@@ -23,6 +23,7 @@ export interface AdvancedSlice extends AdvancedState, FilesystemState {
   setCarbonRegion: (region: CarbonRegion) => void
   setProjectYears: (years: number) => void
   setElectricityCost: (cost: number) => void
+  setUnitSystem: (system: 'binary' | 'decimal') => void
 
   // Filesystem actions
   setFsType: (type: FilesystemState['fsType']) => void
@@ -42,6 +43,7 @@ export const createAdvancedSlice: StateCreator<AdvancedSlice> = (set) => ({
   carbonRegion: 'world_average',
   projectYears: 5,
   electricityCostPerKwh: 0.12,
+  unitSystem: 'binary', // Default to binary (TiB/GiB) - more accurate for storage
 
   // Default filesystem state
   fsType: 'zfs',
@@ -61,6 +63,7 @@ export const createAdvancedSlice: StateCreator<AdvancedSlice> = (set) => ({
   setProjectYears: (projectYears) => set({ projectYears: Math.max(1, projectYears) }),
   setElectricityCost: (electricityCostPerKwh) =>
     set({ electricityCostPerKwh: Math.max(0, electricityCostPerKwh) }),
+  setUnitSystem: (unitSystem) => set({ unitSystem }),
 
   // Filesystem actions
   setFsType: (fsType) => set({ fsType }),

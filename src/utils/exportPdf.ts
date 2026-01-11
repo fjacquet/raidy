@@ -8,6 +8,7 @@ import autoTable from 'jspdf-autotable'
 import type { Drive } from '@/types/drive'
 import type { CalculationResults } from '@/types/results'
 import type { Topology, ZfsOptions } from '@/types/topology'
+import { formatBytes as formatBytesUtil, type UnitSystem } from './units'
 
 interface ExportConfig {
   drive: Drive
@@ -16,16 +17,7 @@ interface ExportConfig {
   zfsOptions?: ZfsOptions
   results: CalculationResults
   projectName?: string
-}
-
-/**
- * Format bytes to human-readable string.
- */
-function formatBytes(bytes: number): string {
-  if (bytes >= 1024 ** 5) return `${(bytes / 1024 ** 5).toFixed(2)} PB`
-  if (bytes >= 1024 ** 4) return `${(bytes / 1024 ** 4).toFixed(2)} TB`
-  if (bytes >= 1024 ** 3) return `${(bytes / 1024 ** 3).toFixed(2)} GB`
-  return `${(bytes / 1024 ** 2).toFixed(0)} MB`
+  unitSystem?: UnitSystem
 }
 
 /**
@@ -58,7 +50,11 @@ export function exportToPdf(config: ExportConfig): void {
     zfsOptions,
     results,
     projectName = 'Storage Configuration',
+    unitSystem = 'binary',
   } = config
+
+  // Create a local formatBytes function using the specified unit system
+  const formatBytes = (bytes: number) => formatBytesUtil(bytes, unitSystem)
   const { volumetry, performance, sustainability, tco, resilience } = results
 
   // Create PDF document

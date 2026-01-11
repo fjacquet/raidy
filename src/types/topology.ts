@@ -67,12 +67,11 @@ export type CephTopology =
   | 'ceph_ec_8_3' // Erasure coded k=8, m=3 (8 data + 3 parity)
   | 'ceph_ec_8_4' // Erasure coded k=8, m=4 (8 data + 4 parity)
 
-/** Dell PowerFlex topologies */
+/** Dell PowerFlex topologies (SSD/NVMe only - HDD no longer supported) */
 export type PowerFlexTopology =
   | 'powerflex_medium_2way' // Medium granularity, 2-way mirror (1MB chunk)
   | 'powerflex_medium_3way' // Medium granularity, 3-way mirror (1MB chunk)
-  | 'powerflex_fine_2way' // Fine granularity, 2-way mirror (128KB chunk)
-  | 'powerflex_fine_3way' // Fine granularity, 3-way mirror (128KB chunk)
+  | 'powerflex_fine_2way' // Fine granularity, 2-way mirror only (8KB chunk) - 3-way not supported in FG mode
   | 'powerflex_ec_4_1' // Erasure coding 4+1 (4 data + 1 parity = 80%)
   | 'powerflex_ec_4_2' // Erasure coding 4+2 (4 data + 2 parity = 67%)
   | 'powerflex_ec_8_2' // Erasure coding 8+2 (8 data + 2 parity = 80%)
@@ -415,16 +414,16 @@ export const DEFAULT_TIERING_CONFIG: TieringConfig = {
   workingSetPercent: 20,
 }
 
-/** Default PowerFlex options */
+/** Default PowerFlex options (SSD/NVMe only - HDD no longer supported) */
 export const DEFAULT_POWERFLEX_OPTIONS: PowerFlexOptions = {
   granularity: 'medium',
   protectionMode: 'mirror',
-  mirrorCopies: 2,
+  mirrorCopies: 2, // Fine granularity only supports 2-way mirror
   ecScheme: '8_2',
   compression: true,
   compressionRatio: 2.0, // 2:1 compression
   storagePools: 1,
-  faultSets: 3,
+  faultSets: 1, // Fault sets are optional (1 = no fault sets, distributed placement)
   fgOverhead: 0.12, // 12% FG metadata overhead
 }
 

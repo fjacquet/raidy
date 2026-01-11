@@ -2672,5 +2672,1301 @@
       "load_watts": 4.0
     },
     "cost_usd": 349
+  },
+  "wd-red-plus-2tb": {
+    "id": "wd-red-plus-2tb",
+    "model": "WD Red Plus 2TB",
+    "type": "HDD",
+    "formFactor": "3.5\"",
+    "interface": "SATA",
+    "rpm": 5400,
+    "capacity_raw": 2000000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 100,
+      "iops_write": 100,
+      "bandwidth_read_mb": 175,
+      "bandwidth_write_mb": 175
+    },
+    "reliability": {
+      "ure_rate": 14,
+      "afr": 0.8,
+      "dwpd": 0,
+      "mtbf_hours": 1000000
+    },
+    "power": {
+      "idle_watts": 2.5,
+      "load_watts": 4.1
+    },
+    "cost_usd": 69
+  },
+  "wd-red-plus-4tb": {
+    "id": "wd-red-plus-4tb",
+    "model": "WD Red Plus 4TB",
+    "type": "HDD",
+    "formFactor": "3.5\"",
+    "interface": "SATA",
+    "rpm": 5400,
+    "capacity_raw": 4000000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 100,
+      "iops_write": 100,
+      "bandwidth_read_mb": 180,
+      "bandwidth_write_mb": 180
+    },
+    "reliability": {
+      "ure_rate": 14,
+      "afr": 0.8,
+      "dwpd": 0,
+      "mtbf_hours": 1000000
+    },
+    "power": {
+      "idle_watts": 2.7,
+      "load_watts": 4.5
+    },
+    "cost_usd": 99
+  },
+  "wd-red-plus-6tb": {
+    "id": "wd-red-plus-6tb",
+    "model": "WD Red Plus 6TB",
+    "type": "HDD",
+    "formFactor": "3.5\"",
+    "interface": "SATA",
+    "rpm": 5640,
+    "capacity_raw": 6000000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 100,
+      "iops_write": 100,
+      "bandwidth_read_mb": 185,
+      "bandwidth_write_mb": 185
+    },
+    "reliability": {
+      "ure_rate": 14,
+      "afr": 0.8,
+      "dwpd": 0,
+      "mtbf_hours": 1000000
+    },
+    "power": {
+      "idle_watts": 3.0,
+      "load_watts": 5.0
+    },
+    "cost_usd": 129
+  },
+  "wd-red-plus-8tb": {
+    "id": "wd-red-plus-8tb",
+    "model": "WD Red Plus 8TB",
+    "type": "HDD",
+    "formFactor": "3.5\"",
+    "interface": "SATA",
+    "rpm": 5640,
+    "capacity_raw": 8000000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 100,
+      "iops_write": 100,
+      "bandwidth_read_mb": 210,
+      "bandwidth_write_mb": 210
+    },
+    "reliability": {
+      "ure_rate": 14,
+      "afr": 0.8,
+      "dwpd": 0,
+      "mtbf_hours": 1000000
+    },
+    "power": {
+      "idle_watts": 3.0,
+      "load_watts": 5.8
+    },
+    "cost_usd": 169
+  },
+  "wd-red-plus-10tb": {
+    "id": "wd-red-plus-10tb",
+    "model": "WD Red Plus 10TB",
+    "type": "HDD",
+    "formFactor": "3.5\"",
+    "interface": "SATA",
+    "rpm": 7200,
+    "capacity_raw": 10000000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 130,
+      "iops_write": 130,
+      "bandwidth_read_mb": 215,
+      "bandwidth_write_mb": 215
+    },
+    "reliability": {
+      "ure_rate": 14,
+      "afr": 0.8,
+      "dwpd": 0,
+      "mtbf_hours": 1000000
+    },
+    "power": {
+      "idle_watts": 3.2,
+      "load_watts": 6.4
+    },
+    "cost_usd": 199
+  },
+  "wd-red-plus-12tb": {
+    "id": "wd-red-plus-12tb",
+    "model": "WD Red Plus 12TB",
+    "type": "HDD",
+    "formFactor": "3.5\"",
+    "interface": "SATA",
+    "rpm": 7200,
+    "capacity_raw": 12000000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 130,
+      "iops_write": 130,
+      "bandwidth_read_mb": 235,
+      "bandwidth_write_mb": 235
+    },
+    "reliability": {
+      "ure_rate": 14,
+      "afr": 0.8,
+      "dwpd": 0,
+      "mtbf_hours": 1000000
+    },
+    "power": {
+      "idle_watts": 3.3,
+      "load_watts": 6.8
+    },
+    "cost_usd": 229
+  },
+  "wd-red-plus-14tb": {
+    "id": "wd-red-plus-14tb",
+    "model": "WD Red Plus 14TB",
+    "type": "HDD",
+    "formFactor": "3.5\"",
+    "interface": "SATA",
+    "rpm": 7200,
+    "capacity_raw": 14000000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 130,
+      "iops_write": 130,
+      "bandwidth_read_mb": 255,
+      "bandwidth_write_mb": 255
+    },
+    "reliability": {
+      "ure_rate": 14,
+      "afr": 0.8,
+      "dwpd": 0,
+      "mtbf_hours": 1000000
+    },
+    "power": {
+      "idle_watts": 3.5,
+      "load_watts": 7.2
+    },
+    "cost_usd": 269
+  },
+  "wd-red-pro-2tb": {
+    "id": "wd-red-pro-2tb",
+    "model": "WD Red Pro 2TB",
+    "type": "HDD",
+    "formFactor": "3.5\"",
+    "interface": "SATA",
+    "rpm": 7200,
+    "capacity_raw": 2000000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 150,
+      "iops_write": 150,
+      "bandwidth_read_mb": 164,
+      "bandwidth_write_mb": 164
+    },
+    "reliability": {
+      "ure_rate": 15,
+      "afr": 0.6,
+      "dwpd": 0,
+      "mtbf_hours": 1000000
+    },
+    "power": {
+      "idle_watts": 3.4,
+      "load_watts": 6.8
+    },
+    "cost_usd": 109
+  },
+  "wd-red-pro-4tb": {
+    "id": "wd-red-pro-4tb",
+    "model": "WD Red Pro 4TB",
+    "type": "HDD",
+    "formFactor": "3.5\"",
+    "interface": "SATA",
+    "rpm": 7200,
+    "capacity_raw": 4000000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 150,
+      "iops_write": 150,
+      "bandwidth_read_mb": 178,
+      "bandwidth_write_mb": 178
+    },
+    "reliability": {
+      "ure_rate": 15,
+      "afr": 0.6,
+      "dwpd": 0,
+      "mtbf_hours": 1000000
+    },
+    "power": {
+      "idle_watts": 3.4,
+      "load_watts": 6.8
+    },
+    "cost_usd": 139
+  },
+  "wd-red-pro-6tb": {
+    "id": "wd-red-pro-6tb",
+    "model": "WD Red Pro 6TB",
+    "type": "HDD",
+    "formFactor": "3.5\"",
+    "interface": "SATA",
+    "rpm": 7200,
+    "capacity_raw": 6000000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 150,
+      "iops_write": 150,
+      "bandwidth_read_mb": 227,
+      "bandwidth_write_mb": 227
+    },
+    "reliability": {
+      "ure_rate": 15,
+      "afr": 0.6,
+      "dwpd": 0,
+      "mtbf_hours": 1000000
+    },
+    "power": {
+      "idle_watts": 3.4,
+      "load_watts": 6.8
+    },
+    "cost_usd": 169
+  },
+  "wd-red-pro-8tb": {
+    "id": "wd-red-pro-8tb",
+    "model": "WD Red Pro 8TB",
+    "type": "HDD",
+    "formFactor": "3.5\"",
+    "interface": "SATA",
+    "rpm": 7200,
+    "capacity_raw": 8000000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 150,
+      "iops_write": 150,
+      "bandwidth_read_mb": 235,
+      "bandwidth_write_mb": 235
+    },
+    "reliability": {
+      "ure_rate": 15,
+      "afr": 0.6,
+      "dwpd": 0,
+      "mtbf_hours": 1000000
+    },
+    "power": {
+      "idle_watts": 3.4,
+      "load_watts": 6.8
+    },
+    "cost_usd": 219
+  },
+  "wd-red-pro-10tb": {
+    "id": "wd-red-pro-10tb",
+    "model": "WD Red Pro 10TB",
+    "type": "HDD",
+    "formFactor": "3.5\"",
+    "interface": "SATA",
+    "rpm": 7200,
+    "capacity_raw": 10000000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 150,
+      "iops_write": 150,
+      "bandwidth_read_mb": 260,
+      "bandwidth_write_mb": 260
+    },
+    "reliability": {
+      "ure_rate": 15,
+      "afr": 0.6,
+      "dwpd": 0,
+      "mtbf_hours": 1000000
+    },
+    "power": {
+      "idle_watts": 4.4,
+      "load_watts": 7.0
+    },
+    "cost_usd": 269
+  },
+  "wd-red-pro-12tb": {
+    "id": "wd-red-pro-12tb",
+    "model": "WD Red Pro 12TB",
+    "type": "HDD",
+    "formFactor": "3.5\"",
+    "interface": "SATA",
+    "rpm": 7200,
+    "capacity_raw": 12000000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 150,
+      "iops_write": 150,
+      "bandwidth_read_mb": 265,
+      "bandwidth_write_mb": 265
+    },
+    "reliability": {
+      "ure_rate": 15,
+      "afr": 0.6,
+      "dwpd": 0,
+      "mtbf_hours": 1000000
+    },
+    "power": {
+      "idle_watts": 4.4,
+      "load_watts": 7.1
+    },
+    "cost_usd": 299
+  },
+  "wd-red-pro-14tb": {
+    "id": "wd-red-pro-14tb",
+    "model": "WD Red Pro 14TB",
+    "type": "HDD",
+    "formFactor": "3.5\"",
+    "interface": "SATA",
+    "rpm": 7200,
+    "capacity_raw": 14000000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 150,
+      "iops_write": 150,
+      "bandwidth_read_mb": 272,
+      "bandwidth_write_mb": 272
+    },
+    "reliability": {
+      "ure_rate": 15,
+      "afr": 0.6,
+      "dwpd": 0,
+      "mtbf_hours": 1000000
+    },
+    "power": {
+      "idle_watts": 4.6,
+      "load_watts": 7.4
+    },
+    "cost_usd": 329
+  },
+  "wd-red-pro-16tb": {
+    "id": "wd-red-pro-16tb",
+    "model": "WD Red Pro 16TB",
+    "type": "HDD",
+    "formFactor": "3.5\"",
+    "interface": "SATA",
+    "rpm": 7200,
+    "capacity_raw": 16000000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 150,
+      "iops_write": 150,
+      "bandwidth_read_mb": 272,
+      "bandwidth_write_mb": 272
+    },
+    "reliability": {
+      "ure_rate": 15,
+      "afr": 0.6,
+      "dwpd": 0,
+      "mtbf_hours": 1000000
+    },
+    "power": {
+      "idle_watts": 4.8,
+      "load_watts": 7.6
+    },
+    "cost_usd": 379
+  },
+  "seagate-ironwolf-2tb": {
+    "id": "seagate-ironwolf-2tb",
+    "model": "Seagate IronWolf 2TB",
+    "type": "HDD",
+    "formFactor": "3.5\"",
+    "interface": "SATA",
+    "rpm": 5900,
+    "capacity_raw": 2000000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 100,
+      "iops_write": 100,
+      "bandwidth_read_mb": 180,
+      "bandwidth_write_mb": 180
+    },
+    "reliability": {
+      "ure_rate": 14,
+      "afr": 0.8,
+      "dwpd": 0,
+      "mtbf_hours": 1000000
+    },
+    "power": {
+      "idle_watts": 3.4,
+      "load_watts": 5.3
+    },
+    "cost_usd": 69
+  },
+  "seagate-ironwolf-4tb": {
+    "id": "seagate-ironwolf-4tb",
+    "model": "Seagate IronWolf 4TB",
+    "type": "HDD",
+    "formFactor": "3.5\"",
+    "interface": "SATA",
+    "rpm": 5900,
+    "capacity_raw": 4000000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 100,
+      "iops_write": 100,
+      "bandwidth_read_mb": 180,
+      "bandwidth_write_mb": 180
+    },
+    "reliability": {
+      "ure_rate": 14,
+      "afr": 0.8,
+      "dwpd": 0,
+      "mtbf_hours": 1000000
+    },
+    "power": {
+      "idle_watts": 4.4,
+      "load_watts": 6.8
+    },
+    "cost_usd": 99
+  },
+  "seagate-ironwolf-6tb": {
+    "id": "seagate-ironwolf-6tb",
+    "model": "Seagate IronWolf 6TB",
+    "type": "HDD",
+    "formFactor": "3.5\"",
+    "interface": "SATA",
+    "rpm": 5400,
+    "capacity_raw": 6000000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 100,
+      "iops_write": 100,
+      "bandwidth_read_mb": 180,
+      "bandwidth_write_mb": 180
+    },
+    "reliability": {
+      "ure_rate": 14,
+      "afr": 0.8,
+      "dwpd": 0,
+      "mtbf_hours": 1000000
+    },
+    "power": {
+      "idle_watts": 4.6,
+      "load_watts": 7.0
+    },
+    "cost_usd": 129
+  },
+  "seagate-ironwolf-8tb": {
+    "id": "seagate-ironwolf-8tb",
+    "model": "Seagate IronWolf 8TB",
+    "type": "HDD",
+    "formFactor": "3.5\"",
+    "interface": "SATA",
+    "rpm": 7200,
+    "capacity_raw": 8000000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 130,
+      "iops_write": 130,
+      "bandwidth_read_mb": 210,
+      "bandwidth_write_mb": 210
+    },
+    "reliability": {
+      "ure_rate": 14,
+      "afr": 0.8,
+      "dwpd": 0,
+      "mtbf_hours": 1000000
+    },
+    "power": {
+      "idle_watts": 4.6,
+      "load_watts": 7.8
+    },
+    "cost_usd": 169
+  },
+  "seagate-ironwolf-10tb": {
+    "id": "seagate-ironwolf-10tb",
+    "model": "Seagate IronWolf 10TB",
+    "type": "HDD",
+    "formFactor": "3.5\"",
+    "interface": "SATA",
+    "rpm": 7200,
+    "capacity_raw": 10000000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 130,
+      "iops_write": 130,
+      "bandwidth_read_mb": 210,
+      "bandwidth_write_mb": 210
+    },
+    "reliability": {
+      "ure_rate": 14,
+      "afr": 0.8,
+      "dwpd": 0,
+      "mtbf_hours": 1000000
+    },
+    "power": {
+      "idle_watts": 4.8,
+      "load_watts": 8.1
+    },
+    "cost_usd": 219
+  },
+  "seagate-ironwolf-12tb": {
+    "id": "seagate-ironwolf-12tb",
+    "model": "Seagate IronWolf 12TB",
+    "type": "HDD",
+    "formFactor": "3.5\"",
+    "interface": "SATA",
+    "rpm": 7200,
+    "capacity_raw": 12000000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 130,
+      "iops_write": 130,
+      "bandwidth_read_mb": 256,
+      "bandwidth_write_mb": 256
+    },
+    "reliability": {
+      "ure_rate": 14,
+      "afr": 0.8,
+      "dwpd": 0,
+      "mtbf_hours": 1000000
+    },
+    "power": {
+      "idle_watts": 5.3,
+      "load_watts": 8.8
+    },
+    "cost_usd": 249
+  },
+  "seagate-ironwolf-14tb": {
+    "id": "seagate-ironwolf-14tb",
+    "model": "Seagate IronWolf 14TB",
+    "type": "HDD",
+    "formFactor": "3.5\"",
+    "interface": "SATA",
+    "rpm": 7200,
+    "capacity_raw": 14000000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 130,
+      "iops_write": 130,
+      "bandwidth_read_mb": 260,
+      "bandwidth_write_mb": 260
+    },
+    "reliability": {
+      "ure_rate": 14,
+      "afr": 0.8,
+      "dwpd": 0,
+      "mtbf_hours": 1000000
+    },
+    "power": {
+      "idle_watts": 5.3,
+      "load_watts": 9.0
+    },
+    "cost_usd": 289
+  },
+  "seagate-ironwolf-16tb": {
+    "id": "seagate-ironwolf-16tb",
+    "model": "Seagate IronWolf 16TB",
+    "type": "HDD",
+    "formFactor": "3.5\"",
+    "interface": "SATA",
+    "rpm": 7200,
+    "capacity_raw": 16000000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 130,
+      "iops_write": 130,
+      "bandwidth_read_mb": 260,
+      "bandwidth_write_mb": 260
+    },
+    "reliability": {
+      "ure_rate": 14,
+      "afr": 0.8,
+      "dwpd": 0,
+      "mtbf_hours": 1000000
+    },
+    "power": {
+      "idle_watts": 5.4,
+      "load_watts": 9.5
+    },
+    "cost_usd": 329
+  },
+  "seagate-ironwolf-pro-4tb": {
+    "id": "seagate-ironwolf-pro-4tb",
+    "model": "Seagate IronWolf Pro 4TB",
+    "type": "HDD",
+    "formFactor": "3.5\"",
+    "interface": "SATA",
+    "rpm": 7200,
+    "capacity_raw": 4000000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 180,
+      "iops_write": 180,
+      "bandwidth_read_mb": 214,
+      "bandwidth_write_mb": 214
+    },
+    "reliability": {
+      "ure_rate": 15,
+      "afr": 0.6,
+      "dwpd": 0,
+      "mtbf_hours": 1200000
+    },
+    "power": {
+      "idle_watts": 4.4,
+      "load_watts": 7.8
+    },
+    "cost_usd": 149
+  },
+  "seagate-ironwolf-pro-6tb": {
+    "id": "seagate-ironwolf-pro-6tb",
+    "model": "Seagate IronWolf Pro 6TB",
+    "type": "HDD",
+    "formFactor": "3.5\"",
+    "interface": "SATA",
+    "rpm": 7200,
+    "capacity_raw": 6000000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 180,
+      "iops_write": 180,
+      "bandwidth_read_mb": 230,
+      "bandwidth_write_mb": 230
+    },
+    "reliability": {
+      "ure_rate": 15,
+      "afr": 0.6,
+      "dwpd": 0,
+      "mtbf_hours": 1200000
+    },
+    "power": {
+      "idle_watts": 4.6,
+      "load_watts": 8.0
+    },
+    "cost_usd": 179
+  },
+  "seagate-ironwolf-pro-8tb": {
+    "id": "seagate-ironwolf-pro-8tb",
+    "model": "Seagate IronWolf Pro 8TB",
+    "type": "HDD",
+    "formFactor": "3.5\"",
+    "interface": "SATA",
+    "rpm": 7200,
+    "capacity_raw": 8000000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 180,
+      "iops_write": 180,
+      "bandwidth_read_mb": 245,
+      "bandwidth_write_mb": 245
+    },
+    "reliability": {
+      "ure_rate": 15,
+      "afr": 0.6,
+      "dwpd": 0,
+      "mtbf_hours": 1200000
+    },
+    "power": {
+      "idle_watts": 4.8,
+      "load_watts": 8.5
+    },
+    "cost_usd": 239
+  },
+  "seagate-ironwolf-pro-10tb": {
+    "id": "seagate-ironwolf-pro-10tb",
+    "model": "Seagate IronWolf Pro 10TB",
+    "type": "HDD",
+    "formFactor": "3.5\"",
+    "interface": "SATA",
+    "rpm": 7200,
+    "capacity_raw": 10000000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 180,
+      "iops_write": 180,
+      "bandwidth_read_mb": 255,
+      "bandwidth_write_mb": 255
+    },
+    "reliability": {
+      "ure_rate": 15,
+      "afr": 0.6,
+      "dwpd": 0,
+      "mtbf_hours": 1200000
+    },
+    "power": {
+      "idle_watts": 5.0,
+      "load_watts": 8.8
+    },
+    "cost_usd": 289
+  },
+  "seagate-ironwolf-pro-12tb": {
+    "id": "seagate-ironwolf-pro-12tb",
+    "model": "Seagate IronWolf Pro 12TB",
+    "type": "HDD",
+    "formFactor": "3.5\"",
+    "interface": "SATA",
+    "rpm": 7200,
+    "capacity_raw": 12000000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 180,
+      "iops_write": 180,
+      "bandwidth_read_mb": 260,
+      "bandwidth_write_mb": 260
+    },
+    "reliability": {
+      "ure_rate": 15,
+      "afr": 0.6,
+      "dwpd": 0,
+      "mtbf_hours": 1200000
+    },
+    "power": {
+      "idle_watts": 5.3,
+      "load_watts": 9.4
+    },
+    "cost_usd": 329
+  },
+  "seagate-ironwolf-pro-14tb": {
+    "id": "seagate-ironwolf-pro-14tb",
+    "model": "Seagate IronWolf Pro 14TB",
+    "type": "HDD",
+    "formFactor": "3.5\"",
+    "interface": "SATA",
+    "rpm": 7200,
+    "capacity_raw": 14000000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 180,
+      "iops_write": 180,
+      "bandwidth_read_mb": 270,
+      "bandwidth_write_mb": 270
+    },
+    "reliability": {
+      "ure_rate": 15,
+      "afr": 0.6,
+      "dwpd": 0,
+      "mtbf_hours": 1200000
+    },
+    "power": {
+      "idle_watts": 5.3,
+      "load_watts": 9.6
+    },
+    "cost_usd": 369
+  },
+  "seagate-ironwolf-pro-16tb": {
+    "id": "seagate-ironwolf-pro-16tb",
+    "model": "Seagate IronWolf Pro 16TB",
+    "type": "HDD",
+    "formFactor": "3.5\"",
+    "interface": "SATA",
+    "rpm": 7200,
+    "capacity_raw": 16000000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 180,
+      "iops_write": 180,
+      "bandwidth_read_mb": 270,
+      "bandwidth_write_mb": 270
+    },
+    "reliability": {
+      "ure_rate": 15,
+      "afr": 0.6,
+      "dwpd": 0,
+      "mtbf_hours": 1200000
+    },
+    "power": {
+      "idle_watts": 5.4,
+      "load_watts": 9.8
+    },
+    "cost_usd": 399
+  },
+  "toshiba-n300-4tb": {
+    "id": "toshiba-n300-4tb",
+    "model": "Toshiba N300 4TB",
+    "type": "HDD",
+    "formFactor": "3.5\"",
+    "interface": "SATA",
+    "rpm": 7200,
+    "capacity_raw": 4000000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 150,
+      "iops_write": 150,
+      "bandwidth_read_mb": 204,
+      "bandwidth_write_mb": 204
+    },
+    "reliability": {
+      "ure_rate": 14,
+      "afr": 0.8,
+      "dwpd": 0,
+      "mtbf_hours": 1000000
+    },
+    "power": {
+      "idle_watts": 4.0,
+      "load_watts": 6.4
+    },
+    "cost_usd": 109
+  },
+  "toshiba-n300-6tb": {
+    "id": "toshiba-n300-6tb",
+    "model": "Toshiba N300 6TB",
+    "type": "HDD",
+    "formFactor": "3.5\"",
+    "interface": "SATA",
+    "rpm": 7200,
+    "capacity_raw": 6000000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 150,
+      "iops_write": 150,
+      "bandwidth_read_mb": 230,
+      "bandwidth_write_mb": 230
+    },
+    "reliability": {
+      "ure_rate": 14,
+      "afr": 0.8,
+      "dwpd": 0,
+      "mtbf_hours": 1000000
+    },
+    "power": {
+      "idle_watts": 4.2,
+      "load_watts": 6.6
+    },
+    "cost_usd": 139
+  },
+  "toshiba-n300-8tb": {
+    "id": "toshiba-n300-8tb",
+    "model": "Toshiba N300 8TB",
+    "type": "HDD",
+    "formFactor": "3.5\"",
+    "interface": "SATA",
+    "rpm": 7200,
+    "capacity_raw": 8000000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 150,
+      "iops_write": 150,
+      "bandwidth_read_mb": 248,
+      "bandwidth_write_mb": 248
+    },
+    "reliability": {
+      "ure_rate": 14,
+      "afr": 0.8,
+      "dwpd": 0,
+      "mtbf_hours": 1000000
+    },
+    "power": {
+      "idle_watts": 4.6,
+      "load_watts": 7.6
+    },
+    "cost_usd": 179
+  },
+  "toshiba-n300-10tb": {
+    "id": "toshiba-n300-10tb",
+    "model": "Toshiba N300 10TB",
+    "type": "HDD",
+    "formFactor": "3.5\"",
+    "interface": "SATA",
+    "rpm": 7200,
+    "capacity_raw": 10000000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 150,
+      "iops_write": 150,
+      "bandwidth_read_mb": 255,
+      "bandwidth_write_mb": 255
+    },
+    "reliability": {
+      "ure_rate": 14,
+      "afr": 0.8,
+      "dwpd": 0,
+      "mtbf_hours": 1000000
+    },
+    "power": {
+      "idle_watts": 5.0,
+      "load_watts": 9.0
+    },
+    "cost_usd": 219
+  },
+  "toshiba-n300-12tb": {
+    "id": "toshiba-n300-12tb",
+    "model": "Toshiba N300 12TB",
+    "type": "HDD",
+    "formFactor": "3.5\"",
+    "interface": "SATA",
+    "rpm": 7200,
+    "capacity_raw": 12000000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 150,
+      "iops_write": 150,
+      "bandwidth_read_mb": 265,
+      "bandwidth_write_mb": 265
+    },
+    "reliability": {
+      "ure_rate": 14,
+      "afr": 0.8,
+      "dwpd": 0,
+      "mtbf_hours": 1000000
+    },
+    "power": {
+      "idle_watts": 5.2,
+      "load_watts": 9.2
+    },
+    "cost_usd": 259
+  },
+  "toshiba-n300-14tb": {
+    "id": "toshiba-n300-14tb",
+    "model": "Toshiba N300 14TB",
+    "type": "HDD",
+    "formFactor": "3.5\"",
+    "interface": "SATA",
+    "rpm": 7200,
+    "capacity_raw": 14000000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 150,
+      "iops_write": 150,
+      "bandwidth_read_mb": 272,
+      "bandwidth_write_mb": 272
+    },
+    "reliability": {
+      "ure_rate": 14,
+      "afr": 0.8,
+      "dwpd": 0,
+      "mtbf_hours": 1000000
+    },
+    "power": {
+      "idle_watts": 5.5,
+      "load_watts": 9.4
+    },
+    "cost_usd": 299
+  },
+  "toshiba-n300-16tb": {
+    "id": "toshiba-n300-16tb",
+    "model": "Toshiba N300 16TB",
+    "type": "HDD",
+    "formFactor": "3.5\"",
+    "interface": "SATA",
+    "rpm": 7200,
+    "capacity_raw": 16000000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 150,
+      "iops_write": 150,
+      "bandwidth_read_mb": 280,
+      "bandwidth_write_mb": 280
+    },
+    "reliability": {
+      "ure_rate": 14,
+      "afr": 0.8,
+      "dwpd": 0,
+      "mtbf_hours": 1000000
+    },
+    "power": {
+      "idle_watts": 5.7,
+      "load_watts": 9.6
+    },
+    "cost_usd": 349
+  },
+  "seagate-exos-x16-4tb": {
+    "id": "seagate-exos-x16-4tb",
+    "model": "Seagate Exos X16 4TB",
+    "type": "HDD",
+    "formFactor": "3.5\"",
+    "interface": "SATA",
+    "rpm": 7200,
+    "capacity_raw": 4000000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 170,
+      "iops_write": 170,
+      "bandwidth_read_mb": 261,
+      "bandwidth_write_mb": 261
+    },
+    "reliability": {
+      "ure_rate": 15,
+      "afr": 0.35,
+      "dwpd": 0,
+      "mtbf_hours": 2500000
+    },
+    "power": {
+      "idle_watts": 5.0,
+      "load_watts": 8.3
+    },
+    "cost_usd": 149
+  },
+  "seagate-exos-x16-8tb": {
+    "id": "seagate-exos-x16-8tb",
+    "model": "Seagate Exos X16 8TB",
+    "type": "HDD",
+    "formFactor": "3.5\"",
+    "interface": "SATA",
+    "rpm": 7200,
+    "capacity_raw": 8000000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 170,
+      "iops_write": 170,
+      "bandwidth_read_mb": 261,
+      "bandwidth_write_mb": 261
+    },
+    "reliability": {
+      "ure_rate": 15,
+      "afr": 0.35,
+      "dwpd": 0,
+      "mtbf_hours": 2500000
+    },
+    "power": {
+      "idle_watts": 5.0,
+      "load_watts": 8.3
+    },
+    "cost_usd": 199
+  },
+  "seagate-exos-x16-10tb": {
+    "id": "seagate-exos-x16-10tb",
+    "model": "Seagate Exos X16 10TB",
+    "type": "HDD",
+    "formFactor": "3.5\"",
+    "interface": "SATA",
+    "rpm": 7200,
+    "capacity_raw": 10000000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 170,
+      "iops_write": 170,
+      "bandwidth_read_mb": 261,
+      "bandwidth_write_mb": 261
+    },
+    "reliability": {
+      "ure_rate": 15,
+      "afr": 0.35,
+      "dwpd": 0,
+      "mtbf_hours": 2500000
+    },
+    "power": {
+      "idle_watts": 5.0,
+      "load_watts": 8.3
+    },
+    "cost_usd": 249
+  },
+  "seagate-exos-x16-12tb": {
+    "id": "seagate-exos-x16-12tb",
+    "model": "Seagate Exos X16 12TB",
+    "type": "HDD",
+    "formFactor": "3.5\"",
+    "interface": "SATA",
+    "rpm": 7200,
+    "capacity_raw": 12000000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 170,
+      "iops_write": 170,
+      "bandwidth_read_mb": 261,
+      "bandwidth_write_mb": 261
+    },
+    "reliability": {
+      "ure_rate": 15,
+      "afr": 0.35,
+      "dwpd": 0,
+      "mtbf_hours": 2500000
+    },
+    "power": {
+      "idle_watts": 5.0,
+      "load_watts": 8.3
+    },
+    "cost_usd": 279
+  },
+  "seagate-exos-x16-14tb": {
+    "id": "seagate-exos-x16-14tb",
+    "model": "Seagate Exos X16 14TB",
+    "type": "HDD",
+    "formFactor": "3.5\"",
+    "interface": "SATA",
+    "rpm": 7200,
+    "capacity_raw": 14000000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 170,
+      "iops_write": 170,
+      "bandwidth_read_mb": 261,
+      "bandwidth_write_mb": 261
+    },
+    "reliability": {
+      "ure_rate": 15,
+      "afr": 0.35,
+      "dwpd": 0,
+      "mtbf_hours": 2500000
+    },
+    "power": {
+      "idle_watts": 5.0,
+      "load_watts": 8.3
+    },
+    "cost_usd": 329
+  },
+  "seagate-exos-x16-16tb": {
+    "id": "seagate-exos-x16-16tb",
+    "model": "Seagate Exos X16 16TB",
+    "type": "HDD",
+    "formFactor": "3.5\"",
+    "interface": "SATA",
+    "rpm": 7200,
+    "capacity_raw": 16000000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 170,
+      "iops_write": 170,
+      "bandwidth_read_mb": 261,
+      "bandwidth_write_mb": 261
+    },
+    "reliability": {
+      "ure_rate": 15,
+      "afr": 0.35,
+      "dwpd": 0,
+      "mtbf_hours": 2500000
+    },
+    "power": {
+      "idle_watts": 5.0,
+      "load_watts": 8.3
+    },
+    "cost_usd": 379
+  },
+  "wd-ultrastar-dc-hc550-10tb": {
+    "id": "wd-ultrastar-dc-hc550-10tb",
+    "model": "WD Ultrastar DC HC550 10TB",
+    "type": "HDD",
+    "formFactor": "3.5\"",
+    "interface": "SATA",
+    "rpm": 7200,
+    "capacity_raw": 10000000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 160,
+      "iops_write": 160,
+      "bandwidth_read_mb": 255,
+      "bandwidth_write_mb": 255
+    },
+    "reliability": {
+      "ure_rate": 15,
+      "afr": 0.35,
+      "dwpd": 0,
+      "mtbf_hours": 2500000
+    },
+    "power": {
+      "idle_watts": 5.0,
+      "load_watts": 7.6
+    },
+    "cost_usd": 259
+  },
+  "wd-ultrastar-dc-hc550-12tb": {
+    "id": "wd-ultrastar-dc-hc550-12tb",
+    "model": "WD Ultrastar DC HC550 12TB",
+    "type": "HDD",
+    "formFactor": "3.5\"",
+    "interface": "SATA",
+    "rpm": 7200,
+    "capacity_raw": 12000000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 160,
+      "iops_write": 160,
+      "bandwidth_read_mb": 255,
+      "bandwidth_write_mb": 255
+    },
+    "reliability": {
+      "ure_rate": 15,
+      "afr": 0.35,
+      "dwpd": 0,
+      "mtbf_hours": 2500000
+    },
+    "power": {
+      "idle_watts": 5.2,
+      "load_watts": 7.8
+    },
+    "cost_usd": 289
+  },
+  "wd-ultrastar-dc-hc550-14tb": {
+    "id": "wd-ultrastar-dc-hc550-14tb",
+    "model": "WD Ultrastar DC HC550 14TB",
+    "type": "HDD",
+    "formFactor": "3.5\"",
+    "interface": "SATA",
+    "rpm": 7200,
+    "capacity_raw": 14000000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 160,
+      "iops_write": 160,
+      "bandwidth_read_mb": 255,
+      "bandwidth_write_mb": 255
+    },
+    "reliability": {
+      "ure_rate": 15,
+      "afr": 0.35,
+      "dwpd": 0,
+      "mtbf_hours": 2500000
+    },
+    "power": {
+      "idle_watts": 5.5,
+      "load_watts": 8.0
+    },
+    "cost_usd": 319
+  },
+  "wd-ultrastar-dc-hc550-16tb": {
+    "id": "wd-ultrastar-dc-hc550-16tb",
+    "model": "WD Ultrastar DC HC550 16TB",
+    "type": "HDD",
+    "formFactor": "3.5\"",
+    "interface": "SATA",
+    "rpm": 7200,
+    "capacity_raw": 16000000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 160,
+      "iops_write": 160,
+      "bandwidth_read_mb": 269,
+      "bandwidth_write_mb": 269
+    },
+    "reliability": {
+      "ure_rate": 15,
+      "afr": 0.35,
+      "dwpd": 0,
+      "mtbf_hours": 2500000
+    },
+    "power": {
+      "idle_watts": 5.8,
+      "load_watts": 8.2
+    },
+    "cost_usd": 349
+  },
+  "wd-ultrastar-dc-hc550-18tb": {
+    "id": "wd-ultrastar-dc-hc550-18tb",
+    "model": "WD Ultrastar DC HC550 18TB",
+    "type": "HDD",
+    "formFactor": "3.5\"",
+    "interface": "SATA",
+    "rpm": 7200,
+    "capacity_raw": 18000000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 160,
+      "iops_write": 160,
+      "bandwidth_read_mb": 269,
+      "bandwidth_write_mb": 269
+    },
+    "reliability": {
+      "ure_rate": 15,
+      "afr": 0.35,
+      "dwpd": 0,
+      "mtbf_hours": 2500000
+    },
+    "power": {
+      "idle_watts": 6.0,
+      "load_watts": 8.5
+    },
+    "cost_usd": 399
   }
 }

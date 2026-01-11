@@ -213,11 +213,10 @@ function getDataFraction(
       switch (topology.level) {
         case 'powerflex_medium_2way':
         case 'powerflex_fine_2way':
-          // 2-way mirror: 50% efficiency
+          // 2-way mirror: 50% efficiency (FG only supports 2-way)
           return 0.5
         case 'powerflex_medium_3way':
-        case 'powerflex_fine_3way':
-          // 3-way mirror: 33% efficiency
+          // 3-way mirror: 33% efficiency (Medium Granularity only)
           return 1 / 3
         case 'powerflex_ec_4_1':
           // Erasure coding 4+1: 4/(4+1) = 80% efficiency

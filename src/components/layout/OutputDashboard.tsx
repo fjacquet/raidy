@@ -11,7 +11,13 @@ import {
   Speedometer,
 } from '@/components/outputs'
 import drivesData from '@/data/drives.json'
-import { formatBytes, formatCurrency, formatNumber, useCalculations, useResilience } from '@/hooks'
+import {
+  formatCurrency,
+  formatNumber,
+  useCalculations,
+  useFormatBytes,
+  useResilience,
+} from '@/hooks'
 import { useConfigStore } from '@/store'
 import type { Drive } from '@/types'
 import { downloadAnsible, downloadTerraform, downloadYaml, exportToPdf } from '@/utils'
@@ -79,8 +85,9 @@ function ProgressBar({
 }
 
 export function OutputDashboard() {
-  const { topology, zfsOptions, driveId, driveCount, hotSpares, controllerOptions } =
+  const { topology, zfsOptions, driveId, driveCount, hotSpares, controllerOptions, unitSystem } =
     useConfigStore()
+  const formatBytes = useFormatBytes()
   const results = useCalculations()
   const selectedDrive = drives[driveId] || null
 
@@ -114,6 +121,7 @@ export function OutputDashboard() {
         resilience: resilienceResult,
       },
       projectName: 'Storage Configuration',
+      unitSystem,
     })
   }
 
@@ -130,6 +138,7 @@ export function OutputDashboard() {
         ...results,
         resilience: resilienceResult,
       },
+      unitSystem,
     })
   }
 
@@ -146,6 +155,7 @@ export function OutputDashboard() {
         ...results,
         resilience: resilienceResult,
       },
+      unitSystem,
     })
   }
 
@@ -162,6 +172,7 @@ export function OutputDashboard() {
         ...results,
         resilience: resilienceResult,
       },
+      unitSystem,
     })
   }
 

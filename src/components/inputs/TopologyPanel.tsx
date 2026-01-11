@@ -13,6 +13,37 @@ import {
 import { useConfigStore } from '@/store'
 import type { Topology, TopologyType } from '@/types'
 
+// NetApp platform options
+const NETAPP_PLATFORM_OPTIONS = [
+  { value: 'aff_a', label: 'AFF A-Series' },
+  { value: 'aff_c', label: 'AFF C-Series' },
+  { value: 'fas', label: 'FAS' },
+  { value: 'asa', label: 'ASA (SAN)' },
+  { value: 'e_series', label: 'E-Series' },
+]
+
+const NETAPP_ADP_OPTIONS = [
+  { value: 'none', label: 'None' },
+  { value: 'adpv1', label: 'ADP v1' },
+  { value: 'adpv2', label: 'ADP v2 (Root-Data)' },
+]
+
+// Synology model series options
+const SYNOLOGY_MODEL_OPTIONS = [
+  { value: 'j', label: 'J Series (Entry)' },
+  { value: 'value', label: 'Value Series' },
+  { value: 'plus', label: 'Plus Series' },
+  { value: 'xs', label: 'XS/XS+ (Enterprise)' },
+]
+
+// PowerFlex EC scheme options
+const POWERFLEX_EC_OPTIONS = [
+  { value: '4_1', label: '4+1 (80%)' },
+  { value: '4_2', label: '4+2 (67%)' },
+  { value: '8_2', label: '8+2 (80%)' },
+  { value: '12_4', label: '12+4 (75%)' },
+]
+
 const TOPOLOGY_TYPES = [
   { value: 'zfs', label: 'ZFS' },
   { value: 'standard', label: 'RAID' },
@@ -132,12 +163,7 @@ const TOPOLOGY_LEVELS: Record<
     {
       value: 'powerflex_fine_2way',
       label: 'Fine 2-way',
-      description: 'Fine granularity (128KB), 2-way mirror, ~42.5% efficiency',
-    },
-    {
-      value: 'powerflex_fine_3way',
-      label: 'Fine 3-way',
-      description: 'Fine granularity (128KB), 3-way mirror, ~28% efficiency',
+      description: 'Fine granularity (8KB), 2-way mirror only, ~42.5% efficiency',
     },
     {
       value: 'powerflex_ec_4_1',
@@ -231,6 +257,9 @@ export function TopologyPanel() {
     vsanOptions,
     dellOptions,
     cephOptions,
+    powerFlexOptions,
+    netAppOptions,
+    synologyOptions,
     setTopology,
     setHotSpares,
     setZfsOptions,
@@ -238,6 +267,9 @@ export function TopologyPanel() {
     setVsanOptions,
     setDellOptions,
     setCephOptions,
+    setPowerFlexOptions,
+    setNetAppOptions,
+    setSynologyOptions,
   } = useConfigStore()
 
   const handleTypeChange = (type: string) => {
@@ -563,6 +595,392 @@ export function TopologyPanel() {
             checked={cephOptions.journalOnSsd}
             onChange={(v) => setCephOptions({ journalOnSsd: v })}
           />
+
+          <Toggle
+            id="ceph-wal-db-offload"
+            label="WAL/DB on Separate NVMe"
+            checked={cephOptions.walDbOffload}
+            onChange={(v) => setCephOptions({ walDbOffload: v })}
+          />
+
+          {cephOptions.walDbOffload && (
+            <div className="space-y-2">
+              <Label htmlFor="ceph-wal-ratio">HDDs per WAL/DB NVMe</Label>
+              <NumberInput
+                id="ceph-wal-ratio"
+                value={cephOptions.walDbRatio}
+                min={2}
+                max={12}
+                onChange={(v) => setCephOptions({ walDbRatio: v })}
+              />
+              <p className="text-xs text-slate-500">
+                Ratio of HDDs to NVMe drives for WAL/DB offload
+              </p>
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <Label htmlFor="ceph-safe-capacity">Safe Capacity Threshold</Label>
+            <Slider
+              id="ceph-safe-capacity"
+              value={cephOptions.safeCapacityThreshold * 100}
+              min={70}
+              max={95}
+              onChange={(v) => setCephOptions({ safeCapacityThreshold: v / 100 })}
+            />
+            <p className="text-xs text-slate-500">
+              Ceph nearfull threshold: {Math.round(cephOptions.safeCapacityThreshold * 100)}%
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* PowerFlex Options */}
+      {topology.type === 'powerflex' && (
+        <div className="space-y-4 pt-3 border-t border-surface-700">
+          <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+            PowerFlex Options
+          </h4>
+
+          <div className="space-y-2">
+            <Label>Granularity</Label>
+            <SegmentedControl
+              value={powerFlexOptions.granularity}
+              options={[
+                { value: 'medium', label: 'Medium (1MB)' },
+                { value: 'fine', label: 'Fine (8KB)' },
+              ]}
+              onChange={(v) => setPowerFlexOptions({ granularity: v as 'medium' | 'fine' })}
+            />
+            <p className="text-xs text-slate-500">
+              {powerFlexOptions.granularity === 'fine'
+                ? 'Fine granularity: Better for small I/O, 12-15% metadata overhead'
+                : 'Medium granularity: Standard mode, lower overhead'}
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Protection Mode</Label>
+            <SegmentedControl
+              value={powerFlexOptions.protectionMode}
+              options={[
+                { value: 'mirror', label: 'Mirror' },
+                { value: 'erasure', label: 'Erasure Coding' },
+              ]}
+              onChange={(v) => setPowerFlexOptions({ protectionMode: v as 'mirror' | 'erasure' })}
+            />
+          </div>
+
+          {powerFlexOptions.protectionMode === 'mirror' && (
+            <div className="space-y-2">
+              <Label>Mirror Copies</Label>
+              <SegmentedControl
+                value={String(powerFlexOptions.mirrorCopies)}
+                options={[
+                  { value: '2', label: '2-way' },
+                  { value: '3', label: '3-way' },
+                ]}
+                onChange={(v) => setPowerFlexOptions({ mirrorCopies: Number(v) as 2 | 3 })}
+              />
+            </div>
+          )}
+
+          {powerFlexOptions.protectionMode === 'erasure' && (
+            <div className="space-y-2">
+              <Label>EC Scheme</Label>
+              <Select
+                id="powerflex-ec-scheme"
+                value={powerFlexOptions.ecScheme}
+                options={POWERFLEX_EC_OPTIONS}
+                onChange={(v) =>
+                  setPowerFlexOptions({ ecScheme: v as '4_1' | '4_2' | '8_2' | '12_4' })
+                }
+              />
+              <p className="text-xs text-slate-500">
+                Erasure coding reduces IOPS by ~30% due to CPU overhead
+              </p>
+            </div>
+          )}
+
+          <Toggle
+            id="powerflex-compression"
+            label="Enable Compression"
+            checked={powerFlexOptions.compression}
+            onChange={(v) => setPowerFlexOptions({ compression: v })}
+          />
+
+          {powerFlexOptions.compression && (
+            <div className="space-y-2">
+              <Label htmlFor="powerflex-compression-ratio">Compression Ratio</Label>
+              <Slider
+                id="powerflex-compression-ratio"
+                value={powerFlexOptions.compressionRatio}
+                min={1}
+                max={4}
+                step={0.5}
+                onChange={(v) => setPowerFlexOptions({ compressionRatio: v })}
+              />
+              <p className="text-xs text-slate-500">
+                Expected ratio: {powerFlexOptions.compressionRatio}:1
+              </p>
+            </div>
+          )}
+
+          {powerFlexOptions.granularity === 'fine' && (
+            <div className="space-y-2">
+              <Label htmlFor="powerflex-fg-overhead">FG Metadata Overhead</Label>
+              <Slider
+                id="powerflex-fg-overhead"
+                value={powerFlexOptions.fgOverhead * 100}
+                min={10}
+                max={18}
+                onChange={(v) => setPowerFlexOptions({ fgOverhead: v / 100 })}
+              />
+              <p className="text-xs text-slate-500">
+                Fine granularity overhead: {Math.round(powerFlexOptions.fgOverhead * 100)}%
+              </p>
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <Label htmlFor="powerflex-fault-sets">Fault Sets</Label>
+            <NumberInput
+              id="powerflex-fault-sets"
+              value={powerFlexOptions.faultSets}
+              min={3}
+              max={16}
+              onChange={(v) => setPowerFlexOptions({ faultSets: v })}
+            />
+            <p className="text-xs text-slate-500">
+              Minimum 3 fault sets required for data protection
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* NetApp Options (proprietary type with netapp_ prefix) */}
+      {topology.type === 'proprietary' && topology.level.startsWith('netapp_') && (
+        <div className="space-y-4 pt-3 border-t border-surface-700">
+          <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+            NetApp ONTAP Options
+          </h4>
+
+          <div className="space-y-2">
+            <Label htmlFor="netapp-platform">Platform</Label>
+            <Select
+              id="netapp-platform"
+              value={netAppOptions.platform}
+              options={NETAPP_PLATFORM_OPTIONS}
+              onChange={(v) =>
+                setNetAppOptions({
+                  platform: v as 'aff_a' | 'aff_c' | 'fas' | 'asa' | 'e_series',
+                })
+              }
+            />
+            <p className="text-xs text-slate-500">
+              {netAppOptions.platform === 'aff_a'
+                ? 'All-Flash FAS A-Series: High performance'
+                : netAppOptions.platform === 'aff_c'
+                  ? 'All-Flash FAS C-Series: Capacity optimized'
+                  : netAppOptions.platform === 'fas'
+                    ? 'Fabric-Attached Storage: Hybrid HDD/SSD'
+                    : netAppOptions.platform === 'asa'
+                      ? 'All-Flash SAN Array: Block-only SAN'
+                      : 'E-Series: High-performance block storage'}
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label>RAID Type</Label>
+            <SegmentedControl
+              value={netAppOptions.raidType}
+              options={[
+                { value: 'raid_dp', label: 'RAID-DP' },
+                { value: 'raid_tec', label: 'RAID-TEC' },
+              ]}
+              onChange={(v) => setNetAppOptions({ raidType: v as 'raid_dp' | 'raid_tec' })}
+            />
+            <p className="text-xs text-slate-500">
+              {netAppOptions.raidType === 'raid_tec'
+                ? 'Triple parity: Recommended for drives > 10TB'
+                : 'Double parity: Standard protection'}
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="netapp-adp">Advanced Drive Partitioning</Label>
+            <Select
+              id="netapp-adp"
+              value={netAppOptions.adpVersion}
+              options={NETAPP_ADP_OPTIONS}
+              onChange={(v) => setNetAppOptions({ adpVersion: v as 'none' | 'adpv1' | 'adpv2' })}
+            />
+            <p className="text-xs text-slate-500">
+              {netAppOptions.adpVersion === 'adpv2'
+                ? 'ADP v2: Root-data partitioning, better capacity utilization'
+                : netAppOptions.adpVersion === 'adpv1'
+                  ? 'ADP v1: Basic root partitioning'
+                  : 'No partitioning: Traditional dedicated root drives'}
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="netapp-snapshot-reserve">Snapshot Reserve</Label>
+            <Slider
+              id="netapp-snapshot-reserve"
+              value={netAppOptions.snapshotReserve}
+              min={0}
+              max={20}
+              onChange={(v) => setNetAppOptions({ snapshotReserve: v })}
+            />
+            <p className="text-xs text-slate-500">
+              Snapshot reserve: {netAppOptions.snapshotReserve}%
+              {netAppOptions.platform.startsWith('aff') && netAppOptions.snapshotReserve === 0
+                ? ' (typical for AFF)'
+                : ''}
+            </p>
+          </div>
+
+          <Toggle
+            id="netapp-compression"
+            label="Inline Compression"
+            checked={netAppOptions.compression}
+            onChange={(v) => setNetAppOptions({ compression: v })}
+          />
+
+          <Toggle
+            id="netapp-dedup"
+            label="Inline Deduplication"
+            checked={netAppOptions.dedup}
+            onChange={(v) => setNetAppOptions({ dedup: v })}
+          />
+
+          <Toggle
+            id="netapp-zero-detection"
+            label="Zero-Block Detection"
+            checked={netAppOptions.zeroDetection}
+            onChange={(v) => setNetAppOptions({ zeroDetection: v })}
+          />
+
+          {(netAppOptions.compression || netAppOptions.dedup) && (
+            <div className="space-y-2">
+              <Label htmlFor="netapp-drr">Data Reduction Ratio</Label>
+              <Slider
+                id="netapp-drr"
+                value={netAppOptions.dataReductionRatio}
+                min={1}
+                max={5}
+                step={0.5}
+                onChange={(v) => setNetAppOptions({ dataReductionRatio: v })}
+              />
+              <p className="text-xs text-slate-500">
+                Expected DRR: {netAppOptions.dataReductionRatio}:1 (compression + dedup)
+              </p>
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <Label htmlFor="netapp-wafl">WAFL Overhead</Label>
+            <Slider
+              id="netapp-wafl"
+              value={netAppOptions.waflOverhead * 100}
+              min={1}
+              max={3}
+              step={0.1}
+              onChange={(v) => setNetAppOptions({ waflOverhead: v / 100 })}
+            />
+            <p className="text-xs text-slate-500">
+              WAFL filesystem overhead: {(netAppOptions.waflOverhead * 100).toFixed(1)}%
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Synology Options (proprietary type with synology_ prefix) */}
+      {topology.type === 'proprietary' && topology.level.startsWith('synology_') && (
+        <div className="space-y-4 pt-3 border-t border-surface-700">
+          <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+            Synology Options
+          </h4>
+
+          <div className="space-y-2">
+            <Label>Filesystem</Label>
+            <SegmentedControl
+              value={synologyOptions.filesystem}
+              options={[
+                { value: 'btrfs', label: 'Btrfs' },
+                { value: 'ext4', label: 'EXT4' },
+              ]}
+              onChange={(v) => setSynologyOptions({ filesystem: v as 'btrfs' | 'ext4' })}
+            />
+            <p className="text-xs text-slate-500">
+              {synologyOptions.filesystem === 'btrfs'
+                ? 'Btrfs: Snapshots, data protection, ~4% overhead'
+                : 'EXT4: Legacy, no snapshots, lower overhead'}
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="synology-model">Model Series</Label>
+            <Select
+              id="synology-model"
+              value={synologyOptions.modelSeries}
+              options={SYNOLOGY_MODEL_OPTIONS}
+              onChange={(v) =>
+                setSynologyOptions({ modelSeries: v as 'j' | 'value' | 'plus' | 'xs' })
+              }
+            />
+            <p className="text-xs text-slate-500">
+              {synologyOptions.modelSeries === 'j'
+                ? 'J Series: Entry-level, limited CPU for RAID parity'
+                : synologyOptions.modelSeries === 'value'
+                  ? 'Value Series: Home/small office use'
+                  : synologyOptions.modelSeries === 'plus'
+                    ? 'Plus Series: SMB with Btrfs support'
+                    : 'XS Series: Enterprise with high performance'}
+            </p>
+          </div>
+
+          <Toggle
+            id="synology-ssd-cache"
+            label="SSD Cache"
+            checked={synologyOptions.ssdCache}
+            onChange={(v) => setSynologyOptions({ ssdCache: v })}
+          />
+
+          {synologyOptions.ssdCache && (
+            <div className="space-y-2">
+              <Label>Cache Mode</Label>
+              <SegmentedControl
+                value={synologyOptions.cacheMode}
+                options={[
+                  { value: 'read_only', label: 'Read Only' },
+                  { value: 'read_write', label: 'Read/Write' },
+                ]}
+                onChange={(v) => setSynologyOptions({ cacheMode: v as 'read_only' | 'read_write' })}
+              />
+              <p className="text-xs text-slate-500">
+                {synologyOptions.cacheMode === 'read_write'
+                  ? 'Read/Write cache: Better performance, requires 2 SSDs for protection'
+                  : 'Read-only cache: Accelerates reads only'}
+              </p>
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <Label htmlFor="synology-system-partition">System Partition Size</Label>
+            <Slider
+              id="synology-system-partition"
+              value={synologyOptions.systemPartitionSize / (1024 * 1024 * 1024)}
+              min={20}
+              max={35}
+              onChange={(v) => setSynologyOptions({ systemPartitionSize: v * 1024 * 1024 * 1024 })}
+            />
+            <p className="text-xs text-slate-500">
+              System partition per disk:{' '}
+              {Math.round(synologyOptions.systemPartitionSize / (1024 * 1024 * 1024))} GB
+            </p>
+          </div>
         </div>
       )}
     </div>

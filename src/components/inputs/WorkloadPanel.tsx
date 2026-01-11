@@ -3,6 +3,7 @@
  */
 
 import { Label, Select, Slider } from '@/components/common/FormControls'
+import { useFormatBytes } from '@/hooks/useCalculations'
 import { useConfigStore } from '@/store'
 import type { BlockSize } from '@/types'
 
@@ -15,20 +16,6 @@ const BLOCK_SIZES: { value: BlockSize; label: string }[] = [
   { value: '256K', label: '256K' },
   { value: '1M', label: '1M' },
 ]
-
-// Format bytes to human-readable
-function formatBytes(bytes: number): string {
-  if (bytes >= 1024 ** 4) {
-    const tb = bytes / 1024 ** 4
-    return `${tb >= 100 ? tb.toFixed(0) : tb.toFixed(1)} TB`
-  }
-  if (bytes >= 1024 ** 3) {
-    const gb = bytes / 1024 ** 3
-    return `${gb >= 100 ? gb.toFixed(0) : gb.toFixed(1)} GB`
-  }
-  const mb = bytes / 1024 ** 2
-  return `${mb.toFixed(0)} MB`
-}
 
 // Convert slider position to bytes (logarithmic scale)
 function sliderToBytes(position: number): number {
@@ -65,6 +52,7 @@ function dailyWriteToSlider(bytes: number): number {
 }
 
 export function WorkloadPanel() {
+  const formatBytes = useFormatBytes()
   const {
     readPercent,
     blockSize,

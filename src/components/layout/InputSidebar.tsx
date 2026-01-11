@@ -3,7 +3,13 @@
  */
 
 import { useState } from 'react'
-import { AdvancedPanel, HardwarePanel, TopologyPanel, WorkloadPanel } from '@/components/inputs'
+import {
+  AdvancedPanel,
+  DrivePropertiesPanel,
+  HardwarePanel,
+  TopologyPanel,
+  WorkloadPanel,
+} from '@/components/inputs'
 
 interface AccordionItemProps {
   title: string
@@ -87,6 +93,14 @@ export function InputSidebar() {
         onToggle={() => toggleSection('advanced')}
       >
         <AdvancedPanel />
+      </AccordionItem>
+
+      <AccordionItem
+        title="Drive Properties"
+        isOpen={openSections.has('drive-properties')}
+        onToggle={() => toggleSection('drive-properties')}
+      >
+        <DrivePropertiesPanel />
       </AccordionItem>
     </aside>
   )

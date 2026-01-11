@@ -11,6 +11,7 @@ import { calculateVolumetry } from '@/engines/volumetry'
 import { useConfigStore } from '@/store'
 import type { Drive } from '@/types'
 import type { CalculationResults } from '@/types/results'
+import { formatBytes as formatBytesUtil } from '@/utils'
 
 // Type assertion for the imported JSON
 const drives = drivesData as Record<string, Drive>
@@ -105,11 +106,16 @@ export function useCalculations(): CalculationResults {
       }
     }
 
-    // Volumetry calculations
+    // Total drives across all servers
+    // driveCount = drives per server, serverCount = number of servers
+    const totalDriveCount = driveCount * serverCount
+    const totalHotSpares = hotSpares * serverCount
+
+    // Volumetry calculations (uses total drives across all servers)
     const volumetry = calculateVolumetry({
       drive,
-      driveCount,
-      hotSpares,
+      driveCount: totalDriveCount,
+      hotSpares: totalHotSpares,
       topology,
       zfsOptions,
       s2dOptions,
@@ -123,11 +129,11 @@ export function useCalculations(): CalculationResults {
       dedupRatio,
     })
 
-    // Performance calculations
+    // Performance calculations (uses total drives across all servers)
     const performance = calculatePerformance({
       drive,
-      driveCount,
-      hotSpares,
+      driveCount: totalDriveCount,
+      hotSpares: totalHotSpares,
       topology,
       controllerOptions,
       readPercent,
@@ -140,10 +146,10 @@ export function useCalculations(): CalculationResults {
       cephOptions,
     })
 
-    // Sustainability calculations
+    // Sustainability calculations (uses total drives for power, serverCount for server power)
     const sustainability = calculateSustainability({
       drive,
-      driveCount,
+      driveCount: totalDriveCount,
       serverCount,
       serverPowerWatts,
       pue,
@@ -154,10 +160,10 @@ export function useCalculations(): CalculationResults {
       usableCapacity: volumetry.usableCapacity,
     })
 
-    // TCO calculations
+    // TCO calculations (uses total drives for hardware cost)
     const tco = calculateTCO(
       drive,
-      driveCount,
+      totalDriveCount,
       projectYears,
       sustainability,
       volumetry.usableCapacity,
@@ -207,23 +213,18 @@ export function useCalculations(): CalculationResults {
 }
 
 /**
- * Format bytes to human-readable string.
+ * Format bytes to human-readable string using the store's unit system setting.
+ * Re-exports the centralized formatBytes utility for backward compatibility.
  */
-export function formatBytes(bytes: number): string {
-  if (bytes >= 1024 ** 5) {
-    const pb = bytes / 1024 ** 5
-    return `${pb >= 100 ? pb.toFixed(0) : pb.toFixed(1)} PB`
-  }
-  if (bytes >= 1024 ** 4) {
-    const tb = bytes / 1024 ** 4
-    return `${tb >= 100 ? tb.toFixed(0) : tb.toFixed(1)} TB`
-  }
-  if (bytes >= 1024 ** 3) {
-    const gb = bytes / 1024 ** 3
-    return `${gb >= 100 ? gb.toFixed(0) : gb.toFixed(1)} GB`
-  }
-  const mb = bytes / 1024 ** 2
-  return `${mb.toFixed(0)} MB`
+export { formatBytes } from '@/utils'
+
+/**
+ * Format bytes using the unit system from store (for use in React components).
+ * Use this hook when you need the formatted value to update when unitSystem changes.
+ */
+export function useFormatBytes() {
+  const unitSystem = useConfigStore((state) => state.unitSystem)
+  return (bytes: number) => formatBytesUtil(bytes, unitSystem)
 }
 
 /**

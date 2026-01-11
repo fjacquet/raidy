@@ -3,7 +3,13 @@
  */
 
 import { useMemo } from 'react'
-import { Label, NumberInput, Select, Slider } from '@/components/common/FormControls'
+import {
+  Label,
+  NumberInput,
+  SegmentedControl,
+  Select,
+  Slider,
+} from '@/components/common/FormControls'
 import { useConfigStore } from '@/store'
 import type { CarbonRegion, ControllerType, NetworkSpeed, PCIeGen, PCIeLanes } from '@/types'
 import { CONTROLLER_LIMITS, getControllerOptions, requiresHba } from '@/types'
@@ -78,6 +84,8 @@ export function AdvancedPanel() {
     setFsType,
     setBackupRetention,
     setDailyChangeRate,
+    unitSystem,
+    setUnitSystem,
   } = useConfigStore()
 
   // Get available controller options based on topology type (HBA for ZFS/vSAN/S2D, RAID for others)
@@ -93,8 +101,31 @@ export function AdvancedPanel() {
 
   return (
     <div className="space-y-6">
-      {/* Data Efficiency Section */}
+      {/* Display Settings Section */}
       <div className="space-y-4">
+        <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+          Display Settings
+        </h4>
+
+        <div className="space-y-2">
+          <Label htmlFor="unit-system">Capacity Unit System</Label>
+          <SegmentedControl
+            value={unitSystem}
+            options={[
+              { value: 'binary', label: 'TiB/GiB (Binary)' },
+              { value: 'decimal', label: 'TB/GB (Decimal)' },
+            ]}
+            onChange={(v) => setUnitSystem(v as 'binary' | 'decimal')}
+          />
+          <p className="text-xs text-slate-500">
+            Binary (1024-based) shows actual OS/filesystem capacity. Decimal (1000-based) matches
+            drive marketing specs.
+          </p>
+        </div>
+      </div>
+
+      {/* Data Efficiency Section */}
+      <div className="space-y-4 pt-4 border-t border-surface-700">
         <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
           Data Efficiency
         </h4>

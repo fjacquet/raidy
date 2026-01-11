@@ -96,6 +96,7 @@ const getDefaultState = () => ({
   carbonRegion: 'world_average' as const,
   projectYears: 5,
   electricityCostPerKwh: 0.12,
+  unitSystem: 'binary' as const,
 
   // Filesystem defaults
   fsType: 'zfs' as const,
@@ -148,6 +149,7 @@ export const useConfigStore = create<ConfigStore>()(
         supportsReflink: state.supportsReflink,
         backupRetention: state.backupRetention,
         dailyChangeRate: state.dailyChangeRate,
+        unitSystem: state.unitSystem,
       }),
     },
   ),

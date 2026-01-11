@@ -115,6 +115,8 @@ export interface AdvancedState {
   projectYears: number
   /** Electricity cost per kWh in USD */
   electricityCostPerKwh: number
+  /** Unit system for display: binary (TiB/GiB) or decimal (TB/GB) */
+  unitSystem: 'binary' | 'decimal'
 }
 
 /** File system options for backup calculations */

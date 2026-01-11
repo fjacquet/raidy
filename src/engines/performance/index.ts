@@ -253,8 +253,7 @@ function getRaidWritePenalty(topology: Topology): number {
         case 'powerflex_fine_2way':
           return 2 // 2-way mirror writes
         case 'powerflex_medium_3way':
-        case 'powerflex_fine_3way':
-          return 3 // 3-way mirror writes
+          return 3 // 3-way mirror writes (Medium Granularity only - Fine Granularity doesn't support 3-way)
         case 'powerflex_ec_4_1':
           return 1.25 // EC 4+1: write amplification = 5/4 = 1.25
         case 'powerflex_ec_4_2':

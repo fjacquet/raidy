@@ -6,6 +6,7 @@
 import type { Drive } from '@/types/drive'
 import type { CalculationResults } from '@/types/results'
 import type { RaidControllerOptions, Topology, ZfsOptions } from '@/types/topology'
+import { formatBytes as formatBytesUtil, type UnitSystem } from './units'
 
 interface ExportConfig {
   drive: Drive
@@ -15,14 +16,24 @@ interface ExportConfig {
   zfsOptions?: ZfsOptions
   controllerOptions: RaidControllerOptions
   results: CalculationResults
+  unitSystem?: UnitSystem
 }
 
 /**
  * Generate Ansible playbook for storage configuration.
  */
 export function exportToAnsible(config: ExportConfig): string {
-  const { drive, driveCount, hotSpares, topology, zfsOptions, results } = config
+  const {
+    drive,
+    driveCount,
+    hotSpares,
+    topology,
+    zfsOptions,
+    results,
+    unitSystem = 'binary',
+  } = config
   const { volumetry } = results
+  const formatBytes = (bytes: number) => formatBytesUtil(bytes, unitSystem)
 
   const usableDrives = driveCount - hotSpares
 
@@ -32,7 +43,7 @@ export function exportToAnsible(config: ExportConfig): string {
 #
 # Topology: ${topology.type.toUpperCase()} ${topology.level}
 # Drives: ${driveCount}x ${drive.model}
-# Usable Capacity: ${(volumetry.usableCapacity / 1024 ** 4).toFixed(2)} TB
+# Usable Capacity: ${formatBytes(volumetry.usableCapacity)}
 
 - name: Configure Storage Array
   hosts: storage_servers
@@ -153,8 +164,9 @@ export function exportToAnsible(config: ExportConfig): string {
  * Generate Terraform configuration for cloud storage.
  */
 export function exportToTerraform(config: ExportConfig): string {
-  const { drive, driveCount, topology, results } = config
+  const { drive, driveCount, topology, results, unitSystem = 'binary' } = config
   const { volumetry } = results
+  const formatBytes = (bytes: number) => formatBytesUtil(bytes, unitSystem)
 
   // Calculate disk size in GB
   const diskSizeGb = Math.ceil(drive.capacity_raw / 1024 ** 3)
@@ -164,7 +176,7 @@ export function exportToTerraform(config: ExportConfig): string {
 #
 # Topology: ${topology.type.toUpperCase()} ${topology.level}
 # Drives: ${driveCount}x ${drive.model} (${diskSizeGb} GB each)
-# Usable Capacity: ${(volumetry.usableCapacity / 1024 ** 4).toFixed(2)} TB
+# Usable Capacity: ${formatBytes(volumetry.usableCapacity)}
 
 terraform {
   required_providers {
@@ -303,8 +315,18 @@ output "estimated_usable_capacity_gb" {
  * Generate YAML configuration summary.
  */
 export function exportToYaml(config: ExportConfig): string {
-  const { drive, driveCount, hotSpares, topology, zfsOptions, controllerOptions, results } = config
+  const {
+    drive,
+    driveCount,
+    hotSpares,
+    topology,
+    zfsOptions,
+    controllerOptions,
+    results,
+    unitSystem = 'binary',
+  } = config
   const { volumetry, performance, sustainability, tco } = results
+  const formatBytes = (bytes: number) => formatBytesUtil(bytes, unitSystem)
 
   let yaml = `# Raidy Storage Configuration
 # Generated: ${new Date().toISOString()}
@@ -314,7 +336,7 @@ hardware:
     model: "${drive.model}"
     type: ${drive.type}
     capacity_bytes: ${drive.capacity_raw}
-    capacity_formatted: "${(drive.capacity_raw / 1024 ** 4).toFixed(2)} TB"
+    capacity_formatted: "${formatBytes(drive.capacity_raw)}"
   count: ${driveCount}
   hot_spares: ${hotSpares}
 
@@ -341,11 +363,11 @@ controller:
 
 capacity:
   raw_bytes: ${volumetry.rawCapacity}
-  raw_formatted: "${(volumetry.rawCapacity / 1024 ** 4).toFixed(2)} TB"
+  raw_formatted: "${formatBytes(volumetry.rawCapacity)}"
   usable_bytes: ${volumetry.usableCapacity}
-  usable_formatted: "${(volumetry.usableCapacity / 1024 ** 4).toFixed(2)} TB"
+  usable_formatted: "${formatBytes(volumetry.usableCapacity)}"
   effective_bytes: ${volumetry.effectiveCapacity}
-  effective_formatted: "${(volumetry.effectiveCapacity / 1024 ** 4).toFixed(2)} TB"
+  effective_formatted: "${formatBytes(volumetry.effectiveCapacity)}"
   efficiency_percent: ${volumetry.efficiency.toFixed(2)}
 
 performance:

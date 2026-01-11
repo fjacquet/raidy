@@ -11,20 +11,13 @@ import {
   Slider,
 } from '@/components/common/FormControls'
 import drivesData from '@/data/drives.json'
+import { useFormatBytes } from '@/hooks/useCalculations'
 import { useConfigStore } from '@/store'
 import type { Drive, DriveConnectivity, FormFactorFilter } from '@/types'
 import { CONNECTIVITY_TO_TYPES, FORM_FACTOR_TO_TYPES, getDefaultFormFactor } from '@/types'
 
 // Type assertion for the imported JSON
 const drives = drivesData as Record<string, Drive>
-
-// Format bytes to human-readable
-function formatCapacity(bytes: number): string {
-  const tb = bytes / 1024 ** 4
-  if (tb >= 1) return `${tb.toFixed(tb >= 10 ? 0 : 1)} TB`
-  const gb = bytes / 1024 ** 3
-  return `${gb.toFixed(0)} GB`
-}
 
 // Format price
 function formatPrice(usd: number): string {
@@ -67,6 +60,9 @@ export function HardwarePanel() {
     setServerPower,
   } = useConfigStore()
 
+  // Use centralized byte formatting with user's preferred unit system
+  const formatBytes = useFormatBytes()
+
   const driveList = useMemo(() => Object.values(drives), [])
 
   // Filter drives based on connectivity and form factor selection
@@ -97,9 +93,9 @@ export function HardwarePanel() {
   const driveOptions = useMemo(() => {
     return filteredDrives.map((drive) => ({
       value: drive.id,
-      label: `${drive.model} (${formatCapacity(drive.capacity_raw)})`,
+      label: `${drive.model} (${formatBytes(drive.capacity_raw)})`,
     }))
-  }, [filteredDrives])
+  }, [filteredDrives, formatBytes])
 
   // Calculate totals
   const totalRawCapacity = selectedDrive ? selectedDrive.capacity_raw * driveCount : 0
@@ -162,17 +158,19 @@ export function HardwarePanel() {
         )}
       </div>
 
-      {/* Drive Count */}
+      {/* Drive Count per Server */}
       <div className="space-y-2">
-        <Label htmlFor="drive-count" hint={`${driveCount} drives`}>
-          Drive Count
+        <Label htmlFor="drive-count" hint={`${driveCount} per server`}>
+          Drives per Server
         </Label>
         <Slider id="drive-count" value={driveCount} min={1} max={100} onChange={setDriveCount} />
       </div>
 
       {/* Server Count */}
       <div className="space-y-2">
-        <Label htmlFor="server-count">Servers / Nodes</Label>
+        <Label htmlFor="server-count" hint={`Total: ${driveCount * serverCount} drives`}>
+          Servers / Nodes
+        </Label>
         <Slider id="server-count" value={serverCount} min={1} max={16} onChange={setServerCount} />
       </div>
 
@@ -194,9 +192,7 @@ export function HardwarePanel() {
       <div className="pt-3 border-t border-surface-700">
         <div className="grid grid-cols-2 gap-2 text-sm">
           <div className="text-slate-400">Raw Capacity:</div>
-          <div className="text-right font-medium text-white">
-            {formatCapacity(totalRawCapacity)}
-          </div>
+          <div className="text-right font-medium text-white">{formatBytes(totalRawCapacity)}</div>
           <div className="text-slate-400">Hardware Cost:</div>
           <div className="text-right font-medium text-white">{formatPrice(totalCost)}</div>
         </div>

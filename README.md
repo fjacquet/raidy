@@ -1,13 +1,27 @@
 # Raidy
 
-Browser-based storage infrastructure simulator for NVMe, ZFS, S2D, and cloud hybrid configurations.
+Browser-based storage infrastructure simulator for enterprise storage platforms.
+
+## Supported Platforms
+
+- **ZFS**: RAID-Z1/Z2/Z3, dRAID, Mirror, Stripe with slop space and special vdev
+- **S2D (Storage Spaces Direct)**: Mirror, Parity, Dual Parity, MAP with auto-tiering
+- **Ceph**: Replicated (2/3/4x) and Erasure Coded (2+1, 4+2, 8+3, 8+4) pools
+- **PowerFlex**: Medium (1MB) and Fine (8KB) granularity, 2/3-way mirror, EC 4+1/4+2/8+2/12+4
+- **vSAN**: OSA and ESA with RAID-1/5/6 policies
+- **NetApp**: RAID-DP, RAID-TEC with ADP, WAFL overhead, and data reduction
+- **Synology**: SHR, SHR-2, RAID F1 with Btrfs/ext4
+- **Dell**: PowerStore, PowerScale, ObjectScale topologies
+- **Standard RAID**: 0, 1, 5, 6, 10, 50, 60
 
 ## Features
 
-- **Volumetry Engine**: Calculate usable capacity for RAID, ZFS, S2D topologies
+- **Volumetry Engine**: Calculate usable/effective capacity with platform-specific overheads
 - **Performance Engine**: Identify bottlenecks across media, controller, bus, and network layers
 - **Resilience Engine**: Monte Carlo simulations for data loss probability
 - **Sustainability Engine**: Energy consumption, CO2 emissions, and flash endurance analysis
+- **Unit System Toggle**: Display capacity in binary (TiB/GiB) or decimal (TB/GB) units
+- **Multi-Server Support**: Scale calculations across multiple servers/nodes
 
 ## Quick Start
 
@@ -48,6 +62,16 @@ npm run format
 npm test
 ```
 
+## Drive Database
+
+Comprehensive drive database including:
+
+- **NVMe SSDs**: Samsung PM1733/PM1735, Intel P5316/P5510/P5520, Micron 9400, Kioxia CM6/CD8, SK Hynix PE8110, Solidigm D5-P5336
+- **SAS SSDs**: Samsung PM1643a, Seagate Nytro
+- **SATA SSDs**: Samsung 870 EVO, Crucial MX500
+- **Enterprise HDDs**: WD Ultrastar DC HC550/HC580, Seagate Exos X16/X18/X20/X24
+- **NAS HDDs**: WD Red Plus/Pro (2-16TB), Seagate IronWolf/Pro (2-16TB), Toshiba N300 (4-16TB)
+
 ## Project Structure
 
 ```
@@ -57,7 +81,7 @@ src/
 │   ├── inputs/      # Configuration panels
 │   ├── outputs/     # Visualization components
 │   └── layout/      # App layout (Cockpit, Sidebar)
-├── data/            # Static drive database
+├── data/            # Static drive database (drives.json)
 ├── engines/         # Calculation modules
 │   ├── volumetry/   # Capacity calculations
 │   ├── performance/ # Bottleneck analysis
@@ -66,7 +90,7 @@ src/
 ├── hooks/           # Custom React hooks
 ├── store/           # Zustand state management
 ├── types/           # TypeScript definitions
-└── utils/           # Formatters, serialization
+└── utils/           # Formatters, unit conversion, serialization
 ```
 
 ## License

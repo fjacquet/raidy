@@ -5,7 +5,7 @@
 
 import { sankey, sankeyLinkHorizontal } from 'd3-sankey'
 import { useMemo } from 'react'
-import { formatBytes } from '@/hooks'
+import { useFormatBytes } from '@/hooks'
 import type { VolumetryResult } from '@/types/results'
 
 interface SankeyDiagramProps {
@@ -39,6 +39,7 @@ const COLORS = {
 }
 
 export function SankeyDiagram({ volumetry, width = 600, height = 300 }: SankeyDiagramProps) {
+  const formatBytes = useFormatBytes()
   const { nodes, links, sankeyData } = useMemo(() => {
     const {
       rawCapacity,
