@@ -5,6 +5,8 @@ import { defineConfig } from 'vite'
 
 // https://vite.dev/config/
 export default defineConfig({
+  // Base path for GitHub Pages deployment (https://fjacquet.github.io/raidy/)
+  base: '/raidy/',
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
