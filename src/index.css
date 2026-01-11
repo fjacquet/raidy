@@ -1,0 +1,99 @@
+@import "tailwindcss";
+
+/* Custom Raidy theme configuration */
+@theme {
+  /* Storage-themed color palette */
+  --color-primary-50: oklch(97% 0.02 240);
+  --color-primary-100: oklch(94% 0.04 240);
+  --color-primary-200: oklch(88% 0.08 240);
+  --color-primary-300: oklch(78% 0.12 240);
+  --color-primary-400: oklch(68% 0.16 240);
+  --color-primary-500: oklch(58% 0.18 240);
+  --color-primary-600: oklch(48% 0.16 240);
+  --color-primary-700: oklch(40% 0.14 240);
+  --color-primary-800: oklch(32% 0.12 240);
+  --color-primary-900: oklch(24% 0.1 240);
+  --color-primary-950: oklch(16% 0.08 240);
+
+  /* Semantic colors for metrics */
+  --color-capacity: oklch(72% 0.19 142);
+  --color-overhead: oklch(75% 0.18 85);
+  --color-parity: oklch(62% 0.25 27);
+  --color-bottleneck: oklch(55% 0.28 27);
+  --color-safe: oklch(70% 0.17 162);
+
+  /* Dark mode background */
+  --color-surface-900: oklch(15% 0.02 260);
+  --color-surface-800: oklch(20% 0.02 260);
+  --color-surface-700: oklch(28% 0.02 260);
+
+  /* Fonts */
+  --font-mono: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
+}
+
+/* Base styles - Dark mode by default */
+@layer base {
+  html {
+    color-scheme: dark;
+  }
+
+  body {
+    @apply bg-surface-900 text-slate-100 antialiased;
+    font-family: system-ui, -apple-system, sans-serif;
+  }
+}
+
+/* Component classes */
+@layer components {
+  .panel {
+    @apply bg-surface-800 rounded-lg border border-surface-700 p-4;
+  }
+
+  .input-group {
+    @apply space-y-2;
+  }
+
+  .label {
+    @apply block text-sm font-medium text-slate-300;
+  }
+
+  .gauge-track {
+    stroke: var(--color-surface-700);
+  }
+
+  .gauge-fill {
+    stroke: var(--color-primary-500);
+    transition: stroke-dashoffset 0.5s ease-out;
+  }
+
+  /* Accordion styles */
+  .accordion-trigger {
+    @apply flex w-full items-center justify-between py-3 px-4 text-left font-medium text-slate-200 hover:bg-surface-700 rounded-lg transition-colors;
+  }
+
+  .accordion-content {
+    @apply overflow-hidden transition-all duration-200 ease-out;
+  }
+
+  /* Sankey diagram styles */
+  .sankey-node {
+    @apply fill-current;
+  }
+
+  .sankey-link {
+    fill: none;
+    stroke-opacity: 0.4;
+    transition: stroke-opacity 0.2s;
+  }
+
+  .sankey-link:hover {
+    stroke-opacity: 0.7;
+  }
+}
+
+/* Utility classes */
+@layer utilities {
+  .text-gradient {
+    @apply bg-gradient-to-r from-primary-400 to-primary-600 bg-clip-text text-transparent;
+  }
+}
