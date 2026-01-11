@@ -1,33 +1,254 @@
 {
-  "wd-gold-24tb": {
-    "id": "wd-gold-24tb",
-    "model": "WD Gold 24TB",
+  "seagate-exos-15e900-900gb": {
+    "id": "seagate-exos-15e900-900gb",
+    "model": "Seagate Exos 15E900 900GB",
     "type": "HDD",
-    "formFactor": "3.5\"",
-    "capacity_raw": 24000000000000,
-    "sector_size": 4096,
+    "formFactor": "2.5\"",
+    "interface": "SAS",
+    "rpm": 15000,
+    "capacity_raw": 900000000000,
+    "sector_size": 512,
     "performance": {
-      "iops_read": 170,
-      "iops_write": 170,
-      "bandwidth_read_mb": 272,
-      "bandwidth_write_mb": 272
+      "iops_read": 175,
+      "iops_write": 175,
+      "bandwidth_read_mb": 315,
+      "bandwidth_write_mb": 315
     },
     "reliability": {
       "ure_rate": 15,
       "afr": 0.44,
-      "dwpd": 0
+      "dwpd": 0,
+      "mtbf_hours": 2000000
     },
     "power": {
-      "idle_watts": 5.4,
-      "load_watts": 8.8
+      "idle_watts": 4.5,
+      "load_watts": 10.5
     },
-    "cost_usd": 499
+    "cost_usd": 299
+  },
+  "seagate-exos-15e900-600gb": {
+    "id": "seagate-exos-15e900-600gb",
+    "model": "Seagate Exos 15E900 600GB",
+    "type": "HDD",
+    "formFactor": "2.5\"",
+    "interface": "SAS",
+    "rpm": 15000,
+    "capacity_raw": 600000000000,
+    "sector_size": 512,
+    "performance": {
+      "iops_read": 175,
+      "iops_write": 175,
+      "bandwidth_read_mb": 315,
+      "bandwidth_write_mb": 315
+    },
+    "reliability": {
+      "ure_rate": 15,
+      "afr": 0.44,
+      "dwpd": 0,
+      "mtbf_hours": 2000000
+    },
+    "power": {
+      "idle_watts": 4.5,
+      "load_watts": 10.5
+    },
+    "cost_usd": 249
+  },
+  "seagate-exos-15e900-300gb": {
+    "id": "seagate-exos-15e900-300gb",
+    "model": "Seagate Exos 15E900 300GB",
+    "type": "HDD",
+    "formFactor": "2.5\"",
+    "interface": "SAS",
+    "rpm": 15000,
+    "capacity_raw": 300000000000,
+    "sector_size": 512,
+    "performance": {
+      "iops_read": 210,
+      "iops_write": 210,
+      "bandwidth_read_mb": 300,
+      "bandwidth_write_mb": 300
+    },
+    "reliability": {
+      "ure_rate": 15,
+      "afr": 0.44,
+      "dwpd": 0,
+      "mtbf_hours": 2000000
+    },
+    "power": {
+      "idle_watts": 4.5,
+      "load_watts": 10.5
+    },
+    "cost_usd": 199
+  },
+  "hgst-ultrastar-c15k600-600gb": {
+    "id": "hgst-ultrastar-c15k600-600gb",
+    "model": "HGST Ultrastar C15K600 600GB",
+    "type": "HDD",
+    "formFactor": "2.5\"",
+    "interface": "SAS",
+    "rpm": 15000,
+    "capacity_raw": 600000000000,
+    "sector_size": 512,
+    "performance": {
+      "iops_read": 175,
+      "iops_write": 175,
+      "bandwidth_read_mb": 300,
+      "bandwidth_write_mb": 300
+    },
+    "reliability": {
+      "ure_rate": 15,
+      "afr": 0.44,
+      "dwpd": 0,
+      "mtbf_hours": 2000000
+    },
+    "power": {
+      "idle_watts": 4.2,
+      "load_watts": 9.5
+    },
+    "cost_usd": 229
+  },
+  "seagate-exos-10e2400-2.4tb": {
+    "id": "seagate-exos-10e2400-2.4tb",
+    "model": "Seagate Exos 10E2400 2.4TB",
+    "type": "HDD",
+    "formFactor": "2.5\"",
+    "interface": "SAS",
+    "rpm": 10000,
+    "capacity_raw": 2400000000000,
+    "sector_size": 512,
+    "performance": {
+      "iops_read": 140,
+      "iops_write": 140,
+      "bandwidth_read_mb": 260,
+      "bandwidth_write_mb": 260
+    },
+    "reliability": {
+      "ure_rate": 15,
+      "afr": 0.44,
+      "dwpd": 0,
+      "mtbf_hours": 2000000
+    },
+    "power": {
+      "idle_watts": 3.5,
+      "load_watts": 8.0
+    },
+    "cost_usd": 279
+  },
+  "seagate-exos-10e2400-1.8tb": {
+    "id": "seagate-exos-10e2400-1.8tb",
+    "model": "Seagate Exos 10E2400 1.8TB",
+    "type": "HDD",
+    "formFactor": "2.5\"",
+    "interface": "SAS",
+    "rpm": 10000,
+    "capacity_raw": 1800000000000,
+    "sector_size": 512,
+    "performance": {
+      "iops_read": 140,
+      "iops_write": 140,
+      "bandwidth_read_mb": 260,
+      "bandwidth_write_mb": 260
+    },
+    "reliability": {
+      "ure_rate": 15,
+      "afr": 0.44,
+      "dwpd": 0,
+      "mtbf_hours": 2000000
+    },
+    "power": {
+      "idle_watts": 3.5,
+      "load_watts": 7.5
+    },
+    "cost_usd": 229
+  },
+  "seagate-exos-10e2400-1.2tb": {
+    "id": "seagate-exos-10e2400-1.2tb",
+    "model": "Seagate Exos 10E2400 1.2TB",
+    "type": "HDD",
+    "formFactor": "2.5\"",
+    "interface": "SAS",
+    "rpm": 10000,
+    "capacity_raw": 1200000000000,
+    "sector_size": 512,
+    "performance": {
+      "iops_read": 140,
+      "iops_write": 140,
+      "bandwidth_read_mb": 260,
+      "bandwidth_write_mb": 260
+    },
+    "reliability": {
+      "ure_rate": 15,
+      "afr": 0.44,
+      "dwpd": 0,
+      "mtbf_hours": 2000000
+    },
+    "power": {
+      "idle_watts": 3.5,
+      "load_watts": 7.0
+    },
+    "cost_usd": 179
+  },
+  "hgst-ultrastar-c10k1800-1.8tb": {
+    "id": "hgst-ultrastar-c10k1800-1.8tb",
+    "model": "HGST Ultrastar C10K1800 1.8TB",
+    "type": "HDD",
+    "formFactor": "2.5\"",
+    "interface": "SAS",
+    "rpm": 10000,
+    "capacity_raw": 1800000000000,
+    "sector_size": 512,
+    "performance": {
+      "iops_read": 140,
+      "iops_write": 140,
+      "bandwidth_read_mb": 241,
+      "bandwidth_write_mb": 241
+    },
+    "reliability": {
+      "ure_rate": 15,
+      "afr": 0.44,
+      "dwpd": 0,
+      "mtbf_hours": 2000000
+    },
+    "power": {
+      "idle_watts": 3.2,
+      "load_watts": 7.2
+    },
+    "cost_usd": 219
+  },
+  "seagate-exos-7e2000-2tb": {
+    "id": "seagate-exos-7e2000-2tb",
+    "model": "Seagate Exos 7E2000 2TB",
+    "type": "HDD",
+    "formFactor": "2.5\"",
+    "interface": "SAS",
+    "rpm": 7200,
+    "capacity_raw": 2000000000000,
+    "sector_size": 512,
+    "performance": {
+      "iops_read": 100,
+      "iops_write": 100,
+      "bandwidth_read_mb": 190,
+      "bandwidth_write_mb": 190
+    },
+    "reliability": {
+      "ure_rate": 15,
+      "afr": 0.44,
+      "dwpd": 0,
+      "mtbf_hours": 2000000
+    },
+    "power": {
+      "idle_watts": 2.5,
+      "load_watts": 5.5
+    },
+    "cost_usd": 149
   },
   "seagate-exos-x24": {
     "id": "seagate-exos-x24",
     "model": "Seagate Exos X24 24TB",
     "type": "HDD",
     "formFactor": "3.5\"",
+    "interface": "SATA",
+    "rpm": 7200,
     "capacity_raw": 24000000000000,
     "sector_size": 4096,
     "performance": {
@@ -39,79 +260,1198 @@
     "reliability": {
       "ure_rate": 15,
       "afr": 0.35,
-      "dwpd": 0
+      "dwpd": 0,
+      "mtbf_hours": 2500000
+    },
+    "power": {
+      "idle_watts": 5.6,
+      "load_watts": 8.3
+    },
+    "cost_usd": 479
+  },
+  "seagate-exos-x22": {
+    "id": "seagate-exos-x22",
+    "model": "Seagate Exos X22 22TB",
+    "type": "HDD",
+    "formFactor": "3.5\"",
+    "interface": "SATA",
+    "rpm": 7200,
+    "capacity_raw": 22000000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 180,
+      "iops_write": 180,
+      "bandwidth_read_mb": 285,
+      "bandwidth_write_mb": 285
+    },
+    "reliability": {
+      "ure_rate": 15,
+      "afr": 0.35,
+      "dwpd": 0,
+      "mtbf_hours": 2500000
+    },
+    "power": {
+      "idle_watts": 5.5,
+      "load_watts": 8.0
+    },
+    "cost_usd": 449
+  },
+  "seagate-exos-x20": {
+    "id": "seagate-exos-x20",
+    "model": "Seagate Exos X20 20TB",
+    "type": "HDD",
+    "formFactor": "3.5\"",
+    "interface": "SATA",
+    "rpm": 7200,
+    "capacity_raw": 20000000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 180,
+      "iops_write": 180,
+      "bandwidth_read_mb": 285,
+      "bandwidth_write_mb": 285
+    },
+    "reliability": {
+      "ure_rate": 15,
+      "afr": 0.35,
+      "dwpd": 0,
+      "mtbf_hours": 2500000
+    },
+    "power": {
+      "idle_watts": 5.3,
+      "load_watts": 7.8
+    },
+    "cost_usd": 399
+  },
+  "seagate-exos-x18": {
+    "id": "seagate-exos-x18",
+    "model": "Seagate Exos X18 18TB",
+    "type": "HDD",
+    "formFactor": "3.5\"",
+    "interface": "SATA",
+    "rpm": 7200,
+    "capacity_raw": 18000000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 170,
+      "iops_write": 170,
+      "bandwidth_read_mb": 270,
+      "bandwidth_write_mb": 270
+    },
+    "reliability": {
+      "ure_rate": 15,
+      "afr": 0.35,
+      "dwpd": 0,
+      "mtbf_hours": 2500000
     },
     "power": {
       "idle_watts": 5.0,
-      "load_watts": 9.4
+      "load_watts": 7.6
     },
-    "cost_usd": 479
+    "cost_usd": 349
+  },
+  "wd-gold-24tb": {
+    "id": "wd-gold-24tb",
+    "model": "WD Gold 24TB",
+    "type": "HDD",
+    "formFactor": "3.5\"",
+    "interface": "SATA",
+    "rpm": 7200,
+    "capacity_raw": 24000000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 150,
+      "iops_write": 150,
+      "bandwidth_read_mb": 298,
+      "bandwidth_write_mb": 298
+    },
+    "reliability": {
+      "ure_rate": 15,
+      "afr": 0.35,
+      "dwpd": 0,
+      "mtbf_hours": 2500000
+    },
+    "power": {
+      "idle_watts": 5.6,
+      "load_watts": 8.1
+    },
+    "cost_usd": 499
+  },
+  "wd-ultrastar-dc-hc580-24tb": {
+    "id": "wd-ultrastar-dc-hc580-24tb",
+    "model": "WD Ultrastar DC HC580 24TB",
+    "type": "HDD",
+    "formFactor": "3.5\"",
+    "interface": "SATA",
+    "rpm": 7200,
+    "capacity_raw": 24000000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 180,
+      "iops_write": 180,
+      "bandwidth_read_mb": 298,
+      "bandwidth_write_mb": 298
+    },
+    "reliability": {
+      "ure_rate": 15,
+      "afr": 0.35,
+      "dwpd": 0,
+      "mtbf_hours": 2500000
+    },
+    "power": {
+      "idle_watts": 5.7,
+      "load_watts": 8.3
+    },
+    "cost_usd": 489
+  },
+  "wd-ultrastar-dc-hc570-22tb": {
+    "id": "wd-ultrastar-dc-hc570-22tb",
+    "model": "WD Ultrastar DC HC570 22TB",
+    "type": "HDD",
+    "formFactor": "3.5\"",
+    "interface": "SATA",
+    "rpm": 7200,
+    "capacity_raw": 22000000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 175,
+      "iops_write": 175,
+      "bandwidth_read_mb": 272,
+      "bandwidth_write_mb": 272
+    },
+    "reliability": {
+      "ure_rate": 15,
+      "afr": 0.35,
+      "dwpd": 0,
+      "mtbf_hours": 2500000
+    },
+    "power": {
+      "idle_watts": 5.6,
+      "load_watts": 8.2
+    },
+    "cost_usd": 449
+  },
+  "wd-ultrastar-dc-hc560-20tb": {
+    "id": "wd-ultrastar-dc-hc560-20tb",
+    "model": "WD Ultrastar DC HC560 20TB",
+    "type": "HDD",
+    "formFactor": "3.5\"",
+    "interface": "SATA",
+    "rpm": 7200,
+    "capacity_raw": 20000000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 164,
+      "iops_write": 164,
+      "bandwidth_read_mb": 269,
+      "bandwidth_write_mb": 269
+    },
+    "reliability": {
+      "ure_rate": 15,
+      "afr": 0.35,
+      "dwpd": 0,
+      "mtbf_hours": 2500000
+    },
+    "power": {
+      "idle_watts": 5.4,
+      "load_watts": 7.9
+    },
+    "cost_usd": 399
+  },
+  "toshiba-mg10-22tb": {
+    "id": "toshiba-mg10-22tb",
+    "model": "Toshiba MG10 22TB",
+    "type": "HDD",
+    "formFactor": "3.5\"",
+    "interface": "SATA",
+    "rpm": 7200,
+    "capacity_raw": 22000000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 170,
+      "iops_write": 170,
+      "bandwidth_read_mb": 288,
+      "bandwidth_write_mb": 288
+    },
+    "reliability": {
+      "ure_rate": 15,
+      "afr": 0.35,
+      "dwpd": 0,
+      "mtbf_hours": 2500000
+    },
+    "power": {
+      "idle_watts": 5.4,
+      "load_watts": 8.0
+    },
+    "cost_usd": 429
   },
   "toshiba-mg10-20tb": {
     "id": "toshiba-mg10-20tb",
     "model": "Toshiba MG10 20TB",
     "type": "HDD",
     "formFactor": "3.5\"",
+    "interface": "SATA",
+    "rpm": 7200,
     "capacity_raw": 20000000000000,
     "sector_size": 4096,
     "performance": {
-      "iops_read": 160,
-      "iops_write": 160,
-      "bandwidth_read_mb": 268,
-      "bandwidth_write_mb": 268
+      "iops_read": 166,
+      "iops_write": 166,
+      "bandwidth_read_mb": 282,
+      "bandwidth_write_mb": 282
     },
     "reliability": {
       "ure_rate": 15,
       "afr": 0.44,
-      "dwpd": 0
+      "dwpd": 0,
+      "mtbf_hours": 2500000
     },
     "power": {
-      "idle_watts": 4.6,
-      "load_watts": 7.3
+      "idle_watts": 5.2,
+      "load_watts": 7.8
     },
     "cost_usd": 349
   },
-  "samsung-870-evo-4tb": {
-    "id": "samsung-870-evo-4tb",
-    "model": "Samsung 870 EVO 4TB",
+  "seagate-exos-x20z-smr-20tb": {
+    "id": "seagate-exos-x20z-smr-20tb",
+    "model": "Seagate Exos X20z SMR 20TB",
+    "type": "HDD",
+    "formFactor": "3.5\"",
+    "interface": "SATA",
+    "rpm": 7200,
+    "capacity_raw": 20000000000000,
+    "sector_size": 4096,
+    "recording": "SMR",
+    "performance": {
+      "iops_read": 80,
+      "iops_write": 40,
+      "bandwidth_read_mb": 285,
+      "bandwidth_write_mb": 200
+    },
+    "reliability": {
+      "ure_rate": 15,
+      "afr": 0.35,
+      "dwpd": 0,
+      "mtbf_hours": 2500000
+    },
+    "power": {
+      "idle_watts": 5.0,
+      "load_watts": 7.5
+    },
+    "cost_usd": 299
+  },
+  "seagate-exos-x26z-smr-26tb": {
+    "id": "seagate-exos-x26z-smr-26tb",
+    "model": "Seagate Exos X26z SMR 26TB",
+    "type": "HDD",
+    "formFactor": "3.5\"",
+    "interface": "SATA",
+    "rpm": 7200,
+    "capacity_raw": 26000000000000,
+    "sector_size": 4096,
+    "recording": "SMR",
+    "performance": {
+      "iops_read": 80,
+      "iops_write": 40,
+      "bandwidth_read_mb": 290,
+      "bandwidth_write_mb": 200
+    },
+    "reliability": {
+      "ure_rate": 15,
+      "afr": 0.35,
+      "dwpd": 0,
+      "mtbf_hours": 2500000
+    },
+    "power": {
+      "idle_watts": 5.2,
+      "load_watts": 7.8
+    },
+    "cost_usd": 349
+  },
+  "seagate-mozaic-3plus-30tb": {
+    "id": "seagate-mozaic-3plus-30tb",
+    "model": "Seagate Mozaic 3+ HAMR 30TB",
+    "type": "HDD",
+    "formFactor": "3.5\"",
+    "interface": "SATA",
+    "rpm": 7200,
+    "capacity_raw": 30000000000000,
+    "sector_size": 4096,
+    "recording": "HAMR",
+    "performance": {
+      "iops_read": 180,
+      "iops_write": 180,
+      "bandwidth_read_mb": 295,
+      "bandwidth_write_mb": 295
+    },
+    "reliability": {
+      "ure_rate": 15,
+      "afr": 0.35,
+      "dwpd": 0,
+      "mtbf_hours": 2500000
+    },
+    "power": {
+      "idle_watts": 5.8,
+      "load_watts": 8.5
+    },
+    "cost_usd": 549
+  },
+  "seagate-mozaic-3plus-32tb": {
+    "id": "seagate-mozaic-3plus-32tb",
+    "model": "Seagate Mozaic 3+ HAMR 32TB",
+    "type": "HDD",
+    "formFactor": "3.5\"",
+    "interface": "SATA",
+    "rpm": 7200,
+    "capacity_raw": 32000000000000,
+    "sector_size": 4096,
+    "recording": "HAMR",
+    "performance": {
+      "iops_read": 180,
+      "iops_write": 180,
+      "bandwidth_read_mb": 300,
+      "bandwidth_write_mb": 300
+    },
+    "reliability": {
+      "ure_rate": 15,
+      "afr": 0.35,
+      "dwpd": 0,
+      "mtbf_hours": 2500000
+    },
+    "power": {
+      "idle_watts": 5.9,
+      "load_watts": 8.6
+    },
+    "cost_usd": 599
+  },
+  "seagate-exos-2x18-dual-actuator": {
+    "id": "seagate-exos-2x18-dual-actuator",
+    "model": "Seagate Exos 2X18 Mach.2 18TB",
+    "type": "HDD",
+    "formFactor": "3.5\"",
+    "interface": "SAS",
+    "rpm": 7200,
+    "capacity_raw": 18000000000000,
+    "sector_size": 4096,
+    "recording": "CMR",
+    "dualActuator": true,
+    "performance": {
+      "iops_read": 304,
+      "iops_write": 560,
+      "bandwidth_read_mb": 554,
+      "bandwidth_write_mb": 554
+    },
+    "reliability": {
+      "ure_rate": 15,
+      "afr": 0.35,
+      "dwpd": 0,
+      "mtbf_hours": 2500000
+    },
+    "power": {
+      "idle_watts": 6.5,
+      "load_watts": 12.0
+    },
+    "cost_usd": 599
+  },
+  "samsung-pm893-960gb": {
+    "id": "samsung-pm893-960gb",
+    "model": "Samsung PM893 960GB",
     "type": "SSD_SATA",
     "formFactor": "2.5\"",
-    "capacity_raw": 4000000000000,
+    "interface": "SATA",
+    "capacity_raw": 960000000000,
     "sector_size": 512,
     "performance": {
       "iops_read": 98000,
-      "iops_write": 88000,
+      "iops_write": 30000,
+      "bandwidth_read_mb": 550,
+      "bandwidth_write_mb": 520
+    },
+    "reliability": {
+      "ure_rate": 17,
+      "afr": 0.5,
+      "dwpd": 1.0,
+      "mtbf_hours": 2000000
+    },
+    "power": {
+      "idle_watts": 1.4,
+      "load_watts": 3.1
+    },
+    "cost_usd": 129
+  },
+  "samsung-pm893-1.92tb": {
+    "id": "samsung-pm893-1.92tb",
+    "model": "Samsung PM893 1.92TB",
+    "type": "SSD_SATA",
+    "formFactor": "2.5\"",
+    "interface": "SATA",
+    "capacity_raw": 1920000000000,
+    "sector_size": 512,
+    "performance": {
+      "iops_read": 98000,
+      "iops_write": 30000,
+      "bandwidth_read_mb": 550,
+      "bandwidth_write_mb": 520
+    },
+    "reliability": {
+      "ure_rate": 17,
+      "afr": 0.5,
+      "dwpd": 1.0,
+      "mtbf_hours": 2000000
+    },
+    "power": {
+      "idle_watts": 1.5,
+      "load_watts": 3.5
+    },
+    "cost_usd": 199
+  },
+  "samsung-pm893-3.84tb": {
+    "id": "samsung-pm893-3.84tb",
+    "model": "Samsung PM893 3.84TB",
+    "type": "SSD_SATA",
+    "formFactor": "2.5\"",
+    "interface": "SATA",
+    "capacity_raw": 3840000000000,
+    "sector_size": 512,
+    "performance": {
+      "iops_read": 98000,
+      "iops_write": 30000,
+      "bandwidth_read_mb": 550,
+      "bandwidth_write_mb": 520
+    },
+    "reliability": {
+      "ure_rate": 17,
+      "afr": 0.5,
+      "dwpd": 1.0,
+      "mtbf_hours": 2000000
+    },
+    "power": {
+      "idle_watts": 1.6,
+      "load_watts": 3.8
+    },
+    "cost_usd": 349
+  },
+  "samsung-pm893-7.68tb": {
+    "id": "samsung-pm893-7.68tb",
+    "model": "Samsung PM893 7.68TB",
+    "type": "SSD_SATA",
+    "formFactor": "2.5\"",
+    "interface": "SATA",
+    "capacity_raw": 7680000000000,
+    "sector_size": 512,
+    "performance": {
+      "iops_read": 98000,
+      "iops_write": 30000,
+      "bandwidth_read_mb": 550,
+      "bandwidth_write_mb": 520
+    },
+    "reliability": {
+      "ure_rate": 17,
+      "afr": 0.5,
+      "dwpd": 1.0,
+      "mtbf_hours": 2000000
+    },
+    "power": {
+      "idle_watts": 1.8,
+      "load_watts": 4.2
+    },
+    "cost_usd": 599
+  },
+  "samsung-pm897-3.84tb": {
+    "id": "samsung-pm897-3.84tb",
+    "model": "Samsung PM897 3.84TB",
+    "type": "SSD_SATA",
+    "formFactor": "2.5\"",
+    "interface": "SATA",
+    "capacity_raw": 3840000000000,
+    "sector_size": 512,
+    "performance": {
+      "iops_read": 97000,
+      "iops_write": 60000,
       "bandwidth_read_mb": 560,
       "bandwidth_write_mb": 530
     },
     "reliability": {
       "ure_rate": 17,
       "afr": 0.5,
-      "dwpd": 0.3
+      "dwpd": 3.0,
+      "mtbf_hours": 2000000
     },
     "power": {
-      "idle_watts": 0.05,
-      "load_watts": 4.0
+      "idle_watts": 1.8,
+      "load_watts": 4.5
+    },
+    "cost_usd": 499
+  },
+  "micron-5400-pro-960gb": {
+    "id": "micron-5400-pro-960gb",
+    "model": "Micron 5400 Pro 960GB",
+    "type": "SSD_SATA",
+    "formFactor": "2.5\"",
+    "interface": "SATA",
+    "capacity_raw": 960000000000,
+    "sector_size": 512,
+    "performance": {
+      "iops_read": 95000,
+      "iops_write": 32000,
+      "bandwidth_read_mb": 540,
+      "bandwidth_write_mb": 520
+    },
+    "reliability": {
+      "ure_rate": 17,
+      "afr": 0.5,
+      "dwpd": 1.5,
+      "mtbf_hours": 2000000
+    },
+    "power": {
+      "idle_watts": 1.3,
+      "load_watts": 3.0
+    },
+    "cost_usd": 119
+  },
+  "micron-5400-pro-1.92tb": {
+    "id": "micron-5400-pro-1.92tb",
+    "model": "Micron 5400 Pro 1.92TB",
+    "type": "SSD_SATA",
+    "formFactor": "2.5\"",
+    "interface": "SATA",
+    "capacity_raw": 1920000000000,
+    "sector_size": 512,
+    "performance": {
+      "iops_read": 95000,
+      "iops_write": 36000,
+      "bandwidth_read_mb": 540,
+      "bandwidth_write_mb": 520
+    },
+    "reliability": {
+      "ure_rate": 17,
+      "afr": 0.5,
+      "dwpd": 1.5,
+      "mtbf_hours": 2000000
+    },
+    "power": {
+      "idle_watts": 1.4,
+      "load_watts": 3.4
+    },
+    "cost_usd": 189
+  },
+  "micron-5400-pro-3.84tb": {
+    "id": "micron-5400-pro-3.84tb",
+    "model": "Micron 5400 Pro 3.84TB",
+    "type": "SSD_SATA",
+    "formFactor": "2.5\"",
+    "interface": "SATA",
+    "capacity_raw": 3840000000000,
+    "sector_size": 512,
+    "performance": {
+      "iops_read": 95000,
+      "iops_write": 36000,
+      "bandwidth_read_mb": 540,
+      "bandwidth_write_mb": 520
+    },
+    "reliability": {
+      "ure_rate": 17,
+      "afr": 0.5,
+      "dwpd": 1.5,
+      "mtbf_hours": 2000000
+    },
+    "power": {
+      "idle_watts": 1.6,
+      "load_watts": 3.8
+    },
+    "cost_usd": 339
+  },
+  "micron-5400-pro-7.68tb": {
+    "id": "micron-5400-pro-7.68tb",
+    "model": "Micron 5400 Pro 7.68TB",
+    "type": "SSD_SATA",
+    "formFactor": "2.5\"",
+    "interface": "SATA",
+    "capacity_raw": 7680000000000,
+    "sector_size": 512,
+    "performance": {
+      "iops_read": 95000,
+      "iops_write": 36000,
+      "bandwidth_read_mb": 540,
+      "bandwidth_write_mb": 520
+    },
+    "reliability": {
+      "ure_rate": 17,
+      "afr": 0.5,
+      "dwpd": 1.5,
+      "mtbf_hours": 2000000
+    },
+    "power": {
+      "idle_watts": 1.9,
+      "load_watts": 4.3
+    },
+    "cost_usd": 579
+  },
+  "micron-5400-max-1.92tb": {
+    "id": "micron-5400-max-1.92tb",
+    "model": "Micron 5400 Max 1.92TB",
+    "type": "SSD_SATA",
+    "formFactor": "2.5\"",
+    "interface": "SATA",
+    "capacity_raw": 1920000000000,
+    "sector_size": 512,
+    "performance": {
+      "iops_read": 95000,
+      "iops_write": 70000,
+      "bandwidth_read_mb": 540,
+      "bandwidth_write_mb": 520
+    },
+    "reliability": {
+      "ure_rate": 17,
+      "afr": 0.5,
+      "dwpd": 5.0,
+      "mtbf_hours": 2000000
+    },
+    "power": {
+      "idle_watts": 1.8,
+      "load_watts": 4.8
     },
     "cost_usd": 349
+  },
+  "kioxia-hk6-r-3.84tb": {
+    "id": "kioxia-hk6-r-3.84tb",
+    "model": "KIOXIA HK6-R 3.84TB",
+    "type": "SSD_SATA",
+    "formFactor": "2.5\"",
+    "interface": "SATA",
+    "capacity_raw": 3840000000000,
+    "sector_size": 512,
+    "performance": {
+      "iops_read": 88000,
+      "iops_write": 18000,
+      "bandwidth_read_mb": 560,
+      "bandwidth_write_mb": 300
+    },
+    "reliability": {
+      "ure_rate": 17,
+      "afr": 0.4,
+      "dwpd": 1.0,
+      "mtbf_hours": 2500000
+    },
+    "power": {
+      "idle_watts": 1.4,
+      "load_watts": 3.3
+    },
+    "cost_usd": 299
+  },
+  "kioxia-pm6-r-1.92tb": {
+    "id": "kioxia-pm6-r-1.92tb",
+    "model": "KIOXIA PM6-R 1.92TB",
+    "type": "SSD_SAS",
+    "formFactor": "2.5\"",
+    "interface": "SAS",
+    "capacity_raw": 1920000000000,
+    "sector_size": 512,
+    "performance": {
+      "iops_read": 595000,
+      "iops_write": 100000,
+      "bandwidth_read_mb": 4300,
+      "bandwidth_write_mb": 1150
+    },
+    "reliability": {
+      "ure_rate": 17,
+      "afr": 0.4,
+      "dwpd": 1.0,
+      "mtbf_hours": 2500000
+    },
+    "power": {
+      "idle_watts": 5.0,
+      "load_watts": 12.0
+    },
+    "cost_usd": 399
+  },
+  "kioxia-pm6-r-3.84tb": {
+    "id": "kioxia-pm6-r-3.84tb",
+    "model": "KIOXIA PM6-R 3.84TB",
+    "type": "SSD_SAS",
+    "formFactor": "2.5\"",
+    "interface": "SAS",
+    "capacity_raw": 3840000000000,
+    "sector_size": 512,
+    "performance": {
+      "iops_read": 595000,
+      "iops_write": 90000,
+      "bandwidth_read_mb": 4300,
+      "bandwidth_write_mb": 1100
+    },
+    "reliability": {
+      "ure_rate": 17,
+      "afr": 0.4,
+      "dwpd": 1.0,
+      "mtbf_hours": 2500000
+    },
+    "power": {
+      "idle_watts": 5.0,
+      "load_watts": 12.0
+    },
+    "cost_usd": 599
+  },
+  "kioxia-pm6-r-7.68tb": {
+    "id": "kioxia-pm6-r-7.68tb",
+    "model": "KIOXIA PM6-R 7.68TB",
+    "type": "SSD_SAS",
+    "formFactor": "2.5\"",
+    "interface": "SAS",
+    "capacity_raw": 7680000000000,
+    "sector_size": 512,
+    "performance": {
+      "iops_read": 580000,
+      "iops_write": 85000,
+      "bandwidth_read_mb": 4200,
+      "bandwidth_write_mb": 1050
+    },
+    "reliability": {
+      "ure_rate": 17,
+      "afr": 0.4,
+      "dwpd": 1.0,
+      "mtbf_hours": 2500000
+    },
+    "power": {
+      "idle_watts": 5.5,
+      "load_watts": 13.0
+    },
+    "cost_usd": 999
+  },
+  "kioxia-pm6-r-15.36tb": {
+    "id": "kioxia-pm6-r-15.36tb",
+    "model": "KIOXIA PM6-R 15.36TB",
+    "type": "SSD_SAS",
+    "formFactor": "2.5\"",
+    "interface": "SAS",
+    "capacity_raw": 15360000000000,
+    "sector_size": 512,
+    "performance": {
+      "iops_read": 560000,
+      "iops_write": 80000,
+      "bandwidth_read_mb": 4100,
+      "bandwidth_write_mb": 950
+    },
+    "reliability": {
+      "ure_rate": 17,
+      "afr": 0.4,
+      "dwpd": 1.0,
+      "mtbf_hours": 2500000
+    },
+    "power": {
+      "idle_watts": 6.0,
+      "load_watts": 14.0
+    },
+    "cost_usd": 1799
+  },
+  "kioxia-pm6-r-30.72tb": {
+    "id": "kioxia-pm6-r-30.72tb",
+    "model": "KIOXIA PM6-R 30.72TB",
+    "type": "SSD_SAS",
+    "formFactor": "2.5\"",
+    "interface": "SAS",
+    "capacity_raw": 30720000000000,
+    "sector_size": 512,
+    "performance": {
+      "iops_read": 520000,
+      "iops_write": 70000,
+      "bandwidth_read_mb": 4000,
+      "bandwidth_write_mb": 900
+    },
+    "reliability": {
+      "ure_rate": 17,
+      "afr": 0.4,
+      "dwpd": 1.0,
+      "mtbf_hours": 2500000
+    },
+    "power": {
+      "idle_watts": 6.5,
+      "load_watts": 15.0
+    },
+    "cost_usd": 3299
+  },
+  "kioxia-pm6-v-3.2tb": {
+    "id": "kioxia-pm6-v-3.2tb",
+    "model": "KIOXIA PM6-V 3.2TB",
+    "type": "SSD_SAS",
+    "formFactor": "2.5\"",
+    "interface": "SAS",
+    "capacity_raw": 3200000000000,
+    "sector_size": 512,
+    "performance": {
+      "iops_read": 595000,
+      "iops_write": 160000,
+      "bandwidth_read_mb": 4300,
+      "bandwidth_write_mb": 2700
+    },
+    "reliability": {
+      "ure_rate": 17,
+      "afr": 0.4,
+      "dwpd": 3.0,
+      "mtbf_hours": 2500000
+    },
+    "power": {
+      "idle_watts": 5.5,
+      "load_watts": 14.0
+    },
+    "cost_usd": 799
+  },
+  "kioxia-pm6-v-6.4tb": {
+    "id": "kioxia-pm6-v-6.4tb",
+    "model": "KIOXIA PM6-V 6.4TB",
+    "type": "SSD_SAS",
+    "formFactor": "2.5\"",
+    "interface": "SAS",
+    "capacity_raw": 6400000000000,
+    "sector_size": 512,
+    "performance": {
+      "iops_read": 580000,
+      "iops_write": 150000,
+      "bandwidth_read_mb": 4200,
+      "bandwidth_write_mb": 2600
+    },
+    "reliability": {
+      "ure_rate": 17,
+      "afr": 0.4,
+      "dwpd": 3.0,
+      "mtbf_hours": 2500000
+    },
+    "power": {
+      "idle_watts": 5.5,
+      "load_watts": 14.0
+    },
+    "cost_usd": 1399
+  },
+  "kioxia-pm6-v-12.8tb": {
+    "id": "kioxia-pm6-v-12.8tb",
+    "model": "KIOXIA PM6-V 12.8TB",
+    "type": "SSD_SAS",
+    "formFactor": "2.5\"",
+    "interface": "SAS",
+    "capacity_raw": 12800000000000,
+    "sector_size": 512,
+    "performance": {
+      "iops_read": 560000,
+      "iops_write": 140000,
+      "bandwidth_read_mb": 4100,
+      "bandwidth_write_mb": 2500
+    },
+    "reliability": {
+      "ure_rate": 17,
+      "afr": 0.4,
+      "dwpd": 3.0,
+      "mtbf_hours": 2500000
+    },
+    "power": {
+      "idle_watts": 6.0,
+      "load_watts": 15.0
+    },
+    "cost_usd": 2499
+  },
+  "kioxia-pm6-m-1.6tb": {
+    "id": "kioxia-pm6-m-1.6tb",
+    "model": "KIOXIA PM6-M 1.6TB",
+    "type": "SSD_SAS",
+    "formFactor": "2.5\"",
+    "interface": "SAS",
+    "capacity_raw": 1600000000000,
+    "sector_size": 512,
+    "performance": {
+      "iops_read": 595000,
+      "iops_write": 240000,
+      "bandwidth_read_mb": 4300,
+      "bandwidth_write_mb": 4100
+    },
+    "reliability": {
+      "ure_rate": 17,
+      "afr": 0.4,
+      "dwpd": 10.0,
+      "mtbf_hours": 2500000
+    },
+    "power": {
+      "idle_watts": 6.0,
+      "load_watts": 18.0
+    },
+    "cost_usd": 899
+  },
+  "kioxia-pm6-m-3.2tb": {
+    "id": "kioxia-pm6-m-3.2tb",
+    "model": "KIOXIA PM6-M 3.2TB",
+    "type": "SSD_SAS",
+    "formFactor": "2.5\"",
+    "interface": "SAS",
+    "capacity_raw": 3200000000000,
+    "sector_size": 512,
+    "performance": {
+      "iops_read": 580000,
+      "iops_write": 230000,
+      "bandwidth_read_mb": 4200,
+      "bandwidth_write_mb": 4000
+    },
+    "reliability": {
+      "ure_rate": 17,
+      "afr": 0.4,
+      "dwpd": 10.0,
+      "mtbf_hours": 2500000
+    },
+    "power": {
+      "idle_watts": 6.5,
+      "load_watts": 19.0
+    },
+    "cost_usd": 1599
+  },
+  "kioxia-pm7-7.68tb": {
+    "id": "kioxia-pm7-7.68tb",
+    "model": "KIOXIA PM7 7.68TB",
+    "type": "SSD_SAS",
+    "formFactor": "2.5\"",
+    "interface": "SAS",
+    "capacity_raw": 7680000000000,
+    "sector_size": 512,
+    "performance": {
+      "iops_read": 720000,
+      "iops_write": 175000,
+      "bandwidth_read_mb": 4200,
+      "bandwidth_write_mb": 4100
+    },
+    "reliability": {
+      "ure_rate": 17,
+      "afr": 0.4,
+      "dwpd": 1.0,
+      "mtbf_hours": 2500000
+    },
+    "power": {
+      "idle_watts": 6.0,
+      "load_watts": 15.0
+    },
+    "cost_usd": 1299
+  },
+  "kioxia-pm7-15.36tb": {
+    "id": "kioxia-pm7-15.36tb",
+    "model": "KIOXIA PM7 15.36TB",
+    "type": "SSD_SAS",
+    "formFactor": "2.5\"",
+    "interface": "SAS",
+    "capacity_raw": 15360000000000,
+    "sector_size": 512,
+    "performance": {
+      "iops_read": 680000,
+      "iops_write": 150000,
+      "bandwidth_read_mb": 4000,
+      "bandwidth_write_mb": 3800
+    },
+    "reliability": {
+      "ure_rate": 17,
+      "afr": 0.4,
+      "dwpd": 1.0,
+      "mtbf_hours": 2500000
+    },
+    "power": {
+      "idle_watts": 6.5,
+      "load_watts": 16.0
+    },
+    "cost_usd": 2299
+  },
+  "samsung-pm9a3-m2-1.92tb": {
+    "id": "samsung-pm9a3-m2-1.92tb",
+    "model": "Samsung PM9A3 M.2 1.92TB",
+    "type": "SSD_NVMe",
+    "formFactor": "M.2",
+    "interface": "PCIe4",
+    "capacity_raw": 1920000000000,
+    "sector_size": 512,
+    "performance": {
+      "iops_read": 900000,
+      "iops_write": 170000,
+      "bandwidth_read_mb": 6400,
+      "bandwidth_write_mb": 2700
+    },
+    "reliability": {
+      "ure_rate": 17,
+      "afr": 0.44,
+      "dwpd": 1.0,
+      "mtbf_hours": 2000000
+    },
+    "power": {
+      "idle_watts": 3.5,
+      "load_watts": 9.0
+    },
+    "cost_usd": 299
+  },
+  "samsung-pm9a3-m2-3.84tb": {
+    "id": "samsung-pm9a3-m2-3.84tb",
+    "model": "Samsung PM9A3 M.2 3.84TB",
+    "type": "SSD_NVMe",
+    "formFactor": "M.2",
+    "interface": "PCIe4",
+    "capacity_raw": 3840000000000,
+    "sector_size": 512,
+    "performance": {
+      "iops_read": 1000000,
+      "iops_write": 180000,
+      "bandwidth_read_mb": 6800,
+      "bandwidth_write_mb": 3000
+    },
+    "reliability": {
+      "ure_rate": 17,
+      "afr": 0.44,
+      "dwpd": 1.0,
+      "mtbf_hours": 2000000
+    },
+    "power": {
+      "idle_watts": 4.0,
+      "load_watts": 10.0
+    },
+    "cost_usd": 499
+  },
+  "micron-7400-pro-m2-960gb": {
+    "id": "micron-7400-pro-m2-960gb",
+    "model": "Micron 7400 Pro M.2 960GB",
+    "type": "SSD_NVMe",
+    "formFactor": "M.2",
+    "interface": "PCIe4",
+    "capacity_raw": 960000000000,
+    "sector_size": 512,
+    "performance": {
+      "iops_read": 230000,
+      "iops_write": 60000,
+      "bandwidth_read_mb": 4400,
+      "bandwidth_write_mb": 1000
+    },
+    "reliability": {
+      "ure_rate": 17,
+      "afr": 0.5,
+      "dwpd": 1.0,
+      "mtbf_hours": 2000000
+    },
+    "power": {
+      "idle_watts": 2.5,
+      "load_watts": 6.0
+    },
+    "cost_usd": 159
+  },
+  "micron-7400-pro-m2-1.92tb": {
+    "id": "micron-7400-pro-m2-1.92tb",
+    "model": "Micron 7400 Pro M.2 1.92TB",
+    "type": "SSD_NVMe",
+    "formFactor": "M.2",
+    "interface": "PCIe4",
+    "capacity_raw": 1920000000000,
+    "sector_size": 512,
+    "performance": {
+      "iops_read": 430000,
+      "iops_write": 95000,
+      "bandwidth_read_mb": 6500,
+      "bandwidth_write_mb": 2200
+    },
+    "reliability": {
+      "ure_rate": 17,
+      "afr": 0.5,
+      "dwpd": 1.0,
+      "mtbf_hours": 2000000
+    },
+    "power": {
+      "idle_watts": 3.0,
+      "load_watts": 8.0
+    },
+    "cost_usd": 279
+  },
+  "micron-7400-pro-m2-3.84tb": {
+    "id": "micron-7400-pro-m2-3.84tb",
+    "model": "Micron 7400 Pro M.2 3.84TB",
+    "type": "SSD_NVMe",
+    "formFactor": "M.2",
+    "interface": "PCIe4",
+    "capacity_raw": 3840000000000,
+    "sector_size": 512,
+    "performance": {
+      "iops_read": 520000,
+      "iops_write": 105000,
+      "bandwidth_read_mb": 6600,
+      "bandwidth_write_mb": 2700
+    },
+    "reliability": {
+      "ure_rate": 17,
+      "afr": 0.5,
+      "dwpd": 1.0,
+      "mtbf_hours": 2000000
+    },
+    "power": {
+      "idle_watts": 3.5,
+      "load_watts": 9.0
+    },
+    "cost_usd": 449
+  },
+  "samsung-pm9a3-u2-1.92tb": {
+    "id": "samsung-pm9a3-u2-1.92tb",
+    "model": "Samsung PM9A3 U.2 1.92TB",
+    "type": "SSD_NVMe",
+    "formFactor": "U.2",
+    "interface": "PCIe4",
+    "capacity_raw": 1920000000000,
+    "sector_size": 512,
+    "performance": {
+      "iops_read": 1000000,
+      "iops_write": 190000,
+      "bandwidth_read_mb": 6900,
+      "bandwidth_write_mb": 3500
+    },
+    "reliability": {
+      "ure_rate": 17,
+      "afr": 0.44,
+      "dwpd": 1.0,
+      "mtbf_hours": 2000000
+    },
+    "power": {
+      "idle_watts": 4.0,
+      "load_watts": 11.0
+    },
+    "cost_usd": 349
+  },
+  "samsung-pm9a3-u2-3.84tb": {
+    "id": "samsung-pm9a3-u2-3.84tb",
+    "model": "Samsung PM9A3 U.2 3.84TB",
+    "type": "SSD_NVMe",
+    "formFactor": "U.2",
+    "interface": "PCIe4",
+    "capacity_raw": 3840000000000,
+    "sector_size": 512,
+    "performance": {
+      "iops_read": 1100000,
+      "iops_write": 200000,
+      "bandwidth_read_mb": 6900,
+      "bandwidth_write_mb": 4000
+    },
+    "reliability": {
+      "ure_rate": 17,
+      "afr": 0.44,
+      "dwpd": 1.0,
+      "mtbf_hours": 2000000
+    },
+    "power": {
+      "idle_watts": 4.5,
+      "load_watts": 12.0
+    },
+    "cost_usd": 549
   },
   "samsung-pm9a3-7.68tb": {
     "id": "samsung-pm9a3-7.68tb",
     "model": "Samsung PM9A3 7.68TB",
     "type": "SSD_NVMe",
     "formFactor": "U.2",
+    "interface": "PCIe4",
     "capacity_raw": 7680000000000,
     "sector_size": 512,
     "performance": {
-      "iops_read": 1000000,
-      "iops_write": 180000,
-      "bandwidth_read_mb": 6800,
-      "bandwidth_write_mb": 4000
+      "iops_read": 1100000,
+      "iops_write": 200000,
+      "bandwidth_read_mb": 6900,
+      "bandwidth_write_mb": 4100
     },
     "reliability": {
       "ure_rate": 17,
       "afr": 0.44,
-      "dwpd": 1.0
+      "dwpd": 1.0,
+      "mtbf_hours": 2000000
     },
     "power": {
       "idle_watts": 4.5,
@@ -119,59 +1459,324 @@
     },
     "cost_usd": 899
   },
-  "intel-d7-p5620-6.4tb": {
-    "id": "intel-d7-p5620-6.4tb",
-    "model": "Intel D7-P5620 6.4TB",
+  "samsung-pm9a3-15.36tb": {
+    "id": "samsung-pm9a3-15.36tb",
+    "model": "Samsung PM9A3 15.36TB",
     "type": "SSD_NVMe",
     "formFactor": "U.2",
-    "capacity_raw": 6400000000000,
+    "interface": "PCIe4",
+    "capacity_raw": 15360000000000,
     "sector_size": 512,
     "performance": {
-      "iops_read": 900000,
-      "iops_write": 220000,
-      "bandwidth_read_mb": 6700,
-      "bandwidth_write_mb": 4200
+      "iops_read": 1100000,
+      "iops_write": 200000,
+      "bandwidth_read_mb": 6900,
+      "bandwidth_write_mb": 4100
     },
     "reliability": {
       "ure_rate": 17,
       "afr": 0.44,
-      "dwpd": 3.0
+      "dwpd": 1.0,
+      "mtbf_hours": 2000000
     },
     "power": {
       "idle_watts": 5.0,
-      "load_watts": 25.0
+      "load_watts": 14.0
     },
-    "cost_usd": 1299
+    "cost_usd": 1699
   },
-  "micron-7450-pro-15.36tb": {
-    "id": "micron-7450-pro-15.36tb",
-    "model": "Micron 7450 PRO 15.36TB",
+  "micron-7400-pro-u3-1.92tb": {
+    "id": "micron-7400-pro-u3-1.92tb",
+    "model": "Micron 7400 Pro U.3 1.92TB",
     "type": "SSD_NVMe",
-    "formFactor": "U.2",
-    "capacity_raw": 15360000000000,
+    "formFactor": "U.3",
+    "interface": "PCIe4",
+    "capacity_raw": 1920000000000,
     "sector_size": 4096,
     "performance": {
-      "iops_read": 1000000,
-      "iops_write": 215000,
-      "bandwidth_read_mb": 6800,
-      "bandwidth_write_mb": 5300
+      "iops_read": 650000,
+      "iops_write": 130000,
+      "bandwidth_read_mb": 6600,
+      "bandwidth_write_mb": 3600
     },
     "reliability": {
       "ure_rate": 17,
       "afr": 0.5,
-      "dwpd": 1.0
+      "dwpd": 1.0,
+      "mtbf_hours": 2000000
+    },
+    "power": {
+      "idle_watts": 4.0,
+      "load_watts": 11.0
+    },
+    "cost_usd": 329
+  },
+  "micron-7400-pro-u3-3.84tb": {
+    "id": "micron-7400-pro-u3-3.84tb",
+    "model": "Micron 7400 Pro U.3 3.84TB",
+    "type": "SSD_NVMe",
+    "formFactor": "U.3",
+    "interface": "PCIe4",
+    "capacity_raw": 3840000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 850000,
+      "iops_write": 165000,
+      "bandwidth_read_mb": 6600,
+      "bandwidth_write_mb": 5000
+    },
+    "reliability": {
+      "ure_rate": 17,
+      "afr": 0.5,
+      "dwpd": 1.0,
+      "mtbf_hours": 2000000
+    },
+    "power": {
+      "idle_watts": 4.5,
+      "load_watts": 12.0
+    },
+    "cost_usd": 549
+  },
+  "micron-7400-pro-u3-7.68tb": {
+    "id": "micron-7400-pro-u3-7.68tb",
+    "model": "Micron 7400 Pro U.3 7.68TB",
+    "type": "SSD_NVMe",
+    "formFactor": "U.3",
+    "interface": "PCIe4",
+    "capacity_raw": 7680000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 1000000,
+      "iops_write": 190000,
+      "bandwidth_read_mb": 6600,
+      "bandwidth_write_mb": 5400
+    },
+    "reliability": {
+      "ure_rate": 17,
+      "afr": 0.5,
+      "dwpd": 1.0,
+      "mtbf_hours": 2000000
+    },
+    "power": {
+      "idle_watts": 5.0,
+      "load_watts": 14.0
+    },
+    "cost_usd": 999
+  },
+  "micron-7400-max-u3-1.6tb": {
+    "id": "micron-7400-max-u3-1.6tb",
+    "model": "Micron 7400 Max U.3 1.6TB",
+    "type": "SSD_NVMe",
+    "formFactor": "U.3",
+    "interface": "PCIe4",
+    "capacity_raw": 1600000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 620000,
+      "iops_write": 180000,
+      "bandwidth_read_mb": 6600,
+      "bandwidth_write_mb": 4200
+    },
+    "reliability": {
+      "ure_rate": 17,
+      "afr": 0.5,
+      "dwpd": 3.0,
+      "mtbf_hours": 2000000
+    },
+    "power": {
+      "idle_watts": 4.5,
+      "load_watts": 14.0
+    },
+    "cost_usd": 449
+  },
+  "micron-7400-max-u3-3.2tb": {
+    "id": "micron-7400-max-u3-3.2tb",
+    "model": "Micron 7400 Max U.3 3.2TB",
+    "type": "SSD_NVMe",
+    "formFactor": "U.3",
+    "interface": "PCIe4",
+    "capacity_raw": 3200000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 800000,
+      "iops_write": 200000,
+      "bandwidth_read_mb": 6600,
+      "bandwidth_write_mb": 5200
+    },
+    "reliability": {
+      "ure_rate": 17,
+      "afr": 0.5,
+      "dwpd": 3.0,
+      "mtbf_hours": 2000000
+    },
+    "power": {
+      "idle_watts": 5.0,
+      "load_watts": 15.0
+    },
+    "cost_usd": 799
+  },
+  "micron-7400-max-u3-6.4tb": {
+    "id": "micron-7400-max-u3-6.4tb",
+    "model": "Micron 7400 Max U.3 6.4TB",
+    "type": "SSD_NVMe",
+    "formFactor": "U.3",
+    "interface": "PCIe4",
+    "capacity_raw": 6400000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 1000000,
+      "iops_write": 215000,
+      "bandwidth_read_mb": 6600,
+      "bandwidth_write_mb": 5400
+    },
+    "reliability": {
+      "ure_rate": 17,
+      "afr": 0.5,
+      "dwpd": 3.0,
+      "mtbf_hours": 2000000
     },
     "power": {
       "idle_watts": 5.5,
-      "load_watts": 18.0
+      "load_watts": 16.0
+    },
+    "cost_usd": 1399
+  },
+  "kioxia-cm6-r-7.68tb": {
+    "id": "kioxia-cm6-r-7.68tb",
+    "model": "KIOXIA CM6-R 7.68TB",
+    "type": "SSD_NVMe",
+    "formFactor": "U.3",
+    "interface": "PCIe4",
+    "capacity_raw": 7680000000000,
+    "sector_size": 512,
+    "performance": {
+      "iops_read": 1200000,
+      "iops_write": 120000,
+      "bandwidth_read_mb": 6900,
+      "bandwidth_write_mb": 4000
+    },
+    "reliability": {
+      "ure_rate": 17,
+      "afr": 0.44,
+      "dwpd": 1.0,
+      "mtbf_hours": 2500000
+    },
+    "power": {
+      "idle_watts": 5.0,
+      "load_watts": 14.0
+    },
+    "cost_usd": 1099
+  },
+  "kioxia-cm6-r-15.36tb": {
+    "id": "kioxia-cm6-r-15.36tb",
+    "model": "KIOXIA CM6-R 15.36TB",
+    "type": "SSD_NVMe",
+    "formFactor": "U.3",
+    "interface": "PCIe4",
+    "capacity_raw": 15360000000000,
+    "sector_size": 512,
+    "performance": {
+      "iops_read": 1300000,
+      "iops_write": 140000,
+      "bandwidth_read_mb": 6850,
+      "bandwidth_write_mb": 4000
+    },
+    "reliability": {
+      "ure_rate": 17,
+      "afr": 0.44,
+      "dwpd": 1.0,
+      "mtbf_hours": 2500000
+    },
+    "power": {
+      "idle_watts": 6.0,
+      "load_watts": 17.0
     },
     "cost_usd": 1999
+  },
+  "kioxia-cm6-r-30.72tb": {
+    "id": "kioxia-cm6-r-30.72tb",
+    "model": "KIOXIA CM6-R 30.72TB",
+    "type": "SSD_NVMe",
+    "formFactor": "U.3",
+    "interface": "PCIe4",
+    "capacity_raw": 30720000000000,
+    "sector_size": 512,
+    "performance": {
+      "iops_read": 1400000,
+      "iops_write": 170000,
+      "bandwidth_read_mb": 6850,
+      "bandwidth_write_mb": 4000
+    },
+    "reliability": {
+      "ure_rate": 17,
+      "afr": 0.44,
+      "dwpd": 1.0,
+      "mtbf_hours": 2500000
+    },
+    "power": {
+      "idle_watts": 7.0,
+      "load_watts": 20.0
+    },
+    "cost_usd": 3799
+  },
+  "kioxia-cm6-v-3.2tb": {
+    "id": "kioxia-cm6-v-3.2tb",
+    "model": "KIOXIA CM6-V 3.2TB",
+    "type": "SSD_NVMe",
+    "formFactor": "U.3",
+    "interface": "PCIe4",
+    "capacity_raw": 3200000000000,
+    "sector_size": 512,
+    "performance": {
+      "iops_read": 1300000,
+      "iops_write": 260000,
+      "bandwidth_read_mb": 6900,
+      "bandwidth_write_mb": 5300
+    },
+    "reliability": {
+      "ure_rate": 17,
+      "afr": 0.44,
+      "dwpd": 3.0,
+      "mtbf_hours": 2500000
+    },
+    "power": {
+      "idle_watts": 5.5,
+      "load_watts": 17.0
+    },
+    "cost_usd": 899
+  },
+  "kioxia-cm6-v-6.4tb": {
+    "id": "kioxia-cm6-v-6.4tb",
+    "model": "KIOXIA CM6-V 6.4TB",
+    "type": "SSD_NVMe",
+    "formFactor": "U.3",
+    "interface": "PCIe4",
+    "capacity_raw": 6400000000000,
+    "sector_size": 512,
+    "performance": {
+      "iops_read": 1400000,
+      "iops_write": 280000,
+      "bandwidth_read_mb": 6900,
+      "bandwidth_write_mb": 5300
+    },
+    "reliability": {
+      "ure_rate": 17,
+      "afr": 0.44,
+      "dwpd": 3.0,
+      "mtbf_hours": 2500000
+    },
+    "power": {
+      "idle_watts": 6.0,
+      "load_watts": 18.0
+    },
+    "cost_usd": 1599
   },
   "kioxia-cm7-v-12.8tb": {
     "id": "kioxia-cm7-v-12.8tb",
     "model": "Kioxia CM7-V 12.8TB",
     "type": "SSD_NVMe",
-    "formFactor": "U.2",
+    "formFactor": "U.3",
+    "interface": "PCIe5",
     "capacity_raw": 12800000000000,
     "sector_size": 512,
     "performance": {
@@ -183,7 +1788,8 @@
     "reliability": {
       "ure_rate": 17,
       "afr": 0.44,
-      "dwpd": 3.0
+      "dwpd": 3.0,
+      "mtbf_hours": 2500000
     },
     "power": {
       "idle_watts": 6.0,
@@ -191,131 +1797,168 @@
     },
     "cost_usd": 2499
   },
-  "seagate-nytro-3750-15.36tb": {
-    "id": "seagate-nytro-3750-15.36tb",
-    "model": "Seagate Nytro 3750 15.36TB",
-    "type": "SSD_SAS",
-    "formFactor": "2.5\"",
-    "capacity_raw": 15360000000000,
+  "samsung-pm9d3-e1s-1.92tb": {
+    "id": "samsung-pm9d3-e1s-1.92tb",
+    "model": "Samsung PM9D3 E1.S 1.92TB",
+    "type": "SSD_NVMe",
+    "formFactor": "E1.S",
+    "interface": "PCIe5",
+    "capacity_raw": 1920000000000,
     "sector_size": 512,
     "performance": {
-      "iops_read": 520000,
-      "iops_write": 125000,
-      "bandwidth_read_mb": 2150,
-      "bandwidth_write_mb": 1850
-    },
-    "reliability": {
-      "ure_rate": 17,
-      "afr": 0.44,
-      "dwpd": 1.0
-    },
-    "power": {
-      "idle_watts": 4.5,
-      "load_watts": 10.5
-    },
-    "cost_usd": 2199
-  },
-  "wd-ultrastar-dc-sn655-15.36tb": {
-    "id": "wd-ultrastar-dc-sn655-15.36tb",
-    "model": "WD Ultrastar DC SN655 15.36TB",
-    "type": "SSD_NVMe",
-    "formFactor": "U.2",
-    "capacity_raw": 15360000000000,
-    "sector_size": 4096,
-    "performance": {
-      "iops_read": 1100000,
-      "iops_write": 260000,
+      "iops_read": 1600000,
+      "iops_write": 350000,
       "bandwidth_read_mb": 7000,
-      "bandwidth_write_mb": 4400
+      "bandwidth_write_mb": 4200
     },
     "reliability": {
       "ure_rate": 17,
       "afr": 0.35,
-      "dwpd": 1.0
-    },
-    "power": {
-      "idle_watts": 6.0,
-      "load_watts": 18.0
-    },
-    "cost_usd": 1899
-  },
-  "solidigm-d7-p5620-e3s-6.4tb": {
-    "id": "solidigm-d7-p5620-e3s-6.4tb",
-    "model": "Solidigm D7-P5620 E3.S 6.4TB",
-    "type": "SSD_NVMe",
-    "formFactor": "E3.S",
-    "capacity_raw": 6400000000000,
-    "sector_size": 512,
-    "performance": {
-      "iops_read": 1000000,
-      "iops_write": 200000,
-      "bandwidth_read_mb": 7000,
-      "bandwidth_write_mb": 4300
-    },
-    "reliability": {
-      "ure_rate": 17,
-      "afr": 0.44,
-      "dwpd": 3.0
+      "dwpd": 1.0,
+      "mtbf_hours": 2000000
     },
     "power": {
       "idle_watts": 5.0,
-      "load_watts": 25.0
+      "load_watts": 18.0
     },
-    "cost_usd": 1199
+    "cost_usd": 449
   },
-  "solidigm-d7-p5520-e3s-7.68tb": {
-    "id": "solidigm-d7-p5520-e3s-7.68tb",
-    "model": "Solidigm D7-P5520 E3.S 7.68TB",
+  "samsung-pm9d3-e1s-3.84tb": {
+    "id": "samsung-pm9d3-e1s-3.84tb",
+    "model": "Samsung PM9D3 E1.S 3.84TB",
     "type": "SSD_NVMe",
-    "formFactor": "E3.S",
+    "formFactor": "E1.S",
+    "interface": "PCIe5",
+    "capacity_raw": 3840000000000,
+    "sector_size": 512,
+    "performance": {
+      "iops_read": 1800000,
+      "iops_write": 380000,
+      "bandwidth_read_mb": 7000,
+      "bandwidth_write_mb": 5000
+    },
+    "reliability": {
+      "ure_rate": 17,
+      "afr": 0.35,
+      "dwpd": 1.0,
+      "mtbf_hours": 2000000
+    },
+    "power": {
+      "idle_watts": 5.5,
+      "load_watts": 20.0
+    },
+    "cost_usd": 749
+  },
+  "samsung-pm9d3-e1s-7.68tb": {
+    "id": "samsung-pm9d3-e1s-7.68tb",
+    "model": "Samsung PM9D3 E1.S 7.68TB",
+    "type": "SSD_NVMe",
+    "formFactor": "E1.S",
+    "interface": "PCIe5",
     "capacity_raw": 7680000000000,
     "sector_size": 512,
     "performance": {
-      "iops_read": 1100000,
-      "iops_write": 100000,
+      "iops_read": 2000000,
+      "iops_write": 400000,
       "bandwidth_read_mb": 7000,
-      "bandwidth_write_mb": 3600
+      "bandwidth_write_mb": 5500
+    },
+    "reliability": {
+      "ure_rate": 17,
+      "afr": 0.35,
+      "dwpd": 1.0,
+      "mtbf_hours": 2000000
+    },
+    "power": {
+      "idle_watts": 6.0,
+      "load_watts": 22.0
+    },
+    "cost_usd": 1299
+  },
+  "micron-9550-e3s-7.68tb": {
+    "id": "micron-9550-e3s-7.68tb",
+    "model": "Micron 9550 E3.S 7.68TB",
+    "type": "SSD_NVMe",
+    "formFactor": "E3.S",
+    "interface": "PCIe5",
+    "capacity_raw": 7680000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 2500000,
+      "iops_write": 450000,
+      "bandwidth_read_mb": 14000,
+      "bandwidth_write_mb": 8000
     },
     "reliability": {
       "ure_rate": 17,
       "afr": 0.44,
-      "dwpd": 1.0
+      "dwpd": 1.0,
+      "mtbf_hours": 2000000
     },
     "power": {
-      "idle_watts": 5.0,
-      "load_watts": 18.0
+      "idle_watts": 6.0,
+      "load_watts": 22.0
     },
-    "cost_usd": 899
+    "cost_usd": 1399
   },
-  "solidigm-d5-p5336-e3s-30.72tb": {
-    "id": "solidigm-d5-p5336-e3s-30.72tb",
-    "model": "Solidigm D5-P5336 E3.S 30.72TB",
+  "micron-9550-e3s-15.36tb": {
+    "id": "micron-9550-e3s-15.36tb",
+    "model": "Micron 9550 E3.S 15.36TB",
     "type": "SSD_NVMe",
     "formFactor": "E3.S",
+    "interface": "PCIe5",
+    "capacity_raw": 15360000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 3000000,
+      "iops_write": 500000,
+      "bandwidth_read_mb": 14000,
+      "bandwidth_write_mb": 9000
+    },
+    "reliability": {
+      "ure_rate": 17,
+      "afr": 0.44,
+      "dwpd": 1.0,
+      "mtbf_hours": 2000000
+    },
+    "power": {
+      "idle_watts": 7.0,
+      "load_watts": 25.0
+    },
+    "cost_usd": 2499
+  },
+  "micron-9550-e3s-30.72tb": {
+    "id": "micron-9550-e3s-30.72tb",
+    "model": "Micron 9550 E3.S 30.72TB",
+    "type": "SSD_NVMe",
+    "formFactor": "E3.S",
+    "interface": "PCIe5",
     "capacity_raw": 30720000000000,
     "sector_size": 4096,
     "performance": {
-      "iops_read": 770000,
-      "iops_write": 50000,
-      "bandwidth_read_mb": 7000,
-      "bandwidth_write_mb": 2800
+      "iops_read": 3300000,
+      "iops_write": 550000,
+      "bandwidth_read_mb": 14000,
+      "bandwidth_write_mb": 10000
     },
     "reliability": {
       "ure_rate": 17,
       "afr": 0.44,
-      "dwpd": 0.58
+      "dwpd": 1.0,
+      "mtbf_hours": 2000000
     },
     "power": {
-      "idle_watts": 5.0,
-      "load_watts": 20.0
+      "idle_watts": 8.0,
+      "load_watts": 28.0
     },
-    "cost_usd": 3499
+    "cost_usd": 4499
   },
   "samsung-pm9d3a-e3s-7.68tb": {
     "id": "samsung-pm9d3a-e3s-7.68tb",
     "model": "Samsung PM9D3a E3.S 7.68TB",
     "type": "SSD_NVMe",
     "formFactor": "E3.S",
+    "interface": "PCIe5",
     "capacity_raw": 7680000000000,
     "sector_size": 512,
     "performance": {
@@ -327,7 +1970,8 @@
     "reliability": {
       "ure_rate": 17,
       "afr": 0.35,
-      "dwpd": 1.0
+      "dwpd": 1.0,
+      "mtbf_hours": 2000000
     },
     "power": {
       "idle_watts": 5.5,
@@ -340,6 +1984,7 @@
     "model": "Kioxia CD8P E3.S 7.68TB",
     "type": "SSD_NVMe",
     "formFactor": "E3.S",
+    "interface": "PCIe5",
     "capacity_raw": 7680000000000,
     "sector_size": 512,
     "performance": {
@@ -351,7 +1996,8 @@
     "reliability": {
       "ure_rate": 17,
       "afr": 0.44,
-      "dwpd": 1.0
+      "dwpd": 1.0,
+      "mtbf_hours": 2500000
     },
     "power": {
       "idle_watts": 6.0,
@@ -364,6 +2010,7 @@
     "model": "Micron 7450 MAX E3.S 6.4TB",
     "type": "SSD_NVMe",
     "formFactor": "E3.S",
+    "interface": "PCIe4",
     "capacity_raw": 6400000000000,
     "sector_size": 4096,
     "performance": {
@@ -375,12 +2022,655 @@
     "reliability": {
       "ure_rate": 17,
       "afr": 0.44,
-      "dwpd": 3.0
+      "dwpd": 3.0,
+      "mtbf_hours": 2000000
     },
     "power": {
       "idle_watts": 5.5,
       "load_watts": 18.0
     },
     "cost_usd": 1599
+  },
+  "micron-7450-pro-15.36tb": {
+    "id": "micron-7450-pro-15.36tb",
+    "model": "Micron 7450 PRO 15.36TB",
+    "type": "SSD_NVMe",
+    "formFactor": "U.2",
+    "interface": "PCIe4",
+    "capacity_raw": 15360000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 1000000,
+      "iops_write": 215000,
+      "bandwidth_read_mb": 6800,
+      "bandwidth_write_mb": 5300
+    },
+    "reliability": {
+      "ure_rate": 17,
+      "afr": 0.5,
+      "dwpd": 1.0,
+      "mtbf_hours": 2000000
+    },
+    "power": {
+      "idle_watts": 5.5,
+      "load_watts": 18.0
+    },
+    "cost_usd": 1999
+  },
+  "solidigm-d5-p5336-u2-30.72tb": {
+    "id": "solidigm-d5-p5336-u2-30.72tb",
+    "model": "Solidigm D5-P5336 U.2 30.72TB",
+    "type": "SSD_NVMe",
+    "formFactor": "U.2",
+    "interface": "PCIe4",
+    "nandType": "QLC",
+    "capacity_raw": 30720000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 700000,
+      "iops_write": 40000,
+      "bandwidth_read_mb": 7000,
+      "bandwidth_write_mb": 2400
+    },
+    "reliability": {
+      "ure_rate": 17,
+      "afr": 0.44,
+      "dwpd": 0.58,
+      "mtbf_hours": 2000000
+    },
+    "power": {
+      "idle_watts": 6.0,
+      "load_watts": 20.0
+    },
+    "cost_usd": 2499
+  },
+  "solidigm-d5-p5336-u2-61.44tb": {
+    "id": "solidigm-d5-p5336-u2-61.44tb",
+    "model": "Solidigm D5-P5336 U.2 61.44TB",
+    "type": "SSD_NVMe",
+    "formFactor": "U.2",
+    "interface": "PCIe4",
+    "nandType": "QLC",
+    "capacity_raw": 61440000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 800000,
+      "iops_write": 45000,
+      "bandwidth_read_mb": 7000,
+      "bandwidth_write_mb": 2800
+    },
+    "reliability": {
+      "ure_rate": 17,
+      "afr": 0.44,
+      "dwpd": 0.58,
+      "mtbf_hours": 2000000
+    },
+    "power": {
+      "idle_watts": 7.0,
+      "load_watts": 24.0
+    },
+    "cost_usd": 4499
+  },
+  "solidigm-d5-p5336-e3s-30.72tb": {
+    "id": "solidigm-d5-p5336-e3s-30.72tb",
+    "model": "Solidigm D5-P5336 E3.S 30.72TB",
+    "type": "SSD_NVMe",
+    "formFactor": "E3.S",
+    "interface": "PCIe4",
+    "nandType": "QLC",
+    "capacity_raw": 30720000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 770000,
+      "iops_write": 50000,
+      "bandwidth_read_mb": 7000,
+      "bandwidth_write_mb": 2800
+    },
+    "reliability": {
+      "ure_rate": 17,
+      "afr": 0.44,
+      "dwpd": 0.58,
+      "mtbf_hours": 2000000
+    },
+    "power": {
+      "idle_watts": 5.0,
+      "load_watts": 20.0
+    },
+    "cost_usd": 3499
+  },
+  "solidigm-d5-p5336-e3s-61.44tb": {
+    "id": "solidigm-d5-p5336-e3s-61.44tb",
+    "model": "Solidigm D5-P5336 E3.S 61.44TB",
+    "type": "SSD_NVMe",
+    "formFactor": "E3.S",
+    "interface": "PCIe4",
+    "nandType": "QLC",
+    "capacity_raw": 61440000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 900000,
+      "iops_write": 55000,
+      "bandwidth_read_mb": 7000,
+      "bandwidth_write_mb": 3200
+    },
+    "reliability": {
+      "ure_rate": 17,
+      "afr": 0.44,
+      "dwpd": 0.58,
+      "mtbf_hours": 2000000
+    },
+    "power": {
+      "idle_watts": 6.0,
+      "load_watts": 26.0
+    },
+    "cost_usd": 5999
+  },
+  "solidigm-d5-p5336-e3s-122.88tb": {
+    "id": "solidigm-d5-p5336-e3s-122.88tb",
+    "model": "Solidigm D5-P5336 E3.S 122.88TB",
+    "type": "SSD_NVMe",
+    "formFactor": "E3.S",
+    "interface": "PCIe4",
+    "nandType": "QLC",
+    "capacity_raw": 122880000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 930000,
+      "iops_write": 60000,
+      "bandwidth_read_mb": 7000,
+      "bandwidth_write_mb": 3500
+    },
+    "reliability": {
+      "ure_rate": 17,
+      "afr": 0.44,
+      "dwpd": 0.58,
+      "mtbf_hours": 2000000
+    },
+    "power": {
+      "idle_watts": 7.0,
+      "load_watts": 28.0
+    },
+    "cost_usd": 9999
+  },
+  "samsung-pm9c3a-qlc-15.36tb": {
+    "id": "samsung-pm9c3a-qlc-15.36tb",
+    "model": "Samsung PM9C3a QLC 15.36TB",
+    "type": "SSD_NVMe",
+    "formFactor": "U.2",
+    "interface": "PCIe5",
+    "nandType": "QLC",
+    "capacity_raw": 15360000000000,
+    "sector_size": 512,
+    "performance": {
+      "iops_read": 750000,
+      "iops_write": 70000,
+      "bandwidth_read_mb": 7200,
+      "bandwidth_write_mb": 2500
+    },
+    "reliability": {
+      "ure_rate": 17,
+      "afr": 0.35,
+      "dwpd": 0.6,
+      "mtbf_hours": 2000000
+    },
+    "power": {
+      "idle_watts": 5.5,
+      "load_watts": 18.0
+    },
+    "cost_usd": 1299
+  },
+  "samsung-pm9c3a-qlc-30.72tb": {
+    "id": "samsung-pm9c3a-qlc-30.72tb",
+    "model": "Samsung PM9C3a QLC 30.72TB",
+    "type": "SSD_NVMe",
+    "formFactor": "U.2",
+    "interface": "PCIe5",
+    "nandType": "QLC",
+    "capacity_raw": 30720000000000,
+    "sector_size": 512,
+    "performance": {
+      "iops_read": 800000,
+      "iops_write": 75000,
+      "bandwidth_read_mb": 7200,
+      "bandwidth_write_mb": 3000
+    },
+    "reliability": {
+      "ure_rate": 17,
+      "afr": 0.35,
+      "dwpd": 0.6,
+      "mtbf_hours": 2000000
+    },
+    "power": {
+      "idle_watts": 6.5,
+      "load_watts": 22.0
+    },
+    "cost_usd": 2399
+  },
+  "micron-6550-ion-30.72tb": {
+    "id": "micron-6550-ion-30.72tb",
+    "model": "Micron 6550 ION 30.72TB",
+    "type": "SSD_NVMe",
+    "formFactor": "E3.S",
+    "interface": "PCIe5",
+    "nandType": "QLC",
+    "capacity_raw": 30720000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 750000,
+      "iops_write": 65000,
+      "bandwidth_read_mb": 10000,
+      "bandwidth_write_mb": 3000
+    },
+    "reliability": {
+      "ure_rate": 17,
+      "afr": 0.44,
+      "dwpd": 0.5,
+      "mtbf_hours": 2000000
+    },
+    "power": {
+      "idle_watts": 6.0,
+      "load_watts": 22.0
+    },
+    "cost_usd": 2699
+  },
+  "micron-6550-ion-61.44tb": {
+    "id": "micron-6550-ion-61.44tb",
+    "model": "Micron 6550 ION 61.44TB",
+    "type": "SSD_NVMe",
+    "formFactor": "E3.S",
+    "interface": "PCIe5",
+    "nandType": "QLC",
+    "capacity_raw": 61440000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 850000,
+      "iops_write": 70000,
+      "bandwidth_read_mb": 10000,
+      "bandwidth_write_mb": 4000
+    },
+    "reliability": {
+      "ure_rate": 17,
+      "afr": 0.44,
+      "dwpd": 0.5,
+      "mtbf_hours": 2000000
+    },
+    "power": {
+      "idle_watts": 7.0,
+      "load_watts": 25.0
+    },
+    "cost_usd": 4999
+  },
+  "intel-optane-p5810x-400gb": {
+    "id": "intel-optane-p5810x-400gb",
+    "model": "Intel Optane P5810X 400GB",
+    "type": "SSD_NVMe",
+    "formFactor": "U.2",
+    "interface": "PCIe4",
+    "nandType": "3DXPoint",
+    "capacity_raw": 400000000000,
+    "sector_size": 512,
+    "performance": {
+      "iops_read": 1380000,
+      "iops_write": 330000,
+      "bandwidth_read_mb": 7200,
+      "bandwidth_write_mb": 5500
+    },
+    "reliability": {
+      "ure_rate": 17,
+      "afr": 0.2,
+      "dwpd": 100.0,
+      "mtbf_hours": 2000000
+    },
+    "power": {
+      "idle_watts": 5.0,
+      "load_watts": 18.0
+    },
+    "latency_us": {
+      "read": 5,
+      "write": 5
+    },
+    "cost_usd": 1999
+  },
+  "intel-optane-p5810x-800gb": {
+    "id": "intel-optane-p5810x-800gb",
+    "model": "Intel Optane P5810X 800GB",
+    "type": "SSD_NVMe",
+    "formFactor": "U.2",
+    "interface": "PCIe4",
+    "nandType": "3DXPoint",
+    "capacity_raw": 800000000000,
+    "sector_size": 512,
+    "performance": {
+      "iops_read": 1380000,
+      "iops_write": 330000,
+      "bandwidth_read_mb": 7200,
+      "bandwidth_write_mb": 5500
+    },
+    "reliability": {
+      "ure_rate": 17,
+      "afr": 0.2,
+      "dwpd": 100.0,
+      "mtbf_hours": 2000000
+    },
+    "power": {
+      "idle_watts": 5.0,
+      "load_watts": 18.0
+    },
+    "latency_us": {
+      "read": 5,
+      "write": 5
+    },
+    "cost_usd": 3499
+  },
+  "intel-optane-p5810x-1.6tb": {
+    "id": "intel-optane-p5810x-1.6tb",
+    "model": "Intel Optane P5810X 1.6TB",
+    "type": "SSD_NVMe",
+    "formFactor": "U.2",
+    "interface": "PCIe4",
+    "nandType": "3DXPoint",
+    "capacity_raw": 1600000000000,
+    "sector_size": 512,
+    "performance": {
+      "iops_read": 1380000,
+      "iops_write": 330000,
+      "bandwidth_read_mb": 7200,
+      "bandwidth_write_mb": 5500
+    },
+    "reliability": {
+      "ure_rate": 17,
+      "afr": 0.2,
+      "dwpd": 100.0,
+      "mtbf_hours": 2000000
+    },
+    "power": {
+      "idle_watts": 5.5,
+      "load_watts": 20.0
+    },
+    "latency_us": {
+      "read": 5,
+      "write": 5
+    },
+    "cost_usd": 5999
+  },
+  "kioxia-fl6-800gb": {
+    "id": "kioxia-fl6-800gb",
+    "model": "KIOXIA FL6 XL-FLASH 800GB",
+    "type": "SSD_NVMe",
+    "formFactor": "U.3",
+    "interface": "PCIe4",
+    "nandType": "SLC",
+    "capacity_raw": 800000000000,
+    "sector_size": 512,
+    "performance": {
+      "iops_read": 1500000,
+      "iops_write": 400000,
+      "bandwidth_read_mb": 3000,
+      "bandwidth_write_mb": 1500
+    },
+    "reliability": {
+      "ure_rate": 17,
+      "afr": 0.3,
+      "dwpd": 60.0,
+      "mtbf_hours": 2500000
+    },
+    "power": {
+      "idle_watts": 4.5,
+      "load_watts": 14.0
+    },
+    "latency_us": {
+      "read": 29,
+      "write": 8
+    },
+    "cost_usd": 1499
+  },
+  "kioxia-fl6-1.6tb": {
+    "id": "kioxia-fl6-1.6tb",
+    "model": "KIOXIA FL6 XL-FLASH 1.6TB",
+    "type": "SSD_NVMe",
+    "formFactor": "U.3",
+    "interface": "PCIe4",
+    "nandType": "SLC",
+    "capacity_raw": 1600000000000,
+    "sector_size": 512,
+    "performance": {
+      "iops_read": 1500000,
+      "iops_write": 400000,
+      "bandwidth_read_mb": 3000,
+      "bandwidth_write_mb": 1500
+    },
+    "reliability": {
+      "ure_rate": 17,
+      "afr": 0.3,
+      "dwpd": 60.0,
+      "mtbf_hours": 2500000
+    },
+    "power": {
+      "idle_watts": 4.5,
+      "load_watts": 14.0
+    },
+    "latency_us": {
+      "read": 29,
+      "write": 8
+    },
+    "cost_usd": 2499
+  },
+  "kioxia-fl6-3.2tb": {
+    "id": "kioxia-fl6-3.2tb",
+    "model": "KIOXIA FL6 XL-FLASH 3.2TB",
+    "type": "SSD_NVMe",
+    "formFactor": "U.3",
+    "interface": "PCIe4",
+    "nandType": "SLC",
+    "capacity_raw": 3200000000000,
+    "sector_size": 512,
+    "performance": {
+      "iops_read": 1500000,
+      "iops_write": 400000,
+      "bandwidth_read_mb": 3000,
+      "bandwidth_write_mb": 1500
+    },
+    "reliability": {
+      "ure_rate": 17,
+      "afr": 0.3,
+      "dwpd": 60.0,
+      "mtbf_hours": 2500000
+    },
+    "power": {
+      "idle_watts": 5.0,
+      "load_watts": 15.0
+    },
+    "latency_us": {
+      "read": 29,
+      "write": 8
+    },
+    "cost_usd": 4499
+  },
+  "samsung-sz985-800gb": {
+    "id": "samsung-sz985-800gb",
+    "model": "Samsung SZ985 Z-NAND 800GB",
+    "type": "SSD_NVMe",
+    "formFactor": "U.2",
+    "interface": "PCIe3",
+    "nandType": "SLC",
+    "capacity_raw": 800000000000,
+    "sector_size": 512,
+    "performance": {
+      "iops_read": 750000,
+      "iops_write": 170000,
+      "bandwidth_read_mb": 3200,
+      "bandwidth_write_mb": 1500
+    },
+    "reliability": {
+      "ure_rate": 17,
+      "afr": 0.4,
+      "dwpd": 30.0,
+      "mtbf_hours": 2000000
+    },
+    "power": {
+      "idle_watts": 3.5,
+      "load_watts": 11.0
+    },
+    "latency_us": {
+      "read": 12,
+      "write": 16
+    },
+    "cost_usd": 1799
+  },
+  "intel-d7-p5620-6.4tb": {
+    "id": "intel-d7-p5620-6.4tb",
+    "model": "Intel D7-P5620 6.4TB",
+    "type": "SSD_NVMe",
+    "formFactor": "U.2",
+    "interface": "PCIe4",
+    "capacity_raw": 6400000000000,
+    "sector_size": 512,
+    "performance": {
+      "iops_read": 900000,
+      "iops_write": 220000,
+      "bandwidth_read_mb": 6700,
+      "bandwidth_write_mb": 4200
+    },
+    "reliability": {
+      "ure_rate": 17,
+      "afr": 0.44,
+      "dwpd": 3.0,
+      "mtbf_hours": 2000000
+    },
+    "power": {
+      "idle_watts": 5.0,
+      "load_watts": 25.0
+    },
+    "cost_usd": 1299
+  },
+  "solidigm-d7-p5620-e3s-6.4tb": {
+    "id": "solidigm-d7-p5620-e3s-6.4tb",
+    "model": "Solidigm D7-P5620 E3.S 6.4TB",
+    "type": "SSD_NVMe",
+    "formFactor": "E3.S",
+    "interface": "PCIe4",
+    "capacity_raw": 6400000000000,
+    "sector_size": 512,
+    "performance": {
+      "iops_read": 1000000,
+      "iops_write": 200000,
+      "bandwidth_read_mb": 7000,
+      "bandwidth_write_mb": 4300
+    },
+    "reliability": {
+      "ure_rate": 17,
+      "afr": 0.44,
+      "dwpd": 3.0,
+      "mtbf_hours": 2000000
+    },
+    "power": {
+      "idle_watts": 5.0,
+      "load_watts": 25.0
+    },
+    "cost_usd": 1199
+  },
+  "solidigm-d7-p5520-e3s-7.68tb": {
+    "id": "solidigm-d7-p5520-e3s-7.68tb",
+    "model": "Solidigm D7-P5520 E3.S 7.68TB",
+    "type": "SSD_NVMe",
+    "formFactor": "E3.S",
+    "interface": "PCIe4",
+    "capacity_raw": 7680000000000,
+    "sector_size": 512,
+    "performance": {
+      "iops_read": 1100000,
+      "iops_write": 100000,
+      "bandwidth_read_mb": 7000,
+      "bandwidth_write_mb": 3600
+    },
+    "reliability": {
+      "ure_rate": 17,
+      "afr": 0.44,
+      "dwpd": 1.0,
+      "mtbf_hours": 2000000
+    },
+    "power": {
+      "idle_watts": 5.0,
+      "load_watts": 18.0
+    },
+    "cost_usd": 899
+  },
+  "seagate-nytro-3750-15.36tb": {
+    "id": "seagate-nytro-3750-15.36tb",
+    "model": "Seagate Nytro 3750 15.36TB",
+    "type": "SSD_SAS",
+    "formFactor": "2.5\"",
+    "interface": "SAS",
+    "capacity_raw": 15360000000000,
+    "sector_size": 512,
+    "performance": {
+      "iops_read": 520000,
+      "iops_write": 125000,
+      "bandwidth_read_mb": 2150,
+      "bandwidth_write_mb": 1850
+    },
+    "reliability": {
+      "ure_rate": 17,
+      "afr": 0.44,
+      "dwpd": 1.0,
+      "mtbf_hours": 2500000
+    },
+    "power": {
+      "idle_watts": 4.5,
+      "load_watts": 10.5
+    },
+    "cost_usd": 2199
+  },
+  "wd-ultrastar-dc-sn655-15.36tb": {
+    "id": "wd-ultrastar-dc-sn655-15.36tb",
+    "model": "WD Ultrastar DC SN655 15.36TB",
+    "type": "SSD_NVMe",
+    "formFactor": "U.2",
+    "interface": "PCIe4",
+    "capacity_raw": 15360000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 1100000,
+      "iops_write": 260000,
+      "bandwidth_read_mb": 7000,
+      "bandwidth_write_mb": 4400
+    },
+    "reliability": {
+      "ure_rate": 17,
+      "afr": 0.35,
+      "dwpd": 1.0,
+      "mtbf_hours": 2500000
+    },
+    "power": {
+      "idle_watts": 6.0,
+      "load_watts": 18.0
+    },
+    "cost_usd": 1899
+  },
+  "samsung-870-evo-4tb": {
+    "id": "samsung-870-evo-4tb",
+    "model": "Samsung 870 EVO 4TB",
+    "type": "SSD_SATA",
+    "formFactor": "2.5\"",
+    "interface": "SATA",
+    "capacity_raw": 4000000000000,
+    "sector_size": 512,
+    "performance": {
+      "iops_read": 98000,
+      "iops_write": 88000,
+      "bandwidth_read_mb": 560,
+      "bandwidth_write_mb": 530
+    },
+    "reliability": {
+      "ure_rate": 17,
+      "afr": 0.5,
+      "dwpd": 0.3,
+      "mtbf_hours": 1500000
+    },
+    "power": {
+      "idle_watts": 0.05,
+      "load_watts": 4.0
+    },
+    "cost_usd": 349
   }
 }

@@ -87,6 +87,8 @@ export interface DriveReliability {
   afr: number
   /** Drive Writes Per Day for SSD endurance (0 for HDD) */
   dwpd: number
+  /** Mean Time Between Failures in hours (optional) */
+  mtbf_hours?: number
 }
 
 /** Drive power consumption */
@@ -102,6 +104,23 @@ export interface DrivePower {
  * Contains all specifications needed for capacity, performance,
  * reliability, and TCO calculations.
  */
+/** Drive interface/bus type */
+export type DriveInterface = 'SATA' | 'SAS' | 'PCIe3' | 'PCIe4' | 'PCIe5'
+
+/** HDD recording technology */
+export type RecordingType = 'CMR' | 'SMR' | 'HAMR'
+
+/** NAND flash type for SSDs */
+export type NandType = 'SLC' | 'MLC' | 'TLC' | 'QLC' | '3DXPoint'
+
+/** Storage Class Memory latency in microseconds */
+export interface SCMLatency {
+  /** Read latency in microseconds */
+  read: number
+  /** Write latency in microseconds */
+  write: number
+}
+
 export interface Drive {
   /** Unique identifier (e.g., "wd-gold-24tb") */
   id: string
@@ -111,6 +130,8 @@ export interface Drive {
   type: DriveType
   /** Physical form factor (optional, mainly for enterprise SSDs) */
   formFactor?: FormFactor
+  /** Drive interface/bus type (optional, more specific than 'type') */
+  interface?: DriveInterface
   /** Raw capacity in bytes */
   capacity_raw: number
   /** Physical sector size */
@@ -123,6 +144,16 @@ export interface Drive {
   power: DrivePower
   /** Average cost in USD (reference price) */
   cost_usd: number
+  /** HDD rotational speed in RPM (optional, only for HDDs) */
+  rpm?: number
+  /** HDD recording technology (optional, only for HDDs) */
+  recording?: RecordingType
+  /** Dual actuator technology (optional, for Mach.2 drives) */
+  dualActuator?: boolean
+  /** NAND flash type (optional, for SSDs) */
+  nandType?: NandType
+  /** SCM latency in microseconds (optional, for Storage Class Memory) */
+  latency_us?: SCMLatency
 }
 
 /** Drive database as a record for fast lookup */

@@ -1,13 +1,63 @@
 /**
  * Performance & Bottleneck Engine (Module B)
  * Calculates IOPS/throughput and identifies limiting factors.
+ *
+ * Implements spec formulas:
+ * - PowerFlex CPU malus: Standard=100%, Ultra=-15%, EC=-30%
+ * - Ceph latency: (Lat_media × 2) + Lat_réseau + Overhead_CPU
+ * - Write penalty per platform
  */
 
 import type { BlockSize, NetworkSpeed, PCIeGen, PCIeLanes } from '@/types/config'
 import type { Drive } from '@/types/drive'
 import type { BottleneckLayer, PerformanceResult } from '@/types/results'
-import type { RaidControllerOptions, Topology } from '@/types/topology'
+import type {
+  CephOptions,
+  PowerFlexOptions,
+  RaidControllerOptions,
+  Topology,
+} from '@/types/topology'
 import { CONTROLLER_LIMITS } from '@/types/topology'
+
+/** PowerFlex CPU factor based on mode (per PowerFlex spec) */
+const POWERFLEX_CPU_FACTOR = {
+  /** Medium Granularity (Standard): 100% IOPS available */
+  medium: 1.0,
+  /** Fine Granularity with compression (Ultra): -15% IOPS */
+  fine_compressed: 0.85,
+  /** Fine Granularity without compression: -5% IOPS */
+  fine: 0.95,
+  /** Erasure Coding: -30% IOPS due to parity calculation */
+  erasure: 0.7,
+} as const
+
+/** Estimated base latency by drive type in microseconds */
+const DRIVE_BASE_LATENCY_US = {
+  HDD: 8000, // 8ms for HDD seek/rotational
+  SSD_SATA: 150, // 150μs for SATA SSD
+  SSD_SAS: 100, // 100μs for SAS SSD
+  SSD_NVMe: 20, // 20μs for NVMe
+} as const
+
+/** Network latency by speed in microseconds */
+const NETWORK_LATENCY_US: Record<NetworkSpeed, number> = {
+  '1GbE': 500,
+  '10GbE': 50,
+  '25GbE': 25,
+  '40GbE': 20,
+  '100GbE': 10,
+  '200GbE': 5,
+  '400GbE': 3,
+}
+
+/** CPU overhead for different operations in microseconds */
+const CPU_OVERHEAD_US = {
+  standard: 10, // Standard RAID
+  compression: 50, // LZ4/zstd compression
+  dedup: 100, // Deduplication lookup
+  erasure_coding: 80, // EC parity calculation
+  replication: 20, // Data replication coordination
+} as const
 
 export interface PerformanceInput {
   drive: Drive
@@ -21,6 +71,8 @@ export interface PerformanceInput {
   networkSpeed: NetworkSpeed
   pcieGen: PCIeGen
   pcieLanes: PCIeLanes
+  powerFlexOptions?: PowerFlexOptions
+  cephOptions?: CephOptions
 }
 
 /** Block size in bytes */
@@ -128,10 +180,12 @@ function getRaidWritePenalty(topology: Topology): number {
           return 4 // Similar to RAID5
         case 'synology_shr2':
           return 6 // Similar to RAID6
+        case 'synology_raid_f1':
+          return 3.5 // RAID F1 optimized for SSD with uneven parity rotation
         case 'netapp_raid_dp':
-          return 4 // Optimized double parity
+          return 4 // Optimized double parity with WAFL
         case 'netapp_raid_tec':
-          return 5 // Optimized triple parity
+          return 5 // Optimized triple parity for large drives
         default:
           return 1
       }
@@ -192,6 +246,27 @@ function getRaidWritePenalty(topology: Topology): number {
           return 3 // Default to 3x replication
       }
 
+    case 'powerflex':
+      // PowerFlex write penalties based on protection mode
+      switch (topology.level) {
+        case 'powerflex_medium_2way':
+        case 'powerflex_fine_2way':
+          return 2 // 2-way mirror writes
+        case 'powerflex_medium_3way':
+        case 'powerflex_fine_3way':
+          return 3 // 3-way mirror writes
+        case 'powerflex_ec_4_1':
+          return 1.25 // EC 4+1: write amplification = 5/4 = 1.25
+        case 'powerflex_ec_4_2':
+          return 1.5 // EC 4+2: write amplification = 6/4 = 1.5
+        case 'powerflex_ec_8_2':
+          return 1.25 // EC 8+2: write amplification = 10/8 = 1.25
+        case 'powerflex_ec_12_4':
+          return 1.33 // EC 12+4: write amplification = 16/12 = 1.33
+        default:
+          return 2
+      }
+
     default:
       return 1
   }
@@ -245,6 +320,84 @@ function calculateXfsAlignment(
 }
 
 /**
+ * Calculate PowerFlex CPU factor based on granularity and protection mode.
+ * Per PowerFlex spec:
+ * - Standard (Medium Granularity): 100% IOPS
+ * - Ultra (Fine Granularity + compression): -15% IOPS
+ * - Erasure Coding: -30% IOPS
+ */
+function getPowerFlexCpuFactor(topology: Topology, powerFlexOptions?: PowerFlexOptions): number {
+  if (topology.type !== 'powerflex' || !powerFlexOptions) {
+    return 1.0
+  }
+
+  // Check if using erasure coding
+  if (powerFlexOptions.protectionMode === 'erasure') {
+    return POWERFLEX_CPU_FACTOR.erasure // -30%
+  }
+
+  // Check granularity and compression
+  if (powerFlexOptions.granularity === 'fine') {
+    if (powerFlexOptions.compression) {
+      return POWERFLEX_CPU_FACTOR.fine_compressed // -15%
+    }
+    return POWERFLEX_CPU_FACTOR.fine // -5%
+  }
+
+  return POWERFLEX_CPU_FACTOR.medium // 100%
+}
+
+/**
+ * Calculate estimated latency in microseconds.
+ * Per Ceph spec: Latency = (Lat_media × 2) + Lat_réseau + Overhead_CPU
+ *
+ * The ×2 factor accounts for:
+ * - Read: seek + transfer
+ * - Write: journal/WAL write + data write
+ */
+function calculateEstimatedLatency(
+  drive: Drive,
+  topology: Topology,
+  networkSpeed: NetworkSpeed,
+  cephOptions?: CephOptions,
+): number {
+  // Base media latency
+  const mediaLatency = DRIVE_BASE_LATENCY_US[drive.type] || DRIVE_BASE_LATENCY_US.HDD
+
+  // Network latency
+  const networkLatency = NETWORK_LATENCY_US[networkSpeed]
+
+  // CPU overhead based on operations
+  let cpuOverhead: number = CPU_OVERHEAD_US.standard
+
+  switch (topology.type) {
+    case 'ceph':
+      // Ceph formula: (Lat_media × 2) + Lat_réseau + Overhead_CPU
+      cpuOverhead =
+        cephOptions?.poolType === 'erasure'
+          ? CPU_OVERHEAD_US.erasure_coding
+          : CPU_OVERHEAD_US.replication
+      if (cephOptions?.compression) {
+        cpuOverhead += CPU_OVERHEAD_US.compression
+      }
+      // Double media latency for Ceph (primary + replica writes)
+      return mediaLatency * 2 + networkLatency + cpuOverhead
+
+    case 'powerflex':
+      // PowerFlex with compression adds CPU overhead
+      return mediaLatency * 1.5 + networkLatency + cpuOverhead
+
+    case 'zfs':
+      // ZFS with CoW adds some overhead
+      return mediaLatency * 1.2 + cpuOverhead
+
+    default:
+      // Standard storage: single media access + overhead
+      return mediaLatency + cpuOverhead
+  }
+}
+
+/**
  * Calculate complete performance results.
  */
 export function calculatePerformance(input: PerformanceInput): PerformanceResult {
@@ -260,6 +413,8 @@ export function calculatePerformance(input: PerformanceInput): PerformanceResult
     networkSpeed,
     pcieGen,
     pcieLanes,
+    powerFlexOptions,
+    cephOptions,
   } = input
 
   const usableDrives = driveCount - hotSpares
@@ -270,6 +425,12 @@ export function calculatePerformance(input: PerformanceInput): PerformanceResult
   // Calculate write penalty
   const writePenalty = getRaidWritePenalty(topology)
 
+  // Calculate PowerFlex CPU factor (if applicable)
+  const powerFlexCpuFactor = getPowerFlexCpuFactor(topology, powerFlexOptions)
+
+  // Calculate estimated latency
+  const estimatedLatencyUs = calculateEstimatedLatency(drive, topology, networkSpeed, cephOptions)
+
   // --- Media Layer (drives) ---
   // Base IOPS from drives
   const totalReadIOPS = drive.performance.iops_read * usableDrives
@@ -279,8 +440,12 @@ export function calculatePerformance(input: PerformanceInput): PerformanceResult
   const randomWriteFactor = randomPercent / 100
   const effectiveWriteIOPS = baseWriteIOPS / (1 + (writePenalty - 1) * randomWriteFactor)
 
-  // Blended IOPS based on read/write mix
-  const blendedIOPS = (totalReadIOPS * readPercent + effectiveWriteIOPS * writePercent) / 100
+  // Apply PowerFlex CPU factor (reduces IOPS for FG mode and EC)
+  const adjustedReadIOPS = totalReadIOPS * powerFlexCpuFactor
+  const adjustedWriteIOPS = effectiveWriteIOPS * powerFlexCpuFactor
+
+  // Blended IOPS based on read/write mix (with CPU factor applied)
+  const blendedIOPS = (adjustedReadIOPS * readPercent + adjustedWriteIOPS * writePercent) / 100
 
   // Throughput from drives
   const totalReadThroughput = drive.performance.bandwidth_read_mb * usableDrives
@@ -365,10 +530,12 @@ export function calculatePerformance(input: PerformanceInput): PerformanceResult
   return {
     maxReadThroughputMBs: Math.min(effectiveReadThroughput, minThroughput),
     maxWriteThroughputMBs: Math.min(effectiveWriteThroughput, minThroughput),
-    maxReadIOPS: Math.min(totalReadIOPS, minIOPS),
-    maxWriteIOPS: Math.min(effectiveWriteIOPS, minIOPS),
+    maxReadIOPS: Math.min(adjustedReadIOPS, minIOPS),
+    maxWriteIOPS: Math.min(adjustedWriteIOPS, minIOPS),
     layers,
     bottleneckDescription,
     xfsAlignment,
+    estimatedLatencyUs,
+    cpuFactor: powerFlexCpuFactor,
   }
 }

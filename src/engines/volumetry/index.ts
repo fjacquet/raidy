@@ -8,11 +8,15 @@ import type { VolumetryResult } from '@/types/results'
 import type {
   CephOptions,
   DellOptions,
+  NetAppOptions,
+  PowerFlexOptions,
   S2DOptions,
+  SynologyOptions,
   Topology,
   VsanOptions,
   ZfsOptions,
 } from '@/types/topology'
+import { FILESYSTEM_OVERHEAD } from '@/types/topology'
 
 export interface VolumetryInput {
   drive: Drive
@@ -24,6 +28,9 @@ export interface VolumetryInput {
   vsanOptions: VsanOptions
   dellOptions: DellOptions
   cephOptions: CephOptions
+  powerFlexOptions: PowerFlexOptions
+  netAppOptions: NetAppOptions
+  synologyOptions: SynologyOptions
   compressionRatio: number
   dedupRatio: number
 }
@@ -113,11 +120,15 @@ function getDataFraction(
         case 'synology_shr2':
           // SHR2 approximates RAID6 efficiency
           return (usableDrives - 2) / usableDrives
+        case 'synology_raid_f1':
+          // RAID F1: All-Flash optimized, similar to RAID5 with uneven parity rotation
+          // Efficiency ≈ RAID5: (N-1)/N
+          return (usableDrives - 1) / usableDrives
         case 'netapp_raid_dp':
-          // RAID-DP: double parity
+          // RAID-DP: double parity per RAID group
           return (usableDrives - 2) / usableDrives
         case 'netapp_raid_tec':
-          // RAID-TEC: triple parity
+          // RAID-TEC: triple parity per RAID group (for drives >10TB)
           return (usableDrives - 3) / usableDrives
         default:
           return 1.0
@@ -198,6 +209,32 @@ function getDataFraction(
           }
       }
 
+    case 'powerflex':
+      switch (topology.level) {
+        case 'powerflex_medium_2way':
+        case 'powerflex_fine_2way':
+          // 2-way mirror: 50% efficiency
+          return 0.5
+        case 'powerflex_medium_3way':
+        case 'powerflex_fine_3way':
+          // 3-way mirror: 33% efficiency
+          return 1 / 3
+        case 'powerflex_ec_4_1':
+          // Erasure coding 4+1: 4/(4+1) = 80% efficiency
+          return 4 / 5
+        case 'powerflex_ec_4_2':
+          // Erasure coding 4+2: 4/(4+2) = 66.7% efficiency
+          return 4 / 6
+        case 'powerflex_ec_8_2':
+          // Erasure coding 8+2: 8/(8+2) = 80% efficiency
+          return 8 / 10
+        case 'powerflex_ec_12_4':
+          // Erasure coding 12+4: 12/(12+4) = 75% efficiency
+          return 12 / 16
+        default:
+          return 0.5
+      }
+
     default:
       return 1.0
   }
@@ -230,23 +267,55 @@ function getZfsOverhead(
 
 /**
  * Get filesystem overhead percentage.
+ * Uses FILESYSTEM_OVERHEAD constants from specs:
+ * - Btrfs: 4% (Synology spec)
+ * - WAFL: 1-2% (NetApp spec)
+ * - ZFS slop: 1/64 = 1.5625% (ZFS spec)
  */
-function getFilesystemOverheadPercent(topology: Topology): number {
+function getFilesystemOverheadPercent(
+  topology: Topology,
+  synologyOptions?: SynologyOptions,
+  netAppOptions?: NetAppOptions,
+): number {
   switch (topology.type) {
     case 'zfs':
-      return 0.01 // 1% for metadata (in addition to slop)
+      // ZFS metadata overhead (slop handled separately)
+      return 0.01
+
     case 'vmware':
       // vSAN object overhead (~1-2% for metadata, witness components)
       return 0.015
+
     case 'dell':
       // Dell storage platforms have minimal metadata overhead
       return 0.01
+
     case 's2d':
-      // S2D CSV overhead
-      return 0.02
+      // S2D ReFS/CSV overhead
+      return FILESYSTEM_OVERHEAD.refs
+
     case 'ceph':
       // Ceph BlueStore uses ~1-2% for metadata, OSD journals
       return 0.02
+
+    case 'powerflex':
+      // PowerFlex metadata overhead is minimal (~1%)
+      return 0.01
+
+    case 'proprietary':
+      // Check for Synology or NetApp based on topology level
+      if (topology.level.startsWith('synology_') && synologyOptions) {
+        // Synology: Btrfs 4%, ext4 2%
+        return synologyOptions.filesystem === 'btrfs'
+          ? FILESYSTEM_OVERHEAD.btrfs
+          : FILESYSTEM_OVERHEAD.ext4
+      }
+      if (topology.level.startsWith('netapp_') && netAppOptions) {
+        // NetApp: WAFL overhead (1-2%)
+        return netAppOptions.waflOverhead
+      }
+      return 0.02
+
     default:
       // ext4/XFS typically use 1-3% for metadata
       return 0.02
@@ -255,6 +324,12 @@ function getFilesystemOverheadPercent(topology: Topology): number {
 
 /**
  * Calculate complete volumetry results.
+ * Implements spec formulas:
+ * - Ceph: C_safe = C_usable × safeCapacityThreshold (default 0.85)
+ * - NetApp: C_eff = (C_raw - RAID_overhead) × (1 - snap%) × DRR × (1 - WAFL%)
+ * - Synology: System partition 20-30GB per disk
+ * - PowerFlex FG: 12-15% metadata overhead
+ * - ZFS: Slop space 1/64 = 1.5625%
  */
 export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
   const {
@@ -267,6 +342,9 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
     vsanOptions,
     dellOptions,
     cephOptions,
+    powerFlexOptions,
+    netAppOptions,
+    synologyOptions,
     compressionRatio,
     dedupRatio,
   } = input
@@ -281,6 +359,12 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
   const usableDrives = driveCount - hotSpares
   const rawUsableCapacity = drive.capacity_raw * usableDrives
 
+  // Synology system partition overhead (20-30GB per disk)
+  let synologySystemOverhead = 0
+  if (topology.type === 'proprietary' && topology.level.startsWith('synology_')) {
+    synologySystemOverhead = synologyOptions.systemPartitionSize * usableDrives
+  }
+
   // Calculate parity/redundancy overhead
   const dataFraction = getDataFraction(
     topology,
@@ -290,32 +374,71 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
     dellOptions,
     cephOptions,
   )
-  const capacityAfterParity = rawUsableCapacity * dataFraction
-  const parityOverhead = rawUsableCapacity - capacityAfterParity
+  const capacityAfterSysPartition = rawUsableCapacity - synologySystemOverhead
+  const capacityAfterParity = capacityAfterSysPartition * dataFraction
+  const parityOverhead = capacityAfterSysPartition - capacityAfterParity
 
-  // S2D rebuild reserve (1 drive equivalent per node)
+  // S2D rebuild reserve (per-drive or per-node based on reserveStrategy)
   let s2dReserve = 0
   if (topology.type === 's2d' && s2dOptions.rebuildReserve) {
-    s2dReserve = drive.capacity_raw * s2dOptions.faultDomains
+    if (s2dOptions.reserveStrategy === 'node_failure') {
+      // Reserve one node's worth of capacity
+      s2dReserve = drive.capacity_raw * (usableDrives / s2dOptions.faultDomains)
+    } else {
+      // Reserve one drive equivalent per fault domain
+      s2dReserve = drive.capacity_raw * s2dOptions.faultDomains
+    }
   }
 
-  // ZFS-specific overhead
+  // ZFS-specific overhead (slop space = 1/64)
   let slopOverhead = 0
   if (topology.type === 'zfs') {
     const zfsOverhead = getZfsOverhead(capacityAfterParity, zfsOptions, drive.sector_size)
     slopOverhead = zfsOverhead.slop
   }
 
+  // PowerFlex Fine Granularity metadata overhead (12-15%)
+  let powerFlexFgOverhead = 0
+  if (topology.type === 'powerflex' && powerFlexOptions.granularity === 'fine') {
+    powerFlexFgOverhead = capacityAfterParity * powerFlexOptions.fgOverhead
+  }
+
+  // NetApp snapshot reserve
+  let netAppSnapshotReserve = 0
+  if (topology.type === 'proprietary' && topology.level.startsWith('netapp_')) {
+    netAppSnapshotReserve = capacityAfterParity * netAppOptions.snapshotReserve
+  }
+
   // Filesystem overhead
-  const fsOverheadPercent = getFilesystemOverheadPercent(topology)
-  const capacityForFs = capacityAfterParity - slopOverhead - s2dReserve
+  const fsOverheadPercent = getFilesystemOverheadPercent(topology, synologyOptions, netAppOptions)
+  const capacityForFs =
+    capacityAfterParity - slopOverhead - s2dReserve - powerFlexFgOverhead - netAppSnapshotReserve
   const filesystemOverhead = capacityForFs * fsOverheadPercent
 
-  // Usable capacity (before compression/dedup)
-  const usableCapacity = capacityForFs - filesystemOverhead
+  // Usable capacity (before compression/dedup and safe capacity factor)
+  let usableCapacity = capacityForFs - filesystemOverhead
+
+  // Ceph safe capacity factor (nearfull threshold, default 85%)
+  // Per spec: C_safe = C_usable × 0.85
+  let cephSafeCapacityReduction = 0
+  if (topology.type === 'ceph') {
+    cephSafeCapacityReduction = usableCapacity * (1 - cephOptions.safeCapacityThreshold)
+    usableCapacity = usableCapacity * cephOptions.safeCapacityThreshold
+  }
 
   // Effective capacity (after compression and dedup)
-  const effectiveCapacity = usableCapacity * compressionRatio * dedupRatio
+  let effectiveCapacity = usableCapacity * compressionRatio * dedupRatio
+
+  // NetApp DRR (Data Reduction Ratio) - applies on top of standard compression/dedup
+  // Includes zero-detection + inline dedup + inline compression + compaction
+  if (topology.type === 'proprietary' && topology.level.startsWith('netapp_')) {
+    effectiveCapacity = usableCapacity * netAppOptions.dataReductionRatio
+  }
+
+  // PowerFlex compression ratio (only for modes with compression enabled)
+  if (topology.type === 'powerflex' && powerFlexOptions.compression) {
+    effectiveCapacity = usableCapacity * powerFlexOptions.compressionRatio
+  }
 
   // Overall efficiency
   const efficiency = (usableCapacity / rawCapacity) * 100
@@ -344,7 +467,7 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
 
   if (slopOverhead > 0) {
     breakdown.push({
-      label: 'ZFS Slop Space',
+      label: 'ZFS Slop Space (1/64)',
       bytes: slopOverhead,
       percent: (slopOverhead / rawCapacity) * 100,
       color: 'var(--color-overhead)',
@@ -352,10 +475,50 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
   }
 
   if (s2dReserve > 0) {
+    const reserveLabel =
+      s2dOptions.reserveStrategy === 'node_failure'
+        ? 'S2D Node Failure Reserve'
+        : 'S2D Drive Failure Reserve'
     breakdown.push({
-      label: 'S2D Rebuild Reserve',
+      label: reserveLabel,
       bytes: s2dReserve,
       percent: (s2dReserve / rawCapacity) * 100,
+      color: 'var(--color-overhead)',
+    })
+  }
+
+  if (synologySystemOverhead > 0) {
+    breakdown.push({
+      label: 'Synology System Partition',
+      bytes: synologySystemOverhead,
+      percent: (synologySystemOverhead / rawCapacity) * 100,
+      color: 'var(--color-overhead)',
+    })
+  }
+
+  if (powerFlexFgOverhead > 0) {
+    breakdown.push({
+      label: 'PowerFlex FG Metadata',
+      bytes: powerFlexFgOverhead,
+      percent: (powerFlexFgOverhead / rawCapacity) * 100,
+      color: 'var(--color-overhead)',
+    })
+  }
+
+  if (netAppSnapshotReserve > 0) {
+    breakdown.push({
+      label: 'NetApp Snapshot Reserve',
+      bytes: netAppSnapshotReserve,
+      percent: (netAppSnapshotReserve / rawCapacity) * 100,
+      color: 'var(--color-overhead)',
+    })
+  }
+
+  if (cephSafeCapacityReduction > 0) {
+    breakdown.push({
+      label: 'Ceph Safe Capacity (85%)',
+      bytes: cephSafeCapacityReduction,
+      percent: (cephSafeCapacityReduction / rawCapacity) * 100,
       color: 'var(--color-overhead)',
     })
   }

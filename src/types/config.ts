@@ -7,8 +7,11 @@ import type { DriveConnectivity, FormFactorFilter } from './drive'
 import type {
   CephOptions,
   DellOptions,
+  NetAppOptions,
+  PowerFlexOptions,
   RaidControllerOptions,
   S2DOptions,
+  SynologyOptions,
   Topology,
   VsanOptions,
   ZfsOptions,
@@ -68,6 +71,12 @@ export interface TopologyState {
   dellOptions: DellOptions
   /** Ceph-specific options */
   cephOptions: CephOptions
+  /** PowerFlex-specific options */
+  powerFlexOptions: PowerFlexOptions
+  /** NetApp-specific options */
+  netAppOptions: NetAppOptions
+  /** Synology-specific options */
+  synologyOptions: SynologyOptions
   /** RAID controller options */
   controllerOptions: RaidControllerOptions
 }
@@ -147,6 +156,9 @@ export interface ConfigActions {
   setVsanOptions: (options: Partial<VsanOptions>) => void
   setDellOptions: (options: Partial<DellOptions>) => void
   setCephOptions: (options: Partial<CephOptions>) => void
+  setPowerFlexOptions: (options: Partial<PowerFlexOptions>) => void
+  setNetAppOptions: (options: Partial<NetAppOptions>) => void
+  setSynologyOptions: (options: Partial<SynologyOptions>) => void
   setControllerOptions: (options: Partial<RaidControllerOptions>) => void
 
   // Workload actions

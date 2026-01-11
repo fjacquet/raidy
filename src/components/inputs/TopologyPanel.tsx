@@ -19,6 +19,7 @@ const TOPOLOGY_TYPES = [
   { value: 's2d', label: 'S2D' },
   { value: 'vmware', label: 'vSAN' },
   { value: 'dell', label: 'Dell' },
+  { value: 'powerflex', label: 'PowerFlex' },
   { value: 'ceph', label: 'Ceph' },
   { value: 'proprietary', label: 'Other' },
 ]
@@ -115,6 +116,48 @@ const TOPOLOGY_LEVELS: Record<
       value: 'objectscale_ec',
       label: 'ObjectScale EC',
       description: 'Dell ObjectScale erasure coding',
+    },
+  ],
+  powerflex: [
+    {
+      value: 'powerflex_medium_2way',
+      label: 'Medium 2-way',
+      description: 'Medium granularity, 2-way mirror, 50% efficiency',
+    },
+    {
+      value: 'powerflex_medium_3way',
+      label: 'Medium 3-way',
+      description: 'Medium granularity, 3-way mirror, 33% efficiency',
+    },
+    {
+      value: 'powerflex_fine_2way',
+      label: 'Fine 2-way',
+      description: 'Fine granularity (128KB), 2-way mirror, ~42.5% efficiency',
+    },
+    {
+      value: 'powerflex_fine_3way',
+      label: 'Fine 3-way',
+      description: 'Fine granularity (128KB), 3-way mirror, ~28% efficiency',
+    },
+    {
+      value: 'powerflex_ec_4_1',
+      label: 'EC 4+1',
+      description: 'Erasure coding 4+1, 80% efficiency, -30% IOPS',
+    },
+    {
+      value: 'powerflex_ec_4_2',
+      label: 'EC 4+2',
+      description: 'Erasure coding 4+2, 67% efficiency, -30% IOPS',
+    },
+    {
+      value: 'powerflex_ec_8_2',
+      label: 'EC 8+2',
+      description: 'Erasure coding 8+2, 80% efficiency, -30% IOPS',
+    },
+    {
+      value: 'powerflex_ec_12_4',
+      label: 'EC 12+4',
+      description: 'Erasure coding 12+4, 75% efficiency, -30% IOPS',
     },
   ],
   ceph: [

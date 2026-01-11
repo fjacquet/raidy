@@ -42,11 +42,15 @@ const getDefaultState = () => ({
     dedup: false,
     recordsize: 131072,
     specialVdev: false,
+    slogDevice: false,
+    l2arcDevice: false,
+    maxOccupation: 80,
   },
   s2dOptions: {
     faultDomains: 4,
     mirrorCopies: 2 as const,
     rebuildReserve: true,
+    reserveStrategy: 'node_failure' as const,
     storageTiers: false,
   },
   controllerOptions: {
@@ -54,6 +58,25 @@ const getDefaultState = () => ({
     stripeSize: 256 as const,
     readPolicy: 'adaptive' as const,
     writePolicy: 'write-back' as const,
+  },
+  netAppOptions: {
+    platform: 'aff_a' as const,
+    raidType: 'raid_dp' as const,
+    adpVersion: 'adpv2' as const,
+    snapshotReserve: 5,
+    dataReductionRatio: 3.0,
+    waflOverhead: 0.015,
+    compression: true,
+    dedup: true,
+    zeroDetection: true,
+  },
+  synologyOptions: {
+    filesystem: 'btrfs' as const,
+    btrfsOverhead: 0.04,
+    systemPartitionSize: 25 * 1024 * 1024 * 1024, // 25GB
+    modelSeries: 'plus' as const,
+    ssdCache: false,
+    cacheMode: 'read_only' as const,
   },
 
   // Workload defaults
@@ -105,6 +128,8 @@ export const useConfigStore = create<ConfigStore>()(
         zfsOptions: state.zfsOptions,
         s2dOptions: state.s2dOptions,
         controllerOptions: state.controllerOptions,
+        netAppOptions: state.netAppOptions,
+        synologyOptions: state.synologyOptions,
         readPercent: state.readPercent,
         blockSize: state.blockSize,
         randomPercent: state.randomPercent,

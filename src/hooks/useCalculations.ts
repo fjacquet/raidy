@@ -33,6 +33,9 @@ export function useCalculations(): CalculationResults {
     vsanOptions,
     dellOptions,
     cephOptions,
+    powerFlexOptions,
+    netAppOptions,
+    synologyOptions,
     controllerOptions,
     // Workload
     readPercent,
@@ -113,6 +116,9 @@ export function useCalculations(): CalculationResults {
       vsanOptions,
       dellOptions,
       cephOptions,
+      powerFlexOptions,
+      netAppOptions,
+      synologyOptions,
       compressionRatio,
       dedupRatio,
     })
@@ -130,6 +136,8 @@ export function useCalculations(): CalculationResults {
       networkSpeed,
       pcieGen,
       pcieLanes,
+      powerFlexOptions,
+      cephOptions,
     })
 
     // Sustainability calculations
@@ -178,6 +186,9 @@ export function useCalculations(): CalculationResults {
     vsanOptions,
     dellOptions,
     cephOptions,
+    powerFlexOptions,
+    netAppOptions,
+    synologyOptions,
     controllerOptions,
     readPercent,
     blockSize,

@@ -36,6 +36,7 @@ export type S2DTopology =
 export type ProprietaryRaid =
   | 'synology_shr' // Synology Hybrid RAID
   | 'synology_shr2' // SHR with 2-drive fault tolerance
+  | 'synology_raid_f1' // Synology RAID F1 (All-Flash, optimized parity rotation)
   | 'netapp_raid_dp' // NetApp RAID-DP (double parity)
   | 'netapp_raid_tec' // NetApp RAID-TEC (triple parity)
 
@@ -66,8 +67,27 @@ export type CephTopology =
   | 'ceph_ec_8_3' // Erasure coded k=8, m=3 (8 data + 3 parity)
   | 'ceph_ec_8_4' // Erasure coded k=8, m=4 (8 data + 4 parity)
 
+/** Dell PowerFlex topologies */
+export type PowerFlexTopology =
+  | 'powerflex_medium_2way' // Medium granularity, 2-way mirror (1MB chunk)
+  | 'powerflex_medium_3way' // Medium granularity, 3-way mirror (1MB chunk)
+  | 'powerflex_fine_2way' // Fine granularity, 2-way mirror (128KB chunk)
+  | 'powerflex_fine_3way' // Fine granularity, 3-way mirror (128KB chunk)
+  | 'powerflex_ec_4_1' // Erasure coding 4+1 (4 data + 1 parity = 80%)
+  | 'powerflex_ec_4_2' // Erasure coding 4+2 (4 data + 2 parity = 67%)
+  | 'powerflex_ec_8_2' // Erasure coding 8+2 (8 data + 2 parity = 80%)
+  | 'powerflex_ec_12_4' // Erasure coding 12+4 (12 data + 4 parity = 75%)
+
 /** All supported topology types */
-export type TopologyType = 'standard' | 'zfs' | 's2d' | 'proprietary' | 'vmware' | 'dell' | 'ceph'
+export type TopologyType =
+  | 'standard'
+  | 'zfs'
+  | 's2d'
+  | 'proprietary'
+  | 'vmware'
+  | 'dell'
+  | 'ceph'
+  | 'powerflex'
 
 /** Union of all topology configurations */
 export type Topology =
@@ -78,6 +98,7 @@ export type Topology =
   | { type: 'vmware'; level: VsanTopology }
   | { type: 'dell'; level: DellTopology }
   | { type: 'ceph'; level: CephTopology }
+  | { type: 'powerflex'; level: PowerFlexTopology }
 
 /** ZFS-specific configuration options */
 export interface ZfsOptions {
@@ -91,8 +112,36 @@ export interface ZfsOptions {
   dedup: boolean
   /** Record size in bytes */
   recordsize: number
-  /** Special allocation class enabled */
+  /** Special allocation class enabled (metadata on fast flash) */
   specialVdev: boolean
+  /** Separate SLOG (ZIL) device for sync writes */
+  slogDevice: boolean
+  /** L2ARC read cache device (SSD/NVMe) */
+  l2arcDevice: boolean
+  /** Maximum recommended occupation before performance degradation (default 80%) */
+  maxOccupation: number
+}
+
+/** Storage tier definition for tiered storage configurations */
+export interface StorageTier {
+  /** Drive ID for this tier */
+  driveId: string
+  /** Number of drives in this tier */
+  driveCount: number
+}
+
+/** Tiering configuration for platforms supporting dual drive pools */
+export interface TieringConfig {
+  /** Whether tiering is enabled */
+  enabled: boolean
+  /** Fast tier (cache) - typically NVMe/SSD */
+  fastTier: StorageTier
+  /** Capacity tier (bulk storage) - typically HDD or slower SSD */
+  capacityTier: StorageTier
+  /** Cache mode */
+  cacheMode: 'write-back' | 'write-through' | 'read-only'
+  /** Working set percentage (for cache hit rate calculation) */
+  workingSetPercent: number
 }
 
 /** S2D-specific configuration options */
@@ -103,8 +152,12 @@ export interface S2DOptions {
   mirrorCopies: 2 | 3
   /** Enable automatic rebuild reserve */
   rebuildReserve: boolean
+  /** Reserve strategy: per-drive or per-node */
+  reserveStrategy: 'drive_failure' | 'node_failure'
   /** Storage tiers enabled */
   storageTiers: boolean
+  /** Tiering configuration (when storageTiers is true) */
+  tieringConfig?: TieringConfig
 }
 
 /** HBA types for direct disk passthrough (required for ZFS, vSAN, S2D, etc.) */
@@ -130,7 +183,7 @@ export type RaidControllerType =
 export type ControllerType = HbaType | RaidControllerType
 
 /** Topologies that require HBA (direct disk access) */
-export const HBA_REQUIRED_TOPOLOGIES: TopologyType[] = ['zfs', 's2d', 'vmware', 'ceph']
+export const HBA_REQUIRED_TOPOLOGIES: TopologyType[] = ['zfs', 's2d', 'vmware', 'ceph', 'powerflex']
 
 /** Check if topology requires HBA */
 export function requiresHba(topologyType: TopologyType): boolean {
@@ -165,6 +218,24 @@ export interface VsanOptions {
   dedup: boolean
   /** Enable encryption */
   encryption: boolean
+  /** Tiering configuration (disk groups with cache + capacity) */
+  tiering?: TieringConfig
+}
+
+/** Synology NAS-specific configuration options */
+export interface SynologyOptions {
+  /** File system type */
+  filesystem: 'btrfs' | 'ext4'
+  /** Btrfs metadata overhead (default 4% = 0.04) */
+  btrfsOverhead: number
+  /** System partition size per disk in bytes (20-30GB) */
+  systemPartitionSize: number
+  /** NAS model series (J series has CPU limitations) */
+  modelSeries: 'j' | 'value' | 'plus' | 'xs'
+  /** Enable SSD cache */
+  ssdCache: boolean
+  /** SSD cache mode */
+  cacheMode: 'read_only' | 'read_write'
 }
 
 /** Dell storage-specific configuration options */
@@ -177,6 +248,28 @@ export interface DellOptions {
   compression: boolean
   /** Enable deduplication */
   dedup: boolean
+}
+
+/** NetApp storage-specific configuration options */
+export interface NetAppOptions {
+  /** Storage platform */
+  platform: 'aff_a' | 'aff_c' | 'fas' | 'asa' | 'e_series'
+  /** RAID type */
+  raidType: 'raid_dp' | 'raid_tec'
+  /** Advanced Drive Partitioning version */
+  adpVersion: 'none' | 'adpv1' | 'adpv2'
+  /** Snapshot reserve percentage (0-20%, default 5% or 0% on AFF) */
+  snapshotReserve: number
+  /** Data Reduction Ratio (1.0 = none, 3.0 = 3:1 compression+dedup) */
+  dataReductionRatio: number
+  /** WAFL filesystem overhead (0.01-0.02 = 1-2%) */
+  waflOverhead: number
+  /** Enable inline compression */
+  compression: boolean
+  /** Enable inline deduplication */
+  dedup: boolean
+  /** Enable zero-block detection */
+  zeroDetection: boolean
 }
 
 /** Ceph storage-specific configuration options */
@@ -199,6 +292,36 @@ export interface CephOptions {
   encryption: boolean
   /** OSD journal on SSD */
   journalOnSsd: boolean
+  /** WAL/DB offload to separate NVMe (for HDD OSDs) */
+  walDbOffload: boolean
+  /** WAL/DB ratio: how many HDDs per NVMe for WAL/DB (e.g., 4 = 1 NVMe for 4 HDDs) */
+  walDbRatio: number
+  /** Safe capacity threshold (Ceph nearfull, default 0.85 = 85%) */
+  safeCapacityThreshold: number
+  /** Cache tiering configuration (CRUSH rules) */
+  tiering?: TieringConfig
+}
+
+/** PowerFlex configuration options */
+export interface PowerFlexOptions {
+  /** Granularity level */
+  granularity: 'medium' | 'fine'
+  /** Protection mode */
+  protectionMode: 'mirror' | 'erasure'
+  /** Mirror copies (for mirror mode) */
+  mirrorCopies: 2 | 3
+  /** Erasure coding scheme (for erasure mode) */
+  ecScheme: '4_1' | '4_2' | '8_2' | '12_4'
+  /** Enable compression (Ultra mode) */
+  compression: boolean
+  /** Compression ratio (1.0 = none, 2.0 = 2:1, 4.0 = 4:1) */
+  compressionRatio: number
+  /** Storage pools count */
+  storagePools: number
+  /** Fault sets (for distributed placement) */
+  faultSets: number
+  /** Fine Granularity metadata overhead (12-15% for FG mode) */
+  fgOverhead: number
 }
 
 /** Complete topology configuration */
@@ -227,6 +350,9 @@ export const DEFAULT_ZFS_OPTIONS: ZfsOptions = {
   dedup: false,
   recordsize: 131072, // 128K
   specialVdev: false,
+  slogDevice: false,
+  l2arcDevice: false,
+  maxOccupation: 80, // Performance degrades beyond 80%
 }
 
 /** Default S2D options */
@@ -234,6 +360,7 @@ export const DEFAULT_S2D_OPTIONS: S2DOptions = {
   faultDomains: 4,
   mirrorCopies: 2,
   rebuildReserve: true,
+  reserveStrategy: 'node_failure',
   storageTiers: false,
 }
 
@@ -274,7 +401,65 @@ export const DEFAULT_CEPH_OPTIONS: CephOptions = {
   compressionAlgorithm: 'none',
   encryption: false,
   journalOnSsd: true,
+  walDbOffload: false,
+  walDbRatio: 4, // 1 NVMe for 4 HDDs
+  safeCapacityThreshold: 0.85, // Ceph nearfull at 85%
 }
+
+/** Default tiering configuration */
+export const DEFAULT_TIERING_CONFIG: TieringConfig = {
+  enabled: false,
+  fastTier: { driveId: '', driveCount: 2 },
+  capacityTier: { driveId: '', driveCount: 4 },
+  cacheMode: 'write-back',
+  workingSetPercent: 20,
+}
+
+/** Default PowerFlex options */
+export const DEFAULT_POWERFLEX_OPTIONS: PowerFlexOptions = {
+  granularity: 'medium',
+  protectionMode: 'mirror',
+  mirrorCopies: 2,
+  ecScheme: '8_2',
+  compression: true,
+  compressionRatio: 2.0, // 2:1 compression
+  storagePools: 1,
+  faultSets: 3,
+  fgOverhead: 0.12, // 12% FG metadata overhead
+}
+
+/** Default Synology options */
+export const DEFAULT_SYNOLOGY_OPTIONS: SynologyOptions = {
+  filesystem: 'btrfs',
+  btrfsOverhead: 0.04, // 4% for metadata
+  systemPartitionSize: 25 * 1024 * 1024 * 1024, // 25GB per disk
+  modelSeries: 'plus',
+  ssdCache: false,
+  cacheMode: 'read_write',
+}
+
+/** Default NetApp options */
+export const DEFAULT_NETAPP_OPTIONS: NetAppOptions = {
+  platform: 'aff_a',
+  raidType: 'raid_dp',
+  adpVersion: 'adpv2',
+  snapshotReserve: 0.05, // 5% default
+  dataReductionRatio: 1.0, // No reduction by default
+  waflOverhead: 0.015, // 1.5% WAFL overhead
+  compression: true,
+  dedup: false,
+  zeroDetection: true,
+}
+
+/** Filesystem overhead constants */
+export const FILESYSTEM_OVERHEAD = {
+  btrfs: 0.04, // 4% for Btrfs metadata
+  ext4: 0.02, // 2% for ext4
+  xfs: 0.02, // 2% for XFS
+  zfs_slop: 1 / 64, // 1.5625% ZFS slop space
+  wafl: 0.015, // 1.5% WAFL default
+  refs: 0.02, // 2% for ReFS
+} as const
 
 /** Controller/HBA performance limits (IOPS, throughput in MB/s) */
 export const CONTROLLER_LIMITS: Record<

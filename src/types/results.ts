@@ -63,6 +63,10 @@ export interface PerformanceResult {
     suValue: string
     swValue: string
   }
+  /** Estimated latency in microseconds (for Ceph: media×2 + network + CPU) */
+  estimatedLatencyUs?: number
+  /** CPU factor applied (for PowerFlex: 1.0=standard, 0.85=ultra, 0.70=EC) */
+  cpuFactor?: number
 }
 
 /** Monte Carlo resilience simulation results (Module C) */
