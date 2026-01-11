@@ -529,9 +529,6 @@ export function TopologyPanel() {
                 <h5 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
                   Disk Group Configuration
                 </h5>
-                <p className="text-xs text-slate-500 mb-3">
-                  vSAN OSA uses disk groups with cache tier (NVMe/SSD) and capacity tier (HDD/SSD).
-                </p>
               </div>
               <TieringPanel
                 config={vsanOptions.tiering ?? DEFAULT_TIERING_CONFIG}
@@ -547,6 +544,8 @@ export function TopologyPanel() {
                 serverCount={serverCount}
                 platform="vsan"
                 showCacheMode={false}
+                vsanMode={vsanOptions.diskGroupMode}
+                onVsanModeChange={(diskGroupMode) => setVsanOptions({ diskGroupMode })}
               />
             </>
           )}

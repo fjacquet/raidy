@@ -207,6 +207,8 @@ export interface RaidControllerOptions {
 export interface VsanOptions {
   /** Storage architecture */
   architecture: 'osa' | 'esa'
+  /** Disk group mode for OSA: hybrid (HDD capacity) or all-flash (SSD capacity) */
+  diskGroupMode: 'hybrid' | 'all-flash'
   /** Failures To Tolerate */
   ftt: 1 | 2 | 3
   /** Stripe width for RAID-5/6 */
@@ -374,6 +376,7 @@ export const DEFAULT_CONTROLLER_OPTIONS: RaidControllerOptions = {
 /** Default vSAN options */
 export const DEFAULT_VSAN_OPTIONS: VsanOptions = {
   architecture: 'esa',
+  diskGroupMode: 'all-flash',
   ftt: 1,
   stripeWidth: 4,
   compression: true,

@@ -26,10 +26,20 @@ export interface TieringPanelProps {
   showCacheMode?: boolean
   /** Whether to show working set slider */
   showWorkingSet?: boolean
+  /** vSAN mode: hybrid (HDD capacity) or all-flash (SSD capacity) */
+  vsanMode?: 'hybrid' | 'all-flash'
+  /** Callback when vSAN mode changes */
+  onVsanModeChange?: (mode: 'hybrid' | 'all-flash') => void
 }
 
-/** Drive type filter options for fast tier */
+/** Drive type filter options for fast/cache tier (SSD/NVMe only) */
 const FAST_TIER_TYPES: Drive['type'][] = ['SSD_NVMe', 'SSD_SAS', 'SSD_SATA']
+
+/** HDD types for vSAN Hybrid capacity tier */
+const HDD_TYPES: Drive['type'][] = ['HDD']
+
+/** SSD types for vSAN All-Flash capacity tier */
+const SSD_TYPES: Drive['type'][] = ['SSD_NVMe', 'SSD_SAS', 'SSD_SATA']
 
 /** Get platform-specific labels */
 function getPlatformLabels(platform: TieringPanelProps['platform']) {
@@ -65,6 +75,8 @@ export function TieringPanel({
   platform,
   showCacheMode = true,
   showWorkingSet = true,
+  vsanMode = 'hybrid',
+  onVsanModeChange,
 }: TieringPanelProps) {
   const formatBytes = useFormatBytes()
   const labels = getPlatformLabels(platform)
@@ -72,15 +84,23 @@ export function TieringPanel({
   // Get all drives as array
   const driveList = useMemo(() => Object.values(drives), [])
 
-  // Filter drives for fast tier (NVMe/SSD only)
+  // Filter drives for fast tier (NVMe/SSD only - same for all platforms)
   const fastTierDrives = useMemo(() => {
     return driveList.filter((drive) => FAST_TIER_TYPES.includes(drive.type))
   }, [driveList])
 
-  // All drives available for capacity tier
+  // Filter drives for capacity tier based on platform and mode
   const capacityTierDrives = useMemo(() => {
+    if (platform === 'vsan') {
+      // vSAN OSA: Hybrid = HDD only, All-Flash = SSD only
+      if (vsanMode === 'hybrid') {
+        return driveList.filter((drive) => HDD_TYPES.includes(drive.type))
+      }
+      return driveList.filter((drive) => SSD_TYPES.includes(drive.type))
+    }
+    // S2D and Ceph: all drive types allowed for capacity
     return driveList
-  }, [driveList])
+  }, [driveList, platform, vsanMode])
 
   // Build options for selects
   const fastTierOptions = useMemo(() => {
@@ -124,6 +144,26 @@ export function TieringPanel({
 
   return (
     <div className="space-y-4">
+      {/* vSAN Mode Selector */}
+      {platform === 'vsan' && onVsanModeChange && (
+        <div className="space-y-2">
+          <Label>vSAN Configuration</Label>
+          <SegmentedControl
+            value={vsanMode}
+            options={[
+              { value: 'hybrid', label: 'Hybrid (HDD)' },
+              { value: 'all-flash', label: 'All-Flash (SSD)' },
+            ]}
+            onChange={(mode) => onVsanModeChange(mode as 'hybrid' | 'all-flash')}
+          />
+          <p className="text-xs text-slate-500">
+            {vsanMode === 'hybrid'
+              ? 'Cache: NVMe/SSD, Capacity: HDD (spinning disks)'
+              : 'Cache: NVMe/SSD, Capacity: SSD/NVMe (all flash)'}
+          </p>
+        </div>
+      )}
+
       {/* Fast Tier Section */}
       <div className="space-y-3 p-3 bg-surface-800 rounded-lg">
         <h5 className="text-sm font-medium text-blue-400">{labels.fastTier}</h5>
