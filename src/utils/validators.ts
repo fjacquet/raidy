@@ -12,6 +12,7 @@ import type {
   S2DOptions,
   SynologyOptions,
   Topology,
+  VsanOptions,
   ZfsOptions,
 } from '@/types/topology'
 import { CONTROLLER_LIMITS, requiresHba } from '@/types/topology'
@@ -40,6 +41,7 @@ export interface ValidationInput {
   powerFlexOptions?: PowerFlexOptions
   netAppOptions?: NetAppOptions
   synologyOptions?: SynologyOptions
+  vsanOptions?: VsanOptions
 }
 
 /**
@@ -350,6 +352,65 @@ function validatePowerFlex(
 }
 
 /**
+ * Validate vSAN requirements.
+ * Per VMware spec:
+ * - ESA (Express Storage Architecture) requires NVMe-only drives
+ * - ESA provides single-tier storage (no hybrid caching)
+ * - OSA supports mixed drive types with caching tier
+ */
+function validateVsan(
+  drive: Drive,
+  topology: Topology,
+  vsanOptions?: VsanOptions,
+): ValidationAlert[] {
+  const alerts: ValidationAlert[] = []
+
+  // Check if using vSAN ESA topology
+  const isEsaTopology = topology.type === 'vmware' && topology.level.includes('esa')
+  const isEsaArchitecture = vsanOptions?.architecture === 'esa'
+
+  if (isEsaTopology || isEsaArchitecture) {
+    // vSAN ESA requires NVMe drives only
+    if (drive.type !== 'SSD_NVMe') {
+      alerts.push({
+        severity: 'error',
+        code: 'VSAN_ESA_NVME_REQUIRED',
+        message: `vSAN ESA: NVMe drives required. Drive "${drive.model}" is ${drive.type}.`,
+        recommendation:
+          'vSAN Express Storage Architecture (ESA) only supports NVMe drives. Use vSAN OSA for SAS/SATA/HDD configurations.',
+      })
+    }
+
+    // vSAN ESA recommends high-endurance drives
+    if (drive.type === 'SSD_NVMe' && drive.reliability.dwpd < 1) {
+      alerts.push({
+        severity: 'warning',
+        code: 'VSAN_ESA_LOW_ENDURANCE',
+        message: `vSAN ESA: Drive "${drive.model}" has low endurance (${drive.reliability.dwpd} DWPD).`,
+        recommendation:
+          'vSAN ESA recommends drives with at least 1 DWPD for write-intensive workloads.',
+      })
+    }
+  }
+
+  // vSAN OSA with HDD should have SSD cache tier
+  const isOsaTopology = topology.type === 'vmware' && topology.level.includes('osa')
+  const isOsaArchitecture = vsanOptions?.architecture === 'osa'
+
+  if ((isOsaTopology || isOsaArchitecture) && drive.type === 'HDD') {
+    alerts.push({
+      severity: 'info',
+      code: 'VSAN_OSA_HDD_CACHE_RECOMMENDED',
+      message: 'vSAN OSA with HDD: SSD cache tier recommended for performance.',
+      recommendation:
+        'Add NVMe or SSD cache drives for hybrid configuration. Minimum 10% cache-to-capacity ratio.',
+    })
+  }
+
+  return alerts
+}
+
+/**
  * Run all validators and return alerts.
  */
 export function validateConfiguration(input: ValidationInput): ValidationAlert[] {
@@ -418,6 +479,12 @@ export function validateConfiguration(input: ValidationInput): ValidationAlert[]
   if (input.topology.type === 'powerflex') {
     const powerFlexAlerts = validatePowerFlex(input.drive, input.topology, input.powerFlexOptions)
     alerts.push(...powerFlexAlerts)
+  }
+
+  // vSAN-specific (ESA requires NVMe, OSA recommends cache tier)
+  if (input.topology.type === 'vmware') {
+    const vsanAlerts = validateVsan(input.drive, input.topology, input.vsanOptions)
+    alerts.push(...vsanAlerts)
   }
 
   // Sort by severity: error > warning > info
