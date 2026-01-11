@@ -109,8 +109,8 @@ export function useResilience(options: UseResilienceOptions): UseResilienceResul
     drive,
     driveCount,
     topology,
-    rebuildSpeedMBs = 100, // Default 100 MB/s rebuild speed
-    simulationCount = 10000,
+    rebuildSpeedMBs = 200, // Default 200 MB/s rebuild speed (modern RAID controllers)
+    simulationCount = 100000, // 100K iterations for better precision on rare events
     autoRun = false,
   } = options
 

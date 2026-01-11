@@ -49,6 +49,12 @@ function getParityDrives(raidLevel: string): number {
 /**
  * Run a single Monte Carlo simulation.
  * Returns true if the array survives, false if data loss occurs.
+ *
+ * This model includes:
+ * - Individual drive failures based on AFR
+ * - Correlated/batch failures (drives from same batch fail together)
+ * - URE (Unrecoverable Read Error) during rebuild
+ * - Stress-induced failures (rebuild increases failure rate of remaining drives)
  */
 function runSingleSimulation(input: SimulationInput): {
   survived: boolean
@@ -60,13 +66,22 @@ function runSingleSimulation(input: SimulationInput): {
 
   const parityDrives = getParityDrives(raidLevel)
 
+  // Base daily failure rate per drive
+  const baseDailyFailureRate = afrPercent / 100 / 365
+
+  // Correlated failure factor: 10% chance a failure triggers another within 7 days
+  // This models batch failures from same manufacturing lot
+  const correlatedFailureProbability = 0.10
+  const correlatedFailureWindowDays = 7
+
+  // Stress factor: rebuild increases failure rate of remaining drives by 30%
+  const rebuildStressFactor = 1.3
+
   // No redundancy = any failure is data loss
   if (parityDrives === 0) {
-    // Simulate one year of operation
-    const dailyFailureRate = afrPercent / 100 / 365
     for (let day = 0; day < 365; day++) {
       for (let drive = 0; drive < driveCount; drive++) {
-        if (random() < dailyFailureRate) {
+        if (random() < baseDailyFailureRate) {
           return { survived: false, rebuildTimeHours: 0, hadURE: false, hadDualFailure: true }
         }
       }
@@ -81,28 +96,46 @@ function runSingleSimulation(input: SimulationInput): {
   // URE probability during rebuild
   // URE rate is 10^-ureRate per bit read
   // Total bits read during rebuild = drive capacity in bits
-  const bitsRead = driveCapacityBytes * 8 * (driveCount - 1) // Read from all surviving drives
+  const bitsRead = driveCapacityBytes * 8 * (driveCount - 1)
   const ureRatePerBit = 10 ** -ureRate
   const ureProbability = 1 - (1 - ureRatePerBit) ** bitsRead
-
-  // Daily failure rate per drive
-  const dailyFailureRate = afrPercent / 100 / 365
 
   // Simulate one year of operation
   let failedDrives = 0
   let isRebuilding = false
   let rebuildDaysRemaining = 0
+  let correlatedFailureWindow = 0
   let hadURE = false
   let hadDualFailure = false
 
   for (let day = 0; day < 365; day++) {
+    const activeDrives = driveCount - failedDrives
+
+    // Calculate effective failure rate
+    let effectiveFailureRate = baseDailyFailureRate
+
+    // Increase failure rate during rebuild (stress on remaining drives)
+    if (isRebuilding) {
+      effectiveFailureRate *= rebuildStressFactor
+    }
+
+    // Increase failure rate during correlated failure window
+    if (correlatedFailureWindow > 0) {
+      effectiveFailureRate *= 2.0 // Double the rate during batch failure window
+      correlatedFailureWindow--
+    }
+
     // Check for drive failures
-    for (let drive = 0; drive < driveCount - failedDrives; drive++) {
-      if (random() < dailyFailureRate) {
+    for (let drive = 0; drive < activeDrives; drive++) {
+      if (random() < effectiveFailureRate) {
         failedDrives++
 
+        // Check for correlated failure trigger
+        if (random() < correlatedFailureProbability) {
+          correlatedFailureWindow = correlatedFailureWindowDays
+        }
+
         if (failedDrives > parityDrives) {
-          // Too many failures - data loss
           hadDualFailure = true
           return { survived: false, rebuildTimeHours, hadURE, hadDualFailure }
         }
@@ -117,6 +150,12 @@ function runSingleSimulation(input: SimulationInput): {
             hadURE = true
             return { survived: false, rebuildTimeHours, hadURE, hadDualFailure }
           }
+        } else {
+          // Additional failure during rebuild - check URE again
+          if (random() < ureProbability) {
+            hadURE = true
+            return { survived: false, rebuildTimeHours, hadURE, hadDualFailure }
+          }
         }
       }
     }
@@ -126,7 +165,10 @@ function runSingleSimulation(input: SimulationInput): {
       rebuildDaysRemaining--
       if (rebuildDaysRemaining <= 0) {
         isRebuilding = false
-        failedDrives = 0 // Rebuild complete, drive replaced
+        failedDrives = Math.max(0, failedDrives - 1) // One drive rebuilt
+        if (failedDrives === 0) {
+          correlatedFailureWindow = 0 // Reset correlated window on full recovery
+        }
       }
     }
   }
@@ -188,7 +230,10 @@ function runSimulation(input: SimulationInput): void {
 
   // Format survival percentage with appropriate precision
   let survivalPercent: string
-  if (survivalRate >= 0.99999) {
+  if (survivalRate >= 1.0) {
+    // Perfect survival - show as ">99.9999%" to indicate limits of simulation
+    survivalPercent = '>99.9999%'
+  } else if (survivalRate >= 0.99999) {
     survivalPercent = `${(survivalRate * 100).toFixed(4)}%`
   } else if (survivalRate >= 0.999) {
     survivalPercent = `${(survivalRate * 100).toFixed(3)}%`
