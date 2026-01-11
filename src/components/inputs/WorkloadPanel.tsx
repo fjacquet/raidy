@@ -2,7 +2,7 @@
  * Workload configuration panel - I/O patterns and data volumes.
  */
 
-import { Label, SegmentedControl, Slider } from '@/components/common/FormControls'
+import { Label, Select, Slider } from '@/components/common/FormControls'
 import { useConfigStore } from '@/store'
 import type { BlockSize } from '@/types'
 
@@ -119,8 +119,9 @@ export function WorkloadPanel() {
 
       {/* Block Size */}
       <div className="space-y-2">
-        <Label>Block Size</Label>
-        <SegmentedControl
+        <Label htmlFor="block-size">Block Size</Label>
+        <Select
+          id="block-size"
           value={blockSize}
           options={BLOCK_SIZES}
           onChange={(v) => setBlockSize(v as BlockSize)}
