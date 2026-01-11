@@ -429,7 +429,9 @@ export function OutputDashboard() {
             <div className="text-center py-8 text-slate-500">
               <p>Click "Run Simulation" to calculate</p>
               <p className="text-xs mt-1">100,000 Monte Carlo iterations</p>
-              <p className="text-xs text-slate-600">Includes correlated failures & rebuild stress</p>
+              <p className="text-xs text-slate-600">
+                Includes correlated failures & rebuild stress
+              </p>
             </div>
           )}
         </div>

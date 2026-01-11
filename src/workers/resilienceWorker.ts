@@ -71,7 +71,7 @@ function runSingleSimulation(input: SimulationInput): {
 
   // Correlated failure factor: 10% chance a failure triggers another within 7 days
   // This models batch failures from same manufacturing lot
-  const correlatedFailureProbability = 0.10
+  const correlatedFailureProbability = 0.1
   const correlatedFailureWindowDays = 7
 
   // Stress factor: rebuild increases failure rate of remaining drives by 30%
