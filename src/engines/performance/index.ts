@@ -63,6 +63,7 @@ export interface PerformanceInput {
   drive: Drive
   driveCount: number
   hotSpares: number
+  serverCount: number
   topology: Topology
   controllerOptions: RaidControllerOptions
   readPercent: number
@@ -404,6 +405,7 @@ export function calculatePerformance(input: PerformanceInput): PerformanceResult
     drive,
     driveCount,
     hotSpares,
+    serverCount,
     topology,
     controllerOptions,
     readPercent,
@@ -461,17 +463,25 @@ export function calculatePerformance(input: PerformanceInput): PerformanceResult
 
   // --- Controller/CPU Layer ---
   // Use CONTROLLER_LIMITS to get the limits for the selected controller/HBA
+  // Each server has its own controller, so aggregate scales with serverCount
   const controllerSpec = CONTROLLER_LIMITS[controllerOptions.controller]
-  const controllerIOPS = controllerSpec?.iops ?? 1000000
-  const controllerThroughput = controllerSpec?.throughputMBs ?? 10000
-  const controllerName = controllerSpec?.name ?? 'Controller'
+  const controllerIOPS = (controllerSpec?.iops ?? 1000000) * serverCount
+  const controllerThroughput = (controllerSpec?.throughputMBs ?? 10000) * serverCount
+  const controllerName =
+    serverCount > 1
+      ? `${serverCount}× ${controllerSpec?.name ?? 'Controller'}`
+      : (controllerSpec?.name ?? 'Controller')
 
   // --- Bus Layer (PCIe) ---
-  const pcieBandwidth = PCIE_LANE_BANDWIDTH[pcieGen] * PCIE_LANE_COUNT[pcieLanes]
+  // Each server has its own PCIe bus, so aggregate scales with serverCount
+  const pcieBandwidthPerServer = PCIE_LANE_BANDWIDTH[pcieGen] * PCIE_LANE_COUNT[pcieLanes]
+  const pcieBandwidth = pcieBandwidthPerServer * serverCount
   const pcieIOPS = (pcieBandwidth * 1024 * 1024) / blockSizeBytes
 
   // --- Network Layer ---
-  const networkBandwidth = NETWORK_SPEED_MBS[networkSpeed]
+  // Each server has its own network uplink, so aggregate scales with serverCount
+  const networkBandwidthPerServer = NETWORK_SPEED_MBS[networkSpeed]
+  const networkBandwidth = networkBandwidthPerServer * serverCount
   const networkIOPS = (networkBandwidth * 1024 * 1024) / blockSizeBytes
 
   // --- Build bottleneck layers ---

@@ -134,6 +134,7 @@ export function useCalculations(): CalculationResults {
       drive,
       driveCount: totalDriveCount,
       hotSpares: totalHotSpares,
+      serverCount,
       topology,
       controllerOptions,
       readPercent,
