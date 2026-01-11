@@ -116,6 +116,7 @@ export function useCalculations(): CalculationResults {
       drive,
       driveCount: totalDriveCount,
       hotSpares: totalHotSpares,
+      serverCount,
       topology,
       zfsOptions,
       s2dOptions,

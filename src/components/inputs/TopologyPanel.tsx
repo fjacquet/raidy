@@ -10,8 +10,10 @@ import {
   Slider,
   Toggle,
 } from '@/components/common/FormControls'
+import { TieringPanel } from '@/components/inputs/TieringPanel'
 import { useConfigStore } from '@/store'
 import type { Topology, TopologyType } from '@/types'
+import { DEFAULT_TIERING_CONFIG } from '@/types'
 
 // NetApp platform options
 const NETAPP_PLATFORM_OPTIONS = [
@@ -252,6 +254,7 @@ export function TopologyPanel() {
   const {
     topology,
     hotSpares,
+    serverCount,
     zfsOptions,
     s2dOptions,
     vsanOptions,
@@ -444,6 +447,23 @@ export function TopologyPanel() {
             checked={s2dOptions.storageTiers}
             onChange={(v) => setS2DOptions({ storageTiers: v })}
           />
+
+          {s2dOptions.storageTiers && (
+            <TieringPanel
+              config={s2dOptions.tieringConfig ?? DEFAULT_TIERING_CONFIG}
+              onChange={(tieringConfig) =>
+                setS2DOptions({
+                  tieringConfig: {
+                    ...DEFAULT_TIERING_CONFIG,
+                    ...s2dOptions.tieringConfig,
+                    ...tieringConfig,
+                  },
+                })
+              }
+              serverCount={serverCount}
+              platform="s2d"
+            />
+          )}
         </div>
       )}
 
@@ -501,6 +521,35 @@ export function TopologyPanel() {
             checked={vsanOptions.encryption}
             onChange={(v) => setVsanOptions({ encryption: v })}
           />
+
+          {/* OSA Disk Group Tiering */}
+          {vsanOptions.architecture === 'osa' && (
+            <>
+              <div className="pt-3 border-t border-surface-700">
+                <h5 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
+                  Disk Group Configuration
+                </h5>
+                <p className="text-xs text-slate-500 mb-3">
+                  vSAN OSA uses disk groups with cache tier (NVMe/SSD) and capacity tier (HDD/SSD).
+                </p>
+              </div>
+              <TieringPanel
+                config={vsanOptions.tiering ?? DEFAULT_TIERING_CONFIG}
+                onChange={(tiering) =>
+                  setVsanOptions({
+                    tiering: {
+                      ...DEFAULT_TIERING_CONFIG,
+                      ...vsanOptions.tiering,
+                      ...tiering,
+                    },
+                  })
+                }
+                serverCount={serverCount}
+                platform="vsan"
+                showCacheMode={false}
+              />
+            </>
+          )}
         </div>
       )}
 
@@ -619,19 +668,38 @@ export function TopologyPanel() {
           />
 
           {cephOptions.walDbOffload && (
-            <div className="space-y-2">
-              <Label htmlFor="ceph-wal-ratio">HDDs per WAL/DB NVMe</Label>
-              <NumberInput
-                id="ceph-wal-ratio"
-                value={cephOptions.walDbRatio}
-                min={2}
-                max={12}
-                onChange={(v) => setCephOptions({ walDbRatio: v })}
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="ceph-wal-ratio">HDDs per WAL/DB NVMe</Label>
+                <NumberInput
+                  id="ceph-wal-ratio"
+                  value={cephOptions.walDbRatio}
+                  min={2}
+                  max={12}
+                  onChange={(v) => setCephOptions({ walDbRatio: v })}
+                />
+                <p className="text-xs text-slate-500">
+                  Ratio of HDDs to NVMe drives for WAL/DB offload
+                </p>
+              </div>
+
+              <TieringPanel
+                config={cephOptions.tiering ?? DEFAULT_TIERING_CONFIG}
+                onChange={(tiering) =>
+                  setCephOptions({
+                    tiering: {
+                      ...DEFAULT_TIERING_CONFIG,
+                      ...cephOptions.tiering,
+                      ...tiering,
+                    },
+                  })
+                }
+                serverCount={serverCount}
+                platform="ceph"
+                showCacheMode={false}
+                showWorkingSet={false}
               />
-              <p className="text-xs text-slate-500">
-                Ratio of HDDs to NVMe drives for WAL/DB offload
-              </p>
-            </div>
+            </>
           )}
 
           <div className="space-y-2">

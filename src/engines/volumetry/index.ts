@@ -3,6 +3,7 @@
  * Calculates usable capacity after all overhead factors.
  */
 
+import drivesData from '@/data/drives.json'
 import type { Drive } from '@/types/drive'
 import type { VolumetryResult } from '@/types/results'
 import type {
@@ -12,16 +13,64 @@ import type {
   PowerFlexOptions,
   S2DOptions,
   SynologyOptions,
+  TieringConfig,
   Topology,
   VsanOptions,
   ZfsOptions,
 } from '@/types/topology'
 import { FILESYSTEM_OVERHEAD } from '@/types/topology'
 
+// Type assertion for the imported JSON
+const drives = drivesData as Record<string, Drive>
+
+/**
+ * Calculate tiered capacity when tiering is enabled.
+ * Returns cache tier overhead and capacity tier raw capacity.
+ */
+interface TieredCapacityResult {
+  cacheTierCapacity: number
+  cacheTierDrive: Drive | null
+  cacheTierDriveCount: number
+  capacityTierCapacity: number
+  capacityTierDrive: Drive | null
+  capacityTierDriveCount: number
+}
+
+function calculateTieredCapacity(
+  tieringConfig: TieringConfig | undefined,
+  serverCount: number,
+): TieredCapacityResult | null {
+  if (!tieringConfig?.enabled) {
+    return null
+  }
+
+  const cacheDrive = tieringConfig.fastTier.driveId ? drives[tieringConfig.fastTier.driveId] : null
+  const capacityDrive = tieringConfig.capacityTier.driveId
+    ? drives[tieringConfig.capacityTier.driveId]
+    : null
+
+  if (!cacheDrive || !capacityDrive) {
+    return null
+  }
+
+  const cacheDriveCount = tieringConfig.fastTier.driveCount * serverCount
+  const capacityDriveCount = tieringConfig.capacityTier.driveCount * serverCount
+
+  return {
+    cacheTierCapacity: cacheDrive.capacity_raw * cacheDriveCount,
+    cacheTierDrive: cacheDrive,
+    cacheTierDriveCount: cacheDriveCount,
+    capacityTierCapacity: capacityDrive.capacity_raw * capacityDriveCount,
+    capacityTierDrive: capacityDrive,
+    capacityTierDriveCount: capacityDriveCount,
+  }
+}
+
 export interface VolumetryInput {
   drive: Drive
   driveCount: number
   hotSpares: number
+  serverCount: number
   topology: Topology
   zfsOptions: ZfsOptions
   s2dOptions: S2DOptions
@@ -335,6 +384,7 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
     drive,
     driveCount,
     hotSpares,
+    serverCount,
     topology,
     zfsOptions,
     s2dOptions,
@@ -348,15 +398,42 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
     dedupRatio,
   } = input
 
-  // Raw capacity (all drives including hot spares)
-  const rawCapacity = drive.capacity_raw * driveCount
+  // Check for tiered configuration
+  let tieredCapacity: TieredCapacityResult | null = null
 
-  // Hot spare overhead
-  const hotSpareOverhead = drive.capacity_raw * hotSpares
+  // S2D tiering
+  if (topology.type === 's2d' && s2dOptions.storageTiers && s2dOptions.tieringConfig) {
+    tieredCapacity = calculateTieredCapacity(s2dOptions.tieringConfig, serverCount)
+  }
 
-  // Usable drives after hot spares
-  const usableDrives = driveCount - hotSpares
-  const rawUsableCapacity = drive.capacity_raw * usableDrives
+  // vSAN OSA tiering (disk groups)
+  if (topology.type === 'vmware' && vsanOptions.architecture === 'osa' && vsanOptions.tiering) {
+    tieredCapacity = calculateTieredCapacity(vsanOptions.tiering, serverCount)
+  }
+
+  // Ceph WAL/DB tiering
+  if (topology.type === 'ceph' && cephOptions.walDbOffload && cephOptions.tiering) {
+    tieredCapacity = calculateTieredCapacity(cephOptions.tiering, serverCount)
+  }
+
+  // Calculate raw capacity based on tiering or standard configuration
+  const effectiveDrive = tieredCapacity?.capacityTierDrive ?? drive
+  const effectiveDriveCount = tieredCapacity ? tieredCapacity.capacityTierDriveCount : driveCount
+  const cacheTierCapacity = tieredCapacity?.cacheTierCapacity ?? 0
+
+  // Raw capacity (all drives including hot spares and cache tier)
+  const rawCapacity = tieredCapacity
+    ? tieredCapacity.capacityTierCapacity + tieredCapacity.cacheTierCapacity
+    : drive.capacity_raw * driveCount
+
+  // Hot spare overhead (applies to capacity tier only when tiered)
+  const hotSpareOverhead = tieredCapacity
+    ? (tieredCapacity.capacityTierDrive?.capacity_raw ?? 0) * hotSpares
+    : drive.capacity_raw * hotSpares
+
+  // Usable drives after hot spares (capacity tier only when tiered)
+  const usableDrives = effectiveDriveCount - hotSpares
+  const rawUsableCapacity = effectiveDrive.capacity_raw * usableDrives
 
   // Synology system partition overhead (20-30GB per disk)
   let synologySystemOverhead = 0
@@ -463,6 +540,22 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
       color: 'var(--color-overhead)',
     },
   ]
+
+  // Cache tier is overhead (not usable capacity) - shown as dedicated cache
+  if (cacheTierCapacity > 0) {
+    const cacheLabel =
+      topology.type === 'ceph'
+        ? 'WAL/DB NVMe (Cache)'
+        : topology.type === 'vmware'
+          ? 'vSAN Cache Tier'
+          : 'Cache Tier (NVMe/SSD)'
+    breakdown.push({
+      label: cacheLabel,
+      bytes: cacheTierCapacity,
+      percent: (cacheTierCapacity / rawCapacity) * 100,
+      color: 'var(--color-cache)',
+    })
+  }
 
   if (slopOverhead > 0) {
     breakdown.push({
