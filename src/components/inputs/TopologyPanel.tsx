@@ -276,10 +276,28 @@ export function TopologyPanel() {
     const levels = TOPOLOGY_LEVELS[type as TopologyType]
     const defaultLevel = levels?.[0]?.value ?? 'RAID0'
     setTopology({ type, level: defaultLevel } as Topology)
+
+    // Sync vSAN architecture with default topology level
+    if (type === 'vmware') {
+      if (defaultLevel.includes('esa')) {
+        setVsanOptions({ architecture: 'esa' })
+      } else if (defaultLevel.includes('osa')) {
+        setVsanOptions({ architecture: 'osa' })
+      }
+    }
   }
 
   const handleLevelChange = (level: string) => {
     setTopology({ type: topology.type, level } as Topology)
+
+    // Sync vSAN architecture with topology level
+    if (topology.type === 'vmware') {
+      if (level.includes('esa')) {
+        setVsanOptions({ architecture: 'esa' })
+      } else if (level.includes('osa')) {
+        setVsanOptions({ architecture: 'osa' })
+      }
+    }
   }
 
   const levelOptions = TOPOLOGY_LEVELS[topology.type] || []
@@ -438,18 +456,15 @@ export function TopologyPanel() {
 
           <div className="space-y-2">
             <Label>Architecture</Label>
-            <SegmentedControl
-              value={vsanOptions.architecture}
-              options={[
-                { value: 'osa', label: 'OSA' },
-                { value: 'esa', label: 'ESA' },
-              ]}
-              onChange={(v) => setVsanOptions({ architecture: v as 'osa' | 'esa' })}
-            />
+            <div className="px-3 py-2 bg-surface-700 rounded-md text-sm font-medium text-white">
+              {vsanOptions.architecture === 'esa'
+                ? 'ESA (Express Storage)'
+                : 'OSA (Original Storage)'}
+            </div>
             <p className="text-xs text-slate-500">
               {vsanOptions.architecture === 'esa'
-                ? 'Express Storage Architecture - NVMe-optimized, higher performance'
-                : 'Original Storage Architecture - Traditional disk groups'}
+                ? 'NVMe-only, single-tier, higher performance'
+                : 'Traditional disk groups with caching tier'}
             </p>
           </div>
 
