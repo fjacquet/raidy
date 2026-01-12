@@ -171,12 +171,13 @@ function getDataFraction(
   topology: Topology,
   driveCount: number,
   s2dOptions: S2DOptions,
-  vsanOptions: VsanOptions,
+  _vsanOptions: VsanOptions,
   _objectscaleOptions: ObjectScaleOptions,
   _powerstoreOptions: PowerStoreOptions,
   _powerscaleOptions: PowerScaleOptions,
   cephOptions: CephOptions,
   nutanixOptions: NutanixOptions,
+  serverCount: number,
 ): number {
   const usableDrives = driveCount // Hot spares handled separately
 
@@ -285,24 +286,39 @@ function getDataFraction(
           return 1.0
       }
 
-    case 'vmware':
-      // vSAN efficiency depends on FTT and protection method
+    case 'vsan_osa':
+      // vSAN OSA (Original Storage Architecture) - disk groups with cache + capacity
       switch (topology.level) {
         case 'vsan_osa_raid1':
-        case 'vsan_esa_raid1':
-          // RAID-1 with FTT mirrors: capacity / (FTT + 1)
-          return 1 / (vsanOptions.ftt + 1)
+          // RAID-1 FTT=1: 2-way mirror, 50% efficiency
+          return 0.5
+        case 'vsan_osa_raid1_ftt2':
+          // RAID-1 FTT=2: 3-way mirror, 33% efficiency
+          return 1 / 3
         case 'vsan_osa_raid5':
-        case 'vsan_esa_raid5':
-          // RAID-5 requires minimum (3 × FTT + 1) hosts, efficiency ~(n-FTT)/n
-          // For FTT=1: minimum 4 hosts, ~75% efficiency
-          return (usableDrives - vsanOptions.ftt) / usableDrives
+          // RAID-5 (3+1) FTT=1: 75% efficiency
+          return 0.75
         case 'vsan_osa_raid6':
-        case 'vsan_esa_raid6':
-          // RAID-6 with FTT=2: minimum 6 hosts, ~67% efficiency
-          return (usableDrives - 2 * vsanOptions.ftt) / usableDrives
+          // RAID-6 (4+2) FTT=2: 67% efficiency
+          return 4 / 6
         default:
-          return 1.0
+          return 0.5
+      }
+
+    case 'vsan_esa':
+      // vSAN ESA (Express Storage Architecture) - single-tier NVMe only
+      switch (topology.level) {
+        case 'vsan_esa_raid1':
+          // RAID-1: 2-way mirror, 50% efficiency (only for 2-node clusters)
+          return 0.5
+        case 'vsan_esa_raid5':
+          // Adaptive RAID-5: 2+1 (67%) for 3-5 hosts, 4+1 (80%) for 6+ hosts
+          return serverCount >= 6 ? 0.8 : 2 / 3
+        case 'vsan_esa_raid6':
+          // RAID-6 (4+2) FTT=2: 67% efficiency
+          return 4 / 6
+        default:
+          return 2 / 3
       }
 
     case 'objectscale':
@@ -491,7 +507,8 @@ function getFilesystemOverheadPercent(
       // ZFS metadata overhead (slop handled separately)
       return 0.01
 
-    case 'vmware':
+    case 'vsan_osa':
+    case 'vsan_esa':
       // vSAN object overhead (~1-2% for metadata, witness components)
       return 0.015
 
@@ -583,7 +600,7 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
   }
 
   // vSAN OSA tiering (disk groups)
-  if (topology.type === 'vmware' && vsanOptions.architecture === 'osa' && vsanOptions.tiering) {
+  if (topology.type === 'vsan_osa' && vsanOptions.tiering) {
     tieredCapacity = calculateTieredCapacity(vsanOptions.tiering, serverCount)
   }
 
@@ -637,6 +654,7 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
     powerscaleOptions,
     cephOptions,
     nutanixOptions,
+    serverCount,
   )
   const capacityAfterSysPartition = rawUsableCapacity - synologySystemOverhead
   const capacityAfterParity = capacityAfterSysPartition * dataFraction
@@ -816,8 +834,8 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
     const cacheLabel =
       topology.type === 'ceph'
         ? 'WAL/DB NVMe (Cache)'
-        : topology.type === 'vmware'
-          ? 'vSAN Cache Tier'
+        : topology.type === 'vsan_osa'
+          ? 'vSAN OSA Cache Tier'
           : 'Cache Tier (NVMe/SSD)'
     breakdown.push({
       label: cacheLabel,

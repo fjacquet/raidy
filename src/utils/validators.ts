@@ -32,6 +32,7 @@ export interface ValidationAlert {
 export interface ValidationInput {
   drive: Drive
   driveCount: number
+  serverCount?: number
   topology: Topology
   controller: ControllerType
   ramPerNodeGb?: number
@@ -361,15 +362,13 @@ function validatePowerFlex(
 function validateVsan(
   drive: Drive,
   topology: Topology,
-  vsanOptions?: VsanOptions,
+  serverCount: number,
+  _vsanOptions?: VsanOptions,
 ): ValidationAlert[] {
   const alerts: ValidationAlert[] = []
 
-  // Check if using vSAN ESA topology
-  const isEsaTopology = topology.type === 'vmware' && topology.level.includes('esa')
-  const isEsaArchitecture = vsanOptions?.architecture === 'esa'
-
-  if (isEsaTopology || isEsaArchitecture) {
+  // vSAN ESA validation
+  if (topology.type === 'vsan_esa') {
     // vSAN ESA requires NVMe drives only
     if (drive.type !== 'SSD_NVMe') {
       alerts.push({
@@ -391,20 +390,53 @@ function validateVsan(
           'vSAN ESA recommends drives with at least 1 DWPD for write-intensive workloads.',
       })
     }
+
+    // ESA minimum host requirements
+    const esaMinHosts: Record<string, number> = {
+      vsan_esa_raid1: 2,
+      vsan_esa_raid5: 3,
+      vsan_esa_raid6: 6,
+    }
+    const minHosts = esaMinHosts[topology.level] ?? 3
+    if (serverCount < minHosts) {
+      alerts.push({
+        severity: 'error',
+        code: 'VSAN_ESA_MIN_HOSTS',
+        message: `vSAN ESA ${topology.level}: Requires minimum ${minHosts} hosts, only ${serverCount} configured.`,
+        recommendation: `Increase server count to at least ${minHosts} hosts for this protection level.`,
+      })
+    }
   }
 
-  // vSAN OSA with HDD should have SSD cache tier
-  const isOsaTopology = topology.type === 'vmware' && topology.level.includes('osa')
-  const isOsaArchitecture = vsanOptions?.architecture === 'osa'
+  // vSAN OSA validation
+  if (topology.type === 'vsan_osa') {
+    // OSA with HDD should have SSD cache tier
+    if (drive.type === 'HDD') {
+      alerts.push({
+        severity: 'info',
+        code: 'VSAN_OSA_HDD_CACHE_RECOMMENDED',
+        message: 'vSAN OSA with HDD: SSD cache tier recommended for performance.',
+        recommendation:
+          'Add NVMe or SSD cache drives for hybrid configuration. Minimum 10% cache-to-capacity ratio.',
+      })
+    }
 
-  if ((isOsaTopology || isOsaArchitecture) && drive.type === 'HDD') {
-    alerts.push({
-      severity: 'info',
-      code: 'VSAN_OSA_HDD_CACHE_RECOMMENDED',
-      message: 'vSAN OSA with HDD: SSD cache tier recommended for performance.',
-      recommendation:
-        'Add NVMe or SSD cache drives for hybrid configuration. Minimum 10% cache-to-capacity ratio.',
-    })
+    // OSA minimum host requirements
+    const osaMinHosts: Record<string, number> = {
+      vsan_osa_raid1: 3,
+      vsan_osa_raid1_ftt2: 5,
+      vsan_osa_raid5: 4,
+      vsan_osa_raid6: 6,
+    }
+    const minHosts = osaMinHosts[topology.level] ?? 3
+    if (serverCount < minHosts) {
+      alerts.push({
+        severity: 'error',
+        code: 'VSAN_OSA_MIN_HOSTS',
+        message: `vSAN OSA ${topology.level}: Requires minimum ${minHosts} hosts, only ${serverCount} configured.`,
+        recommendation: `Increase server count to at least ${minHosts} hosts for this protection level.`,
+      })
+    }
   }
 
   return alerts
@@ -482,8 +514,13 @@ export function validateConfiguration(input: ValidationInput): ValidationAlert[]
   }
 
   // vSAN-specific (ESA requires NVMe, OSA recommends cache tier)
-  if (input.topology.type === 'vmware') {
-    const vsanAlerts = validateVsan(input.drive, input.topology, input.vsanOptions)
+  if (input.topology.type === 'vsan_osa' || input.topology.type === 'vsan_esa') {
+    const vsanAlerts = validateVsan(
+      input.drive,
+      input.topology,
+      input.serverCount ?? 3,
+      input.vsanOptions,
+    )
     alerts.push(...vsanAlerts)
   }
 

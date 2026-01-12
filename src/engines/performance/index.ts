@@ -205,22 +205,34 @@ function getRaidWritePenalty(topology: Topology): number {
           return 1
       }
 
-    case 'vmware':
-      // vSAN write penalties
+    case 'vsan_osa':
+      // vSAN OSA (Original Storage Architecture) - disk groups
+      // Traditional RAID penalties due to two-tier architecture
       switch (topology.level) {
         case 'vsan_osa_raid1':
+          return 2 // 2-way mirror writes
+        case 'vsan_osa_raid1_ftt2':
+          return 3 // 3-way mirror writes (FTT=2)
+        case 'vsan_osa_raid5':
+          return 4 // Traditional RAID-5 penalty (3+1)
+        case 'vsan_osa_raid6':
+          return 6 // Traditional RAID-6 penalty (4+2)
+        default:
+          return 2
+      }
+
+    case 'vsan_esa':
+      // vSAN ESA (Express Storage Architecture) - single-tier NVMe
+      // Near RAID-1 performance due to log-structured writes
+      switch (topology.level) {
         case 'vsan_esa_raid1':
           return 2 // Mirror writes
-        case 'vsan_osa_raid5':
-          return 4 // OSA RAID-5 has traditional penalty
         case 'vsan_esa_raid5':
-          return 2.5 // ESA is more efficient with log-structured writes
-        case 'vsan_osa_raid6':
-          return 6 // OSA RAID-6 traditional penalty
+          return 2.5 // Log-structured optimized, near RAID-1 performance
         case 'vsan_esa_raid6':
-          return 3.5 // ESA optimizes double parity
+          return 3.5 // Optimized double parity, much better than OSA
         default:
-          return 1
+          return 2.5
       }
 
     case 'objectscale':

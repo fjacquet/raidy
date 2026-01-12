@@ -43,7 +43,8 @@ const TOPOLOGY_TYPES = [
   { value: 'ceph', label: 'Ceph' },
   { value: 'nutanix', label: 'Nutanix' },
   { value: 's2d', label: 'S2D' },
-  { value: 'vmware', label: 'vSAN' },
+  { value: 'vsan_esa', label: 'vSAN ESA' },
+  { value: 'vsan_osa', label: 'vSAN OSA' },
   { value: 'zfs', label: 'ZFS' },
   { value: 'objectscale', label: 'ObjectScale' },
   { value: 'powerflex', label: 'PowerFlex' },
@@ -96,36 +97,43 @@ const TOPOLOGY_LEVELS: Record<
     { value: 'dual_parity', label: 'Dual Parity', description: 'Erasure coding' },
     { value: 'map', label: 'MAP', description: 'Mirror-Accelerated Parity' },
   ],
-  vmware: [
+  vsan_osa: [
     {
       value: 'vsan_osa_raid1',
-      label: 'vSAN OSA RAID-1',
-      description: 'Original Storage Architecture, mirrored (FTT=1)',
+      label: 'RAID-1 (Mirror)',
+      description: 'FTT=1, min 3 hosts, 50% efficiency',
+    },
+    {
+      value: 'vsan_osa_raid1_ftt2',
+      label: 'RAID-1 FTT=2',
+      description: 'FTT=2, min 5 hosts, 33% efficiency',
     },
     {
       value: 'vsan_osa_raid5',
-      label: 'vSAN OSA RAID-5',
-      description: 'Original Storage Architecture, single parity (FTT=1)',
+      label: 'RAID-5 (3+1)',
+      description: 'FTT=1, min 4 hosts, 75% efficiency, write penalty',
     },
     {
       value: 'vsan_osa_raid6',
-      label: 'vSAN OSA RAID-6',
-      description: 'Original Storage Architecture, dual parity (FTT=2)',
+      label: 'RAID-6 (4+2)',
+      description: 'FTT=2, min 6 hosts, 67% efficiency, write penalty',
     },
-    {
-      value: 'vsan_esa_raid1',
-      label: 'vSAN ESA RAID-1',
-      description: 'Express Storage Architecture, mirrored',
-    },
+  ],
+  vsan_esa: [
     {
       value: 'vsan_esa_raid5',
-      label: 'vSAN ESA RAID-5',
-      description: 'Express Storage Architecture, single parity',
+      label: 'RAID-5 Adaptive (Recommended)',
+      description: '2+1 or 4+1 based on cluster size, min 3 hosts, 67-80% efficiency',
     },
     {
       value: 'vsan_esa_raid6',
-      label: 'vSAN ESA RAID-6',
-      description: 'Express Storage Architecture, dual parity',
+      label: 'RAID-6 (4+2)',
+      description: 'FTT=2, min 6 hosts, 67% efficiency',
+    },
+    {
+      value: 'vsan_esa_raid1',
+      label: 'RAID-1 (Mirror)',
+      description: 'Only recommended for 2-node clusters, 50% efficiency',
     },
   ],
   objectscale: [
@@ -365,28 +373,10 @@ export function TopologyPanel() {
     const levels = TOPOLOGY_LEVELS[type as TopologyType]
     const defaultLevel = levels?.[0]?.value ?? 'RAID0'
     setTopology({ type, level: defaultLevel } as Topology)
-
-    // Sync vSAN architecture with default topology level
-    if (type === 'vmware') {
-      if (defaultLevel.includes('esa')) {
-        setVsanOptions({ architecture: 'esa' })
-      } else if (defaultLevel.includes('osa')) {
-        setVsanOptions({ architecture: 'osa' })
-      }
-    }
   }
 
   const handleLevelChange = (level: string) => {
     setTopology({ type: topology.type, level } as Topology)
-
-    // Sync vSAN architecture with topology level
-    if (topology.type === 'vmware') {
-      if (level.includes('esa')) {
-        setVsanOptions({ architecture: 'esa' })
-      } else if (level.includes('osa')) {
-        setVsanOptions({ architecture: 'osa' })
-      }
-    }
   }
 
   const levelOptions = TOPOLOGY_LEVELS[topology.type] || []
@@ -553,38 +543,42 @@ export function TopologyPanel() {
         </div>
       )}
 
-      {/* vSAN Options */}
-      {topology.type === 'vmware' && (
+      {/* vSAN OSA Options */}
+      {topology.type === 'vsan_osa' && (
         <div className="space-y-4 pt-3 border-t border-surface-700">
           <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-            vSAN Options
+            vSAN OSA Options
           </h4>
 
-          <div className="space-y-2">
-            <Label>Architecture</Label>
-            <div className="px-3 py-2 bg-surface-700 rounded-md text-sm font-medium text-white">
-              {vsanOptions.architecture === 'esa'
-                ? 'ESA (Express Storage)'
-                : 'OSA (Original Storage)'}
-            </div>
-            <p className="text-xs text-slate-500">
-              {vsanOptions.architecture === 'esa'
-                ? 'NVMe-only, single-tier, higher performance'
-                : 'Traditional disk groups with caching tier'}
+          {/* Configuration info box */}
+          <div className="p-3 bg-surface-800 rounded-lg text-xs text-slate-400">
+            {topology.level === 'vsan_osa_raid1' && (
+              <p>
+                <strong className="text-slate-300">RAID-1 FTT=1:</strong> 2-way mirror, requires
+                minimum 3 hosts. 50% storage efficiency. Best read performance.
+              </p>
+            )}
+            {topology.level === 'vsan_osa_raid1_ftt2' && (
+              <p>
+                <strong className="text-slate-300">RAID-1 FTT=2:</strong> 3-way mirror, requires
+                minimum 5 hosts. 33% storage efficiency. Maximum fault tolerance.
+              </p>
+            )}
+            {topology.level === 'vsan_osa_raid5' && (
+              <p>
+                <strong className="text-slate-300">RAID-5 (3+1):</strong> Single parity, requires
+                minimum 4 hosts. 75% efficiency. 4x write penalty vs mirror.
+              </p>
+            )}
+            {topology.level === 'vsan_osa_raid6' && (
+              <p>
+                <strong className="text-slate-300">RAID-6 (4+2):</strong> Dual parity, requires
+                minimum 6 hosts. 67% efficiency. 6x write penalty vs mirror.
+              </p>
+            )}
+            <p className="mt-2 text-slate-500">
+              OSA uses disk groups with cache tier (NVMe/SSD) + capacity tier (SSD/HDD).
             </p>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Failures To Tolerate (FTT)</Label>
-            <SegmentedControl
-              value={String(vsanOptions.ftt)}
-              options={[
-                { value: '1', label: 'FTT=1' },
-                { value: '2', label: 'FTT=2' },
-                { value: '3', label: 'FTT=3' },
-              ]}
-              onChange={(v) => setVsanOptions({ ftt: Number(v) as 1 | 2 | 3 })}
-            />
           </div>
 
           <Toggle
@@ -608,33 +602,94 @@ export function TopologyPanel() {
             onChange={(v) => setVsanOptions({ encryption: v })}
           />
 
-          {/* OSA Disk Group Tiering */}
-          {vsanOptions.architecture === 'osa' && (
-            <>
-              <div className="pt-3 border-t border-surface-700">
-                <h5 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
-                  Disk Group Configuration
-                </h5>
-              </div>
-              <TieringPanel
-                config={vsanOptions.tiering ?? DEFAULT_TIERING_CONFIG}
-                onChange={(tiering) =>
-                  setVsanOptions({
-                    tiering: {
-                      ...DEFAULT_TIERING_CONFIG,
-                      ...vsanOptions.tiering,
-                      ...tiering,
-                    },
-                  })
-                }
-                serverCount={serverCount}
-                platform="vsan"
-                showCacheMode={false}
-                vsanMode={vsanOptions.diskGroupMode}
-                onVsanModeChange={(diskGroupMode) => setVsanOptions({ diskGroupMode })}
-              />
-            </>
-          )}
+          {/* Disk Group Tiering */}
+          <div className="pt-3 border-t border-surface-700">
+            <h5 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
+              Disk Group Configuration
+            </h5>
+          </div>
+          <TieringPanel
+            config={vsanOptions.tiering ?? DEFAULT_TIERING_CONFIG}
+            onChange={(tiering) =>
+              setVsanOptions({
+                tiering: {
+                  ...DEFAULT_TIERING_CONFIG,
+                  ...vsanOptions.tiering,
+                  ...tiering,
+                },
+              })
+            }
+            serverCount={serverCount}
+            platform="vsan"
+            showCacheMode={false}
+            vsanMode={vsanOptions.diskGroupMode}
+            onVsanModeChange={(diskGroupMode) => setVsanOptions({ diskGroupMode })}
+          />
+        </div>
+      )}
+
+      {/* vSAN ESA Options */}
+      {topology.type === 'vsan_esa' && (
+        <div className="space-y-4 pt-3 border-t border-surface-700">
+          <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+            vSAN ESA Options
+          </h4>
+
+          {/* Configuration info box */}
+          <div className="p-3 bg-surface-800 rounded-lg text-xs text-slate-400">
+            {topology.level === 'vsan_esa_raid5' && (
+              <>
+                <p>
+                  <strong className="text-slate-300">Adaptive RAID-5:</strong> Uses 2+1 for 3-5
+                  hosts (67% efficiency) or 4+1 for 6+ hosts (80% efficiency). Near RAID-1
+                  performance with ~2.5x write penalty.
+                </p>
+                <p className="mt-1 text-green-400">Recommended for most ESA deployments.</p>
+              </>
+            )}
+            {topology.level === 'vsan_esa_raid6' && (
+              <p>
+                <strong className="text-slate-300">RAID-6 (4+2):</strong> FTT=2, requires minimum 6
+                hosts. 67% efficiency. ~3.5x write penalty (much better than OSA RAID-6).
+              </p>
+            )}
+            {topology.level === 'vsan_esa_raid1' && (
+              <p>
+                <strong className="text-slate-300">RAID-1 (Mirror):</strong> Only recommended for
+                2-node stretched clusters. 50% efficiency. Use RAID-5 for better efficiency in 3+
+                node clusters.
+              </p>
+            )}
+            <p className="mt-2 text-slate-500">
+              ESA is a single-tier architecture. NVMe drives only, no disk groups.
+            </p>
+          </div>
+
+          {/* NVMe requirement notice */}
+          <div className="p-2 bg-blue-900/30 border border-blue-700/50 rounded text-xs text-blue-300">
+            vSAN ESA requires NVMe drives only. Each drive serves both cache and capacity.
+          </div>
+
+          <Toggle
+            id="vsan-esa-compression"
+            label="Enable Compression"
+            checked={vsanOptions.compression}
+            onChange={(v) => setVsanOptions({ compression: v })}
+          />
+
+          <Toggle
+            id="vsan-esa-dedup"
+            label="Enable Deduplication"
+            checked={vsanOptions.dedup}
+            onChange={(v) => setVsanOptions({ dedup: v })}
+          />
+
+          <Toggle
+            id="vsan-esa-encryption"
+            label="Enable Encryption"
+            checked={vsanOptions.encryption}
+            onChange={(v) => setVsanOptions({ encryption: v })}
+          />
         </div>
       )}
 

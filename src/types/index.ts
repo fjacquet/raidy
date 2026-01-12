@@ -74,8 +74,9 @@ export type {
   Topology,
   TopologyConfig,
   TopologyType,
+  VsanEsaTopology,
   VsanOptions,
-  VsanTopology,
+  VsanOsaTopology,
   ZfsOptions,
   ZfsTopology,
 } from './topology'

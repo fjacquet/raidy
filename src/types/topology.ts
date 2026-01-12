@@ -46,14 +46,18 @@ export type ProprietaryRaid =
   | 'netapp_raid_dp' // NetApp RAID-DP (double parity)
   | 'netapp_raid_tec' // NetApp RAID-TEC (triple parity)
 
-/** VMware vSAN topologies */
-export type VsanTopology =
-  | 'vsan_osa_raid1' // OSA with RAID-1 (FTT=1)
-  | 'vsan_osa_raid5' // OSA with RAID-5 (FTT=1)
-  | 'vsan_osa_raid6' // OSA with RAID-6 (FTT=2)
-  | 'vsan_esa_raid1' // ESA with RAID-1
-  | 'vsan_esa_raid5' // ESA with RAID-5
-  | 'vsan_esa_raid6' // ESA with RAID-6
+/** VMware vSAN OSA (Original Storage Architecture) topologies */
+export type VsanOsaTopology =
+  | 'vsan_osa_raid1' // RAID-1 FTT=1 (min 3 hosts, 50% efficiency)
+  | 'vsan_osa_raid1_ftt2' // RAID-1 FTT=2 (min 5 hosts, 33% efficiency)
+  | 'vsan_osa_raid5' // RAID-5 3+1 FTT=1 (min 4 hosts, 75% efficiency)
+  | 'vsan_osa_raid6' // RAID-6 4+2 FTT=2 (min 6 hosts, 67% efficiency)
+
+/** VMware vSAN ESA (Express Storage Architecture) topologies */
+export type VsanEsaTopology =
+  | 'vsan_esa_raid5' // Adaptive RAID-5 (2+1 or 4+1, min 3 hosts, 67-80% efficiency) - RECOMMENDED
+  | 'vsan_esa_raid6' // RAID-6 4+2 FTT=2 (min 6 hosts, 67% efficiency)
+  | 'vsan_esa_raid1' // RAID-1 (only for 2-node clusters, 50% efficiency)
 
 /** Dell ObjectScale topologies (Object Storage S3) - per SME specs */
 export type ObjectScaleTopology =
@@ -110,7 +114,8 @@ export type TopologyType =
   | 'zfs'
   | 's2d'
   | 'proprietary'
-  | 'vmware'
+  | 'vsan_osa' // vSAN Original Storage Architecture (disk groups)
+  | 'vsan_esa' // vSAN Express Storage Architecture (NVMe-only)
   | 'ceph'
   | 'powerflex'
   | 'powerstore'
@@ -124,7 +129,8 @@ export type Topology =
   | { type: 'zfs'; level: ZfsTopology }
   | { type: 's2d'; level: S2DTopology }
   | { type: 'proprietary'; level: ProprietaryRaid }
-  | { type: 'vmware'; level: VsanTopology }
+  | { type: 'vsan_osa'; level: VsanOsaTopology }
+  | { type: 'vsan_esa'; level: VsanEsaTopology }
   | { type: 'ceph'; level: CephTopology }
   | { type: 'powerflex'; level: PowerFlexTopology }
   | { type: 'powerstore'; level: PowerStoreTopology }
@@ -218,7 +224,8 @@ export type ControllerType = HbaType | RaidControllerType
 export const HBA_REQUIRED_TOPOLOGIES: TopologyType[] = [
   'zfs',
   's2d',
-  'vmware',
+  'vsan_osa',
+  'vsan_esa',
   'ceph',
   'powerflex',
   'powerscale',
@@ -247,21 +254,15 @@ export interface RaidControllerOptions {
 
 /** vSAN-specific configuration options */
 export interface VsanOptions {
-  /** Storage architecture */
-  architecture: 'osa' | 'esa'
   /** Disk group mode for OSA: hybrid (HDD capacity) or all-flash (SSD capacity) */
   diskGroupMode: 'hybrid' | 'all-flash'
-  /** Failures To Tolerate */
-  ftt: 1 | 2 | 3
-  /** Stripe width for RAID-5/6 */
-  stripeWidth: number
   /** Enable compression */
   compression: boolean
   /** Enable deduplication */
   dedup: boolean
   /** Enable encryption */
   encryption: boolean
-  /** Tiering configuration (disk groups with cache + capacity) */
+  /** Tiering configuration (disk groups with cache + capacity) - OSA only */
   tiering?: TieringConfig
 }
 
@@ -481,10 +482,7 @@ export const DEFAULT_CONTROLLER_OPTIONS: RaidControllerOptions = {
 
 /** Default vSAN options */
 export const DEFAULT_VSAN_OPTIONS: VsanOptions = {
-  architecture: 'esa',
   diskGroupMode: 'all-flash',
-  ftt: 1,
-  stripeWidth: 4,
   compression: true,
   dedup: false,
   encryption: false,
