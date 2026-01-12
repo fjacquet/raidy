@@ -6,12 +6,12 @@
 import type { DriveConnectivity, FormFactorFilter } from './drive'
 import type {
   CephOptions,
-  ObjectScaleOptions,
-  PowerStoreOptions,
-  PowerScaleOptions,
   NetAppOptions,
   NutanixOptions,
+  ObjectScaleOptions,
   PowerFlexOptions,
+  PowerScaleOptions,
+  PowerStoreOptions,
   RaidControllerOptions,
   S2DOptions,
   SynologyOptions,

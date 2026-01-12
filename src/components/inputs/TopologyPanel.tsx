@@ -804,7 +804,10 @@ export function TopologyPanel() {
               onChange={(v) => setObjectScaleOptions({ objectSizeKB: v })}
             />
             <p className="text-xs text-slate-500">
-              Average object size: {objectscaleOptions.objectSizeKB >= 1024 ? `${(objectscaleOptions.objectSizeKB / 1024).toFixed(1)} MB` : `${objectscaleOptions.objectSizeKB} KB`}
+              Average object size:{' '}
+              {objectscaleOptions.objectSizeKB >= 1024
+                ? `${(objectscaleOptions.objectSizeKB / 1024).toFixed(1)} MB`
+                : `${objectscaleOptions.objectSizeKB} KB`}
             </p>
           </div>
 
@@ -832,7 +835,8 @@ export function TopologyPanel() {
               onChange={(v) => setObjectScaleOptions({ networkEfficiencyFactor: v / 100 })}
             />
             <p className="text-xs text-slate-500">
-              East-West traffic factor: {Math.round(objectscaleOptions.networkEfficiencyFactor * 100)}%
+              East-West traffic factor:{' '}
+              {Math.round(objectscaleOptions.networkEfficiencyFactor * 100)}%
             </p>
           </div>
 

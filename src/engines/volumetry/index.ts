@@ -596,19 +596,22 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
   // ObjectScale system overhead (10-15% for metadata, indexes, S3 protocol overhead)
   let objectscaleSystemOverhead = 0
   if (topology.type === 'objectscale') {
-    objectscaleSystemOverhead = capacityAfterParity * (objectscaleOptions.systemOverheadPercent / 100)
+    objectscaleSystemOverhead =
+      capacityAfterParity * (objectscaleOptions.systemOverheadPercent / 100)
   }
 
   // PowerStore snapshot reserve
   let powerstoreSnapshotReserve = 0
   if (topology.type === 'powerstore') {
-    powerstoreSnapshotReserve = capacityAfterParity * (powerstoreOptions.snapshotReservePercent / 100)
+    powerstoreSnapshotReserve =
+      capacityAfterParity * (powerstoreOptions.snapshotReservePercent / 100)
   }
 
   // PowerScale snapshot reserve
   let powerscaleSnapshotReserve = 0
   if (topology.type === 'powerscale') {
-    powerscaleSnapshotReserve = capacityAfterParity * (powerscaleOptions.snapshotReservePercent / 100)
+    powerscaleSnapshotReserve =
+      capacityAfterParity * (powerscaleOptions.snapshotReservePercent / 100)
   }
 
   // Filesystem overhead
