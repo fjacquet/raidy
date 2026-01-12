@@ -645,6 +645,34 @@ export function TopologyPanel() {
             Nutanix AOS Options
           </h4>
 
+          {/* Show mode description based on selected topology level */}
+          <div className="p-3 bg-surface-800 rounded-lg text-xs text-slate-400">
+            {topology.level === 'nutanix_rf2' && (
+              <p>
+                <strong className="text-slate-300">RF2:</strong> 2 copies of data, 50% storage
+                efficiency. Tolerates single node failure.
+              </p>
+            )}
+            {topology.level === 'nutanix_rf3' && (
+              <p>
+                <strong className="text-slate-300">RF3:</strong> 3 copies of data, 33% storage
+                efficiency. Tolerates dual node failure.
+              </p>
+            )}
+            {topology.level === 'nutanix_ec_rf2' && (
+              <p>
+                <strong className="text-slate-300">EC-X (RF2):</strong> Erasure coding 4:1 for cold
+                data, ~75% efficiency. Hot data remains RF2.
+              </p>
+            )}
+            {topology.level === 'nutanix_ec_rf3' && (
+              <p>
+                <strong className="text-slate-300">EC-X (RF3):</strong> Erasure coding 6:2 for cold
+                data, ~75% efficiency. Hot data remains RF3.
+              </p>
+            )}
+          </div>
+
           <div className="space-y-2">
             <Label>Cluster Type</Label>
             <SegmentedControl
@@ -661,47 +689,6 @@ export function TopologyPanel() {
                 : 'Hybrid: SSD cache + HDD capacity tier'}
             </p>
           </div>
-
-          <div className="space-y-2">
-            <Label>Replication Factor</Label>
-            <SegmentedControl
-              value={String(nutanixOptions.replicationFactor)}
-              options={[
-                { value: '2', label: 'RF2' },
-                { value: '3', label: 'RF3' },
-              ]}
-              onChange={(v) => setNutanixOptions({ replicationFactor: Number(v) as 2 | 3 })}
-            />
-            <p className="text-xs text-slate-500">
-              {nutanixOptions.replicationFactor === 2
-                ? 'RF2: 2 copies, 50% efficiency, single node failure tolerance'
-                : 'RF3: 3 copies, 33% efficiency, dual node failure tolerance'}
-            </p>
-          </div>
-
-          <Toggle
-            id="nutanix-ec"
-            label="Erasure Coding (EC-X)"
-            checked={nutanixOptions.erasureCoding}
-            onChange={(v) => setNutanixOptions({ erasureCoding: v })}
-          />
-
-          {nutanixOptions.erasureCoding && (
-            <div className="space-y-2">
-              <Label>EC Stripe Configuration</Label>
-              <SegmentedControl
-                value={nutanixOptions.ecStripe}
-                options={[
-                  { value: '4_1', label: '4:1 (80%)' },
-                  { value: '6_2', label: '6:2 (75%)' },
-                ]}
-                onChange={(v) => setNutanixOptions({ ecStripe: v as '4_1' | '6_2' })}
-              />
-              <p className="text-xs text-slate-500">
-                EC-X applies to cold data only, reduces capacity overhead
-              </p>
-            </div>
-          )}
 
           <Toggle
             id="nutanix-compression"
