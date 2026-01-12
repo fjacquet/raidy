@@ -7,7 +7,13 @@
 export type StandardRaidLevel =
   | 'RAID0'
   | 'RAID1'
+  | 'RAID1E'
+  | 'RAID1_3WAY'
+  | 'RAID3'
+  | 'RAID4'
   | 'RAID5'
+  | 'RAID5E'
+  | 'RAID5EE'
   | 'RAID6'
   | 'RAID10'
   | 'RAID50'

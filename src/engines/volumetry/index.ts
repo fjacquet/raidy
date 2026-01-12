@@ -186,9 +186,29 @@ function getDataFraction(
         case 'RAID0':
           return 1.0 // No redundancy
         case 'RAID1':
-          return 0.5 // Mirror
+          return 0.5 // Mirror (2-way)
+        case 'RAID1E':
+          // RAID 1E: Mirrored striping, each block written twice
+          // Efficiency is ~50% regardless of drive count
+          return 0.5
+        case 'RAID1_3WAY':
+          // 3-Way Mirror / Triple Mirror
+          return 1 / 3
+        case 'RAID3':
+          // Byte-level striping with dedicated parity disk
+          return (usableDrives - 1) / usableDrives
+        case 'RAID4':
+          // Block-level striping with dedicated parity disk
+          return (usableDrives - 1) / usableDrives
         case 'RAID5':
           return (usableDrives - 1) / usableDrives
+        case 'RAID5E':
+          // RAID 5E: RAID 5 with integrated distributed hot spare
+          // Uses 1 drive worth for parity + 1 for distributed spare
+          return (usableDrives - 2) / usableDrives
+        case 'RAID5EE':
+          // RAID 5EE: Similar to 5E but with active hot spare
+          return (usableDrives - 2) / usableDrives
         case 'RAID6':
           return (usableDrives - 2) / usableDrives
         case 'RAID10':

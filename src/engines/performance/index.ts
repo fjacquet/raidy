@@ -126,8 +126,20 @@ function getRaidWritePenalty(topology: Topology): number {
           return 1
         case 'RAID1':
           return 2 // Write to both mirrors
+        case 'RAID1E':
+          return 2 // Write to 2 mirrors (like RAID10)
+        case 'RAID1_3WAY':
+          return 3 // Write to all 3 mirrors
+        case 'RAID3':
+          return 2 // Dedicated parity disk, sequential optimized
+        case 'RAID4':
+          return 3 // Dedicated parity disk becomes bottleneck for random I/O
         case 'RAID5':
           return 4 // Read old data + parity, write new data + parity
+        case 'RAID5E':
+          return 4 // Same as RAID5
+        case 'RAID5EE':
+          return 4 // Same as RAID5
         case 'RAID6':
           return 6 // Read old data + 2 parities, write new data + 2 parities
         case 'RAID10':
@@ -339,17 +351,25 @@ function calculateXfsAlignment(
   switch (topology.type) {
     case 'standard':
       switch (topology.level) {
+        case 'RAID3':
+        case 'RAID4':
         case 'RAID5':
         case 'RAID50':
           dataDrives = driveCount - 1
           break
+        case 'RAID5E':
+        case 'RAID5EE':
         case 'RAID6':
         case 'RAID60':
           dataDrives = driveCount - 2
           break
         case 'RAID1':
+        case 'RAID1E':
         case 'RAID10':
           dataDrives = driveCount / 2
+          break
+        case 'RAID1_3WAY':
+          dataDrives = driveCount / 3
           break
       }
       break

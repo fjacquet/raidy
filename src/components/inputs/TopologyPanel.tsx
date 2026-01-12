@@ -66,9 +66,23 @@ const TOPOLOGY_LEVELS: Record<
 > = {
   standard: [
     { value: 'RAID0', label: 'RAID 0', description: 'Stripe, no redundancy' },
-    { value: 'RAID1', label: 'RAID 1', description: 'Mirror, 50% capacity' },
-    { value: 'RAID5', label: 'RAID 5', description: 'Single parity, n-1 capacity' },
-    { value: 'RAID6', label: 'RAID 6', description: 'Double parity, n-2 capacity' },
+    { value: 'RAID1', label: 'RAID 1', description: 'Mirror (2-way), 50% capacity' },
+    { value: 'RAID1E', label: 'RAID 1E', description: 'Mirrored stripe, 50% capacity, 3+ drives' },
+    { value: 'RAID1_3WAY', label: '3-Way Mirror', description: 'Triple mirror, 33% capacity' },
+    {
+      value: 'RAID3',
+      label: 'RAID 3',
+      description: 'Byte-stripe + dedicated parity, sequential I/O',
+    },
+    { value: 'RAID4', label: 'RAID 4', description: 'Block-stripe + dedicated parity' },
+    { value: 'RAID5', label: 'RAID 5', description: 'Single distributed parity, n-1 capacity' },
+    {
+      value: 'RAID5E',
+      label: 'RAID 5E',
+      description: 'RAID 5 + integrated hot spare, n-2 capacity',
+    },
+    { value: 'RAID5EE', label: 'RAID 5EE', description: 'RAID 5E Enhanced, active spare' },
+    { value: 'RAID6', label: 'RAID 6', description: 'Double distributed parity, n-2 capacity' },
     { value: 'RAID10', label: 'RAID 10', description: 'Mirrored stripes, 50% capacity' },
     { value: 'RAID50', label: 'RAID 50', description: 'Striped RAID 5 groups' },
     { value: 'RAID60', label: 'RAID 60', description: 'Striped RAID 6 groups' },
@@ -292,6 +306,11 @@ const TOPOLOGY_LEVELS: Record<
   proprietary: [
     { value: 'synology_shr', label: 'Synology SHR', description: 'Hybrid RAID, 1-drive fault' },
     { value: 'synology_shr2', label: 'Synology SHR-2', description: 'Hybrid RAID, 2-drive fault' },
+    {
+      value: 'synology_raid_f1',
+      label: 'Synology RAID F1',
+      description: 'All-Flash optimized, uneven parity rotation',
+    },
     { value: 'netapp_raid_dp', label: 'NetApp RAID-DP', description: 'Double parity' },
     { value: 'netapp_raid_tec', label: 'NetApp RAID-TEC', description: 'Triple parity' },
   ],
