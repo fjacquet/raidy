@@ -13,6 +13,7 @@ import type { Drive } from '@/types/drive'
 import type { BottleneckLayer, PerformanceResult } from '@/types/results'
 import type {
   CephOptions,
+  NutanixOptions,
   PowerFlexOptions,
   RaidControllerOptions,
   Topology,
@@ -74,6 +75,7 @@ export interface PerformanceInput {
   pcieLanes: PCIeLanes
   powerFlexOptions?: PowerFlexOptions
   cephOptions?: CephOptions
+  nutanixOptions?: NutanixOptions
 }
 
 /** Block size in bytes */
@@ -209,23 +211,58 @@ function getRaidWritePenalty(topology: Topology): number {
           return 1
       }
 
-    case 'dell':
-      // Dell storage platform write characteristics
+    case 'objectscale':
+      // ObjectScale S3 object storage write characteristics
+      // EC with eventual consistency has low write amplification
+      switch (topology.level) {
+        case 'objectscale_ec_4_2':
+          return 1.5 // EC 4+2: write amplification = 6/4 = 1.5
+        case 'objectscale_ec_8_4':
+          return 1.5 // EC 8+4: write amplification = 12/8 = 1.5
+        case 'objectscale_ec_10_2':
+          return 1.2 // EC 10+2: write amplification = 12/10 = 1.2
+        case 'objectscale_ec_12_4':
+          return 1.33 // EC 12+4: write amplification = 16/12 = 1.33
+        case 'objectscale_replica_2':
+          return 2 // 2-way replication
+        case 'objectscale_replica_3':
+          return 3 // 3-way replication
+        default:
+          return 1.2
+      }
+
+    case 'powerstore':
+      // Dell PowerStore block storage write characteristics
       switch (topology.level) {
         case 'powerstore_raid5':
           return 3 // PowerStore uses optimized RAID-5 with NVMe
         case 'powerstore_raid6':
           return 4 // PowerStore RAID-6
-        case 'powerscale_n1':
-          return 2.5 // PowerScale N+1 with inline writes
-        case 'powerscale_n2':
-          return 3.5 // PowerScale N+2
-        case 'powerscale_mirror':
-          return 2 // Mirror writes
-        case 'objectscale_ec':
-          return 1.5 // ObjectScale EC with eventual consistency
+        case 'powerstore_raid10':
+          return 2 // PowerStore RAID-10 mirror writes
         default:
-          return 1
+          return 3
+      }
+
+    case 'powerscale':
+      // Dell PowerScale scale-out NAS write characteristics
+      switch (topology.level) {
+        case 'powerscale_n1':
+          return 2.5 // N+1 with inline writes
+        case 'powerscale_n2':
+          return 3.5 // N+2
+        case 'powerscale_n2_1':
+          return 3.5 // N+2:1 similar to N+2
+        case 'powerscale_n3':
+          return 4.5 // N+3
+        case 'powerscale_n4':
+          return 5.5 // N+4
+        case 'powerscale_mirror_2x':
+          return 2 // 2x mirror writes
+        case 'powerscale_mirror_3x':
+          return 3 // 3x mirror writes
+        default:
+          return 3.5
       }
 
     case 'ceph':
@@ -263,6 +300,23 @@ function getRaidWritePenalty(topology: Topology): number {
           return 1.25 // EC 8+2: write amplification = 10/8 = 1.25
         case 'powerflex_ec_12_4':
           return 1.33 // EC 12+4: write amplification = 16/12 = 1.33
+        default:
+          return 2
+      }
+
+    case 'nutanix':
+      // Nutanix write penalty based on RF and EC
+      // Per spec: Writes are synchronous across RF copies via OpLog
+      // Write Penalty = RF for replication, EC reduces it
+      switch (topology.level) {
+        case 'nutanix_rf2':
+          return 2 // RF2: write to 2 copies (primary + 1 replica)
+        case 'nutanix_rf3':
+          return 3 // RF3: write to 3 copies (primary + 2 replicas)
+        case 'nutanix_ec_rf2':
+          return 1.25 // EC-X with RF2: 4:1 striping reduces penalty
+        case 'nutanix_ec_rf3':
+          return 1.33 // EC-X with RF3: 6:2 striping
         default:
           return 2
       }
@@ -360,6 +414,7 @@ function calculateEstimatedLatency(
   topology: Topology,
   networkSpeed: NetworkSpeed,
   cephOptions?: CephOptions,
+  nutanixOptions?: NutanixOptions,
 ): number {
   // Base media latency
   const mediaLatency = DRIVE_BASE_LATENCY_US[drive.type] || DRIVE_BASE_LATENCY_US.HDD
@@ -387,9 +442,45 @@ function calculateEstimatedLatency(
       // PowerFlex with compression adds CPU overhead
       return mediaLatency * 1.5 + networkLatency + cpuOverhead
 
+    case 'objectscale':
+      // ObjectScale S3: eventual consistency, EC overhead
+      cpuOverhead = CPU_OVERHEAD_US.erasure_coding
+      // Object storage has higher protocol overhead
+      return mediaLatency * 2 + networkLatency * 1.5 + cpuOverhead
+
+    case 'powerstore':
+      // PowerStore: optimized block storage with NVMe
+      return mediaLatency * 1.2 + cpuOverhead
+
+    case 'powerscale':
+      // PowerScale: scale-out NAS with parity writes
+      cpuOverhead = CPU_OVERHEAD_US.replication
+      return mediaLatency * 1.5 + networkLatency + cpuOverhead
+
     case 'zfs':
       // ZFS with CoW adds some overhead
       return mediaLatency * 1.2 + cpuOverhead
+
+    case 'nutanix': {
+      // Nutanix DSF: CVM-to-CVM replication adds network latency
+      // Per spec: NVMe/RoCE = +0.1ms, 10GbE = +0.5ms
+      cpuOverhead = CPU_OVERHEAD_US.replication
+      if (nutanixOptions?.compression) {
+        cpuOverhead += CPU_OVERHEAD_US.compression
+      }
+      if (nutanixOptions?.dedup) {
+        cpuOverhead += CPU_OVERHEAD_US.dedup
+      }
+      // Network latency based on network type
+      const nutanixNetworkLatency =
+        nutanixOptions?.networkType === 'rdma'
+          ? 100 // 0.1ms for RDMA
+          : nutanixOptions?.networkType === '25gbe'
+            ? 250 // 0.25ms for 25GbE
+            : 500 // 0.5ms for 10GbE
+      // Nutanix writes to OpLog first, then destages - similar to 2x media latency
+      return mediaLatency * 2 + nutanixNetworkLatency + cpuOverhead
+    }
 
     default:
       // Standard storage: single media access + overhead
@@ -416,6 +507,7 @@ export function calculatePerformance(input: PerformanceInput): PerformanceResult
     pcieLanes,
     powerFlexOptions,
     cephOptions,
+    nutanixOptions,
   } = input
 
   const usableDrives = driveCount - hotSpares
@@ -430,7 +522,13 @@ export function calculatePerformance(input: PerformanceInput): PerformanceResult
   const powerFlexCpuFactor = getPowerFlexCpuFactor(topology, powerFlexOptions)
 
   // Calculate estimated latency
-  const estimatedLatencyUs = calculateEstimatedLatency(drive, topology, networkSpeed, cephOptions)
+  const estimatedLatencyUs = calculateEstimatedLatency(
+    drive,
+    topology,
+    networkSpeed,
+    cephOptions,
+    nutanixOptions,
+  )
 
   // --- Media Layer (drives) ---
   // Base IOPS from drives

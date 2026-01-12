@@ -51,7 +51,10 @@ const TOPOLOGY_TYPES = [
   { value: 'standard', label: 'RAID' },
   { value: 's2d', label: 'S2D' },
   { value: 'vmware', label: 'vSAN' },
-  { value: 'dell', label: 'Dell' },
+  { value: 'nutanix', label: 'Nutanix' },
+  { value: 'objectscale', label: 'ObjectScale' },
+  { value: 'powerstore', label: 'PowerStore' },
+  { value: 'powerscale', label: 'PowerScale' },
   { value: 'powerflex', label: 'PowerFlex' },
   { value: 'ceph', label: 'Ceph' },
   { value: 'proprietary', label: 'Other' },
@@ -119,36 +122,90 @@ const TOPOLOGY_LEVELS: Record<
       description: 'Express Storage Architecture, dual parity',
     },
   ],
-  dell: [
+  objectscale: [
+    {
+      value: 'objectscale_ec_4_2',
+      label: 'EC 4+2',
+      description: 'Erasure coding 4+2, 67% efficiency',
+    },
+    {
+      value: 'objectscale_ec_8_4',
+      label: 'EC 8+4',
+      description: 'Erasure coding 8+4, 67% efficiency',
+    },
+    {
+      value: 'objectscale_ec_10_2',
+      label: 'EC 10+2',
+      description: 'Erasure coding 10+2, 83% efficiency',
+    },
+    {
+      value: 'objectscale_ec_12_4',
+      label: 'EC 12+4',
+      description: 'Erasure coding 12+4, 75% efficiency',
+    },
+    {
+      value: 'objectscale_replica_2',
+      label: 'Replica 2x',
+      description: '2-way replication, 50% efficiency',
+    },
+    {
+      value: 'objectscale_replica_3',
+      label: 'Replica 3x',
+      description: '3-way replication, 33% efficiency',
+    },
+  ],
+  powerstore: [
     {
       value: 'powerstore_raid5',
-      label: 'PowerStore RAID-5',
-      description: 'Dell PowerStore with single parity',
+      label: 'RAID-5',
+      description: 'Single parity, ~80% efficiency',
     },
     {
       value: 'powerstore_raid6',
-      label: 'PowerStore RAID-6',
-      description: 'Dell PowerStore with dual parity',
+      label: 'RAID-6',
+      description: 'Dual parity, ~75% efficiency',
     },
     {
+      value: 'powerstore_raid10',
+      label: 'RAID-10',
+      description: 'Mirrored stripes, 50% efficiency',
+    },
+  ],
+  powerscale: [
+    {
       value: 'powerscale_n1',
-      label: 'PowerScale N+1',
-      description: 'Dell PowerScale (Isilon) N+1 protection',
+      label: 'N+1',
+      description: 'Single parity protection',
     },
     {
       value: 'powerscale_n2',
-      label: 'PowerScale N+2',
-      description: 'Dell PowerScale (Isilon) N+2 protection',
+      label: 'N+2',
+      description: 'Double parity protection',
     },
     {
-      value: 'powerscale_mirror',
-      label: 'PowerScale Mirror',
-      description: 'Dell PowerScale mirrored protection',
+      value: 'powerscale_n2_1',
+      label: 'N+2:1',
+      description: 'N+2 with stripe failure tolerance',
     },
     {
-      value: 'objectscale_ec',
-      label: 'ObjectScale EC',
-      description: 'Dell ObjectScale erasure coding',
+      value: 'powerscale_n3',
+      label: 'N+3',
+      description: 'Triple parity protection',
+    },
+    {
+      value: 'powerscale_n4',
+      label: 'N+4',
+      description: 'Quad parity protection',
+    },
+    {
+      value: 'powerscale_mirror_2x',
+      label: 'Mirror 2x',
+      description: '2-way mirrored, 50% efficiency',
+    },
+    {
+      value: 'powerscale_mirror_3x',
+      label: 'Mirror 3x',
+      description: '3-way mirrored, 33% efficiency',
     },
   ],
   powerflex: [
@@ -220,6 +277,28 @@ const TOPOLOGY_LEVELS: Record<
       description: 'Erasure coded k=8, m=4, 67% efficiency',
     },
   ],
+  nutanix: [
+    {
+      value: 'nutanix_rf2',
+      label: 'RF2',
+      description: 'Replication Factor 2 (2 copies), 50% efficiency',
+    },
+    {
+      value: 'nutanix_rf3',
+      label: 'RF3',
+      description: 'Replication Factor 3 (3 copies), 33% efficiency',
+    },
+    {
+      value: 'nutanix_ec_rf2',
+      label: 'EC-X (RF2)',
+      description: 'Erasure Coding 4:1 with RF2 base, ~75% efficiency',
+    },
+    {
+      value: 'nutanix_ec_rf3',
+      label: 'EC-X (RF3)',
+      description: 'Erasure Coding 6:2 with RF3 base, ~75% efficiency',
+    },
+  ],
   proprietary: [
     { value: 'synology_shr', label: 'Synology SHR', description: 'Hybrid RAID, 1-drive fault' },
     { value: 'synology_shr2', label: 'Synology SHR-2', description: 'Hybrid RAID, 2-drive fault' },
@@ -258,21 +337,27 @@ export function TopologyPanel() {
     zfsOptions,
     s2dOptions,
     vsanOptions,
-    dellOptions,
+    objectscaleOptions,
+    powerstoreOptions,
+    powerscaleOptions,
     cephOptions,
     powerFlexOptions,
     netAppOptions,
     synologyOptions,
+    nutanixOptions,
     setTopology,
     setHotSpares,
     setZfsOptions,
     setS2DOptions,
     setVsanOptions,
-    setDellOptions,
+    setObjectScaleOptions,
+    setPowerStoreOptions,
+    setPowerScaleOptions,
     setCephOptions,
     setPowerFlexOptions,
     setNetAppOptions,
     setSynologyOptions,
+    setNutanixOptions,
   } = useConfigStore()
 
   const handleTypeChange = (type: string) => {
@@ -552,47 +637,383 @@ export function TopologyPanel() {
         </div>
       )}
 
-      {/* Dell Options */}
-      {topology.type === 'dell' && (
+      {/* Nutanix Options */}
+      {topology.type === 'nutanix' && (
         <div className="space-y-4 pt-3 border-t border-surface-700">
           <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-            Dell Platform Options
+            Nutanix AOS Options
           </h4>
 
           <div className="space-y-2">
-            <Label>Platform</Label>
+            <Label>Cluster Type</Label>
             <SegmentedControl
-              value={dellOptions.platform}
+              value={nutanixOptions.clusterType}
               options={[
-                { value: 'powerstore', label: 'PowerStore' },
-                { value: 'powerscale', label: 'PowerScale' },
-                { value: 'objectscale', label: 'ObjectScale' },
+                { value: 'all-flash', label: 'All-Flash' },
+                { value: 'hybrid', label: 'Hybrid' },
               ]}
-              onChange={(v) =>
-                setDellOptions({ platform: v as 'objectscale' | 'powerscale' | 'powerstore' })
-              }
+              onChange={(v) => setNutanixOptions({ clusterType: v as 'all-flash' | 'hybrid' })}
             />
             <p className="text-xs text-slate-500">
-              {dellOptions.platform === 'powerstore'
-                ? 'Unified block/file storage with NVMe'
-                : dellOptions.platform === 'powerscale'
-                  ? 'Scale-out NAS (formerly Isilon)'
-                  : 'S3-compatible object storage'}
+              {nutanixOptions.clusterType === 'all-flash'
+                ? 'All-Flash: NVMe/SSD only, maximum performance'
+                : 'Hybrid: SSD cache + HDD capacity tier'}
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Replication Factor</Label>
+            <SegmentedControl
+              value={String(nutanixOptions.replicationFactor)}
+              options={[
+                { value: '2', label: 'RF2' },
+                { value: '3', label: 'RF3' },
+              ]}
+              onChange={(v) => setNutanixOptions({ replicationFactor: Number(v) as 2 | 3 })}
+            />
+            <p className="text-xs text-slate-500">
+              {nutanixOptions.replicationFactor === 2
+                ? 'RF2: 2 copies, 50% efficiency, single node failure tolerance'
+                : 'RF3: 3 copies, 33% efficiency, dual node failure tolerance'}
             </p>
           </div>
 
           <Toggle
-            id="dell-compression"
+            id="nutanix-ec"
+            label="Erasure Coding (EC-X)"
+            checked={nutanixOptions.erasureCoding}
+            onChange={(v) => setNutanixOptions({ erasureCoding: v })}
+          />
+
+          {nutanixOptions.erasureCoding && (
+            <div className="space-y-2">
+              <Label>EC Stripe Configuration</Label>
+              <SegmentedControl
+                value={nutanixOptions.ecStripe}
+                options={[
+                  { value: '4_1', label: '4:1 (80%)' },
+                  { value: '6_2', label: '6:2 (75%)' },
+                ]}
+                onChange={(v) => setNutanixOptions({ ecStripe: v as '4_1' | '6_2' })}
+              />
+              <p className="text-xs text-slate-500">
+                EC-X applies to cold data only, reduces capacity overhead
+              </p>
+            </div>
+          )}
+
+          <Toggle
+            id="nutanix-compression"
             label="Enable Compression"
-            checked={dellOptions.compression}
-            onChange={(v) => setDellOptions({ compression: v })}
+            checked={nutanixOptions.compression}
+            onChange={(v) => setNutanixOptions({ compression: v })}
+          />
+
+          {nutanixOptions.compression && (
+            <div className="space-y-2">
+              <Label htmlFor="nutanix-compression-ratio">Compression Ratio</Label>
+              <Slider
+                id="nutanix-compression-ratio"
+                value={nutanixOptions.compressionRatio}
+                min={1}
+                max={3}
+                step={0.1}
+                onChange={(v) => setNutanixOptions({ compressionRatio: v })}
+              />
+              <p className="text-xs text-slate-500">
+                Expected ratio: {nutanixOptions.compressionRatio.toFixed(1)}:1
+              </p>
+            </div>
+          )}
+
+          <Toggle
+            id="nutanix-dedup"
+            label="Enable Deduplication"
+            checked={nutanixOptions.dedup}
+            onChange={(v) => setNutanixOptions({ dedup: v })}
+          />
+
+          {nutanixOptions.dedup && (
+            <div className="space-y-2">
+              <Label htmlFor="nutanix-dedup-ratio">Deduplication Ratio</Label>
+              <Slider
+                id="nutanix-dedup-ratio"
+                value={nutanixOptions.dedupRatio}
+                min={1}
+                max={3}
+                step={0.1}
+                onChange={(v) => setNutanixOptions({ dedupRatio: v })}
+              />
+              <p className="text-xs text-slate-500">
+                Expected ratio: {nutanixOptions.dedupRatio.toFixed(1)}:1
+              </p>
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <Label>Network Type</Label>
+            <SegmentedControl
+              value={nutanixOptions.networkType}
+              options={[
+                { value: '10gbe', label: '10 GbE' },
+                { value: '25gbe', label: '25 GbE' },
+                { value: 'rdma', label: 'RDMA' },
+              ]}
+              onChange={(v) => setNutanixOptions({ networkType: v as '10gbe' | '25gbe' | 'rdma' })}
+            />
+            <p className="text-xs text-slate-500">
+              {nutanixOptions.networkType === 'rdma'
+                ? 'RDMA (RoCE): Lowest latency (+0.1ms)'
+                : nutanixOptions.networkType === '25gbe'
+                  ? '25 GbE: Standard HCI (+0.25ms latency)'
+                  : '10 GbE: Legacy (+0.5ms latency)'}
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="nutanix-overhead">System Overhead</Label>
+            <Slider
+              id="nutanix-overhead"
+              value={nutanixOptions.systemOverhead * 100}
+              min={5}
+              max={15}
+              onChange={(v) => setNutanixOptions({ systemOverhead: v / 100 })}
+            />
+            <p className="text-xs text-slate-500">
+              CVM, metadata, snapshots: {Math.round(nutanixOptions.systemOverhead * 100)}%
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* ObjectScale Options */}
+      {topology.type === 'objectscale' && (
+        <div className="space-y-4 pt-3 border-t border-surface-700">
+          <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+            ObjectScale Options
+          </h4>
+
+          <div className="space-y-2">
+            <Label htmlFor="objectscale-object-size">Object Size (KB)</Label>
+            <Slider
+              id="objectscale-object-size"
+              value={objectscaleOptions.objectSizeKB}
+              min={100}
+              max={10240}
+              step={100}
+              onChange={(v) => setObjectScaleOptions({ objectSizeKB: v })}
+            />
+            <p className="text-xs text-slate-500">
+              Average object size: {objectscaleOptions.objectSizeKB >= 1024 ? `${(objectscaleOptions.objectSizeKB / 1024).toFixed(1)} MB` : `${objectscaleOptions.objectSizeKB} KB`}
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="objectscale-overhead">System Overhead</Label>
+            <Slider
+              id="objectscale-overhead"
+              value={objectscaleOptions.systemOverheadPercent}
+              min={10}
+              max={15}
+              onChange={(v) => setObjectScaleOptions({ systemOverheadPercent: v })}
+            />
+            <p className="text-xs text-slate-500">
+              Metadata, indexes, S3 protocol: {objectscaleOptions.systemOverheadPercent}%
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="objectscale-network">Network Efficiency</Label>
+            <Slider
+              id="objectscale-network"
+              value={objectscaleOptions.networkEfficiencyFactor * 100}
+              min={50}
+              max={80}
+              onChange={(v) => setObjectScaleOptions({ networkEfficiencyFactor: v / 100 })}
+            />
+            <p className="text-xs text-slate-500">
+              East-West traffic factor: {Math.round(objectscaleOptions.networkEfficiencyFactor * 100)}%
+            </p>
+          </div>
+
+          <Toggle
+            id="objectscale-compression"
+            label="Enable Compression"
+            checked={objectscaleOptions.compression}
+            onChange={(v) => setObjectScaleOptions({ compression: v })}
+          />
+
+          {objectscaleOptions.compression && (
+            <div className="space-y-2">
+              <Label htmlFor="objectscale-compression-ratio">Compression Ratio</Label>
+              <Slider
+                id="objectscale-compression-ratio"
+                value={objectscaleOptions.compressionRatio}
+                min={1}
+                max={3}
+                step={0.1}
+                onChange={(v) => setObjectScaleOptions({ compressionRatio: v })}
+              />
+              <p className="text-xs text-slate-500">
+                Expected ratio: {objectscaleOptions.compressionRatio.toFixed(1)}:1
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* PowerStore Options */}
+      {topology.type === 'powerstore' && (
+        <div className="space-y-4 pt-3 border-t border-surface-700">
+          <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+            PowerStore Options
+          </h4>
+
+          <Toggle
+            id="powerstore-compression"
+            label="Enable Compression"
+            checked={powerstoreOptions.compression}
+            onChange={(v) => setPowerStoreOptions({ compression: v })}
+          />
+
+          {powerstoreOptions.compression && (
+            <div className="space-y-2">
+              <Label htmlFor="powerstore-compression-ratio">Compression Ratio</Label>
+              <Slider
+                id="powerstore-compression-ratio"
+                value={powerstoreOptions.compressionRatio}
+                min={1}
+                max={3}
+                step={0.1}
+                onChange={(v) => setPowerStoreOptions({ compressionRatio: v })}
+              />
+              <p className="text-xs text-slate-500">
+                Expected ratio: {powerstoreOptions.compressionRatio.toFixed(1)}:1
+              </p>
+            </div>
+          )}
+
+          <Toggle
+            id="powerstore-dedup"
+            label="Enable Deduplication"
+            checked={powerstoreOptions.dedup}
+            onChange={(v) => setPowerStoreOptions({ dedup: v })}
+          />
+
+          {powerstoreOptions.dedup && (
+            <div className="space-y-2">
+              <Label htmlFor="powerstore-dedup-ratio">Deduplication Ratio</Label>
+              <Slider
+                id="powerstore-dedup-ratio"
+                value={powerstoreOptions.dedupRatio}
+                min={1}
+                max={3}
+                step={0.1}
+                onChange={(v) => setPowerStoreOptions({ dedupRatio: v })}
+              />
+              <p className="text-xs text-slate-500">
+                Expected ratio: {powerstoreOptions.dedupRatio.toFixed(1)}:1
+              </p>
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <Label htmlFor="powerstore-snapshot">Snapshot Reserve</Label>
+            <Slider
+              id="powerstore-snapshot"
+              value={powerstoreOptions.snapshotReservePercent}
+              min={0}
+              max={30}
+              onChange={(v) => setPowerStoreOptions({ snapshotReservePercent: v })}
+            />
+            <p className="text-xs text-slate-500">
+              Snapshot reserve: {powerstoreOptions.snapshotReservePercent}%
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* PowerScale Options */}
+      {topology.type === 'powerscale' && (
+        <div className="space-y-4 pt-3 border-t border-surface-700">
+          <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+            PowerScale Options
+          </h4>
+
+          <Toggle
+            id="powerscale-compression"
+            label="Enable Compression"
+            checked={powerscaleOptions.compression}
+            onChange={(v) => setPowerScaleOptions({ compression: v })}
+          />
+
+          {powerscaleOptions.compression && (
+            <div className="space-y-2">
+              <Label htmlFor="powerscale-compression-ratio">Compression Ratio</Label>
+              <Slider
+                id="powerscale-compression-ratio"
+                value={powerscaleOptions.compressionRatio}
+                min={1}
+                max={3}
+                step={0.1}
+                onChange={(v) => setPowerScaleOptions({ compressionRatio: v })}
+              />
+              <p className="text-xs text-slate-500">
+                Expected ratio: {powerscaleOptions.compressionRatio.toFixed(1)}:1
+              </p>
+            </div>
+          )}
+
+          <Toggle
+            id="powerscale-dedup"
+            label="Enable Deduplication"
+            checked={powerscaleOptions.dedup}
+            onChange={(v) => setPowerScaleOptions({ dedup: v })}
+          />
+
+          {powerscaleOptions.dedup && (
+            <div className="space-y-2">
+              <Label htmlFor="powerscale-dedup-ratio">Deduplication Ratio</Label>
+              <Slider
+                id="powerscale-dedup-ratio"
+                value={powerscaleOptions.dedupRatio}
+                min={1}
+                max={3}
+                step={0.1}
+                onChange={(v) => setPowerScaleOptions({ dedupRatio: v })}
+              />
+              <p className="text-xs text-slate-500">
+                Expected ratio: {powerscaleOptions.dedupRatio.toFixed(1)}:1
+              </p>
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <Label htmlFor="powerscale-snapshot">Snapshot Reserve</Label>
+            <Slider
+              id="powerscale-snapshot"
+              value={powerscaleOptions.snapshotReservePercent}
+              min={0}
+              max={30}
+              onChange={(v) => setPowerScaleOptions({ snapshotReservePercent: v })}
+            />
+            <p className="text-xs text-slate-500">
+              Snapshot reserve: {powerscaleOptions.snapshotReservePercent}%
+            </p>
+          </div>
+
+          <Toggle
+            id="powerscale-smartquotas"
+            label="SmartQuotas"
+            checked={powerscaleOptions.smartQuotas}
+            onChange={(v) => setPowerScaleOptions({ smartQuotas: v })}
           />
 
           <Toggle
-            id="dell-dedup"
-            label="Enable Deduplication"
-            checked={dellOptions.dedup}
-            onChange={(v) => setDellOptions({ dedup: v })}
+            id="powerscale-synciq"
+            label="SyncIQ (Replication)"
+            checked={powerscaleOptions.syncIQ}
+            onChange={(v) => setPowerScaleOptions({ syncIQ: v })}
           />
         </div>
       )}

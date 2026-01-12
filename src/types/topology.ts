@@ -49,14 +49,30 @@ export type VsanTopology =
   | 'vsan_esa_raid5' // ESA with RAID-5
   | 'vsan_esa_raid6' // ESA with RAID-6
 
-/** Dell storage topologies */
-export type DellTopology =
-  | 'objectscale_ec' // ObjectScale erasure coding
-  | 'powerscale_n1' // PowerScale N+1 protection
-  | 'powerscale_n2' // PowerScale N+2 protection
-  | 'powerscale_mirror' // PowerScale mirrored
-  | 'powerstore_raid5' // PowerStore RAID-5
-  | 'powerstore_raid6' // PowerStore RAID-6
+/** Dell ObjectScale topologies (Object Storage S3) */
+export type ObjectScaleTopology =
+  | 'objectscale_ec_4_2' // 4+2 EC (67%)
+  | 'objectscale_ec_8_4' // 8+4 EC (67%)
+  | 'objectscale_ec_10_2' // 10+2 EC (83%)
+  | 'objectscale_ec_12_4' // 12+4 EC (75%)
+  | 'objectscale_replica_2' // 2-way replication (50%)
+  | 'objectscale_replica_3' // 3-way replication (33%)
+
+/** Dell PowerStore topologies (Block Storage) */
+export type PowerStoreTopology =
+  | 'powerstore_raid5' // RAID-5
+  | 'powerstore_raid6' // RAID-6
+  | 'powerstore_raid10' // RAID-10
+
+/** Dell PowerScale topologies (Scale-out NAS) */
+export type PowerScaleTopology =
+  | 'powerscale_n1' // N+1 protection
+  | 'powerscale_n2' // N+2 protection
+  | 'powerscale_n2_1' // N+2:1 protection
+  | 'powerscale_n3' // N+3 protection
+  | 'powerscale_n4' // N+4 protection
+  | 'powerscale_mirror_2x' // 2x mirrored
+  | 'powerscale_mirror_3x' // 3x mirrored
 
 /** Ceph storage topologies */
 export type CephTopology =
@@ -77,6 +93,13 @@ export type PowerFlexTopology =
   | 'powerflex_ec_8_2' // Erasure coding 8+2 (8 data + 2 parity = 80%)
   | 'powerflex_ec_12_4' // Erasure coding 12+4 (12 data + 4 parity = 75%)
 
+/** Nutanix AOS topologies (based on RF and EC-X) */
+export type NutanixTopology =
+  | 'nutanix_rf2' // Replication Factor 2 (2 copies)
+  | 'nutanix_rf3' // Replication Factor 3 (3 copies)
+  | 'nutanix_ec_rf2' // EC-X with RF2 base (4:1 striping, ~75% efficiency)
+  | 'nutanix_ec_rf3' // EC-X with RF3 base (6:2 striping)
+
 /** All supported topology types */
 export type TopologyType =
   | 'standard'
@@ -84,9 +107,12 @@ export type TopologyType =
   | 's2d'
   | 'proprietary'
   | 'vmware'
-  | 'dell'
   | 'ceph'
   | 'powerflex'
+  | 'powerstore'
+  | 'powerscale'
+  | 'objectscale'
+  | 'nutanix'
 
 /** Union of all topology configurations */
 export type Topology =
@@ -95,9 +121,12 @@ export type Topology =
   | { type: 's2d'; level: S2DTopology }
   | { type: 'proprietary'; level: ProprietaryRaid }
   | { type: 'vmware'; level: VsanTopology }
-  | { type: 'dell'; level: DellTopology }
   | { type: 'ceph'; level: CephTopology }
   | { type: 'powerflex'; level: PowerFlexTopology }
+  | { type: 'powerstore'; level: PowerStoreTopology }
+  | { type: 'powerscale'; level: PowerScaleTopology }
+  | { type: 'objectscale'; level: ObjectScaleTopology }
+  | { type: 'nutanix'; level: NutanixTopology }
 
 /** ZFS-specific configuration options */
 export interface ZfsOptions {
@@ -182,7 +211,16 @@ export type RaidControllerType =
 export type ControllerType = HbaType | RaidControllerType
 
 /** Topologies that require HBA (direct disk access) */
-export const HBA_REQUIRED_TOPOLOGIES: TopologyType[] = ['zfs', 's2d', 'vmware', 'ceph', 'powerflex']
+export const HBA_REQUIRED_TOPOLOGIES: TopologyType[] = [
+  'zfs',
+  's2d',
+  'vmware',
+  'ceph',
+  'powerflex',
+  'powerscale',
+  'objectscale',
+  'nutanix',
+]
 
 /** Check if topology requires HBA */
 export function requiresHba(topologyType: TopologyType): boolean {
@@ -239,16 +277,50 @@ export interface SynologyOptions {
   cacheMode: 'read_only' | 'read_write'
 }
 
-/** Dell storage-specific configuration options */
-export interface DellOptions {
-  /** Storage platform */
-  platform: 'objectscale' | 'powerscale' | 'powerstore'
-  /** Protection level descriptor */
-  protectionLevel: string
+/** Dell ObjectScale-specific configuration options (Object Storage S3) */
+export interface ObjectScaleOptions {
+  /** Average object size in KB (impacts performance calculations) */
+  objectSizeKB: number
+  /** System overhead percentage (10-15% for OS, metadata, maintenance) */
+  systemOverheadPercent: number
+  /** Network efficiency factor (0.6 = 40% used for East-West traffic) */
+  networkEfficiencyFactor: number
   /** Enable compression */
   compression: boolean
+  /** Compression ratio (1.0 = none, 2.0 = 2:1) */
+  compressionRatio: number
+}
+
+/** Dell PowerStore-specific configuration options (Block Storage) */
+export interface PowerStoreOptions {
+  /** Enable compression */
+  compression: boolean
+  /** Compression ratio (1.0 = none, 2.0 = 2:1) */
+  compressionRatio: number
   /** Enable deduplication */
   dedup: boolean
+  /** Deduplication ratio (1.0 = none, 2.0 = 2:1) */
+  dedupRatio: number
+  /** Snapshot reserve percentage */
+  snapshotReservePercent: number
+}
+
+/** Dell PowerScale-specific configuration options (Scale-out NAS) */
+export interface PowerScaleOptions {
+  /** Enable compression */
+  compression: boolean
+  /** Compression ratio (1.0 = none, 2.0 = 2:1) */
+  compressionRatio: number
+  /** Enable deduplication */
+  dedup: boolean
+  /** Deduplication ratio (1.0 = none, 2.0 = 2:1) */
+  dedupRatio: number
+  /** Snapshot reserve percentage */
+  snapshotReservePercent: number
+  /** SmartQuotas enabled */
+  smartQuotas: boolean
+  /** SyncIQ replication enabled */
+  syncIQ: boolean
 }
 
 /** NetApp storage-specific configuration options */
@@ -325,6 +397,32 @@ export interface PowerFlexOptions {
   fgOverhead: number
 }
 
+/** Nutanix AOS configuration options */
+export interface NutanixOptions {
+  /** Cluster configuration: All-Flash or Hybrid */
+  clusterType: 'all-flash' | 'hybrid'
+  /** Replication Factor (RF2 or RF3) */
+  replicationFactor: 2 | 3
+  /** Enable Erasure Coding (EC-X) for cold data */
+  erasureCoding: boolean
+  /** EC-X stripe configuration (only if erasureCoding is true) */
+  ecStripe: '4_1' | '6_2'
+  /** Enable inline compression */
+  compression: boolean
+  /** Expected compression ratio (1.0 = none, 1.5 = 1.5:1) */
+  compressionRatio: number
+  /** Enable deduplication (capacity tier) */
+  dedup: boolean
+  /** Expected deduplication ratio (1.0 = none, 1.2 = 1.2:1) */
+  dedupRatio: number
+  /** System/metadata overhead (5-10% for snapshots, metadata, rebuild) */
+  systemOverhead: number
+  /** Network type for inter-CVM replication */
+  networkType: '10gbe' | '25gbe' | 'rdma'
+  /** Tiering configuration (for hybrid clusters) */
+  tiering?: TieringConfig
+}
+
 /** Complete topology configuration */
 export interface TopologyConfig {
   /** Selected topology */
@@ -384,12 +482,33 @@ export const DEFAULT_VSAN_OPTIONS: VsanOptions = {
   encryption: false,
 }
 
-/** Default Dell options */
-export const DEFAULT_DELL_OPTIONS: DellOptions = {
-  platform: 'powerstore',
-  protectionLevel: 'raid5',
+/** Default ObjectScale options */
+export const DEFAULT_OBJECTSCALE_OPTIONS: ObjectScaleOptions = {
+  objectSizeKB: 1024, // 1MB average object size
+  systemOverheadPercent: 12, // 12% for OS, K8s, metadata
+  networkEfficiencyFactor: 0.6, // 40% for East-West traffic
+  compression: false,
+  compressionRatio: 1.0,
+}
+
+/** Default PowerStore options */
+export const DEFAULT_POWERSTORE_OPTIONS: PowerStoreOptions = {
   compression: true,
+  compressionRatio: 1.5,
   dedup: false,
+  dedupRatio: 1.0,
+  snapshotReservePercent: 20,
+}
+
+/** Default PowerScale options */
+export const DEFAULT_POWERSCALE_OPTIONS: PowerScaleOptions = {
+  compression: true,
+  compressionRatio: 1.5,
+  dedup: false,
+  dedupRatio: 1.0,
+  snapshotReservePercent: 20,
+  smartQuotas: false,
+  syncIQ: false,
 }
 
 /** Default Ceph options */
@@ -428,6 +547,20 @@ export const DEFAULT_POWERFLEX_OPTIONS: PowerFlexOptions = {
   storagePools: 1,
   faultSets: 1, // Fault sets are optional (1 = no fault sets, distributed placement)
   fgOverhead: 0.12, // 12% FG metadata overhead
+}
+
+/** Default Nutanix AOS options */
+export const DEFAULT_NUTANIX_OPTIONS: NutanixOptions = {
+  clusterType: 'all-flash',
+  replicationFactor: 2, // RF2 is standard
+  erasureCoding: false,
+  ecStripe: '4_1', // 4:1 striping (75% efficiency)
+  compression: true,
+  compressionRatio: 1.5, // 1.5:1 inline compression
+  dedup: false,
+  dedupRatio: 1.0,
+  systemOverhead: 0.1, // 10% for system/metadata/snapshots
+  networkType: '25gbe',
 }
 
 /** Default Synology options */

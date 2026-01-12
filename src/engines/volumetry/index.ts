@@ -8,9 +8,12 @@ import type { Drive } from '@/types/drive'
 import type { VolumetryResult } from '@/types/results'
 import type {
   CephOptions,
-  DellOptions,
   NetAppOptions,
+  NutanixOptions,
+  ObjectScaleOptions,
   PowerFlexOptions,
+  PowerScaleOptions,
+  PowerStoreOptions,
   S2DOptions,
   SynologyOptions,
   TieringConfig,
@@ -75,11 +78,14 @@ export interface VolumetryInput {
   zfsOptions: ZfsOptions
   s2dOptions: S2DOptions
   vsanOptions: VsanOptions
-  dellOptions: DellOptions
+  objectscaleOptions: ObjectScaleOptions
+  powerstoreOptions: PowerStoreOptions
+  powerscaleOptions: PowerScaleOptions
   cephOptions: CephOptions
   powerFlexOptions: PowerFlexOptions
   netAppOptions: NetAppOptions
   synologyOptions: SynologyOptions
+  nutanixOptions: NutanixOptions
   compressionRatio: number
   dedupRatio: number
 }
@@ -93,8 +99,11 @@ function getDataFraction(
   driveCount: number,
   s2dOptions: S2DOptions,
   vsanOptions: VsanOptions,
-  _dellOptions: DellOptions,
+  _objectscaleOptions: ObjectScaleOptions,
+  _powerstoreOptions: PowerStoreOptions,
+  _powerscaleOptions: PowerScaleOptions,
   cephOptions: CephOptions,
+  nutanixOptions: NutanixOptions,
 ): number {
   const usableDrives = driveCount // Hot spares handled separately
 
@@ -203,29 +212,73 @@ function getDataFraction(
           return 1.0
       }
 
-    case 'dell':
+    case 'objectscale':
+      // Dell ObjectScale (Object Storage S3)
+      switch (topology.level) {
+        case 'objectscale_ec_4_2':
+          // EC 4+2: 4/(4+2) = 66.7% efficiency
+          return 4 / 6
+        case 'objectscale_ec_8_4':
+          // EC 8+4: 8/(8+4) = 66.7% efficiency
+          return 8 / 12
+        case 'objectscale_ec_10_2':
+          // EC 10+2: 10/(10+2) = 83.3% efficiency
+          return 10 / 12
+        case 'objectscale_ec_12_4':
+          // EC 12+4: 12/(12+4) = 75% efficiency
+          return 12 / 16
+        case 'objectscale_replica_2':
+          // 2-way replication: 50% efficiency
+          return 1 / 2
+        case 'objectscale_replica_3':
+          // 3-way replication: 33.3% efficiency
+          return 1 / 3
+        default:
+          return 10 / 12 // Default to EC 10+2
+      }
+
+    case 'powerstore':
+      // Dell PowerStore (Block Storage)
       switch (topology.level) {
         case 'powerstore_raid5':
           // PowerStore RAID-5: typically 4+1 or 8+1 stripes, ~80% efficiency
           return 0.8
         case 'powerstore_raid6':
-          // PowerStore RAID-6: typically 4+2 or 8+2 stripes, ~66-80% efficiency
+          // PowerStore RAID-6: typically 4+2 or 8+2 stripes, ~75% efficiency
           return 0.75
+        case 'powerstore_raid10':
+          // PowerStore RAID-10: mirrored stripes, 50% efficiency
+          return 0.5
+        default:
+          return 0.8 // Default to RAID-5
+      }
+
+    case 'powerscale':
+      // Dell PowerScale (Scale-out NAS)
+      switch (topology.level) {
         case 'powerscale_n1':
-          // PowerScale N+1: single parity, (n-1)/n
+          // N+1 protection: (n-1)/n
           return (usableDrives - 1) / usableDrives
         case 'powerscale_n2':
-          // PowerScale N+2: double parity, (n-2)/n
+          // N+2 protection: (n-2)/n
           return (usableDrives - 2) / usableDrives
-        case 'powerscale_mirror':
-          // PowerScale mirror: 50% efficiency
+        case 'powerscale_n2_1':
+          // N+2:1 protection: (n-2)/n with 1 stripe failure tolerance
+          return (usableDrives - 2) / usableDrives
+        case 'powerscale_n3':
+          // N+3 protection: (n-3)/n
+          return (usableDrives - 3) / usableDrives
+        case 'powerscale_n4':
+          // N+4 protection: (n-4)/n
+          return (usableDrives - 4) / usableDrives
+        case 'powerscale_mirror_2x':
+          // 2x mirrored: 50% efficiency
           return 0.5
-        case 'objectscale_ec':
-          // ObjectScale erasure coding: typically 10+2 = 83% or 6+3 = 67%
-          // Using 10+2 as default
-          return 10 / 12
+        case 'powerscale_mirror_3x':
+          // 3x mirrored: 33.3% efficiency
+          return 1 / 3
         default:
-          return 1.0
+          return (usableDrives - 2) / usableDrives // Default to N+2
       }
 
     case 'ceph':
@@ -283,6 +336,27 @@ function getDataFraction(
           return 0.5
       }
 
+    case 'nutanix':
+      // Nutanix AOS: RF2 = 50%, RF3 = 33%, EC-X improves efficiency
+      switch (topology.level) {
+        case 'nutanix_rf2':
+          // RF2: 2 copies = 50% efficiency
+          return 1 / nutanixOptions.replicationFactor
+        case 'nutanix_rf3':
+          // RF3: 3 copies = 33% efficiency
+          return 1 / nutanixOptions.replicationFactor
+        case 'nutanix_ec_rf2':
+          // EC-X with RF2 base: 4:1 striping = 75% efficiency (approximation)
+          // Per spec: C_usable_ec = C_formatted × 0.75
+          return 0.75
+        case 'nutanix_ec_rf3':
+          // EC-X with RF3 base: 6:2 striping = 75% efficiency
+          return 6 / 8
+        default:
+          // Default to RF2 if not specified
+          return 1 / nutanixOptions.replicationFactor
+      }
+
     default:
       return 1.0
   }
@@ -334,9 +408,17 @@ function getFilesystemOverheadPercent(
       // vSAN object overhead (~1-2% for metadata, witness components)
       return 0.015
 
-    case 'dell':
-      // Dell storage platforms have minimal metadata overhead
+    case 'objectscale':
+      // ObjectScale S3 metadata overhead (~1-2%)
+      return 0.015
+
+    case 'powerstore':
+      // PowerStore block storage minimal metadata overhead
       return 0.01
+
+    case 'powerscale':
+      // PowerScale scale-out NAS filesystem overhead
+      return 0.015
 
     case 's2d':
       // S2D ReFS/CSV overhead
@@ -349,6 +431,10 @@ function getFilesystemOverheadPercent(
     case 'powerflex':
       // PowerFlex metadata overhead is minimal (~1%)
       return 0.01
+
+    case 'nutanix':
+      // Nutanix AOS: CVM overhead, metadata, etc. (~1-2%)
+      return 0.015
 
     case 'proprietary':
       // Check for Synology or NetApp based on topology level
@@ -389,11 +475,14 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
     zfsOptions,
     s2dOptions,
     vsanOptions,
-    dellOptions,
+    objectscaleOptions,
+    powerstoreOptions,
+    powerscaleOptions,
     cephOptions,
     powerFlexOptions,
     netAppOptions,
     synologyOptions,
+    nutanixOptions,
     compressionRatio,
     dedupRatio,
   } = input
@@ -414,6 +503,15 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
   // Ceph WAL/DB tiering
   if (topology.type === 'ceph' && cephOptions.walDbOffload && cephOptions.tiering) {
     tieredCapacity = calculateTieredCapacity(cephOptions.tiering, serverCount)
+  }
+
+  // Nutanix hybrid tiering (SSD cache + HDD capacity)
+  if (
+    topology.type === 'nutanix' &&
+    nutanixOptions.clusterType === 'hybrid' &&
+    nutanixOptions.tiering
+  ) {
+    tieredCapacity = calculateTieredCapacity(nutanixOptions.tiering, serverCount)
   }
 
   // Calculate raw capacity based on tiering or standard configuration
@@ -447,8 +545,11 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
     usableDrives,
     s2dOptions,
     vsanOptions,
-    dellOptions,
+    objectscaleOptions,
+    powerstoreOptions,
+    powerscaleOptions,
     cephOptions,
+    nutanixOptions,
   )
   const capacityAfterSysPartition = rawUsableCapacity - synologySystemOverhead
   const capacityAfterParity = capacityAfterSysPartition * dataFraction
@@ -485,10 +586,43 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
     netAppSnapshotReserve = capacityAfterParity * netAppOptions.snapshotReserve
   }
 
+  // Nutanix system overhead (5-10% for snapshots, metadata, CVM, rebuild)
+  // Per spec: C_formatted = C_raw × 0.90 (10% overhead)
+  let nutanixSystemOverhead = 0
+  if (topology.type === 'nutanix') {
+    nutanixSystemOverhead = capacityAfterParity * nutanixOptions.systemOverhead
+  }
+
+  // ObjectScale system overhead (10-15% for metadata, indexes, S3 protocol overhead)
+  let objectscaleSystemOverhead = 0
+  if (topology.type === 'objectscale') {
+    objectscaleSystemOverhead = capacityAfterParity * (objectscaleOptions.systemOverheadPercent / 100)
+  }
+
+  // PowerStore snapshot reserve
+  let powerstoreSnapshotReserve = 0
+  if (topology.type === 'powerstore') {
+    powerstoreSnapshotReserve = capacityAfterParity * (powerstoreOptions.snapshotReservePercent / 100)
+  }
+
+  // PowerScale snapshot reserve
+  let powerscaleSnapshotReserve = 0
+  if (topology.type === 'powerscale') {
+    powerscaleSnapshotReserve = capacityAfterParity * (powerscaleOptions.snapshotReservePercent / 100)
+  }
+
   // Filesystem overhead
   const fsOverheadPercent = getFilesystemOverheadPercent(topology, synologyOptions, netAppOptions)
   const capacityForFs =
-    capacityAfterParity - slopOverhead - s2dReserve - powerFlexFgOverhead - netAppSnapshotReserve
+    capacityAfterParity -
+    slopOverhead -
+    s2dReserve -
+    powerFlexFgOverhead -
+    netAppSnapshotReserve -
+    nutanixSystemOverhead -
+    objectscaleSystemOverhead -
+    powerstoreSnapshotReserve -
+    powerscaleSnapshotReserve
   const filesystemOverhead = capacityForFs * fsOverheadPercent
 
   // Usable capacity (before compression/dedup and safe capacity factor)
@@ -514,6 +648,33 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
   // PowerFlex compression ratio (only for modes with compression enabled)
   if (topology.type === 'powerflex' && powerFlexOptions.compression) {
     effectiveCapacity = usableCapacity * powerFlexOptions.compressionRatio
+  }
+
+  // Nutanix compression and deduplication
+  // Per spec: C_effective = C_usable × (Ratio_comp × Ratio_dedup)
+  if (topology.type === 'nutanix') {
+    const nutanixCompRatio = nutanixOptions.compression ? nutanixOptions.compressionRatio : 1.0
+    const nutanixDedupRatio = nutanixOptions.dedup ? nutanixOptions.dedupRatio : 1.0
+    effectiveCapacity = usableCapacity * nutanixCompRatio * nutanixDedupRatio
+  }
+
+  // ObjectScale compression (for S3 object storage)
+  if (topology.type === 'objectscale' && objectscaleOptions.compression) {
+    effectiveCapacity = usableCapacity * objectscaleOptions.compressionRatio
+  }
+
+  // PowerStore compression and deduplication
+  if (topology.type === 'powerstore') {
+    const psCompRatio = powerstoreOptions.compression ? powerstoreOptions.compressionRatio : 1.0
+    const psDedupRatio = powerstoreOptions.dedup ? powerstoreOptions.dedupRatio : 1.0
+    effectiveCapacity = usableCapacity * psCompRatio * psDedupRatio
+  }
+
+  // PowerScale compression and deduplication
+  if (topology.type === 'powerscale') {
+    const pscCompRatio = powerscaleOptions.compression ? powerscaleOptions.compressionRatio : 1.0
+    const pscDedupRatio = powerscaleOptions.dedup ? powerscaleOptions.dedupRatio : 1.0
+    effectiveCapacity = usableCapacity * pscCompRatio * pscDedupRatio
   }
 
   // Overall efficiency
@@ -602,6 +763,42 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
       label: 'NetApp Snapshot Reserve',
       bytes: netAppSnapshotReserve,
       percent: (netAppSnapshotReserve / rawCapacity) * 100,
+      color: 'var(--color-overhead)',
+    })
+  }
+
+  if (nutanixSystemOverhead > 0) {
+    breakdown.push({
+      label: 'Nutanix System/CVM Reserve',
+      bytes: nutanixSystemOverhead,
+      percent: (nutanixSystemOverhead / rawCapacity) * 100,
+      color: 'var(--color-overhead)',
+    })
+  }
+
+  if (objectscaleSystemOverhead > 0) {
+    breakdown.push({
+      label: 'ObjectScale System Overhead',
+      bytes: objectscaleSystemOverhead,
+      percent: (objectscaleSystemOverhead / rawCapacity) * 100,
+      color: 'var(--color-overhead)',
+    })
+  }
+
+  if (powerstoreSnapshotReserve > 0) {
+    breakdown.push({
+      label: 'PowerStore Snapshot Reserve',
+      bytes: powerstoreSnapshotReserve,
+      percent: (powerstoreSnapshotReserve / rawCapacity) * 100,
+      color: 'var(--color-overhead)',
+    })
+  }
+
+  if (powerscaleSnapshotReserve > 0) {
+    breakdown.push({
+      label: 'PowerScale Snapshot Reserve',
+      bytes: powerscaleSnapshotReserve,
+      percent: (powerscaleSnapshotReserve / rawCapacity) * 100,
       color: 'var(--color-overhead)',
     })
   }

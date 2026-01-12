@@ -6,8 +6,11 @@
 import type { DriveConnectivity, FormFactorFilter } from './drive'
 import type {
   CephOptions,
-  DellOptions,
+  ObjectScaleOptions,
+  PowerStoreOptions,
+  PowerScaleOptions,
   NetAppOptions,
+  NutanixOptions,
   PowerFlexOptions,
   RaidControllerOptions,
   S2DOptions,
@@ -67,8 +70,12 @@ export interface TopologyState {
   s2dOptions: S2DOptions
   /** vSAN-specific options */
   vsanOptions: VsanOptions
-  /** Dell-specific options */
-  dellOptions: DellOptions
+  /** ObjectScale-specific options */
+  objectscaleOptions: ObjectScaleOptions
+  /** PowerStore-specific options */
+  powerstoreOptions: PowerStoreOptions
+  /** PowerScale-specific options */
+  powerscaleOptions: PowerScaleOptions
   /** Ceph-specific options */
   cephOptions: CephOptions
   /** PowerFlex-specific options */
@@ -77,6 +84,8 @@ export interface TopologyState {
   netAppOptions: NetAppOptions
   /** Synology-specific options */
   synologyOptions: SynologyOptions
+  /** Nutanix-specific options */
+  nutanixOptions: NutanixOptions
   /** RAID controller options */
   controllerOptions: RaidControllerOptions
 }
@@ -156,11 +165,14 @@ export interface ConfigActions {
   setZfsOptions: (options: Partial<ZfsOptions>) => void
   setS2DOptions: (options: Partial<S2DOptions>) => void
   setVsanOptions: (options: Partial<VsanOptions>) => void
-  setDellOptions: (options: Partial<DellOptions>) => void
+  setObjectScaleOptions: (options: Partial<ObjectScaleOptions>) => void
+  setPowerStoreOptions: (options: Partial<PowerStoreOptions>) => void
+  setPowerScaleOptions: (options: Partial<PowerScaleOptions>) => void
   setCephOptions: (options: Partial<CephOptions>) => void
   setPowerFlexOptions: (options: Partial<PowerFlexOptions>) => void
   setNetAppOptions: (options: Partial<NetAppOptions>) => void
   setSynologyOptions: (options: Partial<SynologyOptions>) => void
+  setNutanixOptions: (options: Partial<NutanixOptions>) => void
   setControllerOptions: (options: Partial<RaidControllerOptions>) => void
 
   // Workload actions

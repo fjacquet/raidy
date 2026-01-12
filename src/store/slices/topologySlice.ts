@@ -5,8 +5,11 @@
 import type { StateCreator } from 'zustand'
 import type {
   CephOptions,
-  DellOptions,
+  ObjectScaleOptions,
+  PowerStoreOptions,
+  PowerScaleOptions,
   NetAppOptions,
+  NutanixOptions,
   PowerFlexOptions,
   RaidControllerOptions,
   S2DOptions,
@@ -19,8 +22,11 @@ import type {
 import {
   DEFAULT_CEPH_OPTIONS,
   DEFAULT_CONTROLLER_OPTIONS,
-  DEFAULT_DELL_OPTIONS,
+  DEFAULT_OBJECTSCALE_OPTIONS,
+  DEFAULT_POWERSTORE_OPTIONS,
+  DEFAULT_POWERSCALE_OPTIONS,
   DEFAULT_NETAPP_OPTIONS,
+  DEFAULT_NUTANIX_OPTIONS,
   DEFAULT_POWERFLEX_OPTIONS,
   DEFAULT_S2D_OPTIONS,
   DEFAULT_SYNOLOGY_OPTIONS,
@@ -34,11 +40,14 @@ export interface TopologySlice extends TopologyState {
   setZfsOptions: (options: Partial<ZfsOptions>) => void
   setS2DOptions: (options: Partial<S2DOptions>) => void
   setVsanOptions: (options: Partial<VsanOptions>) => void
-  setDellOptions: (options: Partial<DellOptions>) => void
+  setObjectScaleOptions: (options: Partial<ObjectScaleOptions>) => void
+  setPowerStoreOptions: (options: Partial<PowerStoreOptions>) => void
+  setPowerScaleOptions: (options: Partial<PowerScaleOptions>) => void
   setCephOptions: (options: Partial<CephOptions>) => void
   setPowerFlexOptions: (options: Partial<PowerFlexOptions>) => void
   setNetAppOptions: (options: Partial<NetAppOptions>) => void
   setSynologyOptions: (options: Partial<SynologyOptions>) => void
+  setNutanixOptions: (options: Partial<NutanixOptions>) => void
   setControllerOptions: (options: Partial<RaidControllerOptions>) => void
 }
 
@@ -49,11 +58,14 @@ export const createTopologySlice: StateCreator<TopologySlice> = (set) => ({
   zfsOptions: { ...DEFAULT_ZFS_OPTIONS },
   s2dOptions: { ...DEFAULT_S2D_OPTIONS },
   vsanOptions: { ...DEFAULT_VSAN_OPTIONS },
-  dellOptions: { ...DEFAULT_DELL_OPTIONS },
+  objectscaleOptions: { ...DEFAULT_OBJECTSCALE_OPTIONS },
+  powerstoreOptions: { ...DEFAULT_POWERSTORE_OPTIONS },
+  powerscaleOptions: { ...DEFAULT_POWERSCALE_OPTIONS },
   cephOptions: { ...DEFAULT_CEPH_OPTIONS },
   powerFlexOptions: { ...DEFAULT_POWERFLEX_OPTIONS },
   netAppOptions: { ...DEFAULT_NETAPP_OPTIONS },
   synologyOptions: { ...DEFAULT_SYNOLOGY_OPTIONS },
+  nutanixOptions: { ...DEFAULT_NUTANIX_OPTIONS },
   controllerOptions: { ...DEFAULT_CONTROLLER_OPTIONS },
 
   // Actions
@@ -63,8 +75,12 @@ export const createTopologySlice: StateCreator<TopologySlice> = (set) => ({
   setS2DOptions: (options) => set((state) => ({ s2dOptions: { ...state.s2dOptions, ...options } })),
   setVsanOptions: (options) =>
     set((state) => ({ vsanOptions: { ...state.vsanOptions, ...options } })),
-  setDellOptions: (options) =>
-    set((state) => ({ dellOptions: { ...state.dellOptions, ...options } })),
+  setObjectScaleOptions: (options) =>
+    set((state) => ({ objectscaleOptions: { ...state.objectscaleOptions, ...options } })),
+  setPowerStoreOptions: (options) =>
+    set((state) => ({ powerstoreOptions: { ...state.powerstoreOptions, ...options } })),
+  setPowerScaleOptions: (options) =>
+    set((state) => ({ powerscaleOptions: { ...state.powerscaleOptions, ...options } })),
   setCephOptions: (options) =>
     set((state) => ({ cephOptions: { ...state.cephOptions, ...options } })),
   setPowerFlexOptions: (options) =>
@@ -73,6 +89,8 @@ export const createTopologySlice: StateCreator<TopologySlice> = (set) => ({
     set((state) => ({ netAppOptions: { ...state.netAppOptions, ...options } })),
   setSynologyOptions: (options) =>
     set((state) => ({ synologyOptions: { ...state.synologyOptions, ...options } })),
+  setNutanixOptions: (options) =>
+    set((state) => ({ nutanixOptions: { ...state.nutanixOptions, ...options } })),
   setControllerOptions: (options) =>
     set((state) => ({ controllerOptions: { ...state.controllerOptions, ...options } })),
 })
