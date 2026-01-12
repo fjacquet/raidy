@@ -110,12 +110,12 @@ const TOPOLOGY_LEVELS: Record<
     },
     {
       value: 'vsan_osa_raid5',
-      label: 'RAID-5 (3+1)',
+      label: 'RAID-5 Erasure Coding',
       description: 'FTT=1, min 4 hosts, 75% efficiency, write penalty',
     },
     {
       value: 'vsan_osa_raid6',
-      label: 'RAID-6 (4+2)',
+      label: 'RAID-6 Erasure Coding',
       description: 'FTT=2, min 6 hosts, 67% efficiency, write penalty',
     },
   ],
@@ -123,11 +123,11 @@ const TOPOLOGY_LEVELS: Record<
     {
       value: 'vsan_esa_raid5',
       label: 'RAID-5 Adaptive (Recommended)',
-      description: '2+1 or 4+1 based on cluster size, min 3 hosts, 67-80% efficiency',
+      description: 'Optimizes stripe width for cluster size, min 3 hosts, 67-80% efficiency',
     },
     {
       value: 'vsan_esa_raid6',
-      label: 'RAID-6 (4+2)',
+      label: 'RAID-6 Erasure Coding',
       description: 'FTT=2, min 6 hosts, 67% efficiency',
     },
     {
