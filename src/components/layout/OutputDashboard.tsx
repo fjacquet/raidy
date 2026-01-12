@@ -6,8 +6,10 @@ import {
   AnimatedBytes,
   AnimatedCurrency,
   AnimatedPercent,
+  CapacityBreakdownList,
   DonutChart,
   DonutLegend,
+  SankeyDiagram,
   Speedometer,
 } from '@/components/outputs'
 import drivesData from '@/data/drives.json'
@@ -16,6 +18,8 @@ import {
   formatNumber,
   useCalculations,
   useFormatBytes,
+  useIsDesktop,
+  useIsMobile,
   useResilience,
 } from '@/hooks'
 import { useConfigStore } from '@/store'
@@ -91,9 +95,13 @@ export function OutputDashboard() {
   const results = useCalculations()
   const selectedDrive = drives[driveId] || null
 
+  // Responsive hooks
+  const isMobile = useIsMobile()
+  const isDesktop = useIsDesktop()
+
   const { volumetry, performance, sustainability, tco } = results
 
-  // Resilience simulation
+  // Resilience simulation - reduce iterations on mobile for battery/performance
   const {
     result: resilienceResult,
     progress: resilienceProgress,
@@ -104,7 +112,7 @@ export function OutputDashboard() {
     driveCount,
     topology,
     rebuildSpeedMBs: 150,
-    simulationCount: 10000,
+    simulationCount: isMobile ? 1000 : 10000, // 1K on mobile, 10K on desktop
     autoRun: false,
   })
 
@@ -198,21 +206,16 @@ export function OutputDashboard() {
             </span>
           </div>
 
-          <div className="flex flex-col lg:flex-row gap-6">
-            {/* Donut Chart */}
-            <div className="flex flex-col items-center">
-              <DonutChart
-                segments={capacitySegments}
-                size={180}
-                thickness={24}
-                centerValue={formatBytes(volumetry.usableCapacity)}
-                centerLabel="Usable"
-              />
-            </div>
+          {/* Desktop: Sankey + Metrics | Mobile: List view */}
+          {isDesktop ? (
+            <div className="space-y-4">
+              {/* Sankey Diagram - Desktop only */}
+              <div className="overflow-x-auto">
+                <SankeyDiagram volumetry={volumetry} width={560} height={280} />
+              </div>
 
-            {/* Metrics and Legend */}
-            <div className="flex-1 space-y-4">
-              <div className="grid grid-cols-3 gap-4">
+              {/* Metrics */}
+              <div className="grid grid-cols-3 gap-4 pt-4 border-t border-surface-700">
                 <MetricCard label="Raw Capacity">
                   <AnimatedBytes value={volumetry.rawCapacity} />
                 </MetricCard>
@@ -227,37 +230,59 @@ export function OutputDashboard() {
                   <AnimatedBytes value={volumetry.effectiveCapacity} />
                 </MetricCard>
               </div>
-
-              <DonutLegend segments={capacitySegments} />
             </div>
-          </div>
+          ) : (
+            <div className="space-y-4">
+              {/* Donut Chart - Compact for tablet/mobile */}
+              <div className="flex flex-col sm:flex-row gap-4 items-center sm:items-start">
+                <div className="flex-shrink-0">
+                  <DonutChart
+                    segments={capacitySegments}
+                    size={isMobile ? 140 : 160}
+                    thickness={isMobile ? 18 : 22}
+                    centerValue={formatBytes(volumetry.usableCapacity)}
+                    centerLabel="Usable"
+                  />
+                </div>
+                <div className="flex-1 w-full">
+                  <DonutLegend segments={capacitySegments} />
+                </div>
+              </div>
+
+              {/* Capacity Breakdown List - Mobile */}
+              <div className="pt-4 border-t border-surface-700">
+                <CapacityBreakdownList volumetry={volumetry} />
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Performance Gauges Card */}
         <div className="panel row-span-2">
           <h3 className="text-lg font-semibold text-white mb-4">Performance</h3>
 
-          <div className="grid grid-cols-2 gap-4">
+          {/* Responsive speedometer grid */}
+          <div className="grid grid-cols-2 gap-2 sm:gap-4">
             <Speedometer
               value={performance.maxReadThroughputMBs}
               max={50000}
               label="Read"
               unit="MB/s"
-              size={140}
+              size={isMobile ? 100 : 140}
             />
             <Speedometer
               value={performance.maxWriteThroughputMBs}
               max={50000}
               label="Write"
               unit="MB/s"
-              size={140}
+              size={isMobile ? 100 : 140}
             />
             <Speedometer
               value={performance.maxReadIOPS}
               max={2000000}
               label="Read IOPS"
               unit="IOPS"
-              size={140}
+              size={isMobile ? 100 : 140}
               thresholds={[
                 { value: 0.5, color: '#22c55e' },
                 { value: 0.8, color: '#3b82f6' },
@@ -269,7 +294,7 @@ export function OutputDashboard() {
               max={2000000}
               label="Write IOPS"
               unit="IOPS"
-              size={140}
+              size={isMobile ? 100 : 140}
               thresholds={[
                 { value: 0.5, color: '#22c55e' },
                 { value: 0.8, color: '#3b82f6' },
@@ -428,7 +453,7 @@ export function OutputDashboard() {
           ) : (
             <div className="text-center py-8 text-slate-500">
               <p>Click "Run Simulation" to calculate</p>
-              <p className="text-xs mt-1">100,000 Monte Carlo iterations</p>
+              <p className="text-xs mt-1">{isMobile ? '1,000' : '10,000'} Monte Carlo iterations</p>
               <p className="text-xs text-slate-600">
                 Includes correlated failures & rebuild stress
               </p>
