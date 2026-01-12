@@ -11,6 +11,7 @@ import {
   DonutLegend,
   SankeyDiagram,
   Speedometer,
+  ZfsCapacityDetails,
 } from '@/components/outputs'
 import drivesData from '@/data/drives.json'
 import {
@@ -256,6 +257,19 @@ export function OutputDashboard() {
             </div>
           )}
         </div>
+
+        {/* ZFS Capacity Details Card - Only shown for ZFS topology */}
+        {topology.type === 'zfs' && volumetry.zfsDetails && (
+          <div className="panel xl:col-span-2">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-white">ZFS Capacity Breakdown</h3>
+              <span className="text-xs text-slate-500">
+                Dual-unit display: TiB (binary) / TB (decimal)
+              </span>
+            </div>
+            <ZfsCapacityDetails details={volumetry.zfsDetails} />
+          </div>
+        )}
 
         {/* Performance Gauges Card */}
         <div className="panel row-span-2">

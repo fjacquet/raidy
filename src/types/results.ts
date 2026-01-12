@@ -27,6 +27,40 @@ export interface VolumetryResult {
     percent: number
     color: string
   }[]
+  /** ZFS-specific detailed capacity breakdown (only present when topology is ZFS) */
+  zfsDetails?: ZfsCapacityDetails
+}
+
+/** ZFS-specific capacity breakdown for detailed display */
+export interface ZfsCapacityDetails {
+  /** Total raw storage capacity (all vdevs) in bytes */
+  totalRawCapacity: number
+  /** Zpool capacity after RAID-Z parity/mirror overhead in bytes */
+  zpoolCapacity: number
+  /** Capacity lost to parity (RAID-Z) or mirror redundancy in bytes */
+  parityOverhead: number
+  /** Capacity lost to ashift padding (sector alignment) in bytes */
+  ashiftPaddingOverhead: number
+  /** Zpool usable capacity after parity in bytes */
+  zpoolUsableCapacity: number
+  /** Slop space reservation (1/32 of pool) in bytes */
+  slopSpaceReservation: number
+  /** ZFS usable capacity after slop in bytes */
+  zfsUsableCapacity: number
+  /** Recommended minimum free space (20% of usable) in bytes */
+  recommendedMinFreeSpace: number
+  /** Practical usable capacity after 20% headroom in bytes */
+  practicalUsableCapacity: number
+  /** Effective capacity after compression/dedup in bytes */
+  effectiveCapacity: number
+  /** Compression ratio applied (1.0 = no compression) */
+  compressionRatio: number
+  /** Deduplication ratio applied (1.0 = no dedup) */
+  dedupRatio: number
+  /** Ashift value used */
+  ashift: number
+  /** Record size in bytes */
+  recordSize: number
 }
 
 /** Performance bottleneck analysis (Module B) */

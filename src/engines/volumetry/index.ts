@@ -5,7 +5,7 @@
 
 import drivesData from '@/data/drives.json'
 import type { Drive } from '@/types/drive'
-import type { VolumetryResult } from '@/types/results'
+import type { VolumetryResult, ZfsCapacityDetails } from '@/types/results'
 import type {
   CephOptions,
   NetAppOptions,
@@ -654,11 +654,13 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
     }
   }
 
-  // ZFS-specific overhead (slop space = 1/64)
+  // ZFS-specific overhead (slop space = 1/32)
   let slopOverhead = 0
+  let zfsAshiftOverhead = 0
   if (topology.type === 'zfs') {
     const zfsOverhead = getZfsOverhead(capacityAfterParity, zfsOptions, drive.sector_size)
     slopOverhead = zfsOverhead.slop
+    zfsAshiftOverhead = zfsOverhead.ashift
   }
 
   // PowerFlex Fine Granularity metadata overhead (12-15%)
@@ -927,6 +929,32 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
     color: 'var(--color-overhead)',
   })
 
+  // Build ZFS-specific details if ZFS topology
+  let zfsDetails: ZfsCapacityDetails | undefined
+  if (topology.type === 'zfs') {
+    const zpoolUsable = rawUsableCapacity - parityOverhead - zfsAshiftOverhead
+    const zfsUsable = zpoolUsable - slopOverhead - filesystemOverhead
+    const recommendedMinFree = zfsUsable * 0.2 // 20% headroom recommendation
+    const practicalUsable = zfsUsable - recommendedMinFree
+
+    zfsDetails = {
+      totalRawCapacity: rawCapacity,
+      zpoolCapacity: rawUsableCapacity, // After hot spares
+      parityOverhead: parityOverhead,
+      ashiftPaddingOverhead: zfsAshiftOverhead,
+      zpoolUsableCapacity: zpoolUsable,
+      slopSpaceReservation: slopOverhead,
+      zfsUsableCapacity: zfsUsable,
+      recommendedMinFreeSpace: recommendedMinFree,
+      practicalUsableCapacity: practicalUsable,
+      effectiveCapacity: effectiveCapacity,
+      compressionRatio,
+      dedupRatio,
+      ashift: zfsOptions.ashift,
+      recordSize: zfsOptions.recordsize,
+    }
+  }
+
   return {
     rawCapacity,
     parityOverhead,
@@ -937,5 +965,6 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
     effectiveCapacity,
     efficiency,
     breakdown,
+    zfsDetails,
   }
 }
