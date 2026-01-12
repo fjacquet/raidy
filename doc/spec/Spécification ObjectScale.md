@@ -85,6 +85,7 @@ Note: Si Réplication x3, diviser par 3.
 C'est la partie critique pour ObjectScale. Les formules doivent être basées sur des abaques :
 
 1. **IOPS Totaux (Petits Objets):**
+
    - Limité par le média (Disque).
    - $$IOPS_{cluster} = (IOPS_{drive} \times N_{drives} \times N_{nodes}) \times Penalite_{EC}$$
    - _Note:_ L'EC a une pénalité en écriture (Write Penalty) due aux calculs de parité, contrairement à la réplication.

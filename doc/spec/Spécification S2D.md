@@ -103,7 +103,7 @@ L'interface doit présenter deux jauges principales et un tableau détaillé.
 
 ### Visualisation
 
-- **Graphique Volumétrie :** Une barre empilée montrant [OS] [Cache (Indisponible)] [Réserve] [Parité/Overhead] [**Espace Utilisable Réel**].
+- **Graphique Volumétrie :** Une barre empilée montrant [OS][cache (indisponible)] [Réserve][parité/overhead] [**Espace Utilisable Réel**].
 - **Graphique Performance :** Courbe estimée IOPS vs Latence.
 
 ### Alertes de configuration (Règles métiers)
@@ -128,15 +128,15 @@ Pour stocker une configuration, voici le format de données suggéré :
   "storage_per_node": {
     "slots_populated": 8,
     "cache_drives": [
-      {"type": "NVMe", "size_tb": 1.6, "quantity": 2, "iops_rating": 300000}
+      { "type": "NVMe", "size_tb": 1.6, "quantity": 2, "iops_rating": 300000 }
     ],
     "capacity_drives": [
-      {"type": "HDD", "size_tb": 8, "quantity": 6, "rpm": 7200}
+      { "type": "HDD", "size_tb": 8, "quantity": 6, "rpm": 7200 }
     ]
   },
   "settings": {
     "resiliency": "Mirror-Accelerated Parity",
-    "map_ratio": 0.20,
+    "map_ratio": 0.2,
     "reserve_strategy": "OneNode"
   }
 }
