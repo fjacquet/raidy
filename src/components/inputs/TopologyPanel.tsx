@@ -47,16 +47,16 @@ const POWERFLEX_EC_OPTIONS = [
 ]
 
 const TOPOLOGY_TYPES = [
-  { value: 'zfs', label: 'ZFS' },
   { value: 'standard', label: 'RAID' },
+  { value: 'zfs', label: 'ZFS' },
   { value: 's2d', label: 'S2D' },
   { value: 'vmware', label: 'vSAN' },
   { value: 'nutanix', label: 'Nutanix' },
-  { value: 'objectscale', label: 'ObjectScale' },
+  { value: 'ceph', label: 'Ceph' },
+  { value: 'powerflex', label: 'PowerFlex' },
   { value: 'powerstore', label: 'PowerStore' },
   { value: 'powerscale', label: 'PowerScale' },
-  { value: 'powerflex', label: 'PowerFlex' },
-  { value: 'ceph', label: 'Ceph' },
+  { value: 'objectscale', label: 'ObjectScale' },
   { value: 'proprietary', label: 'Other' },
 ]
 
@@ -124,34 +124,24 @@ const TOPOLOGY_LEVELS: Record<
   ],
   objectscale: [
     {
-      value: 'objectscale_ec_4_2',
-      label: 'EC 4+2',
-      description: 'Erasure coding 4+2, 67% efficiency',
-    },
-    {
-      value: 'objectscale_ec_8_4',
-      label: 'EC 8+4',
-      description: 'Erasure coding 8+4, 67% efficiency',
+      value: 'objectscale_ec_12_4',
+      label: 'EC 12+4 (Default)',
+      description: '75% efficiency, min 5 nodes, tolerates 4 failures',
     },
     {
       value: 'objectscale_ec_10_2',
-      label: 'EC 10+2',
-      description: 'Erasure coding 10+2, 83% efficiency',
+      label: 'EC 10+2 (Cold/Archive)',
+      description: '83% efficiency, min 7 nodes, tolerates 2 failures',
     },
     {
-      value: 'objectscale_ec_12_4',
-      label: 'EC 12+4',
-      description: 'Erasure coding 12+4, 75% efficiency',
+      value: 'objectscale_ec_24_4',
+      label: 'EC 24+4 (Preview)',
+      description: '86% efficiency, min 8 nodes, tech preview',
     },
     {
-      value: 'objectscale_replica_2',
-      label: 'Replica 2x',
-      description: '2-way replication, 50% efficiency',
-    },
-    {
-      value: 'objectscale_replica_3',
-      label: 'Replica 3x',
-      description: '3-way replication, 33% efficiency',
+      value: 'objectscale_mirror_3',
+      label: 'Triple Mirror',
+      description: '33% efficiency, for metadata/small configs',
     },
   ],
   powerstore: [

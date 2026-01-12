@@ -49,14 +49,12 @@ export type VsanTopology =
   | 'vsan_esa_raid5' // ESA with RAID-5
   | 'vsan_esa_raid6' // ESA with RAID-6
 
-/** Dell ObjectScale topologies (Object Storage S3) */
+/** Dell ObjectScale topologies (Object Storage S3) - per SME specs */
 export type ObjectScaleTopology =
-  | 'objectscale_ec_4_2' // 4+2 EC (67%)
-  | 'objectscale_ec_8_4' // 8+4 EC (67%)
-  | 'objectscale_ec_10_2' // 10+2 EC (83%)
-  | 'objectscale_ec_12_4' // 12+4 EC (75%)
-  | 'objectscale_replica_2' // 2-way replication (50%)
-  | 'objectscale_replica_3' // 3-way replication (33%)
+  | 'objectscale_ec_12_4' // EC 12+4 (75%) - default, min 5 nodes
+  | 'objectscale_ec_10_2' // EC 10+2 (83%) - cold/archive, min 7 nodes
+  | 'objectscale_ec_24_4' // EC 24+4 (86%) - tech preview, min 8 nodes
+  | 'objectscale_mirror_3' // Triple mirroring (33%) - metadata/small configs
 
 /** Dell PowerStore topologies (Block Storage) */
 export type PowerStoreTopology =
@@ -277,14 +275,18 @@ export interface SynologyOptions {
   cacheMode: 'read_only' | 'read_write'
 }
 
-/** Dell ObjectScale-specific configuration options (Object Storage S3) */
+/** Dell ObjectScale-specific configuration options (Object Storage S3) - per SME specs */
 export interface ObjectScaleOptions {
-  /** Average object size in KB (impacts performance calculations) */
+  /** Average object size in KB (10KB - 1GB, impacts performance calculations) */
   objectSizeKB: number
-  /** System overhead percentage (10-15% for OS, metadata, maintenance) */
+  /** System overhead percentage (10-20% for formatting, metadata, rebalance, rebuild) */
   systemOverheadPercent: number
-  /** Network efficiency factor (0.6 = 40% used for East-West traffic) */
+  /** Network efficiency factor (0.5-0.6 for East-West traffic: EC, XOR, rebalance, geo) */
   networkEfficiencyFactor: number
+  /** Number of sites in Replication Group (1-8, impacts geo-overhead) */
+  sites: number
+  /** Maximum fill rate percentage (80-85% recommended, >90% may block writes) */
+  fillRatePercent: number
   /** Enable compression */
   compression: boolean
   /** Compression ratio (1.0 = none, 2.0 = 2:1) */
@@ -482,11 +484,13 @@ export const DEFAULT_VSAN_OPTIONS: VsanOptions = {
   encryption: false,
 }
 
-/** Default ObjectScale options */
+/** Default ObjectScale options - per SME specs */
 export const DEFAULT_OBJECTSCALE_OPTIONS: ObjectScaleOptions = {
   objectSizeKB: 1024, // 1MB average object size
-  systemOverheadPercent: 12, // 12% for OS, K8s, metadata
-  networkEfficiencyFactor: 0.6, // 40% for East-West traffic
+  systemOverheadPercent: 15, // 10-20% for formatting, metadata, rebalance, rebuild
+  networkEfficiencyFactor: 0.55, // 0.5-0.6 for East-West traffic (EC, XOR, rebalance, geo)
+  sites: 1, // Single site (1-8 supported for geo-replication)
+  fillRatePercent: 80, // 80-85% recommended, >90% may block writes
   compression: false,
   compressionRatio: 1.0,
 }

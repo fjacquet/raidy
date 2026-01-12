@@ -212,23 +212,19 @@ function getRaidWritePenalty(topology: Topology): number {
       }
 
     case 'objectscale':
-      // ObjectScale S3 object storage write characteristics
+      // ObjectScale S3 object storage write characteristics per SME spec
       // EC with eventual consistency has low write amplification
       switch (topology.level) {
-        case 'objectscale_ec_4_2':
-          return 1.5 // EC 4+2: write amplification = 6/4 = 1.5
-        case 'objectscale_ec_8_4':
-          return 1.5 // EC 8+4: write amplification = 12/8 = 1.5
-        case 'objectscale_ec_10_2':
-          return 1.2 // EC 10+2: write amplification = 12/10 = 1.2
         case 'objectscale_ec_12_4':
-          return 1.33 // EC 12+4: write amplification = 16/12 = 1.33
-        case 'objectscale_replica_2':
-          return 2 // 2-way replication
-        case 'objectscale_replica_3':
-          return 3 // 3-way replication
+          return 1.33 // EC 12+4: write amplification = 16/12 = 1.33 (default, min 5 nodes)
+        case 'objectscale_ec_10_2':
+          return 1.2 // EC 10+2: write amplification = 12/10 = 1.2 (cold/archive, min 7 nodes)
+        case 'objectscale_ec_24_4':
+          return 1.17 // EC 24+4: write amplification = 28/24 = 1.17 (tech preview, min 8 nodes)
+        case 'objectscale_mirror_3':
+          return 3 // Triple mirroring: 3x write amplification (metadata/small configs)
         default:
-          return 1.2
+          return 1.33 // Default to EC 12+4
       }
 
     case 'powerstore':

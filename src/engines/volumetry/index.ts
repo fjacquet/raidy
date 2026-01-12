@@ -69,6 +69,79 @@ function calculateTieredCapacity(
   }
 }
 
+/**
+ * Get ObjectScale geo-overhead factor for multi-site replication.
+ * Based on SME spec tables for Replication Group overhead.
+ * Returns the overhead multiplier (1.0 = no overhead, 2.67 = worst case for 2 sites EC 12+4)
+ */
+function getObjectScaleGeoOverhead(topology: Topology, sites: number): number {
+  if (topology.type !== 'objectscale' || sites <= 1) {
+    return 1.0 // No geo-overhead for single site
+  }
+
+  // Geo-overhead tables from SME spec
+  const geoOverhead12_4: Record<number, number> = {
+    1: 1.33,
+    2: 2.67,
+    3: 2.0,
+    4: 1.77,
+    5: 1.67,
+    6: 1.6,
+    7: 1.55,
+    8: 1.52,
+  }
+
+  const geoOverhead10_2: Record<number, number> = {
+    1: 1.2,
+    2: 2.4,
+    3: 1.8,
+    4: 1.6,
+    5: 1.5,
+    6: 1.44,
+    7: 1.4,
+    8: 1.37,
+  }
+
+  // EC 24+4 uses similar overhead to 12+4 (scaled)
+  const geoOverhead24_4: Record<number, number> = {
+    1: 1.17,
+    2: 2.33,
+    3: 1.75,
+    4: 1.56,
+    5: 1.47,
+    6: 1.4,
+    7: 1.35,
+    8: 1.31,
+  }
+
+  // Triple mirror uses 3x overhead factor
+  const geoOverheadMirror3: Record<number, number> = {
+    1: 3.0,
+    2: 6.0,
+    3: 4.5,
+    4: 4.0,
+    5: 3.75,
+    6: 3.6,
+    7: 3.5,
+    8: 3.43,
+  }
+
+  const sitesKey = Math.min(Math.max(sites, 1), 8)
+
+  switch (topology.level) {
+    case 'objectscale_ec_12_4':
+      return geoOverhead12_4[sitesKey] ?? 1.33
+    case 'objectscale_ec_10_2':
+      return geoOverhead10_2[sitesKey] ?? 1.2
+    case 'objectscale_ec_24_4':
+      return geoOverhead24_4[sitesKey] ?? 1.17
+    case 'objectscale_mirror_3':
+      return geoOverheadMirror3[sitesKey] ?? 3.0
+    default:
+      return 1.33
+  }
+}
+
 export interface VolumetryInput {
   drive: Drive
   driveCount: number
@@ -213,28 +286,22 @@ function getDataFraction(
       }
 
     case 'objectscale':
-      // Dell ObjectScale (Object Storage S3)
+      // Dell ObjectScale (Object Storage S3) - per SME specs
       switch (topology.level) {
-        case 'objectscale_ec_4_2':
-          // EC 4+2: 4/(4+2) = 66.7% efficiency
-          return 4 / 6
-        case 'objectscale_ec_8_4':
-          // EC 8+4: 8/(8+4) = 66.7% efficiency
-          return 8 / 12
-        case 'objectscale_ec_10_2':
-          // EC 10+2: 10/(10+2) = 83.3% efficiency
-          return 10 / 12
         case 'objectscale_ec_12_4':
-          // EC 12+4: 12/(12+4) = 75% efficiency
+          // EC 12+4: 12/(12+4) = 75% efficiency, min 5 nodes, default
           return 12 / 16
-        case 'objectscale_replica_2':
-          // 2-way replication: 50% efficiency
-          return 1 / 2
-        case 'objectscale_replica_3':
-          // 3-way replication: 33.3% efficiency
+        case 'objectscale_ec_10_2':
+          // EC 10+2: 10/(10+2) = 83.3% efficiency, min 7 nodes, cold/archive
+          return 10 / 12
+        case 'objectscale_ec_24_4':
+          // EC 24+4: 24/(24+4) = 85.7% efficiency, min 8 nodes, tech preview
+          return 24 / 28
+        case 'objectscale_mirror_3':
+          // Triple mirroring: 33.3% efficiency, for metadata/small configs
           return 1 / 3
         default:
-          return 10 / 12 // Default to EC 10+2
+          return 12 / 16 // Default to EC 12+4
       }
 
     case 'powerstore':
@@ -593,11 +660,19 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
     nutanixSystemOverhead = capacityAfterParity * nutanixOptions.systemOverhead
   }
 
-  // ObjectScale system overhead (10-15% for metadata, indexes, S3 protocol overhead)
+  // ObjectScale system overhead (10-20% for metadata, indexes, S3 protocol overhead)
+  // Plus geo-overhead for multi-site replication (per SME spec)
   let objectscaleSystemOverhead = 0
+  let objectscaleGeoOverhead = 0
   if (topology.type === 'objectscale') {
     objectscaleSystemOverhead =
       capacityAfterParity * (objectscaleOptions.systemOverheadPercent / 100)
+    // Apply geo-overhead factor for multi-site replication
+    const geoFactor = getObjectScaleGeoOverhead(topology, objectscaleOptions.sites)
+    if (geoFactor > 1.0) {
+      // Geo-overhead reduces usable capacity by the inverse of the factor
+      objectscaleGeoOverhead = capacityAfterParity * (1 - 1 / geoFactor)
+    }
   }
 
   // PowerStore snapshot reserve
@@ -624,6 +699,7 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
     netAppSnapshotReserve -
     nutanixSystemOverhead -
     objectscaleSystemOverhead -
+    objectscaleGeoOverhead -
     powerstoreSnapshotReserve -
     powerscaleSnapshotReserve
   const filesystemOverhead = capacityForFs * fsOverheadPercent
@@ -784,6 +860,15 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
       label: 'ObjectScale System Overhead',
       bytes: objectscaleSystemOverhead,
       percent: (objectscaleSystemOverhead / rawCapacity) * 100,
+      color: 'var(--color-overhead)',
+    })
+  }
+
+  if (objectscaleGeoOverhead > 0) {
+    breakdown.push({
+      label: `ObjectScale Geo-Replication (${objectscaleOptions.sites} sites)`,
+      bytes: objectscaleGeoOverhead,
+      percent: (objectscaleGeoOverhead / rawCapacity) * 100,
       color: 'var(--color-overhead)',
     })
   }

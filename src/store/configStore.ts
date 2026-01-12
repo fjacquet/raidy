@@ -33,7 +33,7 @@ const getDefaultState = () => ({
   serverPowerWatts: 400,
 
   // Topology defaults
-  topology: { type: 'zfs' as const, level: 'raidz2' as const },
+  topology: { type: 'standard' as const, level: 'RAID6' as const },
   hotSpares: 1,
   zfsOptions: {
     ashift: 12 as const,
@@ -92,8 +92,10 @@ const getDefaultState = () => ({
   },
   objectscaleOptions: {
     objectSizeKB: 1024,
-    systemOverheadPercent: 12,
-    networkEfficiencyFactor: 0.6,
+    systemOverheadPercent: 15,
+    networkEfficiencyFactor: 0.55,
+    sites: 1,
+    fillRatePercent: 80,
     compression: false,
     compressionRatio: 1.0,
   },
