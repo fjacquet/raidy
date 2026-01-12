@@ -52,8 +52,8 @@ export interface TopologySlice extends TopologyState {
 }
 
 export const createTopologySlice: StateCreator<TopologySlice> = (set) => ({
-  // Default state
-  topology: { type: 'zfs', level: 'raidz2' },
+  // Default state - RAID 6 is the most common enterprise configuration
+  topology: { type: 'standard', level: 'RAID6' },
   hotSpares: 1,
   zfsOptions: { ...DEFAULT_ZFS_OPTIONS },
   s2dOptions: { ...DEFAULT_S2D_OPTIONS },
