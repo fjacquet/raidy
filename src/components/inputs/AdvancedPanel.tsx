@@ -124,43 +124,46 @@ export function AdvancedPanel() {
         </div>
       </div>
 
-      {/* Data Efficiency Section */}
-      <div className="space-y-4 pt-4 border-t border-surface-700">
-        <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-          Data Efficiency
-        </h4>
+      {/* Data Efficiency Section - Only for topologies that support compression/dedup */}
+      {/* Standard RAID and S2D do not have inline compression/deduplication */}
+      {topology.type !== 'standard' && topology.type !== 's2d' && (
+        <div className="space-y-4 pt-4 border-t border-surface-700">
+          <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+            Data Efficiency
+          </h4>
 
-        <div className="space-y-2">
-          <Label htmlFor="compression-ratio" hint={`${compressionRatio.toFixed(1)}x`}>
-            Compression Ratio
-          </Label>
-          <Slider
-            id="compression-ratio"
-            value={compressionRatio}
-            min={1}
-            max={5}
-            step={0.1}
-            onChange={setCompressionRatio}
-            formatValue={(v) => `${v.toFixed(1)}x`}
-          />
-          <p className="text-xs text-slate-500">1.0 = no compression, 2.0 = 50% reduction</p>
-        </div>
+          <div className="space-y-2">
+            <Label htmlFor="compression-ratio" hint={`${compressionRatio.toFixed(1)}x`}>
+              Compression Ratio
+            </Label>
+            <Slider
+              id="compression-ratio"
+              value={compressionRatio}
+              min={1}
+              max={5}
+              step={0.1}
+              onChange={setCompressionRatio}
+              formatValue={(v) => `${v.toFixed(1)}x`}
+            />
+            <p className="text-xs text-slate-500">1.0 = no compression, 2.0 = 50% reduction</p>
+          </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="dedup-ratio" hint={`${dedupRatio.toFixed(1)}x`}>
-            Deduplication Ratio
-          </Label>
-          <Slider
-            id="dedup-ratio"
-            value={dedupRatio}
-            min={1}
-            max={10}
-            step={0.1}
-            onChange={setDedupRatio}
-            formatValue={(v) => `${v.toFixed(1)}x`}
-          />
+          <div className="space-y-2">
+            <Label htmlFor="dedup-ratio" hint={`${dedupRatio.toFixed(1)}x`}>
+              Deduplication Ratio
+            </Label>
+            <Slider
+              id="dedup-ratio"
+              value={dedupRatio}
+              min={1}
+              max={10}
+              step={0.1}
+              onChange={setDedupRatio}
+              formatValue={(v) => `${v.toFixed(1)}x`}
+            />
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Network & Bus Section */}
       <div className="space-y-4 pt-4 border-t border-surface-700">

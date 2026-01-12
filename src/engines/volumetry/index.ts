@@ -738,7 +738,15 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
   }
 
   // Effective capacity (after compression and dedup)
-  let effectiveCapacity = usableCapacity * compressionRatio * dedupRatio
+  // Only apply compression/dedup for topologies that support it
+  let effectiveCapacity = usableCapacity
+
+  // Standard RAID has no compression/deduplication - effectiveCapacity = usableCapacity
+  // S2D has no inline compression/dedup at storage layer
+  // ZFS supports compression and dedup via filesystem
+  if (topology.type === 'zfs') {
+    effectiveCapacity = usableCapacity * compressionRatio * dedupRatio
+  }
 
   // NetApp DRR (Data Reduction Ratio) - applies on top of standard compression/dedup
   // Includes zero-detection + inline dedup + inline compression + compaction
