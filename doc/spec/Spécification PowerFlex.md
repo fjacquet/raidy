@@ -1,12 +1,12 @@
-**📘 Spécification Logicielle : PowerFlex Calculator (Ultimate Edition)**
+**Spécification Logicielle : PowerFlex Calculator (Ultimate Edition)**
 
-## **1\. Vision du Produit**
+## **1. Vision du Produit**
 
 Un outil de modélisation pour architectes et ingénieurs stockage permettant de dimensionner des clusters Dell PowerFlex (HCI ou Two-Layer). Le logiciel doit comparer les modes de protection (Mirroring vs Compression vs Erasure Coding) et prédire les goulots d'étranglement.
 
 ## ---
 
-**2\. Module d'Entrée : Configuration du Cluster**
+**2. Module d'Entrée : Configuration du Cluster**
 
 L'interface doit permettre de définir le "Hardware Pool".
 
@@ -27,7 +27,7 @@ L'interface doit permettre de définir le "Hardware Pool".
 
 ## ---
 
-**3\. Module de Calcul : Volumétrie & Protection**
+**3. Module de Calcul : Volumétrie & Protection**
 
 Le moteur doit supporter trois algorithmes de protection distincts selon le choix de l'utilisateur.
 
@@ -69,7 +69,7 @@ _Technologie : Erasure Coding distribué (similaire à vSAN RAID 5/6)._
 
 ## ---
 
-**4\. Module de Calcul : Performance (IOPS & Latence)**
+**4. Module de Calcul : Performance (IOPS & Latence)**
 
 Le logiciel doit calculer le **"Point de Rupture"** (Bottleneck). La performance réelle est la valeur la plus basse entre les trois limites ci-dessous.
 
@@ -82,7 +82,7 @@ C'est ici que le choix de la technologie (Mirror vs EC) impacte le calcul.
   - _Mode Standard/Ultra (Mirroring) :_ $WP \= 2$ (1 écriture client \= 2 écritures disque).
   - _Mode Erasure Coding :_
     - Séquentiel : $WP \\approx 1.2$ (Full stripe write).
-    - Aléatoire : $WP \= N\_{parity} \+ 1$ (Read-Modify-Write). _Pour du 4+2, WP \= 3 à 4\._
+    - Aléatoire : $WP \= N\_{parity} \+ 1$ (Read-Modify-Write). _Pour du 4+2, WP \= 3 à 4._
 
 $$IOPS\_{frontend\\\_max} \= \\frac{Total\\\_IOPS\_{backend}}{R\_{ratio} \+ (W\_{ratio} \\times WP)}$$
 
@@ -100,7 +100,7 @@ $$Throughput\_{max} \= N\_{nodes} \\times Speed\_{NIC} \\times 0.8 \\text{ (Effi
 
 ## ---
 
-**5\. Matrice de Compatibilité (Règles Métier)**
+**5. Matrice de Compatibilité (Règles Métier)**
 
 Le logiciel doit inclure un validateur automatique (Checklist) avant de lancer le calcul.
 
@@ -121,7 +121,7 @@ Le logiciel doit inclure un validateur automatique (Checklist) avant de lancer l
 
 ## ---
 
-**6\. Interface Utilisateur & Scénarios**
+**6. Interface Utilisateur & Scénarios**
 
 L'UI doit proposer trois onglets principaux :
 

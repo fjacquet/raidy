@@ -6,16 +6,16 @@
 
 ## ---
 
-**1\. Technical Architecture**
+**1. Technical Architecture**
 
 ### **1.1. Technology Stack**
 
-- **Core:** React (Functional Components \+ Hooks) or Svelte 5\.
+- **Core:** React (Functional Components + Hooks) or Svelte 5.
 - **Language:** TypeScript (Strict Mode). _Critical for maintaining complex math type-safety._
 - **State Management:** URL-based State (Zustand or Recoil syncs to URL Hash).
   - _Why:_ Enables "Copy URL to Share" without a backend database.
 - **Math Engine:** Pure TypeScript for logic; Web Workers for Monte Carlo simulations (Resilience engine).
-- **Visualization:** Recharts (for simple graphs) \+ D3.js (for custom Capacity Waterfall charts).
+- **Visualization:** Recharts (for simple graphs) + D3.js (for custom Capacity Waterfall charts).
 - **Styling:** Tailwind CSS (Mobile responsive, Dark Mode native).
 - **Deployment:** Static hosting (Vercel / Netlify / GitHub Pages).
 
@@ -28,7 +28,7 @@
 
 ## ---
 
-**2\. Data Structure (The "Database")**
+**2. Data Structure (The "Database")**
 
 Since there is no backend, the "intelligence" lives in strictly typed JSON definitions.
 
@@ -62,7 +62,7 @@ cost_avg: number; // USD (Base reference)
 
 ## ---
 
-**3\. Core Logic Modules**
+**3. Core Logic Modules**
 
 ### **3.1. Module A: Volumetry & Efficiency Engine**
 
@@ -141,7 +141,7 @@ _Handles the "What is the Carbon/Financial Cost?" question._
 
 ## ---
 
-**4\. UI/UX Specification**
+**4. UI/UX Specification**
 
 ### **4.1. Layout Strategy (The "Cockpit")**
 
@@ -167,7 +167,7 @@ Split screen layout. Fixed Input on Left, Reactive Output on Right.
 
 ## ---
 
-**5\. Export & Share Capabilities**
+**5. Export & Share Capabilities**
 
 - **Share:**
   - Generate Share Link: Serializes the JSON state $\\to$ Base64 String $\\to$ Updates URL.
@@ -178,7 +178,7 @@ Split screen layout. Fixed Input on Left, Reactive Output on Right.
 
 ## ---
 
-**6\. Testing & Validation Plan**
+**6. Testing & Validation Plan**
 
 - **Unit Tests:**
   - Verify RAID 5/6 math against industry standard formulas.
