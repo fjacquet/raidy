@@ -38,25 +38,17 @@ const SYNOLOGY_MODEL_OPTIONS = [
   { value: 'xs', label: 'XS/XS+ (Enterprise)' },
 ]
 
-// PowerFlex EC scheme options
-const POWERFLEX_EC_OPTIONS = [
-  { value: '4_1', label: '4+1 (80%)' },
-  { value: '4_2', label: '4+2 (67%)' },
-  { value: '8_2', label: '8+2 (80%)' },
-  { value: '12_4', label: '12+4 (75%)' },
-]
-
 const TOPOLOGY_TYPES = [
   { value: 'standard', label: 'RAID' },
-  { value: 'zfs', label: 'ZFS' },
+  { value: 'ceph', label: 'Ceph' },
+  { value: 'nutanix', label: 'Nutanix' },
   { value: 's2d', label: 'S2D' },
   { value: 'vmware', label: 'vSAN' },
-  { value: 'nutanix', label: 'Nutanix' },
-  { value: 'ceph', label: 'Ceph' },
-  { value: 'powerflex', label: 'PowerFlex' },
-  { value: 'powerstore', label: 'PowerStore' },
-  { value: 'powerscale', label: 'PowerScale' },
+  { value: 'zfs', label: 'ZFS' },
   { value: 'objectscale', label: 'ObjectScale' },
+  { value: 'powerflex', label: 'PowerFlex' },
+  { value: 'powerscale', label: 'PowerScale' },
+  { value: 'powerstore', label: 'PowerStore' },
   { value: 'proprietary', label: 'Other' },
 ]
 
@@ -1158,65 +1150,27 @@ export function TopologyPanel() {
             PowerFlex Options
           </h4>
 
-          <div className="space-y-2">
-            <Label>Granularity</Label>
-            <SegmentedControl
-              value={powerFlexOptions.granularity}
-              options={[
-                { value: 'medium', label: 'Medium (1MB)' },
-                { value: 'fine', label: 'Fine (8KB)' },
-              ]}
-              onChange={(v) => setPowerFlexOptions({ granularity: v as 'medium' | 'fine' })}
-            />
-            <p className="text-xs text-slate-500">
-              {powerFlexOptions.granularity === 'fine'
-                ? 'Fine granularity: Better for small I/O, 12-15% metadata overhead'
-                : 'Medium granularity: Standard mode, lower overhead'}
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Protection Mode</Label>
-            <SegmentedControl
-              value={powerFlexOptions.protectionMode}
-              options={[
-                { value: 'mirror', label: 'Mirror' },
-                { value: 'erasure', label: 'Erasure Coding' },
-              ]}
-              onChange={(v) => setPowerFlexOptions({ protectionMode: v as 'mirror' | 'erasure' })}
-            />
-          </div>
-
-          {powerFlexOptions.protectionMode === 'mirror' && (
-            <div className="space-y-2">
-              <Label>Mirror Copies</Label>
-              <SegmentedControl
-                value={String(powerFlexOptions.mirrorCopies)}
-                options={[
-                  { value: '2', label: '2-way' },
-                  { value: '3', label: '3-way' },
-                ]}
-                onChange={(v) => setPowerFlexOptions({ mirrorCopies: Number(v) as 2 | 3 })}
-              />
-            </div>
-          )}
-
-          {powerFlexOptions.protectionMode === 'erasure' && (
-            <div className="space-y-2">
-              <Label>EC Scheme</Label>
-              <Select
-                id="powerflex-ec-scheme"
-                value={powerFlexOptions.ecScheme}
-                options={POWERFLEX_EC_OPTIONS}
-                onChange={(v) =>
-                  setPowerFlexOptions({ ecScheme: v as '4_1' | '4_2' | '8_2' | '12_4' })
-                }
-              />
-              <p className="text-xs text-slate-500">
-                Erasure coding reduces IOPS by ~30% due to CPU overhead
+          {/* Show mode description based on selected topology level */}
+          <div className="p-3 bg-surface-800 rounded-lg text-xs text-slate-400">
+            {topology.level.includes('medium') && (
+              <p>
+                <strong className="text-slate-300">Medium Granularity (1MB):</strong> Standard mode
+                with lower metadata overhead. Supports 2-way and 3-way mirroring.
               </p>
-            </div>
-          )}
+            )}
+            {topology.level.includes('fine') && (
+              <p>
+                <strong className="text-slate-300">Fine Granularity (8KB):</strong> Better for small
+                random I/O. Only supports 2-way mirroring. 12-15% metadata overhead.
+              </p>
+            )}
+            {topology.level.includes('ec_') && (
+              <p>
+                <strong className="text-slate-300">Erasure Coding:</strong> Higher capacity
+                efficiency but ~30% lower IOPS due to CPU overhead. Requires PowerFlex 4.5+.
+              </p>
+            )}
+          </div>
 
           <Toggle
             id="powerflex-compression"
@@ -1242,7 +1196,8 @@ export function TopologyPanel() {
             </div>
           )}
 
-          {powerFlexOptions.granularity === 'fine' && (
+          {/* FG Metadata overhead - only for Fine granularity modes */}
+          {topology.level.includes('fine') && (
             <div className="space-y-2">
               <Label htmlFor="powerflex-fg-overhead">FG Metadata Overhead</Label>
               <Slider
