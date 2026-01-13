@@ -543,8 +543,12 @@ export function calculatePerformance(input: PerformanceInput): PerformanceResult
   const sequentialPercent = 100 - randomPercent
   const blockSizeBytes = BLOCK_SIZE_BYTES[blockSize]
 
-  // Calculate write penalty
-  const writePenalty = getRaidWritePenalty(topology)
+  // Calculate write penalty for random I/O
+  const randomWritePenalty = getRaidWritePenalty(topology)
+
+  // Sequential write penalty is reduced (full-stripe writes avoid read-modify-write)
+  // For RAID 5/6, sequential penalty ≈ 1 + parity_drives/data_drives
+  const sequentialWritePenalty = Math.max(1, (randomWritePenalty + 1) / 2)
 
   // Calculate PowerFlex CPU factor (if applicable)
   const powerFlexCpuFactor = getPowerFlexCpuFactor(topology, powerFlexOptions)
@@ -559,33 +563,50 @@ export function calculatePerformance(input: PerformanceInput): PerformanceResult
   )
 
   // --- Media Layer (drives) ---
-  // Base IOPS from drives
-  const totalReadIOPS = drive.performance.iops_read * usableDrives
-  const baseWriteIOPS = drive.performance.iops_write * usableDrives
+  // Base IOPS from drives (use lower of read/write as drives share capacity)
+  const driveIOPS = Math.min(drive.performance.iops_read, drive.performance.iops_write)
+  const totalDriveIOPS = driveIOPS * usableDrives
 
-  // Apply write penalty for random writes
-  const randomWriteFactor = randomPercent / 100
-  const effectiveWriteIOPS = baseWriteIOPS / (1 + (writePenalty - 1) * randomWriteFactor)
+  // Calculate effective write penalty based on random vs sequential mix
+  // Random writes: full RAID penalty (read old data + parity, write new data + parity)
+  // Sequential writes: reduced penalty (full-stripe writes)
+  const randomRatio = randomPercent / 100
+  const sequentialRatio = sequentialPercent / 100
+  const effectiveWritePenalty =
+    randomRatio * randomWritePenalty + sequentialRatio * sequentialWritePenalty
+
+  // RAID IOPS Formula: Frontend IOPS = Backend IOPS / (ReadRatio + WriteRatio × Penalty)
+  // This correctly models that reads and writes compete for the same drive IOPS
+  const readRatio = readPercent / 100
+  const writeRatio = writePercent / 100
+  const backendIOPSPerFrontendIO = readRatio + writeRatio * effectiveWritePenalty
+  const maxFrontendIOPS = totalDriveIOPS / backendIOPSPerFrontendIO
 
   // Apply PowerFlex CPU factor (reduces IOPS for FG mode and EC)
-  const adjustedReadIOPS = totalReadIOPS * powerFlexCpuFactor
-  const adjustedWriteIOPS = effectiveWriteIOPS * powerFlexCpuFactor
+  const blendedIOPS = maxFrontendIOPS * powerFlexCpuFactor
 
-  // Blended IOPS based on read/write mix (with CPU factor applied)
-  const blendedIOPS = (adjustedReadIOPS * readPercent + adjustedWriteIOPS * writePercent) / 100
+  // Note: For RAID, read and write share the same backend IOPS pool
+  // The blendedIOPS already accounts for the workload mix and penalty
 
   // Throughput from drives
   const totalReadThroughput = drive.performance.bandwidth_read_mb * usableDrives
   const totalWriteThroughput = drive.performance.bandwidth_write_mb * usableDrives
 
-  // For sequential I/O, throughput is additive; for random, IOPS-limited
-  const effectiveReadThroughput =
-    (sequentialPercent / 100) * totalReadThroughput +
-    ((randomPercent / 100) * (totalReadIOPS * blockSizeBytes)) / (1024 * 1024)
+  // Apply write penalty to throughput for write-heavy workloads
+  // Sequential throughput is less affected by RAID penalty than random IOPS
+  const effectiveWriteThroughput = totalWriteThroughput / sequentialWritePenalty
 
-  const effectiveWriteThroughput =
-    (sequentialPercent / 100) * totalWriteThroughput +
-    ((randomPercent / 100) * (effectiveWriteIOPS * blockSizeBytes)) / (1024 * 1024)
+  // Blended throughput based on read/write mix
+  const blendedThroughput = totalReadThroughput * readRatio + effectiveWriteThroughput * writeRatio
+
+  // For random I/O, throughput is IOPS-limited
+  const iopsLimitedThroughput = (blendedIOPS * blockSizeBytes) / (1024 * 1024)
+
+  // Effective throughput: blend of sequential (bandwidth-limited) and random (IOPS-limited)
+  const effectiveReadThroughput =
+    sequentialRatio * totalReadThroughput + randomRatio * iopsLimitedThroughput
+  const effectiveThroughput =
+    sequentialRatio * blendedThroughput + randomRatio * iopsLimitedThroughput
 
   // --- Controller/CPU Layer ---
   // Use CONTROLLER_LIMITS to get the limits for the selected controller/HBA
@@ -614,7 +635,7 @@ export function calculatePerformance(input: PerformanceInput): PerformanceResult
   const layers: BottleneckLayer[] = [
     {
       name: 'Media (Drives)',
-      throughputMBs: Math.min(effectiveReadThroughput, effectiveWriteThroughput),
+      throughputMBs: effectiveThroughput,
       iops: blendedIOPS,
       isBottleneck: false,
       utilization: 0,
@@ -662,15 +683,20 @@ export function calculatePerformance(input: PerformanceInput): PerformanceResult
   // XFS alignment
   const xfsAlignment = calculateXfsAlignment(controllerOptions.stripeSize, usableDrives, topology)
 
+  // Calculate max read/write throughput considering bottlenecks
+  const maxReadThroughputMBs = Math.min(effectiveReadThroughput, minThroughput)
+  const maxWriteThroughputMBs = Math.min(effectiveThroughput * writeRatio, minThroughput)
+
   return {
-    maxReadThroughputMBs: Math.min(effectiveReadThroughput, minThroughput),
-    maxWriteThroughputMBs: Math.min(effectiveWriteThroughput, minThroughput),
-    maxReadIOPS: Math.min(adjustedReadIOPS, minIOPS),
-    maxWriteIOPS: Math.min(adjustedWriteIOPS, minIOPS),
+    maxReadThroughputMBs,
+    maxWriteThroughputMBs,
+    maxReadIOPS: Math.min(blendedIOPS, minIOPS),
+    maxWriteIOPS: Math.min(blendedIOPS, minIOPS),
     layers,
     bottleneckDescription,
     xfsAlignment,
     estimatedLatencyUs,
     cpuFactor: powerFlexCpuFactor,
+    writePenalty: effectiveWritePenalty,
   }
 }

@@ -101,6 +101,8 @@ export interface PerformanceResult {
   estimatedLatencyUs?: number
   /** CPU factor applied (for PowerFlex: 1.0=standard, 0.85=ultra, 0.70=EC) */
   cpuFactor?: number
+  /** Effective write penalty factor (RAID amplification) */
+  writePenalty?: number
 }
 
 /** Monte Carlo resilience simulation results (Module C) */
