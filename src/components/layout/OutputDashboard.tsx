@@ -270,7 +270,7 @@ export function OutputDashboard() {
         )}
 
         {/* Performance Gauges Card */}
-        <div className="panel row-span-2">
+        <div className="panel">
           <h3 className="text-lg font-semibold text-white mb-4">Performance</h3>
 
           {/* Responsive speedometer grid */}
@@ -318,6 +318,76 @@ export function OutputDashboard() {
           <div className="mt-4 pt-4 border-t border-surface-700">
             <p className="text-sm text-slate-400">{performance.bottleneckDescription}</p>
           </div>
+        </div>
+
+        {/* Power & Sustainability Card */}
+        <div className="panel">
+          <h3 className="text-lg font-semibold text-white mb-4">Power & Sustainability</h3>
+
+          <div className="grid grid-cols-2 gap-4 mb-4">
+            <MetricCard label="Total Power">
+              <span className="font-mono">
+                {formatNumber(Math.round(sustainability.powerBreakdown.total))}
+              </span>
+              <span className="text-sm text-slate-400 ml-1">W</span>
+            </MetricCard>
+            <MetricCard label="Annual Energy">
+              <span className="font-mono">
+                {formatNumber(Math.round(sustainability.annualEnergyKwh))}
+              </span>
+              <span className="text-sm text-slate-400 ml-1">kWh</span>
+            </MetricCard>
+          </div>
+
+          <div className="space-y-2">
+            <ProgressBar
+              label="Drives"
+              value={sustainability.powerBreakdown.drives}
+              max={sustainability.powerBreakdown.total}
+              color="bg-blue-500"
+            />
+            <ProgressBar
+              label="Servers"
+              value={sustainability.powerBreakdown.servers}
+              max={sustainability.powerBreakdown.total}
+              color="bg-purple-500"
+            />
+            <ProgressBar
+              label="Cooling (PUE)"
+              value={sustainability.powerBreakdown.cooling}
+              max={sustainability.powerBreakdown.total}
+              color="bg-cyan-500"
+            />
+          </div>
+
+          <div className="mt-4 pt-4 border-t border-surface-700 flex justify-between items-center">
+            <span className="text-slate-400">Annual CO₂:</span>
+            <span className="text-lg font-bold text-white">
+              {formatNumber(Math.round(sustainability.annualCO2Kg))} kg
+            </span>
+          </div>
+
+          {sustainability.flashEndurance && (
+            <div className="mt-4 pt-4 border-t border-surface-700">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-slate-300">SSD Endurance</span>
+                <span
+                  className={`text-sm font-medium ${
+                    sustainability.flashEndurance.surviveProject ? 'text-green-400' : 'text-red-400'
+                  }`}
+                >
+                  {sustainability.flashEndurance.surviveProject ? '✓ OK' : '⚠ At Risk'}
+                </span>
+              </div>
+              <ProgressBar
+                label={`DWPD Usage (${sustainability.flashEndurance.requiredDwpd.toFixed(2)} / ${sustainability.flashEndurance.ratedDwpd.toFixed(1)})`}
+                value={sustainability.flashEndurance.utilizationPercent}
+                max={100}
+                color={sustainability.flashEndurance.surviveProject ? 'bg-green-500' : 'bg-red-500'}
+                showValue={false}
+              />
+            </div>
+          )}
         </div>
 
         {/* Bottleneck Analysis Card */}
@@ -469,76 +539,6 @@ export function OutputDashboard() {
               <p className="text-xs text-slate-600">
                 Includes correlated failures & rebuild stress
               </p>
-            </div>
-          )}
-        </div>
-
-        {/* Power & Sustainability Card */}
-        <div className="panel">
-          <h3 className="text-lg font-semibold text-white mb-4">Power & Sustainability</h3>
-
-          <div className="grid grid-cols-2 gap-4 mb-4">
-            <MetricCard label="Total Power">
-              <span className="font-mono">
-                {formatNumber(Math.round(sustainability.powerBreakdown.total))}
-              </span>
-              <span className="text-sm text-slate-400 ml-1">W</span>
-            </MetricCard>
-            <MetricCard label="Annual Energy">
-              <span className="font-mono">
-                {formatNumber(Math.round(sustainability.annualEnergyKwh))}
-              </span>
-              <span className="text-sm text-slate-400 ml-1">kWh</span>
-            </MetricCard>
-          </div>
-
-          <div className="space-y-2">
-            <ProgressBar
-              label="Drives"
-              value={sustainability.powerBreakdown.drives}
-              max={sustainability.powerBreakdown.total}
-              color="bg-blue-500"
-            />
-            <ProgressBar
-              label="Servers"
-              value={sustainability.powerBreakdown.servers}
-              max={sustainability.powerBreakdown.total}
-              color="bg-purple-500"
-            />
-            <ProgressBar
-              label="Cooling (PUE)"
-              value={sustainability.powerBreakdown.cooling}
-              max={sustainability.powerBreakdown.total}
-              color="bg-cyan-500"
-            />
-          </div>
-
-          <div className="mt-4 pt-4 border-t border-surface-700 flex justify-between items-center">
-            <span className="text-slate-400">Annual CO₂:</span>
-            <span className="text-lg font-bold text-white">
-              {formatNumber(Math.round(sustainability.annualCO2Kg))} kg
-            </span>
-          </div>
-
-          {sustainability.flashEndurance && (
-            <div className="mt-4 pt-4 border-t border-surface-700">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-slate-300">SSD Endurance</span>
-                <span
-                  className={`text-sm font-medium ${
-                    sustainability.flashEndurance.surviveProject ? 'text-green-400' : 'text-red-400'
-                  }`}
-                >
-                  {sustainability.flashEndurance.surviveProject ? '✓ OK' : '⚠ At Risk'}
-                </span>
-              </div>
-              <ProgressBar
-                label={`DWPD Usage (${sustainability.flashEndurance.requiredDwpd.toFixed(2)} / ${sustainability.flashEndurance.ratedDwpd.toFixed(1)})`}
-                value={sustainability.flashEndurance.utilizationPercent}
-                max={100}
-                color={sustainability.flashEndurance.surviveProject ? 'bg-green-500' : 'bg-red-500'}
-                showValue={false}
-              />
             </div>
           )}
         </div>
