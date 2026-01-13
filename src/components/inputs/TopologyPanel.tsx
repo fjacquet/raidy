@@ -50,6 +50,7 @@ const TOPOLOGY_TYPES = [
   { value: 'powerflex', label: 'PowerFlex' },
   { value: 'powerscale', label: 'PowerScale' },
   { value: 'powerstore', label: 'PowerStore' },
+  { value: 'powervault', label: 'PowerVault ME5' },
   { value: 'proprietary', label: 'Other' },
 ]
 
@@ -303,6 +304,29 @@ const TOPOLOGY_LEVELS: Record<
       description: 'Erasure Coding 6:2 with RF3 base, ~75% efficiency',
     },
   ],
+  powervault: [
+    { value: 'powervault_raid1', label: 'RAID 1', description: '2-way mirror, 50% efficiency' },
+    {
+      value: 'powervault_raid5',
+      label: 'RAID 5',
+      description: 'Single parity, 4x write penalty',
+    },
+    {
+      value: 'powervault_raid6',
+      label: 'RAID 6',
+      description: 'Dual parity, 2-drive fault tolerance',
+    },
+    {
+      value: 'powervault_raid10',
+      label: 'RAID 10',
+      description: 'Mirrored stripes, best random IOPS',
+    },
+    {
+      value: 'powervault_adapt',
+      label: 'ADAPT (Recommended)',
+      description: 'Distributed RAID, ~87% efficiency, 12-128 drives',
+    },
+  ],
   proprietary: [
     { value: 'synology_shr', label: 'Synology SHR', description: 'Hybrid RAID, 1-drive fault' },
     { value: 'synology_shr2', label: 'Synology SHR-2', description: 'Hybrid RAID, 2-drive fault' },
@@ -354,6 +378,7 @@ export function TopologyPanel() {
     netAppOptions,
     synologyOptions,
     nutanixOptions,
+    powervaultOptions,
     setTopology,
     setHotSpares,
     setZfsOptions,
@@ -367,6 +392,7 @@ export function TopologyPanel() {
     setNetAppOptions,
     setSynologyOptions,
     setNutanixOptions,
+    setPowerVaultOptions,
   } = useConfigStore()
 
   const handleTypeChange = (type: string) => {
@@ -825,6 +851,124 @@ export function TopologyPanel() {
             <p className="text-xs text-slate-500">
               CVM, metadata, snapshots: {Math.round(nutanixOptions.systemOverhead * 100)}%
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* PowerVault ME5 Options */}
+      {topology.type === 'powervault' && (
+        <div className="space-y-4 pt-3 border-t border-surface-700">
+          <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+            PowerVault ME5 Options
+          </h4>
+
+          {/* Show mode description based on selected topology level */}
+          <div className="p-3 bg-surface-800 rounded-lg text-xs text-slate-400">
+            {topology.level === 'powervault_raid1' && (
+              <p>
+                <strong className="text-slate-300">RAID 1:</strong> 2-way mirror with 50% storage
+                efficiency. Simple, fast rebuilds. Best for boot volumes and small deployments.
+              </p>
+            )}
+            {topology.level === 'powervault_raid5' && (
+              <p>
+                <strong className="text-slate-300">RAID 5:</strong> Single distributed parity with
+                (n-1)/n efficiency. 4x write penalty. Not recommended for write-intensive workloads.
+              </p>
+            )}
+            {topology.level === 'powervault_raid6' && (
+              <p>
+                <strong className="text-slate-300">RAID 6:</strong> Dual distributed parity with
+                (n-2)/n efficiency. 6x write penalty. Better data protection for large capacity
+                drives.
+              </p>
+            )}
+            {topology.level === 'powervault_raid10' && (
+              <p>
+                <strong className="text-slate-300">RAID 10:</strong> Mirrored stripes with 50%
+                efficiency. Best random IOPS performance. Ideal for databases.
+              </p>
+            )}
+            {topology.level === 'powervault_adapt' && (
+              <p>
+                <strong className="text-slate-300">ADAPT:</strong> Distributed RAID with ~87%
+                efficiency. Spare capacity distributed across all drives. Fastest rebuilds (8-10x
+                faster). Requires 12-128 drives.
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label>Model</Label>
+            <SegmentedControl
+              value={powervaultOptions.model}
+              options={[
+                { value: 'ME5212', label: 'ME5212' },
+                { value: 'ME5224', label: 'ME5224' },
+                { value: 'ME5284', label: 'ME5284' },
+              ]}
+              onChange={(v) => setPowerVaultOptions({ model: v as 'ME5212' | 'ME5224' | 'ME5284' })}
+            />
+            <p className="text-xs text-slate-500">
+              {powervaultOptions.model === 'ME5212'
+                ? 'ME5212: 2U, 12 drives (3.5" only)'
+                : powervaultOptions.model === 'ME5224'
+                  ? 'ME5224: 2U, 24 drives (2.5")'
+                  : 'ME5284: 5U, 84 drives (3.5"), max density'}
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Controllers</Label>
+            <SegmentedControl
+              value={String(powervaultOptions.controllers)}
+              options={[
+                { value: '1', label: 'Single' },
+                { value: '2', label: 'Dual Active' },
+              ]}
+              onChange={(v) => setPowerVaultOptions({ controllers: Number(v) as 1 | 2 })}
+            />
+            <p className="text-xs text-slate-500">
+              {powervaultOptions.controllers === 1
+                ? 'Single: 420K IOPS, 7 GB/s max'
+                : 'Dual Active: 840K IOPS, 14 GB/s max, failover support'}
+            </p>
+          </div>
+
+          <Toggle
+            id="powervault-tiering"
+            label="Enable Auto-Tiering"
+            checked={powervaultOptions.tiering}
+            onChange={(v) => setPowerVaultOptions({ tiering: v })}
+          />
+          <p className="text-xs text-slate-500">
+            Automatically moves data between tiers (Performance SSD, Standard 10K, Archive NL-SAS)
+          </p>
+
+          <Toggle
+            id="powervault-ssd-cache"
+            label="SSD Read Cache"
+            checked={powervaultOptions.ssdReadCache}
+            onChange={(v) => setPowerVaultOptions({ ssdReadCache: v })}
+          />
+          <p className="text-xs text-slate-500">
+            Uses SSDs as read cache for HDD pools (not available with all-flash)
+          </p>
+
+          <Toggle
+            id="powervault-thin"
+            label="Thin Provisioning"
+            checked={powervaultOptions.thinProvisioning}
+            onChange={(v) => setPowerVaultOptions({ thinProvisioning: v })}
+          />
+          <p className="text-xs text-slate-500">
+            4MB page size thin provisioning. No compression/deduplication support.
+          </p>
+
+          {/* Warning about no compression/dedup */}
+          <div className="p-3 bg-amber-900/20 border border-amber-700/30 rounded-lg text-xs text-amber-300">
+            <strong>Note:</strong> PowerVault ME5 does not support inline compression or
+            deduplication. For data reduction features, consider PowerStore or PowerScale.
           </div>
         </div>
       )}

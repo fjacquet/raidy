@@ -341,6 +341,24 @@ function getRaidWritePenalty(topology: Topology): number {
           return 2
       }
 
+    case 'powervault':
+      // Dell PowerVault ME5 write penalties
+      // Traditional RAID uses standard penalties, ADAPT is optimized
+      switch (topology.level) {
+        case 'powervault_raid1':
+          return 2 // RAID 1: write to both mirrors
+        case 'powervault_raid5':
+          return 4 // RAID 5: read-modify-write for parity
+        case 'powervault_raid6':
+          return 6 // RAID 6: read-modify-write for dual parity
+        case 'powervault_raid10':
+          return 2 // RAID 10: mirror penalty only
+        case 'powervault_adapt':
+          return 2.5 // ADAPT: distributed parity reduces penalty vs traditional RAID 5/6
+        default:
+          return 4
+      }
+
     default:
       return 1
   }

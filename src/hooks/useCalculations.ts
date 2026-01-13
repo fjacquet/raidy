@@ -40,6 +40,7 @@ export function useCalculations(): CalculationResults {
     netAppOptions,
     synologyOptions,
     nutanixOptions,
+    powervaultOptions,
     controllerOptions,
     // Workload
     readPercent,
@@ -123,6 +124,7 @@ export function useCalculations(): CalculationResults {
       netAppOptions,
       synologyOptions,
       nutanixOptions,
+      powervaultOptions,
       compressionRatio,
       dedupRatio,
     })
@@ -188,6 +190,7 @@ export function useCalculations(): CalculationResults {
     netAppOptions,
     synologyOptions,
     nutanixOptions,
+    powervaultOptions,
     controllerOptions,
     readPercent,
     blockSize,

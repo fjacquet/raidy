@@ -14,6 +14,7 @@ import type {
   PowerFlexOptions,
   PowerScaleOptions,
   PowerStoreOptions,
+  PowerVaultOptions,
   S2DOptions,
   SynologyOptions,
   TieringConfig,
@@ -159,6 +160,7 @@ export interface VolumetryInput {
   netAppOptions: NetAppOptions
   synologyOptions: SynologyOptions
   nutanixOptions: NutanixOptions
+  powervaultOptions: PowerVaultOptions
   compressionRatio: number
   dedupRatio: number
 }
@@ -479,6 +481,29 @@ function getDataFraction(
           return 1 / nutanixOptions.replicationFactor
       }
 
+    case 'powervault':
+      // Dell PowerVault ME5: Traditional RAID and ADAPT distributed RAID
+      switch (topology.level) {
+        case 'powervault_raid1':
+          // RAID 1: 2-way mirror, 50% efficiency
+          return 0.5
+        case 'powervault_raid5':
+          // RAID 5: single parity, (n-1)/n efficiency
+          return (usableDrives - 1) / usableDrives
+        case 'powervault_raid6':
+          // RAID 6: dual parity, (n-2)/n efficiency
+          return (usableDrives - 2) / usableDrives
+        case 'powervault_raid10':
+          // RAID 10: mirrored stripes, 50% efficiency
+          return 0.5
+        case 'powervault_adapt':
+          // ADAPT: distributed RAID with ~87% efficiency for 24+ drives
+          // Uses distributed spare capacity and parity across all drives
+          return usableDrives >= 24 ? 0.87 : 0.85
+        default:
+          return 0.8
+      }
+
     default:
       return 1.0
   }
@@ -558,6 +583,10 @@ function getFilesystemOverheadPercent(
     case 'nutanix':
       // Nutanix AOS: CVM overhead, metadata, etc. (~1-2%)
       return 0.015
+
+    case 'powervault':
+      // PowerVault ME5: minimal metadata overhead (~1%)
+      return 0.01
 
     case 'proprietary':
       // Check for Synology or NetApp based on topology level

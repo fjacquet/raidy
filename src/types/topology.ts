@@ -108,6 +108,14 @@ export type NutanixTopology =
   | 'nutanix_ec_rf2' // EC-X with RF2 base (4:1 striping, ~75% efficiency)
   | 'nutanix_ec_rf3' // EC-X with RF3 base (6:2 striping)
 
+/** Dell PowerVault ME5 topologies (Mid-range Block Storage) */
+export type PowerVaultTopology =
+  | 'powervault_raid1' // 2-way mirror, 50% efficiency
+  | 'powervault_raid5' // Single parity, (n-1)/n efficiency, 4x write penalty
+  | 'powervault_raid6' // Dual parity, (n-2)/n efficiency, 6x write penalty
+  | 'powervault_raid10' // Mirrored stripes, 50% efficiency
+  | 'powervault_adapt' // ADAPT distributed RAID, ~87% efficiency, 12-128 drives
+
 /** All supported topology types */
 export type TopologyType =
   | 'standard'
@@ -122,6 +130,7 @@ export type TopologyType =
   | 'powerscale'
   | 'objectscale'
   | 'nutanix'
+  | 'powervault' // Dell PowerVault ME5 (mid-range block storage)
 
 /** Union of all topology configurations */
 export type Topology =
@@ -137,6 +146,7 @@ export type Topology =
   | { type: 'powerscale'; level: PowerScaleTopology }
   | { type: 'objectscale'; level: ObjectScaleTopology }
   | { type: 'nutanix'; level: NutanixTopology }
+  | { type: 'powervault'; level: PowerVaultTopology }
 
 /** ZFS-specific configuration options */
 export interface ZfsOptions {
@@ -216,6 +226,8 @@ export type RaidControllerType =
   | 'perc_h965i' // Dell PERC H965i (PCIe Gen5)
   | 'perc_h755n' // Dell PERC H755N (NVMe)
   | 'perc_h965in' // Dell PERC H965iN (NVMe Gen5)
+  | 'powervault_me5_single' // Dell PowerVault ME5 (Single Controller)
+  | 'powervault_me5_dual' // Dell PowerVault ME5 (Dual Active Controllers)
 
 /** Combined controller/HBA types */
 export type ControllerType = HbaType | RaidControllerType
@@ -432,6 +444,20 @@ export interface NutanixOptions {
   tiering?: TieringConfig
 }
 
+/** Dell PowerVault ME5 configuration options */
+export interface PowerVaultOptions {
+  /** Model: ME5212 (12 drives), ME5224 (24 drives), ME5284 (84 drives) */
+  model: 'ME5212' | 'ME5224' | 'ME5284'
+  /** Number of controllers (1 = single, 2 = dual-active) */
+  controllers: 1 | 2
+  /** Enable auto-tiering (3 tiers: Performance SSD, Standard 10K, Archive NL-SAS) */
+  tiering: boolean
+  /** Enable SSD read cache (uses SSDs as read cache for HDD pools) */
+  ssdReadCache: boolean
+  /** Thin provisioning enabled (4MB page size) */
+  thinProvisioning: boolean
+}
+
 /** Complete topology configuration */
 export interface TopologyConfig {
   /** Selected topology */
@@ -571,6 +597,15 @@ export const DEFAULT_NUTANIX_OPTIONS: NutanixOptions = {
   networkType: '25gbe',
 }
 
+/** Default PowerVault ME5 options */
+export const DEFAULT_POWERVAULT_OPTIONS: PowerVaultOptions = {
+  model: 'ME5224',
+  controllers: 2, // Dual-active (most common configuration)
+  tiering: false,
+  ssdReadCache: false,
+  thinProvisioning: true, // Enabled by default
+}
+
 /** Default Synology options */
 export const DEFAULT_SYNOLOGY_OPTIONS: SynologyOptions = {
   filesystem: 'btrfs',
@@ -632,6 +667,18 @@ export const CONTROLLER_LIMITS: Record<
     iops: 1800000,
     throughputMBs: 28000,
     name: 'Dell PERC H965iN (NVMe)',
+    isHba: false,
+  },
+  powervault_me5_single: {
+    iops: 420000,
+    throughputMBs: 7000,
+    name: 'Dell PowerVault ME5 (Single Controller)',
+    isHba: false,
+  },
+  powervault_me5_dual: {
+    iops: 840000,
+    throughputMBs: 14000,
+    name: 'Dell PowerVault ME5 (Dual Active)',
     isHba: false,
   },
 }

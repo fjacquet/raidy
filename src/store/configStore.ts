@@ -115,6 +115,13 @@ const getDefaultState = () => ({
     smartQuotas: false,
     syncIQ: false,
   },
+  powervaultOptions: {
+    model: 'ME5224' as const,
+    controllers: 2 as const,
+    tiering: false,
+    ssdReadCache: false,
+    thinProvisioning: true,
+  },
 
   // Workload defaults
   readPercent: 70,
@@ -172,6 +179,7 @@ export const useConfigStore = create<ConfigStore>()(
         objectscaleOptions: state.objectscaleOptions,
         powerstoreOptions: state.powerstoreOptions,
         powerscaleOptions: state.powerscaleOptions,
+        powervaultOptions: state.powervaultOptions,
         readPercent: state.readPercent,
         blockSize: state.blockSize,
         randomPercent: state.randomPercent,
