@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Raidy** is a browser-based simulator for modern storage infrastructure (NVMe, ZFS, S2D, Cloud Hybrid). It's a Single Page Application (SPA) / Progressive Web App (PWA) with no backend - all intelligence lives in typed JSON definitions and client-side calculation engines.
+**Raidy** is a browser-based simulator for modern storage infrastructure including RAID, ZFS, VMware vSAN (ESA/OSA), Microsoft S2D, Nutanix, Dell PowerFlex/PowerStore/PowerScale, NetApp ONTAP, and Ceph. It's a Single Page Application (SPA) / Progressive Web App (PWA) with no backend - all intelligence lives in typed JSON definitions and client-side calculation engines.
 
 ## Technology Stack
 
@@ -53,9 +53,21 @@ npm test -- path/to/test.spec.ts
 
 #### Module A: Volumetry & Efficiency Engine
 Answers "How much space do I actually get?"
-- Supported topologies: RAID 0/1/10/5/6/50/60, ZFS (Stripe/Mirror/RAID-Z1/Z2/Z3/dRAID), S2D (Mirror/Dual Parity/MAP), Synology SHR, NetApp RAID-DP
+- Supported topologies:
+  - Standard RAID: 0/1/1E/3/4/5/5E/5EE/6/10/50/60
+  - ZFS: Stripe/Mirror/RAID-Z1/Z2/Z3/dRAID1/2/3
+  - Microsoft S2D: Simple/Mirror/Parity/Dual Parity/MAP
+  - VMware vSAN OSA: RAID-1/RAID-5/RAID-6 (disk groups, dynamic stripe width)
+  - VMware vSAN ESA: Adaptive RAID-5/RAID-6 (NVMe only, scales with cluster size)
+  - Nutanix: RF2/RF3, Erasure Coding
+  - Dell PowerFlex: 2-way/3-way mirror, dynamic rebuild
+  - Dell PowerStore/PowerScale/ObjectScale
+  - NetApp ONTAP: RAID-DP/RAID-TEC, ADP
+  - Ceph: Replicated/Erasure Coded pools
+  - Synology SHR/SHR-2
 - ZFS overhead: Apply 1/32 "slop" factor, compression ratio, ashift padding penalty
 - S2D reserve: Subtract 1 drive equivalent per node for automatic rebuild reserve
+- vSAN ESA: Adaptive efficiency (67-80%) based on cluster size and drive count
 - Veeam/Reflink logic: Toggle for XFS/ReFS reflink support affects backup size calculations
 
 #### Module B: Performance & Bottleneck Engine
