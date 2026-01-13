@@ -325,7 +325,7 @@ export function exportToYaml(config: ExportConfig): string {
     results,
     unitSystem = 'binary',
   } = config
-  const { volumetry, performance, sustainability, tco } = results
+  const { volumetry, performance, sustainability } = results
   const formatBytes = (bytes: number) => formatBytesUtil(bytes, unitSystem)
 
   let yaml = `# Raidy Storage Configuration
@@ -384,15 +384,6 @@ power:
   cooling_watts: ${Math.round(sustainability.powerBreakdown.cooling)}
   annual_kwh: ${Math.round(sustainability.annualEnergyKwh)}
   annual_co2_kg: ${Math.round(sustainability.annualCO2Kg)}
-
-cost:
-  hardware_usd: ${Math.round(tco.hardwareCost)}
-  energy_5yr_usd: ${Math.round(tco.totalEnergyCost)}
-  maintenance_usd: ${Math.round(tco.maintenanceCost)}
-  replacement_usd: ${Math.round(tco.replacementCost)}
-  total_tco_usd: ${Math.round(tco.totalCost)}
-  cost_per_usable_tb: ${tco.costPerTB.toFixed(2)}
-  cost_per_effective_tb: ${tco.costPerEffectiveTB.toFixed(2)}
 `
 
   return yaml

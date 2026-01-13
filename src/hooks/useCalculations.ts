@@ -6,7 +6,7 @@
 import { useMemo } from 'react'
 import drivesData from '@/data/drives.json'
 import { calculatePerformance } from '@/engines/performance'
-import { calculateSustainability, calculateTCO } from '@/engines/sustainability'
+import { calculateSustainability } from '@/engines/sustainability'
 import { calculateVolumetry } from '@/engines/volumetry'
 import { useConfigStore } from '@/store'
 import type { Drive } from '@/types'
@@ -94,16 +94,7 @@ export function useCalculations(): CalculationResults {
           annualCO2Kg: 0,
           powerBreakdown: { drives: 0, servers: 0, cooling: 0, total: 0 },
         },
-        tco: {
-          hardwareCost: 0,
-          totalEnergyCost: 0,
-          maintenanceCost: 0,
-          replacementCost: 0,
-          totalCost: 0,
-          costPerTB: 0,
-          costPerEffectiveTB: 0,
-          annualOpex: 0,
-        },
+        tco: null,
         lastUpdated: Date.now(),
         errors,
       }
@@ -169,22 +160,12 @@ export function useCalculations(): CalculationResults {
       usableCapacity: volumetry.usableCapacity,
     })
 
-    // TCO calculations (uses total drives for hardware cost)
-    const tco = calculateTCO(
-      drive,
-      totalDriveCount,
-      projectYears,
-      sustainability,
-      volumetry.usableCapacity,
-      volumetry.effectiveCapacity,
-    )
-
     return {
       volumetry,
       performance,
       resilience: null, // Monte Carlo is Phase 4
       sustainability,
-      tco,
+      tco: null, // TCO removed
       lastUpdated: Date.now(),
       errors,
     }

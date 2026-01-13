@@ -1,15 +1,9 @@
 /**
- * Advanced configuration panel - network, power, TCO settings.
+ * Advanced configuration panel - network, power, sustainability settings.
  */
 
 import { useMemo } from 'react'
-import {
-  Label,
-  NumberInput,
-  SegmentedControl,
-  Select,
-  Slider,
-} from '@/components/common/FormControls'
+import { Label, SegmentedControl, Select, Slider } from '@/components/common/FormControls'
 import { useConfigStore } from '@/store'
 import type { CarbonRegion, ControllerType, NetworkSpeed, PCIeGen, PCIeLanes } from '@/types'
 import { CONTROLLER_LIMITS, getControllerOptions, requiresHba } from '@/types'
@@ -66,8 +60,6 @@ export function AdvancedPanel() {
     pcieLanes,
     pue,
     carbonRegion,
-    projectYears,
-    electricityCostPerKwh,
     fsType,
     backupRetention,
     dailyChangeRate,
@@ -79,8 +71,6 @@ export function AdvancedPanel() {
     setPcieLanes,
     setPue,
     setCarbonRegion,
-    setProjectYears,
-    setElectricityCost,
     setFsType,
     setBackupRetention,
     setDailyChangeRate,
@@ -273,38 +263,6 @@ export function AdvancedPanel() {
               label: `${r.label} (${r.intensity} gCO₂/kWh)`,
             }))}
             onChange={(v) => setCarbonRegion(v as CarbonRegion)}
-          />
-        </div>
-      </div>
-
-      {/* TCO Section */}
-      <div className="space-y-4 pt-4 border-t border-surface-700">
-        <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-          Total Cost of Ownership
-        </h4>
-
-        <div className="space-y-2">
-          <Label htmlFor="project-years">Project Lifespan</Label>
-          <Slider
-            id="project-years"
-            value={projectYears}
-            min={1}
-            max={10}
-            onChange={setProjectYears}
-            formatValue={(v) => `${v} years`}
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="electricity-cost">Electricity Cost</Label>
-          <NumberInput
-            id="electricity-cost"
-            value={electricityCostPerKwh}
-            min={0}
-            max={1}
-            step={0.01}
-            onChange={setElectricityCost}
-            suffix="$/kWh"
           />
         </div>
       </div>

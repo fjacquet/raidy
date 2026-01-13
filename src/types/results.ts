@@ -195,7 +195,7 @@ export interface CalculationResults {
   performance: PerformanceResult
   resilience: ResilienceResult | null
   sustainability: SustainabilityResult
-  tco: TCOResult
+  tco: TCOResult | null
   /** Timestamp of last calculation */
   lastUpdated: number
   /** Any calculation errors */

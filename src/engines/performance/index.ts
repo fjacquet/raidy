@@ -575,18 +575,25 @@ export function calculatePerformance(input: PerformanceInput): PerformanceResult
   const effectiveWritePenalty =
     randomRatio * randomWritePenalty + sequentialRatio * sequentialWritePenalty
 
-  // RAID IOPS Formula: Frontend IOPS = Backend IOPS / (ReadRatio + WriteRatio × Penalty)
-  // This correctly models that reads and writes compete for the same drive IOPS
+  // RAID IOPS calculations
   const readRatio = readPercent / 100
   const writeRatio = writePercent / 100
+
+  // Max Read IOPS = what you'd get with 100% reads (no RAID penalty)
+  const maxPureReadIOPS = totalDriveIOPS
+
+  // Max Write IOPS = what you'd get with 100% writes (full RAID penalty)
+  const maxPureWriteIOPS = totalDriveIOPS / effectiveWritePenalty
+
+  // Blended IOPS for the actual workload mix
+  // Formula: Frontend IOPS = Backend IOPS / (ReadRatio + WriteRatio × Penalty)
   const backendIOPSPerFrontendIO = readRatio + writeRatio * effectiveWritePenalty
   const maxFrontendIOPS = totalDriveIOPS / backendIOPSPerFrontendIO
 
   // Apply PowerFlex CPU factor (reduces IOPS for FG mode and EC)
   const blendedIOPS = maxFrontendIOPS * powerFlexCpuFactor
-
-  // Note: For RAID, read and write share the same backend IOPS pool
-  // The blendedIOPS already accounts for the workload mix and penalty
+  const adjustedReadIOPS = maxPureReadIOPS * powerFlexCpuFactor
+  const adjustedWriteIOPS = maxPureWriteIOPS * powerFlexCpuFactor
 
   // Throughput from drives
   const totalReadThroughput = drive.performance.bandwidth_read_mb * usableDrives
@@ -685,13 +692,16 @@ export function calculatePerformance(input: PerformanceInput): PerformanceResult
 
   // Calculate max read/write throughput considering bottlenecks
   const maxReadThroughputMBs = Math.min(effectiveReadThroughput, minThroughput)
-  const maxWriteThroughputMBs = Math.min(effectiveThroughput * writeRatio, minThroughput)
+  const maxWriteThroughputMBs = Math.min(effectiveWriteThroughput, minThroughput)
 
   return {
     maxReadThroughputMBs,
     maxWriteThroughputMBs,
-    maxReadIOPS: Math.min(blendedIOPS, minIOPS),
-    maxWriteIOPS: Math.min(blendedIOPS, minIOPS),
+    // Show max IOPS capability at media layer: reads have no penalty, writes have RAID penalty
+    // Note: these are NOT capped by other bottlenecks - the bottleneck analysis shows system limits
+    maxReadIOPS: adjustedReadIOPS,
+    maxWriteIOPS: adjustedWriteIOPS,
+    // Blended IOPS for the actual workload is shown in the media layer
     layers,
     bottleneckDescription,
     xfsAlignment,

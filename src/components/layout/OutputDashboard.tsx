@@ -4,7 +4,6 @@
 
 import {
   AnimatedBytes,
-  AnimatedCurrency,
   AnimatedPercent,
   CapacityBreakdownList,
   DonutChart,
@@ -15,7 +14,6 @@ import {
 } from '@/components/outputs'
 import drivesData from '@/data/drives.json'
 import {
-  formatCurrency,
   formatNumber,
   useCalculations,
   useFormatBytes,
@@ -100,7 +98,7 @@ export function OutputDashboard() {
   const isMobile = useIsMobile()
   const isDesktop = useIsDesktop()
 
-  const { volumetry, performance, sustainability, tco } = results
+  const { volumetry, performance, sustainability } = results
 
   // Resilience simulation - reduce iterations on mobile for battery/performance
   const {
@@ -543,48 +541,6 @@ export function OutputDashboard() {
               />
             </div>
           )}
-        </div>
-
-        {/* TCO Card */}
-        <div className="panel">
-          <h3 className="text-lg font-semibold text-white mb-4">Total Cost of Ownership</h3>
-
-          <div className="grid grid-cols-2 gap-4 mb-4">
-            <MetricCard label="Hardware">
-              <AnimatedCurrency value={tco.hardwareCost} />
-            </MetricCard>
-            <MetricCard label="5-Year TCO" color="text-primary-400">
-              <AnimatedCurrency value={tco.totalCost} />
-            </MetricCard>
-          </div>
-
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-slate-400">Energy Cost:</span>
-              <span className="text-slate-200">{formatCurrency(tco.totalEnergyCost)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-slate-400">Maintenance:</span>
-              <span className="text-slate-200">{formatCurrency(tco.maintenanceCost)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-slate-400">Replacements:</span>
-              <span className="text-slate-200">{formatCurrency(tco.replacementCost)}</span>
-            </div>
-          </div>
-
-          <div className="mt-4 pt-4 border-t border-surface-700 grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-xs text-slate-400">$/Usable TB</p>
-              <p className="text-lg font-bold text-white">{formatCurrency(tco.costPerTB)}</p>
-            </div>
-            <div>
-              <p className="text-xs text-slate-400">$/Effective TB</p>
-              <p className="text-lg font-bold text-green-400">
-                {formatCurrency(tco.costPerEffectiveTB)}
-              </p>
-            </div>
-          </div>
         </div>
 
         {/* Commands Card */}

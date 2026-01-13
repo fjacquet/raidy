@@ -21,18 +21,6 @@ interface ExportConfig {
 }
 
 /**
- * Format currency.
- */
-function formatCurrency(value: number): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value)
-}
-
-/**
  * Format number with commas.
  */
 function formatNumber(value: number): string {
@@ -55,7 +43,7 @@ export function exportToPdf(config: ExportConfig): void {
 
   // Create a local formatBytes function using the specified unit system
   const formatBytes = (bytes: number) => formatBytesUtil(bytes, unitSystem)
-  const { volumetry, performance, sustainability, tco, resilience } = results
+  const { volumetry, performance, sustainability, resilience } = results
 
   // Create PDF document
   const doc = new jsPDF()
@@ -187,29 +175,6 @@ export function exportToPdf(config: ExportConfig): void {
     ],
     theme: 'striped',
     headStyles: { fillColor: [34, 197, 94] }, // Green
-  })
-
-  y = (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 10
-
-  // TCO Section
-  doc.setFontSize(14)
-  doc.text('Total Cost of Ownership', 14, y)
-  y += 8
-
-  autoTable(doc, {
-    startY: y,
-    head: [['Metric', 'Value']],
-    body: [
-      ['Hardware Cost', formatCurrency(tco.hardwareCost)],
-      ['Energy Cost (5yr)', formatCurrency(tco.totalEnergyCost)],
-      ['Maintenance Cost', formatCurrency(tco.maintenanceCost)],
-      ['Replacement Cost', formatCurrency(tco.replacementCost)],
-      ['Total 5-Year TCO', formatCurrency(tco.totalCost)],
-      ['Cost per Usable TB', formatCurrency(tco.costPerTB)],
-      ['Cost per Effective TB', formatCurrency(tco.costPerEffectiveTB)],
-    ],
-    theme: 'striped',
-    headStyles: { fillColor: [168, 85, 247] }, // Purple
   })
 
   y = (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 10
