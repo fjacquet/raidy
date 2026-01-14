@@ -65,7 +65,9 @@ export function HardwarePanel() {
   } = useConfigStore()
 
   // Check if topology requires NVMe-only drives
-  const requiresNvme = NVME_ONLY_TOPOLOGIES.includes(topology.type as (typeof NVME_ONLY_TOPOLOGIES)[number])
+  const requiresNvme = NVME_ONLY_TOPOLOGIES.includes(
+    topology.type as (typeof NVME_ONLY_TOPOLOGIES)[number],
+  )
 
   // Use centralized byte formatting with user's preferred unit system
   const formatBytes = useFormatBytes()
