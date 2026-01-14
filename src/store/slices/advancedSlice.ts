@@ -40,7 +40,7 @@ export const createAdvancedSlice: StateCreator<AdvancedSlice> = (set) => ({
   pcieGen: 'gen4',
   pcieLanes: 'x8',
   pue: 1.4,
-  carbonRegion: 'world_average',
+  carbonRegion: 'switzerland',
   projectYears: 5,
   electricityCostPerKwh: 0.12,
   unitSystem: 'binary', // Default to binary (TiB/GiB) - more accurate for storage

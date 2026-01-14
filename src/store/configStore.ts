@@ -137,7 +137,7 @@ const getDefaultState = () => ({
   pcieGen: 'gen4' as const,
   pcieLanes: 'x8' as const,
   pue: 1.4,
-  carbonRegion: 'world_average' as const,
+  carbonRegion: 'switzerland' as const,
   projectYears: 5,
   electricityCostPerKwh: 0.12,
   unitSystem: 'binary' as const,

@@ -34,6 +34,7 @@ import {
   DEFAULT_SYNOLOGY_OPTIONS,
   DEFAULT_VSAN_OPTIONS,
   DEFAULT_ZFS_OPTIONS,
+  getControllerOptions,
 } from '@/types'
 
 export interface TopologySlice extends TopologyState {
@@ -73,7 +74,26 @@ export const createTopologySlice: StateCreator<TopologySlice> = (set) => ({
   controllerOptions: { ...DEFAULT_CONTROLLER_OPTIONS },
 
   // Actions
-  setTopology: (topology) => set({ topology }),
+  setTopology: (topology) =>
+    set((state) => {
+      // Get valid controllers for the new topology
+      const validControllers = getControllerOptions(topology.type)
+      const currentController = state.controllerOptions.controller
+      const firstValidController = validControllers[0]
+
+      // If current controller is not valid for new topology, switch to first valid option
+      if (firstValidController && !validControllers.includes(currentController)) {
+        return {
+          topology,
+          controllerOptions: {
+            ...state.controllerOptions,
+            controller: firstValidController,
+          },
+        }
+      }
+
+      return { topology }
+    }),
   setHotSpares: (hotSpares) => set({ hotSpares: Math.max(0, hotSpares) }),
   setZfsOptions: (options) => set((state) => ({ zfsOptions: { ...state.zfsOptions, ...options } })),
   setS2DOptions: (options) => set((state) => ({ s2dOptions: { ...state.s2dOptions, ...options } })),

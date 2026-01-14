@@ -2,6 +2,8 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+> **See Also**: [ARCHITECTURE.md](./ARCHITECTURE.md) for detailed system architecture, data flow diagrams, and component documentation. **Keep ARCHITECTURE.md up-to-date when making architectural changes.**
+
 ## Project Overview
 
 **Raidy** is a browser-based simulator for modern storage infrastructure including RAID, ZFS, VMware vSAN (ESA/OSA), Microsoft S2D, Nutanix, Dell PowerFlex/PowerStore/PowerScale, NetApp ONTAP, and Ceph. It's a Single Page Application (SPA) / Progressive Web App (PWA) with no backend - all intelligence lives in typed JSON definitions and client-side calculation engines.

@@ -228,11 +228,14 @@ export type RaidControllerType =
   | 'perc_h965in' // Dell PERC H965iN (NVMe Gen5)
   | 'powervault_me5_single' // Dell PowerVault ME5 (Single Controller)
   | 'powervault_me5_dual' // Dell PowerVault ME5 (Dual Active Controllers)
+  | 'powerstore_t' // Dell PowerStore T Model (integrated appliance)
+  | 'powerscale_node' // Dell PowerScale Node Controller (Isilon)
+  | 'objectscale_node' // Dell ObjectScale Node Controller (ECS-based)
 
 /** Combined controller/HBA types */
 export type ControllerType = HbaType | RaidControllerType
 
-/** Topologies that require HBA (direct disk access) */
+/** Topologies that require HBA (direct disk access) - software-defined storage only */
 export const HBA_REQUIRED_TOPOLOGIES: TopologyType[] = [
   'zfs',
   's2d',
@@ -240,9 +243,8 @@ export const HBA_REQUIRED_TOPOLOGIES: TopologyType[] = [
   'vsan_esa',
   'ceph',
   'powerflex',
-  'powerscale',
-  'objectscale',
   'nutanix',
+  // Note: powerscale and objectscale are appliances with built-in controllers, not HBA-based
 ]
 
 /** Check if topology requires HBA */
@@ -681,10 +683,48 @@ export const CONTROLLER_LIMITS: Record<
     name: 'Dell PowerVault ME5 (Dual Active)',
     isHba: false,
   },
+  // Dell PowerStore T-Series (dedicated storage appliance)
+  // Based on Dell specs: 5200T=7.5M IOPS, 9200T=12.5M IOPS
+  // Using mid-range 3200T/5200T representative values
+  powerstore_t: {
+    iops: 5000000,
+    throughputMBs: 25000,
+    name: 'Dell PowerStore T Model',
+    isHba: false,
+  },
+  // Dell PowerScale (Isilon node controllers)
+  powerscale_node: {
+    iops: 800000,
+    throughputMBs: 15000,
+    name: 'Dell PowerScale Node Controller',
+    isHba: false,
+  },
+  // Dell ObjectScale (ECS-based node controllers)
+  objectscale_node: {
+    iops: 500000,
+    throughputMBs: 10000,
+    name: 'Dell ObjectScale Node Controller',
+    isHba: false,
+  },
+}
+
+/** Maps storage appliances to their specific built-in controllers */
+const APPLIANCE_CONTROLLERS: Partial<Record<TopologyType, ControllerType[]>> = {
+  powervault: ['powervault_me5_single', 'powervault_me5_dual'],
+  powerstore: ['powerstore_t'],
+  powerscale: ['powerscale_node'],
+  objectscale: ['objectscale_node'],
 }
 
 /** Get controller options filtered by topology requirements */
 export function getControllerOptions(topologyType: TopologyType): ControllerType[] {
+  // Storage appliances have fixed built-in controllers
+  const applianceControllers = APPLIANCE_CONTROLLERS[topologyType]
+  if (applianceControllers) {
+    return applianceControllers
+  }
+
+  // Software-defined storage needs HBAs, traditional RAID needs controllers
   const needsHba = requiresHba(topologyType)
   return (Object.keys(CONTROLLER_LIMITS) as ControllerType[]).filter(
     (key) => CONTROLLER_LIMITS[key].isHba === needsHba,

@@ -1,17 +1,26 @@
 /**
- * Application header with branding and export actions.
+ * Application header with branding, unit system toggle, and carbon intensity selector.
  */
 
-import { copyShareableUrl } from '@/store'
+import { SegmentedControl, Select } from '@/components/common'
+import { useConfigStore } from '@/store'
+import type { CarbonRegion } from '@/types'
+
+const CARBON_REGIONS: { value: CarbonRegion; label: string }[] = [
+  { value: 'switzerland', label: 'Switzerland (30)' },
+  { value: 'norway', label: 'Norway (26)' },
+  { value: 'france', label: 'France (56)' },
+  { value: 'germany', label: 'Germany (385)' },
+  { value: 'usa_average', label: 'USA (386)' },
+  { value: 'world_average', label: 'World (475)' },
+  { value: 'china', label: 'China (555)' },
+]
 
 export function Header() {
-  const handleShare = async () => {
-    const success = await copyShareableUrl()
-    if (success) {
-      // TODO: Show toast notification
-      console.log('URL copied to clipboard')
-    }
-  }
+  const unitSystem = useConfigStore((state) => state.unitSystem)
+  const setUnitSystem = useConfigStore((state) => state.setUnitSystem)
+  const carbonRegion = useConfigStore((state) => state.carbonRegion)
+  const setCarbonRegion = useConfigStore((state) => state.setCarbonRegion)
 
   return (
     <header className="bg-surface-800 border-b border-surface-700 px-6 py-4">
@@ -26,20 +35,27 @@ export function Header() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={handleShare}
-            className="px-4 py-2 text-sm font-medium text-slate-300 bg-surface-700 hover:bg-surface-600 rounded-lg transition-colors"
-          >
-            Share
-          </button>
-          <button
-            type="button"
-            className="px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-500 rounded-lg transition-colors"
-          >
-            Export PDF
-          </button>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-slate-400">CO₂:</span>
+            <Select
+              id="carbon-region"
+              value={carbonRegion}
+              options={CARBON_REGIONS}
+              onChange={(v) => setCarbonRegion(v as CarbonRegion)}
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-slate-400">Units:</span>
+            <SegmentedControl
+              value={unitSystem}
+              options={[
+                { value: 'binary', label: 'TiB' },
+                { value: 'decimal', label: 'TB' },
+              ]}
+              onChange={(v) => setUnitSystem(v as 'binary' | 'decimal')}
+            />
+          </div>
         </div>
       </div>
     </header>

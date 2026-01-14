@@ -3,9 +3,9 @@
  */
 
 import { useMemo } from 'react'
-import { Label, SegmentedControl, Select, Slider } from '@/components/common/FormControls'
+import { Label, Select, Slider } from '@/components/common/FormControls'
 import { useConfigStore } from '@/store'
-import type { CarbonRegion, ControllerType, NetworkSpeed, PCIeGen, PCIeLanes } from '@/types'
+import type { ControllerType, NetworkSpeed, PCIeGen, PCIeLanes } from '@/types'
 import { CONTROLLER_LIMITS, getControllerOptions, requiresHba } from '@/types'
 
 const NETWORK_SPEEDS: { value: NetworkSpeed; label: string }[] = [
@@ -30,16 +30,6 @@ const PCIE_LANES: { value: PCIeLanes; label: string }[] = [
   { value: 'x16', label: 'x16' },
 ]
 
-const CARBON_REGIONS: { value: CarbonRegion; label: string; intensity: number }[] = [
-  { value: 'switzerland', label: 'Switzerland', intensity: 30 },
-  { value: 'france', label: 'France', intensity: 56 },
-  { value: 'norway', label: 'Norway', intensity: 26 },
-  { value: 'germany', label: 'Germany', intensity: 385 },
-  { value: 'usa_average', label: 'USA (Average)', intensity: 386 },
-  { value: 'china', label: 'China', intensity: 555 },
-  { value: 'world_average', label: 'World Average', intensity: 475 },
-]
-
 const FS_TYPES = [
   { value: 'zfs', label: 'ZFS' },
   { value: 'xfs', label: 'XFS' },
@@ -59,7 +49,6 @@ export function AdvancedPanel() {
     pcieGen,
     pcieLanes,
     pue,
-    carbonRegion,
     fsType,
     backupRetention,
     dailyChangeRate,
@@ -70,12 +59,9 @@ export function AdvancedPanel() {
     setPcieGen,
     setPcieLanes,
     setPue,
-    setCarbonRegion,
     setFsType,
     setBackupRetention,
     setDailyChangeRate,
-    unitSystem,
-    setUnitSystem,
   } = useConfigStore()
 
   // Get available controller options based on topology type (HBA for ZFS/vSAN/S2D, RAID for others)
@@ -91,69 +77,48 @@ export function AdvancedPanel() {
 
   return (
     <div className="space-y-6">
-      {/* Display Settings Section */}
-      <div className="space-y-4">
-        <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-          Display Settings
-        </h4>
-
-        <div className="space-y-2">
-          <Label htmlFor="unit-system">Capacity Unit System</Label>
-          <SegmentedControl
-            value={unitSystem}
-            options={[
-              { value: 'binary', label: 'TiB/GiB (Binary)' },
-              { value: 'decimal', label: 'TB/GB (Decimal)' },
-            ]}
-            onChange={(v) => setUnitSystem(v as 'binary' | 'decimal')}
-          />
-          <p className="text-xs text-slate-500">
-            Binary (1024-based) shows actual OS/filesystem capacity. Decimal (1000-based) matches
-            drive marketing specs.
-          </p>
-        </div>
-      </div>
-
       {/* Data Efficiency Section - Only for topologies that support compression/dedup */}
-      {/* Standard RAID and S2D do not have inline compression/deduplication */}
-      {topology.type !== 'standard' && topology.type !== 's2d' && (
-        <div className="space-y-4 pt-4 border-t border-surface-700">
-          <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-            Data Efficiency
-          </h4>
+      {/* Standard RAID, S2D, and PowerVault ME5 do not have inline compression/deduplication */}
+      {topology.type !== 'standard' &&
+        topology.type !== 's2d' &&
+        topology.type !== 'powervault' && (
+          <div className="space-y-4 pt-4 border-t border-surface-700">
+            <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+              Data Efficiency
+            </h4>
 
-          <div className="space-y-2">
-            <Label htmlFor="compression-ratio" hint={`${compressionRatio.toFixed(1)}x`}>
-              Compression Ratio
-            </Label>
-            <Slider
-              id="compression-ratio"
-              value={compressionRatio}
-              min={1}
-              max={5}
-              step={0.1}
-              onChange={setCompressionRatio}
-              formatValue={(v) => `${v.toFixed(1)}x`}
-            />
-            <p className="text-xs text-slate-500">1.0 = no compression, 2.0 = 50% reduction</p>
-          </div>
+            <div className="space-y-2">
+              <Label htmlFor="compression-ratio" hint={`${compressionRatio.toFixed(1)}x`}>
+                Compression Ratio
+              </Label>
+              <Slider
+                id="compression-ratio"
+                value={compressionRatio}
+                min={1}
+                max={5}
+                step={0.1}
+                onChange={setCompressionRatio}
+                formatValue={(v) => `${v.toFixed(1)}x`}
+              />
+              <p className="text-xs text-slate-500">1.0 = no compression, 2.0 = 50% reduction</p>
+            </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="dedup-ratio" hint={`${dedupRatio.toFixed(1)}x`}>
-              Deduplication Ratio
-            </Label>
-            <Slider
-              id="dedup-ratio"
-              value={dedupRatio}
-              min={1}
-              max={10}
-              step={0.1}
-              onChange={setDedupRatio}
-              formatValue={(v) => `${v.toFixed(1)}x`}
-            />
+            <div className="space-y-2">
+              <Label htmlFor="dedup-ratio" hint={`${dedupRatio.toFixed(1)}x`}>
+                Deduplication Ratio
+              </Label>
+              <Slider
+                id="dedup-ratio"
+                value={dedupRatio}
+                min={1}
+                max={10}
+                step={0.1}
+                onChange={setDedupRatio}
+                formatValue={(v) => `${v.toFixed(1)}x`}
+              />
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
       {/* Network & Bus Section */}
       <div className="space-y-4 pt-4 border-t border-surface-700">
@@ -251,19 +216,6 @@ export function AdvancedPanel() {
           <p className="text-xs text-slate-500">
             1.0 = perfect, 1.2 = excellent, 1.6 = average, 2.0 = poor
           </p>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="carbon-region">Grid Carbon Intensity</Label>
-          <Select
-            id="carbon-region"
-            value={carbonRegion}
-            options={CARBON_REGIONS.map((r) => ({
-              value: r.value,
-              label: `${r.label} (${r.intensity} gCO₂/kWh)`,
-            }))}
-            onChange={(v) => setCarbonRegion(v as CarbonRegion)}
-          />
         </div>
       </div>
 

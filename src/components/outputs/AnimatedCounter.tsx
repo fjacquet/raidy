@@ -3,6 +3,8 @@
  */
 
 import { useEffect, useRef, useState } from 'react'
+import { useConfigStore } from '@/store'
+import { formatBytes } from '@/utils'
 
 interface AnimatedCounterProps {
   value: number
@@ -74,6 +76,7 @@ export function AnimatedCounter({
 
 /**
  * Animated bytes counter with appropriate unit formatting.
+ * Uses the store's unitSystem setting for correct TiB/TB labels.
  */
 export function AnimatedBytes({
   value,
@@ -84,18 +87,8 @@ export function AnimatedBytes({
   duration?: number
   className?: string
 }) {
-  const formatter = (v: number): string => {
-    if (v >= 1024 ** 5) {
-      return `${(v / 1024 ** 5).toFixed(1)} PB`
-    }
-    if (v >= 1024 ** 4) {
-      return `${(v / 1024 ** 4).toFixed(1)} TB`
-    }
-    if (v >= 1024 ** 3) {
-      return `${(v / 1024 ** 3).toFixed(1)} GB`
-    }
-    return `${(v / 1024 ** 2).toFixed(0)} MB`
-  }
+  const unitSystem = useConfigStore((state) => state.unitSystem)
+  const formatter = (v: number): string => formatBytes(v, unitSystem)
 
   return (
     <AnimatedCounter
