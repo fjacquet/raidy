@@ -44,8 +44,12 @@ const FORM_FACTOR_OPTIONS: { value: FormFactorFilter; label: string }[] = [
   { value: 'm.2', label: 'M.2' },
 ]
 
+/** Topologies that only support NVMe drives */
+const NVME_ONLY_TOPOLOGIES = ['powerstore', 'vsan_esa'] as const
+
 export function HardwarePanel() {
   const {
+    topology,
     driveConnectivity,
     driveFormFactor,
     driveId,
@@ -59,6 +63,9 @@ export function HardwarePanel() {
     setServerCount,
     setServerPower,
   } = useConfigStore()
+
+  // Check if topology requires NVMe-only drives
+  const requiresNvme = NVME_ONLY_TOPOLOGIES.includes(topology.type as (typeof NVME_ONLY_TOPOLOGIES)[number])
 
   // Use centralized byte formatting with user's preferred unit system
   const formatBytes = useFormatBytes()
@@ -81,6 +88,13 @@ export function HardwarePanel() {
   }, [driveList, driveConnectivity, driveFormFactor])
 
   const selectedDrive = drives[driveId]
+
+  // Auto-set NVMe connectivity for topologies that require it
+  useEffect(() => {
+    if (requiresNvme && driveConnectivity !== 'nvme') {
+      setDriveConnectivity('nvme')
+    }
+  }, [requiresNvme, driveConnectivity, setDriveConnectivity])
 
   // Auto-select first drive when filter changes and current drive is not in filtered list
   useEffect(() => {
@@ -106,11 +120,23 @@ export function HardwarePanel() {
       {/* Drive Connectivity Filter */}
       <div className="space-y-2">
         <Label>Drive Connectivity</Label>
-        <SegmentedControl
-          value={driveConnectivity}
-          options={CONNECTIVITY_OPTIONS}
-          onChange={(value) => setDriveConnectivity(value as DriveConnectivity)}
-        />
+        {requiresNvme ? (
+          <>
+            <div className="px-3 py-2 bg-surface-700 rounded-lg text-sm text-slate-300">
+              NVMe Only
+            </div>
+            <p className="text-xs text-amber-500">
+              {topology.type === 'powerstore' && 'Dell PowerStore requires NVMe drives'}
+              {topology.type === 'vsan_esa' && 'VMware vSAN ESA requires NVMe drives'}
+            </p>
+          </>
+        ) : (
+          <SegmentedControl
+            value={driveConnectivity}
+            options={CONNECTIVITY_OPTIONS}
+            onChange={(value) => setDriveConnectivity(value as DriveConnectivity)}
+          />
+        )}
       </div>
 
       {/* Form Factor Filter */}

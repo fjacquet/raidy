@@ -712,13 +712,17 @@ export function calculatePerformance(input: PerformanceInput): PerformanceResult
   const maxReadThroughputMBs = Math.min(effectiveReadThroughput, minThroughput)
   const maxWriteThroughputMBs = Math.min(effectiveWriteThroughput, minThroughput)
 
+  // Cap IOPS by controller/appliance limit
+  // For integrated appliances (PowerStore, PowerScale, etc.), the controller IS the system limit
+  const cappedReadIOPS = Math.min(adjustedReadIOPS, controllerIOPS)
+  const cappedWriteIOPS = Math.min(adjustedWriteIOPS, controllerIOPS)
+
   return {
     maxReadThroughputMBs,
     maxWriteThroughputMBs,
-    // Show max IOPS capability at media layer: reads have no penalty, writes have RAID penalty
-    // Note: these are NOT capped by other bottlenecks - the bottleneck analysis shows system limits
-    maxReadIOPS: adjustedReadIOPS,
-    maxWriteIOPS: adjustedWriteIOPS,
+    // Max IOPS capped by the lowest limit in the chain (typically controller for appliances)
+    maxReadIOPS: cappedReadIOPS,
+    maxWriteIOPS: cappedWriteIOPS,
     // Blended IOPS for the actual workload is shown in the media layer
     layers,
     bottleneckDescription,

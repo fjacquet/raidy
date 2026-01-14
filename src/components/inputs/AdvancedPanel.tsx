@@ -77,11 +77,16 @@ export function AdvancedPanel() {
 
   return (
     <div className="space-y-6">
-      {/* Data Efficiency Section - Only for topologies that support compression/dedup */}
-      {/* Standard RAID, S2D, and PowerVault ME5 do not have inline compression/deduplication */}
+      {/* Data Efficiency Section - Only for topologies that don't have platform-specific controls */}
+      {/* Excluded: standard RAID, S2D, PowerVault (no inline compression), and platforms with their own controls in TopologyPanel */}
       {topology.type !== 'standard' &&
         topology.type !== 's2d' &&
-        topology.type !== 'powervault' && (
+        topology.type !== 'powervault' &&
+        topology.type !== 'powerstore' &&
+        topology.type !== 'powerscale' &&
+        topology.type !== 'objectscale' &&
+        topology.type !== 'powerflex' &&
+        topology.type !== 'nutanix' && (
           <div className="space-y-4 pt-4 border-t border-surface-700">
             <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
               Data Efficiency
