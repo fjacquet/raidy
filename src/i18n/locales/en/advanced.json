@@ -1,0 +1,60 @@
+{
+  "dataEfficiency": {
+    "title": "Data Efficiency",
+    "compression": "Compression Ratio",
+    "compressionHint": "1.0 = no compression, 2.0 = 50% reduction",
+    "dedup": "Deduplication Ratio",
+    "dedupHint": "1.0 = no dedup, 2.0 = 50% reduction"
+  },
+  "network": {
+    "title": "Network & Bus",
+    "speed": "Network Speed",
+    "speeds": {
+      "1gbe": "1 GbE",
+      "10gbe": "10 GbE",
+      "25gbe": "25 GbE",
+      "40gbe": "40 GbE",
+      "50gbe": "50 GbE",
+      "100gbe": "100 GbE",
+      "200gbe": "200 GbE",
+      "400gbe": "400 GbE"
+    }
+  },
+  "pcie": {
+    "title": "Host Bus Adapter",
+    "generation": "PCIe Generation",
+    "lanes": "PCIe Lanes"
+  },
+  "controller": {
+    "title": "RAID Controller",
+    "hbaModel": "HBA Model",
+    "model": "Controller Model",
+    "maxIops": "Max IOPS",
+    "maxThroughput": "Max Throughput",
+    "hbaHint": "ZFS, vSAN, and S2D require direct disk access via HBA (IT mode)",
+    "raidHint": "Hardware RAID controllers manage disk redundancy"
+  },
+  "power": {
+    "title": "Power & Sustainability",
+    "pue": "PUE (Power Usage Effectiveness)",
+    "pueHint": "1.0 = perfect, 1.2 = excellent, 1.4 = average, 2.0 = poor",
+    "projectYears": "Project Duration (Years)",
+    "electricityCost": "Electricity Cost ($/kWh)"
+  },
+  "filesystem": {
+    "title": "Filesystem & Backup",
+    "type": "Filesystem",
+    "types": {
+      "zfs": "ZFS",
+      "xfs": "XFS",
+      "ext4": "ext4",
+      "btrfs": "Btrfs",
+      "refs": "ReFS",
+      "ntfs": "NTFS"
+    },
+    "reflink": "Supports Reflink",
+    "reflinkHint": "Copy-on-write clones for backup efficiency",
+    "backupRetention": "Backup Retention (Days)",
+    "dailyChangeRate": "Daily Change Rate (%)"
+  }
+}

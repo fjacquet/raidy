@@ -1,0 +1,129 @@
+{
+  "capacity": {
+    "title": "Capacity Overview",
+    "raw": "Raw Capacity",
+    "usable": "Usable Capacity",
+    "effective": "Effective Capacity",
+    "afterCompression": "After compression",
+    "efficiency": "Efficiency",
+    "zfsBreakdown": "ZFS Capacity Breakdown",
+    "dualUnitHint": "Dual-unit display: TiB (binary) / TB (decimal)",
+    "segments": {
+      "usable": "Usable",
+      "parity": "Parity",
+      "hotSpares": "Hot Spares",
+      "zfsSlop": "ZFS Slop",
+      "fsOverhead": "FS Overhead"
+    },
+    "breakdown": {
+      "title": "Capacity Breakdown",
+      "rawCapacity": "Raw Capacity",
+      "parity": "Parity/Redundancy",
+      "hotSpares": "Hot Spares",
+      "zfsSlop": "ZFS Slop Space",
+      "filesystemOverhead": "Filesystem Overhead",
+      "systemReserve": "System Reserve",
+      "usableCapacity": "Usable Capacity",
+      "compressionGain": "Compression Gain",
+      "dedupGain": "Dedup Gain",
+      "effectiveCapacity": "Final Effective Capacity",
+      "ofRaw": "of raw capacity"
+    }
+  },
+  "performance": {
+    "title": "Performance",
+    "read": "Read",
+    "write": "Write",
+    "readIops": "Read IOPS",
+    "writeIops": "Write IOPS",
+    "readThroughput": "Read Throughput",
+    "writeThroughput": "Write Throughput",
+    "latency": "Latency",
+    "bottleneck": {
+      "title": "Bottleneck Analysis",
+      "media": "Media Limit",
+      "controller": "Controller Limit",
+      "pcie": "PCIe Bus Limit",
+      "network": "Network Limit",
+      "actual": "Effective Limit"
+    }
+  },
+  "resilience": {
+    "title": "Data Resilience",
+    "runSimulation": "Run Simulation",
+    "simulating": "Simulating...",
+    "monteCarloSimulation": "Monte Carlo Simulation",
+    "annualSurvivalRate": "Annual Survival Rate ({{nines}} nines)",
+    "survivalProbability": "Survival Probability",
+    "rebuildTime": "Rebuild Time",
+    "ureRisk": "URE Risk",
+    "dualFailure": "Dual Failure",
+    "riskLevel": "Risk Level",
+    "recommendations": "Recommendations",
+    "recommendation": "Recommendation",
+    "simulations": "Simulations Run",
+    "clickToRun": "Click \"Run Simulation\" to calculate",
+    "iterations": "Monte Carlo iterations",
+    "includesCorrelated": "Includes correlated failures & rebuild stress"
+  },
+  "power": {
+    "title": "Power & Sustainability",
+    "totalPower": "Total Power",
+    "annualEnergy": "Annual Energy",
+    "drives": "Drives",
+    "servers": "Servers",
+    "cooling": "Cooling (PUE)",
+    "annualCo2": "Annual CO₂:",
+    "drivePower": "Drive Power",
+    "serverPower": "Server Power",
+    "totalPowerPue": "Total Power (with PUE)",
+    "annualCost": "Annual Cost",
+    "co2Emissions": "CO₂ Emissions",
+    "projectCost": "{{years}}-Year Energy Cost"
+  },
+  "ssd": {
+    "title": "SSD Endurance",
+    "ok": "OK",
+    "atRisk": "At Risk",
+    "dwpdUsage": "DWPD Usage ({{required}} / {{rated}})",
+    "dwpd": "Drive DWPD",
+    "requiredDwpd": "Required DWPD",
+    "enduranceYears": "Estimated Lifespan",
+    "warning": "Warning: Workload exceeds drive endurance",
+    "sufficient": "Endurance sufficient for workload"
+  },
+  "commands": {
+    "title": "Configuration Commands",
+    "zfs": {
+      "createPool": "Create ZFS pool with {{level}}",
+      "enableCompression": "Enable {{type}} compression",
+      "setRecordsize": "Set recordsize to {{size}}K",
+      "enableDedup": "Enable deduplication (RAM-intensive!)"
+    },
+    "mdadm": {
+      "createArray": "Create mdadm {{level}} array",
+      "formatXfs": "Format with XFS (stripe-aligned)"
+    },
+    "s2d": {
+      "createPool": "Create Storage Spaces Direct pool",
+      "createVdisk": "Create virtual disk with {{level}} resiliency"
+    },
+    "proprietary": {
+      "config": "{{level}} configuration",
+      "referVendor": "Refer to vendor documentation for {{level}} setup commands."
+    }
+  },
+  "export": {
+    "title": "Export Configuration",
+    "pdf": "PDF Report",
+    "pdfDesc": "Full report",
+    "yaml": "YAML",
+    "yamlDesc": "Configuration",
+    "ansible": "Ansible",
+    "ansibleDesc": "Playbook",
+    "terraform": "Terraform",
+    "terraformDesc": "GCP Config",
+    "json": "JSON Export",
+    "footer": "Export your storage configuration for documentation or infrastructure automation."
+  }
+}

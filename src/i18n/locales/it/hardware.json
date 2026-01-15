@@ -1,0 +1,72 @@
+{
+  "connectivity": {
+    "label": "Connettivita disco",
+    "all": "Tutti",
+    "nvme": "NVMe",
+    "sas": "SAS",
+    "sata": "SATA",
+    "hdd": "HDD",
+    "nvmeRequired": {
+      "powerstore": "Dell PowerStore richiede dischi NVMe",
+      "vsan_esa": "VMware vSAN ESA richiede dischi NVMe"
+    }
+  },
+  "formFactor": {
+    "label": "Fattore di forma",
+    "all": "Tutti",
+    "2.5": "2.5\"",
+    "3.5": "3.5\"",
+    "u2": "U.2",
+    "e3s": "E3.S",
+    "edsff": "EDSFF",
+    "m2": "M.2"
+  },
+  "drive": {
+    "label": "Modello disco",
+    "count": "Dischi per server",
+    "countHint": "Dischi totali: {{total}}"
+  },
+  "server": {
+    "label": "Server / Nodi",
+    "power": "Potenza server (W)",
+    "powerHint": "Esclusi i dischi"
+  },
+  "summary": {
+    "rawCapacity": "Capacita grezza",
+    "totalDrives": "Dischi totali",
+    "hardwareCost": "Costo hardware"
+  },
+  "properties": {
+    "title": "Proprieta disco",
+    "noDrive": "Nessun disco selezionato",
+    "basicInfo": "Info base",
+    "model": "Modello",
+    "type": "Tipo",
+    "formFactor": "Fattore di forma",
+    "capacity": "Capacita",
+    "sectorSize": "Dim. settore",
+    "performance": "Prestazioni",
+    "readIops": "IOPS lettura",
+    "writeIops": "IOPS scrittura",
+    "readBandwidth": "BW lettura",
+    "writeBandwidth": "BW scrittura",
+    "readLatency": "Latenza lettura",
+    "writeLatency": "Latenza scrittura",
+    "latency": "Latenza",
+    "reliability": "Affidabilita",
+    "ureRate": "Tasso URE",
+    "afr": "AFR",
+    "dwpd": "DWPD",
+    "mtbf": "MTBF",
+    "power": "Consumo",
+    "idle": "Riposo",
+    "load": "Carico",
+    "technology": "Tecnologia",
+    "rpm": "RPM",
+    "recording": "Registrazione",
+    "dualActuator": "Doppio attuatore",
+    "nandType": "Tipo NAND",
+    "interface": "Interfaccia",
+    "cost": "Prezzo"
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "presets": {
+    "label": "Arbeitslast-Profil",
+    "database": "Datenbank (OLTP)",
+    "olap": "Analytik (OLAP)",
+    "fileServer": "Dateiserver",
+    "webServer": "Webserver",
+    "videoStreaming": "Video-Streaming",
+    "virtualDesktop": "Virtueller Desktop (VDI)",
+    "backup": "Backup-Ziel",
+    "archive": "Archiv",
+    "custom": "Benutzerdefiniert"
+  },
+  "ioPattern": {
+    "label": "I/O-Muster",
+    "readWrite": "Lese-/Schreibverhaeltnis",
+    "readPercent": "Lesen %",
+    "writePercent": "Schreiben %",
+    "randomSequential": "Zufaellig / Sequentiell",
+    "randomPercent": "Zufaellig %",
+    "sequentialPercent": "Sequentiell %"
+  },
+  "blockSize": {
+    "label": "Blockgroesse",
+    "hint4k": "4K - Datenbank-Random-I/O",
+    "hint8k": "8K - SQL Server, Oracle",
+    "hint16k": "16K - MySQL InnoDB Standard",
+    "hint64k": "64K - Allgemein",
+    "hint128k": "128K - Dateiserver, Virtualisierung",
+    "hint256k": "256K - Videoschnitt, grosse Dateien",
+    "hint1m": "1M - Sequentiell, Backup"
+  },
+  "capacity": {
+    "datasetSize": "Gesamte Datengroesse",
+    "dailyWriteVolume": "Taegliches Schreibvolumen",
+    "hint": "Fuer SSD-Endurance-Berechnung verwendet"
+  }
+}

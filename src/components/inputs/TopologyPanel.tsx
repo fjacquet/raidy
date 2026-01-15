@@ -2,6 +2,7 @@
  * Topology configuration panel - RAID/ZFS/S2D/vSAN/Dell selection.
  */
 
+import { useTranslation } from 'react-i18next'
 import {
   Label,
   NumberInput,
@@ -363,6 +364,7 @@ const RECORDSIZE_OPTIONS = [
 ]
 
 export function TopologyPanel() {
+  const { t } = useTranslation('topology')
   const {
     topology,
     hotSpares,
@@ -411,7 +413,7 @@ export function TopologyPanel() {
     <div className="space-y-5">
       {/* Topology Type */}
       <div className="space-y-2">
-        <Label htmlFor="storage-type">Storage Type</Label>
+        <Label htmlFor="storage-type">{t('type.label')}</Label>
         <Select
           id="storage-type"
           value={topology.type}
@@ -422,7 +424,7 @@ export function TopologyPanel() {
 
       {/* Topology Level */}
       <div className="space-y-2">
-        <Label htmlFor="topology-level">Configuration</Label>
+        <Label htmlFor="topology-level">{t('configuration.label')}</Label>
         <Select
           id="topology-level"
           value={topology.level}
@@ -436,7 +438,7 @@ export function TopologyPanel() {
 
       {/* Hot Spares */}
       <div className="space-y-2">
-        <Label htmlFor="hot-spares">Hot Spares</Label>
+        <Label htmlFor="hot-spares">{t('hotSpares.label')}</Label>
         <Slider id="hot-spares" value={hotSpares} min={0} max={4} onChange={setHotSpares} />
       </div>
 
@@ -444,11 +446,11 @@ export function TopologyPanel() {
       {topology.type === 'zfs' && (
         <div className="space-y-4 pt-3 border-t border-surface-700">
           <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-            ZFS Options
+            {t('zfs.title')}
           </h4>
 
           <div className="space-y-2">
-            <Label htmlFor="ashift">Sector Size (ashift)</Label>
+            <Label htmlFor="ashift">{t('zfs.ashift')}</Label>
             <Select
               id="ashift"
               value={String(zfsOptions.ashift)}
@@ -459,14 +461,14 @@ export function TopologyPanel() {
 
           <Toggle
             id="zfs-compression"
-            label="Enable Compression"
+            label={t('zfs.compression')}
             checked={zfsOptions.compression}
             onChange={(v) => setZfsOptions({ compression: v })}
           />
 
           {zfsOptions.compression && (
             <div className="space-y-2">
-              <Label htmlFor="compression-type">Compression Algorithm</Label>
+              <Label htmlFor="compression-type">{t('zfs.compressionAlgorithm')}</Label>
               <Select
                 id="compression-type"
                 value={zfsOptions.compressionType}
@@ -479,7 +481,7 @@ export function TopologyPanel() {
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="recordsize">Record Size</Label>
+            <Label htmlFor="recordsize">{t('zfs.recordSize')}</Label>
             <Select
               id="recordsize"
               value={String(zfsOptions.recordsize)}
@@ -490,14 +492,14 @@ export function TopologyPanel() {
 
           <Toggle
             id="zfs-dedup"
-            label="Enable Deduplication"
+            label={t('zfs.dedup')}
             checked={zfsOptions.dedup}
             onChange={(v) => setZfsOptions({ dedup: v })}
           />
 
           <Toggle
             id="zfs-special"
-            label="Special VDEV (metadata)"
+            label={t('zfs.specialVdev')}
             checked={zfsOptions.specialVdev}
             onChange={(v) => setZfsOptions({ specialVdev: v })}
           />
@@ -508,11 +510,11 @@ export function TopologyPanel() {
       {topology.type === 's2d' && (
         <div className="space-y-4 pt-3 border-t border-surface-700">
           <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-            S2D Options
+            {t('s2d.title')}
           </h4>
 
           <div className="space-y-2">
-            <Label htmlFor="fault-domains">Fault Domains (Nodes)</Label>
+            <Label htmlFor="fault-domains">{t('s2d.faultDomains')}</Label>
             <NumberInput
               id="fault-domains"
               value={s2dOptions.faultDomains}
@@ -524,7 +526,7 @@ export function TopologyPanel() {
 
           {(topology.level === 'mirror' || topology.level === 'map') && (
             <div className="space-y-2">
-              <Label>Mirror Copies</Label>
+              <Label>{t('s2d.mirrorCopies')}</Label>
               <SegmentedControl
                 value={String(s2dOptions.mirrorCopies)}
                 options={[
@@ -538,14 +540,14 @@ export function TopologyPanel() {
 
           <Toggle
             id="s2d-reserve"
-            label="Rebuild Reserve (1 drive/node)"
+            label={t('s2d.rebuildReserve')}
             checked={s2dOptions.rebuildReserve}
             onChange={(v) => setS2DOptions({ rebuildReserve: v })}
           />
 
           <Toggle
             id="s2d-tiers"
-            label="Storage Tiers Enabled"
+            label={t('s2d.storageTiers')}
             checked={s2dOptions.storageTiers}
             onChange={(v) => setS2DOptions({ storageTiers: v })}
           />
@@ -573,7 +575,7 @@ export function TopologyPanel() {
       {topology.type === 'vsan_osa' && (
         <div className="space-y-4 pt-3 border-t border-surface-700">
           <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-            vSAN OSA Options
+            {t('vsanOsa.title')}
           </h4>
 
           {/* Configuration info box */}
@@ -609,21 +611,21 @@ export function TopologyPanel() {
 
           <Toggle
             id="vsan-compression"
-            label="Enable Compression"
+            label={t('common.enableCompression')}
             checked={vsanOptions.compression}
             onChange={(v) => setVsanOptions({ compression: v })}
           />
 
           <Toggle
             id="vsan-dedup"
-            label="Enable Deduplication"
+            label={t('common.enableDedup')}
             checked={vsanOptions.dedup}
             onChange={(v) => setVsanOptions({ dedup: v })}
           />
 
           <Toggle
             id="vsan-encryption"
-            label="Enable Encryption"
+            label={t('common.enableEncryption')}
             checked={vsanOptions.encryption}
             onChange={(v) => setVsanOptions({ encryption: v })}
           />
@@ -631,7 +633,7 @@ export function TopologyPanel() {
           {/* Disk Group Tiering */}
           <div className="pt-3 border-t border-surface-700">
             <h5 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
-              Disk Group Configuration
+              {t('vsanOsa.diskGroupConfig')}
             </h5>
           </div>
           <TieringPanel
@@ -658,7 +660,7 @@ export function TopologyPanel() {
       {topology.type === 'vsan_esa' && (
         <div className="space-y-4 pt-3 border-t border-surface-700">
           <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-            vSAN ESA Options
+            {t('vsanEsa.title')}
           </h4>
 
           {/* Configuration info box */}
@@ -698,21 +700,21 @@ export function TopologyPanel() {
 
           <Toggle
             id="vsan-esa-compression"
-            label="Enable Compression"
+            label={t('common.enableCompression')}
             checked={vsanOptions.compression}
             onChange={(v) => setVsanOptions({ compression: v })}
           />
 
           <Toggle
             id="vsan-esa-dedup"
-            label="Enable Deduplication"
+            label={t('common.enableDedup')}
             checked={vsanOptions.dedup}
             onChange={(v) => setVsanOptions({ dedup: v })}
           />
 
           <Toggle
             id="vsan-esa-encryption"
-            label="Enable Encryption"
+            label={t('common.enableEncryption')}
             checked={vsanOptions.encryption}
             onChange={(v) => setVsanOptions({ encryption: v })}
           />
@@ -723,7 +725,7 @@ export function TopologyPanel() {
       {topology.type === 'nutanix' && (
         <div className="space-y-4 pt-3 border-t border-surface-700">
           <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-            Nutanix AOS Options
+            {t('nutanix.title')}
           </h4>
 
           {/* Show mode description based on selected topology level */}
@@ -755,7 +757,7 @@ export function TopologyPanel() {
           </div>
 
           <div className="space-y-2">
-            <Label>Cluster Type</Label>
+            <Label>{t('nutanix.clusterType')}</Label>
             <SegmentedControl
               value={nutanixOptions.clusterType}
               options={[
@@ -773,14 +775,14 @@ export function TopologyPanel() {
 
           <Toggle
             id="nutanix-compression"
-            label="Enable Compression"
+            label={t('common.enableCompression')}
             checked={nutanixOptions.compression}
             onChange={(v) => setNutanixOptions({ compression: v })}
           />
 
           {nutanixOptions.compression && (
             <div className="space-y-2">
-              <Label htmlFor="nutanix-compression-ratio">Compression Ratio</Label>
+              <Label htmlFor="nutanix-compression-ratio">{t('common.compressionRatio')}</Label>
               <Slider
                 id="nutanix-compression-ratio"
                 value={nutanixOptions.compressionRatio}
@@ -797,14 +799,14 @@ export function TopologyPanel() {
 
           <Toggle
             id="nutanix-dedup"
-            label="Enable Deduplication"
+            label={t('common.enableDedup')}
             checked={nutanixOptions.dedup}
             onChange={(v) => setNutanixOptions({ dedup: v })}
           />
 
           {nutanixOptions.dedup && (
             <div className="space-y-2">
-              <Label htmlFor="nutanix-dedup-ratio">Deduplication Ratio</Label>
+              <Label htmlFor="nutanix-dedup-ratio">{t('common.dedupRatio')}</Label>
               <Slider
                 id="nutanix-dedup-ratio"
                 value={nutanixOptions.dedupRatio}
@@ -820,7 +822,7 @@ export function TopologyPanel() {
           )}
 
           <div className="space-y-2">
-            <Label>Network Type</Label>
+            <Label>{t('nutanix.networkType')}</Label>
             <SegmentedControl
               value={nutanixOptions.networkType}
               options={[
@@ -840,7 +842,7 @@ export function TopologyPanel() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="nutanix-overhead">System Overhead</Label>
+            <Label htmlFor="nutanix-overhead">{t('common.systemOverhead')}</Label>
             <Slider
               id="nutanix-overhead"
               value={nutanixOptions.systemOverhead * 100}
@@ -859,7 +861,7 @@ export function TopologyPanel() {
       {topology.type === 'powervault' && (
         <div className="space-y-4 pt-3 border-t border-surface-700">
           <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-            PowerVault ME5 Options
+            {t('powervault.title')}
           </h4>
 
           {/* Show mode description based on selected topology level */}
@@ -899,7 +901,7 @@ export function TopologyPanel() {
           </div>
 
           <div className="space-y-2">
-            <Label>Model</Label>
+            <Label>{t('powervault.model')}</Label>
             <SegmentedControl
               value={powervaultOptions.model}
               options={[
@@ -919,7 +921,7 @@ export function TopologyPanel() {
           </div>
 
           <div className="space-y-2">
-            <Label>Controllers</Label>
+            <Label>{t('powervault.controllers')}</Label>
             <SegmentedControl
               value={String(powervaultOptions.controllers)}
               options={[
@@ -937,7 +939,7 @@ export function TopologyPanel() {
 
           <Toggle
             id="powervault-tiering"
-            label="Enable Auto-Tiering"
+            label={t('powervault.enableTiering')}
             checked={powervaultOptions.tiering}
             onChange={(v) => setPowerVaultOptions({ tiering: v })}
           />
@@ -947,7 +949,7 @@ export function TopologyPanel() {
 
           <Toggle
             id="powervault-ssd-cache"
-            label="SSD Read Cache"
+            label={t('powervault.ssdReadCache')}
             checked={powervaultOptions.ssdReadCache}
             onChange={(v) => setPowerVaultOptions({ ssdReadCache: v })}
           />
@@ -957,7 +959,7 @@ export function TopologyPanel() {
 
           <Toggle
             id="powervault-thin"
-            label="Thin Provisioning"
+            label={t('common.thinProvisioning')}
             checked={powervaultOptions.thinProvisioning}
             onChange={(v) => setPowerVaultOptions({ thinProvisioning: v })}
           />
@@ -977,11 +979,11 @@ export function TopologyPanel() {
       {topology.type === 'objectscale' && (
         <div className="space-y-4 pt-3 border-t border-surface-700">
           <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-            ObjectScale Options
+            {t('objectscale.title')}
           </h4>
 
           <div className="space-y-2">
-            <Label htmlFor="objectscale-object-size">Object Size (KB)</Label>
+            <Label htmlFor="objectscale-object-size">{t('objectscale.objectSize')}</Label>
             <Slider
               id="objectscale-object-size"
               value={objectscaleOptions.objectSizeKB}
@@ -999,7 +1001,7 @@ export function TopologyPanel() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="objectscale-overhead">System Overhead</Label>
+            <Label htmlFor="objectscale-overhead">{t('common.systemOverhead')}</Label>
             <Slider
               id="objectscale-overhead"
               value={objectscaleOptions.systemOverheadPercent}
@@ -1013,7 +1015,7 @@ export function TopologyPanel() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="objectscale-network">Network Efficiency</Label>
+            <Label htmlFor="objectscale-network">{t('objectscale.networkEfficiency')}</Label>
             <Slider
               id="objectscale-network"
               value={objectscaleOptions.networkEfficiencyFactor * 100}
@@ -1029,14 +1031,14 @@ export function TopologyPanel() {
 
           <Toggle
             id="objectscale-compression"
-            label="Enable Compression"
+            label={t('common.enableCompression')}
             checked={objectscaleOptions.compression}
             onChange={(v) => setObjectScaleOptions({ compression: v })}
           />
 
           {objectscaleOptions.compression && (
             <div className="space-y-2">
-              <Label htmlFor="objectscale-compression-ratio">Compression Ratio</Label>
+              <Label htmlFor="objectscale-compression-ratio">{t('common.compressionRatio')}</Label>
               <Slider
                 id="objectscale-compression-ratio"
                 value={objectscaleOptions.compressionRatio}
@@ -1057,19 +1059,19 @@ export function TopologyPanel() {
       {topology.type === 'powerstore' && (
         <div className="space-y-4 pt-3 border-t border-surface-700">
           <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-            PowerStore Options
+            {t('powerstore.title')}
           </h4>
 
           <Toggle
             id="powerstore-compression"
-            label="Enable Compression"
+            label={t('common.enableCompression')}
             checked={powerstoreOptions.compression}
             onChange={(v) => setPowerStoreOptions({ compression: v })}
           />
 
           {powerstoreOptions.compression && (
             <div className="space-y-2">
-              <Label htmlFor="powerstore-compression-ratio">Compression Ratio</Label>
+              <Label htmlFor="powerstore-compression-ratio">{t('common.compressionRatio')}</Label>
               <Slider
                 id="powerstore-compression-ratio"
                 value={powerstoreOptions.compressionRatio}
@@ -1086,14 +1088,14 @@ export function TopologyPanel() {
 
           <Toggle
             id="powerstore-dedup"
-            label="Enable Deduplication"
+            label={t('common.enableDedup')}
             checked={powerstoreOptions.dedup}
             onChange={(v) => setPowerStoreOptions({ dedup: v })}
           />
 
           {powerstoreOptions.dedup && (
             <div className="space-y-2">
-              <Label htmlFor="powerstore-dedup-ratio">Deduplication Ratio</Label>
+              <Label htmlFor="powerstore-dedup-ratio">{t('common.dedupRatio')}</Label>
               <Slider
                 id="powerstore-dedup-ratio"
                 value={powerstoreOptions.dedupRatio}
@@ -1109,7 +1111,7 @@ export function TopologyPanel() {
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="powerstore-snapshot">Snapshot Reserve</Label>
+            <Label htmlFor="powerstore-snapshot">{t('common.snapshotReserve')}</Label>
             <Slider
               id="powerstore-snapshot"
               value={powerstoreOptions.snapshotReservePercent}
@@ -1128,19 +1130,19 @@ export function TopologyPanel() {
       {topology.type === 'powerscale' && (
         <div className="space-y-4 pt-3 border-t border-surface-700">
           <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-            PowerScale Options
+            {t('powerscale.title')}
           </h4>
 
           <Toggle
             id="powerscale-compression"
-            label="Enable Compression"
+            label={t('common.enableCompression')}
             checked={powerscaleOptions.compression}
             onChange={(v) => setPowerScaleOptions({ compression: v })}
           />
 
           {powerscaleOptions.compression && (
             <div className="space-y-2">
-              <Label htmlFor="powerscale-compression-ratio">Compression Ratio</Label>
+              <Label htmlFor="powerscale-compression-ratio">{t('common.compressionRatio')}</Label>
               <Slider
                 id="powerscale-compression-ratio"
                 value={powerscaleOptions.compressionRatio}
@@ -1157,14 +1159,14 @@ export function TopologyPanel() {
 
           <Toggle
             id="powerscale-dedup"
-            label="Enable Deduplication"
+            label={t('common.enableDedup')}
             checked={powerscaleOptions.dedup}
             onChange={(v) => setPowerScaleOptions({ dedup: v })}
           />
 
           {powerscaleOptions.dedup && (
             <div className="space-y-2">
-              <Label htmlFor="powerscale-dedup-ratio">Deduplication Ratio</Label>
+              <Label htmlFor="powerscale-dedup-ratio">{t('common.dedupRatio')}</Label>
               <Slider
                 id="powerscale-dedup-ratio"
                 value={powerscaleOptions.dedupRatio}
@@ -1180,7 +1182,7 @@ export function TopologyPanel() {
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="powerscale-snapshot">Snapshot Reserve</Label>
+            <Label htmlFor="powerscale-snapshot">{t('common.snapshotReserve')}</Label>
             <Slider
               id="powerscale-snapshot"
               value={powerscaleOptions.snapshotReservePercent}
@@ -1195,14 +1197,14 @@ export function TopologyPanel() {
 
           <Toggle
             id="powerscale-smartquotas"
-            label="SmartQuotas"
+            label={t('powerscale.smartQuotas')}
             checked={powerscaleOptions.smartQuotas}
             onChange={(v) => setPowerScaleOptions({ smartQuotas: v })}
           />
 
           <Toggle
             id="powerscale-synciq"
-            label="SyncIQ (Replication)"
+            label={t('powerscale.syncIQ')}
             checked={powerscaleOptions.syncIQ}
             onChange={(v) => setPowerScaleOptions({ syncIQ: v })}
           />
@@ -1213,11 +1215,11 @@ export function TopologyPanel() {
       {topology.type === 'ceph' && (
         <div className="space-y-4 pt-3 border-t border-surface-700">
           <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-            Ceph Options
+            {t('ceph.title')}
           </h4>
 
           <div className="space-y-2">
-            <Label>Storage Backend</Label>
+            <Label>{t('ceph.backend')}</Label>
             <SegmentedControl
               value={cephOptions.backend}
               options={[
@@ -1235,14 +1237,14 @@ export function TopologyPanel() {
 
           <Toggle
             id="ceph-compression"
-            label="Enable Compression"
+            label={t('common.enableCompression')}
             checked={cephOptions.compression}
             onChange={(v) => setCephOptions({ compression: v })}
           />
 
           {cephOptions.compression && (
             <div className="space-y-2">
-              <Label>Compression Algorithm</Label>
+              <Label>{t('ceph.compressionAlgorithm')}</Label>
               <SegmentedControl
                 value={cephOptions.compressionAlgorithm}
                 options={[
@@ -1259,21 +1261,21 @@ export function TopologyPanel() {
 
           <Toggle
             id="ceph-encryption"
-            label="Enable Encryption"
+            label={t('common.enableEncryption')}
             checked={cephOptions.encryption}
             onChange={(v) => setCephOptions({ encryption: v })}
           />
 
           <Toggle
             id="ceph-journal-ssd"
-            label="Journal/WAL on SSD"
+            label={t('ceph.journalOnSsd')}
             checked={cephOptions.journalOnSsd}
             onChange={(v) => setCephOptions({ journalOnSsd: v })}
           />
 
           <Toggle
             id="ceph-wal-db-offload"
-            label="WAL/DB on Separate NVMe"
+            label={t('ceph.walDbOffload')}
             checked={cephOptions.walDbOffload}
             onChange={(v) => setCephOptions({ walDbOffload: v })}
           />
@@ -1281,7 +1283,7 @@ export function TopologyPanel() {
           {cephOptions.walDbOffload && (
             <>
               <div className="space-y-2">
-                <Label htmlFor="ceph-wal-ratio">HDDs per WAL/DB NVMe</Label>
+                <Label htmlFor="ceph-wal-ratio">{t('ceph.walDbRatio')}</Label>
                 <NumberInput
                   id="ceph-wal-ratio"
                   value={cephOptions.walDbRatio}
@@ -1314,7 +1316,7 @@ export function TopologyPanel() {
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="ceph-safe-capacity">Safe Capacity Threshold</Label>
+            <Label htmlFor="ceph-safe-capacity">{t('ceph.safeCapacity')}</Label>
             <Slider
               id="ceph-safe-capacity"
               value={cephOptions.safeCapacityThreshold * 100}
@@ -1333,7 +1335,7 @@ export function TopologyPanel() {
       {topology.type === 'powerflex' && (
         <div className="space-y-4 pt-3 border-t border-surface-700">
           <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-            PowerFlex Options
+            {t('powerflex.title')}
           </h4>
 
           {/* Show mode description based on selected topology level */}
@@ -1360,14 +1362,14 @@ export function TopologyPanel() {
 
           <Toggle
             id="powerflex-compression"
-            label="Enable Compression"
+            label={t('common.enableCompression')}
             checked={powerFlexOptions.compression}
             onChange={(v) => setPowerFlexOptions({ compression: v })}
           />
 
           {powerFlexOptions.compression && (
             <div className="space-y-2">
-              <Label htmlFor="powerflex-compression-ratio">Compression Ratio</Label>
+              <Label htmlFor="powerflex-compression-ratio">{t('common.compressionRatio')}</Label>
               <Slider
                 id="powerflex-compression-ratio"
                 value={powerFlexOptions.compressionRatio}
@@ -1385,7 +1387,7 @@ export function TopologyPanel() {
           {/* FG Metadata overhead - only for Fine granularity modes */}
           {topology.level.includes('fine') && (
             <div className="space-y-2">
-              <Label htmlFor="powerflex-fg-overhead">FG Metadata Overhead</Label>
+              <Label htmlFor="powerflex-fg-overhead">{t('powerflex.fgOverhead')}</Label>
               <Slider
                 id="powerflex-fg-overhead"
                 value={powerFlexOptions.fgOverhead * 100}
@@ -1400,7 +1402,7 @@ export function TopologyPanel() {
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="powerflex-fault-sets">Fault Sets</Label>
+            <Label htmlFor="powerflex-fault-sets">{t('powerflex.faultSets')}</Label>
             <NumberInput
               id="powerflex-fault-sets"
               value={powerFlexOptions.faultSets}
@@ -1419,11 +1421,11 @@ export function TopologyPanel() {
       {topology.type === 'proprietary' && topology.level.startsWith('netapp_') && (
         <div className="space-y-4 pt-3 border-t border-surface-700">
           <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-            NetApp ONTAP Options
+            {t('netapp.title')}
           </h4>
 
           <div className="space-y-2">
-            <Label htmlFor="netapp-platform">Platform</Label>
+            <Label htmlFor="netapp-platform">{t('netapp.platform')}</Label>
             <Select
               id="netapp-platform"
               value={netAppOptions.platform}
@@ -1448,7 +1450,7 @@ export function TopologyPanel() {
           </div>
 
           <div className="space-y-2">
-            <Label>RAID Type</Label>
+            <Label>{t('netapp.raidType')}</Label>
             <SegmentedControl
               value={netAppOptions.raidType}
               options={[
@@ -1465,7 +1467,7 @@ export function TopologyPanel() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="netapp-adp">Advanced Drive Partitioning</Label>
+            <Label htmlFor="netapp-adp">{t('netapp.adp')}</Label>
             <Select
               id="netapp-adp"
               value={netAppOptions.adpVersion}
@@ -1482,7 +1484,7 @@ export function TopologyPanel() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="netapp-snapshot-reserve">Snapshot Reserve</Label>
+            <Label htmlFor="netapp-snapshot-reserve">{t('common.snapshotReserve')}</Label>
             <Slider
               id="netapp-snapshot-reserve"
               value={netAppOptions.snapshotReserve}
@@ -1500,28 +1502,28 @@ export function TopologyPanel() {
 
           <Toggle
             id="netapp-compression"
-            label="Inline Compression"
+            label={t('netapp.inlineCompression')}
             checked={netAppOptions.compression}
             onChange={(v) => setNetAppOptions({ compression: v })}
           />
 
           <Toggle
             id="netapp-dedup"
-            label="Inline Deduplication"
+            label={t('netapp.inlineDedup')}
             checked={netAppOptions.dedup}
             onChange={(v) => setNetAppOptions({ dedup: v })}
           />
 
           <Toggle
             id="netapp-zero-detection"
-            label="Zero-Block Detection"
+            label={t('netapp.zeroDetection')}
             checked={netAppOptions.zeroDetection}
             onChange={(v) => setNetAppOptions({ zeroDetection: v })}
           />
 
           {(netAppOptions.compression || netAppOptions.dedup) && (
             <div className="space-y-2">
-              <Label htmlFor="netapp-drr">Data Reduction Ratio</Label>
+              <Label htmlFor="netapp-drr">{t('netapp.dataReductionRatio')}</Label>
               <Slider
                 id="netapp-drr"
                 value={netAppOptions.dataReductionRatio}
@@ -1537,7 +1539,7 @@ export function TopologyPanel() {
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="netapp-wafl">WAFL Overhead</Label>
+            <Label htmlFor="netapp-wafl">{t('netapp.waflOverhead')}</Label>
             <Slider
               id="netapp-wafl"
               value={netAppOptions.waflOverhead * 100}
@@ -1557,11 +1559,11 @@ export function TopologyPanel() {
       {topology.type === 'proprietary' && topology.level.startsWith('synology_') && (
         <div className="space-y-4 pt-3 border-t border-surface-700">
           <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-            Synology Options
+            {t('synology.title')}
           </h4>
 
           <div className="space-y-2">
-            <Label>Filesystem</Label>
+            <Label>{t('synology.filesystem')}</Label>
             <SegmentedControl
               value={synologyOptions.filesystem}
               options={[
@@ -1578,7 +1580,7 @@ export function TopologyPanel() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="synology-model">Model Series</Label>
+            <Label htmlFor="synology-model">{t('synology.modelSeries')}</Label>
             <Select
               id="synology-model"
               value={synologyOptions.modelSeries}
@@ -1600,14 +1602,14 @@ export function TopologyPanel() {
 
           <Toggle
             id="synology-ssd-cache"
-            label="SSD Cache"
+            label={t('synology.ssdCache')}
             checked={synologyOptions.ssdCache}
             onChange={(v) => setSynologyOptions({ ssdCache: v })}
           />
 
           {synologyOptions.ssdCache && (
             <div className="space-y-2">
-              <Label>Cache Mode</Label>
+              <Label>{t('synology.cacheMode')}</Label>
               <SegmentedControl
                 value={synologyOptions.cacheMode}
                 options={[
@@ -1625,7 +1627,7 @@ export function TopologyPanel() {
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="synology-system-partition">System Partition Size</Label>
+            <Label htmlFor="synology-system-partition">{t('synology.systemPartition')}</Label>
             <Slider
               id="synology-system-partition"
               value={synologyOptions.systemPartitionSize / (1024 * 1024 * 1024)}

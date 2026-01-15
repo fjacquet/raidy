@@ -3,6 +3,7 @@
  * Shows the same data as Sankey diagram in a stacked bar format.
  */
 
+import { useTranslation } from 'react-i18next'
 import { useFormatBytes } from '@/hooks'
 import type { VolumetryResult } from '@/types/results'
 
@@ -29,6 +30,7 @@ const COLORS = {
 }
 
 export function CapacityBreakdownList({ volumetry }: CapacityBreakdownListProps) {
+  const { t } = useTranslation('output')
   const formatBytes = useFormatBytes()
 
   const {
@@ -46,7 +48,7 @@ export function CapacityBreakdownList({ volumetry }: CapacityBreakdownListProps)
 
   // Raw capacity (always shown)
   items.push({
-    label: 'Raw Capacity',
+    label: t('capacity.breakdown.rawCapacity'),
     value: rawCapacity,
     color: COLORS.raw,
     isOverhead: false,
@@ -55,7 +57,7 @@ export function CapacityBreakdownList({ volumetry }: CapacityBreakdownListProps)
   // Overhead items (only if > 0)
   if (parityOverhead > 0) {
     items.push({
-      label: 'Parity/Redundancy',
+      label: t('capacity.breakdown.parity'),
       value: -parityOverhead,
       color: COLORS.parity,
       isOverhead: true,
@@ -64,7 +66,7 @@ export function CapacityBreakdownList({ volumetry }: CapacityBreakdownListProps)
 
   if (hotSpareOverhead > 0) {
     items.push({
-      label: 'Hot Spares',
+      label: t('capacity.breakdown.hotSpares'),
       value: -hotSpareOverhead,
       color: COLORS.hotSpare,
       isOverhead: true,
@@ -73,7 +75,7 @@ export function CapacityBreakdownList({ volumetry }: CapacityBreakdownListProps)
 
   if (slopOverhead > 0) {
     items.push({
-      label: 'ZFS Slop Space',
+      label: t('capacity.breakdown.zfsSlop'),
       value: -slopOverhead,
       color: COLORS.slop,
       isOverhead: true,
@@ -82,7 +84,7 @@ export function CapacityBreakdownList({ volumetry }: CapacityBreakdownListProps)
 
   if (filesystemOverhead > 0) {
     items.push({
-      label: 'Filesystem Overhead',
+      label: t('capacity.breakdown.filesystemOverhead'),
       value: -filesystemOverhead,
       color: COLORS.filesystem,
       isOverhead: true,
@@ -91,7 +93,7 @@ export function CapacityBreakdownList({ volumetry }: CapacityBreakdownListProps)
 
   // Usable capacity
   items.push({
-    label: 'Usable Capacity',
+    label: t('capacity.breakdown.usableCapacity'),
     value: usableCapacity,
     color: COLORS.usable,
     isOverhead: false,
@@ -101,7 +103,10 @@ export function CapacityBreakdownList({ volumetry }: CapacityBreakdownListProps)
   if (Math.abs(effectiveCapacity - usableCapacity) > 1024 * 1024) {
     const gain = effectiveCapacity - usableCapacity
     items.push({
-      label: gain > 0 ? 'Compression/Dedup Gain' : 'Effective Capacity',
+      label:
+        gain > 0
+          ? t('capacity.breakdown.compressionGain')
+          : t('capacity.breakdown.effectiveCapacity'),
       value: gain > 0 ? gain : effectiveCapacity,
       color: COLORS.effective,
       isOverhead: false,
@@ -165,11 +170,11 @@ export function CapacityBreakdownList({ volumetry }: CapacityBreakdownListProps)
       {/* Summary line */}
       <div className="pt-2 mt-2 border-t border-surface-700">
         <div className="flex justify-between items-center text-sm font-medium">
-          <span className="text-surface-200">Final Effective Capacity</span>
+          <span className="text-surface-200">{t('capacity.breakdown.effectiveCapacity')}</span>
           <span className="font-mono text-green-400">{formatBytes(effectiveCapacity)}</span>
         </div>
         <div className="text-xs text-surface-500 mt-1">
-          {((effectiveCapacity / rawCapacity) * 100).toFixed(1)}% of raw capacity
+          {((effectiveCapacity / rawCapacity) * 100).toFixed(1)}% {t('capacity.breakdown.ofRaw')}
         </div>
       </div>
     </div>

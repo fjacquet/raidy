@@ -2,6 +2,7 @@
  * Right panel containing calculation results and visualizations.
  */
 
+import { useTranslation } from 'react-i18next'
 import {
   AnimatedBytes,
   AnimatedPercent,
@@ -88,6 +89,7 @@ function ProgressBar({
 }
 
 export function OutputDashboard() {
+  const { t } = useTranslation('output')
   const { topology, zfsOptions, driveId, driveCount, hotSpares, controllerOptions, unitSystem } =
     useConfigStore()
   const formatBytes = useFormatBytes()
@@ -185,11 +187,19 @@ export function OutputDashboard() {
 
   // Prepare donut chart data
   const capacitySegments = [
-    { label: 'Usable', value: volumetry.usableCapacity, color: '#3b82f6' },
-    { label: 'Parity', value: volumetry.parityOverhead, color: '#f97316' },
-    { label: 'Hot Spares', value: volumetry.hotSpareOverhead, color: '#eab308' },
-    { label: 'ZFS Slop', value: volumetry.slopOverhead, color: '#a855f7' },
-    { label: 'FS Overhead', value: volumetry.filesystemOverhead, color: '#ec4899' },
+    { label: t('capacity.segments.usable'), value: volumetry.usableCapacity, color: '#3b82f6' },
+    { label: t('capacity.segments.parity'), value: volumetry.parityOverhead, color: '#f97316' },
+    {
+      label: t('capacity.segments.hotSpares'),
+      value: volumetry.hotSpareOverhead,
+      color: '#eab308',
+    },
+    { label: t('capacity.segments.zfsSlop'), value: volumetry.slopOverhead, color: '#a855f7' },
+    {
+      label: t('capacity.segments.fsOverhead'),
+      value: volumetry.filesystemOverhead,
+      color: '#ec4899',
+    },
   ].filter((s) => s.value > 0)
 
   return (
@@ -198,10 +208,10 @@ export function OutputDashboard() {
         {/* Capacity Overview Card */}
         <div className="panel xl:col-span-2">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-white">Capacity Overview</h3>
+            <h3 className="text-lg font-semibold text-white">{t('capacity.title')}</h3>
             <span className="text-sm font-medium">
               <AnimatedPercent value={volumetry.efficiency} className="text-primary-400" />{' '}
-              Efficiency
+              {t('capacity.efficiency')}
             </span>
           </div>
 
@@ -215,16 +225,16 @@ export function OutputDashboard() {
 
               {/* Metrics */}
               <div className="grid grid-cols-3 gap-4 pt-4 border-t border-surface-700">
-                <MetricCard label="Raw Capacity">
+                <MetricCard label={t('capacity.raw')}>
                   <AnimatedBytes value={volumetry.rawCapacity} />
                 </MetricCard>
-                <MetricCard label="Usable Capacity" color="text-primary-400">
+                <MetricCard label={t('capacity.usable')} color="text-primary-400">
                   <AnimatedBytes value={volumetry.usableCapacity} />
                 </MetricCard>
                 <MetricCard
-                  label="Effective Capacity"
+                  label={t('capacity.effective')}
                   color="text-green-400"
-                  subvalue="After compression"
+                  subvalue={t('capacity.afterCompression')}
                 >
                   <AnimatedBytes value={volumetry.effectiveCapacity} />
                 </MetricCard>
@@ -240,7 +250,7 @@ export function OutputDashboard() {
                     size={isMobile ? 140 : 160}
                     thickness={isMobile ? 18 : 22}
                     centerValue={formatBytes(volumetry.usableCapacity)}
-                    centerLabel="Usable"
+                    centerLabel={t('capacity.segments.usable')}
                   />
                 </div>
                 <div className="flex-1 w-full">
@@ -260,10 +270,8 @@ export function OutputDashboard() {
         {topology.type === 'zfs' && volumetry.zfsDetails && (
           <div className="panel xl:col-span-2">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-white">ZFS Capacity Breakdown</h3>
-              <span className="text-xs text-slate-500">
-                Dual-unit display: TiB (binary) / TB (decimal)
-              </span>
+              <h3 className="text-lg font-semibold text-white">{t('capacity.zfsBreakdown')}</h3>
+              <span className="text-xs text-slate-500">{t('capacity.dualUnitHint')}</span>
             </div>
             <ZfsCapacityDetails details={volumetry.zfsDetails} />
           </div>
@@ -271,28 +279,28 @@ export function OutputDashboard() {
 
         {/* Performance Gauges Card */}
         <div className="panel">
-          <h3 className="text-lg font-semibold text-white mb-4">Performance</h3>
+          <h3 className="text-lg font-semibold text-white mb-4">{t('performance.title')}</h3>
 
           {/* Responsive speedometer grid */}
           <div className="grid grid-cols-2 gap-2 sm:gap-4">
             <Speedometer
               value={performance.maxReadThroughputMBs}
               max={50000}
-              label="Read"
+              label={t('performance.read')}
               unit="MB/s"
               size={isMobile ? 100 : 140}
             />
             <Speedometer
               value={performance.maxWriteThroughputMBs}
               max={50000}
-              label="Write"
+              label={t('performance.write')}
               unit="MB/s"
               size={isMobile ? 100 : 140}
             />
             <Speedometer
               value={performance.maxReadIOPS}
               max={2000000}
-              label="Read IOPS"
+              label={t('performance.readIops')}
               unit="IOPS"
               size={isMobile ? 100 : 140}
               thresholds={[
@@ -304,7 +312,7 @@ export function OutputDashboard() {
             <Speedometer
               value={performance.maxWriteIOPS}
               max={2000000}
-              label="Write IOPS"
+              label={t('performance.writeIops')}
               unit="IOPS"
               size={isMobile ? 100 : 140}
               thresholds={[
@@ -322,16 +330,16 @@ export function OutputDashboard() {
 
         {/* Power & Sustainability Card */}
         <div className="panel">
-          <h3 className="text-lg font-semibold text-white mb-4">Power & Sustainability</h3>
+          <h3 className="text-lg font-semibold text-white mb-4">{t('power.title')}</h3>
 
           <div className="grid grid-cols-2 gap-4 mb-4">
-            <MetricCard label="Total Power">
+            <MetricCard label={t('power.totalPower')}>
               <span className="font-mono">
                 {formatNumber(Math.round(sustainability.powerBreakdown.total))}
               </span>
               <span className="text-sm text-slate-400 ml-1">W</span>
             </MetricCard>
-            <MetricCard label="Annual Energy">
+            <MetricCard label={t('power.annualEnergy')}>
               <span className="font-mono">
                 {formatNumber(Math.round(sustainability.annualEnergyKwh))}
               </span>
@@ -341,19 +349,19 @@ export function OutputDashboard() {
 
           <div className="space-y-2">
             <ProgressBar
-              label="Drives"
+              label={t('power.drives')}
               value={sustainability.powerBreakdown.drives}
               max={sustainability.powerBreakdown.total}
               color="bg-blue-500"
             />
             <ProgressBar
-              label="Servers"
+              label={t('power.servers')}
               value={sustainability.powerBreakdown.servers}
               max={sustainability.powerBreakdown.total}
               color="bg-purple-500"
             />
             <ProgressBar
-              label="Cooling (PUE)"
+              label={t('power.cooling')}
               value={sustainability.powerBreakdown.cooling}
               max={sustainability.powerBreakdown.total}
               color="bg-cyan-500"
@@ -361,7 +369,7 @@ export function OutputDashboard() {
           </div>
 
           <div className="mt-4 pt-4 border-t border-surface-700 flex justify-between items-center">
-            <span className="text-slate-400">Annual CO₂:</span>
+            <span className="text-slate-400">{t('power.annualCo2')}</span>
             <span className="text-lg font-bold text-white">
               {formatNumber(Math.round(sustainability.annualCO2Kg))} kg
             </span>
@@ -370,17 +378,22 @@ export function OutputDashboard() {
           {sustainability.flashEndurance && (
             <div className="mt-4 pt-4 border-t border-surface-700">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-slate-300">SSD Endurance</span>
+                <span className="text-sm font-medium text-slate-300">{t('ssd.title')}</span>
                 <span
                   className={`text-sm font-medium ${
                     sustainability.flashEndurance.surviveProject ? 'text-green-400' : 'text-red-400'
                   }`}
                 >
-                  {sustainability.flashEndurance.surviveProject ? '✓ OK' : '⚠ At Risk'}
+                  {sustainability.flashEndurance.surviveProject
+                    ? `✓ ${t('ssd.ok')}`
+                    : `⚠ ${t('ssd.atRisk')}`}
                 </span>
               </div>
               <ProgressBar
-                label={`DWPD Usage (${sustainability.flashEndurance.requiredDwpd.toFixed(2)} / ${sustainability.flashEndurance.ratedDwpd.toFixed(1)})`}
+                label={t('ssd.dwpdUsage', {
+                  required: sustainability.flashEndurance.requiredDwpd.toFixed(2),
+                  rated: sustainability.flashEndurance.ratedDwpd.toFixed(1),
+                })}
                 value={sustainability.flashEndurance.utilizationPercent}
                 max={100}
                 color={sustainability.flashEndurance.surviveProject ? 'bg-green-500' : 'bg-red-500'}
@@ -392,7 +405,9 @@ export function OutputDashboard() {
 
         {/* Bottleneck Analysis Card */}
         <div className="panel">
-          <h3 className="text-lg font-semibold text-white mb-4">Bottleneck Analysis</h3>
+          <h3 className="text-lg font-semibold text-white mb-4">
+            {t('performance.bottleneck.title')}
+          </h3>
 
           <div className="space-y-3">
             {performance.layers.map((layer) => (
@@ -426,21 +441,21 @@ export function OutputDashboard() {
         {/* Resilience Simulation Card */}
         <div className="panel">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-white">Data Resilience</h3>
+            <h3 className="text-lg font-semibold text-white">{t('resilience.title')}</h3>
             <button
               type="button"
               onClick={runSimulation}
               disabled={resilienceRunning}
               className="px-3 py-1 text-xs font-medium rounded bg-primary-600 hover:bg-primary-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {resilienceRunning ? 'Simulating...' : 'Run Simulation'}
+              {resilienceRunning ? t('resilience.simulating') : t('resilience.runSimulation')}
             </button>
           </div>
 
           {resilienceRunning && (
             <div className="mb-4">
               <div className="flex justify-between text-xs text-slate-400 mb-1">
-                <span>Monte Carlo Simulation</span>
+                <span>{t('resilience.monteCarloSimulation')}</span>
                 <span>{resilienceProgress.percent.toFixed(0)}%</span>
               </div>
               <div className="h-2 bg-surface-700 rounded-full overflow-hidden">
@@ -470,32 +485,32 @@ export function OutputDashboard() {
                   {resilienceResult.survivalPercent}
                 </p>
                 <p className="text-xs text-slate-400 mt-1">
-                  Annual Survival Rate ({resilienceResult.nines} nines)
+                  {t('resilience.annualSurvivalRate', { nines: resilienceResult.nines })}
                 </p>
               </div>
 
               {/* Risk Metrics */}
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div>
-                  <p className="text-slate-400">Rebuild Time</p>
+                  <p className="text-slate-400">{t('resilience.rebuildTime')}</p>
                   <p className="text-white font-mono">
                     {resilienceResult.avgRebuildTimeHours.toFixed(1)}h
                   </p>
                 </div>
                 <div>
-                  <p className="text-slate-400">URE Risk</p>
+                  <p className="text-slate-400">{t('resilience.ureRisk')}</p>
                   <p className="text-white font-mono">
                     {(resilienceResult.ureProbability * 100).toFixed(3)}%
                   </p>
                 </div>
                 <div>
-                  <p className="text-slate-400">Dual Failure</p>
+                  <p className="text-slate-400">{t('resilience.dualFailure')}</p>
                   <p className="text-white font-mono">
                     {(resilienceResult.dualFailureProbability * 100).toFixed(3)}%
                   </p>
                 </div>
                 <div>
-                  <p className="text-slate-400">Risk Level</p>
+                  <p className="text-slate-400">{t('resilience.riskLevel')}</p>
                   <p
                     className={`font-medium capitalize ${
                       resilienceResult.riskLevel === 'low'
@@ -516,7 +531,7 @@ export function OutputDashboard() {
               {resilienceResult.recommendations.length > 0 && (
                 <div className="pt-3 border-t border-surface-700">
                   <p className="text-xs font-semibold text-slate-400 uppercase mb-2">
-                    Recommendations
+                    {t('resilience.recommendations')}
                   </p>
                   <ul className="space-y-1 text-xs text-slate-300">
                     {resilienceResult.recommendations.map((rec) => (
@@ -534,24 +549,26 @@ export function OutputDashboard() {
             </div>
           ) : (
             <div className="text-center py-8 text-slate-500">
-              <p>Click "Run Simulation" to calculate</p>
-              <p className="text-xs mt-1">{isMobile ? '1,000' : '10,000'} Monte Carlo iterations</p>
-              <p className="text-xs text-slate-600">
-                Includes correlated failures & rebuild stress
+              <p>{t('resilience.clickToRun')}</p>
+              <p className="text-xs mt-1">
+                {isMobile ? '1,000' : '10,000'} {t('resilience.iterations')}
               </p>
+              <p className="text-xs text-slate-600">{t('resilience.includesCorrelated')}</p>
             </div>
           )}
         </div>
 
         {/* Commands Card */}
         <div className="panel xl:col-span-3 lg:col-span-2">
-          <h3 className="text-lg font-semibold text-white mb-4">Configuration Commands</h3>
+          <h3 className="text-lg font-semibold text-white mb-4">{t('commands.title')}</h3>
 
           <div className="bg-surface-900 rounded-lg p-4 font-mono text-sm overflow-x-auto">
             {topology.type === 'zfs' && (
               <div className="space-y-4">
                 <div>
-                  <p className="text-slate-500"># Create ZFS pool with {topology.level}</p>
+                  <p className="text-slate-500">
+                    # {t('commands.zfs.createPool', { level: topology.level })}
+                  </p>
                   <p className="text-green-400">
                     zpool create -o ashift={zfsOptions.ashift} tank {topology.level} /dev/sd[a-z]
                   </p>
@@ -559,7 +576,7 @@ export function OutputDashboard() {
                 {zfsOptions.compression && (
                   <div>
                     <p className="text-slate-500">
-                      # Enable {zfsOptions.compressionType} compression
+                      # {t('commands.zfs.enableCompression', { type: zfsOptions.compressionType })}
                     </p>
                     <p className="text-green-400">
                       zfs set compression={zfsOptions.compressionType} tank
@@ -568,7 +585,7 @@ export function OutputDashboard() {
                 )}
                 <div>
                   <p className="text-slate-500">
-                    # Set recordsize to {zfsOptions.recordsize / 1024}K
+                    # {t('commands.zfs.setRecordsize', { size: zfsOptions.recordsize / 1024 })}
                   </p>
                   <p className="text-green-400">
                     zfs set recordsize={zfsOptions.recordsize / 1024}K tank
@@ -576,7 +593,7 @@ export function OutputDashboard() {
                 </div>
                 {zfsOptions.dedup && (
                   <div>
-                    <p className="text-slate-500"># Enable deduplication (RAM-intensive!)</p>
+                    <p className="text-slate-500"># {t('commands.zfs.enableDedup')}</p>
                     <p className="text-yellow-400">zfs set dedup=on tank</p>
                   </div>
                 )}
@@ -586,7 +603,9 @@ export function OutputDashboard() {
             {topology.type === 'standard' && (
               <div className="space-y-4">
                 <div>
-                  <p className="text-slate-500"># Create mdadm {topology.level} array</p>
+                  <p className="text-slate-500">
+                    # {t('commands.mdadm.createArray', { level: topology.level })}
+                  </p>
                   <p className="text-green-400">
                     mdadm --create /dev/md0 --level=
                     {topology.level.toLowerCase().replace('raid', '')} --raid-devices=N /dev/sd[a-z]
@@ -594,7 +613,7 @@ export function OutputDashboard() {
                 </div>
                 {performance.xfsAlignment && (
                   <div>
-                    <p className="text-slate-500"># Format with XFS (stripe-aligned)</p>
+                    <p className="text-slate-500"># {t('commands.mdadm.formatXfs')}</p>
                     <p className="text-green-400">
                       mkfs.xfs -d su={performance.xfsAlignment.suValue},sw=
                       {Math.floor(performance.xfsAlignment.swidth / performance.xfsAlignment.sunit)}{' '}
@@ -608,7 +627,7 @@ export function OutputDashboard() {
             {topology.type === 's2d' && (
               <div className="space-y-4">
                 <div>
-                  <p className="text-slate-500"># Create Storage Spaces Direct pool</p>
+                  <p className="text-slate-500"># {t('commands.s2d.createPool')}</p>
                   <p className="text-green-400">
                     New-StoragePool -StorageSubSystemFriendlyName "Clustered*" `
                   </p>
@@ -619,7 +638,7 @@ export function OutputDashboard() {
                 </div>
                 <div>
                   <p className="text-slate-500">
-                    # Create virtual disk with {topology.level} resiliency
+                    # {t('commands.s2d.createVdisk', { level: topology.level })}
                   </p>
                   <p className="text-green-400">
                     New-VirtualDisk -FriendlyName "Volume1" -ResiliencySettingName "
@@ -631,9 +650,11 @@ export function OutputDashboard() {
 
             {topology.type === 'proprietary' && (
               <div>
-                <p className="text-slate-500"># {topology.level} configuration</p>
+                <p className="text-slate-500">
+                  # {t('commands.proprietary.config', { level: topology.level })}
+                </p>
                 <p className="text-slate-400">
-                  Refer to vendor documentation for {topology.level} setup commands.
+                  {t('commands.proprietary.referVendor', { level: topology.level })}
                 </p>
               </div>
             )}
@@ -642,7 +663,7 @@ export function OutputDashboard() {
 
         {/* Export Card */}
         <div className="panel xl:col-span-3 lg:col-span-2">
-          <h3 className="text-lg font-semibold text-white mb-4">Export Configuration</h3>
+          <h3 className="text-lg font-semibold text-white mb-4">{t('export.title')}</h3>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <button
@@ -665,8 +686,8 @@ export function OutputDashboard() {
                   d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
                 />
               </svg>
-              <span className="text-sm font-medium text-white">PDF Report</span>
-              <span className="text-xs text-slate-400">Full report</span>
+              <span className="text-sm font-medium text-white">{t('export.pdf')}</span>
+              <span className="text-xs text-slate-400">{t('export.pdfDesc')}</span>
             </button>
 
             <button
@@ -689,8 +710,8 @@ export function OutputDashboard() {
                   d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                 />
               </svg>
-              <span className="text-sm font-medium text-white">YAML</span>
-              <span className="text-xs text-slate-400">Configuration</span>
+              <span className="text-sm font-medium text-white">{t('export.yaml')}</span>
+              <span className="text-xs text-slate-400">{t('export.yamlDesc')}</span>
             </button>
 
             <button
@@ -713,8 +734,8 @@ export function OutputDashboard() {
                   d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"
                 />
               </svg>
-              <span className="text-sm font-medium text-white">Ansible</span>
-              <span className="text-xs text-slate-400">Playbook</span>
+              <span className="text-sm font-medium text-white">{t('export.ansible')}</span>
+              <span className="text-xs text-slate-400">{t('export.ansibleDesc')}</span>
             </button>
 
             <button
@@ -737,14 +758,12 @@ export function OutputDashboard() {
                   d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
                 />
               </svg>
-              <span className="text-sm font-medium text-white">Terraform</span>
-              <span className="text-xs text-slate-400">GCP Config</span>
+              <span className="text-sm font-medium text-white">{t('export.terraform')}</span>
+              <span className="text-xs text-slate-400">{t('export.terraformDesc')}</span>
             </button>
           </div>
 
-          <p className="text-xs text-slate-500 mt-4 text-center">
-            Export your storage configuration for documentation or infrastructure automation.
-          </p>
+          <p className="text-xs text-slate-500 mt-4 text-center">{t('export.footer')}</p>
         </div>
       </div>
     </main>

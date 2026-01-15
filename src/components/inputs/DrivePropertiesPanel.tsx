@@ -2,6 +2,7 @@
  * Drive Properties Panel - displays detailed specifications of the selected drive.
  */
 
+import { useTranslation } from 'react-i18next'
 import drivesData from '@/data/drives.json'
 import { formatCurrency, formatNumber, useFormatBytes } from '@/hooks/useCalculations'
 import { useConfigStore } from '@/store'
@@ -70,12 +71,13 @@ function formatMTBF(hours: number): string {
 }
 
 export function DrivePropertiesPanel() {
+  const { t } = useTranslation('hardware')
   const formatBytes = useFormatBytes()
   const { driveId } = useConfigStore()
   const drive = drives[driveId]
 
   if (!drive) {
-    return <div className="text-sm text-slate-500 italic">No drive selected</div>
+    return <div className="text-sm text-slate-500 italic">{t('properties.noDrive')}</div>
   }
 
   const formFactor = drive.formFactor ?? getDefaultFormFactor(drive.type)
@@ -85,64 +87,88 @@ export function DrivePropertiesPanel() {
   return (
     <div className="space-y-1">
       {/* Basic Info */}
-      <SectionHeader title="Basic Info" />
-      <PropertyRow label="Model" value={drive.model} />
-      <PropertyRow label="Type" value={formatDriveType(drive.type)} />
-      <PropertyRow label="Form Factor" value={formFactor} />
-      {drive.interface && <PropertyRow label="Interface" value={drive.interface} />}
-      <PropertyRow label="Capacity" value={formatBytes(drive.capacity_raw)} />
+      <SectionHeader title={t('properties.basicInfo')} />
+      <PropertyRow label={t('properties.model')} value={drive.model} />
+      <PropertyRow label={t('properties.type')} value={formatDriveType(drive.type)} />
+      <PropertyRow label={t('properties.formFactor')} value={formFactor} />
+      {drive.interface && <PropertyRow label={t('properties.interface')} value={drive.interface} />}
+      <PropertyRow label={t('properties.capacity')} value={formatBytes(drive.capacity_raw)} />
       <PropertyRow
-        label="Sector Size"
+        label={t('properties.sectorSize')}
         value={drive.sector_size === 4096 ? '4KN (4096B)' : '512B'}
       />
-      <PropertyRow label="Price" value={formatCurrency(drive.cost_usd)} />
+      <PropertyRow label={t('properties.cost')} value={formatCurrency(drive.cost_usd)} />
 
       {/* Performance */}
-      <SectionHeader title="Performance" />
-      <PropertyRow label="Read IOPS" value={formatNumber(drive.performance.iops_read)} />
-      <PropertyRow label="Write IOPS" value={formatNumber(drive.performance.iops_write)} />
+      <SectionHeader title={t('properties.performance')} />
       <PropertyRow
-        label="Read BW"
+        label={t('properties.readIops')}
+        value={formatNumber(drive.performance.iops_read)}
+      />
+      <PropertyRow
+        label={t('properties.writeIops')}
+        value={formatNumber(drive.performance.iops_write)}
+      />
+      <PropertyRow
+        label={t('properties.readBandwidth')}
         value={`${formatNumber(drive.performance.bandwidth_read_mb)} MB/s`}
       />
       <PropertyRow
-        label="Write BW"
+        label={t('properties.writeBandwidth')}
         value={`${formatNumber(drive.performance.bandwidth_write_mb)} MB/s`}
       />
       {drive.latency_us && (
         <>
-          <PropertyRow label="Read Latency" value={`${drive.latency_us.read} \u00B5s`} />
-          <PropertyRow label="Write Latency" value={`${drive.latency_us.write} \u00B5s`} />
+          <PropertyRow
+            label={t('properties.readLatency')}
+            value={`${drive.latency_us.read} \u00B5s`}
+          />
+          <PropertyRow
+            label={t('properties.writeLatency')}
+            value={`${drive.latency_us.write} \u00B5s`}
+          />
         </>
       )}
 
       {/* Reliability */}
-      <SectionHeader title="Reliability" />
-      <PropertyRow label="URE Rate" value={formatURERate(drive.reliability.ure_rate)} />
-      <PropertyRow label="AFR" value={`${drive.reliability.afr}%`} />
+      <SectionHeader title={t('properties.reliability')} />
+      <PropertyRow
+        label={t('properties.ureRate')}
+        value={formatURERate(drive.reliability.ure_rate)}
+      />
+      <PropertyRow label={t('properties.afr')} value={`${drive.reliability.afr}%`} />
       {isSSD && drive.reliability.dwpd > 0 && (
-        <PropertyRow label="DWPD" value={drive.reliability.dwpd.toString()} />
+        <PropertyRow label={t('properties.dwpd')} value={drive.reliability.dwpd.toString()} />
       )}
       {drive.reliability.mtbf_hours && (
-        <PropertyRow label="MTBF" value={formatMTBF(drive.reliability.mtbf_hours)} />
+        <PropertyRow
+          label={t('properties.mtbf')}
+          value={formatMTBF(drive.reliability.mtbf_hours)}
+        />
       )}
 
       {/* Power */}
-      <SectionHeader title="Power" />
-      <PropertyRow label="Idle" value={`${drive.power.idle_watts} W`} />
-      <PropertyRow label="Load" value={`${drive.power.load_watts} W`} />
+      <SectionHeader title={t('properties.power')} />
+      <PropertyRow label={t('properties.idle')} value={`${drive.power.idle_watts} W`} />
+      <PropertyRow label={t('properties.load')} value={`${drive.power.load_watts} W`} />
 
       {/* Technology (conditional) */}
       {(isHDD || isSSD) &&
         (drive.rpm || drive.recording || drive.dualActuator || drive.nandType) && (
           <>
-            <SectionHeader title="Technology" />
-            {isHDD && drive.rpm && <PropertyRow label="RPM" value={formatNumber(drive.rpm)} />}
-            {isHDD && drive.recording && <PropertyRow label="Recording" value={drive.recording} />}
-            {drive.dualActuator && <PropertyRow label="Dual Actuator" value="Yes (Mach.2)" />}
+            <SectionHeader title={t('properties.technology')} />
+            {isHDD && drive.rpm && (
+              <PropertyRow label={t('properties.rpm')} value={formatNumber(drive.rpm)} />
+            )}
+            {isHDD && drive.recording && (
+              <PropertyRow label={t('properties.recording')} value={drive.recording} />
+            )}
+            {drive.dualActuator && (
+              <PropertyRow label={t('properties.dualActuator')} value="Yes (Mach.2)" />
+            )}
             {isSSD && drive.nandType && (
               <PropertyRow
-                label="NAND Type"
+                label={t('properties.nandType')}
                 value={drive.nandType === '3DXPoint' ? '3D XPoint (SCM)' : drive.nandType}
               />
             )}

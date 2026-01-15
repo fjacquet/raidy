@@ -1,0 +1,26 @@
+{
+  "errors": {
+    "minDrives": "Mindestens {{count}} Laufwerke erforderlich fuer {{level}}",
+    "maxOccupation": "ZFS: Maximale Belegung sollte {{max}}% nicht ueberschreiten",
+    "incompatibleDrive": "Ausgewaehltes Laufwerk ist mit dieser Topologie nicht kompatibel",
+    "nvmeRequired": "Diese Topologie erfordert NVMe-Laufwerke",
+    "insufficientNodes": "Mindestens {{count}} Knoten erforderlich",
+    "invalidConfiguration": "Ungueltige Konfiguration"
+  },
+  "warnings": {
+    "cephRam": "Ceph: Ungenuegend RAM pro OSD (mindestens 4GB empfohlen)",
+    "zfsOccupation": "ZFS: Belegung ueber {{threshold}}% kann die Leistung beeintraechtigen",
+    "smrIncompatible": "SMR-Laufwerk inkompatibel mit zufaelligen Schreiblasten",
+    "hardwareRaidIncompatible": "Hardware-RAID-Controller inkompatibel mit ZFS",
+    "lowSpares": "Keine Hot Spares konfiguriert - Rebuild erfordert Ersatzlaufwerk",
+    "highWriteLoad": "Hohe Schreiblast kann die SSD-Lebensdauer verkuerzen",
+    "singleNode": "Einzelknoten-Konfiguration hat keine Redundanz bei Knotenausfall"
+  },
+  "info": {
+    "vsanEsaNvme": "vSAN ESA bietet hoehere Effizienz mit All-NVMe-Konfiguration",
+    "s2dReserve": "S2D reserviert Kapazitaet entsprechend dem groessten Laufwerk pro Knoten fuer Rebuild",
+    "zfsSlop": "ZFS reserviert 1/32 der Pool-Kapazitaet fuer Metadaten und COW-Operationen",
+    "compressionRecommended": "Komprimierung empfohlen fuer diesen Arbeitslasttyp",
+    "reflinkBackup": "Reflink-faehiges Dateisystem ermoeglicht platzsparende Backups"
+  }
+}

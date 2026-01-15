@@ -1,0 +1,129 @@
+{
+  "capacity": {
+    "title": "Aperçu de la capacité",
+    "raw": "Capacité brute",
+    "usable": "Capacité utilisable",
+    "effective": "Capacité effective",
+    "afterCompression": "Après compression",
+    "efficiency": "Efficacité",
+    "zfsBreakdown": "Répartition capacité ZFS",
+    "dualUnitHint": "Double affichage: TiB (binaire) / TB (décimal)",
+    "segments": {
+      "usable": "Utilisable",
+      "parity": "Parité",
+      "hotSpares": "Hot Spares",
+      "zfsSlop": "Slop ZFS",
+      "fsOverhead": "Surcharge FS"
+    },
+    "breakdown": {
+      "title": "Répartition de la capacité",
+      "rawCapacity": "Capacité brute",
+      "parity": "Parité/Redondance",
+      "hotSpares": "Disques de secours",
+      "zfsSlop": "Espace slop ZFS",
+      "filesystemOverhead": "Surcharge système de fichiers",
+      "systemReserve": "Réserve système",
+      "usableCapacity": "Capacité utilisable",
+      "compressionGain": "Gain compression",
+      "dedupGain": "Gain déduplication",
+      "effectiveCapacity": "Capacité effective finale",
+      "ofRaw": "de la capacité brute"
+    }
+  },
+  "performance": {
+    "title": "Performance",
+    "read": "Lecture",
+    "write": "Écriture",
+    "readIops": "IOPS lecture",
+    "writeIops": "IOPS écriture",
+    "readThroughput": "Débit lecture",
+    "writeThroughput": "Débit écriture",
+    "latency": "Latence",
+    "bottleneck": {
+      "title": "Analyse des goulots",
+      "media": "Limite média",
+      "controller": "Limite contrôleur",
+      "pcie": "Limite bus PCIe",
+      "network": "Limite réseau",
+      "actual": "Limite effective"
+    }
+  },
+  "resilience": {
+    "title": "Résilience des données",
+    "runSimulation": "Lancer la simulation",
+    "simulating": "Simulation en cours...",
+    "monteCarloSimulation": "Simulation Monte Carlo",
+    "annualSurvivalRate": "Taux de survie annuel ({{nines}} neuf)",
+    "survivalProbability": "Probabilité de survie",
+    "rebuildTime": "Temps de reconstruction",
+    "ureRisk": "Risque URE",
+    "dualFailure": "Double panne",
+    "riskLevel": "Niveau de risque",
+    "recommendations": "Recommandations",
+    "recommendation": "Recommandation",
+    "simulations": "Simulations effectuées",
+    "clickToRun": "Cliquez sur \"Lancer la simulation\" pour calculer",
+    "iterations": "itérations Monte Carlo",
+    "includesCorrelated": "Inclut les pannes corrélées et stress de reconstruction"
+  },
+  "power": {
+    "title": "Énergie & Durabilité",
+    "totalPower": "Puissance totale",
+    "annualEnergy": "Énergie annuelle",
+    "drives": "Disques",
+    "servers": "Serveurs",
+    "cooling": "Refroidissement (PUE)",
+    "annualCo2": "CO₂ annuel:",
+    "drivePower": "Consommation disques",
+    "serverPower": "Consommation serveurs",
+    "totalPowerPue": "Consommation totale (avec PUE)",
+    "annualCost": "Coût annuel",
+    "co2Emissions": "Émissions CO₂",
+    "projectCost": "Coût énergie sur {{years}} ans"
+  },
+  "ssd": {
+    "title": "Endurance SSD",
+    "ok": "OK",
+    "atRisk": "À risque",
+    "dwpdUsage": "Usage DWPD ({{required}} / {{rated}})",
+    "dwpd": "DWPD du disque",
+    "requiredDwpd": "DWPD requis",
+    "enduranceYears": "Durée de vie estimée",
+    "warning": "Attention: La charge dépasse l'endurance du disque",
+    "sufficient": "Endurance suffisante pour la charge"
+  },
+  "commands": {
+    "title": "Commandes de configuration",
+    "zfs": {
+      "createPool": "Créer un pool ZFS avec {{level}}",
+      "enableCompression": "Activer la compression {{type}}",
+      "setRecordsize": "Définir recordsize à {{size}}K",
+      "enableDedup": "Activer la déduplication (gourmand en RAM!)"
+    },
+    "mdadm": {
+      "createArray": "Créer une grappe mdadm {{level}}",
+      "formatXfs": "Formater avec XFS (aligné sur les bandes)"
+    },
+    "s2d": {
+      "createPool": "Créer un pool Storage Spaces Direct",
+      "createVdisk": "Créer un disque virtuel avec résilience {{level}}"
+    },
+    "proprietary": {
+      "config": "Configuration {{level}}",
+      "referVendor": "Consultez la documentation du fournisseur pour les commandes de configuration {{level}}."
+    }
+  },
+  "export": {
+    "title": "Exporter la configuration",
+    "pdf": "Rapport PDF",
+    "pdfDesc": "Rapport complet",
+    "yaml": "YAML",
+    "yamlDesc": "Configuration",
+    "ansible": "Ansible",
+    "ansibleDesc": "Playbook",
+    "terraform": "Terraform",
+    "terraformDesc": "Config GCP",
+    "json": "Export JSON",
+    "footer": "Exportez votre configuration de stockage pour la documentation ou l'automatisation d'infrastructure."
+  }
+}

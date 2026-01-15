@@ -2,6 +2,7 @@
  * Workload configuration panel - I/O patterns and data volumes.
  */
 
+import { useTranslation } from 'react-i18next'
 import { Label, Select, Slider } from '@/components/common/FormControls'
 import { useFormatBytes } from '@/hooks/useCalculations'
 import { useConfigStore } from '@/store'
@@ -52,6 +53,7 @@ function dailyWriteToSlider(bytes: number): number {
 }
 
 export function WorkloadPanel() {
+  const { t } = useTranslation('workload')
   const formatBytes = useFormatBytes()
   const {
     readPercent,
@@ -73,7 +75,7 @@ export function WorkloadPanel() {
     <div className="space-y-5">
       {/* Read/Write Mix */}
       <div className="space-y-2">
-        <Label htmlFor="read-percent">Read / Write Mix</Label>
+        <Label htmlFor="read-percent">{t('ioPattern.readWrite')}</Label>
         <Slider
           id="read-percent"
           value={readPercent}
@@ -83,14 +85,18 @@ export function WorkloadPanel() {
           formatValue={(v) => `${v}% R`}
         />
         <div className="flex justify-between text-xs text-slate-500">
-          <span>Read: {readPercent}%</span>
-          <span>Write: {writePercent}%</span>
+          <span>
+            {t('ioPattern.readPercent')}: {readPercent}%
+          </span>
+          <span>
+            {t('ioPattern.writePercent')}: {writePercent}%
+          </span>
         </div>
       </div>
 
       {/* Random/Sequential Mix */}
       <div className="space-y-2">
-        <Label htmlFor="random-percent">Random / Sequential</Label>
+        <Label htmlFor="random-percent">{t('ioPattern.randomSequential')}</Label>
         <Slider
           id="random-percent"
           value={randomPercent}
@@ -100,14 +106,18 @@ export function WorkloadPanel() {
           formatValue={(v) => `${v}% Rnd`}
         />
         <div className="flex justify-between text-xs text-slate-500">
-          <span>Random: {randomPercent}%</span>
-          <span>Sequential: {sequentialPercent}%</span>
+          <span>
+            {t('ioPattern.randomPercent')}: {randomPercent}%
+          </span>
+          <span>
+            {t('ioPattern.sequentialPercent')}: {sequentialPercent}%
+          </span>
         </div>
       </div>
 
       {/* Block Size */}
       <div className="space-y-2">
-        <Label htmlFor="block-size">Block Size</Label>
+        <Label htmlFor="block-size">{t('blockSize.label')}</Label>
         <Select
           id="block-size"
           value={blockSize}
@@ -115,20 +125,20 @@ export function WorkloadPanel() {
           onChange={(v) => setBlockSize(v as BlockSize)}
         />
         <p className="text-xs text-slate-500">
-          {blockSize === '4K' && 'Database workloads, random I/O'}
-          {blockSize === '8K' && 'Oracle, SQL Server default'}
-          {blockSize === '16K' && 'MySQL InnoDB default'}
-          {blockSize === '64K' && 'General file server'}
-          {blockSize === '128K' && 'Video streaming, large files'}
-          {blockSize === '256K' && 'Video editing, large file transfers'}
-          {blockSize === '1M' && 'Backup, sequential I/O'}
+          {blockSize === '4K' && t('blockSize.hint4k')}
+          {blockSize === '8K' && t('blockSize.hint8k')}
+          {blockSize === '16K' && t('blockSize.hint16k')}
+          {blockSize === '64K' && t('blockSize.hint64k')}
+          {blockSize === '128K' && t('blockSize.hint128k')}
+          {blockSize === '256K' && t('blockSize.hint256k')}
+          {blockSize === '1M' && t('blockSize.hint1m')}
         </p>
       </div>
 
       {/* Dataset Size */}
       <div className="space-y-2">
         <Label htmlFor="dataset-size" hint={formatBytes(datasetSize)}>
-          Total Dataset Size
+          {t('capacity.datasetSize')}
         </Label>
         <Slider
           id="dataset-size"
@@ -144,7 +154,7 @@ export function WorkloadPanel() {
       {/* Daily Write Volume */}
       <div className="space-y-2">
         <Label htmlFor="daily-write" hint={`${formatBytes(dailyWriteVolume)}/day`}>
-          Daily Write Volume
+          {t('capacity.dailyWriteVolume')}
         </Label>
         <Slider
           id="daily-write"
@@ -155,12 +165,12 @@ export function WorkloadPanel() {
           onChange={(v) => setDailyWriteVolume(sliderToDailyWrite(v))}
           formatValue={() => formatBytes(dailyWriteVolume)}
         />
-        <p className="text-xs text-slate-500">Used for SSD endurance calculations (DWPD)</p>
+        <p className="text-xs text-slate-500">{t('capacity.hint')}</p>
       </div>
 
       {/* Workload Presets */}
       <div className="pt-3 border-t border-surface-700">
-        <Label>Quick Presets</Label>
+        <Label>{t('presets.label')}</Label>
         <div className="grid grid-cols-2 gap-2 mt-2">
           <button
             type="button"
@@ -171,7 +181,7 @@ export function WorkloadPanel() {
             }}
             className="px-3 py-2 text-xs bg-surface-700 hover:bg-surface-600 rounded-lg text-slate-300 transition-colors"
           >
-            Database (OLTP)
+            {t('presets.database')}
           </button>
           <button
             type="button"
@@ -182,7 +192,7 @@ export function WorkloadPanel() {
             }}
             className="px-3 py-2 text-xs bg-surface-700 hover:bg-surface-600 rounded-lg text-slate-300 transition-colors"
           >
-            File Server
+            {t('presets.fileServer')}
           </button>
           <button
             type="button"
@@ -193,7 +203,7 @@ export function WorkloadPanel() {
             }}
             className="px-3 py-2 text-xs bg-surface-700 hover:bg-surface-600 rounded-lg text-slate-300 transition-colors"
           >
-            Video Streaming
+            {t('presets.videoStreaming')}
           </button>
           <button
             type="button"
@@ -204,7 +214,7 @@ export function WorkloadPanel() {
             }}
             className="px-3 py-2 text-xs bg-surface-700 hover:bg-surface-600 rounded-lg text-slate-300 transition-colors"
           >
-            Backup Target
+            {t('presets.backup')}
           </button>
         </div>
       </div>

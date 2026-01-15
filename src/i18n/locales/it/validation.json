@@ -1,0 +1,26 @@
+{
+  "errors": {
+    "minDrives": "Minimo {{count}} dischi richiesti per {{level}}",
+    "maxOccupation": "ZFS: L'occupazione massima non deve superare {{max}}%",
+    "incompatibleDrive": "Il disco selezionato e incompatibile con questa topologia",
+    "nvmeRequired": "Questa topologia richiede dischi NVMe",
+    "insufficientNodes": "Minimo {{count}} nodi richiesti",
+    "invalidConfiguration": "Configurazione non valida"
+  },
+  "warnings": {
+    "cephRam": "Ceph: RAM insufficiente per OSD (minimo 4GB raccomandato)",
+    "zfsOccupation": "ZFS: Occupazione superiore a {{threshold}}% puo impattare le prestazioni",
+    "smrIncompatible": "Disco SMR incompatibile con carichi di scrittura casuali",
+    "hardwareRaidIncompatible": "Controller RAID hardware incompatibile con ZFS",
+    "lowSpares": "Nessun hot spare configurato - il rebuild richiedera un disco sostitutivo",
+    "highWriteLoad": "Carico di scrittura elevato puo ridurre la durata dell'SSD",
+    "singleNode": "Configurazione a nodo singolo senza ridondanza per guasto nodo"
+  },
+  "info": {
+    "vsanEsaNvme": "vSAN ESA offre maggiore efficienza con configurazione all-NVMe",
+    "s2dReserve": "S2D riserva capacita pari al disco piu grande per nodo per il rebuild",
+    "zfsSlop": "ZFS riserva 1/32 della capacita del pool per metadati e operazioni COW",
+    "compressionRecommended": "Compressione raccomandata per questo tipo di carico",
+    "reflinkBackup": "Filesystem con reflink permette backup efficienti in spazio"
+  }
+}

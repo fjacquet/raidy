@@ -1,0 +1,66 @@
+{
+  "title": "Report Configurazione Storage",
+  "subtitle": "Generato da Raidy - {{date}}",
+  "sections": {
+    "hardware": "Configurazione Hardware",
+    "capacity": "Analisi Capacità",
+    "performance": "Metriche Prestazioni",
+    "power": "Energia & Sostenibilità",
+    "resilience": "Resilienza Dati (Simulazione Monte Carlo)",
+    "zfs": "Comandi Configurazione ZFS",
+    "recommendations": "Raccomandazioni"
+  },
+  "columns": {
+    "parameter": "Parametro",
+    "value": "Valore",
+    "metric": "Metrica",
+    "percentage": "Percentuale"
+  },
+  "hardware": {
+    "model": "Modello Disco",
+    "type": "Tipo Disco",
+    "capacity": "Capacità Disco",
+    "count": "Numero Dischi",
+    "topology": "Topologia",
+    "rawCapacity": "Capacità Grezza"
+  },
+  "capacity": {
+    "rawCapacity": "Capacità Grezza",
+    "parityOverhead": "Overhead Parità",
+    "hotSpareOverhead": "Overhead Hot Spare",
+    "filesystemOverhead": "Overhead Filesystem",
+    "zfsSlop": "Slop ZFS",
+    "usableCapacity": "Capacità Utilizzabile",
+    "effectiveCapacity": "Capacità Effettiva"
+  },
+  "performance": {
+    "maxReadThroughput": "Throughput Lettura Max",
+    "maxWriteThroughput": "Throughput Scrittura Max",
+    "maxReadIops": "IOPS Lettura Max",
+    "maxWriteIops": "IOPS Scrittura Max",
+    "bottleneck": "Collo di Bottiglia"
+  },
+  "power": {
+    "totalPower": "Potenza Totale",
+    "drivePower": "Consumo Dischi",
+    "serverPower": "Consumo Server",
+    "cooling": "Raffreddamento (PUE)",
+    "annualEnergy": "Energia Annuale",
+    "annualCo2": "CO₂ Annuale"
+  },
+  "resilience": {
+    "survivalRate": "Tasso Sopravvivenza",
+    "nines": "Nove",
+    "riskLevel": "Livello Rischio",
+    "rebuildTime": "Tempo Rebuild Medio",
+    "ureProbability": "Probabilità URE",
+    "dualFailure": "Probabilità Doppio Guasto"
+  },
+  "zfs": {
+    "createPool": "Crea pool ZFS con {{level}}",
+    "setRecordsize": "Imposta recordsize",
+    "enableCompression": "Abilita compressione",
+    "enableDedup": "Abilita deduplicazione (richiede molta RAM!)"
+  },
+  "footer": "Pagina {{current}} di {{total}} | Generato da Raidy Storage Calculator"
+}

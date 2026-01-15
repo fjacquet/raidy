@@ -1,0 +1,66 @@
+{
+  "title": "Rapport de Configuration de Stockage",
+  "subtitle": "Généré par Raidy - {{date}}",
+  "sections": {
+    "hardware": "Configuration Matérielle",
+    "capacity": "Analyse de Capacité",
+    "performance": "Métriques de Performance",
+    "power": "Énergie & Durabilité",
+    "resilience": "Résilience des Données (Simulation Monte Carlo)",
+    "zfs": "Commandes de Configuration ZFS",
+    "recommendations": "Recommandations"
+  },
+  "columns": {
+    "parameter": "Paramètre",
+    "value": "Valeur",
+    "metric": "Métrique",
+    "percentage": "Pourcentage"
+  },
+  "hardware": {
+    "model": "Modèle de Disque",
+    "type": "Type de Disque",
+    "capacity": "Capacité du Disque",
+    "count": "Nombre de Disques",
+    "topology": "Topologie",
+    "rawCapacity": "Capacité Brute"
+  },
+  "capacity": {
+    "rawCapacity": "Capacité Brute",
+    "parityOverhead": "Surcharge Parité",
+    "hotSpareOverhead": "Surcharge Hot Spare",
+    "filesystemOverhead": "Surcharge Système de Fichiers",
+    "zfsSlop": "Slop ZFS",
+    "usableCapacity": "Capacité Utilisable",
+    "effectiveCapacity": "Capacité Effective"
+  },
+  "performance": {
+    "maxReadThroughput": "Débit Lecture Max",
+    "maxWriteThroughput": "Débit Écriture Max",
+    "maxReadIops": "IOPS Lecture Max",
+    "maxWriteIops": "IOPS Écriture Max",
+    "bottleneck": "Goulot d'Étranglement"
+  },
+  "power": {
+    "totalPower": "Puissance Totale",
+    "drivePower": "Consommation Disques",
+    "serverPower": "Consommation Serveurs",
+    "cooling": "Refroidissement (PUE)",
+    "annualEnergy": "Énergie Annuelle",
+    "annualCo2": "CO₂ Annuel"
+  },
+  "resilience": {
+    "survivalRate": "Taux de Survie",
+    "nines": "Neuf",
+    "riskLevel": "Niveau de Risque",
+    "rebuildTime": "Temps de Reconstruction Moyen",
+    "ureProbability": "Probabilité URE",
+    "dualFailure": "Probabilité Double Panne"
+  },
+  "zfs": {
+    "createPool": "Créer un pool ZFS avec {{level}}",
+    "setRecordsize": "Définir recordsize",
+    "enableCompression": "Activer la compression",
+    "enableDedup": "Activer la déduplication (gourmand en RAM!)"
+  },
+  "footer": "Page {{current}} sur {{total}} | Généré par Raidy Storage Calculator"
+}

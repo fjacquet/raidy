@@ -1,0 +1,49 @@
+{
+  "app": {
+    "title": "Raidy",
+    "subtitle": "Simulatore di infrastruttura di storage"
+  },
+  "nav": {
+    "configuration": "Configurazione",
+    "report": "Report"
+  },
+  "sections": {
+    "topology": "Topologia",
+    "hardware": "Hardware",
+    "workload": "Carico di lavoro",
+    "advanced": "Avanzato",
+    "driveProperties": "Proprieta disco"
+  },
+  "units": {
+    "label": "Unita",
+    "binary": "TiB",
+    "decimal": "TB"
+  },
+  "carbon": {
+    "label": "CO\u2082",
+    "regions": {
+      "switzerland": "Svizzera (30)",
+      "norway": "Norvegia (26)",
+      "france": "Francia (56)",
+      "germany": "Germania (385)",
+      "usa_average": "USA (386)",
+      "world_average": "Mondo (475)",
+      "china": "Cina (555)"
+    }
+  },
+  "language": {
+    "label": "Lingua",
+    "en": "English",
+    "fr": "Francais",
+    "de": "Deutsch",
+    "it": "Italiano"
+  },
+  "buttons": {
+    "export": "Esporta",
+    "reset": "Ripristina",
+    "apply": "Applica",
+    "cancel": "Annulla",
+    "close": "Chiudi",
+    "save": "Salva"
+  }
+}

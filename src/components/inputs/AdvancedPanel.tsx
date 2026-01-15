@@ -3,6 +3,7 @@
  */
 
 import { useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Label, Select, Slider } from '@/components/common/FormControls'
 import { useConfigStore } from '@/store'
 import type { ControllerType, NetworkSpeed, PCIeGen, PCIeLanes } from '@/types'
@@ -40,6 +41,7 @@ const FS_TYPES = [
 ]
 
 export function AdvancedPanel() {
+  const { t } = useTranslation('advanced')
   const {
     topology,
     controllerOptions,
@@ -89,12 +91,12 @@ export function AdvancedPanel() {
         topology.type !== 'nutanix' && (
           <div className="space-y-4 pt-4 border-t border-surface-700">
             <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-              Data Efficiency
+              {t('dataEfficiency.title')}
             </h4>
 
             <div className="space-y-2">
               <Label htmlFor="compression-ratio" hint={`${compressionRatio.toFixed(1)}x`}>
-                Compression Ratio
+                {t('dataEfficiency.compression')}
               </Label>
               <Slider
                 id="compression-ratio"
@@ -105,12 +107,12 @@ export function AdvancedPanel() {
                 onChange={setCompressionRatio}
                 formatValue={(v) => `${v.toFixed(1)}x`}
               />
-              <p className="text-xs text-slate-500">1.0 = no compression, 2.0 = 50% reduction</p>
+              <p className="text-xs text-slate-500">{t('dataEfficiency.compressionHint')}</p>
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="dedup-ratio" hint={`${dedupRatio.toFixed(1)}x`}>
-                Deduplication Ratio
+                {t('dataEfficiency.dedup')}
               </Label>
               <Slider
                 id="dedup-ratio"
@@ -128,11 +130,11 @@ export function AdvancedPanel() {
       {/* Network & Bus Section */}
       <div className="space-y-4 pt-4 border-t border-surface-700">
         <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-          Network & Bus
+          {t('network.title')}
         </h4>
 
         <div className="space-y-2">
-          <Label htmlFor="network-speed">Frontend Network</Label>
+          <Label htmlFor="network-speed">{t('network.speed')}</Label>
           <Select
             id="network-speed"
             value={networkSpeed}
@@ -143,7 +145,7 @@ export function AdvancedPanel() {
 
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-2">
-            <Label htmlFor="pcie-gen">PCIe Gen</Label>
+            <Label htmlFor="pcie-gen">{t('pcie.generation')}</Label>
             <Select
               id="pcie-gen"
               value={pcieGen}
@@ -152,7 +154,7 @@ export function AdvancedPanel() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="pcie-lanes">Lanes</Label>
+            <Label htmlFor="pcie-lanes">{t('pcie.lanes')}</Label>
             <Select
               id="pcie-lanes"
               value={pcieLanes}
@@ -166,11 +168,13 @@ export function AdvancedPanel() {
       {/* Controller / HBA Section */}
       <div className="space-y-4 pt-4 border-t border-surface-700">
         <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-          {needsHba ? 'Host Bus Adapter (HBA)' : 'RAID Controller'}
+          {needsHba ? t('pcie.title') : t('controller.title')}
         </h4>
 
         <div className="space-y-2">
-          <Label htmlFor="controller">{needsHba ? 'HBA Model' : 'Controller Model'}</Label>
+          <Label htmlFor="controller">
+            {needsHba ? t('controller.hbaModel') : t('controller.model')}
+          </Label>
           <Select
             id="controller"
             value={controllerOptions.controller}
@@ -180,11 +184,11 @@ export function AdvancedPanel() {
           {selectedController && (
             <div className="grid grid-cols-2 gap-2 mt-2 text-xs text-slate-400">
               <div>
-                Max IOPS:{' '}
+                {t('controller.maxIops')}:{' '}
                 <span className="text-slate-300">{selectedController.iops.toLocaleString()}</span>
               </div>
               <div>
-                Max Throughput:{' '}
+                {t('controller.maxThroughput')}:{' '}
                 <span className="text-slate-300">
                   {selectedController.throughputMBs.toLocaleString()} MB/s
                 </span>
@@ -192,9 +196,7 @@ export function AdvancedPanel() {
             </div>
           )}
           <p className="text-xs text-slate-500">
-            {needsHba
-              ? 'ZFS, vSAN, and S2D require direct disk access via HBA (IT mode)'
-              : 'Hardware RAID controllers manage disk redundancy'}
+            {needsHba ? t('controller.hbaHint') : t('controller.raidHint')}
           </p>
         </div>
       </div>
@@ -202,12 +204,12 @@ export function AdvancedPanel() {
       {/* Power & Sustainability Section */}
       <div className="space-y-4 pt-4 border-t border-surface-700">
         <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-          Power & Sustainability
+          {t('power.title')}
         </h4>
 
         <div className="space-y-2">
           <Label htmlFor="pue" hint={`${pue.toFixed(2)} PUE`}>
-            Datacenter PUE
+            {t('power.pue')}
           </Label>
           <Slider
             id="pue"
@@ -218,20 +220,18 @@ export function AdvancedPanel() {
             onChange={setPue}
             formatValue={(v) => v.toFixed(2)}
           />
-          <p className="text-xs text-slate-500">
-            1.0 = perfect, 1.2 = excellent, 1.6 = average, 2.0 = poor
-          </p>
+          <p className="text-xs text-slate-500">{t('power.pueHint')}</p>
         </div>
       </div>
 
       {/* Filesystem & Backup Section */}
       <div className="space-y-4 pt-4 border-t border-surface-700">
         <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-          Filesystem & Backup
+          {t('filesystem.title')}
         </h4>
 
         <div className="space-y-2">
-          <Label htmlFor="fs-type">Filesystem Type</Label>
+          <Label htmlFor="fs-type">{t('filesystem.type')}</Label>
           <Select
             id="fs-type"
             value={fsType}
@@ -241,7 +241,7 @@ export function AdvancedPanel() {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="backup-retention">Backup Retention</Label>
+          <Label htmlFor="backup-retention">{t('filesystem.backupRetention')}</Label>
           <Slider
             id="backup-retention"
             value={backupRetention}
@@ -254,7 +254,7 @@ export function AdvancedPanel() {
 
         <div className="space-y-2">
           <Label htmlFor="daily-change" hint={`${dailyChangeRate}%`}>
-            Daily Change Rate
+            {t('filesystem.dailyChangeRate')}
           </Label>
           <Slider
             id="daily-change"

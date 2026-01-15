@@ -1,0 +1,129 @@
+{
+  "capacity": {
+    "title": "Kapazitätsübersicht",
+    "raw": "Bruttokapazität",
+    "usable": "Nutzbare Kapazität",
+    "effective": "Effektive Kapazität",
+    "afterCompression": "Nach Komprimierung",
+    "efficiency": "Effizienz",
+    "zfsBreakdown": "ZFS-Kapazitätsaufschlüsselung",
+    "dualUnitHint": "Duale Anzeige: TiB (binär) / TB (dezimal)",
+    "segments": {
+      "usable": "Nutzbar",
+      "parity": "Parität",
+      "hotSpares": "Hot Spares",
+      "zfsSlop": "ZFS Slop",
+      "fsOverhead": "FS-Overhead"
+    },
+    "breakdown": {
+      "title": "Kapazitätsaufschlüsselung",
+      "rawCapacity": "Bruttokapazität",
+      "parity": "Parität/Redundanz",
+      "hotSpares": "Hot Spares",
+      "zfsSlop": "ZFS Slop-Speicher",
+      "filesystemOverhead": "Dateisystem-Overhead",
+      "systemReserve": "Systemreserve",
+      "usableCapacity": "Nutzbare Kapazität",
+      "compressionGain": "Komprimierungsgewinn",
+      "dedupGain": "Deduplizierungsgewinn",
+      "effectiveCapacity": "Effektive Endkapazität",
+      "ofRaw": "der Bruttokapazität"
+    }
+  },
+  "performance": {
+    "title": "Leistung",
+    "read": "Lesen",
+    "write": "Schreiben",
+    "readIops": "Lese-IOPS",
+    "writeIops": "Schreib-IOPS",
+    "readThroughput": "Lesedurchsatz",
+    "writeThroughput": "Schreibdurchsatz",
+    "latency": "Latenz",
+    "bottleneck": {
+      "title": "Engpassanalyse",
+      "media": "Medienlimit",
+      "controller": "Controller-Limit",
+      "pcie": "PCIe-Bus-Limit",
+      "network": "Netzwerklimit",
+      "actual": "Effektives Limit"
+    }
+  },
+  "resilience": {
+    "title": "Datenresilienz",
+    "runSimulation": "Simulation starten",
+    "simulating": "Simuliere...",
+    "monteCarloSimulation": "Monte-Carlo-Simulation",
+    "annualSurvivalRate": "Jährliche Überlebensrate ({{nines}} Neunen)",
+    "survivalProbability": "Überlebenswahrscheinlichkeit",
+    "rebuildTime": "Rebuild-Zeit",
+    "ureRisk": "URE-Risiko",
+    "dualFailure": "Doppelausfall",
+    "riskLevel": "Risikoniveau",
+    "recommendations": "Empfehlungen",
+    "recommendation": "Empfehlung",
+    "simulations": "Durchgeführte Simulationen",
+    "clickToRun": "Klicken Sie auf \"Simulation starten\" zum Berechnen",
+    "iterations": "Monte-Carlo-Iterationen",
+    "includesCorrelated": "Inkl. korrelierter Ausfälle & Rebuild-Stress"
+  },
+  "power": {
+    "title": "Energie & Nachhaltigkeit",
+    "totalPower": "Gesamtleistung",
+    "annualEnergy": "Jahresenergie",
+    "drives": "Laufwerke",
+    "servers": "Server",
+    "cooling": "Kühlung (PUE)",
+    "annualCo2": "Jährliches CO₂:",
+    "drivePower": "Laufwerksleistung",
+    "serverPower": "Serverleistung",
+    "totalPowerPue": "Gesamtleistung (mit PUE)",
+    "annualCost": "Jährliche Kosten",
+    "co2Emissions": "CO₂-Emissionen",
+    "projectCost": "{{years}}-Jahres-Energiekosten"
+  },
+  "ssd": {
+    "title": "SSD-Endurance",
+    "ok": "OK",
+    "atRisk": "Gefährdet",
+    "dwpdUsage": "DWPD-Nutzung ({{required}} / {{rated}})",
+    "dwpd": "Laufwerks-DWPD",
+    "requiredDwpd": "Erforderliche DWPD",
+    "enduranceYears": "Geschätzte Lebensdauer",
+    "warning": "Warnung: Arbeitslast überschreitet Laufwerks-Endurance",
+    "sufficient": "Endurance ausreichend für Arbeitslast"
+  },
+  "commands": {
+    "title": "Konfigurationsbefehle",
+    "zfs": {
+      "createPool": "ZFS-Pool mit {{level}} erstellen",
+      "enableCompression": "{{type}}-Komprimierung aktivieren",
+      "setRecordsize": "Recordsize auf {{size}}K setzen",
+      "enableDedup": "Deduplizierung aktivieren (RAM-intensiv!)"
+    },
+    "mdadm": {
+      "createArray": "mdadm {{level}}-Array erstellen",
+      "formatXfs": "Mit XFS formatieren (stripe-ausgerichtet)"
+    },
+    "s2d": {
+      "createPool": "Storage Spaces Direct Pool erstellen",
+      "createVdisk": "Virtuelle Festplatte mit {{level}}-Resilienz erstellen"
+    },
+    "proprietary": {
+      "config": "{{level}}-Konfiguration",
+      "referVendor": "Siehe Herstellerdokumentation für {{level}}-Setup-Befehle."
+    }
+  },
+  "export": {
+    "title": "Konfiguration exportieren",
+    "pdf": "PDF-Bericht",
+    "pdfDesc": "Vollständiger Bericht",
+    "yaml": "YAML",
+    "yamlDesc": "Konfiguration",
+    "ansible": "Ansible",
+    "ansibleDesc": "Playbook",
+    "terraform": "Terraform",
+    "terraformDesc": "GCP-Konfiguration",
+    "json": "JSON-Export",
+    "footer": "Exportieren Sie Ihre Speicherkonfiguration für Dokumentation oder Infrastrukturautomatisierung."
+  }
+}

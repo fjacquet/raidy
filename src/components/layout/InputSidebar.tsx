@@ -3,6 +3,7 @@
  */
 
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   AdvancedPanel,
   DrivePropertiesPanel,
@@ -41,6 +42,7 @@ function AccordionItem({ title, isOpen, onToggle, children }: AccordionItemProps
 }
 
 export function InputSidebar() {
+  const { t } = useTranslation('common')
   const [openSections, setOpenSections] = useState<Set<string>>(new Set(['hardware', 'topology']))
 
   const toggleSection = (section: string) => {
@@ -59,12 +61,12 @@ export function InputSidebar() {
     <aside className="w-80 flex-shrink-0 bg-surface-800 border-r border-surface-700 overflow-y-auto">
       <div className="p-4 border-b border-surface-700">
         <h2 className="text-sm font-semibold text-slate-300 uppercase tracking-wider">
-          Configuration
+          {t('nav.configuration')}
         </h2>
       </div>
 
       <AccordionItem
-        title="Topology"
+        title={t('sections.topology')}
         isOpen={openSections.has('topology')}
         onToggle={() => toggleSection('topology')}
       >
@@ -72,7 +74,7 @@ export function InputSidebar() {
       </AccordionItem>
 
       <AccordionItem
-        title="Hardware"
+        title={t('sections.hardware')}
         isOpen={openSections.has('hardware')}
         onToggle={() => toggleSection('hardware')}
       >
@@ -80,7 +82,7 @@ export function InputSidebar() {
       </AccordionItem>
 
       <AccordionItem
-        title="Workload"
+        title={t('sections.workload')}
         isOpen={openSections.has('workload')}
         onToggle={() => toggleSection('workload')}
       >
@@ -88,7 +90,7 @@ export function InputSidebar() {
       </AccordionItem>
 
       <AccordionItem
-        title="Advanced"
+        title={t('sections.advanced')}
         isOpen={openSections.has('advanced')}
         onToggle={() => toggleSection('advanced')}
       >
@@ -96,7 +98,7 @@ export function InputSidebar() {
       </AccordionItem>
 
       <AccordionItem
-        title="Drive Properties"
+        title={t('sections.driveProperties')}
         isOpen={openSections.has('drive-properties')}
         onToggle={() => toggleSection('drive-properties')}
       >

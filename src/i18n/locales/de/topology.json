@@ -1,0 +1,440 @@
+{
+  "type": {
+    "label": "Speichertyp",
+    "standard": "RAID",
+    "zfs": "ZFS",
+    "s2d": "S2D",
+    "vsan_esa": "vSAN ESA",
+    "vsan_osa": "vSAN OSA",
+    "ceph": "Ceph",
+    "nutanix": "Nutanix",
+    "netapp": "NetApp ONTAP",
+    "synology": "Synology",
+    "powerflex": "PowerFlex",
+    "powerstore": "PowerStore",
+    "powerscale": "PowerScale",
+    "objectscale": "ObjectScale",
+    "powervault": "PowerVault ME5",
+    "proprietary": "Andere"
+  },
+  "configuration": {
+    "label": "Konfiguration"
+  },
+  "hotSpares": {
+    "label": "Hot Spares"
+  },
+  "common": {
+    "enableCompression": "Komprimierung aktivieren",
+    "enableDedup": "Deduplizierung aktivieren",
+    "enableEncryption": "Verschlüsselung aktivieren",
+    "compressionRatio": "Komprimierungsverhältnis",
+    "dedupRatio": "Deduplizierungsverhältnis",
+    "systemOverhead": "System-Overhead",
+    "snapshotReserve": "Snapshot-Reserve",
+    "thinProvisioning": "Thin Provisioning",
+    "expectedRatio": "Erwartetes Verhältnis: {{ratio}}:1"
+  },
+  "level": {
+    "label": "RAID-Level",
+    "raid0": { "label": "RAID 0", "description": "Striping, keine Redundanz" },
+    "raid1": { "label": "RAID 1", "description": "Spiegelung (2-Wege), 50% Kapazität" },
+    "raid1e": { "label": "RAID 1E", "description": "Gespiegelte Stripes, 50% Kapazität" },
+    "raid1_3way": { "label": "3-Wege Spiegel", "description": "Dreifach-Spiegel, 33% Kapazität" },
+    "raid3": { "label": "RAID 3", "description": "Byte-Striping + dedizierte Parität" },
+    "raid4": { "label": "RAID 4", "description": "Block-Striping + dedizierte Parität" },
+    "raid5": { "label": "RAID 5", "description": "Einfache verteilte Parität, n-1 Kapazität" },
+    "raid5e": { "label": "RAID 5E", "description": "RAID 5 + integriertes Hot Spare" },
+    "raid5ee": { "label": "RAID 5EE", "description": "RAID 5E Enhanced, aktives Spare" },
+    "raid6": { "label": "RAID 6", "description": "Doppelte verteilte Parität, n-2 Kapazität" },
+    "raid10": { "label": "RAID 10", "description": "Gespiegelte Stripes, 50% Kapazität" },
+    "raid50": { "label": "RAID 50", "description": "Gestripte RAID 5 Gruppen" },
+    "raid60": { "label": "RAID 60", "description": "Gestripte RAID 6 Gruppen" }
+  },
+  "zfs": {
+    "title": "ZFS-Optionen",
+    "stripe": { "label": "Stripe", "description": "Keine Redundanz, max. Kapazität" },
+    "mirror": { "label": "Spiegel", "description": "2-Wege Spiegel, 50% Kapazität" },
+    "raidz1": { "label": "RAID-Z1", "description": "Einfache Parität, n-1 Kapazität" },
+    "raidz2": { "label": "RAID-Z2", "description": "Doppelte Parität, n-2 Kapazität" },
+    "raidz3": { "label": "RAID-Z3", "description": "Dreifache Parität, n-3 Kapazität" },
+    "draid1": { "label": "dRAID1", "description": "Verteiltes RAID-Z1" },
+    "draid2": { "label": "dRAID2", "description": "Verteiltes RAID-Z2" },
+    "draid3": { "label": "dRAID3", "description": "Verteiltes RAID-Z3" },
+    "ashift": "Sektorgrösse (ashift)",
+    "enableCompression": "Kompression aktivieren",
+    "compressionAlgorithm": "Kompressionsalgorithmus",
+    "lz4": "LZ4 (schnell)",
+    "zstd": "ZSTD (ausgewogen)",
+    "gzip": "GZIP (hohes Verhältnis)",
+    "off": "Deaktiviert",
+    "recordSize": "Record-Grösse",
+    "recordDefault": "128K (Standard)",
+    "compression": "Kompression aktivieren",
+    "dedup": "Deduplizierung aktivieren",
+    "specialVdev": "Special VDEV (Metadaten)"
+  },
+  "s2d": {
+    "title": "S2D-Optionen",
+    "simple": { "label": "Einfach", "description": "Keine Redundanz" },
+    "mirror": { "label": "Spiegel", "description": "2-Wege oder 3-Wege Spiegel" },
+    "parity": { "label": "Parität", "description": "Einfache Parität" },
+    "dual_parity": { "label": "Doppelte Parität", "description": "Erasure Coding" },
+    "map": { "label": "MAP", "description": "Spiegel-beschleunigte Parität" },
+    "faultDomains": "Fehlerdomänen (Knoten)",
+    "mirrorCopies": "Spiegelkopien",
+    "2way": "2-Wege",
+    "3way": "3-Wege",
+    "rebuildReserve": "Rebuild-Reserve (1 Laufwerk/Knoten)",
+    "storageTiers": "Speicherebenen aktiviert"
+  },
+  "vsanOsa": {
+    "title": "vSAN OSA-Optionen",
+    "raid1": { "label": "RAID-1 (Spiegel)", "description": "FTT=1, min 3 Hosts, 50% Effizienz" },
+    "raid1_ftt2": { "label": "RAID-1 FTT=2", "description": "FTT=2, min 5 Hosts, 33% Effizienz" },
+    "raid5": {
+      "label": "RAID-5 Erasure Coding",
+      "description": "FTT=1, min 4 Hosts, 75% Effizienz"
+    },
+    "raid6": {
+      "label": "RAID-6 Erasure Coding",
+      "description": "FTT=2, min 6 Hosts, 67% Effizienz"
+    },
+    "info": {
+      "raid1": "RAID-1 FTT=1: 2-Wege Spiegel, mindestens 3 Hosts erforderlich.",
+      "raid1_ftt2": "RAID-1 FTT=2: 3-Wege Spiegel, mindestens 5 Hosts erforderlich.",
+      "raid5": "RAID-5 (3+1): Einfache Parität, mindestens 4 Hosts erforderlich.",
+      "raid6": "RAID-6 (4+2): Doppelte Parität, mindestens 6 Hosts erforderlich.",
+      "diskGroups": "OSA verwendet Disk-Gruppen mit Cache-Ebene (NVMe/SSD) + Kapazitätsebene (SSD/HDD)."
+    },
+    "diskGroupConfig": "Disk-Gruppen-Konfiguration",
+    "enableCompression": "Kompression aktivieren",
+    "enableDedup": "Deduplizierung aktivieren",
+    "enableEncryption": "Verschlüsselung aktivieren"
+  },
+  "vsanEsa": {
+    "title": "vSAN ESA-Optionen",
+    "raid5": {
+      "label": "RAID-5 Adaptiv (Empfohlen)",
+      "description": "Optimiert Stripe-Breite für Clustergrösse, min 3 Hosts"
+    },
+    "raid6": {
+      "label": "RAID-6 Erasure Coding",
+      "description": "FTT=2, min 6 Hosts, 67% Effizienz"
+    },
+    "raid1": { "label": "RAID-1 (Spiegel)", "description": "Nur empfohlen für 2-Knoten-Cluster" },
+    "info": {
+      "raid5": "Adaptives RAID-5: Verwendet 2+1 für 3-5 Hosts oder 4+1 für 6+ Hosts.",
+      "raid5Recommended": "Empfohlen für die meisten ESA-Bereitstellungen.",
+      "raid6": "RAID-6 (4+2): FTT=2, mindestens 6 Hosts erforderlich.",
+      "raid1": "RAID-1 (Spiegel): Nur empfohlen für gestreckte 2-Knoten-Cluster.",
+      "singleTier": "ESA ist eine einstufige Architektur. Nur NVMe-Laufwerke, keine Disk-Gruppen."
+    },
+    "nvmeNotice": "vSAN ESA erfordert ausschliesslich NVMe-Laufwerke.",
+    "enableCompression": "Kompression aktivieren",
+    "enableDedup": "Deduplizierung aktivieren",
+    "enableEncryption": "Verschlüsselung aktivieren"
+  },
+  "nutanix": {
+    "title": "Nutanix AOS-Optionen",
+    "rf2": { "label": "RF2", "description": "Replikationsfaktor 2, 50% Effizienz" },
+    "rf3": { "label": "RF3", "description": "Replikationsfaktor 3, 33% Effizienz" },
+    "ec_rf2": {
+      "label": "EC-X (RF2)",
+      "description": "Erasure Coding 4:1 mit RF2 Basis, ~75% Effizienz"
+    },
+    "ec_rf3": {
+      "label": "EC-X (RF3)",
+      "description": "Erasure Coding 6:2 mit RF3 Basis, ~75% Effizienz"
+    },
+    "clusterType": "Cluster-Typ",
+    "allFlash": "All-Flash",
+    "hybrid": "Hybrid",
+    "clusterTypeDesc": {
+      "allFlash": "All-Flash: Nur NVMe/SSD, maximale Performance",
+      "hybrid": "Hybrid: SSD-Cache + HDD-Kapazitätsebene"
+    },
+    "enableCompression": "Kompression aktivieren",
+    "compressionRatio": "Kompressionsverhältnis",
+    "expectedRatio": "Erwartetes Verhältnis: {{ratio}}:1",
+    "enableDedup": "Deduplizierung aktivieren",
+    "dedupRatio": "Deduplizierungsverhältnis",
+    "networkType": "Netzwerktyp",
+    "networkTypeDesc": {
+      "rdma": "RDMA (RoCE): Niedrigste Latenz (+0.1ms)",
+      "25gbe": "25 GbE: Standard HCI (+0.25ms Latenz)",
+      "10gbe": "10 GbE: Legacy (+0.5ms Latenz)"
+    },
+    "systemOverhead": "System-Overhead",
+    "systemOverheadDesc": "CVM, Metadaten, Snapshots: {{percent}}%"
+  },
+  "powervault": {
+    "title": "PowerVault ME5-Optionen",
+    "raid1": { "label": "RAID 1", "description": "2-Wege Spiegel, 50% Effizienz" },
+    "raid5": { "label": "RAID 5", "description": "Einfache Parität, 4x Schreibstrafe" },
+    "raid6": { "label": "RAID 6", "description": "Doppelte Parität, 2-Laufwerk Fehlertoleranz" },
+    "raid10": { "label": "RAID 10", "description": "Gespiegelte Stripes, beste zufällige IOPS" },
+    "adapt": {
+      "label": "ADAPT (Empfohlen)",
+      "description": "Verteiltes RAID, ~87% Effizienz, 12-128 Laufwerke"
+    },
+    "model": "Modell",
+    "modelDesc": {
+      "ME5212": "ME5212: 2U, 12 Laufwerke (nur 3.5\")",
+      "ME5224": "ME5224: 2U, 24 Laufwerke (2.5\")",
+      "ME5284": "ME5284: 5U, 84 Laufwerke (3.5\"), max. Dichte"
+    },
+    "controllers": "Controller",
+    "single": "Einzeln",
+    "dualActive": "Dual Aktiv",
+    "controllerDesc": {
+      "single": "Einzeln: 420K IOPS, 7 GB/s max",
+      "dual": "Dual Aktiv: 840K IOPS, 14 GB/s max, Failover-Support"
+    },
+    "enableTiering": "Auto-Tiering aktivieren",
+    "tieringDesc": "Verschiebt Daten automatisch zwischen Ebenen",
+    "ssdReadCache": "SSD-Lese-Cache",
+    "ssdCacheDesc": "Verwendet SSDs als Lese-Cache für HDD-Pools",
+    "thinProvisioning": "Thin Provisioning",
+    "thinDesc": "4MB Seitengrösse Thin Provisioning. Keine Kompression/Deduplizierung.",
+    "noCompressionNote": "Hinweis: PowerVault ME5 unterstützt keine Inline-Kompression oder Deduplizierung."
+  },
+  "objectscale": {
+    "title": "ObjectScale-Optionen",
+    "ec_12_4": { "label": "EC 12+4 (Standard)", "description": "75% Effizienz, min 5 Knoten" },
+    "ec_10_2": { "label": "EC 10+2 (Kalt/Archiv)", "description": "83% Effizienz, min 7 Knoten" },
+    "ec_24_4": { "label": "EC 24+4 (Vorschau)", "description": "86% Effizienz, min 8 Knoten" },
+    "mirror_3": { "label": "Dreifach-Spiegel", "description": "33% Effizienz, für Metadaten" },
+    "objectSize": "Objektgrösse (KB)",
+    "avgObjectSize": "Durchschnittliche Objektgrösse: {{size}}",
+    "systemOverhead": "System-Overhead",
+    "systemOverheadDesc": "Metadaten, Indizes, S3-Protokoll: {{percent}}%",
+    "networkEfficiency": "Netzwerkeffizienz",
+    "networkEfficiencyDesc": "Ost-West-Traffic-Faktor: {{percent}}%",
+    "enableCompression": "Kompression aktivieren",
+    "compressionRatio": "Kompressionsverhältnis",
+    "expectedRatio": "Erwartetes Verhältnis: {{ratio}}:1"
+  },
+  "powerstore": {
+    "title": "PowerStore-Optionen",
+    "raid5": { "label": "RAID-5", "description": "Einfache Parität, ~80% Effizienz" },
+    "raid6": { "label": "RAID-6", "description": "Doppelte Parität, ~75% Effizienz" },
+    "raid10": { "label": "RAID-10", "description": "Gespiegelte Stripes, 50% Effizienz" },
+    "enableCompression": "Kompression aktivieren",
+    "compressionRatio": "Kompressionsverhältnis",
+    "expectedRatio": "Erwartetes Verhältnis: {{ratio}}:1",
+    "enableDedup": "Deduplizierung aktivieren",
+    "dedupRatio": "Deduplizierungsverhältnis",
+    "snapshotReserve": "Snapshot-Reserve",
+    "snapshotReserveDesc": "Snapshot-Reserve: {{percent}}%"
+  },
+  "powerscale": {
+    "title": "PowerScale-Optionen",
+    "n1": { "label": "N+1", "description": "Einfacher Paritätsschutz" },
+    "n2": { "label": "N+2", "description": "Doppelter Paritätsschutz" },
+    "n2_1": { "label": "N+2:1", "description": "N+2 mit Stripe-Fehlertoleranz" },
+    "n3": { "label": "N+3", "description": "Dreifacher Paritätsschutz" },
+    "n4": { "label": "N+4", "description": "Vierfacher Paritätsschutz" },
+    "mirror_2x": { "label": "Spiegel 2x", "description": "2-Wege gespiegelt, 50% Effizienz" },
+    "mirror_3x": { "label": "Spiegel 3x", "description": "3-Wege gespiegelt, 33% Effizienz" },
+    "enableCompression": "Kompression aktivieren",
+    "compressionRatio": "Kompressionsverhältnis",
+    "expectedRatio": "Erwartetes Verhältnis: {{ratio}}:1",
+    "enableDedup": "Deduplizierung aktivieren",
+    "dedupRatio": "Deduplizierungsverhältnis",
+    "snapshotReserve": "Snapshot-Reserve",
+    "snapshotReserveDesc": "Snapshot-Reserve: {{percent}}%",
+    "smartQuotas": "SmartQuotas",
+    "syncIQ": "SyncIQ (Replikation)"
+  },
+  "ceph": {
+    "title": "Ceph-Optionen",
+    "replicated_2": {
+      "label": "Repliziert 2x",
+      "description": "2-Wege Replikation, 50% Effizienz"
+    },
+    "replicated_3": {
+      "label": "Repliziert 3x",
+      "description": "3-Wege Replikation, 33% Effizienz"
+    },
+    "ec_2_1": { "label": "EC 2+1", "description": "Erasure Coded k=2, m=1, 67% Effizienz" },
+    "ec_4_2": { "label": "EC 4+2", "description": "Erasure Coded k=4, m=2, 67% Effizienz" },
+    "ec_8_3": { "label": "EC 8+3", "description": "Erasure Coded k=8, m=3, 73% Effizienz" },
+    "ec_8_4": { "label": "EC 8+4", "description": "Erasure Coded k=8, m=4, 67% Effizienz" },
+    "backend": "Speicher-Backend",
+    "storageBackend": "Speicher-Backend",
+    "bluestore": "BlueStore",
+    "filestore": "FileStore",
+    "backendDesc": {
+      "bluestore": "Modernes Backend mit direktem Festplattenzugriff",
+      "filestore": "Legacy-Backend mit Dateisystem"
+    },
+    "enableCompression": "Kompression aktivieren",
+    "compressionAlgorithm": "Kompressionsalgorithmus",
+    "snappy": "Snappy",
+    "lz4": "LZ4",
+    "zstd": "ZSTD",
+    "enableEncryption": "Verschlüsselung aktivieren",
+    "journalOnSsd": "Journal/WAL auf SSD",
+    "walDbOffload": "WAL/DB auf separatem NVMe",
+    "walDbRatio": "HDDs pro WAL/DB NVMe",
+    "walDbRatioDesc": "Verhältnis HDDs zu NVMe-Laufwerken für WAL/DB",
+    "safeCapacity": "Sichere Kapazitätsschwelle",
+    "safeCapacityDesc": "Ceph nearfull Schwelle: {{percent}}%"
+  },
+  "powerflex": {
+    "title": "PowerFlex-Optionen",
+    "medium_2way": {
+      "label": "Medium 2-Wege",
+      "description": "Mittlere Granularität, 2-Wege Spiegel, 50% Effizienz"
+    },
+    "medium_3way": {
+      "label": "Medium 3-Wege",
+      "description": "Mittlere Granularität, 3-Wege Spiegel, 33% Effizienz"
+    },
+    "fine_2way": {
+      "label": "Fine 2-Wege",
+      "description": "Feine Granularität (8KB), nur 2-Wege Spiegel"
+    },
+    "ec_4_1": { "label": "EC 4+1", "description": "Erasure Coding 4+1, 80% Effizienz, -30% IOPS" },
+    "ec_4_2": { "label": "EC 4+2", "description": "Erasure Coding 4+2, 67% Effizienz, -30% IOPS" },
+    "ec_8_2": { "label": "EC 8+2", "description": "Erasure Coding 8+2, 80% Effizienz, -30% IOPS" },
+    "ec_12_4": {
+      "label": "EC 12+4",
+      "description": "Erasure Coding 12+4, 75% Effizienz, -30% IOPS"
+    },
+    "enableCompression": "Kompression aktivieren",
+    "compressionRatio": "Kompressionsverhältnis",
+    "expectedRatio": "Erwartetes Verhältnis: {{ratio}}:1",
+    "fgOverhead": "FG Metadaten-Overhead",
+    "fgOverheadDesc": "Fine Granularity Overhead: {{percent}}%",
+    "faultSets": "Fehler-Sets",
+    "faultSetsDesc": "Minimum 3 Fehler-Sets erforderlich"
+  },
+  "netapp": {
+    "title": "NetApp ONTAP-Optionen",
+    "platform": {
+      "label": "Plattform",
+      "aff_a": "AFF A-Series",
+      "aff_c": "AFF C-Series",
+      "fas": "FAS",
+      "asa": "ASA (SAN)",
+      "e_series": "E-Series"
+    },
+    "platformDesc": {
+      "aff_a": "All-Flash FAS A-Series: Hohe Performance",
+      "aff_c": "All-Flash FAS C-Series: Kapazitätsoptimiert",
+      "fas": "Fabric-Attached Storage: Hybrid HDD/SSD",
+      "asa": "All-Flash SAN Array: Nur Block-SAN",
+      "e_series": "E-Series: Hochleistungs-Block-Speicher"
+    },
+    "raidType": "RAID-Typ",
+    "raid_dp": "RAID-DP",
+    "raid_tec": "RAID-TEC",
+    "raidTypeDesc": {
+      "raid_tec": "Dreifache Parität: Empfohlen für Laufwerke > 10TB",
+      "raid_dp": "Doppelte Parität: Standardschutz"
+    },
+    "adp": "Erweiterte Laufwerkspartitionierung",
+    "adpNone": "Keine",
+    "adpV1": "ADP v1",
+    "adpV2": "ADP v2 (Root-Data)",
+    "adpDesc": {
+      "adpv2": "ADP v2: Root-Data Partitionierung, bessere Kapazitätsnutzung",
+      "adpv1": "ADP v1: Einfache Root-Partitionierung",
+      "none": "Keine Partitionierung: Traditionelle dedizierte Root-Laufwerke"
+    },
+    "snapshotReserve": "Snapshot-Reserve",
+    "snapshotReserveDesc": "Snapshot-Reserve: {{percent}}%",
+    "snapshotAffNote": " (typisch für AFF)",
+    "inlineCompression": "Inline-Kompression",
+    "inlineDedup": "Inline-Deduplizierung",
+    "zeroDetection": "Zero-Block-Erkennung",
+    "dataReductionRatio": "Datenreduktionsverhältnis",
+    "dataReductionDesc": "Erwartetes DRR: {{ratio}}:1 (Kompression + Deduplizierung)",
+    "waflOverhead": "WAFL-Overhead",
+    "waflOverheadDesc": "WAFL-Dateisystem-Overhead: {{percent}}%"
+  },
+  "synology": {
+    "title": "Synology-Optionen",
+    "shr": { "label": "Synology SHR", "description": "Hybrid RAID, 1-Laufwerk Fehlertoleranz" },
+    "shr2": { "label": "Synology SHR-2", "description": "Hybrid RAID, 2-Laufwerk Fehlertoleranz" },
+    "raid_f1": {
+      "label": "Synology RAID F1",
+      "description": "Flash-optimiert, ungleiche Paritätsrotation"
+    },
+    "filesystem": "Dateisystem",
+    "btrfs": "Btrfs",
+    "ext4": "EXT4",
+    "filesystemDesc": {
+      "btrfs": "Btrfs: Snapshots, Datenschutz, ~4% Overhead",
+      "ext4": "EXT4: Legacy, keine Snapshots, geringerer Overhead"
+    },
+    "modelSeries": "Modellserie",
+    "series": {
+      "j": "J Series (Einstieg)",
+      "value": "Value Series",
+      "plus": "Plus Series",
+      "xs": "XS/XS+ (Enterprise)"
+    },
+    "modelSeriesDesc": {
+      "j": "J Series: Einstiegsklasse, begrenzte CPU für RAID-Parität",
+      "value": "Value Series: Heim-/Kleinbüronutzung",
+      "plus": "Plus Series: KMU mit Btrfs-Support",
+      "xs": "XS Series: Enterprise mit hoher Performance"
+    },
+    "ssdCache": "SSD-Cache",
+    "cacheMode": "Cache-Modus",
+    "readOnly": "Nur Lesen",
+    "readWrite": "Lesen/Schreiben",
+    "cacheModeDesc": {
+      "readWrite": "Lese-/Schreib-Cache: Bessere Performance, benötigt 2 SSDs",
+      "readOnly": "Nur-Lese-Cache: Beschleunigt nur Lesevorgänge"
+    },
+    "systemPartition": "Systempartitionsgrösse",
+    "systemPartitionDesc": "Systempartition pro Laufwerk: {{size}} GB"
+  },
+  "tiering": {
+    "vsanConfig": "vSAN-Konfiguration",
+    "hybrid": "Hybrid (HDD)",
+    "allFlash": "All-Flash (SSD)",
+    "hybridDesc": "Cache: NVMe/SSD, Kapazität: HDD (rotierende Festplatten)",
+    "allFlashDesc": "Cache: NVMe/SSD, Kapazität: SSD/NVMe (All-Flash)",
+    "driveModel": "Laufwerksmodell",
+    "drivesPerServer": "Laufwerke pro Server",
+    "totalDrives": "Gesamt: {{count}} Laufwerke",
+    "fastTierCapacity": "Schnell-Tier-Kapazität",
+    "capacityTier": "Kapazitäts-Tier",
+    "cacheMode": "Cache-Modus",
+    "writeBack": "Write-Back",
+    "writeThrough": "Write-Through",
+    "readOnly": "Nur Lesen",
+    "cacheModeDesc": {
+      "writeback": "Beste Leistung, erfordert Batterie-Backup",
+      "writethrough": "Sicherere Schreibvorgänge, geringere Leistung",
+      "readonly": "Nur Lese-Cache, Schreibvorgänge direkt zum Kapazitäts-Tier"
+    },
+    "workingSetSize": "Working-Set-Größe",
+    "workingSetDesc": "Prozentsatz häufig abgerufener Daten (heiße Daten)",
+    "totalDrivesLabel": "Laufwerke gesamt",
+    "cacheRatio": "Cache-Verhältnis",
+    "recommended": "Empfohlen",
+    "s2d": {
+      "fastTier": "Cache-Tier (NVMe/SSD)",
+      "capacityTier": "Kapazitäts-Tier",
+      "fastTierHint": "Schnelle Laufwerke für Schreib-Cache und heiße Daten",
+      "capacityTierHint": "Massenspeicher für kalte Daten"
+    },
+    "vsan": {
+      "fastTier": "Cache-Tier",
+      "capacityTier": "Kapazitäts-Tier",
+      "fastTierHint": "NVMe/SSD für Lese/Schreib-Cache (pro Disk Group)",
+      "capacityTierHint": "HDD oder SSD für Kapazität (pro Disk Group)"
+    },
+    "ceph": {
+      "fastTier": "WAL/DB-Geräte (NVMe)",
+      "capacityTier": "OSD-Geräte",
+      "fastTierHint": "NVMe für BlueStore WAL und RocksDB",
+      "capacityTierHint": "Primärer OSD-Speicher (HDD oder SSD)"
+    }
+  }
+}

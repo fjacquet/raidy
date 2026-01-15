@@ -1,0 +1,66 @@
+{
+  "title": "Speicherkonfigurationsbericht",
+  "subtitle": "Erstellt von Raidy - {{date}}",
+  "sections": {
+    "hardware": "Hardwarekonfiguration",
+    "capacity": "Kapazitätsanalyse",
+    "performance": "Leistungsmetriken",
+    "power": "Energie & Nachhaltigkeit",
+    "resilience": "Datenresilienz (Monte-Carlo-Simulation)",
+    "zfs": "ZFS-Konfigurationsbefehle",
+    "recommendations": "Empfehlungen"
+  },
+  "columns": {
+    "parameter": "Parameter",
+    "value": "Wert",
+    "metric": "Metrik",
+    "percentage": "Prozentsatz"
+  },
+  "hardware": {
+    "model": "Laufwerksmodell",
+    "type": "Laufwerkstyp",
+    "capacity": "Laufwerkskapazität",
+    "count": "Laufwerksanzahl",
+    "topology": "Topologie",
+    "rawCapacity": "Bruttokapazität"
+  },
+  "capacity": {
+    "rawCapacity": "Bruttokapazität",
+    "parityOverhead": "Paritäts-Overhead",
+    "hotSpareOverhead": "Hot-Spare-Overhead",
+    "filesystemOverhead": "Dateisystem-Overhead",
+    "zfsSlop": "ZFS-Slop",
+    "usableCapacity": "Nutzbare Kapazität",
+    "effectiveCapacity": "Effektive Kapazität"
+  },
+  "performance": {
+    "maxReadThroughput": "Max. Lesedurchsatz",
+    "maxWriteThroughput": "Max. Schreibdurchsatz",
+    "maxReadIops": "Max. Lese-IOPS",
+    "maxWriteIops": "Max. Schreib-IOPS",
+    "bottleneck": "Engpass"
+  },
+  "power": {
+    "totalPower": "Gesamtleistung",
+    "drivePower": "Laufwerksleistung",
+    "serverPower": "Serverleistung",
+    "cooling": "Kühlung (PUE)",
+    "annualEnergy": "Jahresenergie",
+    "annualCo2": "Jährliches CO₂"
+  },
+  "resilience": {
+    "survivalRate": "Überlebensrate",
+    "nines": "Neunen",
+    "riskLevel": "Risikoniveau",
+    "rebuildTime": "Durchschn. Rebuild-Zeit",
+    "ureProbability": "URE-Wahrscheinlichkeit",
+    "dualFailure": "Doppelausfall-Wahrscheinlichkeit"
+  },
+  "zfs": {
+    "createPool": "ZFS-Pool mit {{level}} erstellen",
+    "setRecordsize": "Recordsize festlegen",
+    "enableCompression": "Komprimierung aktivieren",
+    "enableDedup": "Deduplizierung aktivieren (RAM-intensiv!)"
+  },
+  "footer": "Seite {{current}} von {{total}} | Erstellt von Raidy Storage Calculator"
+}

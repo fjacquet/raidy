@@ -1,0 +1,49 @@
+{
+  "app": {
+    "title": "Raidy",
+    "subtitle": "Storage Infrastructure Simulator"
+  },
+  "nav": {
+    "configuration": "Configuration",
+    "report": "Report"
+  },
+  "sections": {
+    "topology": "Topology",
+    "hardware": "Hardware",
+    "workload": "Workload",
+    "advanced": "Advanced",
+    "driveProperties": "Drive Properties"
+  },
+  "units": {
+    "label": "Units",
+    "binary": "TiB",
+    "decimal": "TB"
+  },
+  "carbon": {
+    "label": "CO\u2082",
+    "regions": {
+      "switzerland": "Switzerland (30)",
+      "norway": "Norway (26)",
+      "france": "France (56)",
+      "germany": "Germany (385)",
+      "usa_average": "USA (386)",
+      "world_average": "World (475)",
+      "china": "China (555)"
+    }
+  },
+  "language": {
+    "label": "Language",
+    "en": "English",
+    "fr": "Francais",
+    "de": "Deutsch",
+    "it": "Italiano"
+  },
+  "buttons": {
+    "export": "Export",
+    "reset": "Reset",
+    "apply": "Apply",
+    "cancel": "Cancel",
+    "close": "Close",
+    "save": "Save"
+  }
+}

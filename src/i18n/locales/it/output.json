@@ -1,0 +1,129 @@
+{
+  "capacity": {
+    "title": "Panoramica capacità",
+    "raw": "Capacità grezza",
+    "usable": "Capacità utilizzabile",
+    "effective": "Capacità effettiva",
+    "afterCompression": "Dopo compressione",
+    "efficiency": "Efficienza",
+    "zfsBreakdown": "Ripartizione capacità ZFS",
+    "dualUnitHint": "Doppia visualizzazione: TiB (binario) / TB (decimale)",
+    "segments": {
+      "usable": "Utilizzabile",
+      "parity": "Parità",
+      "hotSpares": "Hot Spare",
+      "zfsSlop": "Slop ZFS",
+      "fsOverhead": "Overhead FS"
+    },
+    "breakdown": {
+      "title": "Ripartizione capacità",
+      "rawCapacity": "Capacità grezza",
+      "parity": "Parità/Ridondanza",
+      "hotSpares": "Hot Spare",
+      "zfsSlop": "Spazio slop ZFS",
+      "filesystemOverhead": "Overhead filesystem",
+      "systemReserve": "Riserva sistema",
+      "usableCapacity": "Capacità utilizzabile",
+      "compressionGain": "Guadagno compressione",
+      "dedupGain": "Guadagno deduplicazione",
+      "effectiveCapacity": "Capacità effettiva finale",
+      "ofRaw": "della capacità grezza"
+    }
+  },
+  "performance": {
+    "title": "Prestazioni",
+    "read": "Lettura",
+    "write": "Scrittura",
+    "readIops": "IOPS lettura",
+    "writeIops": "IOPS scrittura",
+    "readThroughput": "Throughput lettura",
+    "writeThroughput": "Throughput scrittura",
+    "latency": "Latenza",
+    "bottleneck": {
+      "title": "Analisi colli di bottiglia",
+      "media": "Limite media",
+      "controller": "Limite controller",
+      "pcie": "Limite bus PCIe",
+      "network": "Limite rete",
+      "actual": "Limite effettivo"
+    }
+  },
+  "resilience": {
+    "title": "Resilienza dati",
+    "runSimulation": "Avvia simulazione",
+    "simulating": "Simulazione in corso...",
+    "monteCarloSimulation": "Simulazione Monte Carlo",
+    "annualSurvivalRate": "Tasso sopravvivenza annuale ({{nines}} nove)",
+    "survivalProbability": "Probabilità sopravvivenza",
+    "rebuildTime": "Tempo rebuild",
+    "ureRisk": "Rischio URE",
+    "dualFailure": "Doppio guasto",
+    "riskLevel": "Livello rischio",
+    "recommendations": "Raccomandazioni",
+    "recommendation": "Raccomandazione",
+    "simulations": "Simulazioni eseguite",
+    "clickToRun": "Clicca \"Avvia simulazione\" per calcolare",
+    "iterations": "iterazioni Monte Carlo",
+    "includesCorrelated": "Include guasti correlati e stress di rebuild"
+  },
+  "power": {
+    "title": "Energia & Sostenibilità",
+    "totalPower": "Potenza totale",
+    "annualEnergy": "Energia annuale",
+    "drives": "Dischi",
+    "servers": "Server",
+    "cooling": "Raffreddamento (PUE)",
+    "annualCo2": "CO₂ annuale:",
+    "drivePower": "Consumo dischi",
+    "serverPower": "Consumo server",
+    "totalPowerPue": "Consumo totale (con PUE)",
+    "annualCost": "Costo annuale",
+    "co2Emissions": "Emissioni CO₂",
+    "projectCost": "Costo energia {{years}} anni"
+  },
+  "ssd": {
+    "title": "Endurance SSD",
+    "ok": "OK",
+    "atRisk": "A rischio",
+    "dwpdUsage": "Uso DWPD ({{required}} / {{rated}})",
+    "dwpd": "DWPD disco",
+    "requiredDwpd": "DWPD richiesto",
+    "enduranceYears": "Durata stimata",
+    "warning": "Attenzione: Il carico supera l'endurance del disco",
+    "sufficient": "Endurance sufficiente per il carico"
+  },
+  "commands": {
+    "title": "Comandi di configurazione",
+    "zfs": {
+      "createPool": "Crea pool ZFS con {{level}}",
+      "enableCompression": "Abilita compressione {{type}}",
+      "setRecordsize": "Imposta recordsize a {{size}}K",
+      "enableDedup": "Abilita deduplicazione (richiede molta RAM!)"
+    },
+    "mdadm": {
+      "createArray": "Crea array mdadm {{level}}",
+      "formatXfs": "Formatta con XFS (allineato alle stripe)"
+    },
+    "s2d": {
+      "createPool": "Crea pool Storage Spaces Direct",
+      "createVdisk": "Crea disco virtuale con resilienza {{level}}"
+    },
+    "proprietary": {
+      "config": "Configurazione {{level}}",
+      "referVendor": "Consultare la documentazione del fornitore per i comandi di setup {{level}}."
+    }
+  },
+  "export": {
+    "title": "Esporta configurazione",
+    "pdf": "Report PDF",
+    "pdfDesc": "Report completo",
+    "yaml": "YAML",
+    "yamlDesc": "Configurazione",
+    "ansible": "Ansible",
+    "ansibleDesc": "Playbook",
+    "terraform": "Terraform",
+    "terraformDesc": "Config GCP",
+    "json": "Export JSON",
+    "footer": "Esporta la configurazione storage per documentazione o automazione infrastruttura."
+  }
+}

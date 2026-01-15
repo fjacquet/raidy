@@ -3,6 +3,7 @@
  */
 
 import { useEffect, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   Label,
   NumberInput,
@@ -24,30 +25,46 @@ function formatPrice(usd: number): string {
   return `$${usd.toLocaleString()}`
 }
 
-// Connectivity filter options
-const CONNECTIVITY_OPTIONS: { value: DriveConnectivity; label: string }[] = [
-  { value: 'all', label: 'All' },
-  { value: 'nvme', label: 'NVMe' },
-  { value: 'sas', label: 'SAS' },
-  { value: 'sata', label: 'SATA' },
-  { value: 'hdd', label: 'HDD' },
-]
+// Connectivity filter values
+const CONNECTIVITY_VALUES: DriveConnectivity[] = ['all', 'nvme', 'sas', 'sata', 'hdd']
 
-// Form factor filter options
-const FORM_FACTOR_OPTIONS: { value: FormFactorFilter; label: string }[] = [
-  { value: 'all', label: 'All' },
-  { value: '2.5"', label: '2.5"' },
-  { value: '3.5"', label: '3.5"' },
-  { value: 'u.2', label: 'U.2' },
-  { value: 'e3.s', label: 'E3.S' },
-  { value: 'edsff', label: 'EDSFF' },
-  { value: 'm.2', label: 'M.2' },
+// Form factor filter values
+const FORM_FACTOR_VALUES: FormFactorFilter[] = [
+  'all',
+  '2.5"',
+  '3.5"',
+  'u.2',
+  'e3.s',
+  'edsff',
+  'm.2',
 ]
 
 /** Topologies that only support NVMe drives */
 const NVME_ONLY_TOPOLOGIES = ['powerstore', 'vsan_esa'] as const
 
 export function HardwarePanel() {
+  const { t } = useTranslation('hardware')
+
+  // Translated connectivity options
+  const connectivityOptions = useMemo(
+    () =>
+      CONNECTIVITY_VALUES.map((value) => ({
+        value,
+        label: t(`connectivity.${value}`),
+      })),
+    [t],
+  )
+
+  // Translated form factor options
+  const formFactorOptions = useMemo(
+    () =>
+      FORM_FACTOR_VALUES.map((value) => ({
+        value,
+        label: t(`formFactor.${value.replace(/[."]/g, '')}`),
+      })),
+    [t],
+  )
+
   const {
     topology,
     driveConnectivity,
@@ -121,21 +138,21 @@ export function HardwarePanel() {
     <div className="space-y-5">
       {/* Drive Connectivity Filter */}
       <div className="space-y-2">
-        <Label>Drive Connectivity</Label>
+        <Label>{t('connectivity.label')}</Label>
         {requiresNvme ? (
           <>
             <div className="px-3 py-2 bg-surface-700 rounded-lg text-sm text-slate-300">
-              NVMe Only
+              {t('connectivity.nvme')}
             </div>
             <p className="text-xs text-amber-500">
-              {topology.type === 'powerstore' && 'Dell PowerStore requires NVMe drives'}
-              {topology.type === 'vsan_esa' && 'VMware vSAN ESA requires NVMe drives'}
+              {topology.type === 'powerstore' && t('connectivity.nvmeRequired.powerstore')}
+              {topology.type === 'vsan_esa' && t('connectivity.nvmeRequired.vsan_esa')}
             </p>
           </>
         ) : (
           <SegmentedControl
             value={driveConnectivity}
-            options={CONNECTIVITY_OPTIONS}
+            options={connectivityOptions}
             onChange={(value) => setDriveConnectivity(value as DriveConnectivity)}
           />
         )}
@@ -143,41 +160,45 @@ export function HardwarePanel() {
 
       {/* Form Factor Filter */}
       <div className="space-y-2">
-        <Label htmlFor="form-factor">Form Factor</Label>
+        <Label htmlFor="form-factor">{t('formFactor.label')}</Label>
         <Select
           id="form-factor"
           value={driveFormFactor}
-          options={FORM_FACTOR_OPTIONS}
+          options={formFactorOptions}
           onChange={(value) => setDriveFormFactor(value as FormFactorFilter)}
         />
       </div>
 
       {/* Drive Selection */}
       <div className="space-y-2">
-        <Label htmlFor="drive-select" hint={`${filteredDrives.length} drives`}>
-          Drive Model
+        <Label
+          htmlFor="drive-select"
+          hint={`${filteredDrives.length} ${t('properties.title').toLowerCase()}`}
+        >
+          {t('drive.label')}
         </Label>
         <Select id="drive-select" value={driveId} options={driveOptions} onChange={setDriveId} />
         {selectedDrive && (
           <div className="grid grid-cols-2 gap-2 mt-2 text-xs text-slate-400">
             <div>
-              Type:{' '}
+              {t('properties.type')}:{' '}
               <span className="text-slate-300">
                 {selectedDrive.type}
                 {selectedDrive.formFactor ? ` (${selectedDrive.formFactor})` : ''}
               </span>
             </div>
             <div>
-              Price: <span className="text-slate-300">{formatPrice(selectedDrive.cost_usd)}</span>
+              {t('properties.cost')}:{' '}
+              <span className="text-slate-300">{formatPrice(selectedDrive.cost_usd)}</span>
             </div>
             <div>
-              Read:{' '}
+              {t('properties.readIops').replace(' IOPS', '')}:{' '}
               <span className="text-slate-300">
                 {selectedDrive.performance.iops_read.toLocaleString()} IOPS
               </span>
             </div>
             <div>
-              Write:{' '}
+              {t('properties.writeIops').replace(' IOPS', '')}:{' '}
               <span className="text-slate-300">
                 {selectedDrive.performance.iops_write.toLocaleString()} IOPS
               </span>
@@ -188,23 +209,28 @@ export function HardwarePanel() {
 
       {/* Drive Count per Server */}
       <div className="space-y-2">
-        <Label htmlFor="drive-count" hint={`${driveCount} per server`}>
-          Drives per Server
+        <Label htmlFor="drive-count" hint={`${driveCount}`}>
+          {t('drive.count')}
         </Label>
         <Slider id="drive-count" value={driveCount} min={1} max={100} onChange={setDriveCount} />
       </div>
 
       {/* Server Count */}
       <div className="space-y-2">
-        <Label htmlFor="server-count" hint={`Total: ${driveCount * serverCount} drives`}>
-          Servers / Nodes
+        <Label
+          htmlFor="server-count"
+          hint={t('drive.countHint', { total: driveCount * serverCount })}
+        >
+          {t('server.label')}
         </Label>
         <Slider id="server-count" value={serverCount} min={1} max={16} onChange={setServerCount} />
       </div>
 
       {/* Server Power */}
       <div className="space-y-2">
-        <Label htmlFor="server-power">Server Power (excl. drives)</Label>
+        <Label htmlFor="server-power" hint={t('server.powerHint')}>
+          {t('server.power')}
+        </Label>
         <NumberInput
           id="server-power"
           value={serverPowerWatts}
@@ -219,9 +245,9 @@ export function HardwarePanel() {
       {/* Summary */}
       <div className="pt-3 border-t border-surface-700">
         <div className="grid grid-cols-2 gap-2 text-sm">
-          <div className="text-slate-400">Raw Capacity:</div>
+          <div className="text-slate-400">{t('summary.rawCapacity')}:</div>
           <div className="text-right font-medium text-white">{formatBytes(totalRawCapacity)}</div>
-          <div className="text-slate-400">Hardware Cost:</div>
+          <div className="text-slate-400">{t('summary.hardwareCost')}:</div>
           <div className="text-right font-medium text-white">{formatPrice(totalCost)}</div>
         </div>
       </div>

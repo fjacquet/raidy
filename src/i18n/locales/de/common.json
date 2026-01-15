@@ -1,0 +1,49 @@
+{
+  "app": {
+    "title": "Raidy",
+    "subtitle": "Speicherinfrastruktur-Simulator"
+  },
+  "nav": {
+    "configuration": "Konfiguration",
+    "report": "Bericht"
+  },
+  "sections": {
+    "topology": "Topologie",
+    "hardware": "Hardware",
+    "workload": "Arbeitslast",
+    "advanced": "Erweitert",
+    "driveProperties": "Laufwerkseigenschaften"
+  },
+  "units": {
+    "label": "Einheiten",
+    "binary": "TiB",
+    "decimal": "TB"
+  },
+  "carbon": {
+    "label": "CO\u2082",
+    "regions": {
+      "switzerland": "Schweiz (30)",
+      "norway": "Norwegen (26)",
+      "france": "Frankreich (56)",
+      "germany": "Deutschland (385)",
+      "usa_average": "USA (386)",
+      "world_average": "Welt (475)",
+      "china": "China (555)"
+    }
+  },
+  "language": {
+    "label": "Sprache",
+    "en": "English",
+    "fr": "Francais",
+    "de": "Deutsch",
+    "it": "Italiano"
+  },
+  "buttons": {
+    "export": "Exportieren",
+    "reset": "Zuruecksetzen",
+    "apply": "Anwenden",
+    "cancel": "Abbrechen",
+    "close": "Schliessen",
+    "save": "Speichern"
+  }
+}

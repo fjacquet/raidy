@@ -6,3 +6,4 @@ export {
   Slider,
   Toggle,
 } from './FormControls'
+export { LanguageSwitcher } from './LanguageSwitcher'

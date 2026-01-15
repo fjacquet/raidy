@@ -4,6 +4,7 @@
  */
 
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Header } from './Header'
 import { InputSidebar } from './InputSidebar'
 import { OutputDashboard } from './OutputDashboard'
@@ -11,6 +12,7 @@ import { OutputDashboard } from './OutputDashboard'
 type MobileView = 'config' | 'report'
 
 export function Cockpit() {
+  const { t } = useTranslation('common')
   const [mobileView, setMobileView] = useState<MobileView>('config')
 
   return (
@@ -50,7 +52,7 @@ export function Cockpit() {
                 : 'text-surface-300 hover:text-surface-100'
             }`}
           >
-            Configuration
+            {t('nav.configuration')}
           </button>
           <button
             type="button"
@@ -61,7 +63,7 @@ export function Cockpit() {
                 : 'text-surface-300 hover:text-surface-100'
             }`}
           >
-            Report
+            {t('nav.report')}
           </button>
         </div>
       </nav>

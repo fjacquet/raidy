@@ -4,6 +4,7 @@
  */
 
 import { useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Label, SegmentedControl, Select, Slider } from '@/components/common/FormControls'
 import drivesData from '@/data/drives.json'
 import { useFormatBytes } from '@/hooks/useCalculations'
@@ -41,30 +42,14 @@ const HDD_TYPES: Drive['type'][] = ['HDD']
 /** SSD types for vSAN All-Flash capacity tier */
 const SSD_TYPES: Drive['type'][] = ['SSD_NVMe', 'SSD_SAS', 'SSD_SATA']
 
-/** Get platform-specific labels */
-function getPlatformLabels(platform: TieringPanelProps['platform']) {
-  switch (platform) {
-    case 's2d':
-      return {
-        fastTier: 'Cache Tier (NVMe/SSD)',
-        capacityTier: 'Capacity Tier',
-        fastTierHint: 'High-speed drives for write cache and hot data',
-        capacityTierHint: 'Bulk storage for cold data',
-      }
-    case 'vsan':
-      return {
-        fastTier: 'Cache Tier',
-        capacityTier: 'Capacity Tier',
-        fastTierHint: 'NVMe/SSD for read/write cache (per disk group)',
-        capacityTierHint: 'HDD or SSD for capacity (per disk group)',
-      }
-    case 'ceph':
-      return {
-        fastTier: 'WAL/DB Devices (NVMe)',
-        capacityTier: 'OSD Devices',
-        fastTierHint: 'NVMe for BlueStore WAL and RocksDB',
-        capacityTierHint: 'Primary OSD storage (HDD or SSD)',
-      }
+/** Get platform-specific labels using translations */
+function usePlatformLabels(platform: TieringPanelProps['platform']) {
+  const { t } = useTranslation('topology')
+  return {
+    fastTier: t(`tiering.${platform}.fastTier`),
+    capacityTier: t(`tiering.${platform}.capacityTier`),
+    fastTierHint: t(`tiering.${platform}.fastTierHint`),
+    capacityTierHint: t(`tiering.${platform}.capacityTierHint`),
   }
 }
 
@@ -78,8 +63,9 @@ export function TieringPanel({
   vsanMode = 'hybrid',
   onVsanModeChange,
 }: TieringPanelProps) {
+  const { t } = useTranslation('topology')
   const formatBytes = useFormatBytes()
-  const labels = getPlatformLabels(platform)
+  const labels = usePlatformLabels(platform)
 
   // Get all drives as array
   const driveList = useMemo(() => Object.values(drives), [])
@@ -147,19 +133,17 @@ export function TieringPanel({
       {/* vSAN Mode Selector */}
       {platform === 'vsan' && onVsanModeChange && (
         <div className="space-y-2">
-          <Label>vSAN Configuration</Label>
+          <Label>{t('tiering.vsanConfig')}</Label>
           <SegmentedControl
             value={vsanMode}
             options={[
-              { value: 'hybrid', label: 'Hybrid (HDD)' },
-              { value: 'all-flash', label: 'All-Flash (SSD)' },
+              { value: 'hybrid', label: t('tiering.hybrid') },
+              { value: 'all-flash', label: t('tiering.allFlash') },
             ]}
             onChange={(mode) => onVsanModeChange(mode as 'hybrid' | 'all-flash')}
           />
           <p className="text-xs text-slate-500">
-            {vsanMode === 'hybrid'
-              ? 'Cache: NVMe/SSD, Capacity: HDD (spinning disks)'
-              : 'Cache: NVMe/SSD, Capacity: SSD/NVMe (all flash)'}
+            {vsanMode === 'hybrid' ? t('tiering.hybridDesc') : t('tiering.allFlashDesc')}
           </p>
         </div>
       )}
@@ -170,7 +154,7 @@ export function TieringPanel({
         <p className="text-xs text-slate-500">{labels.fastTierHint}</p>
 
         <div className="space-y-2">
-          <Label htmlFor="fast-tier-drive">Drive Model</Label>
+          <Label htmlFor="fast-tier-drive">{t('tiering.driveModel')}</Label>
           <Select
             id="fast-tier-drive"
             value={config.fastTier.driveId}
@@ -180,8 +164,11 @@ export function TieringPanel({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="fast-tier-count" hint={`Total: ${totalFastDrives} drives`}>
-            Drives per Server
+          <Label
+            htmlFor="fast-tier-count"
+            hint={t('tiering.totalDrives', { count: totalFastDrives })}
+          >
+            {t('tiering.drivesPerServer')}
           </Label>
           <Slider
             id="fast-tier-count"
@@ -194,7 +181,7 @@ export function TieringPanel({
 
         {selectedFastDrive && (
           <div className="text-xs text-slate-400">
-            Fast Tier Capacity:{' '}
+            {t('tiering.fastTierCapacity')}:{' '}
             <span className="text-white font-medium">{formatBytes(totalFastCapacity)}</span>
           </div>
         )}
@@ -206,7 +193,7 @@ export function TieringPanel({
         <p className="text-xs text-slate-500">{labels.capacityTierHint}</p>
 
         <div className="space-y-2">
-          <Label htmlFor="capacity-tier-drive">Drive Model</Label>
+          <Label htmlFor="capacity-tier-drive">{t('tiering.driveModel')}</Label>
           <Select
             id="capacity-tier-drive"
             value={config.capacityTier.driveId}
@@ -216,8 +203,11 @@ export function TieringPanel({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="capacity-tier-count" hint={`Total: ${totalCapacityDrives} drives`}>
-            Drives per Server
+          <Label
+            htmlFor="capacity-tier-count"
+            hint={t('tiering.totalDrives', { count: totalCapacityDrives })}
+          >
+            {t('tiering.drivesPerServer')}
           </Label>
           <Slider
             id="capacity-tier-count"
@@ -232,7 +222,7 @@ export function TieringPanel({
 
         {selectedCapacityDrive && (
           <div className="text-xs text-slate-400">
-            Capacity Tier:{' '}
+            {t('tiering.capacityTier')}:{' '}
             <span className="text-white font-medium">{formatBytes(totalCapacityCapacity)}</span>
           </div>
         )}
@@ -241,24 +231,20 @@ export function TieringPanel({
       {/* Cache Mode */}
       {showCacheMode && (
         <div className="space-y-2">
-          <Label>Cache Mode</Label>
+          <Label>{t('tiering.cacheMode')}</Label>
           <SegmentedControl
             value={config.cacheMode}
             options={[
-              { value: 'write-back', label: 'Write-Back' },
-              { value: 'write-through', label: 'Write-Through' },
-              { value: 'read-only', label: 'Read-Only' },
+              { value: 'write-back', label: t('tiering.writeBack') },
+              { value: 'write-through', label: t('tiering.writeThrough') },
+              { value: 'read-only', label: t('tiering.readOnly') },
             ]}
             onChange={(cacheMode) =>
               onChange({ cacheMode: cacheMode as TieringConfig['cacheMode'] })
             }
           />
           <p className="text-xs text-slate-500">
-            {config.cacheMode === 'write-back'
-              ? 'Best performance, requires battery backup or power protection'
-              : config.cacheMode === 'write-through'
-                ? 'Safer writes, lower write performance'
-                : 'Cache reads only, writes go directly to capacity tier'}
+            {t(`tiering.cacheModeDesc.${config.cacheMode.replace('-', '')}`)}
           </p>
         </div>
       )}
@@ -266,7 +252,7 @@ export function TieringPanel({
       {/* Working Set */}
       {showWorkingSet && (
         <div className="space-y-2">
-          <Label hint={`${config.workingSetPercent}%`}>Working Set Size</Label>
+          <Label hint={`${config.workingSetPercent}%`}>{t('tiering.workingSetSize')}</Label>
           <Slider
             id="working-set"
             value={config.workingSetPercent}
@@ -274,27 +260,25 @@ export function TieringPanel({
             max={50}
             onChange={(workingSetPercent) => onChange({ workingSetPercent })}
           />
-          <p className="text-xs text-slate-500">
-            Percentage of data that is frequently accessed (hot data)
-          </p>
+          <p className="text-xs text-slate-500">{t('tiering.workingSetDesc')}</p>
         </div>
       )}
 
       {/* Summary */}
       <div className="pt-3 border-t border-surface-700">
         <div className="grid grid-cols-2 gap-2 text-sm">
-          <div className="text-slate-400">Total Drives:</div>
+          <div className="text-slate-400">{t('tiering.totalDrivesLabel')}:</div>
           <div className="text-right font-medium text-white">
             {totalFastDrives + totalCapacityDrives}
           </div>
-          <div className="text-slate-400">Cache Ratio:</div>
+          <div className="text-slate-400">{t('tiering.cacheRatio')}:</div>
           <div className={`text-right font-medium ${ratioColor}`}>
             {cacheRatio.toFixed(1)}%
             <span className="text-xs ml-1">
               ({ratioStatus === 'optimal' ? '✓' : ratioStatus === 'low' ? '↓' : '↑'})
             </span>
           </div>
-          <div className="text-slate-400">Recommended:</div>
+          <div className="text-slate-400">{t('tiering.recommended')}:</div>
           <div className="text-right text-xs text-slate-500">10-20%</div>
         </div>
       </div>

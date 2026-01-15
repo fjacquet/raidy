@@ -1,0 +1,38 @@
+{
+  "presets": {
+    "label": "Workload Preset",
+    "database": "Database (OLTP)",
+    "olap": "Analytics (OLAP)",
+    "fileServer": "File Server",
+    "webServer": "Web Server",
+    "videoStreaming": "Video Streaming",
+    "virtualDesktop": "Virtual Desktop (VDI)",
+    "backup": "Backup Target",
+    "archive": "Archive",
+    "custom": "Custom"
+  },
+  "ioPattern": {
+    "label": "I/O Pattern",
+    "readWrite": "Read / Write Mix",
+    "readPercent": "Read %",
+    "writePercent": "Write %",
+    "randomSequential": "Random / Sequential",
+    "randomPercent": "Random %",
+    "sequentialPercent": "Sequential %"
+  },
+  "blockSize": {
+    "label": "Block Size",
+    "hint4k": "4K - Database random I/O",
+    "hint8k": "8K - SQL Server, Oracle",
+    "hint16k": "16K - MySQL InnoDB default",
+    "hint64k": "64K - General purpose",
+    "hint128k": "128K - File server, virtualization",
+    "hint256k": "256K - Video editing, large file transfers",
+    "hint1m": "1M - Sequential, backup"
+  },
+  "capacity": {
+    "datasetSize": "Total Dataset Size",
+    "dailyWriteVolume": "Daily Write Volume",
+    "hint": "Used for SSD endurance calculation"
+  }
+}

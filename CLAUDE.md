@@ -16,6 +16,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Math Engine**: Pure TypeScript; Web Workers for Monte Carlo simulations
 - **Visualization**: Recharts (simple graphs) + D3.js (custom Capacity Waterfall/Sankey)
 - **Styling**: Tailwind CSS (mobile responsive, dark mode native)
+- **i18n**: react-i18next (Swiss languages: EN/FR/DE/IT)
 - **Deployment**: Static hosting (Vercel/Netlify/GitHub Pages)
 
 ## Build & Development Commands
@@ -118,6 +119,44 @@ interface Drive {
 - **Share Link**: Serializes state → Base64 → URL hash
 - **PDF Export**: Uses jspdf-autotable for white-labeled reports
 - **Config Export**: JSON/YAML blocks for Ansible/Terraform
+
+## Internationalization (i18n)
+
+All calculators and UI components must be available in the main Swiss languages:
+- **English** (en) - Default
+- **French** (fr)
+- **German** (de)
+- **Italian** (it)
+
+### i18n Implementation
+- **Library**: `react-i18next` with `i18next-browser-languagedetector`
+- **Translations**: `/src/i18n/locales/{lang}/` with 8 namespaces:
+  - `common.json` - App title, buttons, units, navigation
+  - `topology.json` - RAID/ZFS/vSAN names & descriptions
+  - `hardware.json` - Drive types, form factors, properties
+  - `workload.json` - Workload presets, block sizes
+  - `advanced.json` - Network, power, filesystem settings
+  - `output.json` - Dashboard metrics, capacity breakdown
+  - `validation.json` - Error/warning messages
+  - `pdf.json` - PDF export labels
+- **Language detection**: URL param (`?lang=fr`) → localStorage → browser preference → fallback to English
+- **Number formatting**: Swiss locale variants (apostrophe separator: `1'000.50`)
+- **Language switcher**: Located in UI header
+- **Technical terms**: RAID, ZFS, NVMe, IOPS, etc. remain untranslated
+
+### Translation Key Convention
+```typescript
+// Usage: t('topology:level.raid5.description')
+// File: src/i18n/locales/en/topology.json
+{
+  "level": {
+    "raid5": {
+      "label": "RAID 5",
+      "description": "Single distributed parity, n-1 capacity"
+    }
+  }
+}
+```
 
 ## Validation Requirements
 

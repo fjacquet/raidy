@@ -1,0 +1,60 @@
+{
+  "dataEfficiency": {
+    "title": "Efficienza dati",
+    "compression": "Rapporto compressione",
+    "compressionHint": "1.0 = nessuna compressione, 2.0 = riduzione 50%",
+    "dedup": "Rapporto deduplicazione",
+    "dedupHint": "1.0 = nessuna dedup, 2.0 = riduzione 50%"
+  },
+  "network": {
+    "title": "Rete & Bus",
+    "speed": "Velocita rete",
+    "speeds": {
+      "1gbe": "1 GbE",
+      "10gbe": "10 GbE",
+      "25gbe": "25 GbE",
+      "40gbe": "40 GbE",
+      "50gbe": "50 GbE",
+      "100gbe": "100 GbE",
+      "200gbe": "200 GbE",
+      "400gbe": "400 GbE"
+    }
+  },
+  "pcie": {
+    "title": "Adattatore bus host",
+    "generation": "Generazione PCIe",
+    "lanes": "Corsie PCIe"
+  },
+  "controller": {
+    "title": "Controller RAID",
+    "hbaModel": "Modello HBA",
+    "model": "Modello controller",
+    "maxIops": "IOPS max",
+    "maxThroughput": "Throughput max",
+    "hbaHint": "ZFS, vSAN e S2D richiedono accesso diretto ai dischi via HBA (modalita IT)",
+    "raidHint": "I controller RAID hardware gestiscono la ridondanza dei dischi"
+  },
+  "power": {
+    "title": "Energia & Sostenibilita",
+    "pue": "PUE (Power Usage Effectiveness)",
+    "pueHint": "1.0 = perfetto, 1.2 = eccellente, 1.4 = medio, 2.0 = scarso",
+    "projectYears": "Durata progetto (Anni)",
+    "electricityCost": "Costo elettricita ($/kWh)"
+  },
+  "filesystem": {
+    "title": "Filesystem & Backup",
+    "type": "Filesystem",
+    "types": {
+      "zfs": "ZFS",
+      "xfs": "XFS",
+      "ext4": "ext4",
+      "btrfs": "Btrfs",
+      "refs": "ReFS",
+      "ntfs": "NTFS"
+    },
+    "reflink": "Supporta Reflink",
+    "reflinkHint": "Cloni copy-on-write per backup efficienti",
+    "backupRetention": "Retention backup (Giorni)",
+    "dailyChangeRate": "Tasso cambio giornaliero (%)"
+  }
+}
