@@ -7,13 +7,13 @@
 
 import { describe, expect, it } from 'vitest'
 import { calculatePerformance, type PerformanceInput } from '@/engines/performance'
-import type { Drive } from '@/types/drive'
 import {
   DEFAULT_CEPH_OPTIONS,
   DEFAULT_CONTROLLER_OPTIONS,
   DEFAULT_NUTANIX_OPTIONS,
   DEFAULT_POWERFLEX_OPTIONS,
 } from '@/types'
+import type { Drive } from '@/types/drive'
 
 // Test drive: NVMe SSD for performance testing
 const testNvmeDrive: Drive = {

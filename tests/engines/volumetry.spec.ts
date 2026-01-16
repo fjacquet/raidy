@@ -7,7 +7,6 @@
 
 import { describe, expect, it } from 'vitest'
 import { calculateVolumetry, type VolumetryInput } from '@/engines/volumetry'
-import type { Drive } from '@/types/drive'
 import {
   DEFAULT_CEPH_OPTIONS,
   DEFAULT_NETAPP_OPTIONS,
@@ -22,6 +21,7 @@ import {
   DEFAULT_VSAN_OPTIONS,
   DEFAULT_ZFS_OPTIONS,
 } from '@/types'
+import type { Drive } from '@/types/drive'
 
 // Test drive: 1TB capacity for easy math
 const testDrive: Drive = {
@@ -375,9 +375,10 @@ describe('Volumetry Engine - Breakdown', () => {
     const result = calculateVolumetry(input)
 
     const usableItem = result.breakdown.find(
-      (item) => item.label.toLowerCase().includes('usable') || item.label.toLowerCase().includes('data'),
+      (item) =>
+        item.label.toLowerCase().includes('usable') || item.label.toLowerCase().includes('data'),
     )
     expect(usableItem).toBeDefined()
-    expect(usableItem!.bytes).toBeGreaterThan(0)
+    expect(usableItem?.bytes).toBeGreaterThan(0)
   })
 })
