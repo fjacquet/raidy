@@ -1,0 +1,383 @@
+/**
+ * Volumetry Engine Tests
+ *
+ * Validates RAID capacity calculations against industry formulas.
+ * Reference: CLAUDE.md requires validation within 1% of WintelGuy and NetApp calculators.
+ */
+
+import { describe, expect, it } from 'vitest'
+import { calculateVolumetry, type VolumetryInput } from '@/engines/volumetry'
+import type { Drive } from '@/types/drive'
+import {
+  DEFAULT_CEPH_OPTIONS,
+  DEFAULT_NETAPP_OPTIONS,
+  DEFAULT_NUTANIX_OPTIONS,
+  DEFAULT_OBJECTSCALE_OPTIONS,
+  DEFAULT_POWERFLEX_OPTIONS,
+  DEFAULT_POWERSCALE_OPTIONS,
+  DEFAULT_POWERSTORE_OPTIONS,
+  DEFAULT_POWERVAULT_OPTIONS,
+  DEFAULT_S2D_OPTIONS,
+  DEFAULT_SYNOLOGY_OPTIONS,
+  DEFAULT_VSAN_OPTIONS,
+  DEFAULT_ZFS_OPTIONS,
+} from '@/types'
+
+// Test drive: 1TB capacity for easy math
+const testDrive: Drive = {
+  id: 'test-1tb',
+  model: 'Test Drive 1TB',
+  type: 'HDD',
+  formFactor: '3.5"',
+  interface: 'SATA',
+  capacity_raw: 1_000_000_000_000, // 1TB exactly
+  sector_size: 512,
+  performance: {
+    iops_read: 150,
+    iops_write: 150,
+    bandwidth_read_mb: 200,
+    bandwidth_write_mb: 200,
+  },
+  reliability: {
+    ure_rate: 14,
+    afr: 1.0,
+    dwpd: 0,
+    mtbf_hours: 1_000_000,
+  },
+  power: {
+    idle_watts: 5,
+    load_watts: 10,
+  },
+  cost_usd: 100,
+}
+
+// Helper to create a basic VolumetryInput
+function createInput(
+  driveCount: number,
+  topology: VolumetryInput['topology'],
+  hotSpares = 0,
+): VolumetryInput {
+  return {
+    drive: testDrive,
+    driveCount,
+    hotSpares,
+    serverCount: 1,
+    topology,
+    zfsOptions: DEFAULT_ZFS_OPTIONS,
+    s2dOptions: DEFAULT_S2D_OPTIONS,
+    vsanOptions: DEFAULT_VSAN_OPTIONS,
+    objectscaleOptions: DEFAULT_OBJECTSCALE_OPTIONS,
+    powerstoreOptions: DEFAULT_POWERSTORE_OPTIONS,
+    powerscaleOptions: DEFAULT_POWERSCALE_OPTIONS,
+    cephOptions: DEFAULT_CEPH_OPTIONS,
+    powerFlexOptions: DEFAULT_POWERFLEX_OPTIONS,
+    netAppOptions: DEFAULT_NETAPP_OPTIONS,
+    synologyOptions: DEFAULT_SYNOLOGY_OPTIONS,
+    nutanixOptions: DEFAULT_NUTANIX_OPTIONS,
+    powervaultOptions: DEFAULT_POWERVAULT_OPTIONS,
+    compressionRatio: 1.0,
+    dedupRatio: 1.0,
+  }
+}
+
+describe('Volumetry Engine - Standard RAID', () => {
+  describe('RAID 0 (Striping)', () => {
+    it('should use 100% of capacity (no redundancy)', () => {
+      const input = createInput(4, { type: 'standard', level: 'RAID0' })
+      const result = calculateVolumetry(input)
+
+      // RAID 0: all drives contribute to capacity
+      // Raw = 4 * 1TB = 4TB
+      // Usable = 4TB (minus ~2% filesystem overhead)
+      expect(result.rawCapacity).toBe(4_000_000_000_000)
+      expect(result.parityOverhead).toBe(0)
+      // Efficiency should be ~98% (only filesystem overhead)
+      // Note: efficiency is returned as percentage (0-100), not decimal
+      expect(result.efficiency).toBeGreaterThan(95)
+    })
+  })
+
+  describe('RAID 1 (Mirroring)', () => {
+    it('should use 50% of capacity with 2 drives', () => {
+      const input = createInput(2, { type: 'standard', level: 'RAID1' })
+      const result = calculateVolumetry(input)
+
+      // RAID 1: 50% efficiency
+      // Raw = 2 * 1TB = 2TB
+      // Usable (before FS overhead) = 1TB
+      expect(result.rawCapacity).toBe(2_000_000_000_000)
+      // Efficiency ~48-50% (50% mirror + ~2% FS overhead)
+      // Note: efficiency is returned as percentage (0-100)
+      expect(result.efficiency).toBeGreaterThan(45)
+      expect(result.efficiency).toBeLessThan(52)
+    })
+  })
+
+  describe('RAID 5 (Single Parity)', () => {
+    it('should calculate (n-1)/n efficiency', () => {
+      // 4 drives: (4-1)/4 = 75% efficiency
+      const input = createInput(4, { type: 'standard', level: 'RAID5' })
+      const result = calculateVolumetry(input)
+
+      // Raw = 4TB
+      // Usable (before FS) = 3TB (75%)
+      expect(result.rawCapacity).toBe(4_000_000_000_000)
+      // Parity overhead = 1 drive worth = 1TB
+      expect(result.parityOverhead).toBe(1_000_000_000_000)
+      // Efficiency ~73-75% (percentage 0-100)
+      expect(result.efficiency).toBeGreaterThan(70)
+      expect(result.efficiency).toBeLessThan(77)
+    })
+
+    it('should calculate correctly with 8 drives', () => {
+      // 8 drives: (8-1)/8 = 87.5% efficiency
+      const input = createInput(8, { type: 'standard', level: 'RAID5' })
+      const result = calculateVolumetry(input)
+
+      // Parity = 1 drive = 1TB
+      expect(result.parityOverhead).toBe(1_000_000_000_000)
+      // Efficiency ~85-87% (percentage 0-100)
+      expect(result.efficiency).toBeGreaterThan(83)
+      expect(result.efficiency).toBeLessThan(90)
+    })
+
+    it('should handle hot spares correctly', () => {
+      // 5 drives, 1 hot spare = 4 usable drives
+      const input = createInput(5, { type: 'standard', level: 'RAID5' }, 1)
+      const result = calculateVolumetry(input)
+
+      // Hot spare overhead = 1TB
+      expect(result.hotSpareOverhead).toBe(1_000_000_000_000)
+      // Parity uses 1 of remaining 4 drives = 1TB
+      expect(result.parityOverhead).toBe(1_000_000_000_000)
+      // Usable = 3TB (3 data drives)
+    })
+  })
+
+  describe('RAID 6 (Double Parity)', () => {
+    it('should calculate (n-2)/n efficiency', () => {
+      // 6 drives: (6-2)/6 = 66.67% efficiency
+      const input = createInput(6, { type: 'standard', level: 'RAID6' })
+      const result = calculateVolumetry(input)
+
+      // Raw = 6TB
+      expect(result.rawCapacity).toBe(6_000_000_000_000)
+      // Parity = 2 drives = 2TB
+      expect(result.parityOverhead).toBe(2_000_000_000_000)
+      // Efficiency ~64-67% (percentage 0-100)
+      expect(result.efficiency).toBeGreaterThan(62)
+      expect(result.efficiency).toBeLessThan(69)
+    })
+
+    it('should calculate correctly with 12 drives', () => {
+      // 12 drives: (12-2)/12 = 83.33% efficiency
+      const input = createInput(12, { type: 'standard', level: 'RAID6' })
+      const result = calculateVolumetry(input)
+
+      // Parity = 2 drives = 2TB
+      expect(result.parityOverhead).toBe(2_000_000_000_000)
+      // Efficiency ~80-83% (percentage 0-100)
+      expect(result.efficiency).toBeGreaterThan(78)
+      expect(result.efficiency).toBeLessThan(85)
+    })
+  })
+
+  describe('RAID 10 (Mirrored Stripes)', () => {
+    it('should use 50% of capacity', () => {
+      const input = createInput(4, { type: 'standard', level: 'RAID10' })
+      const result = calculateVolumetry(input)
+
+      // RAID 10: 50% efficiency (mirror pairs)
+      expect(result.rawCapacity).toBe(4_000_000_000_000)
+      // Parity overhead = 2TB (half capacity for mirrors)
+      expect(result.parityOverhead).toBe(2_000_000_000_000)
+      // Efficiency ~48-50% (percentage 0-100)
+      expect(result.efficiency).toBeGreaterThan(45)
+      expect(result.efficiency).toBeLessThan(52)
+    })
+  })
+
+  describe('RAID 50 (Striped RAID 5)', () => {
+    it('should calculate with 2 parity drives across 2 groups', () => {
+      // 8 drives in 2 groups of 4: 2 parity drives total
+      // Efficiency: (8-2)/8 = 75%
+      const input = createInput(8, { type: 'standard', level: 'RAID50' })
+      const result = calculateVolumetry(input)
+
+      expect(result.rawCapacity).toBe(8_000_000_000_000)
+      // Efficiency should be similar to RAID 5 with more drives (percentage 0-100)
+      expect(result.efficiency).toBeGreaterThan(70)
+    })
+  })
+
+  describe('RAID 60 (Striped RAID 6)', () => {
+    it('should calculate with 4 parity drives across 2 groups', () => {
+      // 12 drives in 2 groups of 6: 4 parity drives total
+      // Efficiency: (12-4)/12 = 66.67%
+      const input = createInput(12, { type: 'standard', level: 'RAID60' })
+      const result = calculateVolumetry(input)
+
+      expect(result.rawCapacity).toBe(12_000_000_000_000)
+      // Efficiency should be ~64-67% (percentage 0-100)
+      expect(result.efficiency).toBeGreaterThan(62)
+      expect(result.efficiency).toBeLessThan(70)
+    })
+  })
+})
+
+describe('Volumetry Engine - ZFS', () => {
+  describe('ZFS RAID-Z1', () => {
+    it('should calculate (n-1)/n efficiency like RAID 5', () => {
+      const input = createInput(4, { type: 'zfs', level: 'raidz1' })
+      const result = calculateVolumetry(input)
+
+      // 4 drives RAID-Z1: 75% raw efficiency
+      expect(result.rawCapacity).toBe(4_000_000_000_000)
+      // ZFS has additional slop overhead (1/32 = 3.125%)
+      expect(result.slopOverhead).toBeGreaterThan(0)
+      // Final efficiency ~70-74% (75% - slop - fs overhead) (percentage 0-100)
+      expect(result.efficiency).toBeGreaterThan(68)
+      expect(result.efficiency).toBeLessThan(76)
+    })
+  })
+
+  describe('ZFS RAID-Z2', () => {
+    it('should calculate (n-2)/n efficiency like RAID 6', () => {
+      const input = createInput(6, { type: 'zfs', level: 'raidz2' })
+      const result = calculateVolumetry(input)
+
+      // 6 drives RAID-Z2: 66.67% raw efficiency
+      expect(result.rawCapacity).toBe(6_000_000_000_000)
+      // ZFS slop space should be present
+      expect(result.slopOverhead).toBeGreaterThan(0)
+    })
+  })
+
+  describe('ZFS RAID-Z3', () => {
+    it('should calculate (n-3)/n efficiency', () => {
+      const input = createInput(8, { type: 'zfs', level: 'raidz3' })
+      const result = calculateVolumetry(input)
+
+      // 8 drives RAID-Z3: (8-3)/8 = 62.5% raw efficiency
+      expect(result.rawCapacity).toBe(8_000_000_000_000)
+      // Parity = 3 drives = 3TB
+      expect(result.parityOverhead).toBe(3_000_000_000_000)
+    })
+  })
+
+  describe('ZFS Mirror', () => {
+    it('should use 50% of capacity', () => {
+      const input = createInput(2, { type: 'zfs', level: 'mirror' })
+      const result = calculateVolumetry(input)
+
+      expect(result.rawCapacity).toBe(2_000_000_000_000)
+      // Mirror = 50% overhead
+      expect(result.parityOverhead).toBe(1_000_000_000_000)
+    })
+  })
+
+  describe('ZFS Slop Space', () => {
+    it('should reserve ~3.125% slop space (1/32)', () => {
+      const input = createInput(4, { type: 'zfs', level: 'raidz1' })
+      const result = calculateVolumetry(input)
+
+      // Usable before slop = 3TB (75% of 4TB)
+      // Slop = 3TB * (1/32) = ~93.75GB
+      // Allow some variance for calculation method
+      const expectedSlopMin = 80_000_000_000 // 80GB
+      const expectedSlopMax = 120_000_000_000 // 120GB
+      expect(result.slopOverhead).toBeGreaterThan(expectedSlopMin)
+      expect(result.slopOverhead).toBeLessThan(expectedSlopMax)
+    })
+  })
+})
+
+describe('Volumetry Engine - Compression & Dedup', () => {
+  // Note: Standard RAID doesn't apply compression/dedup ratios
+  // Use ZFS which does support data reduction
+
+  it('should increase effective capacity with compression (ZFS)', () => {
+    const inputNoCompression = createInput(4, { type: 'zfs', level: 'raidz1' })
+    inputNoCompression.compressionRatio = 1.0
+
+    const inputWithCompression = { ...inputNoCompression, compressionRatio: 2.0 }
+
+    const resultNoComp = calculateVolumetry(inputNoCompression)
+    const resultWithComp = calculateVolumetry(inputWithCompression)
+
+    // Effective capacity should double with 2:1 compression
+    expect(resultWithComp.effectiveCapacity).toBeGreaterThan(resultNoComp.effectiveCapacity * 1.9)
+    expect(resultWithComp.effectiveCapacity).toBeLessThan(resultNoComp.effectiveCapacity * 2.1)
+  })
+
+  it('should increase effective capacity with dedup (ZFS)', () => {
+    const inputNoDedup = createInput(4, { type: 'zfs', level: 'raidz1' })
+    inputNoDedup.dedupRatio = 1.0
+
+    const inputWithDedup = { ...inputNoDedup, dedupRatio: 1.5 }
+
+    const resultNoDedup = calculateVolumetry(inputNoDedup)
+    const resultWithDedup = calculateVolumetry(inputWithDedup)
+
+    // Effective capacity should be 1.5x with 1.5:1 dedup
+    expect(resultWithDedup.effectiveCapacity).toBeGreaterThan(resultNoDedup.effectiveCapacity * 1.4)
+    expect(resultWithDedup.effectiveCapacity).toBeLessThan(resultNoDedup.effectiveCapacity * 1.6)
+  })
+
+  it('should stack compression and dedup multiplicatively (ZFS)', () => {
+    const inputBase = createInput(4, { type: 'zfs', level: 'raidz1' })
+    inputBase.compressionRatio = 1.0
+    inputBase.dedupRatio = 1.0
+
+    const inputCombined = { ...inputBase, compressionRatio: 2.0, dedupRatio: 1.5 }
+
+    const resultBase = calculateVolumetry(inputBase)
+    const resultCombined = calculateVolumetry(inputCombined)
+
+    // Combined: 2.0 * 1.5 = 3.0x effective capacity
+    expect(resultCombined.effectiveCapacity).toBeGreaterThan(resultBase.effectiveCapacity * 2.8)
+    expect(resultCombined.effectiveCapacity).toBeLessThan(resultBase.effectiveCapacity * 3.2)
+  })
+
+  it('should NOT apply compression/dedup to standard RAID', () => {
+    const inputBase = createInput(4, { type: 'standard', level: 'RAID5' })
+    inputBase.compressionRatio = 1.0
+    inputBase.dedupRatio = 1.0
+
+    const inputWithRatios = { ...inputBase, compressionRatio: 2.0, dedupRatio: 1.5 }
+
+    const resultBase = calculateVolumetry(inputBase)
+    const resultWithRatios = calculateVolumetry(inputWithRatios)
+
+    // Standard RAID should NOT apply compression/dedup
+    expect(resultWithRatios.effectiveCapacity).toBe(resultBase.effectiveCapacity)
+  })
+})
+
+describe('Volumetry Engine - Breakdown', () => {
+  it('should provide complete breakdown of capacity', () => {
+    const input = createInput(6, { type: 'standard', level: 'RAID6' }, 1)
+    const result = calculateVolumetry(input)
+
+    // Should have breakdown array
+    expect(result.breakdown).toBeDefined()
+    expect(Array.isArray(result.breakdown)).toBe(true)
+    expect(result.breakdown.length).toBeGreaterThan(0)
+
+    // Sum of breakdown should equal raw capacity
+    const totalBreakdown = result.breakdown.reduce((sum, item) => sum + item.bytes, 0)
+    // Allow small rounding difference
+    expect(Math.abs(totalBreakdown - result.rawCapacity)).toBeLessThan(1000)
+  })
+
+  it('should include usable capacity in breakdown', () => {
+    const input = createInput(4, { type: 'standard', level: 'RAID5' })
+    const result = calculateVolumetry(input)
+
+    const usableItem = result.breakdown.find(
+      (item) => item.label.toLowerCase().includes('usable') || item.label.toLowerCase().includes('data'),
+    )
+    expect(usableItem).toBeDefined()
+    expect(usableItem!.bytes).toBeGreaterThan(0)
+  })
+})
