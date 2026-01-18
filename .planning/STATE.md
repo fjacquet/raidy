@@ -11,18 +11,18 @@ See: .planning/PROJECT.md
 ## Current Position
 
 Phase: 4 of 6 (Code Quality)
-Plan: 3 of 3 in phase (04-01, 04-02, 04-04 complete)
-Status: Phase 4 complete - volumetry engine refactored to strategy pattern
-Last activity: 2026-01-18 - Completed 04-04-PLAN.md (Volumetry Strategy Pattern)
+Plan: 4 of 4 in phase (04-01, 04-02, 04-04, 04-05 complete)
+Status: Phase 4 complete - volumetry and performance engines refactored to strategy pattern
+Last activity: 2026-01-18 - Completed 04-05-PLAN.md (Performance Engine Extraction)
 
-Progress: █████████████████░░░ 90.5% (19/21 plans complete)
+Progress: ██████████████████░░ 95.2% (20/21 plans complete)
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 19
-- Average duration: 6.4 min
+- Total plans completed: 20
+- Average duration: 6.2 min
 
 **By Phase:**
 
@@ -31,7 +31,7 @@ Progress: █████████████████░░░ 90.5% (19
 | 1 - Test Infrastructure    | 2/2   | 3min  | 1.5min   |
 | 2 - Calculation Validation | 10/10 | 69min | 6.9min   |
 | 3 - Security Hardening     | 4/4   | 18min | 4.5min   |
-| 4 - Code Quality           | 3/3   | 33min | 11.0min  |
+| 4 - Code Quality           | 4/4   | 41min | 10.3min  |
 
 ## Accumulated Context
 
@@ -106,6 +106,10 @@ Progress: █████████████████░░░ 90.5% (19
 | 04-04 | Runtime type guard before strategy lookup                               | Balances compile-time exhaustive checking (assertNever) with runtime safety for invalid topology types from URL params. Added VALID_TOPOLOGY_TYPES array and guard to handle untrusted external data gracefully.              |
 | 04-04 | Group Dell topologies into single strategy                              | PowerFlex, PowerStore, PowerScale, and ObjectScale share similar calculation patterns. Single dell.ts strategy (139 lines) reduces duplication vs 4 separate files.                                                            |
 | 04-04 | Group proprietary topologies together                                   | Synology, NetApp, and PowerVault are all vendor-specific RAID variants. Logical grouping in proprietary.ts strategy (91 lines) for easier maintenance.                                                                        |
+| 04-05 | Strategy pattern for topology-specific performance                      | Isolates write penalty and IOPS calculations per topology. Reduces cyclomatic complexity, enables extensibility. New topologies only need to implement PerformanceStrategy interface.                                         |
+| 04-05 | Consolidate related topologies in single strategy files                 | Dell strategy (PowerStore/PowerScale/ObjectScale/PowerVault), Proprietary strategy (Synology/NetApp). Reduces file count while keeping related logic together.                                                               |
+| 04-05 | Extract utility functions to separate file                              | XFS alignment, latency estimation, PowerFlex CPU factor extracted to utils.ts. Shared across topologies, don't belong in orchestrator or strategies. Further reduces orchestrator complexity.                                 |
+| 04-05 | Exhaustive type checking with assertNever()                             | getStrategy() switch uses assertNever() in default case. TypeScript compiler errors if new TopologyType added without strategy case. Prevents runtime errors from missing topology support.                                   |
 
 ### Pending Todos
 
@@ -117,6 +121,6 @@ Progress: █████████████████░░░ 90.5% (19
 
 ## Session Continuity
 
-Last session: 2026-01-18T21:30:09Z
-Stopped at: Completed 04-04-PLAN.md (Volumetry Strategy Pattern)
+Last session: 2026-01-18T20:31:24Z
+Stopped at: Completed 04-05-PLAN.md (Performance Engine Extraction)
 Resume file: None - Phase 4 complete, ready for Phase 5
