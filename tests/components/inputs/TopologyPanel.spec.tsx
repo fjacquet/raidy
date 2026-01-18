@@ -84,8 +84,8 @@ describe('TopologyPanel', () => {
 
     render(<TopologyPanel />)
 
-    // Verify topology type selector is present
-    expect(screen.getByRole('combobox')).toBeInTheDocument()
+    // Verify topology type and level selectors are present (two comboboxes)
+    expect(screen.getAllByRole('combobox')).toHaveLength(2)
   })
 
   it('renders ZFS panel when ZFS topology selected', () => {
@@ -145,7 +145,7 @@ describe('TopologyPanel', () => {
 
     rerender(<TopologyPanel />)
 
-    // Should not crash
-    expect(screen.getByRole('combobox')).toBeInTheDocument()
+    // Should not crash - verify both selectors still present
+    expect(screen.getAllByRole('combobox')).toHaveLength(2)
   })
 })

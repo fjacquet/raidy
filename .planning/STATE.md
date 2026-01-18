@@ -117,6 +117,9 @@ Progress: ████████████████████░ 95.2% 
 | 04-10 | Extract bottleneck identification to dedicated module                   | Separates bottleneck chain logic (comparing media/controller/bus/network limits) from orchestration. Makes bottleneck algorithm easier to find and test independently.                                                        |
 | 04-10 | Include PCIe and network calculations in bottleneck-chain.ts            | PCIe and network constants were duplicated and tightly coupled to bottleneck analysis. Moving them to same module reduces orchestrator size and groups related functionality.                                                 |
 | 04-10 | Mutate layers array in identifyBottleneck()                             | Existing pattern from orchestrator. Function modifies isBottleneck and utilization fields in-place rather than returning new array. Maintains backward compatibility with test expectations.                                  |
+| 04-06 | Use unknown instead of specific option union types                      | Strategy interfaces accept different option types per topology. Using unknown matches TypeScript best practices for truly variable-type parameters while forcing type guards before use. Simpler than complex union types.     |
+| 04-06 | Apply double-cast pattern in tests                                      | Following Phase 04-01 decision to use 'as unknown as T' instead of 'as any' for intentional type violations in tests. More explicit about breaking type safety.                                                               |
+| 04-06 | Prefix unused parameters with underscore                                | Many strategy implementations don't use the options parameter. Prefixing with _ follows Biome's suggested fix and clearly indicates intentional non-use.                                                                      |
 
 ### Pending Todos
 
