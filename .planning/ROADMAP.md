@@ -22,7 +22,11 @@ This roadmap takes Raidy from a functionally complete application to production-
 3. Developer can see code coverage reports with line-by-line coverage and threshold enforcement
 4. Test configuration supports TypeScript path aliases and React component testing
 
-**Plans:** (created by /gsd:plan-phase)
+**Plans:** 2 plans
+
+Plans:
+- [ ] 01-01-PLAN.md — Install and configure test infrastructure
+- [ ] 01-02-PLAN.md — Complete test setup and verify infrastructure
 
 ---
 
