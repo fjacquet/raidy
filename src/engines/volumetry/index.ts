@@ -37,51 +37,14 @@ import type { VolumetryStrategy } from './strategies/VolumetryStrategy'
 import { vsanStrategy } from './strategies/vsan'
 import { zfsStrategy } from './strategies/zfs'
 
+// Tiering module
+import {
+  calculateTieredCapacity,
+  type TieredCapacityResult,
+} from './tiering/calculateTieredCapacity'
+
 // Type assertion for the imported JSON
 const drives = drivesData as Record<string, Drive>
-
-/**
- * Calculate tiered capacity when tiering is enabled.
- * Returns cache tier overhead and capacity tier raw capacity.
- */
-interface TieredCapacityResult {
-  cacheTierCapacity: number
-  cacheTierDrive: Drive | null
-  cacheTierDriveCount: number
-  capacityTierCapacity: number
-  capacityTierDrive: Drive | null
-  capacityTierDriveCount: number
-}
-
-function calculateTieredCapacity(
-  tieringConfig: TieringConfig | undefined,
-  serverCount: number,
-): TieredCapacityResult | null {
-  if (!tieringConfig?.enabled) {
-    return null
-  }
-
-  const cacheDrive = tieringConfig.fastTier.driveId ? drives[tieringConfig.fastTier.driveId] : null
-  const capacityDrive = tieringConfig.capacityTier.driveId
-    ? drives[tieringConfig.capacityTier.driveId]
-    : null
-
-  if (!cacheDrive || !capacityDrive) {
-    return null
-  }
-
-  const cacheDriveCount = tieringConfig.fastTier.driveCount * serverCount
-  const capacityDriveCount = tieringConfig.capacityTier.driveCount * serverCount
-
-  return {
-    cacheTierCapacity: cacheDrive.capacity_raw * cacheDriveCount,
-    cacheTierDrive: cacheDrive,
-    cacheTierDriveCount: cacheDriveCount,
-    capacityTierCapacity: capacityDrive.capacity_raw * capacityDriveCount,
-    capacityTierDrive: capacityDrive,
-    capacityTierDriveCount: capacityDriveCount,
-  }
-}
 
 /**
  * Get ObjectScale geo-overhead factor for multi-site replication.
