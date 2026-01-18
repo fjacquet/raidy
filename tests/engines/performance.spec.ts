@@ -14,6 +14,12 @@ import {
   DEFAULT_POWERFLEX_OPTIONS,
 } from '@/types'
 import type { Drive } from '@/types/drive'
+import {
+  performanceVectors,
+  testHdd7200,
+  testSsdSata,
+  testSsdNvme,
+} from '../fixtures/performance-vectors'
 
 // Test drive: NVMe SSD for performance testing
 const testNvmeDrive: Drive = {
@@ -257,6 +263,245 @@ describe('Performance Engine - IOPS Calculation', () => {
     // RAID 5 should have lower write IOPS due to 4x penalty
     // Account for the fact that RAID 5 also has one fewer data drive
     expect(resultRaid5.maxWriteIOPS).toBeLessThan(resultRaid0.maxWriteIOPS)
+  })
+})
+
+describe('Performance Engine - Industry-Validated IOPS', () => {
+  describe('RAID 0 IOPS Scaling', () => {
+    it('should aggregate IOPS linearly for RAID 0 (no penalty)', () => {
+      const input = createInput(4, { type: 'standard', level: 'RAID0' }, testHdd7200, 100)
+      const result = calculatePerformance(input)
+
+      // RAID 0: total IOPS = N × drive_iops
+      // HDD: 150 read IOPS, 140 write IOPS per drive
+      // Expected: 4 × 140 = 560 write IOPS (limited by write IOPS)
+      expect(result.maxReadIOPS).toBeGreaterThanOrEqual(4 * 140)
+      expect(result.maxWriteIOPS).toBeGreaterThanOrEqual(4 * 140)
+    })
+
+    it('should scale IOPS with drive count for RAID 0', () => {
+      const input4 = createInput(4, { type: 'standard', level: 'RAID0' }, testSsdSata, 100)
+      const input8 = createInput(8, { type: 'standard', level: 'RAID0' }, testSsdSata, 100)
+
+      const result4 = calculatePerformance(input4)
+      const result8 = calculatePerformance(input8)
+
+      // 8 drives should have ~2× IOPS of 4 drives (or hit bottleneck)
+      expect(result8.maxReadIOPS).toBeGreaterThanOrEqual(result4.maxReadIOPS)
+      expect(result8.maxWriteIOPS).toBeGreaterThanOrEqual(result4.maxWriteIOPS)
+    })
+  })
+
+  describe('RAID 1 IOPS Calculations', () => {
+    it('should apply 2× write penalty for RAID 1 mirrors', () => {
+      const input = createInput(2, { type: 'standard', level: 'RAID1' }, testHdd7200, 100)
+      const result = calculatePerformance(input)
+
+      // RAID 1: write penalty = 2 (write to both mirrors)
+      expect(result.writePenalty).toBeCloseTo(2, 1)
+
+      // Write IOPS should be ~half of read IOPS
+      expect(result.maxWriteIOPS).toBeLessThan(result.maxReadIOPS)
+    })
+
+    it('should read from both mirrors in RAID 1', () => {
+      const input = createInput(2, { type: 'standard', level: 'RAID1' }, testSsdNvme, 100)
+      const result = calculatePerformance(input)
+
+      // Read IOPS benefits from both drives
+      expect(result.maxReadIOPS).toBeGreaterThan(150_000)
+    })
+  })
+
+  describe('RAID 5 IOPS with 4× Write Penalty', () => {
+    it('should apply 4× write penalty for RAID 5 (industry formula)', () => {
+      // MassiveGRID: RAID 5 write IOPS = (N-1) × drive_iops / 4
+      const input = createInput(4, { type: 'standard', level: 'RAID5' }, testHdd7200, 100)
+      const result = calculatePerformance(input)
+
+      // RAID 5: write penalty = 4 (read old data + parity, write new data + parity)
+      expect(result.writePenalty).toBeCloseTo(4, 1)
+    })
+
+    it('should scale RAID 5 write IOPS with drive count', () => {
+      const input4 = createInput(4, { type: 'standard', level: 'RAID5' }, testHdd7200, 100)
+      const input8 = createInput(8, { type: 'standard', level: 'RAID5' }, testHdd7200, 100)
+
+      const result4 = calculatePerformance(input4)
+      const result8 = calculatePerformance(input8)
+
+      // 8 drives: (8-1)/4 = 1.75 effective drives for writes
+      // 4 drives: (4-1)/4 = 0.75 effective drives for writes
+      // So 8 drives should have >2× write IOPS of 4 drives
+      expect(result8.maxWriteIOPS).toBeGreaterThan(result4.maxWriteIOPS)
+    })
+
+    it('should have much lower write IOPS than read IOPS for RAID 5', () => {
+      const input = createInput(8, { type: 'standard', level: 'RAID5' }, testSsdSata, 100)
+      const result = calculatePerformance(input)
+
+      // RAID 5 write penalty significantly reduces write performance
+      expect(result.maxWriteIOPS).toBeLessThan(result.maxReadIOPS / 2)
+    })
+  })
+
+  describe('RAID 6 IOPS with 6× Write Penalty', () => {
+    it('should apply 6× write penalty for RAID 6 (industry formula)', () => {
+      // MassiveGRID: RAID 6 write IOPS = (N-2) × drive_iops / 6
+      const input = createInput(6, { type: 'standard', level: 'RAID6' }, testHdd7200, 100)
+      const result = calculatePerformance(input)
+
+      // RAID 6: write penalty = 6 (read old data + 2 parities, write new data + 2 parities)
+      expect(result.writePenalty).toBeCloseTo(6, 1)
+    })
+
+    it('should have worse write performance than RAID 5', () => {
+      const inputRaid5 = createInput(8, { type: 'standard', level: 'RAID5' }, testSsdSata, 100)
+      const inputRaid6 = createInput(8, { type: 'standard', level: 'RAID6' }, testSsdSata, 100)
+
+      const resultRaid5 = calculatePerformance(inputRaid5)
+      const resultRaid6 = calculatePerformance(inputRaid6)
+
+      // RAID 6 has higher penalty (6 vs 4) AND fewer data drives (N-2 vs N-1)
+      expect(resultRaid6.maxWriteIOPS).toBeLessThan(resultRaid5.maxWriteIOPS)
+    })
+  })
+
+  describe('RAID 10 IOPS Calculations', () => {
+    it('should apply 2× write penalty for RAID 10 (mirror only)', () => {
+      const input = createInput(4, { type: 'standard', level: 'RAID10' }, testHdd7200, 100)
+      const result = calculatePerformance(input)
+
+      // RAID 10: write penalty = 2 (mirror writes, no parity)
+      expect(result.writePenalty).toBeCloseTo(2, 1)
+    })
+
+    it('should have better write performance than RAID 5/6', () => {
+      const inputRaid10 = createInput(8, { type: 'standard', level: 'RAID10' }, testSsdSata, 100)
+      const inputRaid5 = createInput(8, { type: 'standard', level: 'RAID5' }, testSsdSata, 100)
+      const inputRaid6 = createInput(8, { type: 'standard', level: 'RAID6' }, testSsdSata, 100)
+
+      const resultRaid10 = calculatePerformance(inputRaid10)
+      const resultRaid5 = calculatePerformance(inputRaid5)
+      const resultRaid6 = calculatePerformance(inputRaid6)
+
+      // RAID 10 has lower penalty (2 vs 4 vs 6)
+      expect(resultRaid10.maxWriteIOPS).toBeGreaterThan(resultRaid5.maxWriteIOPS)
+      expect(resultRaid10.maxWriteIOPS).toBeGreaterThan(resultRaid6.maxWriteIOPS)
+    })
+  })
+
+  describe('Random vs Sequential I/O Patterns', () => {
+    it('should apply full write penalty for 100% random I/O', () => {
+      const input = createInput(4, { type: 'standard', level: 'RAID5' }, testHdd7200, 100)
+      const result = calculatePerformance(input)
+
+      // 100% random: full 4× penalty for RAID 5
+      expect(result.writePenalty).toBeCloseTo(4, 1)
+    })
+
+    it('should reduce write penalty for sequential I/O', () => {
+      const inputRandom = createInput(4, { type: 'standard', level: 'RAID5' }, testHdd7200, 100)
+      const inputSequential = createInput(4, { type: 'standard', level: 'RAID5' }, testHdd7200, 0)
+
+      const resultRandom = calculatePerformance(inputRandom)
+      const resultSequential = calculatePerformance(inputSequential)
+
+      // Sequential has reduced penalty (full-stripe writes)
+      expect(resultSequential.writePenalty).toBeLessThan(resultRandom.writePenalty)
+    })
+
+    it('should have higher write throughput for sequential vs random (if not bottlenecked)', () => {
+      const inputRandom = createInput(8, { type: 'standard', level: 'RAID5' }, testSsdSata, 100)
+      const inputSequential = createInput(8, { type: 'standard', level: 'RAID5' }, testSsdSata, 0)
+
+      const resultRandom = calculatePerformance(inputRandom)
+      const resultSequential = calculatePerformance(inputSequential)
+
+      // Sequential throughput benefits from reduced penalty
+      // Unless bottlenecked by controller/network, in which case they're equal
+      expect(resultSequential.maxWriteThroughputMBs).toBeGreaterThanOrEqual(
+        resultRandom.maxWriteThroughputMBs,
+      )
+    })
+  })
+
+  describe('ZFS IOPS with Copy-on-Write Optimization', () => {
+    it('should have reduced penalty for RAID-Z1 (2× vs RAID 5 4×)', () => {
+      const input = createInput(4, { type: 'zfs', level: 'raidz1' }, testSsdSata, 100)
+      const result = calculatePerformance(input)
+
+      // ZFS CoW reduces RAID 5-like penalty from 4 to 2
+      expect(result.writePenalty).toBeCloseTo(2, 1)
+    })
+
+    it('should have reduced penalty for RAID-Z2 (3× vs RAID 6 6×)', () => {
+      const input = createInput(6, { type: 'zfs', level: 'raidz2' }, testSsdSata, 100)
+      const result = calculatePerformance(input)
+
+      // ZFS CoW reduces RAID 6-like penalty from 6 to 3
+      expect(result.writePenalty).toBeCloseTo(3, 1)
+    })
+
+    it('should have better write performance than standard RAID 5', () => {
+      const inputRaidZ1 = createInput(4, { type: 'zfs', level: 'raidz1' }, testSsdSata, 100)
+      const inputRaid5 = createInput(4, { type: 'standard', level: 'RAID5' }, testSsdSata, 100)
+
+      const resultRaidZ1 = calculatePerformance(inputRaidZ1)
+      const resultRaid5 = calculatePerformance(inputRaid5)
+
+      // RAID-Z1 has lower penalty (2 vs 4)
+      expect(resultRaidZ1.maxWriteIOPS).toBeGreaterThan(resultRaid5.maxWriteIOPS)
+    })
+  })
+
+  describe('Property-Based IOPS Tests', () => {
+    it('should never have negative IOPS', () => {
+      for (const vector of performanceVectors) {
+        const topology =
+          vector.raidLevel.startsWith('raid')
+            ? { type: 'zfs' as const, level: vector.raidLevel as any }
+            : { type: 'standard' as const, level: vector.raidLevel as any }
+
+        const input = createInput(vector.driveCount, topology, vector.drive, 100)
+        const result = calculatePerformance(input)
+
+        expect(result.maxReadIOPS).toBeGreaterThan(0)
+        expect(result.maxWriteIOPS).toBeGreaterThan(0)
+      }
+    })
+
+    it('should have write IOPS <= read IOPS (due to penalties)', () => {
+      for (const vector of performanceVectors) {
+        if (vector.raidLevel === 'RAID0' || vector.raidLevel === 'stripe') {
+          continue // RAID 0 has no penalty
+        }
+
+        const topology =
+          vector.raidLevel.startsWith('raid')
+            ? { type: 'zfs' as const, level: vector.raidLevel as any }
+            : { type: 'standard' as const, level: vector.raidLevel as any }
+
+        const input = createInput(vector.driveCount, topology, vector.drive, 100)
+        const result = calculatePerformance(input)
+
+        expect(result.maxWriteIOPS).toBeLessThanOrEqual(result.maxReadIOPS)
+      }
+    })
+
+    it('should have write penalty >= 1 for all configurations', () => {
+      for (const vector of performanceVectors) {
+        const topology =
+          vector.raidLevel.startsWith('raid')
+            ? { type: 'zfs' as const, level: vector.raidLevel as any }
+            : { type: 'standard' as const, level: vector.raidLevel as any }
+
+        const input = createInput(vector.driveCount, topology, vector.drive, 100)
+        const result = calculatePerformance(input)
+
+        expect(result.writePenalty).toBeGreaterThanOrEqual(1)
+      }
+    })
   })
 })
 
