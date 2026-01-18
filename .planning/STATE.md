@@ -11,9 +11,9 @@ See: .planning/PROJECT.md
 ## Current Position
 
 Phase: 3 of 6 (Security Hardening - IN PROGRESS)
-Plan: 3 of 4 (URL validation, CSP headers, and PDF sanitization complete)
-Status: Phase 3 in progress - URL validation with Zod, PDF export XSS protection with DOMPurify, CSP configuration, and security scanning deployed
-Last activity: 2026-01-18 - Completed 03-02-PLAN.md (PDF Export Sanitization)
+Plan: 3 of 4 (Validation enforcement and error handling complete)
+Status: Phase 3 in progress - URL validation with Zod, PDF export XSS protection with DOMPurify, CSP configuration, security scanning deployed, and blocking validation with error boundaries implemented
+Last activity: 2026-01-18 - Completed 03-03-PLAN.md (Validation Enforcement and Error Handling)
 
 Progress: ███████████████████░ 93.75% (15/16 plans complete)
 
@@ -22,7 +22,7 @@ Progress: ███████████████████░ 93.75% (1
 **Velocity:**
 
 - Total plans completed: 15
-- Average duration: 5.7 min
+- Average duration: 6.0 min
 
 **By Phase:**
 
@@ -30,7 +30,7 @@ Progress: ███████████████████░ 93.75% (1
 | -------------------------- | ------ | ----- | -------- |
 | 1 - Test Infrastructure    | 2/2    | 3min  | 1.5min   |
 | 2 - Calculation Validation | 10/10  | 69min | 6.9min   |
-| 3 - Security Hardening     | 3/4    | 13min | 4.3min   |
+| 3 - Security Hardening     | 3/4    | 18min | 6.0min   |
 
 ## Accumulated Context
 
@@ -88,6 +88,10 @@ Progress: ███████████████████░ 93.75% (1
 | 03-04 | Document GitHub Pages CSP limitations                                    | Meta tag CSP doesn't support frame-ancestors directive (clickjacking protection) or report-uri (violation reporting). Recommend Netlify/Vercel for production deployments with full CSP support.                               |
 | 03-04 | Set Snyk scan to continue-on-error in CI                                 | Snyk requires SNYK_TOKEN secret in repository settings. If not configured, job would fail. This allows npm audit (built-in) to still catch vulnerabilities while documenting Snyk setup.                                      |
 | 03-04 | Create separate CI workflow from deployment workflow                     | Separation of concerns - CI runs on all PRs/pushes for testing and security, deployment workflow handles GitHub Pages publishing. Better control over when security scans run.                                                 |
+| 03-03 | Use react-error-boundary library for error handling                     | Hooks-based, TypeScript support, 1M+ weekly downloads. Avoids class components while providing built-in reset logic and better integration with React functional components.                                                  |
+| 03-03 | Never expose error.message or error.stack to users                      | Security risk - exposes internal file paths and implementation details. Only log to console for developer debugging. User sees friendly fallback UI instead.                                                                  |
+| 03-03 | validateOrThrow() for explicit validation enforcement                   | Provides both validateOrThrow() (throws on error) and hasBlockingErrors() (returns boolean). Allows flexibility: throwing in critical paths, checking in UI flows.                                                            |
+| 03-03 | Validation gate in useCalculations hook                                  | Single point of enforcement before calculation engines. Returns zero-state results with error messages instead of crashing. Prevents invalid configurations from reaching calculation engines.                                 |
 
 ### Pending Todos
 
@@ -99,6 +103,6 @@ Progress: ███████████████████░ 93.75% (1
 
 ## Session Continuity
 
-Last session: 2026-01-18T16:50:11Z
-Stopped at: Completed 03-02-PLAN.md (PDF Export Sanitization)
+Last session: 2026-01-18T16:50:48Z
+Stopped at: Completed 03-03-PLAN.md (Validation Enforcement and Error Handling)
 Resume file: None - Phase 3 in progress (3 of 4 plans complete)
