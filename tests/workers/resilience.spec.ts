@@ -157,8 +157,10 @@ describe('Resilience Worker - Survival Rate Ordering', () => {
     }
 
     // Each level should have >= survival rate than the previous
+    // Note: Using 0.95 multiplier (5% tolerance) for stochastic variance
+    // See "Statistical Accuracy" describe block for tolerance guidelines
     for (let i = 1; i < survivalRates.length; i++) {
-      expect(survivalRates[i]).toBeGreaterThanOrEqual(survivalRates[i - 1] * 0.95) // 5% tolerance for randomness
+      expect(survivalRates[i]).toBeGreaterThanOrEqual(survivalRates[i - 1] * 0.95)
     }
   })
 })
@@ -239,8 +241,9 @@ describe('Resilience Worker - URE Impact', () => {
     const badUreResult = mockPostMessage.mock.calls.find((call) => call[0].type === 'RESULT')
 
     // Good URE should have higher or equal survival rate
+    // Using 0.95 multiplier (5% tolerance) for stochastic variance
     expect(goodUreResult?.[0].payload.survivalRate).toBeGreaterThanOrEqual(
-      badUreResult?.[0].payload.survivalRate * 0.95, // 5% tolerance
+      badUreResult?.[0].payload.survivalRate * 0.95,
     )
   })
 })
@@ -887,6 +890,7 @@ describe('Resilience Worker - Correlated Failure Modeling', () => {
     const highAfrResult = mockPostMessage.mock.calls.find((call) => call[0].type === 'RESULT')
 
     // High AFR should have lower survival rate overall
+    // Using 0.95 multiplier to ensure meaningful difference despite variance
     expect(highAfrResult?.[0].payload.survivalRate).toBeLessThan(
       lowAfrResult?.[0].payload.survivalRate * 0.95,
     )
@@ -1025,6 +1029,7 @@ describe('Resilience Worker - Correlated Failure Modeling', () => {
 
     // RAID 6 should have higher survival rate than RAID 5
     // (RAID 6 survives 2 failures, RAID 5 only survives 1)
+    // Using 0.95 multiplier for stochastic variance tolerance
     expect(raid6Result?.[0].payload.survivalRate).toBeGreaterThanOrEqual(
       raid5Result?.[0].payload.survivalRate * 0.95,
     )
@@ -1161,6 +1166,35 @@ describe('Resilience Worker - Statistical Accuracy', () => {
    * - Range: [0.9936, 0.9964]
    *
    * Normal approximation valid when: np > 5 and n(1-p) > 5
+   *
+   * ========================================================================
+   * TESTING STOCHASTIC CODE: BEST PRACTICES
+   * ========================================================================
+   *
+   * Monte Carlo simulations are inherently non-deterministic. Tests must validate
+   * statistical properties rather than exact values.
+   *
+   * TOLERANCE GUIDELINES:
+   * - For probability estimates: Use confidence intervals (95% CI = p ± 1.96σ)
+   * - For variance comparisons: Allow 2-3σ deviation from theoretical values
+   * - For convergence tests: Use generous tolerance to account for random variance
+   *
+   * FLAKINESS PREVENTION:
+   * - Avoid strict equality checks (expect(x).toBe(y))
+   * - Use toBeCloseTo with appropriate precision
+   * - Allow tolerance buffers (e.g., 0.5 instead of 0.316 theoretical)
+   * - Consider .retry() for tests with acceptable occasional failures
+   * - Increase simulation counts only if tolerance increases don't suffice
+   *
+   * WHY THESE TESTS MATTER:
+   * Statistical validation ensures Monte Carlo simulations:
+   * 1. Converge to theoretical probabilities
+   * 2. Produce consistent results across runs
+   * 3. Have properly calculated confidence intervals
+   * 4. Respect binomial distribution properties
+   *
+   * If these tests fail frequently (>5% of runs), the simulation has a bug.
+   * Occasional failures (<1%) are acceptable variance for stochastic systems.
    */
 
   beforeEach(() => {
@@ -1203,7 +1237,8 @@ describe('Resilience Worker - Statistical Accuracy', () => {
       survivalRates.reduce((sum, val) => sum + (val - mean) ** 2, 0) / survivalRates.length
     const stdDev = Math.sqrt(variance)
 
-    // All runs should fall within 2σ of mean (95% probability)
+    // All runs should fall within 2.5σ of mean (~98.8% probability)
+    // Using 2.5σ instead of strict 2σ to reduce flakiness in small samples (n=5)
     for (const rate of survivalRates) {
       expect(Math.abs(rate - mean)).toBeLessThan(stdDev * 2.5)
     }
