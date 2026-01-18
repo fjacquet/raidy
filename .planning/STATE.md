@@ -11,24 +11,24 @@ See: .planning/PROJECT.md
 ## Current Position
 
 Phase: 2 of 6 (Calculation Validation)
-Plan: 1 of 3 (RAID Validation)
+Plan: 5 of X (URL Storage and Validators)
 Status: In progress
-Last activity: 2026-01-18 - Completed 02-01-PLAN.md (RAID Calculation Validation)
+Last activity: 2026-01-18 - Completed 02-05-PLAN.md (URL Storage and Validator Tests)
 
-Progress: ██░░░░░░░░ 20% (3/15 plans complete)
+Progress: ███░░░░░░░ 27% (4/15 plans complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 3
-- Average duration: 2.7 min
+- Total plans completed: 4
+- Average duration: 3.8 min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 1 - Test Infrastructure | 2/2 | 3min | 1.5min |
-| 2 - Calculation Validation | 1/3 | 5min | 5min |
+| 2 - Calculation Validation | 2/X | 12min | 6min |
 
 ## Accumulated Context
 
@@ -45,6 +45,10 @@ Progress: ██░░░░░░░░ 20% (3/15 plans complete)
 | 02-01 | Table-driven testing with describe.each | Reduces code duplication, makes adding test vectors trivial, provides clear failure messages. |
 | 02-01 | Property-based testing with fast-check | Discovers edge cases manual tests miss, validates formulas across wide input ranges. 50 runs per test for balance. |
 | 02-01 | Write penalty formulas documented in tests | Critical for Module B (Performance Engine) implementation. Establishes industry-validated formulas early. |
+| 02-05 | Future URL versioning strategy documented | Prepares for v2.0 migration when breaking changes needed. Pattern: #v=2.0 param, version detection, legacy migration. |
+| 02-05 | Table-driven validator tests for systematic coverage | Array of test cases with expectedErrorCode ensures all topology constraints validated. Easy to extend. |
+| 02-05 | Error messages must explain WHY and HOW to fix | User-facing validation requires actionable feedback. Messages include minimum requirements and specific recommendations. |
+| 02-05 | Browser API mocking with vi.stubGlobal | URL storage uses window/navigator APIs. Per-test mocking keeps tests fast without browser automation. |
 
 ### Pending Todos
 
@@ -56,6 +60,6 @@ Progress: ██░░░░░░░░ 20% (3/15 plans complete)
 
 ## Session Continuity
 
-Last session: 2026-01-18T06:26:51Z
-Stopped at: Completed 02-01-PLAN.md (RAID Calculation Validation)
-Resume file: None - ready for 02-02-PLAN.md (ZFS validation)
+Last session: 2026-01-18T07:29:12Z
+Stopped at: Completed 02-05-PLAN.md (URL Storage and Validator Tests)
+Resume file: None - Phase 2 in progress
