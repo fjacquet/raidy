@@ -4,6 +4,7 @@
  */
 
 import { compressToEncodedURIComponent, decompressFromEncodedURIComponent } from 'lz-string'
+import { toast } from 'sonner'
 import type { StateStorage } from 'zustand/middleware'
 import { validateUrlState } from '@/utils/schemas'
 
@@ -31,10 +32,12 @@ export const urlHashStorage: StateStorage = {
       const validated = validateUrlState(parsed)
 
       if (!validated) {
-        // Validation failed - notify user instead of silent failure
+        // Validation failed - notify user with toast
         console.error('Configuration link is invalid or corrupted')
-        // TODO: Add UI notification when notification system is available
-        // showNotification('Unable to load configuration from URL', 'error')
+        toast.error('Invalid configuration link', {
+          description: 'The shared configuration link is invalid. Using default settings instead.',
+          duration: 5000,
+        })
         return null
       }
 
@@ -42,6 +45,10 @@ export const urlHashStorage: StateStorage = {
       return JSON.stringify(validated)
     } catch (error) {
       console.error('Failed to parse URL hash state:', error)
+      toast.error('Invalid configuration link', {
+        description: 'Unable to load configuration from URL. Using default settings instead.',
+        duration: 5000,
+      })
       return null
     }
   },
