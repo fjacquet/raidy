@@ -46,7 +46,7 @@ Plans:
 4. All major topology types (RAID, ZFS, vSAN ESA/OSA, S2D, Ceph, Nutanix) have verified test coverage
 5. URL state serialization roundtrip preserves configuration accurately with backward compatibility validation
 
-**Plans:** 8 plans (5 initial + 3 gap closure)
+**Plans:** 10 plans (5 initial + 5 gap closure)
 
 Plans:
 
@@ -58,6 +58,8 @@ Plans:
 - [x] 02-06-PLAN.md — Add advanced topology performance tests (gap closure: PowerFlex, ObjectScale, PowerStore, PowerScale, Nutanix)
 - [x] 02-07-PLAN.md — Add volumetry edge case and error handling tests (gap closure: zero drives, invalid configs, boundaries)
 - [x] 02-08-PLAN.md — Fix flaky statistical test (gap closure: confidence interval narrowing test stability)
+- [ ] 02-09-PLAN.md — Add vendor-specific topology edge case tests (gap closure: ObjectScale geo-replication, PowerFlex FG, RAID 5E/5EE, PowerVault ADAPT, vSAN ESA RAID-6)
+- [ ] 02-10-PLAN.md — Add tiering and advanced ZFS tests (gap closure: S2D/Nutanix/Ceph tiering, ZFS ashift padding penalty)
 
 ---
 
