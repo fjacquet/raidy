@@ -24,6 +24,7 @@ import {
 } from '@/types'
 import type { Drive } from '@/types/drive'
 import { standardRAIDVectors } from '../fixtures/raid-vectors'
+import { zfsVectors } from '../fixtures/zfs-vectors'
 
 // Test drive: 1TB capacity for easy math
 const testDrive: Drive = {
@@ -692,69 +693,248 @@ describe('Volumetry Engine - Standard RAID', () => {
   })
 })
 
-describe('Volumetry Engine - ZFS', () => {
-  describe('ZFS RAID-Z1', () => {
-    it('should calculate (n-1)/n efficiency like RAID 5', () => {
-      const input = createInput(4, { type: 'zfs', level: 'raidz1' })
-      const result = calculateVolumetry(input)
+describe('Volumetry Engine - ZFS Topologies', () => {
+  // ============================================================
+  // Table-Driven Tests for All ZFS Topologies (OpenZFS Validation)
+  // ============================================================
+  describe('OpenZFS Validated Tests - All Topologies', () => {
+    describe.each(zfsVectors)(
+      '$name',
+      ({ level, drives, driveSize, expectedUsable, tolerance, slopOverhead }) => {
+        it(`should calculate usable capacity within ${tolerance * 100}% of OpenZFS formula`, () => {
+          // Create test drive with specified capacity
+          const testDrive: Drive = {
+            id: `test-${driveSize}`,
+            model: `Test Drive ${driveSize / 1_000_000_000_000}TB`,
+            type: 'HDD',
+            formFactor: '3.5"',
+            interface: 'SATA',
+            capacity_raw: driveSize,
+            sector_size: 512,
+            performance: {
+              iops_read: 150,
+              iops_write: 150,
+              bandwidth_read_mb: 200,
+              bandwidth_write_mb: 200,
+            },
+            reliability: {
+              ure_rate: 14,
+              afr: 1.0,
+              dwpd: 0,
+              mtbf_hours: 1_000_000,
+            },
+            power: {
+              idle_watts: 5,
+              load_watts: 10,
+            },
+            cost_usd: 100,
+          }
 
-      // 4 drives RAID-Z1: 75% raw efficiency
-      expect(result.rawCapacity).toBe(4_000_000_000_000)
-      // ZFS has additional slop overhead (1/32 = 3.125%)
-      expect(result.slopOverhead).toBeGreaterThan(0)
-      // Final efficiency ~70-74% (75% - slop - fs overhead) (percentage 0-100)
-      expect(result.efficiency).toBeGreaterThan(68)
-      expect(result.efficiency).toBeLessThan(76)
-    })
+          const input = createInput(drives, { type: 'zfs', level })
+          input.drive = testDrive
+
+          const result = calculateVolumetry(input)
+
+          // Validate usable capacity matches OpenZFS within tolerance
+          const lowerBound = expectedUsable * (1 - tolerance)
+          const upperBound = expectedUsable * (1 + tolerance)
+
+          expect(result.usableCapacity).toBeGreaterThanOrEqual(lowerBound)
+          expect(result.usableCapacity).toBeLessThanOrEqual(upperBound)
+
+          // Validate slop overhead is present and within expected range
+          const slopLowerBound = slopOverhead * 0.95
+          const slopUpperBound = slopOverhead * 1.05
+          expect(result.slopOverhead).toBeGreaterThanOrEqual(slopLowerBound)
+          expect(result.slopOverhead).toBeLessThanOrEqual(slopUpperBound)
+        })
+      },
+    )
   })
 
-  describe('ZFS RAID-Z2', () => {
-    it('should calculate (n-2)/n efficiency like RAID 6', () => {
+  // ============================================================
+  // ZFS Slop Space Edge Cases
+  // ============================================================
+  describe('ZFS Slop Space - Edge Cases', () => {
+    it('should enforce minimum slop space of 128 MiB', () => {
+      // Small pool: 3×500GB RAID-Z1 = 1TB usable before slop
+      // Slop = 1TB / 32 = ~31.25GB > 128 MiB minimum
+      // Even smaller pool to hit minimum:
+      const smallDrive: Drive = {
+        ...testDrive,
+        capacity_raw: 100_000_000_000, // 100GB
+      }
+
+      const input = createInput(3, { type: 'zfs', level: 'raidz1' })
+      input.drive = smallDrive
+
+      const result = calculateVolumetry(input)
+
+      // For very small pools, slop should be at least 128 MiB
+      const MIN_SLOP = 128 * 1024 * 1024 // 128 MiB
+      expect(result.slopOverhead).toBeGreaterThanOrEqual(MIN_SLOP)
+    })
+
+    it('should enforce maximum slop space of 128 GiB', () => {
+      // Large pool: 20×10TB RAID-Z2 = 180TB usable before slop
+      // Slop = 180TB / 32 = 5.625TB > 128 GiB maximum
+      const largeDrive: Drive = {
+        ...testDrive,
+        capacity_raw: 10_000_000_000_000, // 10TB
+      }
+
+      const input = createInput(20, { type: 'zfs', level: 'raidz2' })
+      input.drive = largeDrive
+
+      const result = calculateVolumetry(input)
+
+      // For very large pools, slop should not exceed 128 GiB
+      const MAX_SLOP = 128 * 1024 * 1024 * 1024 // 128 GiB
+      expect(result.slopOverhead).toBeLessThanOrEqual(MAX_SLOP)
+    })
+
+    it('should calculate standard slop as 1/32 of pool capacity for normal-sized pools', () => {
+      // Standard pool: 6×1TB RAID-Z2 = 4TB usable before slop
+      // Slop = 4TB / 32 = 125GB (within min/max bounds)
       const input = createInput(6, { type: 'zfs', level: 'raidz2' })
+
       const result = calculateVolumetry(input)
 
-      // 6 drives RAID-Z2: 66.67% raw efficiency
-      expect(result.rawCapacity).toBe(6_000_000_000_000)
-      // ZFS slop space should be present
-      expect(result.slopOverhead).toBeGreaterThan(0)
+      // For 4TB usable, slop should be ~125GB (1/32)
+      const expectedSlop = (4 * 1_000_000_000_000) / 32
+      const tolerance = expectedSlop * 0.05 // 5% tolerance
+
+      expect(result.slopOverhead).toBeGreaterThan(expectedSlop - tolerance)
+      expect(result.slopOverhead).toBeLessThan(expectedSlop + tolerance)
     })
   })
 
-  describe('ZFS RAID-Z3', () => {
-    it('should calculate (n-3)/n efficiency', () => {
-      const input = createInput(8, { type: 'zfs', level: 'raidz3' })
-      const result = calculateVolumetry(input)
+  // ============================================================
+  // Property-Based Tests for ZFS Invariants
+  // ============================================================
+  describe('Property-Based Tests - ZFS Invariants', () => {
+    it('ZFS efficiency should always be less than 100% (slop overhead always present)', () => {
+      fc.assert(
+        fc.property(
+          fc.integer({ min: 2, max: 20 }), // Drive count
+          fc.integer({ min: 1_000_000_000_000, max: 10_000_000_000_000 }), // Drive size (1TB - 10TB)
+          fc.constantFrom<ZfsTopology>('stripe', 'mirror', 'raidz1', 'raidz2', 'raidz3'),
+          (driveCount, driveSize, level) => {
+            // Skip invalid configurations (topology requires more drives than available)
+            const minDrivesRequired: Record<ZfsTopology, number> = {
+              stripe: 1,
+              mirror: 2,
+              raidz1: 3,
+              raidz2: 4,
+              raidz3: 5,
+              draid1: 3,
+              draid2: 4,
+              draid3: 5,
+            }
 
-      // 8 drives RAID-Z3: (8-3)/8 = 62.5% raw efficiency
-      expect(result.rawCapacity).toBe(8_000_000_000_000)
-      // Parity = 3 drives = 3TB
-      expect(result.parityOverhead).toBe(3_000_000_000_000)
+            if (driveCount < minDrivesRequired[level]) {
+              return true // Skip invalid configuration
+            }
+
+            const testDrive: Drive = {
+              id: 'test',
+              model: 'Test',
+              type: 'HDD',
+              formFactor: '3.5"',
+              interface: 'SATA',
+              capacity_raw: driveSize,
+              sector_size: 512,
+              performance: { iops_read: 150, iops_write: 150, bandwidth_read_mb: 200, bandwidth_write_mb: 200 },
+              reliability: { ure_rate: 14, afr: 1.0, dwpd: 0, mtbf_hours: 1_000_000 },
+              power: { idle_watts: 5, load_watts: 10 },
+              cost_usd: 100,
+            }
+
+            const input = createInput(driveCount, { type: 'zfs', level })
+            input.drive = testDrive
+
+            const result = calculateVolumetry(input)
+
+            // ZFS efficiency must always be < 100% due to slop overhead
+            // Maximum efficiency for stripe is ~97% (slop + FS overhead)
+            return result.efficiency > 0 && result.efficiency < 100
+          },
+        ),
+        { numRuns: 50 },
+      )
     })
-  })
 
-  describe('ZFS Mirror', () => {
-    it('should use 50% of capacity', () => {
-      const input = createInput(2, { type: 'zfs', level: 'mirror' })
-      const result = calculateVolumetry(input)
+    it('ZFS slop overhead should increase with pool size (before hitting max)', () => {
+      fc.assert(
+        fc.property(
+          fc.integer({ min: 4, max: 10 }), // Small to medium pools
+          fc.integer({ min: 1_000_000_000_000, max: 5_000_000_000_000 }), // 1TB - 5TB drives
+          (driveCount, driveSize) => {
+            const testDrive: Drive = {
+              id: 'test',
+              model: 'Test',
+              type: 'HDD',
+              formFactor: '3.5"',
+              interface: 'SATA',
+              capacity_raw: driveSize,
+              sector_size: 512,
+              performance: { iops_read: 150, iops_write: 150, bandwidth_read_mb: 200, bandwidth_write_mb: 200 },
+              reliability: { ure_rate: 14, afr: 1.0, dwpd: 0, mtbf_hours: 1_000_000 },
+              power: { idle_watts: 5, load_watts: 10 },
+              cost_usd: 100,
+            }
 
-      expect(result.rawCapacity).toBe(2_000_000_000_000)
-      // Mirror = 50% overhead
-      expect(result.parityOverhead).toBe(1_000_000_000_000)
+            const inputN = createInput(driveCount, { type: 'zfs', level: 'raidz1' })
+            inputN.drive = testDrive
+            const resultN = calculateVolumetry(inputN)
+
+            const inputNPlus1 = createInput(driveCount + 1, { type: 'zfs', level: 'raidz1' })
+            inputNPlus1.drive = testDrive
+            const resultNPlus1 = calculateVolumetry(inputNPlus1)
+
+            // Slop should increase with more drives (larger pool)
+            // Unless we hit the 128 GiB maximum (unlikely with these sizes)
+            return resultNPlus1.slopOverhead >= resultN.slopOverhead
+          },
+        ),
+        { numRuns: 50 },
+      )
     })
-  })
 
-  describe('ZFS Slop Space', () => {
-    it('should reserve ~3.125% slop space (1/32)', () => {
-      const input = createInput(4, { type: 'zfs', level: 'raidz1' })
-      const result = calculateVolumetry(input)
+    it('RAID-Z1 should have same parity efficiency as RAID 5 (before slop)', () => {
+      fc.assert(
+        fc.property(
+          fc.integer({ min: 3, max: 20 }), // RAID-Z1 minimum is 3 drives
+          fc.integer({ min: 1_000_000_000_000, max: 10_000_000_000_000 }),
+          (driveCount, driveSize) => {
+            const testDrive: Drive = {
+              id: 'test',
+              model: 'Test',
+              type: 'HDD',
+              formFactor: '3.5"',
+              interface: 'SATA',
+              capacity_raw: driveSize,
+              sector_size: 512,
+              performance: { iops_read: 150, iops_write: 150, bandwidth_read_mb: 200, bandwidth_write_mb: 200 },
+              reliability: { ure_rate: 14, afr: 1.0, dwpd: 0, mtbf_hours: 1_000_000 },
+              power: { idle_watts: 5, load_watts: 10 },
+              cost_usd: 100,
+            }
 
-      // Usable before slop = 3TB (75% of 4TB)
-      // Slop = 3TB * (1/32) = ~93.75GB
-      // Allow some variance for calculation method
-      const expectedSlopMin = 80_000_000_000 // 80GB
-      const expectedSlopMax = 120_000_000_000 // 120GB
-      expect(result.slopOverhead).toBeGreaterThan(expectedSlopMin)
-      expect(result.slopOverhead).toBeLessThan(expectedSlopMax)
+            const inputZfs = createInput(driveCount, { type: 'zfs', level: 'raidz1' })
+            inputZfs.drive = testDrive
+            const resultZfs = calculateVolumetry(inputZfs)
+
+            const inputRaid = createInput(driveCount, { type: 'standard', level: 'RAID5' })
+            inputRaid.drive = testDrive
+            const resultRaid = calculateVolumetry(inputRaid)
+
+            // Both should have same parity overhead (1 drive worth)
+            return resultZfs.parityOverhead === resultRaid.parityOverhead
+          },
+        ),
+        { numRuns: 50 },
+      )
     })
   })
 })

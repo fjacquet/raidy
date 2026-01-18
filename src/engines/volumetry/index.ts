@@ -511,14 +511,22 @@ function getDataFraction(
 
 /**
  * Calculate ZFS-specific overhead.
+ * Per OpenZFS documentation:
+ * - Slop space: clamp(capacity / 32, 128 MiB, 128 GiB)
+ * - spa_slop_shift = 5 (default, means 1/32 = 2^5)
+ * - SPA_MIN_SLOP = 128 MiB
+ * - SPA_MAX_SLOP = 128 GiB
  */
 function getZfsOverhead(
   capacity: number,
   zfsOptions: ZfsOptions,
   sectorSize: number,
 ): { slop: number; ashift: number } {
-  // ZFS slop space: reserves 1/32 (3.125%) of pool capacity
-  const slop = capacity / 32
+  // ZFS slop space: reserves 1/32 (3.125%) of pool capacity with min/max bounds
+  const MIN_SLOP = 128 * 1024 * 1024 // 128 MiB
+  const MAX_SLOP = 128 * 1024 * 1024 * 1024 // 128 GiB
+  const calculatedSlop = capacity / 32
+  const slop = Math.max(MIN_SLOP, Math.min(MAX_SLOP, calculatedSlop))
 
   // Ashift padding penalty when ashift > physical sector size
   let ashiftPenalty = 0
