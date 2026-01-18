@@ -52,7 +52,7 @@ function t(key: string, options?: Record<string, string | number>): string {
  * @param input - Potentially unsafe user input
  * @returns Plain text safe for PDF rendering
  */
-function sanitizeForPdf(input: string): string {
+export function sanitizeForPdf(input: string): string {
   return DOMPurify.sanitize(input, {
     ALLOWED_TAGS: [], // Strip all HTML
     KEEP_CONTENT: true, // Keep text content
