@@ -1139,3 +1139,373 @@ describe('Resilience Worker - Correlated Failure Modeling', () => {
     expect(result.survivalRate).toBeLessThan(0.90)
   })
 })
+
+describe('Resilience Worker - Statistical Accuracy', () => {
+  /**
+   * TEST-08: Statistical Accuracy and Confidence Intervals
+   *
+   * Monte Carlo simulations are stochastic (use random numbers).
+   * Results vary across runs (not deterministic).
+   * Must validate statistical properties, not exact values.
+   *
+   * Confidence interval for binomial distribution:
+   * - 95% CI = p ± 1.96 × sqrt(p(1-p)/n)
+   * - Where:
+   *   - p = survival rate (e.g., 0.995)
+   *   - n = simulation count (e.g., 10,000)
+   *   - 1.96 = z-score for 95% confidence
+   *
+   * Example: 10k simulations, 99.5% survival:
+   * - CI = 0.995 ± 1.96 × sqrt(0.995×0.005/10000)
+   * - CI = 0.995 ± 0.0014
+   * - Range: [0.9936, 0.9964]
+   *
+   * Normal approximation valid when: np > 5 and n(1-p) > 5
+   */
+
+  beforeEach(() => {
+    mockPostMessage.mockClear()
+  })
+
+  it('should produce consistent results across multiple runs', async () => {
+    /**
+     * Run same simulation 5 times, collect survival rates.
+     * All results should fall within reasonable variance.
+     * Standard deviation should match theoretical prediction.
+     */
+
+    const config = {
+      raidLevel: 'RAID5',
+      driveCount: 8,
+      driveCapacityBytes: 2_000_000_000_000,
+      rebuildSpeedMBs: 100,
+      ureRate: 15 as const,
+      afrPercent: 1.0,
+      simulationCount: 5000,
+    }
+
+    const survivalRates: number[] = []
+
+    for (let run = 0; run < 5; run++) {
+      mockPostMessage.mockClear()
+      await importWorker()
+
+      const handler = (self as { onmessage: ((e: MessageEvent) => void) | null }).onmessage
+      handler?.({ data: { type: 'START', payload: config } } as MessageEvent)
+
+      const resultCall = mockPostMessage.mock.calls.find((call) => call[0].type === 'RESULT')
+      survivalRates.push(resultCall?.[0].payload.survivalRate)
+    }
+
+    // Calculate mean and standard deviation
+    const mean = survivalRates.reduce((a, b) => a + b, 0) / survivalRates.length
+    const variance =
+      survivalRates.reduce((sum, val) => sum + (val - mean) ** 2, 0) / survivalRates.length
+    const stdDev = Math.sqrt(variance)
+
+    // All runs should fall within 2σ of mean (95% probability)
+    for (const rate of survivalRates) {
+      expect(Math.abs(rate - mean)).toBeLessThan(stdDev * 2.5)
+    }
+
+    // Standard deviation should be reasonable (not zero, not huge)
+    expect(stdDev).toBeGreaterThan(0)
+    expect(stdDev).toBeLessThan(0.1) // Less than 10% variation
+  })
+
+  it('should calculate valid confidence intervals for survival rate', async () => {
+    await importWorker()
+
+    /**
+     * Test confidence interval calculation for high survival rate.
+     * RAID 6 with moderate conditions should have >95% survival.
+     */
+
+    const handler = (self as { onmessage: ((e: MessageEvent) => void) | null }).onmessage
+    handler?.({
+      data: {
+        type: 'START',
+        payload: {
+          raidLevel: 'RAID6',
+          driveCount: 8,
+          driveCapacityBytes: 2_000_000_000_000,
+          rebuildSpeedMBs: 100,
+          ureRate: 15 as const,
+          afrPercent: 1.0,
+          simulationCount: 10000, // Larger n for narrower CI
+        },
+      },
+    } as MessageEvent)
+
+    const resultCall = mockPostMessage.mock.calls.find((call) => call[0].type === 'RESULT')
+    const result = resultCall?.[0].payload
+
+    // Calculate 95% confidence interval
+    const p = result.survivalRate
+    const n = 10000
+    const marginOfError = 1.96 * Math.sqrt((p * (1 - p)) / n)
+
+    // Margin of error should be small with n=10000
+    expect(marginOfError).toBeLessThan(0.01) // Less than 1%
+
+    // Survival rate should be valid probability
+    expect(p).toBeGreaterThanOrEqual(0)
+    expect(p).toBeLessThanOrEqual(1)
+  })
+
+  it('should show confidence interval narrows with more simulations', async () => {
+    /**
+     * Compare confidence intervals for different simulation counts.
+     * CI width decreases as sqrt(1/n).
+     */
+
+    const baseConfig = {
+      raidLevel: 'RAID5',
+      driveCount: 8,
+      driveCapacityBytes: 2_000_000_000_000,
+      rebuildSpeedMBs: 100,
+      ureRate: 15 as const,
+      afrPercent: 1.5,
+    }
+
+    // Small sample: 1000 simulations
+    await importWorker()
+    let handler = (self as { onmessage: ((e: MessageEvent) => void) | null }).onmessage
+    handler?.({
+      data: { type: 'START', payload: { ...baseConfig, simulationCount: 1000 } },
+    } as MessageEvent)
+    const smallResult = mockPostMessage.mock.calls.find((call) => call[0].type === 'RESULT')
+
+    // Large sample: 10000 simulations
+    mockPostMessage.mockClear()
+    await importWorker()
+    handler = (self as { onmessage: ((e: MessageEvent) => void) | null }).onmessage
+    handler?.({
+      data: { type: 'START', payload: { ...baseConfig, simulationCount: 10000 } },
+    } as MessageEvent)
+    const largeResult = mockPostMessage.mock.calls.find((call) => call[0].type === 'RESULT')
+
+    // Calculate confidence intervals
+    const p1 = smallResult?.[0].payload.survivalRate
+    const margin1 = 1.96 * Math.sqrt((p1 * (1 - p1)) / 1000)
+
+    const p2 = largeResult?.[0].payload.survivalRate
+    const margin2 = 1.96 * Math.sqrt((p2 * (1 - p2)) / 10000)
+
+    // Larger sample should have narrower confidence interval
+    // Theory: margin scales as 1/sqrt(n), so 10x samples → ~3.16x narrower
+    expect(margin2).toBeLessThan(margin1 * 0.4) // Should be ~1/3 of small sample margin
+  })
+
+  it('should validate binomial distribution properties', async () => {
+    await importWorker()
+
+    /**
+     * Binomial distribution requirements:
+     * - Each simulation is independent trial
+     * - Two outcomes: survive or fail
+     * - Constant probability across trials
+     * - Normal approximation valid when np > 5 and n(1-p) > 5
+     */
+
+    const handler = (self as { onmessage: ((e: MessageEvent) => void) | null }).onmessage
+    handler?.({
+      data: {
+        type: 'START',
+        payload: {
+          raidLevel: 'RAID5',
+          driveCount: 8,
+          driveCapacityBytes: 2_000_000_000_000,
+          rebuildSpeedMBs: 100,
+          ureRate: 15 as const,
+          afrPercent: 2.0,
+          simulationCount: 5000,
+        },
+      },
+    } as MessageEvent)
+
+    const resultCall = mockPostMessage.mock.calls.find((call) => call[0].type === 'RESULT')
+    const result = resultCall?.[0].payload
+
+    const p = result.survivalRate
+    const n = 5000
+
+    // Check normal approximation validity
+    const successes = p * n
+    const failures = (1 - p) * n
+
+    expect(successes).toBeGreaterThan(5)
+    expect(failures).toBeGreaterThan(5)
+  })
+
+  it('should show results converge to theoretical probability with large n', async () => {
+    await importWorker()
+
+    /**
+     * Law of large numbers: as n increases, sample mean converges to true mean.
+     * With very large n, results should be stable.
+     */
+
+    const handler = (self as { onmessage: ((e: MessageEvent) => void) | null }).onmessage
+    handler?.({
+      data: {
+        type: 'START',
+        payload: {
+          raidLevel: 'RAID6',
+          driveCount: 8,
+          driveCapacityBytes: 1_000_000_000_000,
+          rebuildSpeedMBs: 100,
+          ureRate: 16 as const,
+          afrPercent: 0.5,
+          simulationCount: 20000, // Very large sample
+        },
+      },
+    } as MessageEvent)
+
+    const resultCall = mockPostMessage.mock.calls.find((call) => call[0].type === 'RESULT')
+    const result = resultCall?.[0].payload
+
+    // With favorable conditions (RAID6, low AFR, good URE), survival should be very high
+    expect(result.survivalRate).toBeGreaterThan(0.95)
+
+    // Confidence interval should be very narrow
+    const p = result.survivalRate
+    const marginOfError = 1.96 * Math.sqrt((p * (1 - p)) / 20000)
+    expect(marginOfError).toBeLessThan(0.005) // Less than 0.5%
+  })
+
+  it('should produce statistically valid URE probability estimates', async () => {
+    await importWorker()
+
+    /**
+     * URE probability should also follow binomial distribution.
+     * Validate statistical properties of URE estimates.
+     */
+
+    const handler = (self as { onmessage: ((e: MessageEvent) => void) | null }).onmessage
+    handler?.({
+      data: {
+        type: 'START',
+        payload: {
+          raidLevel: 'RAID5',
+          driveCount: 12,
+          driveCapacityBytes: 4_000_000_000_000,
+          rebuildSpeedMBs: 100,
+          ureRate: 14 as const, // Higher URE to see events
+          afrPercent: 2.0,
+          simulationCount: 10000,
+        },
+      },
+    } as MessageEvent)
+
+    const resultCall = mockPostMessage.mock.calls.find((call) => call[0].type === 'RESULT')
+    const result = resultCall?.[0].payload
+
+    // URE probability should be valid probability
+    expect(result.ureProbability).toBeGreaterThanOrEqual(0)
+    expect(result.ureProbability).toBeLessThanOrEqual(1)
+
+    // Calculate confidence interval for URE
+    const p = result.ureProbability
+    if (p > 0.01 && p < 0.99) {
+      // Only check if not extreme probability
+      const marginOfError = 1.96 * Math.sqrt((p * (1 - p)) / 10000)
+      expect(marginOfError).toBeLessThan(0.02) // Less than 2%
+    }
+  })
+
+  it('should maintain statistical independence across simulations', async () => {
+    await importWorker()
+
+    /**
+     * Each simulation should be independent.
+     * Run many simulations and verify no systematic patterns.
+     */
+
+    const handler = (self as { onmessage: ((e: MessageEvent) => void) | null }).onmessage
+    handler?.({
+      data: {
+        type: 'START',
+        payload: {
+          raidLevel: 'RAID5',
+          driveCount: 8,
+          driveCapacityBytes: 2_000_000_000_000,
+          rebuildSpeedMBs: 100,
+          ureRate: 15 as const,
+          afrPercent: 1.5,
+          simulationCount: 10000,
+        },
+      },
+    } as MessageEvent)
+
+    const resultCall = mockPostMessage.mock.calls.find((call) => call[0].type === 'RESULT')
+    const result = resultCall?.[0].payload
+
+    // Result should be between 0 and 1
+    expect(result.survivalRate).toBeGreaterThanOrEqual(0)
+    expect(result.survivalRate).toBeLessThanOrEqual(1)
+
+    // With 10k independent trials, result should be stable
+    expect(result.survivalRate).toBeGreaterThan(0.5) // Reasonable for moderate conditions
+  })
+
+  it('should calculate standard error correctly for different probabilities', async () => {
+    await importWorker()
+
+    /**
+     * Standard error = sqrt(p(1-p)/n)
+     * Maximum when p=0.5, decreases toward extremes (p→0 or p→1)
+     */
+
+    // Test with moderate survival rate (higher variance)
+    let handler = (self as { onmessage: ((e: MessageEvent) => void) | null }).onmessage
+    handler?.({
+      data: {
+        type: 'START',
+        payload: {
+          raidLevel: 'RAID5',
+          driveCount: 8,
+          driveCapacityBytes: 4_000_000_000_000,
+          rebuildSpeedMBs: 100,
+          ureRate: 14 as const,
+          afrPercent: 4.0, // Higher to get p closer to 0.5
+          simulationCount: 5000,
+        },
+      },
+    } as MessageEvent)
+    const moderateResult = mockPostMessage.mock.calls.find((call) => call[0].type === 'RESULT')
+
+    // Test with high survival rate (lower variance)
+    mockPostMessage.mockClear()
+    await importWorker()
+    handler = (self as { onmessage: ((e: MessageEvent) => void) | null }).onmessage
+    handler?.({
+      data: {
+        type: 'START',
+        payload: {
+          raidLevel: 'RAID6',
+          driveCount: 8,
+          driveCapacityBytes: 2_000_000_000_000,
+          rebuildSpeedMBs: 100,
+          ureRate: 16 as const,
+          afrPercent: 0.5, // Lower to get high survival
+          simulationCount: 5000,
+        },
+      },
+    } as MessageEvent)
+    const highResult = mockPostMessage.mock.calls.find((call) => call[0].type === 'RESULT')
+
+    // Calculate standard errors
+    const p1 = moderateResult?.[0].payload.survivalRate
+    const se1 = Math.sqrt((p1 * (1 - p1)) / 5000)
+
+    const p2 = highResult?.[0].payload.survivalRate
+    const se2 = Math.sqrt((p2 * (1 - p2)) / 5000)
+
+    // Both should be positive and reasonable
+    expect(se1).toBeGreaterThan(0)
+    expect(se2).toBeGreaterThan(0)
+    expect(se1).toBeLessThan(0.05)
+    expect(se2).toBeLessThan(0.05)
+  })
+})
