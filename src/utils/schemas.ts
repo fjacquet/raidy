@@ -6,25 +6,6 @@
 import { z } from 'zod'
 
 /**
- * Topology type enum - must match TopologyType from @/types/topology
- */
-const TopologyTypeSchema = z.enum([
-  'standard',
-  'zfs',
-  's2d',
-  'proprietary',
-  'vsan_osa',
-  'vsan_esa',
-  'ceph',
-  'powerflex',
-  'powerstore',
-  'powerscale',
-  'objectscale',
-  'nutanix',
-  'powervault',
-])
-
-/**
  * Standard RAID level enum
  */
 const StandardRaidLevelSchema = z.enum([
@@ -278,51 +259,57 @@ const PowerVaultOptionsSchema = z.object({
 /**
  * Complete ConfigState schema matching Zustand store
  * Based on partialize function in configStore.ts
+ *
+ * Fields are optional to support Zustand's persist middleware,
+ * which fills in defaults for missing fields from getDefaultState().
+ * However, when fields ARE present, they must pass validation.
  */
-export const ConfigStateSchema = z.object({
-  // Hardware
-  driveId: z.string().min(1),
-  driveCount: z.number().int().min(1).max(1000).finite(),
-  serverCount: z.number().int().min(1).max(100).finite(),
-  serverPowerWatts: z.number().int().positive().finite(),
+export const ConfigStateSchema = z
+  .object({
+    // Hardware
+    driveId: z.string().min(1).optional(),
+    driveCount: z.number().int().min(1).max(1000).finite().optional(),
+    serverCount: z.number().int().min(1).max(100).finite().optional(),
+    serverPowerWatts: z.number().int().positive().finite().optional(),
 
-  // Topology
-  topology: TopologySchema,
-  hotSpares: z.number().int().min(0).max(100).finite(),
-  zfsOptions: ZfsOptionsSchema,
-  s2dOptions: S2DOptionsSchema,
-  controllerOptions: ControllerOptionsSchema,
-  netAppOptions: NetAppOptionsSchema,
-  synologyOptions: SynologyOptionsSchema,
-  nutanixOptions: NutanixOptionsSchema,
-  objectscaleOptions: ObjectScaleOptionsSchema,
-  powerstoreOptions: PowerStoreOptionsSchema,
-  powerscaleOptions: PowerScaleOptionsSchema,
-  powervaultOptions: PowerVaultOptionsSchema,
+    // Topology
+    topology: TopologySchema.optional(),
+    hotSpares: z.number().int().min(0).max(100).finite().optional(),
+    zfsOptions: ZfsOptionsSchema.optional(),
+    s2dOptions: S2DOptionsSchema.optional(),
+    controllerOptions: ControllerOptionsSchema.optional(),
+    netAppOptions: NetAppOptionsSchema.optional(),
+    synologyOptions: SynologyOptionsSchema.optional(),
+    nutanixOptions: NutanixOptionsSchema.optional(),
+    objectscaleOptions: ObjectScaleOptionsSchema.optional(),
+    powerstoreOptions: PowerStoreOptionsSchema.optional(),
+    powerscaleOptions: PowerScaleOptionsSchema.optional(),
+    powervaultOptions: PowerVaultOptionsSchema.optional(),
 
-  // Workload
-  readPercent: z.number().min(0).max(100).finite(),
-  blockSize: z.string(),
-  randomPercent: z.number().min(0).max(100).finite(),
-  datasetSize: z.number().positive().finite(),
-  dailyWriteVolume: z.number().nonnegative().finite(),
+    // Workload
+    readPercent: z.number().min(0).max(100).finite().optional(),
+    blockSize: z.string().optional(),
+    randomPercent: z.number().min(0).max(100).finite().optional(),
+    datasetSize: z.number().positive().finite().optional(),
+    dailyWriteVolume: z.number().nonnegative().finite().optional(),
 
-  // Advanced
-  compressionRatio: z.number().min(1).max(10).finite(),
-  dedupRatio: z.number().min(1).max(10).finite(),
-  networkSpeed: z.string(),
-  pcieGen: z.string(),
-  pcieLanes: z.string(),
-  pue: z.number().min(1).max(3).finite(),
-  carbonRegion: z.string(),
-  projectYears: z.number().int().min(1).max(20).finite(),
-  electricityCostPerKwh: z.number().positive().finite(),
-  fsType: z.string(),
-  supportsReflink: z.boolean(),
-  backupRetention: z.number().int().positive().finite(),
-  dailyChangeRate: z.number().min(0).max(100).finite(),
-  unitSystem: z.enum(['binary', 'decimal']),
-})
+    // Advanced
+    compressionRatio: z.number().min(1).max(10).finite().optional(),
+    dedupRatio: z.number().min(1).max(10).finite().optional(),
+    networkSpeed: z.string().optional(),
+    pcieGen: z.string().optional(),
+    pcieLanes: z.string().optional(),
+    pue: z.number().min(1).max(3).finite().optional(),
+    carbonRegion: z.string().optional(),
+    projectYears: z.number().int().min(1).max(20).finite().optional(),
+    electricityCostPerKwh: z.number().positive().finite().optional(),
+    fsType: z.string().optional(),
+    supportsReflink: z.boolean().optional(),
+    backupRetention: z.number().int().positive().finite().optional(),
+    dailyChangeRate: z.number().min(0).max(100).finite().optional(),
+    unitSystem: z.enum(['binary', 'decimal']).optional(),
+  })
+  .passthrough() // Allow extra fields for forward compatibility
 
 export type ConfigState = z.infer<typeof ConfigStateSchema>
 

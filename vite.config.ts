@@ -34,7 +34,9 @@ export default defineConfig({
           // React core
           'vendor-react': ['react', 'react-dom'],
           // PDF export (lazy-loaded, large but acceptable)
-          'vendor-pdf': ['jspdf', 'jspdf-autotable', 'html2canvas'],
+          // Note: html2canvas removed - it's an optionalDependency of jspdf for the html() method,
+          // but we only use autoTable and text methods, so it's unnecessary overhead
+          'vendor-pdf': ['jspdf', 'jspdf-autotable'],
           // State management
           'vendor-state': ['zustand'],
         },
