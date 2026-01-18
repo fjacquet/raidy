@@ -1196,6 +1196,378 @@ describe('Volumetry Engine - vSAN Topologies', () => {
   })
 })
 
+describe('Volumetry Engine - Microsoft S2D', () => {
+  // Inline test vectors for S2D topologies
+  const s2dVectors = [
+    {
+      name: 'S2D Simple: 4 nodes, 16 drives - No redundancy',
+      level: 'simple' as const,
+      faultDomains: 4,
+      drives: 16,
+      driveSize: 1_000_000_000_000,
+      expectedEfficiency: 1.0, // 100% (no redundancy)
+      tolerance: 0.03,
+    },
+    {
+      name: 'S2D Mirror 2-way: 4 nodes, 16 drives - 50% efficiency',
+      level: 'mirror' as const,
+      faultDomains: 4,
+      mirrorCopies: 2,
+      drives: 16,
+      driveSize: 1_000_000_000_000,
+      expectedEfficiency: 0.5, // 50% (2-way mirror)
+      tolerance: 0.03,
+    },
+    {
+      name: 'S2D Mirror 3-way: 4 nodes, 16 drives - 33% efficiency',
+      level: 'mirror' as const,
+      faultDomains: 4,
+      mirrorCopies: 3,
+      drives: 16,
+      driveSize: 1_000_000_000_000,
+      expectedEfficiency: 0.333, // 33% (3-way mirror)
+      tolerance: 0.03,
+    },
+    {
+      name: 'S2D Parity: 4 nodes, 16 drives - 75% efficiency',
+      level: 'parity' as const,
+      faultDomains: 4,
+      drives: 16,
+      driveSize: 1_000_000_000_000,
+      expectedEfficiency: 0.75, // 75% (3/4 nodes)
+      tolerance: 0.03,
+    },
+    {
+      name: 'S2D Dual Parity: 4 nodes, 16 drives - 50% efficiency',
+      level: 'dual_parity' as const,
+      faultDomains: 4,
+      drives: 16,
+      driveSize: 1_000_000_000_000,
+      expectedEfficiency: 0.5, // 50% (2/4 nodes)
+      tolerance: 0.03,
+    },
+    {
+      name: 'S2D MAP: 4 nodes, 16 drives - Hybrid efficiency',
+      level: 'map' as const,
+      faultDomains: 4,
+      drives: 16,
+      driveSize: 1_000_000_000_000,
+      expectedEfficiency: 0.5, // ~50% (20% mirror at 50% + 80% parity at 50% = 0.1 + 0.4 = 0.5)
+      tolerance: 0.05,
+    },
+  ]
+
+  describe.each(s2dVectors)('$name', ({ level, faultDomains, drives, driveSize, expectedEfficiency, tolerance, mirrorCopies }) => {
+    it(`should have ${expectedEfficiency * 100}% efficiency within ${tolerance * 100}% tolerance`, () => {
+      const testDrive: Drive = {
+        id: `test-${driveSize}`,
+        model: 'Test Drive 1TB',
+        type: 'SSD_NVMe',
+        formFactor: '2.5"',
+        interface: 'NVMe',
+        capacity_raw: driveSize,
+        sector_size: 4096,
+        performance: {
+          iops_read: 300000,
+          iops_write: 150000,
+          bandwidth_read_mb: 2500,
+          bandwidth_write_mb: 2000,
+        },
+        reliability: {
+          ure_rate: 17,
+          afr: 0.5,
+          dwpd: 3,
+          mtbf_hours: 2_000_000,
+        },
+        power: {
+          idle_watts: 5,
+          load_watts: 8,
+        },
+        cost_usd: 250,
+      }
+
+      const s2dOptions = {
+        ...DEFAULT_S2D_OPTIONS,
+        faultDomains,
+        mirrorCopies: (mirrorCopies ?? 2) as 2 | 3,
+        rebuildReserve: false, // Disable for pure efficiency testing
+      }
+
+      const input = createInput(drives, { type: 's2d', level })
+      input.drive = testDrive
+      input.serverCount = faultDomains
+      input.s2dOptions = s2dOptions
+
+      const result = calculateVolumetry(input)
+
+      // Validate efficiency matches Microsoft specifications
+      const efficiencyDecimal = result.efficiency / 100
+      const lowerBound = expectedEfficiency * (1 - tolerance)
+      const upperBound = expectedEfficiency * (1 + tolerance)
+
+      expect(efficiencyDecimal).toBeGreaterThanOrEqual(lowerBound)
+      expect(efficiencyDecimal).toBeLessThanOrEqual(upperBound)
+    })
+  })
+
+  describe('S2D Rebuild Reserve', () => {
+    it('should subtract 1 drive equivalent per fault domain when enabled', () => {
+      const inputWithReserve = createInput(16, { type: 's2d', level: 'mirror' })
+      inputWithReserve.s2dOptions = { ...DEFAULT_S2D_OPTIONS, rebuildReserve: true, faultDomains: 4 }
+
+      const inputWithoutReserve = createInput(16, { type: 's2d', level: 'mirror' })
+      inputWithoutReserve.s2dOptions = { ...DEFAULT_S2D_OPTIONS, rebuildReserve: false, faultDomains: 4 }
+
+      const resultWith = calculateVolumetry(inputWithReserve)
+      const resultWithout = calculateVolumetry(inputWithoutReserve)
+
+      // Usable capacity should be less with rebuild reserve enabled
+      expect(resultWith.usableCapacity).toBeLessThan(resultWithout.usableCapacity)
+
+      // Difference should be approximately 4 drives worth (1 per fault domain)
+      const reserveDifference = resultWithout.usableCapacity - resultWith.usableCapacity
+      const expectedReserve = 4 * testDrive.capacity_raw
+      const tolerance = expectedReserve * 0.1 // 10% tolerance
+
+      expect(Math.abs(reserveDifference - expectedReserve)).toBeLessThan(tolerance)
+    })
+  })
+})
+
+describe('Volumetry Engine - Ceph', () => {
+  // Inline test vectors for Ceph topologies
+  const cephVectors = [
+    {
+      name: 'Ceph Replicated 2-way: 50% efficiency',
+      level: 'ceph_replicated_2' as const,
+      drives: 12,
+      driveSize: 1_000_000_000_000,
+      expectedEfficiency: 0.5, // 50% (1/2)
+      tolerance: 0.03,
+    },
+    {
+      name: 'Ceph Replicated 3-way: 33% efficiency',
+      level: 'ceph_replicated_3' as const,
+      drives: 12,
+      driveSize: 1_000_000_000_000,
+      expectedEfficiency: 0.333, // 33% (1/3)
+      tolerance: 0.03,
+    },
+    {
+      name: 'Ceph EC 2+1: 67% efficiency',
+      level: 'ceph_ec_2_1' as const,
+      drives: 12,
+      driveSize: 1_000_000_000_000,
+      expectedEfficiency: 0.667, // 67% (2/3)
+      tolerance: 0.03,
+    },
+    {
+      name: 'Ceph EC 4+2: 67% efficiency',
+      level: 'ceph_ec_4_2' as const,
+      drives: 12,
+      driveSize: 1_000_000_000_000,
+      expectedEfficiency: 0.667, // 67% (4/6)
+      tolerance: 0.03,
+    },
+    {
+      name: 'Ceph EC 8+3: 73% efficiency',
+      level: 'ceph_ec_8_3' as const,
+      drives: 12,
+      driveSize: 1_000_000_000_000,
+      expectedEfficiency: 0.727, // 73% (8/11)
+      tolerance: 0.03,
+    },
+    {
+      name: 'Ceph EC 8+4: 67% efficiency',
+      level: 'ceph_ec_8_4' as const,
+      drives: 16,
+      driveSize: 1_000_000_000_000,
+      expectedEfficiency: 0.667, // 67% (8/12)
+      tolerance: 0.03,
+    },
+  ]
+
+  describe.each(cephVectors)('$name', ({ level, drives, driveSize, expectedEfficiency, tolerance }) => {
+    it(`should have ${expectedEfficiency * 100}% efficiency within ${tolerance * 100}% tolerance`, () => {
+      const testDrive: Drive = {
+        id: `test-${driveSize}`,
+        model: 'Test Drive 1TB',
+        type: 'HDD',
+        formFactor: '3.5"',
+        interface: 'SATA',
+        capacity_raw: driveSize,
+        sector_size: 4096,
+        performance: {
+          iops_read: 150,
+          iops_write: 150,
+          bandwidth_read_mb: 200,
+          bandwidth_write_mb: 200,
+        },
+        reliability: {
+          ure_rate: 14,
+          afr: 1.0,
+          dwpd: 0,
+          mtbf_hours: 1_000_000,
+        },
+        power: {
+          idle_watts: 5,
+          load_watts: 10,
+        },
+        cost_usd: 100,
+      }
+
+      const input = createInput(drives, { type: 'ceph', level })
+      input.drive = testDrive
+      input.serverCount = 3
+
+      const result = calculateVolumetry(input)
+
+      // Validate efficiency matches Ceph specifications
+      // Note: Ceph applies safeCapacityThreshold (default 85%), so we measure pre-safe efficiency
+      const rawEfficiency = (result.usableCapacity / 0.85) / result.rawCapacity // Undo safe capacity factor
+      const lowerBound = expectedEfficiency * (1 - tolerance)
+      const upperBound = expectedEfficiency * (1 + tolerance)
+
+      expect(rawEfficiency).toBeGreaterThanOrEqual(lowerBound)
+      expect(rawEfficiency).toBeLessThanOrEqual(upperBound)
+    })
+  })
+
+  describe('Ceph Safe Capacity Factor', () => {
+    it('should reduce usable capacity by 15% (default 85% threshold)', () => {
+      const input = createInput(12, { type: 'ceph', level: 'ceph_replicated_3' })
+      input.cephOptions = { ...DEFAULT_CEPH_OPTIONS, safeCapacityThreshold: 0.85 }
+
+      const result = calculateVolumetry(input)
+
+      // Calculate what usable would be without safe capacity factor
+      // With 3-way replication, raw efficiency is 33%
+      const rawCapacity = result.rawCapacity
+      const theoreticalUsable = rawCapacity * 0.333 * 0.98 // 33% replication + ~2% FS overhead
+      const expectedUsable = theoreticalUsable * 0.85 // Apply safe capacity threshold
+
+      const tolerance = expectedUsable * 0.05 // 5% tolerance
+      expect(Math.abs(result.usableCapacity - expectedUsable)).toBeLessThan(tolerance)
+    })
+  })
+
+})
+
+describe('Volumetry Engine - Nutanix', () => {
+  // Inline test vectors for Nutanix topologies
+  const nutanixVectors = [
+    {
+      name: 'Nutanix RF2: 50% efficiency',
+      level: 'nutanix_rf2' as const,
+      drives: 12,
+      driveSize: 1_000_000_000_000,
+      replicationFactor: 2,
+      expectedEfficiency: 0.5, // 50% (1/2)
+      tolerance: 0.05,
+    },
+    {
+      name: 'Nutanix RF3: 33% efficiency',
+      level: 'nutanix_rf3' as const,
+      drives: 12,
+      driveSize: 1_000_000_000_000,
+      replicationFactor: 3,
+      expectedEfficiency: 0.333, // 33% (1/3)
+      tolerance: 0.05,
+    },
+    {
+      name: 'Nutanix EC-X RF2: 75% efficiency',
+      level: 'nutanix_ec_rf2' as const,
+      drives: 16,
+      driveSize: 1_000_000_000_000,
+      replicationFactor: 2,
+      expectedEfficiency: 0.75, // 75% (4:1 striping)
+      tolerance: 0.05,
+    },
+    {
+      name: 'Nutanix EC-X RF3: 75% efficiency',
+      level: 'nutanix_ec_rf3' as const,
+      drives: 16,
+      driveSize: 1_000_000_000_000,
+      replicationFactor: 3,
+      expectedEfficiency: 0.75, // 75% (6:2 striping = 6/8)
+      tolerance: 0.05,
+    },
+  ]
+
+  describe.each(nutanixVectors)('$name', ({ level, drives, driveSize, replicationFactor, expectedEfficiency, tolerance }) => {
+    it(`should have ${expectedEfficiency * 100}% efficiency within ${tolerance * 100}% tolerance`, () => {
+      const testDrive: Drive = {
+        id: `test-${driveSize}`,
+        model: 'Test Drive 1TB',
+        type: 'SSD_NVMe',
+        formFactor: '2.5"',
+        interface: 'NVMe',
+        capacity_raw: driveSize,
+        sector_size: 4096,
+        performance: {
+          iops_read: 400000,
+          iops_write: 200000,
+          bandwidth_read_mb: 3000,
+          bandwidth_write_mb: 2500,
+        },
+        reliability: {
+          ure_rate: 17,
+          afr: 0.5,
+          dwpd: 5,
+          mtbf_hours: 2_000_000,
+        },
+        power: {
+          idle_watts: 5,
+          load_watts: 8,
+        },
+        cost_usd: 300,
+      }
+
+      const nutanixOptions = {
+        ...DEFAULT_NUTANIX_OPTIONS,
+        replicationFactor: replicationFactor as 2 | 3,
+        systemOverhead: 0.1, // 10% system overhead
+      }
+
+      const input = createInput(drives, { type: 'nutanix', level })
+      input.drive = testDrive
+      input.serverCount = 3
+      input.nutanixOptions = nutanixOptions
+
+      const result = calculateVolumetry(input)
+
+      // Validate efficiency matches Nutanix specifications
+      // Account for system overhead (10%)
+      const rawEfficiency = result.usableCapacity / (result.rawCapacity * 0.9) // Undo system overhead
+      const lowerBound = expectedEfficiency * (1 - tolerance)
+      const upperBound = expectedEfficiency * (1 + tolerance)
+
+      expect(rawEfficiency).toBeGreaterThanOrEqual(lowerBound)
+      expect(rawEfficiency).toBeLessThanOrEqual(upperBound)
+    })
+  })
+
+  describe('Nutanix System Overhead', () => {
+    it('should apply 10% system overhead (default) for CVM, snapshots, metadata', () => {
+      const input = createInput(12, { type: 'nutanix', level: 'nutanix_rf2' })
+      input.nutanixOptions = { ...DEFAULT_NUTANIX_OPTIONS, systemOverhead: 0.1 }
+
+      const result = calculateVolumetry(input)
+
+      // With RF2 (50% replication) and 10% system overhead:
+      // Raw = 12TB
+      // After replication = 6TB (50%)
+      // After system overhead = 5.4TB (90% of 6TB)
+      const rawCapacity = result.rawCapacity
+      const expectedAfterReplication = rawCapacity * 0.5
+      const expectedUsable = expectedAfterReplication * 0.9 * 0.985 // Apply system overhead + FS overhead
+
+      const tolerance = expectedUsable * 0.05 // 5% tolerance
+      expect(Math.abs(result.usableCapacity - expectedUsable)).toBeLessThan(tolerance)
+    })
+  })
+})
+
 describe('Volumetry Engine - Compression & Dedup', () => {
   // Note: Standard RAID doesn't apply compression/dedup ratios
   // Use ZFS which does support data reduction
