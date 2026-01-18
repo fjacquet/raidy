@@ -17,12 +17,11 @@ import { S2dOptionsPanel } from '@/components/inputs/topology-options/S2dOptions
 import { VsanOptionsPanel } from '@/components/inputs/topology-options/VsanOptionsPanel'
 import { CephOptionsPanel } from '@/components/inputs/topology-options/CephOptionsPanel'
 import { NutanixOptionsPanel } from '@/components/inputs/topology-options/NutanixOptionsPanel'
+import { NetAppOptionsPanel } from '@/components/inputs/topology-options/NetAppOptionsPanel'
+import { SynologyOptionsPanel } from '@/components/inputs/topology-options/SynologyOptionsPanel'
 import {
   TOPOLOGY_TYPES,
   TOPOLOGY_LEVELS,
-  NETAPP_PLATFORM_OPTIONS,
-  NETAPP_ADP_OPTIONS,
-  SYNOLOGY_MODEL_OPTIONS,
 } from '@/components/inputs/topology-options/topologyConstants'
 import { useConfigStore } from '@/store'
 import type { Topology, TopologyType } from '@/types'
@@ -38,8 +37,6 @@ export function TopologyPanel() {
     powerstoreOptions,
     powerscaleOptions,
     powerFlexOptions,
-    netAppOptions,
-    synologyOptions,
     powervaultOptions,
     setTopology,
     setHotSpares,
@@ -47,8 +44,6 @@ export function TopologyPanel() {
     setPowerStoreOptions,
     setPowerScaleOptions,
     setPowerFlexOptions,
-    setNetAppOptions,
-    setSynologyOptions,
     setPowerVaultOptions,
   } = useConfigStore()
 
@@ -557,228 +552,12 @@ export function TopologyPanel() {
 
       {/* NetApp Options (proprietary type with netapp_ prefix) */}
       {topology.type === 'proprietary' && topology.level.startsWith('netapp_') && (
-        <div className="space-y-4 pt-3 border-t border-surface-700">
-          <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-            {t('netapp.title')}
-          </h4>
-
-          <div className="space-y-2">
-            <Label htmlFor="netapp-platform">{t('netapp.platform')}</Label>
-            <Select
-              id="netapp-platform"
-              value={netAppOptions.platform}
-              options={NETAPP_PLATFORM_OPTIONS}
-              onChange={(v) =>
-                setNetAppOptions({
-                  platform: v as 'aff_a' | 'aff_c' | 'fas' | 'asa' | 'e_series',
-                })
-              }
-            />
-            <p className="text-xs text-slate-500">
-              {netAppOptions.platform === 'aff_a'
-                ? 'All-Flash FAS A-Series: High performance'
-                : netAppOptions.platform === 'aff_c'
-                  ? 'All-Flash FAS C-Series: Capacity optimized'
-                  : netAppOptions.platform === 'fas'
-                    ? 'Fabric-Attached Storage: Hybrid HDD/SSD'
-                    : netAppOptions.platform === 'asa'
-                      ? 'All-Flash SAN Array: Block-only SAN'
-                      : 'E-Series: High-performance block storage'}
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <Label>{t('netapp.raidType')}</Label>
-            <SegmentedControl
-              value={netAppOptions.raidType}
-              options={[
-                { value: 'raid_dp', label: 'RAID-DP' },
-                { value: 'raid_tec', label: 'RAID-TEC' },
-              ]}
-              onChange={(v) => setNetAppOptions({ raidType: v as 'raid_dp' | 'raid_tec' })}
-            />
-            <p className="text-xs text-slate-500">
-              {netAppOptions.raidType === 'raid_tec'
-                ? 'Triple parity: Recommended for drives > 10TB'
-                : 'Double parity: Standard protection'}
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="netapp-adp">{t('netapp.adp')}</Label>
-            <Select
-              id="netapp-adp"
-              value={netAppOptions.adpVersion}
-              options={NETAPP_ADP_OPTIONS}
-              onChange={(v) => setNetAppOptions({ adpVersion: v as 'none' | 'adpv1' | 'adpv2' })}
-            />
-            <p className="text-xs text-slate-500">
-              {netAppOptions.adpVersion === 'adpv2'
-                ? 'ADP v2: Root-data partitioning, better capacity utilization'
-                : netAppOptions.adpVersion === 'adpv1'
-                  ? 'ADP v1: Basic root partitioning'
-                  : 'No partitioning: Traditional dedicated root drives'}
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="netapp-snapshot-reserve">{t('common.snapshotReserve')}</Label>
-            <Slider
-              id="netapp-snapshot-reserve"
-              value={netAppOptions.snapshotReserve}
-              min={0}
-              max={20}
-              onChange={(v) => setNetAppOptions({ snapshotReserve: v })}
-            />
-            <p className="text-xs text-slate-500">
-              Snapshot reserve: {netAppOptions.snapshotReserve}%
-              {netAppOptions.platform.startsWith('aff') && netAppOptions.snapshotReserve === 0
-                ? ' (typical for AFF)'
-                : ''}
-            </p>
-          </div>
-
-          <Toggle
-            id="netapp-compression"
-            label={t('netapp.inlineCompression')}
-            checked={netAppOptions.compression}
-            onChange={(v) => setNetAppOptions({ compression: v })}
-          />
-
-          <Toggle
-            id="netapp-dedup"
-            label={t('netapp.inlineDedup')}
-            checked={netAppOptions.dedup}
-            onChange={(v) => setNetAppOptions({ dedup: v })}
-          />
-
-          <Toggle
-            id="netapp-zero-detection"
-            label={t('netapp.zeroDetection')}
-            checked={netAppOptions.zeroDetection}
-            onChange={(v) => setNetAppOptions({ zeroDetection: v })}
-          />
-
-          {(netAppOptions.compression || netAppOptions.dedup) && (
-            <div className="space-y-2">
-              <Label htmlFor="netapp-drr">{t('netapp.dataReductionRatio')}</Label>
-              <Slider
-                id="netapp-drr"
-                value={netAppOptions.dataReductionRatio}
-                min={1}
-                max={5}
-                step={0.5}
-                onChange={(v) => setNetAppOptions({ dataReductionRatio: v })}
-              />
-              <p className="text-xs text-slate-500">
-                Expected DRR: {netAppOptions.dataReductionRatio}:1 (compression + dedup)
-              </p>
-            </div>
-          )}
-
-          <div className="space-y-2">
-            <Label htmlFor="netapp-wafl">{t('netapp.waflOverhead')}</Label>
-            <Slider
-              id="netapp-wafl"
-              value={netAppOptions.waflOverhead * 100}
-              min={1}
-              max={3}
-              step={0.1}
-              onChange={(v) => setNetAppOptions({ waflOverhead: v / 100 })}
-            />
-            <p className="text-xs text-slate-500">
-              WAFL filesystem overhead: {(netAppOptions.waflOverhead * 100).toFixed(1)}%
-            </p>
-          </div>
-        </div>
+        <NetAppOptionsPanel />
       )}
 
       {/* Synology Options (proprietary type with synology_ prefix) */}
       {topology.type === 'proprietary' && topology.level.startsWith('synology_') && (
-        <div className="space-y-4 pt-3 border-t border-surface-700">
-          <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-            {t('synology.title')}
-          </h4>
-
-          <div className="space-y-2">
-            <Label>{t('synology.filesystem')}</Label>
-            <SegmentedControl
-              value={synologyOptions.filesystem}
-              options={[
-                { value: 'btrfs', label: 'Btrfs' },
-                { value: 'ext4', label: 'EXT4' },
-              ]}
-              onChange={(v) => setSynologyOptions({ filesystem: v as 'btrfs' | 'ext4' })}
-            />
-            <p className="text-xs text-slate-500">
-              {synologyOptions.filesystem === 'btrfs'
-                ? 'Btrfs: Snapshots, data protection, ~4% overhead'
-                : 'EXT4: Legacy, no snapshots, lower overhead'}
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="synology-model">{t('synology.modelSeries')}</Label>
-            <Select
-              id="synology-model"
-              value={synologyOptions.modelSeries}
-              options={SYNOLOGY_MODEL_OPTIONS}
-              onChange={(v) =>
-                setSynologyOptions({ modelSeries: v as 'j' | 'value' | 'plus' | 'xs' })
-              }
-            />
-            <p className="text-xs text-slate-500">
-              {synologyOptions.modelSeries === 'j'
-                ? 'J Series: Entry-level, limited CPU for RAID parity'
-                : synologyOptions.modelSeries === 'value'
-                  ? 'Value Series: Home/small office use'
-                  : synologyOptions.modelSeries === 'plus'
-                    ? 'Plus Series: SMB with Btrfs support'
-                    : 'XS Series: Enterprise with high performance'}
-            </p>
-          </div>
-
-          <Toggle
-            id="synology-ssd-cache"
-            label={t('synology.ssdCache')}
-            checked={synologyOptions.ssdCache}
-            onChange={(v) => setSynologyOptions({ ssdCache: v })}
-          />
-
-          {synologyOptions.ssdCache && (
-            <div className="space-y-2">
-              <Label>{t('synology.cacheMode')}</Label>
-              <SegmentedControl
-                value={synologyOptions.cacheMode}
-                options={[
-                  { value: 'read_only', label: 'Read Only' },
-                  { value: 'read_write', label: 'Read/Write' },
-                ]}
-                onChange={(v) => setSynologyOptions({ cacheMode: v as 'read_only' | 'read_write' })}
-              />
-              <p className="text-xs text-slate-500">
-                {synologyOptions.cacheMode === 'read_write'
-                  ? 'Read/Write cache: Better performance, requires 2 SSDs for protection'
-                  : 'Read-only cache: Accelerates reads only'}
-              </p>
-            </div>
-          )}
-
-          <div className="space-y-2">
-            <Label htmlFor="synology-system-partition">{t('synology.systemPartition')}</Label>
-            <Slider
-              id="synology-system-partition"
-              value={synologyOptions.systemPartitionSize / (1024 * 1024 * 1024)}
-              min={20}
-              max={35}
-              onChange={(v) => setSynologyOptions({ systemPartitionSize: v * 1024 * 1024 * 1024 })}
-            />
-            <p className="text-xs text-slate-500">
-              System partition per disk:{' '}
-              {Math.round(synologyOptions.systemPartitionSize / (1024 * 1024 * 1024))} GB
-            </p>
-          </div>
-        </div>
+        <SynologyOptionsPanel />
       )}
     </div>
   )
