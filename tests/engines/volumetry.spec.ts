@@ -2467,4 +2467,303 @@ describe('Volumetry Engine - Error Handling', () => {
       })
     })
   })
+
+  describe('S2D Storage Tiering (Cache + Capacity)', () => {
+    it('should calculate S2D tiered capacity with NVMe cache and HDD capacity tiers', () => {
+      const input: VolumetryInput = {
+        topology: { type: 's2d', level: 'mirror' },
+        driveCount: 0, // Not used when tiering enabled
+        drive: testDrive, // Fallback drive
+        hotSpares: 0,
+        serverCount: 4,
+        compressionRatio: 1.0,
+        dedupRatio: 1.0,
+        zfsOptions: DEFAULT_ZFS_OPTIONS,
+        vsanOptions: DEFAULT_VSAN_OPTIONS,
+        objectscaleOptions: DEFAULT_OBJECTSCALE_OPTIONS,
+        powerstoreOptions: DEFAULT_POWERSTORE_OPTIONS,
+        powerscaleOptions: DEFAULT_POWERSCALE_OPTIONS,
+        cephOptions: DEFAULT_CEPH_OPTIONS,
+        powerFlexOptions: DEFAULT_POWERFLEX_OPTIONS,
+        netAppOptions: DEFAULT_NETAPP_OPTIONS,
+        synologyOptions: DEFAULT_SYNOLOGY_OPTIONS,
+        nutanixOptions: DEFAULT_NUTANIX_OPTIONS,
+        powervaultOptions: DEFAULT_POWERVAULT_OPTIONS,
+        s2dOptions: {
+          faultDomains: 4,
+          mirrorCopies: 2,
+          rebuildReserve: true,
+          reserveStrategy: 'node_failure',
+          storageTiers: true,
+          tieringConfig: {
+            enabled: true,
+            fastTier: {
+              driveId: 'samsung-pm9a3-m2-1.92tb', // Real NVMe drive from drives.json (1.92TB)
+              driveCount: 2, // 2 NVMe per server
+            },
+            capacityTier: {
+              driveId: 'seagate-exos-x20', // Real 20TB HDD from drives.json
+              driveCount: 12, // 12 HDD per server
+            },
+          },
+        },
+      }
+
+      const result = calculateVolumetry(input)
+
+      // Fast tier: 4 servers × 2 NVMe × 1.92TB = 15.36TB (cache overhead)
+      // Capacity tier: 4 servers × 12 HDD × 20TB = 960TB raw
+      // Mirror (2-way): 960TB × 50% = 480TB usable (before overhead)
+      expect(result.rawCapacity).toBeGreaterThan(0)
+
+      // Verify calculation produces finite results
+      expect(Number.isFinite(result.rawCapacity)).toBe(true)
+      expect(Number.isFinite(result.usableCapacity)).toBe(true)
+    })
+
+    it('should handle S2D tiering with missing drive IDs gracefully', () => {
+      const input: VolumetryInput = {
+        topology: { type: 's2d', level: 'parity' },
+        driveCount: 48,
+        drive: testDrive,
+        hotSpares: 0,
+        serverCount: 4,
+        compressionRatio: 1.0,
+        dedupRatio: 1.0,
+        zfsOptions: DEFAULT_ZFS_OPTIONS,
+        vsanOptions: DEFAULT_VSAN_OPTIONS,
+        objectscaleOptions: DEFAULT_OBJECTSCALE_OPTIONS,
+        powerstoreOptions: DEFAULT_POWERSTORE_OPTIONS,
+        powerscaleOptions: DEFAULT_POWERSCALE_OPTIONS,
+        cephOptions: DEFAULT_CEPH_OPTIONS,
+        powerFlexOptions: DEFAULT_POWERFLEX_OPTIONS,
+        netAppOptions: DEFAULT_NETAPP_OPTIONS,
+        synologyOptions: DEFAULT_SYNOLOGY_OPTIONS,
+        nutanixOptions: DEFAULT_NUTANIX_OPTIONS,
+        powervaultOptions: DEFAULT_POWERVAULT_OPTIONS,
+        s2dOptions: {
+          faultDomains: 4,
+          mirrorCopies: 2,
+          rebuildReserve: false,
+          reserveStrategy: 'drive_failure',
+          storageTiers: true,
+          tieringConfig: {
+            enabled: true,
+            fastTier: {
+              driveId: 'invalid-drive-id', // Invalid drive
+              driveCount: 2,
+            },
+            capacityTier: {
+              driveId: 'invalid-capacity-drive', // Also invalid
+              driveCount: 12,
+            },
+          },
+        },
+      }
+
+      const result = calculateVolumetry(input)
+
+      // With invalid drive IDs, should fall back to non-tiered calculation
+      // Uses driveCount and drive from input
+      expect(result.rawCapacity).toBeCloseTo(48 * 1_000_000_000_000, -12)
+      expect(Number.isFinite(result.usableCapacity)).toBe(true)
+    })
+
+    it('should calculate S2D dual parity tiering with different server counts', () => {
+      const input: VolumetryInput = {
+        topology: { type: 's2d', level: 'dual_parity' },
+        driveCount: 0,
+        drive: testDrive,
+        hotSpares: 0,
+        serverCount: 6,
+        compressionRatio: 1.0,
+        dedupRatio: 1.0,
+        zfsOptions: DEFAULT_ZFS_OPTIONS,
+        vsanOptions: DEFAULT_VSAN_OPTIONS,
+        objectscaleOptions: DEFAULT_OBJECTSCALE_OPTIONS,
+        powerstoreOptions: DEFAULT_POWERSTORE_OPTIONS,
+        powerscaleOptions: DEFAULT_POWERSCALE_OPTIONS,
+        cephOptions: DEFAULT_CEPH_OPTIONS,
+        powerFlexOptions: DEFAULT_POWERFLEX_OPTIONS,
+        netAppOptions: DEFAULT_NETAPP_OPTIONS,
+        synologyOptions: DEFAULT_SYNOLOGY_OPTIONS,
+        nutanixOptions: DEFAULT_NUTANIX_OPTIONS,
+        powervaultOptions: DEFAULT_POWERVAULT_OPTIONS,
+        s2dOptions: {
+          faultDomains: 6,
+          mirrorCopies: 2,
+          rebuildReserve: true,
+          reserveStrategy: 'node_failure',
+          storageTiers: true,
+          tieringConfig: {
+            enabled: true,
+            fastTier: {
+              driveId: 'samsung-pm893-3.84tb', // Real SATA SSD from drives.json (3.84TB)
+              driveCount: 4, // 4 SSD per server
+            },
+            capacityTier: {
+              driveId: 'wd-gold-24tb', // Real 24TB HDD from drives.json
+              driveCount: 10, // 10 HDD per server
+            },
+          },
+        },
+      }
+
+      const result = calculateVolumetry(input)
+
+      // Fast tier: 6 servers × 4 SSD × 3.84TB = 92.16TB (cache)
+      // Capacity tier: 6 servers × 10 HDD × 24TB = 1440TB raw
+      // Dual parity uses more overhead than mirror
+      expect(result.rawCapacity).toBeGreaterThan(0)
+      expect(Number.isFinite(result.rawCapacity)).toBe(true)
+      expect(Number.isFinite(result.usableCapacity)).toBe(true)
+    })
+  })
+
+  describe('Nutanix Hybrid Tiering (SSD Cache + HDD Capacity)', () => {
+    it('should calculate Nutanix hybrid tiered capacity with SSD cache and HDD capacity', () => {
+      const input: VolumetryInput = {
+        topology: { type: 'nutanix', level: 'nutanix_rf2' },
+        driveCount: 0, // Not used when tiering enabled
+        drive: testDrive, // Fallback drive
+        hotSpares: 0,
+        serverCount: 4,
+        compressionRatio: 1.0,
+        dedupRatio: 1.0,
+        zfsOptions: DEFAULT_ZFS_OPTIONS,
+        s2dOptions: DEFAULT_S2D_OPTIONS,
+        vsanOptions: DEFAULT_VSAN_OPTIONS,
+        objectscaleOptions: DEFAULT_OBJECTSCALE_OPTIONS,
+        powerstoreOptions: DEFAULT_POWERSTORE_OPTIONS,
+        powerscaleOptions: DEFAULT_POWERSCALE_OPTIONS,
+        cephOptions: DEFAULT_CEPH_OPTIONS,
+        powerFlexOptions: DEFAULT_POWERFLEX_OPTIONS,
+        netAppOptions: DEFAULT_NETAPP_OPTIONS,
+        synologyOptions: DEFAULT_SYNOLOGY_OPTIONS,
+        powervaultOptions: DEFAULT_POWERVAULT_OPTIONS,
+        nutanixOptions: {
+          replicationFactor: 2,
+          clusterType: 'hybrid',
+          compression: false,
+          compressionRatio: 1.0,
+          dedup: false,
+          dedupRatio: 1.0,
+          systemOverhead: 0.1,
+          tiering: {
+            enabled: true,
+            fastTier: {
+              driveId: 'samsung-pm893-1.92tb', // Real SATA SSD from drives.json (1.92TB)
+              driveCount: 2, // 2 SSD per node
+            },
+            capacityTier: {
+              driveId: 'seagate-exos-x18', // Real 18TB HDD from drives.json
+              driveCount: 10, // 10 HDD per node
+            },
+          },
+        },
+      }
+
+      const result = calculateVolumetry(input)
+
+      // Fast tier: 4 nodes × 2 SSD × 1.92TB = 15.36TB (cache overhead)
+      // Capacity tier: 4 nodes × 10 HDD × 18TB = 720TB raw
+      // RF2 (2 copies): 720TB × 50% = 360TB before system overhead
+      // System overhead 10%: 360TB × 90% = 324TB usable
+      expect(result.rawCapacity).toBeGreaterThan(0)
+      expect(Number.isFinite(result.rawCapacity)).toBe(true)
+      expect(Number.isFinite(result.usableCapacity)).toBe(true)
+    })
+
+    it('should use all-flash calculation when Nutanix clusterType is not hybrid', () => {
+      const input: VolumetryInput = {
+        topology: { type: 'nutanix', level: 'nutanix_rf3' },
+        driveCount: 60,
+        drive: testDrive,
+        hotSpares: 0,
+        serverCount: 5,
+        compressionRatio: 1.0,
+        dedupRatio: 1.0,
+        zfsOptions: DEFAULT_ZFS_OPTIONS,
+        s2dOptions: DEFAULT_S2D_OPTIONS,
+        vsanOptions: DEFAULT_VSAN_OPTIONS,
+        objectscaleOptions: DEFAULT_OBJECTSCALE_OPTIONS,
+        powerstoreOptions: DEFAULT_POWERSTORE_OPTIONS,
+        powerscaleOptions: DEFAULT_POWERSCALE_OPTIONS,
+        cephOptions: DEFAULT_CEPH_OPTIONS,
+        powerFlexOptions: DEFAULT_POWERFLEX_OPTIONS,
+        netAppOptions: DEFAULT_NETAPP_OPTIONS,
+        synologyOptions: DEFAULT_SYNOLOGY_OPTIONS,
+        powervaultOptions: DEFAULT_POWERVAULT_OPTIONS,
+        nutanixOptions: {
+          replicationFactor: 3,
+          clusterType: 'all-flash', // No tiering
+          compression: false,
+          compressionRatio: 1.0,
+          dedup: false,
+          dedupRatio: 1.0,
+          systemOverhead: 0.1,
+          tiering: null, // Tiering disabled for all-flash
+        },
+      }
+
+      const result = calculateVolumetry(input)
+
+      // All-flash: 60 drives × 1TB = 60TB raw
+      // RF3 (3 copies): 60TB × 33.3% = 20TB before system overhead
+      expect(result.rawCapacity).toBeCloseTo(60e12, -12)
+      expect(result.usableCapacity).toBeCloseTo(18e12, -12) // After 10% system overhead
+    })
+
+    it('should calculate Nutanix hybrid with RF3 and different tier sizes', () => {
+      const input: VolumetryInput = {
+        topology: { type: 'nutanix', level: 'nutanix_rf3' },
+        driveCount: 0,
+        drive: testDrive,
+        hotSpares: 0,
+        serverCount: 6,
+        compressionRatio: 1.0,
+        dedupRatio: 1.0,
+        zfsOptions: DEFAULT_ZFS_OPTIONS,
+        s2dOptions: DEFAULT_S2D_OPTIONS,
+        vsanOptions: DEFAULT_VSAN_OPTIONS,
+        objectscaleOptions: DEFAULT_OBJECTSCALE_OPTIONS,
+        powerstoreOptions: DEFAULT_POWERSTORE_OPTIONS,
+        powerscaleOptions: DEFAULT_POWERSCALE_OPTIONS,
+        cephOptions: DEFAULT_CEPH_OPTIONS,
+        powerFlexOptions: DEFAULT_POWERFLEX_OPTIONS,
+        netAppOptions: DEFAULT_NETAPP_OPTIONS,
+        synologyOptions: DEFAULT_SYNOLOGY_OPTIONS,
+        powervaultOptions: DEFAULT_POWERVAULT_OPTIONS,
+        nutanixOptions: {
+          replicationFactor: 3,
+          clusterType: 'hybrid',
+          compression: false,
+          compressionRatio: 1.0,
+          dedup: false,
+          dedupRatio: 1.0,
+          systemOverhead: 0.1,
+          tiering: {
+            enabled: true,
+            fastTier: {
+              driveId: 'samsung-pm893-3.84tb', // Real SATA SSD from drives.json (3.84TB)
+              driveCount: 3, // 3 SSD per node
+            },
+            capacityTier: {
+              driveId: 'seagate-exos-x22', // Real 22TB HDD from drives.json
+              driveCount: 8, // 8 HDD per node
+            },
+          },
+        },
+      }
+
+      const result = calculateVolumetry(input)
+
+      // Fast tier: 6 nodes × 3 SSD × 3.84TB = 69.12TB (cache)
+      // Capacity tier: 6 nodes × 8 HDD × 22TB = 1056TB raw
+      // RF3 (3 copies): 1056TB × 33.3% = 352TB before system overhead
+      expect(result.rawCapacity).toBeGreaterThan(0)
+      expect(Number.isFinite(result.rawCapacity)).toBe(true)
+      expect(Number.isFinite(result.usableCapacity)).toBe(true)
+    })
+  })
 })

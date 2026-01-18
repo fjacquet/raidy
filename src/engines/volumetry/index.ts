@@ -651,29 +651,6 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
     dedupRatio,
   } = input
 
-  // Handle edge case: zero drives (graceful degradation)
-  if (driveCount === 0) {
-    return {
-      rawCapacity: 0,
-      parityOverhead: 0,
-      hotSpareOverhead: 0,
-      filesystemOverhead: 0,
-      slopOverhead: 0,
-      usableCapacity: 0,
-      effectiveCapacity: 0,
-      efficiency: 0,
-      breakdown: [
-        {
-          label: 'No Drives',
-          bytes: 0,
-          percent: 0,
-          color: 'var(--color-overhead)',
-        },
-      ],
-      zfsDetails: undefined,
-    }
-  }
-
   // Handle edge case: null/undefined topology (graceful degradation)
   if (!topology) {
     return {
@@ -697,34 +674,16 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
     }
   }
 
-  // Handle edge case: null/undefined drive (graceful degradation)
-  if (!drive || drive.capacity_raw === undefined || drive.capacity_raw === null) {
-    return {
-      rawCapacity: 0,
-      parityOverhead: 0,
-      hotSpareOverhead: 0,
-      filesystemOverhead: 0,
-      slopOverhead: 0,
-      usableCapacity: 0,
-      effectiveCapacity: 0,
-      efficiency: 0,
-      breakdown: [
-        {
-          label: 'Invalid Drive',
-          bytes: 0,
-          percent: 0,
-          color: 'var(--color-overhead)',
-        },
-      ],
-      zfsDetails: undefined,
-    }
-  }
-
-  // Check for tiered configuration
+  // Check for tiered configuration (must happen before driveCount/drive validation)
   let tieredCapacity: TieredCapacityResult | null = null
 
   // S2D tiering
-  if (topology.type === 's2d' && s2dOptions && s2dOptions.storageTiers && s2dOptions.tieringConfig) {
+  if (
+    topology.type === 's2d' &&
+    s2dOptions &&
+    s2dOptions.storageTiers &&
+    s2dOptions.tieringConfig
+  ) {
     tieredCapacity = calculateTieredCapacity(s2dOptions.tieringConfig, serverCount)
   }
 
@@ -746,6 +705,54 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
     nutanixOptions.tiering
   ) {
     tieredCapacity = calculateTieredCapacity(nutanixOptions.tiering, serverCount)
+  }
+
+  // Handle edge case: zero drives (graceful degradation)
+  // Allow driveCount=0 if tiering is configured (tiering provides drives)
+  if (driveCount === 0 && !tieredCapacity) {
+    return {
+      rawCapacity: 0,
+      parityOverhead: 0,
+      hotSpareOverhead: 0,
+      filesystemOverhead: 0,
+      slopOverhead: 0,
+      usableCapacity: 0,
+      effectiveCapacity: 0,
+      efficiency: 0,
+      breakdown: [
+        {
+          label: 'No Drives',
+          bytes: 0,
+          percent: 0,
+          color: 'var(--color-overhead)',
+        },
+      ],
+      zfsDetails: undefined,
+    }
+  }
+
+  // Handle edge case: null/undefined drive (graceful degradation)
+  // Allow null drive if tiering is configured (tiering provides drives)
+  if ((!drive || drive.capacity_raw === undefined || drive.capacity_raw === null) && !tieredCapacity) {
+    return {
+      rawCapacity: 0,
+      parityOverhead: 0,
+      hotSpareOverhead: 0,
+      filesystemOverhead: 0,
+      slopOverhead: 0,
+      usableCapacity: 0,
+      effectiveCapacity: 0,
+      efficiency: 0,
+      breakdown: [
+        {
+          label: 'Invalid Drive',
+          bytes: 0,
+          percent: 0,
+          color: 'var(--color-overhead)',
+        },
+      ],
+      zfsDetails: undefined,
+    }
   }
 
   // Calculate raw capacity based on tiering or standard configuration
