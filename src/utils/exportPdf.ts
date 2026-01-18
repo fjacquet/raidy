@@ -5,6 +5,7 @@
 
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
+import DOMPurify from 'dompurify'
 import i18n from '@/i18n'
 import type { Drive } from '@/types/drive'
 import type { CalculationResults } from '@/types/results'
@@ -45,7 +46,24 @@ function t(key: string, options?: Record<string, string | number>): string {
 }
 
 /**
+ * Sanitize user input for PDF rendering.
+ * Strips all HTML tags, keeps text content only.
+ *
+ * @param input - Potentially unsafe user input
+ * @returns Plain text safe for PDF rendering
+ */
+function sanitizeForPdf(input: string): string {
+  return DOMPurify.sanitize(input, {
+    ALLOWED_TAGS: [], // Strip all HTML
+    KEEP_CONTENT: true, // Keep text content
+  })
+}
+
+/**
  * Generate and download a PDF report.
+ *
+ * Security: All user-controlled fields (projectName) are sanitized with DOMPurify
+ * before rendering to prevent XSS injection. jsPDF 4.0.0 includes CVE-2025-68428 fix.
  */
 export function exportToPdf(config: ExportConfig): void {
   const {
@@ -57,6 +75,9 @@ export function exportToPdf(config: ExportConfig): void {
     projectName = 'Storage Configuration',
     unitSystem = 'binary',
   } = config
+
+  // Sanitize user-controlled inputs
+  const safeProjectName = sanitizeForPdf(projectName)
 
   // Create a local formatBytes function using the specified unit system
   const formatBytes = (bytes: number) => formatBytesUtil(bytes, unitSystem)
@@ -70,7 +91,7 @@ export function exportToPdf(config: ExportConfig): void {
   // Title
   doc.setFontSize(20)
   doc.setTextColor(30, 64, 175) // Blue
-  doc.text(projectName, pageWidth / 2, y, { align: 'center' })
+  doc.text(safeProjectName, pageWidth / 2, y, { align: 'center' })
   y += 10
 
   // Subtitle
@@ -308,5 +329,5 @@ export function exportToPdf(config: ExportConfig): void {
   }
 
   // Download
-  doc.save(`${projectName.replace(/\s+/g, '_')}_Report.pdf`)
+  doc.save(`${safeProjectName.replace(/\s+/g, '_')}_Report.pdf`)
 }
