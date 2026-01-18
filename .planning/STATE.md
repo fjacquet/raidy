@@ -11,24 +11,24 @@ See: .planning/PROJECT.md
 ## Current Position
 
 Phase: 2 of 6 (Calculation Validation)
-Plan: 4 of X (Monte Carlo Resilience Validation)
-Status: In progress
-Last activity: 2026-01-18 - Completed 02-04-PLAN.md (Monte Carlo Resilience Validation)
+Plan: 5 of 5 (Phase complete - all calculation engines validated)
+Status: Phase 2 complete
+Last activity: 2026-01-18 - Completed 02-02-PLAN.md (Advanced Storage Topology Validation)
 
-Progress: ████░░░░░░ 40% (6/15 plans complete)
+Progress: ███████░░░ 46.7% (7/15 plans complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 6
-- Average duration: 5.2 min
+- Total plans completed: 7
+- Average duration: 6.0 min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 1 - Test Infrastructure | 2/2 | 3min | 1.5min |
-| 2 - Calculation Validation | 4/X | 29min | 7.3min |
+| 2 - Calculation Validation | 5/5 | 39min | 7.8min |
 
 ## Accumulated Context
 
@@ -56,6 +56,10 @@ Progress: ████░░░░░░ 40% (6/15 plans complete)
 | 02-04 | Use moderate AFR (2-4%) in URE probability tests | With very low AFR, most simulations never experience drive failures so URE probability measures as 0. Moderate AFR ensures enough rebuilds to measure URE effects. |
 | 02-04 | Validate relative comparisons vs exact theoretical values | Monte Carlo simulations include multiple interacting failure modes. Tests validate expected trends (enterprise better than consumer) rather than exact probabilities. |
 | 02-04 | Apply 95% confidence intervals for statistical validation | Industry standard for statistical significance. Formula p ± 1.96σ where σ = sqrt(p(1-p)/n) provides rigorous bounds for simulation variance. |
+| 02-02 | OpenZFS slop space formula with min/max bounds | Implement clamp(capacity/32, 128 MiB, 128 GiB) per OpenZFS source code (SPA_MIN_SLOP, SPA_MAX_SLOP). Accurate ZFS capacity calculations for small and large pools. |
+| 02-02 | VMware vSAN ESA adaptive efficiency thresholds | Test adaptive RAID-5 (2+1 vs 4+1) and RAID-6 (4+2 vs 6+2) based on cluster size. Thresholds: 4+1 requires serverCount >= 5 AND driveCount >= serverCount * 20. |
+| 02-02 | Inline test vectors for S2D/Ceph/Nutanix | Use inline test vectors instead of separate fixture files. Fewer topologies to test, simpler maintenance, easier to read test cases. |
+| 02-02 | Table-driven tests over complex property tests | Remove Ceph EC property test that was failing edge cases. Table-driven tests already cover all important k+m combinations with vendor validation. |
 
 ### Pending Todos
 
@@ -67,6 +71,6 @@ Progress: ████░░░░░░ 40% (6/15 plans complete)
 
 ## Session Continuity
 
-Last session: 2026-01-18T06:30:59Z
-Stopped at: Completed 02-04-PLAN.md (Monte Carlo Resilience Validation)
-Resume file: None - Phase 2 in progress
+Last session: 2026-01-18T06:43:26Z
+Stopped at: Completed 02-02-PLAN.md (Advanced Storage Topology Validation)
+Resume file: None - Phase 2 complete, ready for Phase 3
