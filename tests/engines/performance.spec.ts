@@ -181,6 +181,217 @@ describe('Performance Engine - Write Penalties', () => {
   })
 })
 
+describe('Performance Engine - RAID Write Penalty Validation (TEST-12)', () => {
+  /**
+   * Industry formulas for RAID write penalties (random I/O only)
+   *
+   * Sources:
+   * - MassiveGRID: "Understanding RAID Write Penalties"
+   *   https://www.massivegrid.com/blog/understanding-raid-write-penalties/
+   * - WintelGuy RAID Performance Calculator
+   *   https://www.wintellect.com/raid-calculator/
+   * - NetApp TR-3001: "Storage Performance Fundamentals"
+   * - Dell PowerVault ME4 Series Best Practices Guide
+   *
+   * Random I/O Write Penalties:
+   * - RAID 0: 1× (no penalty)
+   * - RAID 1/10: 2× (mirror both copies)
+   * - RAID 5: 4× (read-modify-write: read old data + parity, write new data + parity)
+   * - RAID 6: 6× (double parity: read old data + P + Q, write new data + P + Q)
+   *
+   * Sequential I/O: Reduced penalties due to full-stripe writes avoiding read-modify-write
+   */
+
+  describe('RAID 5 Write Penalty (4× for random I/O)', () => {
+    it('should apply 4× penalty per MassiveGRID formula', () => {
+      // MassiveGRID: "RAID 5 write penalty = 4"
+      // Reason: Read-Modify-Write cycle requires:
+      //   1. Read old data block
+      //   2. Read old parity block
+      //   3. Write new data block
+      //   4. Write new parity block
+      // Total: 4 I/O operations per logical write
+      const input = createInput(4, { type: 'standard', level: 'RAID5' }, testHdd7200, 100)
+      const result = calculatePerformance(input)
+
+      expect(result.writePenalty).toBe(4)
+    })
+
+    it('should apply 4× penalty with multiple drive counts', () => {
+      // TEST-12: Validate write penalty across different drive counts
+      const driveCounts = [4, 8, 12]
+
+      for (const driveCount of driveCounts) {
+        const input = createInput(driveCount, { type: 'standard', level: 'RAID5' }, testHdd7200, 100)
+        const result = calculatePerformance(input)
+
+        expect(result.writePenalty).toBe(4)
+      }
+    })
+
+    it('should apply 4× penalty with different drive types', () => {
+      // TEST-12: Validate write penalty is consistent across HDD and SSD
+      const drives = [testHdd7200, testSsdSata, testSsdNvme]
+
+      for (const drive of drives) {
+        const input = createInput(8, { type: 'standard', level: 'RAID5' }, drive, 100)
+        const result = calculatePerformance(input)
+
+        expect(result.writePenalty).toBe(4)
+      }
+    })
+
+    it('should reduce write IOPS by ~4× compared to read IOPS', () => {
+      // WintelGuy: Write IOPS = (N-1) × drive_iops / 4
+      // With 8 drives @ 140 IOPS each:
+      // Read IOPS: 8 × 140 = 1120
+      // Write IOPS: (8-1) × 140 / 4 = 245
+      // Note: May be higher if bottlenecked by controller/network
+      const input = createInput(8, { type: 'standard', level: 'RAID5' }, testHdd7200, 100)
+      const result = calculatePerformance(input)
+
+      // Write penalty of 4 should make write IOPS significantly lower than read IOPS
+      // Theoretical: (N-1)/N / penalty = 7/8 / 4 = 0.21875 of read IOPS
+      expect(result.maxWriteIOPS).toBeLessThan(result.maxReadIOPS / 2)
+    })
+
+    it('should have no penalty for 100% sequential writes', () => {
+      // Sequential writes bypass read-modify-write cycle with full-stripe writes
+      // Penalty should be reduced significantly for 0% random (100% sequential)
+      const input = createInput(8, { type: 'standard', level: 'RAID5' }, testHdd7200, 0)
+      const result = calculatePerformance(input)
+
+      // Sequential penalty is (randomPenalty + 1) / 2 = (4 + 1) / 2 = 2.5
+      expect(result.writePenalty).toBe(2.5)
+      expect(result.writePenalty).toBeLessThan(4)
+    })
+  })
+
+  describe('RAID 6 Write Penalty (6× for random I/O)', () => {
+    it('should apply 6× penalty per MassiveGRID formula', () => {
+      // MassiveGRID: "RAID 6 write penalty = 6"
+      // Reason: Double parity requires 6 I/O operations:
+      //   1. Read old data block
+      //   2. Read old P parity block
+      //   3. Read old Q parity block
+      //   4. Write new data block
+      //   5. Write new P parity
+      //   6. Write new Q parity
+      // Total: 6 I/O operations per logical write
+      const input = createInput(6, { type: 'standard', level: 'RAID6' }, testHdd7200, 100)
+      const result = calculatePerformance(input)
+
+      expect(result.writePenalty).toBe(6)
+    })
+
+    it('should apply 6× penalty with multiple drive counts', () => {
+      // TEST-12: Validate write penalty across different drive counts
+      const driveCounts = [6, 12, 18]
+
+      for (const driveCount of driveCounts) {
+        const input = createInput(driveCount, { type: 'standard', level: 'RAID6' }, testHdd7200, 100)
+        const result = calculatePerformance(input)
+
+        expect(result.writePenalty).toBe(6)
+      }
+    })
+
+    it('should apply 6× penalty with different drive types', () => {
+      // TEST-12: Validate write penalty is consistent across HDD and SSD
+      const drives = [testHdd7200, testSsdSata, testSsdNvme]
+
+      for (const drive of drives) {
+        const input = createInput(12, { type: 'standard', level: 'RAID6' }, drive, 100)
+        const result = calculatePerformance(input)
+
+        expect(result.writePenalty).toBe(6)
+      }
+    })
+
+    it('should reduce write IOPS by ~6× compared to read IOPS', () => {
+      // WintelGuy: Write IOPS = (N-2) × drive_iops / 6
+      // With 12 drives @ 140 IOPS each:
+      // Read IOPS: 12 × 140 = 1680
+      // Write IOPS: (12-2) × 140 / 6 = 233.33
+      // Note: May be higher if bottlenecked by controller/network
+      const input = createInput(12, { type: 'standard', level: 'RAID6' }, testHdd7200, 100)
+      const result = calculatePerformance(input)
+
+      // Write penalty of 6 should make write IOPS significantly lower than read IOPS
+      // Theoretical: (N-2)/N / penalty = 10/12 / 6 = 0.139 of read IOPS
+      expect(result.maxWriteIOPS).toBeLessThan(result.maxReadIOPS / 3)
+    })
+
+    it('should have worse write penalty than RAID 5', () => {
+      // RAID 6 should have both:
+      // - Higher penalty (6 vs 4)
+      // - Fewer data drives (N-2 vs N-1)
+      const inputRaid5 = createInput(12, { type: 'standard', level: 'RAID5' }, testHdd7200, 100)
+      const inputRaid6 = createInput(12, { type: 'standard', level: 'RAID6' }, testHdd7200, 100)
+
+      const resultRaid5 = calculatePerformance(inputRaid5)
+      const resultRaid6 = calculatePerformance(inputRaid6)
+
+      expect(resultRaid6.writePenalty).toBeGreaterThan(resultRaid5.writePenalty)
+      expect(resultRaid6.maxWriteIOPS).toBeLessThan(resultRaid5.maxWriteIOPS)
+    })
+
+    it('should have reduced penalty for 100% sequential writes', () => {
+      // Sequential writes bypass read-modify-write cycle with full-stripe writes
+      const input = createInput(12, { type: 'standard', level: 'RAID6' }, testHdd7200, 0)
+      const result = calculatePerformance(input)
+
+      // Sequential penalty is (randomPenalty + 1) / 2 = (6 + 1) / 2 = 3.5
+      expect(result.writePenalty).toBe(3.5)
+      expect(result.writePenalty).toBeLessThan(6)
+    })
+  })
+
+  describe('Sequential vs Random Write Penalty Behavior', () => {
+    it('should apply full penalty only to random I/O', () => {
+      // Random I/O: small blocks, can't fill stripe, requires read-modify-write
+      // Sequential I/O: large blocks, can fill stripe, bypasses read-modify-write
+      const inputFullRandom = createInput(8, { type: 'standard', level: 'RAID5' }, testSsdSata, 100)
+      const inputFullSequential = createInput(
+        8,
+        { type: 'standard', level: 'RAID5' },
+        testSsdSata,
+        0,
+      )
+
+      const resultFullRandom = calculatePerformance(inputFullRandom)
+      const resultFullSequential = calculatePerformance(inputFullSequential)
+
+      expect(resultFullRandom.writePenalty).toBe(4) // Full RAID 5 penalty
+      expect(resultFullSequential.writePenalty).toBeLessThan(4) // Reduced penalty
+    })
+
+    it('should blend penalty for mixed random/sequential workloads', () => {
+      // 50% random, 50% sequential should have penalty between full and reduced
+      const input = createInput(8, { type: 'standard', level: 'RAID5' }, testSsdSata, 50)
+      const result = calculatePerformance(input)
+
+      // Blended penalty: 50% random (4×) + 50% sequential (2.5×) = 3.25×
+      expect(result.writePenalty).toBeGreaterThan(2.5)
+      expect(result.writePenalty).toBeLessThan(4)
+    })
+
+    it('should show sequential write advantage for RAID 6', () => {
+      // RAID 6 random: 6× penalty
+      // RAID 6 sequential: (6+1)/2 = 3.5× penalty
+      const inputRandom = createInput(12, { type: 'standard', level: 'RAID6' }, testSsdSata, 100)
+      const inputSequential = createInput(12, { type: 'standard', level: 'RAID6' }, testSsdSata, 0)
+
+      const resultRandom = calculatePerformance(inputRandom)
+      const resultSequential = calculatePerformance(inputSequential)
+
+      expect(resultRandom.writePenalty).toBe(6)
+      expect(resultSequential.writePenalty).toBe(3.5)
+      expect(resultSequential.maxWriteIOPS).toBeGreaterThan(resultRandom.maxWriteIOPS)
+    })
+  })
+})
+
 describe('Performance Engine - ZFS Write Penalties', () => {
   // Use 100% random to test raw penalty values
 
