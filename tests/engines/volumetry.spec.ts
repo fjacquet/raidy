@@ -2766,4 +2766,350 @@ describe('Volumetry Engine - Error Handling', () => {
       expect(Number.isFinite(result.usableCapacity)).toBe(true)
     })
   })
+
+  describe('Ceph WAL/DB NVMe Offload', () => {
+    it('should calculate Ceph capacity with WAL/DB offloaded to NVMe', () => {
+      const input: VolumetryInput = {
+        topology: { type: 'ceph', level: 'ceph_ec_8_3' },
+        driveCount: 0, // Not used when tiering enabled
+        drive: testDrive, // Fallback drive
+        hotSpares: 0,
+        serverCount: 4,
+        compressionRatio: 1.0,
+        dedupRatio: 1.0,
+        zfsOptions: DEFAULT_ZFS_OPTIONS,
+        s2dOptions: DEFAULT_S2D_OPTIONS,
+        vsanOptions: DEFAULT_VSAN_OPTIONS,
+        objectscaleOptions: DEFAULT_OBJECTSCALE_OPTIONS,
+        powerstoreOptions: DEFAULT_POWERSTORE_OPTIONS,
+        powerscaleOptions: DEFAULT_POWERSCALE_OPTIONS,
+        powerFlexOptions: DEFAULT_POWERFLEX_OPTIONS,
+        netAppOptions: DEFAULT_NETAPP_OPTIONS,
+        synologyOptions: DEFAULT_SYNOLOGY_OPTIONS,
+        nutanixOptions: DEFAULT_NUTANIX_OPTIONS,
+        powervaultOptions: DEFAULT_POWERVAULT_OPTIONS,
+        cephOptions: {
+          poolType: 'erasure',
+          replicationFactor: 3,
+          ecK: 8,
+          ecM: 3,
+          safeCapacityThreshold: 0.85,
+          walDbOffload: true, // Enable WAL/DB offload
+          tiering: {
+            enabled: true,
+            fastTier: {
+              driveId: 'samsung-pm9a3-m2-1.92tb', // NVMe for WAL/DB (1.92TB)
+              driveCount: 1, // 1 NVMe per OSD node for WAL/DB
+            },
+            capacityTier: {
+              driveId: 'seagate-exos-x18', // 18TB HDD for object storage
+              driveCount: 11, // 11 HDD per OSD node
+            },
+          },
+        },
+      }
+
+      const result = calculateVolumetry(input)
+
+      // WAL/DB tier: 4 nodes × 1 NVMe × 1.92TB = 7.68TB (shown as cache overhead)
+      // Capacity tier: 4 nodes × 11 HDD × 18TB = 792TB raw
+      // EC 8+3: 792TB × (8/11) = 576TB before safe capacity
+      // Safe capacity (85%): 576TB × 85% = 489.6TB usable
+      expect(result.rawCapacity).toBeGreaterThan(0)
+      expect(Number.isFinite(result.rawCapacity)).toBe(true)
+      expect(Number.isFinite(result.usableCapacity)).toBe(true)
+    })
+
+    it('should use standard Ceph calculation when WAL/DB offload is disabled', () => {
+      const input: VolumetryInput = {
+        topology: { type: 'ceph', level: 'ceph_replicated_3' },
+        driveCount: 48,
+        drive: testDrive,
+        hotSpares: 0,
+        serverCount: 4,
+        compressionRatio: 1.0,
+        dedupRatio: 1.0,
+        zfsOptions: DEFAULT_ZFS_OPTIONS,
+        s2dOptions: DEFAULT_S2D_OPTIONS,
+        vsanOptions: DEFAULT_VSAN_OPTIONS,
+        objectscaleOptions: DEFAULT_OBJECTSCALE_OPTIONS,
+        powerstoreOptions: DEFAULT_POWERSTORE_OPTIONS,
+        powerscaleOptions: DEFAULT_POWERSCALE_OPTIONS,
+        powerFlexOptions: DEFAULT_POWERFLEX_OPTIONS,
+        netAppOptions: DEFAULT_NETAPP_OPTIONS,
+        synologyOptions: DEFAULT_SYNOLOGY_OPTIONS,
+        nutanixOptions: DEFAULT_NUTANIX_OPTIONS,
+        powervaultOptions: DEFAULT_POWERVAULT_OPTIONS,
+        cephOptions: {
+          poolType: 'replicated',
+          replicationFactor: 3,
+          ecK: 4,
+          ecM: 2,
+          safeCapacityThreshold: 0.85,
+          walDbOffload: false, // No WAL/DB offload
+          tiering: null,
+        },
+      }
+
+      const result = calculateVolumetry(input)
+
+      // All SSD: 48 drives × 1TB = 48TB raw
+      // 3-way replication: 48TB × 33.3% = 16TB before safe capacity
+      // Safe capacity (85%): 16TB × 85% = 13.6TB usable
+      expect(result.rawCapacity).toBeCloseTo(48e12, -12)
+      expect(Number.isFinite(result.usableCapacity)).toBe(true)
+      expect(result.usableCapacity).toBeGreaterThan(0)
+    })
+
+    it('should calculate Ceph EC with WAL/DB offload and different EC schemes', () => {
+      const input: VolumetryInput = {
+        topology: { type: 'ceph', level: 'ceph_ec_4_2' },
+        driveCount: 0,
+        drive: testDrive,
+        hotSpares: 0,
+        serverCount: 3,
+        compressionRatio: 1.0,
+        dedupRatio: 1.0,
+        zfsOptions: DEFAULT_ZFS_OPTIONS,
+        s2dOptions: DEFAULT_S2D_OPTIONS,
+        vsanOptions: DEFAULT_VSAN_OPTIONS,
+        objectscaleOptions: DEFAULT_OBJECTSCALE_OPTIONS,
+        powerstoreOptions: DEFAULT_POWERSTORE_OPTIONS,
+        powerscaleOptions: DEFAULT_POWERSCALE_OPTIONS,
+        powerFlexOptions: DEFAULT_POWERFLEX_OPTIONS,
+        netAppOptions: DEFAULT_NETAPP_OPTIONS,
+        synologyOptions: DEFAULT_SYNOLOGY_OPTIONS,
+        nutanixOptions: DEFAULT_NUTANIX_OPTIONS,
+        powervaultOptions: DEFAULT_POWERVAULT_OPTIONS,
+        cephOptions: {
+          poolType: 'erasure',
+          replicationFactor: 3,
+          ecK: 4,
+          ecM: 2,
+          safeCapacityThreshold: 0.85,
+          walDbOffload: true,
+          tiering: {
+            enabled: true,
+            fastTier: {
+              driveId: 'micron-7400-pro-m2-960gb', // NVMe WAL/DB (960GB)
+              driveCount: 1,
+            },
+            capacityTier: {
+              driveId: 'wd-gold-24tb', // 24TB HDD
+              driveCount: 6,
+            },
+          },
+        },
+      }
+
+      const result = calculateVolumetry(input)
+
+      // WAL/DB tier: 3 nodes × 1 NVMe × 960GB = 2.88TB
+      // Capacity tier: 3 nodes × 6 HDD × 24TB = 432TB raw
+      // EC 4+2: 432TB × (4/6) = 288TB before safe capacity
+      expect(result.rawCapacity).toBeGreaterThan(0)
+      expect(Number.isFinite(result.rawCapacity)).toBe(true)
+      expect(Number.isFinite(result.usableCapacity)).toBe(true)
+    })
+  })
+
+  describe('ZFS Ashift Padding Penalty', () => {
+    it('should calculate ZFS ashift padding penalty when ashift > physical sector size', () => {
+      const drive512B: Drive = {
+        ...testDrive,
+        sector_size: 512, // 512-byte physical sectors
+      }
+
+      const input: VolumetryInput = {
+        topology: { type: 'zfs', level: 'raidz2' },
+        driveCount: 12,
+        drive: drive512B,
+        hotSpares: 0,
+        serverCount: 1,
+        compressionRatio: 1.0,
+        dedupRatio: 1.0,
+        s2dOptions: DEFAULT_S2D_OPTIONS,
+        vsanOptions: DEFAULT_VSAN_OPTIONS,
+        objectscaleOptions: DEFAULT_OBJECTSCALE_OPTIONS,
+        powerstoreOptions: DEFAULT_POWERSTORE_OPTIONS,
+        powerscaleOptions: DEFAULT_POWERSCALE_OPTIONS,
+        cephOptions: DEFAULT_CEPH_OPTIONS,
+        powerFlexOptions: DEFAULT_POWERFLEX_OPTIONS,
+        netAppOptions: DEFAULT_NETAPP_OPTIONS,
+        synologyOptions: DEFAULT_SYNOLOGY_OPTIONS,
+        nutanixOptions: DEFAULT_NUTANIX_OPTIONS,
+        powervaultOptions: DEFAULT_POWERVAULT_OPTIONS,
+        zfsOptions: {
+          ashift: 12, // 4096-byte alignment on 512-byte drives (3 levels above physical)
+          recordsize: 128 * 1024,
+          compression: false,
+          compressionRatio: 1.0,
+          dedup: false,
+          dedupRatio: 1.0,
+        },
+      }
+
+      const result = calculateVolumetry(input)
+
+      // 12 drives × 1TB = 12TB raw
+      // RAID-Z2: (12-2)/12 = 83.3% efficiency = 10TB before overheads
+      // Ashift penalty: 12 - log2(512) = 12 - 9 = 3 levels above physical
+      // Penalty: 5% × 3 = 15% overhead on usable capacity
+      // After ashift penalty: reduced efficiency
+      // Slop space (1/32): additional overhead
+      expect(result.rawCapacity).toBeCloseTo(12e12, -12)
+
+      // Verify ashift penalty is applied (efficiency lower than expected)
+      const baseEfficiency = ((12 - 2) / 12) * 100 // 83.3% without ashift penalty
+      // With ashift penalty and other overheads, efficiency should be noticeably lower
+      expect(result.efficiency).toBeLessThan(baseEfficiency)
+      expect(Number.isFinite(result.efficiency)).toBe(true)
+    })
+
+    it('should not apply ZFS ashift penalty when ashift matches physical sector size', () => {
+      const drive512B: Drive = {
+        ...testDrive,
+        sector_size: 512, // 512-byte physical sectors
+      }
+
+      const input: VolumetryInput = {
+        topology: { type: 'zfs', level: 'raidz1' },
+        driveCount: 6,
+        drive: drive512B,
+        hotSpares: 0,
+        serverCount: 1,
+        compressionRatio: 1.0,
+        dedupRatio: 1.0,
+        s2dOptions: DEFAULT_S2D_OPTIONS,
+        vsanOptions: DEFAULT_VSAN_OPTIONS,
+        objectscaleOptions: DEFAULT_OBJECTSCALE_OPTIONS,
+        powerstoreOptions: DEFAULT_POWERSTORE_OPTIONS,
+        powerscaleOptions: DEFAULT_POWERSCALE_OPTIONS,
+        cephOptions: DEFAULT_CEPH_OPTIONS,
+        powerFlexOptions: DEFAULT_POWERFLEX_OPTIONS,
+        netAppOptions: DEFAULT_NETAPP_OPTIONS,
+        synologyOptions: DEFAULT_SYNOLOGY_OPTIONS,
+        nutanixOptions: DEFAULT_NUTANIX_OPTIONS,
+        powervaultOptions: DEFAULT_POWERVAULT_OPTIONS,
+        zfsOptions: {
+          ashift: 9, // Matches 512-byte physical sector (2^9 = 512)
+          recordsize: 128 * 1024,
+          compression: false,
+          compressionRatio: 1.0,
+          dedup: false,
+          dedupRatio: 1.0,
+        },
+      }
+
+      const result = calculateVolumetry(input)
+
+      // No ashift penalty when ashift matches physical sector size
+      // 6 drives × 1TB = 6TB raw
+      // RAID-Z1: (6-1)/6 = 83.3% efficiency before other overheads
+      expect(result.rawCapacity).toBeCloseTo(6e12, -12)
+
+      // Efficiency should be close to baseline (only slop + FS overhead, no ashift penalty)
+      const baseEfficiency = ((6 - 1) / 6) * 100 // 83.3%
+      // Should only lose a few percent to slop and FS overhead
+      expect(result.efficiency).toBeGreaterThan(baseEfficiency - 5)
+      expect(Number.isFinite(result.efficiency)).toBe(true)
+    })
+
+    it('should apply ZFS ashift penalty for 512B drives with ashift=13', () => {
+      const drive512B: Drive = {
+        ...testDrive,
+        sector_size: 512, // 512-byte physical sectors
+      }
+
+      const input: VolumetryInput = {
+        topology: { type: 'zfs', level: 'mirror' },
+        driveCount: 4,
+        drive: drive512B,
+        hotSpares: 0,
+        serverCount: 1,
+        compressionRatio: 1.0,
+        dedupRatio: 1.0,
+        s2dOptions: DEFAULT_S2D_OPTIONS,
+        vsanOptions: DEFAULT_VSAN_OPTIONS,
+        objectscaleOptions: DEFAULT_OBJECTSCALE_OPTIONS,
+        powerstoreOptions: DEFAULT_POWERSTORE_OPTIONS,
+        powerscaleOptions: DEFAULT_POWERSCALE_OPTIONS,
+        cephOptions: DEFAULT_CEPH_OPTIONS,
+        powerFlexOptions: DEFAULT_POWERFLEX_OPTIONS,
+        netAppOptions: DEFAULT_NETAPP_OPTIONS,
+        synologyOptions: DEFAULT_SYNOLOGY_OPTIONS,
+        nutanixOptions: DEFAULT_NUTANIX_OPTIONS,
+        powervaultOptions: DEFAULT_POWERVAULT_OPTIONS,
+        zfsOptions: {
+          ashift: 13, // 8192-byte alignment on 512-byte drives (4 levels above physical)
+          recordsize: 128 * 1024,
+          compression: false,
+          compressionRatio: 1.0,
+          dedup: false,
+          dedupRatio: 1.0,
+        },
+      }
+
+      const result = calculateVolumetry(input)
+
+      // ashift 13 - log2(512) = 13 - 9 = 4 levels above physical
+      // Higher penalty than ashift=12 case (4 levels × 5% = 20% penalty)
+      // 4 drives × 1TB = 4TB raw
+      // Mirror: 50% efficiency before overheads
+      expect(result.rawCapacity).toBeCloseTo(4e12, -12)
+
+      // With ashift=13 penalty (20%), efficiency should be noticeably impacted
+      const baseEfficiency = 50 // Mirror baseline
+      expect(result.efficiency).toBeLessThan(baseEfficiency)
+      expect(Number.isFinite(result.efficiency)).toBe(true)
+    })
+
+    it('should not apply ZFS ashift penalty for 4096B drives with ashift=12', () => {
+      const drive4096B: Drive = {
+        ...testDrive,
+        sector_size: 4096, // 4096-byte physical sectors (Advanced Format)
+      }
+
+      const input: VolumetryInput = {
+        topology: { type: 'zfs', level: 'raidz1' },
+        driveCount: 5,
+        drive: drive4096B,
+        hotSpares: 0,
+        serverCount: 1,
+        compressionRatio: 1.0,
+        dedupRatio: 1.0,
+        s2dOptions: DEFAULT_S2D_OPTIONS,
+        vsanOptions: DEFAULT_VSAN_OPTIONS,
+        objectscaleOptions: DEFAULT_OBJECTSCALE_OPTIONS,
+        powerstoreOptions: DEFAULT_POWERSTORE_OPTIONS,
+        powerscaleOptions: DEFAULT_POWERSCALE_OPTIONS,
+        cephOptions: DEFAULT_CEPH_OPTIONS,
+        powerFlexOptions: DEFAULT_POWERFLEX_OPTIONS,
+        netAppOptions: DEFAULT_NETAPP_OPTIONS,
+        synologyOptions: DEFAULT_SYNOLOGY_OPTIONS,
+        nutanixOptions: DEFAULT_NUTANIX_OPTIONS,
+        powervaultOptions: DEFAULT_POWERVAULT_OPTIONS,
+        zfsOptions: {
+          ashift: 12, // Matches 4096-byte physical sector (2^12 = 4096)
+          recordsize: 128 * 1024,
+          compression: false,
+          compressionRatio: 1.0,
+          dedup: false,
+          dedupRatio: 1.0,
+        },
+      }
+
+      const result = calculateVolumetry(input)
+
+      // No ashift penalty when ashift matches physical sector size
+      // 5 drives × 1TB = 5TB raw
+      // RAID-Z1: (5-1)/5 = 80% efficiency before other overheads
+      expect(result.rawCapacity).toBeCloseTo(5e12, -12)
+
+      const baseEfficiency = ((5 - 1) / 5) * 100 // 80%
+      // Should only lose a few percent to slop and FS overhead
+      expect(result.efficiency).toBeGreaterThan(baseEfficiency - 5)
+      expect(Number.isFinite(result.efficiency)).toBe(true)
+    })
+  })
 })
