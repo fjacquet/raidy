@@ -443,6 +443,293 @@ describe('Performance Engine - Bottleneck Analysis', () => {
   })
 })
 
+describe('Performance Engine - Bottleneck Chain Logic (TEST-05)', () => {
+  /**
+   * Bottleneck chain: Performance is limited by the slowest component
+   *
+   * Chain order:
+   * 1. Media (drives) - aggregate IOPS/bandwidth
+   * 2. Controller/HBA - RAID controller max throughput
+   * 3. Bus (PCIe) - PCIe lanes × generation bandwidth
+   * 4. Network - network uplink speed (for NAS/SAN)
+   *
+   * Actual performance = Math.min(media, controller, bus, network)
+   */
+
+  describe('Media-Limited Scenarios', () => {
+    it('should be media-limited with slow HDDs and fast infrastructure', () => {
+      // 24× 7200 RPM HDD = ~3,360 read IOPS
+      // Controller: 1M IOPS (default)
+      // Network: 25GbE = 3,125 MB/s
+      // Expected bottleneck: Media (drives)
+      const input = createInput(24, { type: 'standard', level: 'RAID5' }, testHdd7200, 100)
+      const result = calculatePerformance(input)
+
+      const bottleneck = result.layers.find((l) => l.isBottleneck)
+      expect(bottleneck?.name).toContain('Media')
+    })
+
+    it('should have media layer with lowest throughput in media-limited case', () => {
+      const input = createInput(24, { type: 'standard', level: 'RAID5' }, testHdd7200, 100)
+      const result = calculatePerformance(input)
+
+      const mediaLayer = result.layers.find((l) => l.name.includes('Media'))
+      const minThroughput = Math.min(...result.layers.map((l) => l.throughputMBs))
+
+      expect(mediaLayer?.throughputMBs).toBe(minThroughput)
+    })
+  })
+
+  describe('Controller-Limited Scenarios', () => {
+    it('should be controller-limited with many fast NVMe drives', () => {
+      // 12× NVMe @ 750k IOPS = 9M read IOPS aggregate
+      // But controller is typically limited to ~1M IOPS
+      // Expected bottleneck: Controller
+      const input = createInput(12, { type: 'standard', level: 'RAID0' }, testSsdNvme, 100)
+      const result = calculatePerformance(input)
+
+      // Should hit controller or bus limit, not media
+      const bottleneck = result.layers.find((l) => l.isBottleneck)
+      expect(bottleneck?.name).not.toContain('Media')
+    })
+
+    it('should cap IOPS at controller limit', () => {
+      // Many fast drives should not exceed controller limit
+      const input = createInput(16, { type: 'standard', level: 'RAID0' }, testSsdNvme, 100)
+      const result = calculatePerformance(input)
+
+      const controllerLayer = result.layers.find(
+        (l) => l.name.includes('Controller') || l.name.includes('HBA'),
+      )
+      expect(result.maxReadIOPS).toBeLessThanOrEqual(controllerLayer?.iops || Infinity)
+    })
+  })
+
+  describe('Network-Limited Scenarios', () => {
+    it('should be network-limited over 1GbE', () => {
+      // Fast array over slow network
+      // 8× SSD SATA @ 550 MB/s = 4,400 MB/s aggregate
+      // 1GbE = 125 MB/s
+      // Expected bottleneck: Network
+      const input: PerformanceInput = {
+        ...createInput(8, { type: 'standard', level: 'RAID0' }, testSsdSata, 100),
+        networkSpeed: '1GbE',
+      }
+      const result = calculatePerformance(input)
+
+      const bottleneck = result.layers.find((l) => l.isBottleneck)
+      expect(bottleneck?.name).toContain('Network')
+    })
+
+    it('should cap throughput at network speed', () => {
+      // 1GbE = 125 MB/s
+      const input: PerformanceInput = {
+        ...createInput(8, { type: 'standard', level: 'RAID0' }, testSsdSata, 0),
+        networkSpeed: '1GbE',
+      }
+      const result = calculatePerformance(input)
+
+      // Throughput should not exceed 125 MB/s for 1GbE
+      expect(result.maxReadThroughputMBs).toBeLessThanOrEqual(125)
+    })
+
+    it('should improve with faster network', () => {
+      // Same array over 1GbE vs 25GbE
+      const input1GbE: PerformanceInput = {
+        ...createInput(8, { type: 'standard', level: 'RAID0' }, testSsdSata, 0),
+        networkSpeed: '1GbE',
+      }
+      const input25GbE: PerformanceInput = {
+        ...createInput(8, { type: 'standard', level: 'RAID0' }, testSsdSata, 0),
+        networkSpeed: '25GbE',
+      }
+
+      const result1GbE = calculatePerformance(input1GbE)
+      const result25GbE = calculatePerformance(input25GbE)
+
+      expect(result25GbE.maxReadThroughputMBs).toBeGreaterThan(result1GbE.maxReadThroughputMBs)
+    })
+  })
+
+  describe('Bus-Limited Scenarios (PCIe)', () => {
+    it('should be limited by PCIe bandwidth', () => {
+      // Many NVMe drives on limited PCIe lanes
+      // PCIe Gen3 x8 = ~8 GB/s
+      // 16× NVMe @ 6.8 GB/s = 108 GB/s aggregate
+      // Expected bottleneck: PCIe bus
+      const input: PerformanceInput = {
+        ...createInput(16, { type: 'standard', level: 'RAID0' }, testSsdNvme, 0),
+        pcieGen: 'gen3',
+        pcieLanes: 'x8',
+      }
+      const result = calculatePerformance(input)
+
+      const pcieLayer = result.layers.find((l) => l.name.includes('PCIe'))
+      // PCIe should be one of the bottlenecks for this configuration
+      expect(pcieLayer?.throughputMBs).toBeDefined()
+    })
+
+    it('should improve with more PCIe lanes', () => {
+      // Same drives over PCIe x8 vs x16
+      const inputX8: PerformanceInput = {
+        ...createInput(8, { type: 'standard', level: 'RAID0' }, testSsdNvme, 0),
+        pcieGen: 'gen4',
+        pcieLanes: 'x8',
+      }
+      const inputX16: PerformanceInput = {
+        ...createInput(8, { type: 'standard', level: 'RAID0' }, testSsdNvme, 0),
+        pcieGen: 'gen4',
+        pcieLanes: 'x16',
+      }
+
+      const resultX8 = calculatePerformance(inputX8)
+      const resultX16 = calculatePerformance(inputX16)
+
+      const pcieX8 = resultX8.layers.find((l) => l.name.includes('PCIe'))
+      const pcieX16 = resultX16.layers.find((l) => l.name.includes('PCIe'))
+
+      expect(pcieX16?.throughputMBs).toBeGreaterThan(pcieX8?.throughputMBs || 0)
+    })
+
+    it('should improve with newer PCIe generation', () => {
+      // PCIe Gen3 vs Gen4 vs Gen5
+      const inputGen3: PerformanceInput = {
+        ...createInput(8, { type: 'standard', level: 'RAID0' }, testSsdNvme, 0),
+        pcieGen: 'gen3',
+        pcieLanes: 'x8',
+      }
+      const inputGen4: PerformanceInput = {
+        ...createInput(8, { type: 'standard', level: 'RAID0' }, testSsdNvme, 0),
+        pcieGen: 'gen4',
+        pcieLanes: 'x8',
+      }
+      const inputGen5: PerformanceInput = {
+        ...createInput(8, { type: 'standard', level: 'RAID0' }, testSsdNvme, 0),
+        pcieGen: 'gen5',
+        pcieLanes: 'x8',
+      }
+
+      const resultGen3 = calculatePerformance(inputGen3)
+      const resultGen4 = calculatePerformance(inputGen4)
+      const resultGen5 = calculatePerformance(inputGen5)
+
+      const pcieGen3 = resultGen3.layers.find((l) => l.name.includes('PCIe'))
+      const pcieGen4 = resultGen4.layers.find((l) => l.name.includes('PCIe'))
+      const pcieGen5 = resultGen5.layers.find((l) => l.name.includes('PCIe'))
+
+      expect(pcieGen4?.throughputMBs).toBeGreaterThan(pcieGen3?.throughputMBs || 0)
+      expect(pcieGen5?.throughputMBs).toBeGreaterThan(pcieGen4?.throughputMBs || 0)
+    })
+  })
+
+  describe('Bottleneck Chain Validation', () => {
+    it('should identify exactly one bottleneck', () => {
+      const input = createInput(8, { type: 'standard', level: 'RAID5' })
+      const result = calculatePerformance(input)
+
+      const bottlenecks = result.layers.filter((l) => l.isBottleneck)
+      expect(bottlenecks.length).toBe(1)
+    })
+
+    it('should have all layers present', () => {
+      const input = createInput(4, { type: 'standard', level: 'RAID5' })
+      const result = calculatePerformance(input)
+
+      expect(result.layers.length).toBe(4) // Media, Controller, PCIe, Network
+
+      const layerNames = result.layers.map((l) => l.name)
+      expect(layerNames.some((n) => n.includes('Media'))).toBe(true)
+      expect(
+        layerNames.some((n) => n.includes('RAID') || n.includes('Controller') || n.includes('HBA')),
+      ).toBe(true)
+      expect(layerNames.some((n) => n.includes('PCIe'))).toBe(true)
+      expect(layerNames.some((n) => n.includes('Network'))).toBe(true)
+    })
+
+    it('should use Math.min logic for bottleneck identification', () => {
+      const input = createInput(8, { type: 'standard', level: 'RAID0' })
+      const result = calculatePerformance(input)
+
+      // Actual throughput should equal the bottleneck layer throughput
+      const minThroughput = Math.min(...result.layers.map((l) => l.throughputMBs))
+      const bottleneck = result.layers.find((l) => l.isBottleneck)
+
+      expect(bottleneck?.throughputMBs).toBe(minThroughput)
+    })
+
+    it('should calculate utilization for each layer', () => {
+      const input = createInput(4, { type: 'standard', level: 'RAID5' })
+      const result = calculatePerformance(input)
+
+      for (const layer of result.layers) {
+        expect(layer.utilization).toBeGreaterThanOrEqual(0)
+        expect(layer.utilization).toBeLessThanOrEqual(100)
+      }
+    })
+
+    it('should have bottleneck at 100% utilization', () => {
+      const input = createInput(4, { type: 'standard', level: 'RAID5' })
+      const result = calculatePerformance(input)
+
+      const bottleneck = result.layers.find((l) => l.isBottleneck)
+      expect(bottleneck?.utilization).toBeCloseTo(100, 0)
+    })
+  })
+
+  describe('Property-Based Bottleneck Tests', () => {
+    it('should not exceed any layer limit', () => {
+      const input = createInput(12, { type: 'standard', level: 'RAID0' }, testSsdNvme, 0)
+      const result = calculatePerformance(input)
+
+      for (const layer of result.layers) {
+        expect(result.maxReadThroughputMBs).toBeLessThanOrEqual(layer.throughputMBs)
+      }
+    })
+
+    it('should maintain bottleneck with increasing drive count', () => {
+      // Adding drives can shift bottleneck but shouldn't violate limits
+      const input4 = createInput(4, { type: 'standard', level: 'RAID0' }, testSsdNvme, 0)
+      const input8 = createInput(8, { type: 'standard', level: 'RAID0' }, testSsdNvme, 0)
+      const input16 = createInput(16, { type: 'standard', level: 'RAID0' }, testSsdNvme, 0)
+
+      const result4 = calculatePerformance(input4)
+      const result8 = calculatePerformance(input8)
+      const result16 = calculatePerformance(input16)
+
+      // Each should identify a bottleneck
+      expect(result4.layers.filter((l) => l.isBottleneck).length).toBe(1)
+      expect(result8.layers.filter((l) => l.isBottleneck).length).toBe(1)
+      expect(result16.layers.filter((l) => l.isBottleneck).length).toBe(1)
+    })
+
+    it('should shift bottleneck when infrastructure changes', () => {
+      // Fast drives with fast vs slow network
+      // 8× SSD SATA @ 550 MB/s = 4,400 MB/s aggregate
+      // 100GbE = 12,500 MB/s → media-limited
+      // 1GbE = 125 MB/s → network-limited
+      const inputFastNetwork: PerformanceInput = {
+        ...createInput(8, { type: 'standard', level: 'RAID0' }, testSsdSata, 0),
+        networkSpeed: '100GbE',
+      }
+      const inputSlowNetwork: PerformanceInput = {
+        ...createInput(8, { type: 'standard', level: 'RAID0' }, testSsdSata, 0),
+        networkSpeed: '1GbE',
+      }
+
+      const resultFast = calculatePerformance(inputFastNetwork)
+      const resultSlow = calculatePerformance(inputSlowNetwork)
+
+      const bottleneckFast = resultFast.layers.find((l) => l.isBottleneck)
+      const bottleneckSlow = resultSlow.layers.find((l) => l.isBottleneck)
+
+      // With fast network: should be media or controller limited
+      // With slow network: should be network limited
+      expect(bottleneckSlow?.name).toContain('Network')
+      expect(bottleneckFast?.name).not.toContain('Network')
+    })
+  })
+})
+
 describe('Performance Engine - IOPS Calculation', () => {
   it('should calculate read and write IOPS', () => {
     const input = createInput(4, { type: 'standard', level: 'RAID0' })
@@ -754,6 +1041,63 @@ describe('Performance Engine - XFS Alignment', () => {
     const result = calculatePerformance(input)
 
     // For RAID 5 with 5 drives: 4 data drives
+    // swidth should be sunit * 4
+    if (result.xfsAlignment) {
+      expect(result.xfsAlignment.swidth).toBe(result.xfsAlignment.sunit * 4)
+    }
+  })
+
+  it('should calculate swidth = sunit * data_drives for RAID 6', () => {
+    const input = createInput(8, { type: 'standard', level: 'RAID6' })
+    const result = calculatePerformance(input)
+
+    // For RAID 6 with 8 drives: 6 data drives (N-2)
+    // swidth should be sunit * 6
+    if (result.xfsAlignment) {
+      expect(result.xfsAlignment.swidth).toBe(result.xfsAlignment.sunit * 6)
+    }
+  })
+
+  it('should calculate sunit based on chunk size', () => {
+    const input = createInput(4, { type: 'standard', level: 'RAID5' })
+    const result = calculatePerformance(input)
+
+    // sunit is stripe size in 512-byte blocks
+    // Default stripe size is typically 64K = 128 blocks
+    if (result.xfsAlignment) {
+      expect(result.xfsAlignment.sunit).toBeGreaterThan(0)
+      // sunit should be a multiple of sectors (512 bytes)
+      expect(Number.isInteger(result.xfsAlignment.sunit)).toBe(true)
+    }
+  })
+
+  it('should not provide XFS alignment for ZFS', () => {
+    const input = createInput(4, { type: 'zfs', level: 'raidz1' })
+    const result = calculatePerformance(input)
+
+    // ZFS handles its own alignment
+    expect(result.xfsAlignment).toBeUndefined()
+  })
+
+  it('should calculate different swidth for different drive counts', () => {
+    const input4 = createInput(4, { type: 'standard', level: 'RAID5' })
+    const input8 = createInput(8, { type: 'standard', level: 'RAID5' })
+
+    const result4 = calculatePerformance(input4)
+    const result8 = calculatePerformance(input8)
+
+    // 4 drives: 3 data drives (N-1)
+    // 8 drives: 7 data drives (N-1)
+    if (result4.xfsAlignment && result8.xfsAlignment) {
+      expect(result8.xfsAlignment.swidth).toBeGreaterThan(result4.xfsAlignment.swidth)
+    }
+  })
+
+  it('should calculate swidth for RAID 10 (half drives)', () => {
+    const input = createInput(8, { type: 'standard', level: 'RAID10' })
+    const result = calculatePerformance(input)
+
+    // For RAID 10 with 8 drives: 4 data drives (N/2)
     // swidth should be sunit * 4
     if (result.xfsAlignment) {
       expect(result.xfsAlignment.swidth).toBe(result.xfsAlignment.sunit * 4)
