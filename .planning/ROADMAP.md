@@ -133,7 +133,13 @@ Plans:
 4. Production bundle size remains under 2MB total with proper code splitting
 5. Invalid URL hashes show user notification instead of silent console.warn failure
 
-**Plans:** (created by /gsd:plan-phase)
+**Plans:** 3 plans
+
+Plans:
+
+- [ ] 05-01-PLAN.md — Split useCalculations into independent memoization hooks
+- [ ] 05-02-PLAN.md — Implement Monte Carlo cooperative yielding and reduce default iterations
+- [ ] 05-03-PLAN.md — Lazy-load PDF export and configure bundle analysis
 
 ---
 
@@ -163,7 +169,7 @@ Plans:
 | 2 - Calculation Validation | ✓ Complete                | 2026-01-18 |
 | 3 - Security Hardening     | ✓ Complete                | 2026-01-18 |
 | 4 - Code Quality           | ✓ Complete                | 2026-01-18 |
-| 5 - Performance & Fixes    | Not started               | —          |
+| 5 - Performance & Fixes    | Ready for execution       | —          |
 | 6 - Production Validation  | Not started               | —          |
 
 ---
