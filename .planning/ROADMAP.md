@@ -43,14 +43,17 @@ Plans:
 4. All major topology types (RAID, ZFS, vSAN ESA/OSA, S2D, Ceph, Nutanix) have verified test coverage
 5. URL state serialization roundtrip preserves configuration accurately with backward compatibility validation
 
-**Plans:** 5 plans
+**Plans:** 8 plans (5 initial + 3 gap closure)
 
 Plans:
-- [ ] 02-01-PLAN.md — Validate standard RAID capacity calculations with WintelGuy references
-- [ ] 02-02-PLAN.md — Validate ZFS and advanced storage topologies with vendor documentation
-- [ ] 02-03-PLAN.md — Validate performance engine IOPS and write penalty calculations
-- [ ] 02-04-PLAN.md — Validate Monte Carlo resilience simulations with statistical accuracy
-- [ ] 02-05-PLAN.md — Validate URL state serialization and form validation rules
+- [x] 02-01-PLAN.md — Validate standard RAID capacity calculations with WintelGuy references
+- [x] 02-02-PLAN.md — Validate ZFS and advanced storage topologies with vendor documentation
+- [x] 02-03-PLAN.md — Validate performance engine IOPS and write penalty calculations
+- [x] 02-04-PLAN.md — Validate Monte Carlo resilience simulations with statistical accuracy
+- [x] 02-05-PLAN.md — Validate URL state serialization and form validation rules
+- [ ] 02-06-PLAN.md — Add advanced topology performance tests (gap closure: PowerFlex, ObjectScale, PowerStore, PowerScale, Nutanix)
+- [ ] 02-07-PLAN.md — Add volumetry edge case and error handling tests (gap closure: zero drives, invalid configs, boundaries)
+- [ ] 02-08-PLAN.md — Fix flaky statistical test (gap closure: confidence interval narrowing test stability)
 
 ---
 
@@ -127,7 +130,7 @@ Plans:
 | Phase | Status | Completed |
 |-------|--------|-----------|
 | 1 - Test Infrastructure | ✓ Complete | 2026-01-17 |
-| 2 - Calculation Validation | Not started | — |
+| 2 - Calculation Validation | In Progress (gap closure) | — |
 | 3 - Security Hardening | Not started | — |
 | 4 - Code Quality | Not started | — |
 | 5 - Performance & Fixes | Not started | — |
