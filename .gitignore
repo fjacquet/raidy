@@ -24,6 +24,7 @@ lerna-debug.log*
 
 # Test coverage
 coverage/
+coverage.json
 .nyc_output/
 
 # IDE / Editors
@@ -61,3 +62,5 @@ tmp/
 temp/
 *.tmp
 *.temp
+*.backup
+*.bak
