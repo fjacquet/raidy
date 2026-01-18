@@ -123,7 +123,63 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (To be filled by roadmapper) | | |
+| TEST-01 | Phase 2 | Pending |
+| TEST-02 | Phase 2 | Pending |
+| TEST-03 | Phase 2 | Pending |
+| TEST-04 | Phase 2 | Pending |
+| TEST-05 | Phase 2 | Pending |
+| TEST-06 | Phase 2 | Pending |
+| TEST-07 | Phase 2 | Pending |
+| TEST-08 | Phase 2 | Pending |
+| TEST-09 | Phase 2 | Pending |
+| TEST-10 | Phase 2 | Pending |
+| TEST-11 | Phase 2 | Pending |
+| TEST-12 | Phase 2 | Pending |
+| TEST-13 | Phase 1 | Pending |
+| TEST-14 | Phase 2 | Pending |
+| TEST-15 | Phase 2 | Pending |
+| TEST-16 | Phase 2 | Pending |
+| SEC-01 | Phase 3 | Pending |
+| SEC-02 | Phase 3 | Pending |
+| SEC-03 | Phase 3 | Pending |
+| SEC-04 | Phase 3 | Pending |
+| SEC-05 | Phase 3 | Pending |
+| SEC-06 | Phase 3 | Pending |
+| SEC-07 | Phase 3 | Pending |
+| SEC-08 | Phase 3 | Pending |
+| SEC-09 | Phase 3 | Pending |
+| SEC-10 | Phase 3 | Pending |
+| QUAL-01 | Phase 4 | Pending |
+| QUAL-02 | Phase 4 | Pending |
+| QUAL-03 | Phase 4 | Pending |
+| QUAL-04 | Phase 4 | Pending |
+| QUAL-05 | Phase 4 | Pending |
+| QUAL-06 | Phase 4 | Pending |
+| QUAL-07 | Phase 4 | Pending |
+| QUAL-08 | Phase 4 | Pending |
+| QUAL-09 | Phase 4 | Pending |
+| QUAL-10 | Phase 4 | Pending |
+| QUAL-11 | Phase 4 | Pending |
+| QUAL-12 | Phase 4 | Pending |
+| QUAL-13 | Phase 4 | Pending |
+| QUAL-14 | Phase 4 | Pending |
+| QUAL-15 | Phase 4 | Pending |
+| PERF-01 | Phase 5 | Pending |
+| PERF-02 | Phase 5 | Pending |
+| PERF-03 | Phase 5 | Pending |
+| PERF-04 | Phase 5 | Pending |
+| PERF-05 | Phase 5 | Pending |
+| PERF-06 | Phase 5 | Pending |
+| PERF-07 | Phase 5 | Pending |
+| PERF-08 | Phase 5 | Pending |
+| BUG-01 | Phase 5 | Pending |
+| BUG-02 | Phase 5 | Pending |
+| BUG-03 | Phase 1 | Pending |
+| PROD-01 | Phase 6 | Pending |
+| PROD-02 | Phase 6 | Pending |
+| PROD-03 | Phase 6 | Pending |
+| PROD-04 | Phase 6 | Pending |
+| PROD-05 | Phase 6 | Pending |
 
 ---
 *Last updated: 2026-01-17*
