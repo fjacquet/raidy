@@ -102,7 +102,15 @@ Plans:
 4. Codebase passes Biome lint with zero warnings/errors and all TypeScript strict mode violations resolved
 5. Fragile switch statements use exhaustive type checking with no runtime fallbacks
 
-**Plans:** (created by /gsd:plan-phase)
+**Plans:** 5 plans
+
+Plans:
+
+- [ ] 04-01-PLAN.md — Fix Biome lint errors, audit dependencies, add exhaustive type checking
+- [ ] 04-02-PLAN.md — Add calculation error logging and URL hash parse failure notifications
+- [ ] 04-03-PLAN.md — Split TopologyPanel into per-topology option panels
+- [ ] 04-04-PLAN.md — Refactor volumetry engine with strategy pattern
+- [ ] 04-05-PLAN.md — Refactor performance engine with strategy pattern
 
 ---
 
