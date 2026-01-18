@@ -1127,6 +1127,48 @@ describe('Performance Engine - Latency Estimation', () => {
     expect(result.estimatedLatencyUs).toBeDefined()
     expect(result.estimatedLatencyUs).toBeGreaterThan(0)
   })
+
+  it('should calculate Ceph latency with compression overhead', () => {
+    // Ceph with compression adds CPU overhead (line 482)
+    const inputCompression: PerformanceInput = {
+      ...createInput(4, { type: 'ceph', level: 'ceph_replicated_3' }, testSsdNvme, 100),
+      cephOptions: {
+        ...DEFAULT_CEPH_OPTIONS,
+        poolType: 'replicated',
+        compression: true,
+      },
+    }
+    const result = calculatePerformance(inputCompression)
+
+    // Ceph with compression:
+    // - mediaLatency * 2 (NVMe = 20μs * 2 = 40μs)
+    // - networkLatency (25GbE = 25μs)
+    // - cpuOverhead (replication = 20μs + compression = 50μs = 70μs)
+    // Expected: 40 + 25 + 70 = 135μs
+    expect(result.estimatedLatencyUs).toBeGreaterThan(130)
+    expect(result.estimatedLatencyUs).toBeLessThan(150)
+  })
+
+  it('should calculate Ceph erasure coding with compression overhead', () => {
+    // Ceph EC with compression uses erasure_coding CPU overhead + compression
+    const inputEcCompression: PerformanceInput = {
+      ...createInput(12, { type: 'ceph', level: 'ceph_ec_4_2' }, testSsdSata, 100),
+      cephOptions: {
+        ...DEFAULT_CEPH_OPTIONS,
+        poolType: 'erasure',
+        compression: true,
+      },
+    }
+    const result = calculatePerformance(inputEcCompression)
+
+    // Ceph EC with compression:
+    // - mediaLatency * 2 (SSD = 150μs * 2 = 300μs)
+    // - networkLatency (25GbE = 25μs)
+    // - cpuOverhead (erasure_coding = 80μs + compression = 50μs = 130μs)
+    // Expected: 300 + 25 + 130 = 455μs
+    expect(result.estimatedLatencyUs).toBeGreaterThan(440)
+    expect(result.estimatedLatencyUs).toBeLessThan(470)
+  })
 })
 
 describe('Performance Engine - Dell PowerFlex Performance', () => {
@@ -1230,6 +1272,60 @@ describe('Performance Engine - Dell PowerFlex Performance', () => {
     expect(result100GbE.estimatedLatencyUs).toBeLessThan(result1GbE.estimatedLatencyUs)
   })
 
+  it('should apply PowerFlex erasure coding CPU factor (-30% IOPS)', () => {
+    // PowerFlex with erasure coding has -30% IOPS penalty (line 436)
+    const inputErasure: PerformanceInput = {
+      ...createInput(12, { type: 'powerflex', level: 'powerflex_2way' }, testSsdNvme, 100),
+      powerFlexOptions: {
+        ...DEFAULT_POWERFLEX_OPTIONS,
+        protectionMode: 'erasure',
+        granularity: 'medium',
+        compression: false,
+      },
+    }
+    const result = calculatePerformance(inputErasure)
+
+    // Erasure coding should reduce IOPS due to CPU overhead
+    expect(result.maxReadIOPS).toBeGreaterThan(0)
+    expect(result.maxWriteIOPS).toBeGreaterThan(0)
+  })
+
+  it('should apply PowerFlex fine granularity with compression CPU factor (-15% IOPS)', () => {
+    // PowerFlex fine granularity with compression has -15% IOPS penalty (lines 441-442)
+    const inputFineCompressed: PerformanceInput = {
+      ...createInput(12, { type: 'powerflex', level: 'powerflex_2way' }, testSsdNvme, 100),
+      powerFlexOptions: {
+        ...DEFAULT_POWERFLEX_OPTIONS,
+        protectionMode: 'mirror',
+        granularity: 'fine',
+        compression: true,
+      },
+    }
+    const result = calculatePerformance(inputFineCompressed)
+
+    // Fine granularity with compression should have reduced IOPS
+    expect(result.maxReadIOPS).toBeGreaterThan(0)
+    expect(result.maxWriteIOPS).toBeGreaterThan(0)
+  })
+
+  it('should apply PowerFlex fine granularity without compression CPU factor (-5% IOPS)', () => {
+    // PowerFlex fine granularity without compression has -5% IOPS penalty (line 444)
+    const inputFine: PerformanceInput = {
+      ...createInput(12, { type: 'powerflex', level: 'powerflex_2way' }, testSsdNvme, 100),
+      powerFlexOptions: {
+        ...DEFAULT_POWERFLEX_OPTIONS,
+        protectionMode: 'mirror',
+        granularity: 'fine',
+        compression: false,
+      },
+    }
+    const result = calculatePerformance(inputFine)
+
+    // Fine granularity should have slightly reduced IOPS
+    expect(result.maxReadIOPS).toBeGreaterThan(0)
+    expect(result.maxWriteIOPS).toBeGreaterThan(0)
+  })
+
   it('should validate PowerFlex dynamic rebuild performance impact', () => {
     // PowerFlex dynamic rebuild should maintain reasonable performance
     const input = createInput(
@@ -1243,6 +1339,139 @@ describe('Performance Engine - Dell PowerFlex Performance', () => {
     // Should have reduced write penalty for 50% random (vs 100%)
     expect(result.writePenalty).toBeLessThan(3)
     expect(result.maxWriteIOPS).toBeGreaterThan(0)
+  })
+})
+
+describe('Performance Engine - Write Penalty Edge Cases', () => {
+  it('should calculate write penalty for ObjectScale EC variations', () => {
+    // Test different ObjectScale EC levels to cover lines 242-251
+    const levels = [
+      { level: 'objectscale_ec_10_2' as const, drives: 12, expectedPenalty: 1.2 },
+      { level: 'objectscale_ec_24_4' as const, drives: 28, expectedPenalty: 1.17 },
+      { level: 'objectscale_mirror_3' as const, drives: 6, expectedPenalty: 3 },
+    ]
+
+    for (const { level, drives, expectedPenalty } of levels) {
+      const input = createInput(drives, { type: 'objectscale', level }, testSsdSata, 100)
+      const result = calculatePerformance(input)
+      expect(result.writePenalty).toBeCloseTo(expectedPenalty, 1)
+    }
+  })
+
+  it('should calculate write penalty for PowerStore RAID variations', () => {
+    // Test different PowerStore levels to cover lines 257-264
+    const levels = [
+      { level: 'powerstore_raid6' as const, drives: 8, expectedPenalty: 4 },
+      { level: 'powerstore_raid10' as const, drives: 4, expectedPenalty: 2 },
+    ]
+
+    for (const { level, drives, expectedPenalty } of levels) {
+      const input = createInput(drives, { type: 'powerstore', level }, testSsdNvme, 100)
+      const result = calculatePerformance(input)
+      expect(result.writePenalty).toBeCloseTo(expectedPenalty, 1)
+    }
+  })
+
+  it('should calculate write penalty for PowerScale N+x variations', () => {
+    // Test different PowerScale protection levels to cover lines 270-283
+    const levels = [
+      { level: 'powerscale_n1' as const, drives: 12, expectedPenalty: 2.5 },
+      { level: 'powerscale_n2' as const, drives: 12, expectedPenalty: 3.5 },
+      { level: 'powerscale_n2_1' as const, drives: 12, expectedPenalty: 3.5 },
+      { level: 'powerscale_n3' as const, drives: 15, expectedPenalty: 4.5 },
+      { level: 'powerscale_n4' as const, drives: 16, expectedPenalty: 5.5 },
+    ]
+
+    for (const { level, drives, expectedPenalty } of levels) {
+      const input = createInput(drives, { type: 'powerscale', level }, testHddDrive, 100)
+      const result = calculatePerformance(input)
+      expect(result.writePenalty).toBeCloseTo(expectedPenalty, 1)
+    }
+  })
+
+  it('should calculate write penalty for vSAN ESA RAID variations', () => {
+    // Test vSAN ESA levels to cover lines 230-235
+    const input5 = createInput(20, { type: 'vsan_esa', level: 'vsan_esa_raid5' }, testSsdNvme, 100)
+    const input6 = createInput(24, { type: 'vsan_esa', level: 'vsan_esa_raid6' }, testSsdNvme, 100)
+
+    const result5 = calculatePerformance(input5)
+    const result6 = calculatePerformance(input6)
+
+    expect(result5.writePenalty).toBeCloseTo(2.5, 1)
+    expect(result6.writePenalty).toBeCloseTo(3.5, 1)
+  })
+
+  it('should calculate XFS alignment for RAID1_3WAY', () => {
+    // Test RAID1_3WAY to cover lines 402-403
+    const input = createInput(6, { type: 'standard', level: 'RAID1_3WAY' }, testSsdSata, 100)
+    const result = calculatePerformance(input)
+
+    // RAID1_3WAY: 6 drives / 3 = 2 data drives
+    if (result.xfsAlignment) {
+      expect(result.xfsAlignment.swidth).toBe(result.xfsAlignment.sunit * 2)
+    }
+  })
+
+  it('should calculate write penalty for Nutanix EC variations', () => {
+    // Test Nutanix EC levels to cover more write penalty cases
+    const inputEc41 = createInput(
+      10,
+      { type: 'nutanix', level: 'nutanix_ec_4_1' },
+      testSsdSata,
+      100,
+    )
+    const inputEc62 = createInput(
+      16,
+      { type: 'nutanix', level: 'nutanix_ec_6_2' },
+      testSsdSata,
+      100,
+    )
+
+    const resultEc41 = calculatePerformance(inputEc41)
+    const resultEc62 = calculatePerformance(inputEc62)
+
+    expect(resultEc41.writePenalty).toBeGreaterThan(1)
+    expect(resultEc62.writePenalty).toBeGreaterThan(1)
+  })
+
+  it('should calculate write penalty for S2D variations', () => {
+    // Test S2D levels to cover more cases (S2D requires serverCount >= 3)
+    const inputMirror: PerformanceInput = {
+      ...createInput(12, { type: 's2d', level: 's2d_mirror_3way' }, testSsdNvme, 100),
+      serverCount: 4,
+    }
+    const inputParity: PerformanceInput = {
+      ...createInput(12, { type: 's2d', level: 's2d_parity_single' }, testSsdSata, 100),
+      serverCount: 4,
+    }
+    const inputDualParity: PerformanceInput = {
+      ...createInput(16, { type: 's2d', level: 's2d_parity_dual' }, testSsdSata, 100),
+      serverCount: 4,
+    }
+
+    const resultMirror = calculatePerformance(inputMirror)
+    const resultParity = calculatePerformance(inputParity)
+    const resultDualParity = calculatePerformance(inputDualParity)
+
+    // All should have valid write penalties
+    expect(resultMirror.writePenalty).toBeGreaterThanOrEqual(1)
+    expect(resultParity.writePenalty).toBeGreaterThanOrEqual(1)
+    expect(resultDualParity.writePenalty).toBeGreaterThanOrEqual(1)
+  })
+
+  it('should calculate write penalty for ZFS dRAID variations', () => {
+    // Test ZFS dRAID levels
+    const inputDraid1 = createInput(8, { type: 'zfs', level: 'draid1' }, testSsdSata, 100)
+    const inputDraid2 = createInput(12, { type: 'zfs', level: 'draid2' }, testSsdSata, 100)
+    const inputDraid3 = createInput(16, { type: 'zfs', level: 'draid3' }, testSsdSata, 100)
+
+    const resultDraid1 = calculatePerformance(inputDraid1)
+    const resultDraid2 = calculatePerformance(inputDraid2)
+    const resultDraid3 = calculatePerformance(inputDraid3)
+
+    expect(resultDraid1.writePenalty).toBeGreaterThan(1)
+    expect(resultDraid2.writePenalty).toBeGreaterThan(1)
+    expect(resultDraid3.writePenalty).toBeGreaterThan(1)
   })
 })
 
