@@ -444,6 +444,9 @@ function validateVsan(
 
 /**
  * Run all validators and return alerts.
+ *
+ * To prevent calculations on invalid configs, use hasBlockingErrors(alerts)
+ * or validateOrThrow(input) which throws on error-severity alerts.
  */
 export function validateConfiguration(input: ValidationInput): ValidationAlert[] {
   const alerts: ValidationAlert[] = []
@@ -540,6 +543,20 @@ export function validateConfiguration(input: ValidationInput): ValidationAlert[]
  */
 export function hasBlockingErrors(alerts: ValidationAlert[]): boolean {
   return alerts.some((alert) => alert.severity === 'error')
+}
+
+/**
+ * Validate configuration and throw error if blocking issues found.
+ * Use this before running calculations to enforce validation rules.
+ */
+export function validateOrThrow(input: ValidationInput): void {
+  const alerts = validateConfiguration(input)
+  const blockingErrors = alerts.filter((a) => a.severity === 'error')
+
+  if (blockingErrors.length > 0) {
+    const errorMessages = blockingErrors.map((e) => e.message).join('\n')
+    throw new Error(`Invalid configuration:\n${errorMessages}`)
+  }
 }
 
 /**

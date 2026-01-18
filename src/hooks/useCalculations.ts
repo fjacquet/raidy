@@ -12,6 +12,7 @@ import { useConfigStore } from '@/store'
 import type { Drive } from '@/types'
 import type { CalculationResults } from '@/types/results'
 import { formatBytes as formatBytesUtil } from '@/utils'
+import { hasBlockingErrors, validateConfiguration } from '@/utils/validators'
 
 // Type assertion for the imported JSON
 const drives = drivesData as Record<string, Drive>
@@ -105,6 +106,62 @@ export function useCalculations(): CalculationResults {
     // driveCount = drives per server, serverCount = number of servers
     const totalDriveCount = driveCount * serverCount
     const totalHotSpares = hotSpares * serverCount
+
+    // Validate configuration before running calculations
+    const validationAlerts = validateConfiguration({
+      drive,
+      driveCount: totalDriveCount,
+      serverCount,
+      topology,
+      controller: controllerOptions.controller,
+      ramPerNodeGb: 16, // Default RAM (could be made configurable in store)
+      zfsOptions,
+      s2dOptions,
+      cephOptions,
+      powerFlexOptions,
+      netAppOptions,
+      synologyOptions,
+      vsanOptions,
+    })
+
+    // If blocking errors found, skip calculation and return error state
+    if (hasBlockingErrors(validationAlerts)) {
+      const blockingMessages = validationAlerts
+        .filter((a) => a.severity === 'error')
+        .map((a) => a.message)
+
+      return {
+        volumetry: {
+          rawCapacity: 0,
+          parityOverhead: 0,
+          hotSpareOverhead: 0,
+          filesystemOverhead: 0,
+          slopOverhead: 0,
+          usableCapacity: 0,
+          effectiveCapacity: 0,
+          efficiency: 0,
+          breakdown: [],
+        },
+        performance: {
+          maxReadThroughputMBs: 0,
+          maxWriteThroughputMBs: 0,
+          maxReadIOPS: 0,
+          maxWriteIOPS: 0,
+          layers: [],
+          bottleneckDescription: 'Configuration validation failed',
+        },
+        resilience: null,
+        sustainability: {
+          annualEnergyKwh: 0,
+          annualEnergyCost: 0,
+          annualCO2Kg: 0,
+          powerBreakdown: { drives: 0, servers: 0, cooling: 0, total: 0 },
+        },
+        tco: null,
+        lastUpdated: Date.now(),
+        errors: blockingMessages,
+      }
+    }
 
     // Volumetry calculations (uses total drives across all servers)
     const volumetry = calculateVolumetry({
