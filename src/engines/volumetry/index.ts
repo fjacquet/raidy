@@ -19,10 +19,23 @@ import type {
   SynologyOptions,
   TieringConfig,
   Topology,
+  TopologyType,
   VsanOptions,
   ZfsOptions,
 } from '@/types/topology'
 import { FILESYSTEM_OVERHEAD } from '@/types/topology'
+import { assertNever } from '@/utils/typeGuards'
+
+// Strategy imports
+import { cephStrategy } from './strategies/ceph'
+import { dellStrategy } from './strategies/dell'
+import { nutanixStrategy } from './strategies/nutanix'
+import { proprietaryStrategy } from './strategies/proprietary'
+import { raidStrategy } from './strategies/raid'
+import { s2dStrategy } from './strategies/s2d'
+import type { VolumetryStrategy } from './strategies/VolumetryStrategy'
+import { vsanStrategy } from './strategies/vsan'
+import { zfsStrategy } from './strategies/zfs'
 
 // Type assertion for the imported JSON
 const drives = drivesData as Record<string, Drive>
@@ -166,8 +179,65 @@ export interface VolumetryInput {
 }
 
 /**
+ * Get volumetry strategy for topology type with exhaustive type checking.
+ *
+ * Uses strategy pattern to delegate calculations to topology-specific modules.
+ * TypeScript will error at compile time if new topology type added without case.
+ */
+function getStrategy(topologyType: TopologyType): VolumetryStrategy {
+  switch (topologyType) {
+    case 'standard':
+      return raidStrategy
+    case 'zfs':
+      return zfsStrategy
+    case 's2d':
+      return s2dStrategy
+    case 'ceph':
+      return cephStrategy
+    case 'nutanix':
+      return nutanixStrategy
+    case 'vsan_esa':
+    case 'vsan_osa':
+      return vsanStrategy
+    case 'powerflex':
+    case 'powerstore':
+    case 'powerscale':
+    case 'objectscale':
+      return dellStrategy
+    case 'proprietary':
+    case 'powervault':
+      return proprietaryStrategy
+    default:
+      // TypeScript error if new topology type added without case
+      return assertNever(topologyType)
+  }
+}
+
+/**
+ * Valid topology types for runtime checking.
+ * Used to gracefully handle invalid topology types from URL params or user input.
+ */
+const VALID_TOPOLOGY_TYPES: readonly TopologyType[] = [
+  'standard',
+  'zfs',
+  's2d',
+  'proprietary',
+  'vsan_osa',
+  'vsan_esa',
+  'ceph',
+  'powerflex',
+  'powerstore',
+  'powerscale',
+  'objectscale',
+  'nutanix',
+  'powervault',
+] as const
+
+/**
  * Calculate parity overhead factor based on topology.
  * Returns the fraction of capacity used for data (0-1).
+ *
+ * Delegates to topology-specific strategy for calculation.
  */
 function getDataFraction(
   topology: Topology,
@@ -181,336 +251,39 @@ function getDataFraction(
   nutanixOptions: NutanixOptions,
   serverCount: number,
 ): number {
-  const usableDrives = driveCount // Hot spares handled separately
+  // Runtime type guard: handle invalid topology types from URL params/user input
+  // TypeScript can't catch these at compile time when data comes from external sources
+  if (!VALID_TOPOLOGY_TYPES.includes(topology.type as TopologyType)) {
+    console.warn(`Unknown topology type: ${topology.type}, falling back to 100% efficiency`)
+    return 1.0
+  }
+
+  const strategy = getStrategy(topology.type)
+
+  // Build options object based on topology type
+  let options: any = {}
 
   switch (topology.type) {
-    case 'standard':
-      switch (topology.level) {
-        case 'RAID0':
-          return 1.0 // No redundancy
-        case 'RAID1':
-          return 0.5 // Mirror (2-way)
-        case 'RAID1E':
-          // RAID 1E: Mirrored striping, each block written twice
-          // Efficiency is ~50% regardless of drive count
-          return 0.5
-        case 'RAID1_3WAY':
-          // 3-Way Mirror / Triple Mirror
-          return 1 / 3
-        case 'RAID3':
-          // Byte-level striping with dedicated parity disk
-          return (usableDrives - 1) / usableDrives
-        case 'RAID4':
-          // Block-level striping with dedicated parity disk
-          return (usableDrives - 1) / usableDrives
-        case 'RAID5':
-          return (usableDrives - 1) / usableDrives
-        case 'RAID5E':
-          // RAID 5E: RAID 5 with integrated distributed hot spare
-          // Uses 1 drive worth for parity + 1 for distributed spare
-          return (usableDrives - 2) / usableDrives
-        case 'RAID5EE':
-          // RAID 5EE: Similar to 5E but with active hot spare
-          return (usableDrives - 2) / usableDrives
-        case 'RAID6':
-          return (usableDrives - 2) / usableDrives
-        case 'RAID10':
-          return 0.5 // Mirrored stripes
-        case 'RAID50':
-          // Assume 2 groups for RAID50
-          return (usableDrives - 2) / usableDrives
-        case 'RAID60':
-          // Assume 2 groups for RAID60
-          return (usableDrives - 4) / usableDrives
-        default:
-          return 1.0
-      }
-
-    case 'zfs':
-      switch (topology.level) {
-        case 'stripe':
-          return 1.0
-        case 'mirror':
-          return 0.5
-        case 'raidz1':
-        case 'draid1':
-          return (usableDrives - 1) / usableDrives
-        case 'raidz2':
-        case 'draid2':
-          return (usableDrives - 2) / usableDrives
-        case 'raidz3':
-        case 'draid3':
-          return (usableDrives - 3) / usableDrives
-        default:
-          return 1.0
-      }
-
     case 's2d':
-      switch (topology.level) {
-        case 'simple':
-          return 1.0
-        case 'mirror':
-          return 1 / s2dOptions.mirrorCopies
-        case 'parity':
-          // Single parity across fault domains
-          // Handle division by zero
-          if (s2dOptions.faultDomains === 0) return 0
-          return (s2dOptions.faultDomains - 1) / s2dOptions.faultDomains
-        case 'dual_parity':
-          if (s2dOptions.faultDomains === 0) return 0
-          return (s2dOptions.faultDomains - 2) / s2dOptions.faultDomains
-        case 'map': {
-          // MAP uses mirror for hot data portion (estimate 20% mirror, 80% parity)
-          const mirrorPortion = 0.2 / s2dOptions.mirrorCopies
-          if (s2dOptions.faultDomains === 0) return mirrorPortion
-          const parityPortion = 0.8 * ((s2dOptions.faultDomains - 2) / s2dOptions.faultDomains)
-          return mirrorPortion + parityPortion
-        }
-        default:
-          return 1.0
-      }
-
-    case 'proprietary':
-      switch (topology.level) {
-        case 'synology_shr':
-          // SHR approximates RAID5 efficiency
-          return (usableDrives - 1) / usableDrives
-        case 'synology_shr2':
-          // SHR2 approximates RAID6 efficiency
-          return (usableDrives - 2) / usableDrives
-        case 'synology_raid_f1':
-          // RAID F1: All-Flash optimized, similar to RAID5 with uneven parity rotation
-          // Efficiency ≈ RAID5: (N-1)/N
-          return (usableDrives - 1) / usableDrives
-        case 'netapp_raid_dp':
-          // RAID-DP: double parity per RAID group
-          return (usableDrives - 2) / usableDrives
-        case 'netapp_raid_tec':
-          // RAID-TEC: triple parity per RAID group (for drives >10TB)
-          return (usableDrives - 3) / usableDrives
-        default:
-          return 1.0
-      }
-
-    case 'vsan_osa':
-      // vSAN OSA (Original Storage Architecture) - disk groups with cache + capacity
-      // Stripe width scales with cluster size and available drives
-      switch (topology.level) {
-        case 'vsan_osa_raid1':
-          // RAID-1 FTT=1: 2-way mirror, 50% efficiency
-          return 0.5
-        case 'vsan_osa_raid1_ftt2':
-          // RAID-1 FTT=2: 3-way mirror, 33% efficiency
-          return 1 / 3
-        case 'vsan_osa_raid5': {
-          // RAID-5: stripe width adapts to cluster size
-          // Min 4 hosts for 3+1, scales up with more hosts
-          const drivesPerHost = driveCount / serverCount
-          const maxDataDrives = Math.min(serverCount - 1, Math.floor(drivesPerHost / 2), 7)
-          const dataDrives = Math.max(3, maxDataDrives)
-          return dataDrives / (dataDrives + 1)
-        }
-        case 'vsan_osa_raid6': {
-          // RAID-6: stripe width adapts to cluster size
-          // Min 6 hosts for 4+2, scales up with more hosts
-          const drivesPerHost = driveCount / serverCount
-          const maxDataDrives = Math.min(serverCount - 2, Math.floor(drivesPerHost / 2), 6)
-          const dataDrives = Math.max(4, maxDataDrives)
-          return dataDrives / (dataDrives + 2)
-        }
-        default:
-          return 0.5
-      }
-
-    case 'vsan_esa':
-      // vSAN ESA (Express Storage Architecture) - single-tier NVMe only
-      // Stripe width determined by cluster resources (hosts and drives)
-      switch (topology.level) {
-        case 'vsan_esa_raid1':
-          // RAID-1: 2-way mirror, 50% efficiency (only for 2-node clusters)
-          return 0.5
-        case 'vsan_esa_raid5': {
-          // Adaptive RAID-5: stripe width scales with cluster size
-          // 4+1 requires min 5 hosts and sufficient drives (120+ with 24 slots/server)
-          // 2+1 for smaller clusters
-          const canUse4Plus1 = serverCount >= 5 && driveCount >= serverCount * 20
-          return canUse4Plus1 ? 4 / 5 : 2 / 3
-        }
-        case 'vsan_esa_raid6': {
-          // RAID-6: stripe width scales with cluster size
-          // 6+2 requires min 8 hosts, 4+2 for smaller clusters
-          const canUse6Plus2 = serverCount >= 8 && driveCount >= serverCount * 20
-          return canUse6Plus2 ? 6 / 8 : 4 / 6
-        }
-        default:
-          return 2 / 3
-      }
-
-    case 'objectscale':
-      // Dell ObjectScale (Object Storage S3) - per SME specs
-      switch (topology.level) {
-        case 'objectscale_ec_12_4':
-          // EC 12+4: 12/(12+4) = 75% efficiency, min 5 nodes, default
-          return 12 / 16
-        case 'objectscale_ec_10_2':
-          // EC 10+2: 10/(10+2) = 83.3% efficiency, min 7 nodes, cold/archive
-          return 10 / 12
-        case 'objectscale_ec_24_4':
-          // EC 24+4: 24/(24+4) = 85.7% efficiency, min 8 nodes, tech preview
-          return 24 / 28
-        case 'objectscale_mirror_3':
-          // Triple mirroring: 33.3% efficiency, for metadata/small configs
-          return 1 / 3
-        default:
-          return 12 / 16 // Default to EC 12+4
-      }
-
-    case 'powerstore':
-      // Dell PowerStore (Block Storage)
-      switch (topology.level) {
-        case 'powerstore_raid5':
-          // PowerStore RAID-5: typically 4+1 or 8+1 stripes, ~80% efficiency
-          return 0.8
-        case 'powerstore_raid6':
-          // PowerStore RAID-6: typically 4+2 or 8+2 stripes, ~75% efficiency
-          return 0.75
-        case 'powerstore_raid10':
-          // PowerStore RAID-10: mirrored stripes, 50% efficiency
-          return 0.5
-        default:
-          return 0.8 // Default to RAID-5
-      }
-
-    case 'powerscale':
-      // Dell PowerScale (Scale-out NAS)
-      switch (topology.level) {
-        case 'powerscale_n1':
-          // N+1 protection: (n-1)/n
-          return (usableDrives - 1) / usableDrives
-        case 'powerscale_n2':
-          // N+2 protection: (n-2)/n
-          return (usableDrives - 2) / usableDrives
-        case 'powerscale_n2_1':
-          // N+2:1 protection: (n-2)/n with 1 stripe failure tolerance
-          return (usableDrives - 2) / usableDrives
-        case 'powerscale_n3':
-          // N+3 protection: (n-3)/n
-          return (usableDrives - 3) / usableDrives
-        case 'powerscale_n4':
-          // N+4 protection: (n-4)/n
-          return (usableDrives - 4) / usableDrives
-        case 'powerscale_mirror_2x':
-          // 2x mirrored: 50% efficiency
-          return 0.5
-        case 'powerscale_mirror_3x':
-          // 3x mirrored: 33.3% efficiency
-          return 1 / 3
-        default:
-          return (usableDrives - 2) / usableDrives // Default to N+2
-      }
-
+      options = s2dOptions
+      break
     case 'ceph':
-      switch (topology.level) {
-        case 'ceph_replicated_2':
-          // 2-way replication: 50% efficiency
-          return 1 / 2
-        case 'ceph_replicated_3':
-          // 3-way replication: 33% efficiency
-          return 1 / 3
-        case 'ceph_ec_2_1':
-          // Erasure coded k=2, m=1: 2/(2+1) = 66.7% efficiency
-          return 2 / 3
-        case 'ceph_ec_4_2':
-          // Erasure coded k=4, m=2: 4/(4+2) = 66.7% efficiency
-          return 4 / 6
-        case 'ceph_ec_8_3':
-          // Erasure coded k=8, m=3: 8/(8+3) = 72.7% efficiency
-          return 8 / 11
-        case 'ceph_ec_8_4':
-          // Erasure coded k=8, m=4: 8/(8+4) = 66.7% efficiency
-          return 8 / 12
-        default:
-          // Fallback to options if not matched
-          if (cephOptions.poolType === 'replicated') {
-            return 1 / cephOptions.replicationFactor
-          } else {
-            // Erasure coded: k / (k + m)
-            return cephOptions.ecK / (cephOptions.ecK + cephOptions.ecM)
-          }
-      }
-
-    case 'powerflex':
-      switch (topology.level) {
-        case 'powerflex_medium_2way':
-        case 'powerflex_fine_2way':
-          // 2-way mirror: 50% efficiency (FG only supports 2-way)
-          return 0.5
-        case 'powerflex_medium_3way':
-          // 3-way mirror: 33% efficiency (Medium Granularity only)
-          return 1 / 3
-        case 'powerflex_ec_4_1':
-          // Erasure coding 4+1: 4/(4+1) = 80% efficiency
-          return 4 / 5
-        case 'powerflex_ec_4_2':
-          // Erasure coding 4+2: 4/(4+2) = 66.7% efficiency
-          return 4 / 6
-        case 'powerflex_ec_8_2':
-          // Erasure coding 8+2: 8/(8+2) = 80% efficiency
-          return 8 / 10
-        case 'powerflex_ec_12_4':
-          // Erasure coding 12+4: 12/(12+4) = 75% efficiency
-          return 12 / 16
-        default:
-          return 0.5
-      }
-
+      options = cephOptions
+      break
     case 'nutanix':
-      // Nutanix AOS: RF2 = 50%, RF3 = 33%, EC-X improves efficiency
-      switch (topology.level) {
-        case 'nutanix_rf2':
-          // RF2: 2 copies = 50% efficiency
-          return 1 / nutanixOptions.replicationFactor
-        case 'nutanix_rf3':
-          // RF3: 3 copies = 33% efficiency
-          return 1 / nutanixOptions.replicationFactor
-        case 'nutanix_ec_rf2':
-          // EC-X with RF2 base: 4:1 striping = 75% efficiency (approximation)
-          // Per spec: C_usable_ec = C_formatted × 0.75
-          return 0.75
-        case 'nutanix_ec_rf3':
-          // EC-X with RF3 base: 6:2 striping = 75% efficiency
-          return 6 / 8
-        default:
-          // Default to RF2 if not specified
-          return 1 / nutanixOptions.replicationFactor
-      }
-
-    case 'powervault':
-      // Dell PowerVault ME5: Traditional RAID and ADAPT distributed RAID
-      switch (topology.level) {
-        case 'powervault_raid1':
-          // RAID 1: 2-way mirror, 50% efficiency
-          return 0.5
-        case 'powervault_raid5':
-          // RAID 5: single parity, (n-1)/n efficiency
-          return (usableDrives - 1) / usableDrives
-        case 'powervault_raid6':
-          // RAID 6: dual parity, (n-2)/n efficiency
-          return (usableDrives - 2) / usableDrives
-        case 'powervault_raid10':
-          // RAID 10: mirrored stripes, 50% efficiency
-          return 0.5
-        case 'powervault_adapt':
-          // ADAPT: distributed RAID with ~87% efficiency for 24+ drives
-          // Uses distributed spare capacity and parity across all drives
-          return usableDrives >= 24 ? 0.87 : 0.85
-        default:
-          return 0.8
-      }
-
+      options = nutanixOptions
+      break
+    case 'vsan_esa':
+    case 'vsan_osa':
+      // vSAN strategies need serverCount for adaptive stripe width
+      options = { serverCount }
+      break
     default:
-      return 1.0
+      // Other topologies don't need special options
+      options = {}
   }
+
+  return strategy.calculateDataFraction(topology.level, driveCount, options)
 }
 
 /**
@@ -526,11 +299,8 @@ function getZfsOverhead(
   zfsOptions: ZfsOptions,
   sectorSize: number,
 ): { slop: number; ashift: number } {
-  // ZFS slop space: reserves 1/32 (3.125%) of pool capacity with min/max bounds
-  const MIN_SLOP = 128 * 1024 * 1024 // 128 MiB
-  const MAX_SLOP = 128 * 1024 * 1024 * 1024 // 128 GiB
-  const calculatedSlop = capacity / 32
-  const slop = Math.max(MIN_SLOP, Math.min(MAX_SLOP, calculatedSlop))
+  // Use ZFS strategy for slop space calculation
+  const slop = zfsStrategy.calculateOverhead?.(capacity) ?? 0
 
   // Ashift padding penalty when ashift > physical sector size
   let ashiftPenalty = 0
