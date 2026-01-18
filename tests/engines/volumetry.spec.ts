@@ -6,6 +6,7 @@
  */
 
 import { describe, expect, it } from 'vitest'
+import * as fc from 'fast-check'
 import { calculateVolumetry, type VolumetryInput } from '@/engines/volumetry'
 import {
   DEFAULT_CEPH_OPTIONS,
@@ -22,6 +23,7 @@ import {
   DEFAULT_ZFS_OPTIONS,
 } from '@/types'
 import type { Drive } from '@/types/drive'
+import { standardRAIDVectors } from '../fixtures/raid-vectors'
 
 // Test drive: 1TB capacity for easy math
 const testDrive: Drive = {
@@ -221,6 +223,177 @@ describe('Volumetry Engine - Standard RAID', () => {
       // Efficiency should be ~64-67% (percentage 0-100)
       expect(result.efficiency).toBeGreaterThan(62)
       expect(result.efficiency).toBeLessThan(70)
+    })
+  })
+
+  // ============================================================
+  // Table-Driven Tests for RAID 0/1/1E/3/4 (WintelGuy Validation)
+  // ============================================================
+  describe('WintelGuy Validated Tests - RAID 0/1/1E/3/4', () => {
+    // Filter vectors for RAID 0, 1, 1E, 3, 4
+    const vectors = standardRAIDVectors.filter((v) =>
+      ['RAID0', 'RAID1', 'RAID1E', 'RAID3', 'RAID4'].includes(v.level),
+    )
+
+    describe.each(vectors)('$name', ({ level, drives, driveSize, expectedUsable, tolerance }) => {
+      it(`should calculate usable capacity within ${tolerance * 100}% of WintelGuy reference`, () => {
+        // Create test drive with specified capacity
+        const testDrive: Drive = {
+          id: `test-${driveSize}`,
+          model: `Test Drive ${driveSize / 1_000_000_000_000}TB`,
+          type: 'HDD',
+          formFactor: '3.5"',
+          interface: 'SATA',
+          capacity_raw: driveSize,
+          sector_size: 512,
+          performance: {
+            iops_read: 150,
+            iops_write: 150,
+            bandwidth_read_mb: 200,
+            bandwidth_write_mb: 200,
+          },
+          reliability: {
+            ure_rate: 14,
+            afr: 1.0,
+            dwpd: 0,
+            mtbf_hours: 1_000_000,
+          },
+          power: {
+            idle_watts: 5,
+            load_watts: 10,
+          },
+          cost_usd: 100,
+        }
+
+        const input = createInput(drives, { type: 'standard', level })
+        input.drive = testDrive
+
+        const result = calculateVolumetry(input)
+
+        // Validate usable capacity matches WintelGuy within tolerance
+        const lowerBound = expectedUsable * (1 - tolerance)
+        const upperBound = expectedUsable * (1 + tolerance)
+
+        expect(result.usableCapacity).toBeGreaterThanOrEqual(lowerBound)
+        expect(result.usableCapacity).toBeLessThanOrEqual(upperBound)
+      })
+    })
+  })
+
+  // ============================================================
+  // Property-Based Tests for RAID Invariants (RAID 0/1)
+  // ============================================================
+  describe('Property-Based Tests - RAID Invariants', () => {
+    it('RAID 0: capacity should increase monotonically with drive count', () => {
+      fc.assert(
+        fc.property(
+          fc.integer({ min: 2, max: 24 }), // Drive count
+          fc.integer({ min: 100_000_000_000, max: 20_000_000_000_000 }), // Drive size (100GB - 20TB)
+          (driveCount, driveSize) => {
+            // Create test drive
+            const testDrive: Drive = {
+              id: 'test',
+              model: 'Test',
+              type: 'HDD',
+              formFactor: '3.5"',
+              interface: 'SATA',
+              capacity_raw: driveSize,
+              sector_size: 512,
+              performance: { iops_read: 150, iops_write: 150, bandwidth_read_mb: 200, bandwidth_write_mb: 200 },
+              reliability: { ure_rate: 14, afr: 1.0, dwpd: 0, mtbf_hours: 1_000_000 },
+              power: { idle_watts: 5, load_watts: 10 },
+              cost_usd: 100,
+            }
+
+            const inputN = createInput(driveCount, { type: 'standard', level: 'RAID0' })
+            inputN.drive = testDrive
+            const resultN = calculateVolumetry(inputN)
+
+            const inputNPlus1 = createInput(driveCount + 1, { type: 'standard', level: 'RAID0' })
+            inputNPlus1.drive = testDrive
+            const resultNPlus1 = calculateVolumetry(inputNPlus1)
+
+            // Usable capacity should increase monotonically
+            return resultNPlus1.usableCapacity > resultN.usableCapacity
+          },
+        ),
+        { numRuns: 50 },
+      )
+    })
+
+    it('RAID 0: adding drives should increase capacity by ~1 drive worth', () => {
+      fc.assert(
+        fc.property(
+          fc.integer({ min: 2, max: 23 }),
+          fc.integer({ min: 1_000_000_000_000, max: 10_000_000_000_000 }),
+          (driveCount, driveSize) => {
+            const testDrive: Drive = {
+              id: 'test',
+              model: 'Test',
+              type: 'HDD',
+              formFactor: '3.5"',
+              interface: 'SATA',
+              capacity_raw: driveSize,
+              sector_size: 512,
+              performance: { iops_read: 150, iops_write: 150, bandwidth_read_mb: 200, bandwidth_write_mb: 200 },
+              reliability: { ure_rate: 14, afr: 1.0, dwpd: 0, mtbf_hours: 1_000_000 },
+              power: { idle_watts: 5, load_watts: 10 },
+              cost_usd: 100,
+            }
+
+            const inputN = createInput(driveCount, { type: 'standard', level: 'RAID0' })
+            inputN.drive = testDrive
+            const resultN = calculateVolumetry(inputN)
+
+            const inputNPlus1 = createInput(driveCount + 1, { type: 'standard', level: 'RAID0' })
+            inputNPlus1.drive = testDrive
+            const resultNPlus1 = calculateVolumetry(inputNPlus1)
+
+            // Capacity increase should be approximately 1 drive worth (within 5% for FS overhead)
+            const capacityIncrease = resultNPlus1.usableCapacity - resultN.usableCapacity
+            const expectedIncrease = driveSize * 0.98 // Account for ~2% filesystem overhead
+            const tolerance = expectedIncrease * 0.05
+
+            return Math.abs(capacityIncrease - expectedIncrease) < tolerance
+          },
+        ),
+        { numRuns: 50 },
+      )
+    })
+
+    it('RAID 1: capacity should equal N/2 drives (mirroring)', () => {
+      fc.assert(
+        fc.property(
+          fc.integer({ min: 2, max: 24 }).filter((n) => n % 2 === 0), // Even number of drives
+          fc.integer({ min: 1_000_000_000_000, max: 10_000_000_000_000 }),
+          (driveCount, driveSize) => {
+            const testDrive: Drive = {
+              id: 'test',
+              model: 'Test',
+              type: 'HDD',
+              formFactor: '3.5"',
+              interface: 'SATA',
+              capacity_raw: driveSize,
+              sector_size: 512,
+              performance: { iops_read: 150, iops_write: 150, bandwidth_read_mb: 200, bandwidth_write_mb: 200 },
+              reliability: { ure_rate: 14, afr: 1.0, dwpd: 0, mtbf_hours: 1_000_000 },
+              power: { idle_watts: 5, load_watts: 10 },
+              cost_usd: 100,
+            }
+
+            const input = createInput(driveCount, { type: 'standard', level: 'RAID1' })
+            input.drive = testDrive
+            const result = calculateVolumetry(input)
+
+            // RAID 1: 50% efficiency - usable should be ~(N/2) drives
+            const expectedUsable = ((driveCount / 2) * driveSize) * 0.98 // ~2% FS overhead
+            const tolerance = expectedUsable * 0.05
+
+            return Math.abs(result.usableCapacity - expectedUsable) < tolerance
+          },
+        ),
+        { numRuns: 50 },
+      )
     })
   })
 })
