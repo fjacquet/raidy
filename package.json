@@ -34,6 +34,9 @@
   "devDependencies": {
     "@biomejs/biome": "2.3.11",
     "@tailwindcss/vite": "^4.1.18",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.1",
+    "@testing-library/user-event": "^14.6.1",
     "@types/d3-sankey": "^0.12.5",
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^24.10.1",
@@ -43,6 +46,7 @@
     "@vitest/coverage-v8": "^4.0.16",
     "@vitest/ui": "^4.0.16",
     "autoprefixer": "^10.4.23",
+    "jsdom": "^27.4.0",
     "postcss": "^8.5.6",
     "snyk": "^1.1301.2",
     "tailwindcss": "^4.1.18",
