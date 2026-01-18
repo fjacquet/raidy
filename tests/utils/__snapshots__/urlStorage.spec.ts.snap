@@ -1,0 +1,3 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`URL Storage - Serialization Roundtrip > should snapshot URL format for regression prevention 1`] = `"/simulator#storage-state=N4IgLg9gDhA2EHMCeIBcoxKgUzSAzmAIYB2AJkQE5kgA0Is2AbtrHgEoCCAkgCIBsIAL70ylAJYsAwhACuJMGn5CgA"`;
