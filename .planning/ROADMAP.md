@@ -133,13 +133,14 @@ Plans:
 4. Production bundle size remains under 2MB total with proper code splitting
 5. Invalid URL hashes show user notification instead of silent console.warn failure
 
-**Plans:** 3 plans
+**Plans:** 4 plans
 
 Plans:
 
 - [ ] 05-01-PLAN.md — Split useCalculations into independent memoization hooks
 - [ ] 05-02-PLAN.md — Implement Monte Carlo cooperative yielding and reduce default iterations
 - [ ] 05-03-PLAN.md — Lazy-load PDF export and configure bundle analysis
+- [ ] 05-04-PLAN.md — Verify BUG-01 fix (URL hash parse failures show user notifications)
 
 ---
 
