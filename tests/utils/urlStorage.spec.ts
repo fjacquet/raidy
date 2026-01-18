@@ -769,7 +769,7 @@ describe('URL Storage - Security: Malicious URL Protection (SEC-01, SEC-02, SEC-
 
   describe('SEC-10: Type Safety', () => {
     it('should reject string instead of number for driveCount', () => {
-      const maliciousState = createValidState({ driveCount: '12' as any })
+      const maliciousState = createValidState({ driveCount: '12' as unknown as number })
       setMaliciousUrlHash(maliciousState)
 
       const result = urlHashStorage.getItem('raidy')
@@ -799,7 +799,8 @@ describe('URL Storage - Security: Malicious URL Protection (SEC-01, SEC-02, SEC-
       const result = urlHashStorage.getItem('raidy')
 
       expect(result).not.toBeNull()
-      const parsed = JSON.parse(result!)
+      if (!result) throw new Error('Expected result to be non-null')
+      const parsed = JSON.parse(result)
       expect(parsed.driveId).toBe('wd-gold-24tb')
       expect(parsed.driveCount).toBe(12)
     })
@@ -839,7 +840,8 @@ describe('URL Storage - Security: Malicious URL Protection (SEC-01, SEC-02, SEC-
       const result = urlHashStorage.getItem('raidy')
 
       expect(result).not.toBeNull()
-      const parsed = JSON.parse(result!)
+      if (!result) throw new Error('Expected result to be non-null')
+      const parsed = JSON.parse(result)
       expect(parsed.driveCount).toBe(12)
       expect(parsed.topology.type).toBe('standard')
       expect(parsed.topology.level).toBe('RAID6')
@@ -854,7 +856,8 @@ describe('URL Storage - Security: Malicious URL Protection (SEC-01, SEC-02, SEC-
       const result = urlHashStorage.getItem('raidy')
 
       expect(result).not.toBeNull()
-      const parsed = JSON.parse(result!)
+      if (!result) throw new Error('Expected result to be non-null')
+      const parsed = JSON.parse(result)
       expect(parsed.topology.type).toBe('zfs')
       expect(parsed.topology.level).toBe('raidz2')
     })
@@ -866,7 +869,8 @@ describe('URL Storage - Security: Malicious URL Protection (SEC-01, SEC-02, SEC-
       const result = urlHashStorage.getItem('raidy')
 
       expect(result).not.toBeNull()
-      const parsed = JSON.parse(result!)
+      if (!result) throw new Error('Expected result to be non-null')
+      const parsed = JSON.parse(result)
       expect(parsed.driveCount).toBe(1000)
     })
 
@@ -877,7 +881,8 @@ describe('URL Storage - Security: Malicious URL Protection (SEC-01, SEC-02, SEC-
       const result = urlHashStorage.getItem('raidy')
 
       expect(result).not.toBeNull()
-      const parsed = JSON.parse(result!)
+      if (!result) throw new Error('Expected result to be non-null')
+      const parsed = JSON.parse(result)
       expect(parsed.driveCount).toBe(1)
     })
   })

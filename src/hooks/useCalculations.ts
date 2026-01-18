@@ -10,7 +10,12 @@ import { calculateSustainability } from '@/engines/sustainability'
 import { calculateVolumetry } from '@/engines/volumetry'
 import { useConfigStore } from '@/store'
 import type { Drive } from '@/types'
-import type { CalculationResults } from '@/types/results'
+import type {
+  CalculationResults,
+  PerformanceResult,
+  SustainabilityResult,
+  VolumetryResult,
+} from '@/types/results'
 import { formatBytes as formatBytesUtil } from '@/utils'
 import { hasBlockingErrors, validateConfiguration } from '@/utils/validators'
 
@@ -164,60 +169,138 @@ export function useCalculations(): CalculationResults {
     }
 
     // Volumetry calculations (uses total drives across all servers)
-    const volumetry = calculateVolumetry({
-      drive,
-      driveCount: totalDriveCount,
-      hotSpares: totalHotSpares,
-      serverCount,
-      topology,
-      zfsOptions,
-      s2dOptions,
-      vsanOptions,
-      objectscaleOptions,
-      powerstoreOptions,
-      powerscaleOptions,
-      cephOptions,
-      powerFlexOptions,
-      netAppOptions,
-      synologyOptions,
-      nutanixOptions,
-      powervaultOptions,
-      compressionRatio,
-      dedupRatio,
-    })
+    let volumetry: VolumetryResult
+    try {
+      volumetry = calculateVolumetry({
+        drive,
+        driveCount: totalDriveCount,
+        hotSpares: totalHotSpares,
+        serverCount,
+        topology,
+        zfsOptions,
+        s2dOptions,
+        vsanOptions,
+        objectscaleOptions,
+        powerstoreOptions,
+        powerscaleOptions,
+        cephOptions,
+        powerFlexOptions,
+        netAppOptions,
+        synologyOptions,
+        nutanixOptions,
+        powervaultOptions,
+        compressionRatio,
+        dedupRatio,
+      })
+    } catch (error) {
+      console.error('[Volumetry Engine Error]', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        context: {
+          driveId: drive.id,
+          driveCount: totalDriveCount,
+          serverCount,
+          topology: topology.type,
+          level: topology.level,
+        },
+        timestamp: new Date().toISOString(),
+      })
+      // Set safe fallback state
+      volumetry = {
+        rawCapacity: 0,
+        parityOverhead: 0,
+        hotSpareOverhead: 0,
+        filesystemOverhead: 0,
+        slopOverhead: 0,
+        usableCapacity: 0,
+        effectiveCapacity: 0,
+        efficiency: 0,
+        breakdown: [],
+      }
+      errors.push('Volumetry calculation failed')
+    }
 
     // Performance calculations (uses total drives across all servers)
-    const performance = calculatePerformance({
-      drive,
-      driveCount: totalDriveCount,
-      hotSpares: totalHotSpares,
-      serverCount,
-      topology,
-      controllerOptions,
-      readPercent,
-      randomPercent,
-      blockSize,
-      networkSpeed,
-      pcieGen,
-      pcieLanes,
-      powerFlexOptions,
-      cephOptions,
-      nutanixOptions,
-    })
+    let performance: PerformanceResult
+    try {
+      performance = calculatePerformance({
+        drive,
+        driveCount: totalDriveCount,
+        hotSpares: totalHotSpares,
+        serverCount,
+        topology,
+        controllerOptions,
+        readPercent,
+        randomPercent,
+        blockSize,
+        networkSpeed,
+        pcieGen,
+        pcieLanes,
+        powerFlexOptions,
+        cephOptions,
+        nutanixOptions,
+      })
+    } catch (error) {
+      console.error('[Performance Engine Error]', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        context: {
+          driveId: drive.id,
+          driveCount: totalDriveCount,
+          serverCount,
+          topology: topology.type,
+          level: topology.level,
+          readPercent,
+          randomPercent,
+        },
+        timestamp: new Date().toISOString(),
+      })
+      // Set safe fallback state
+      performance = {
+        maxReadThroughputMBs: 0,
+        maxWriteThroughputMBs: 0,
+        maxReadIOPS: 0,
+        maxWriteIOPS: 0,
+        layers: [],
+        bottleneckDescription: 'Performance calculation failed',
+      }
+      errors.push('Performance calculation failed')
+    }
 
     // Sustainability calculations (uses total drives for power, serverCount for server power)
-    const sustainability = calculateSustainability({
-      drive,
-      driveCount: totalDriveCount,
-      serverCount,
-      serverPowerWatts,
-      pue,
-      carbonRegion,
-      projectYears,
-      electricityCostPerKwh,
-      dailyWriteVolume,
-      usableCapacity: volumetry.usableCapacity,
-    })
+    let sustainability: SustainabilityResult
+    try {
+      sustainability = calculateSustainability({
+        drive,
+        driveCount: totalDriveCount,
+        serverCount,
+        serverPowerWatts,
+        pue,
+        carbonRegion,
+        projectYears,
+        electricityCostPerKwh,
+        dailyWriteVolume,
+        usableCapacity: volumetry.usableCapacity,
+      })
+    } catch (error) {
+      console.error('[Sustainability Engine Error]', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        context: {
+          driveId: drive.id,
+          driveCount: totalDriveCount,
+          serverCount,
+          pue,
+          carbonRegion,
+        },
+        timestamp: new Date().toISOString(),
+      })
+      // Set safe fallback state
+      sustainability = {
+        annualEnergyKwh: 0,
+        annualEnergyCost: 0,
+        annualCO2Kg: 0,
+        powerBreakdown: { drives: 0, servers: 0, cooling: 0, total: 0 },
+      }
+      errors.push('Sustainability calculation failed')
+    }
 
     return {
       volumetry,
