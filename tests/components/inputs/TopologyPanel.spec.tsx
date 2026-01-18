@@ -40,7 +40,15 @@ vi.mock('@/components/common/FormControls', () => ({
       ))}
     </select>
   ),
-  Slider: ({ value, onChange, id }: { value: number; onChange: (v: number) => void; id?: string }) => (
+  Slider: ({
+    value,
+    onChange,
+    id,
+  }: {
+    value: number
+    onChange: (v: number) => void
+    id?: string
+  }) => (
     <input id={id} type="range" value={value} onChange={(e) => onChange(Number(e.target.value))} />
   ),
 }))

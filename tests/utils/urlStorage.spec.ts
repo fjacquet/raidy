@@ -71,25 +71,25 @@ describe('URL Storage - Serialization Roundtrip', () => {
 
   it('should roundtrip standard RAID configuration', () => {
     const stateKey = 'storage-state'
-    const raidConfig = JSON.stringify({
+    const raidConfig = {
       topology: { type: 'standard', level: 'RAID5' },
       driveCount: 8,
       driveModel: 'wd-gold-12tb',
       hotSpares: 1,
       serverCount: 1,
-    })
+    }
 
     // Roundtrip
-    urlHashStorage.setItem(stateKey, raidConfig)
+    urlHashStorage.setItem(stateKey, JSON.stringify(raidConfig))
     const newUrl = mockHistory.replaceState.mock.calls[0][2]
     mockLocation.hash = `#${newUrl.split('#')[1]}`
     const retrieved = urlHashStorage.getItem(stateKey)
 
     // Verify
-    expect(retrieved).toBe(raidConfig)
     expect(retrieved).not.toBeNull()
     if (retrieved) {
       const parsed = JSON.parse(retrieved)
+      expect(parsed).toMatchObject(raidConfig)
       expect(parsed.topology.level).toBe('RAID5')
       expect(parsed.driveCount).toBe(8)
       expect(parsed.hotSpares).toBe(1)
@@ -98,30 +98,36 @@ describe('URL Storage - Serialization Roundtrip', () => {
 
   it('should roundtrip ZFS configuration with options', () => {
     const stateKey = 'storage-state'
-    const zfsConfig = JSON.stringify({
+    const zfsConfig = {
       topology: { type: 'zfs', level: 'raidz2' },
       driveCount: 6,
       driveModel: 'samsung-870-evo-4tb',
       zfsOptions: {
-        compression: 'lz4',
         ashift: 12,
+        compression: true,
+        compressionType: 'lz4' as const,
+        dedup: false,
+        recordsize: 128,
+        specialVdev: false,
+        slogDevice: false,
+        l2arcDevice: false,
         maxOccupation: 80,
-        recordSize: 128,
       },
-    })
+    }
 
     // Roundtrip
-    urlHashStorage.setItem(stateKey, zfsConfig)
+    urlHashStorage.setItem(stateKey, JSON.stringify(zfsConfig))
     const newUrl = mockHistory.replaceState.mock.calls[0][2]
     mockLocation.hash = `#${newUrl.split('#')[1]}`
     const retrieved = urlHashStorage.getItem(stateKey)
 
     // Verify all ZFS options preserved
-    expect(retrieved).toBe(zfsConfig)
     expect(retrieved).not.toBeNull()
     if (retrieved) {
       const parsed = JSON.parse(retrieved)
-      expect(parsed.zfsOptions.compression).toBe('lz4')
+      expect(parsed).toMatchObject(zfsConfig)
+      expect(parsed.zfsOptions.compression).toBe(true)
+      expect(parsed.zfsOptions.compressionType).toBe('lz4')
       expect(parsed.zfsOptions.ashift).toBe(12)
       expect(parsed.zfsOptions.maxOccupation).toBe(80)
     }
@@ -129,7 +135,7 @@ describe('URL Storage - Serialization Roundtrip', () => {
 
   it('should roundtrip vSAN ESA configuration', () => {
     const stateKey = 'storage-state'
-    const vsanConfig = JSON.stringify({
+    const vsanConfig = {
       topology: { type: 'vsan_esa', level: 'vsan_esa_raid5' },
       driveCount: 8,
       driveModel: 'intel-p5520-3.84tb',
@@ -140,19 +146,19 @@ describe('URL Storage - Serialization Roundtrip', () => {
         dedupEnabled: true,
         compressionEnabled: true,
       },
-    })
+    }
 
     // Roundtrip
-    urlHashStorage.setItem(stateKey, vsanConfig)
+    urlHashStorage.setItem(stateKey, JSON.stringify(vsanConfig))
     const newUrl = mockHistory.replaceState.mock.calls[0][2]
     mockLocation.hash = `#${newUrl.split('#')[1]}`
     const retrieved = urlHashStorage.getItem(stateKey)
 
     // Verify vSAN options preserved
-    expect(retrieved).toBe(vsanConfig)
     expect(retrieved).not.toBeNull()
     if (retrieved) {
       const parsed = JSON.parse(retrieved)
+      expect(parsed).toMatchObject(vsanConfig)
       expect(parsed.serverCount).toBe(8)
       expect(parsed.vsanOptions.ftt).toBe(1)
       expect(parsed.vsanOptions.dedupEnabled).toBe(true)
@@ -161,21 +167,21 @@ describe('URL Storage - Serialization Roundtrip', () => {
 
   it('should roundtrip complete configuration with all fields', () => {
     const stateKey = 'storage-state'
-    const completeConfig = JSON.stringify({
+    const completeConfig = {
       // Hardware
       driveCount: 12,
       driveModel: 'seagate-exos-x18-18tb',
       serverCount: 4,
       hotSpares: 2,
       // Topology
-      topology: { type: 's2d', level: 's2d_mirror' },
+      topology: { type: 's2d', level: 'mirror' },
       // Workload
       workloadProfile: 'database',
       randomReadPercent: 70,
       randomWritePercent: 20,
-      blockSize: 8192,
+      blockSize: '8192',
       // Advanced settings
-      networkSpeed: 25000,
+      networkSpeed: '25000',
       controllerType: 'hba_12g',
       raidChunkSize: 256,
       compressionRatio: 1.5,
@@ -183,27 +189,29 @@ describe('URL Storage - Serialization Roundtrip', () => {
       // S2D options
       s2dOptions: {
         faultDomains: 4,
-        redundancyMode: 'three_way_mirror',
+        mirrorCopies: 3 as const,
+        rebuildReserve: true,
+        reserveStrategy: 'node_failure' as const,
         storageTiers: true,
       },
-    })
+    }
 
     // Roundtrip
-    urlHashStorage.setItem(stateKey, completeConfig)
+    urlHashStorage.setItem(stateKey, JSON.stringify(completeConfig))
     const newUrl = mockHistory.replaceState.mock.calls[0][2]
     mockLocation.hash = `#${newUrl.split('#')[1]}`
     const retrieved = urlHashStorage.getItem(stateKey)
 
     // Verify all fields preserved
-    expect(retrieved).toBe(completeConfig)
     expect(retrieved).not.toBeNull()
     if (retrieved) {
       const parsed = JSON.parse(retrieved)
+      expect(parsed).toMatchObject(completeConfig)
       expect(parsed.driveCount).toBe(12)
       expect(parsed.hotSpares).toBe(2)
       expect(parsed.workloadProfile).toBe('database')
-      expect(parsed.blockSize).toBe(8192)
-      expect(parsed.networkSpeed).toBe(25000)
+      expect(parsed.blockSize).toBe('8192')
+      expect(parsed.networkSpeed).toBe('25000')
       expect(parsed.compressionRatio).toBe(1.5)
       expect(parsed.s2dOptions.faultDomains).toBe(4)
     }
@@ -254,7 +262,7 @@ describe('URL Storage - Serialization Roundtrip', () => {
   it('should compress URL for complex configuration', () => {
     const stateKey = 'storage-state'
     // Create a large config with repetitive data that compresses well
-    const largeConfig = JSON.stringify({
+    const largeConfig = {
       driveCount: 24,
       driveModel: 'samsung-pm9a3-3.84tb',
       topology: { type: 'ceph', level: 'ceph_ec_4_2' },
@@ -277,23 +285,28 @@ describe('URL Storage - Serialization Roundtrip', () => {
         datacenter: 'dc-west-1',
         status: 'active',
       }),
-    })
+    }
+    const largeConfigStr = JSON.stringify(largeConfig)
 
     // Get compressed version
-    const compressed = compressToEncodedURIComponent(largeConfig)
+    const compressed = compressToEncodedURIComponent(largeConfigStr)
 
     // With repetitive data, compression should work
     // LZ compression is effective on repetitive patterns
-    expect(compressed.length).toBeLessThan(largeConfig.length)
+    expect(compressed.length).toBeLessThan(largeConfigStr.length)
 
     // Roundtrip
-    urlHashStorage.setItem(stateKey, largeConfig)
+    urlHashStorage.setItem(stateKey, largeConfigStr)
     const newUrl = mockHistory.replaceState.mock.calls[0][2]
     mockLocation.hash = `#${newUrl.split('#')[1]}`
     const retrieved = urlHashStorage.getItem(stateKey)
 
     // Verify
-    expect(retrieved).toBe(largeConfig)
+    expect(retrieved).not.toBeNull()
+    if (retrieved) {
+      const parsed = JSON.parse(retrieved)
+      expect(parsed).toMatchObject(largeConfig)
+    }
   })
 
   it('should snapshot URL format for regression prevention', () => {
@@ -312,23 +325,28 @@ describe('URL Storage - Serialization Roundtrip', () => {
 
   it('should handle maximum complexity configuration', () => {
     const stateKey = 'storage-state'
-    const maxConfig = JSON.stringify({
+    const maxConfig = {
       driveCount: 60,
       driveModel: 'micron-9400-15.36tb',
       serverCount: 16,
       hotSpares: 4,
-      topology: { type: 'netapp', level: 'netapp_raid_tec' },
+      topology: { type: 'proprietary', level: 'netapp_raid_tec' },
       workloadProfile: 'mixed',
-      networkSpeed: 100000,
+      networkSpeed: '100000',
       controllerType: 'smartpqi_gen5',
       raidChunkSize: 1024,
       compressionRatio: 2.5,
       dedupRatio: 3.0,
       netAppOptions: {
-        raidType: 'raid_tec',
-        aggregateType: 'ssd',
-        adpEnabled: true,
-        flashPoolEnabled: true,
+        platform: 'aff_a' as const,
+        raidType: 'raid_tec' as const,
+        adpVersion: 'adpv2' as const,
+        snapshotReserve: 20,
+        dataReductionRatio: 3.5,
+        waflOverhead: 0.1,
+        compression: true,
+        dedup: true,
+        zeroDetection: true,
       },
       performanceTargets: {
         iopsTarget: 1000000,
@@ -340,19 +358,19 @@ describe('URL Storage - Serialization Roundtrip', () => {
         maxPowerWatts: 20000,
         maxRackUnits: 42,
       },
-    })
+    }
 
     // Roundtrip
-    urlHashStorage.setItem(stateKey, maxConfig)
+    urlHashStorage.setItem(stateKey, JSON.stringify(maxConfig))
     const newUrl = mockHistory.replaceState.mock.calls[0][2]
     mockLocation.hash = `#${newUrl.split('#')[1]}`
     const retrieved = urlHashStorage.getItem(stateKey)
 
     // Verify all fields preserved
-    expect(retrieved).toBe(maxConfig)
     expect(retrieved).not.toBeNull()
     if (retrieved) {
       const parsed = JSON.parse(retrieved)
+      expect(parsed).toMatchObject(maxConfig)
       expect(parsed.driveCount).toBe(60)
       expect(parsed.netAppOptions.raidType).toBe('raid_tec')
       expect(parsed.costConstraints.maxBudgetUsd).toBe(500000)

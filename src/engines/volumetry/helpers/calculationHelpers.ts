@@ -13,7 +13,6 @@ import type {
   S2DOptions,
   Topology,
   TopologyType,
-  VsanOptions,
   ZfsOptions,
 } from '@/types/topology'
 import { assertNever } from '@/utils/typeGuards'

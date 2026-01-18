@@ -18,15 +18,15 @@ import type {
   S2DOptions,
   SynologyOptions,
   Topology,
-  TopologyType,
   VsanOptions,
   ZfsOptions,
 } from '@/types/topology'
-import { assertNever } from '@/utils/typeGuards'
-// Overhead modules
-import { calculateOverheads } from './overhead/overheadCalculator'
 // Breakdown builder
 import { buildBreakdown } from './breakdown/buildBreakdown'
+// Helper functions
+import { getDataFraction } from './helpers/calculationHelpers'
+// Overhead modules
+import { calculateOverheads } from './overhead/overheadCalculator'
 // Post-processing (compression, dedup, ZFS details)
 import { applyCompressionDedup, buildZfsDetails } from './postProcessing/capacityEnhancements'
 // Validation module
@@ -36,8 +36,6 @@ import {
   validateDriveCount,
   validateTopology,
 } from './validation/inputValidation'
-// Helper functions
-import { getDataFraction, getZfsOverhead } from './helpers/calculationHelpers'
 
 // Type assertion for the imported JSON
 const _drives = drivesData as Record<string, Drive>
@@ -63,7 +61,6 @@ export interface VolumetryInput {
   compressionRatio: number
   dedupRatio: number
 }
-
 
 /**
  * Calculate complete volumetry results.
