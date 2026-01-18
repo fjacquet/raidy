@@ -4,7 +4,8 @@ import { defineConfig } from 'vitest/config'
 export default defineConfig({
   test: {
     globals: true,
-    environment: 'node',
+    environment: 'jsdom',
+    setupFiles: ['./src/test/setup.ts'],
     include: ['src/**/*.{test,spec}.{ts,tsx}', 'tests/**/*.{test,spec}.{ts,tsx}'],
     coverage: {
       provider: 'v8',
@@ -12,11 +13,11 @@ export default defineConfig({
       include: ['src/engines/**/*.ts', 'src/workers/**/*.ts', 'src/utils/**/*.ts'],
       exclude: ['**/*.d.ts', '**/*.test.ts', '**/*.spec.ts'],
       thresholds: {
-        // Start with low thresholds, increase as coverage improves
-        lines: 20,
-        functions: 20,
-        branches: 20,
-        statements: 20,
+        // Production-ready coverage thresholds
+        lines: 75,
+        functions: 75,
+        branches: 75,
+        statements: 75,
       },
     },
   },
