@@ -11,9 +11,9 @@ See: .planning/PROJECT.md
 ## Current Position
 
 Phase: 2 of 6 (Calculation Validation - COMPLETE)
-Plan: 8 of 8 (all plans complete)
-Status: Phase 2 verified with caveat - 64.84% volumetry coverage vs 75% target (90% goal achievement)
-Last activity: 2026-01-18 - Phase 2 re-verification complete after gap closure
+Plan: 9 of 9 (all plans complete including gap closure)
+Status: Phase 2 complete - 87.03% volumetry coverage exceeds 75% target (100% goal achievement)
+Last activity: 2026-01-18 - Completed 02-10-PLAN.md (tiering and advanced ZFS tests)
 
 Progress: ███████████████░░░░░ 66.7% (2/6 phases complete)
 
@@ -21,15 +21,15 @@ Progress: ███████████████░░░░░ 66.7% (2/
 
 **Velocity:**
 
-- Total plans completed: 10
-- Average duration: 5.6 min
+- Total plans completed: 11
+- Average duration: 5.8 min
 
 **By Phase:**
 
 | Phase                      | Plans | Total | Avg/Plan |
 | -------------------------- | ----- | ----- | -------- |
 | 1 - Test Infrastructure    | 2/2   | 3min  | 1.5min   |
-| 2 - Calculation Validation | 8/8   | 53min | 6.6min   |
+| 2 - Calculation Validation | 9/9   | 61min | 6.8min   |
 
 ## Accumulated Context
 
@@ -71,6 +71,10 @@ Progress: ███████████████░░░░░ 66.7% (2/
 | 02-07 | Add input validation guards at calculateVolumetry entry point           | Centralize error handling by validating all inputs (drive, topology, driveCount) before any processing. Makes function more robust and easier to maintain.                                                                     |
 | 02-07 | Use property-based testing (fast-check) for extreme value ranges        | Generate random extreme values (100-500 drives, 1TB-20TB capacities) to validate calculations always produce finite, non-negative results. Catches edge cases manual tests would miss.                                         |
 | 02-07 | Clamp efficiency to 0 when NaN/Infinity                                 | Prevent downstream calculation errors in UI components that expect finite numbers. Explicit NaN/Infinity checking after division operations.                                                                                   |
+| 02-10 | Use real drive IDs from drives.json for tiering tests                  | Fake IDs like 'ssd-nvme-1tb' don't exist in drives.json, causing tiering to fail. Used samsung-pm9a3-m2-1.92tb (NVMe), seagate-exos-x20 (20TB HDD) for realistic validation.                                                   |
+| 02-10 | Allow driveCount=0 and drive=null when tiering is configured           | Tiering provides drives via tieringConfig.fastTier and tieringConfig.capacityTier. Modified validation to check tiering BEFORE driveCount/drive validation to enable hybrid storage configurations.                            |
+| 02-10 | Fix ObjectScale geo-overhead efficiency calculations                    | Existing tests didn't account for filesystem overhead (~1.5%) on top of geo and system overhead. Updated 8 tests with correct compounded efficiency (EC \* geo \* system \* FS).                                               |
+| 02-10 | Test snapshot reserves with varying percentages (15-30%)                | Validates breakdown entries are added correctly when snapshotReservePercent > 0. Ensures PowerStore/PowerScale snapshot reserve features work across different configuration levels.                                           |
 
 ### Pending Todos
 
@@ -82,6 +86,6 @@ Progress: ███████████████░░░░░ 66.7% (2/
 
 ## Session Continuity
 
-Last session: 2026-01-18T10:30:00Z
-Stopped at: Phase 2 complete (verified with 90% goal achievement, 445 tests passing)
+Last session: 2026-01-18T16:18:00Z
+Stopped at: Phase 2 complete (100% goal achievement, 87.03% volumetry coverage, 227 volumetry tests)
 Resume file: None - Ready for Phase 3 (Security Hardening)
