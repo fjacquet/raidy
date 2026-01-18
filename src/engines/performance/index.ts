@@ -18,50 +18,23 @@ import type {
   RaidControllerOptions,
   Topology,
 } from '@/types/topology'
-import { CONTROLLER_LIMITS } from '@/types/topology'
+import { CONTROLLER_LIMITS, type TopologyType } from '@/types/topology'
 import { raidPerformanceStrategy } from './strategies/raid'
 import { zfsPerformanceStrategy } from './strategies/zfs'
+import { s2dPerformanceStrategy } from './strategies/s2d'
+import { vsanPerformanceStrategy } from './strategies/vsan'
+import { cephPerformanceStrategy } from './strategies/ceph'
+import { nutanixPerformanceStrategy } from './strategies/nutanix'
+import { powerFlexPerformanceStrategy } from './strategies/powerflex'
+import { dellPerformanceStrategy } from './strategies/dell'
+import { proprietaryPerformanceStrategy } from './strategies/proprietary'
 import type { PerformanceStrategy } from './strategies/PerformanceStrategy'
-
-/** PowerFlex CPU factor based on mode (per PowerFlex spec) */
-const POWERFLEX_CPU_FACTOR = {
-  /** Medium Granularity (Standard): 100% IOPS available */
-  medium: 1.0,
-  /** Fine Granularity with compression (Ultra): -15% IOPS */
-  fine_compressed: 0.85,
-  /** Fine Granularity without compression: -5% IOPS */
-  fine: 0.95,
-  /** Erasure Coding: -30% IOPS due to parity calculation */
-  erasure: 0.7,
-} as const
-
-/** Estimated base latency by drive type in microseconds */
-const DRIVE_BASE_LATENCY_US = {
-  HDD: 8000, // 8ms for HDD seek/rotational
-  SSD_SATA: 150, // 150μs for SATA SSD
-  SSD_SAS: 100, // 100μs for SAS SSD
-  SSD_NVMe: 20, // 20μs for NVMe
-} as const
-
-/** Network latency by speed in microseconds */
-const NETWORK_LATENCY_US: Record<NetworkSpeed, number> = {
-  '1GbE': 500,
-  '10GbE': 50,
-  '25GbE': 25,
-  '40GbE': 20,
-  '100GbE': 10,
-  '200GbE': 5,
-  '400GbE': 3,
-}
-
-/** CPU overhead for different operations in microseconds */
-const CPU_OVERHEAD_US = {
-  standard: 10, // Standard RAID
-  compression: 50, // LZ4/zstd compression
-  dedup: 100, // Deduplication lookup
-  erasure_coding: 80, // EC parity calculation
-  replication: 20, // Data replication coordination
-} as const
+import { assertNever } from '@/utils/typeGuards'
+import {
+  calculateXfsAlignment,
+  calculateEstimatedLatency,
+  getPowerFlexCpuFactor,
+} from './utils'
 
 export interface PerformanceInput {
   drive: Drive
@@ -120,443 +93,46 @@ const PCIE_LANE_COUNT: Record<PCIeLanes, number> = {
 /**
  * Get strategy for topology type.
  * Returns appropriate performance calculation strategy for the given topology.
+ * Uses exhaustive type checking to ensure all topology types are handled.
  */
-function getStrategy(topologyType: string): PerformanceStrategy | null {
+function getStrategy(topologyType: TopologyType): PerformanceStrategy {
   switch (topologyType) {
     case 'standard':
       return raidPerformanceStrategy
     case 'zfs':
       return zfsPerformanceStrategy
+    case 's2d':
+      return s2dPerformanceStrategy
+    case 'vsan_osa':
+    case 'vsan_esa':
+      return vsanPerformanceStrategy
+    case 'ceph':
+      return cephPerformanceStrategy
+    case 'nutanix':
+      return nutanixPerformanceStrategy
+    case 'powerflex':
+      return powerFlexPerformanceStrategy
+    case 'powerstore':
+    case 'powerscale':
+    case 'objectscale':
+    case 'powervault':
+      return dellPerformanceStrategy
+    case 'proprietary':
+      return proprietaryPerformanceStrategy
     default:
-      return null // Other strategies will be added in Task 2
+      // TypeScript will error if new topology added without case
+      return assertNever(topologyType)
   }
 }
 
 /**
  * Get RAID write penalty for random I/O.
  * This is the number of I/O operations required per write.
+ * Delegates to topology-specific strategy for calculation.
  */
 function getRaidWritePenalty(topology: Topology): number {
-  // Try to use strategy pattern first
   const strategy = getStrategy(topology.type)
-  if (strategy) {
-    return strategy.getWritePenalty(topology.level, topology)
-  }
-
-  // Fallback for topologies not yet extracted to strategies
-  switch (topology.type) {
-    case 'standard':
-      // This should not be reached (handled by strategy)
-      switch (topology.level) {
-        case 'RAID0':
-          return 1
-        case 'RAID1':
-          return 2
-        case 'RAID1E':
-          return 2
-        case 'RAID1_3WAY':
-          return 3
-        case 'RAID3':
-          return 2
-        case 'RAID4':
-          return 3
-        case 'RAID5':
-          return 4
-        case 'RAID5E':
-          return 4
-        case 'RAID5EE':
-          return 4
-        case 'RAID6':
-          return 6
-        case 'RAID10':
-          return 2
-        case 'RAID50':
-          return 4
-        case 'RAID60':
-          return 6
-        default:
-          return 1
-      }
-
-    case 'zfs':
-      // This should not be reached (handled by strategy)
-      switch (topology.level) {
-        case 'stripe':
-          return 1
-        case 'mirror':
-          return 2
-        case 'raidz1':
-        case 'draid1':
-          return 2
-        case 'raidz2':
-        case 'draid2':
-          return 3
-        case 'raidz3':
-        case 'draid3':
-          return 4
-        default:
-          return 1
-      }
-
-    case 's2d':
-      switch (topology.level) {
-        case 'simple':
-          return 1
-        case 'mirror':
-          return 2
-        case 'parity':
-          return 3
-        case 'dual_parity':
-          return 4
-        case 'map':
-          return 2.5 // Blend of mirror and parity
-        default:
-          return 1
-      }
-
-    case 'proprietary':
-      switch (topology.level) {
-        case 'synology_shr':
-          return 4 // Similar to RAID5
-        case 'synology_shr2':
-          return 6 // Similar to RAID6
-        case 'synology_raid_f1':
-          return 3.5 // RAID F1 optimized for SSD with uneven parity rotation
-        case 'netapp_raid_dp':
-          return 4 // Optimized double parity with WAFL
-        case 'netapp_raid_tec':
-          return 5 // Optimized triple parity for large drives
-        default:
-          return 1
-      }
-
-    case 'vsan_osa':
-      // vSAN OSA (Original Storage Architecture) - disk groups
-      // Traditional RAID penalties due to two-tier architecture
-      switch (topology.level) {
-        case 'vsan_osa_raid1':
-          return 2 // 2-way mirror writes
-        case 'vsan_osa_raid1_ftt2':
-          return 3 // 3-way mirror writes (FTT=2)
-        case 'vsan_osa_raid5':
-          return 4 // Traditional RAID-5 penalty (3+1)
-        case 'vsan_osa_raid6':
-          return 6 // Traditional RAID-6 penalty (4+2)
-        default:
-          return 2
-      }
-
-    case 'vsan_esa':
-      // vSAN ESA (Express Storage Architecture) - single-tier NVMe
-      // Near RAID-1 performance due to log-structured writes
-      switch (topology.level) {
-        case 'vsan_esa_raid1':
-          return 2 // Mirror writes
-        case 'vsan_esa_raid5':
-          return 2.5 // Log-structured optimized, near RAID-1 performance
-        case 'vsan_esa_raid6':
-          return 3.5 // Optimized double parity, much better than OSA
-        default:
-          return 2.5
-      }
-
-    case 'objectscale':
-      // ObjectScale S3 object storage write characteristics per SME spec
-      // EC with eventual consistency has low write amplification
-      switch (topology.level) {
-        case 'objectscale_ec_12_4':
-          return 1.33 // EC 12+4: write amplification = 16/12 = 1.33 (default, min 5 nodes)
-        case 'objectscale_ec_10_2':
-          return 1.2 // EC 10+2: write amplification = 12/10 = 1.2 (cold/archive, min 7 nodes)
-        case 'objectscale_ec_24_4':
-          return 1.17 // EC 24+4: write amplification = 28/24 = 1.17 (tech preview, min 8 nodes)
-        case 'objectscale_mirror_3':
-          return 3 // Triple mirroring: 3x write amplification (metadata/small configs)
-        default:
-          return 1.33 // Default to EC 12+4
-      }
-
-    case 'powerstore':
-      // Dell PowerStore block storage write characteristics
-      switch (topology.level) {
-        case 'powerstore_raid5':
-          return 3 // PowerStore uses optimized RAID-5 with NVMe
-        case 'powerstore_raid6':
-          return 4 // PowerStore RAID-6
-        case 'powerstore_raid10':
-          return 2 // PowerStore RAID-10 mirror writes
-        default:
-          return 3
-      }
-
-    case 'powerscale':
-      // Dell PowerScale scale-out NAS write characteristics
-      switch (topology.level) {
-        case 'powerscale_n1':
-          return 2.5 // N+1 with inline writes
-        case 'powerscale_n2':
-          return 3.5 // N+2
-        case 'powerscale_n2_1':
-          return 3.5 // N+2:1 similar to N+2
-        case 'powerscale_n3':
-          return 4.5 // N+3
-        case 'powerscale_n4':
-          return 5.5 // N+4
-        case 'powerscale_mirror_2x':
-          return 2 // 2x mirror writes
-        case 'powerscale_mirror_3x':
-          return 3 // 3x mirror writes
-        default:
-          return 3.5
-      }
-
-    case 'ceph':
-      // Ceph write characteristics depend on replication/erasure coding
-      switch (topology.level) {
-        case 'ceph_replicated_2':
-          return 2 // 2-way replication
-        case 'ceph_replicated_3':
-          return 3 // 3-way replication
-        case 'ceph_ec_2_1':
-          return 2 // EC k=2, m=1 with primary OSD coordination
-        case 'ceph_ec_4_2':
-          return 2.5 // EC k=4, m=2
-        case 'ceph_ec_8_3':
-          return 3 // EC k=8, m=3
-        case 'ceph_ec_8_4':
-          return 3.5 // EC k=8, m=4
-        default:
-          return 3 // Default to 3x replication
-      }
-
-    case 'powerflex':
-      // PowerFlex write penalties based on protection mode
-      switch (topology.level) {
-        case 'powerflex_medium_2way':
-        case 'powerflex_fine_2way':
-          return 2 // 2-way mirror writes
-        case 'powerflex_medium_3way':
-          return 3 // 3-way mirror writes (Medium Granularity only - Fine Granularity doesn't support 3-way)
-        case 'powerflex_ec_4_1':
-          return 1.25 // EC 4+1: write amplification = 5/4 = 1.25
-        case 'powerflex_ec_4_2':
-          return 1.5 // EC 4+2: write amplification = 6/4 = 1.5
-        case 'powerflex_ec_8_2':
-          return 1.25 // EC 8+2: write amplification = 10/8 = 1.25
-        case 'powerflex_ec_12_4':
-          return 1.33 // EC 12+4: write amplification = 16/12 = 1.33
-        default:
-          return 2
-      }
-
-    case 'nutanix':
-      // Nutanix write penalty based on RF and EC
-      // Per spec: Writes are synchronous across RF copies via OpLog
-      // Write Penalty = RF for replication, EC reduces it
-      switch (topology.level) {
-        case 'nutanix_rf2':
-          return 2 // RF2: write to 2 copies (primary + 1 replica)
-        case 'nutanix_rf3':
-          return 3 // RF3: write to 3 copies (primary + 2 replicas)
-        case 'nutanix_ec_rf2':
-          return 1.25 // EC-X with RF2: 4:1 striping reduces penalty
-        case 'nutanix_ec_rf3':
-          return 1.33 // EC-X with RF3: 6:2 striping
-        default:
-          return 2
-      }
-
-    case 'powervault':
-      // Dell PowerVault ME5 write penalties
-      // Traditional RAID uses standard penalties, ADAPT is optimized
-      switch (topology.level) {
-        case 'powervault_raid1':
-          return 2 // RAID 1: write to both mirrors
-        case 'powervault_raid5':
-          return 4 // RAID 5: read-modify-write for parity
-        case 'powervault_raid6':
-          return 6 // RAID 6: read-modify-write for dual parity
-        case 'powervault_raid10':
-          return 2 // RAID 10: mirror penalty only
-        case 'powervault_adapt':
-          return 2.5 // ADAPT: distributed parity reduces penalty vs traditional RAID 5/6
-        default:
-          return 4
-      }
-
-    default:
-      return 1
-  }
-}
-
-/**
- * Calculate XFS stripe alignment parameters.
- */
-function calculateXfsAlignment(
-  stripeSize: number,
-  driveCount: number,
-  topology: Topology,
-): { sunit: number; swidth: number; suValue: string; swValue: string } | undefined {
-  if (topology.type === 'zfs') {
-    return undefined // ZFS handles its own alignment
-  }
-
-  // Get number of data drives
-  let dataDrives = driveCount
-  switch (topology.type) {
-    case 'standard':
-      switch (topology.level) {
-        case 'RAID3':
-        case 'RAID4':
-        case 'RAID5':
-        case 'RAID50':
-          dataDrives = driveCount - 1
-          break
-        case 'RAID5E':
-        case 'RAID5EE':
-        case 'RAID6':
-        case 'RAID60':
-          dataDrives = driveCount - 2
-          break
-        case 'RAID1':
-        case 'RAID1E':
-        case 'RAID10':
-          dataDrives = driveCount / 2
-          break
-        case 'RAID1_3WAY':
-          dataDrives = driveCount / 3
-          break
-      }
-      break
-  }
-
-  // sunit: stripe unit size in 512-byte blocks
-  const sunit = (stripeSize * 1024) / 512
-
-  // swidth: stripe width = sunit * number of data drives
-  const swidth = sunit * dataDrives
-
-  return {
-    sunit,
-    swidth,
-    suValue: `${stripeSize}k`,
-    swValue: `${stripeSize * dataDrives}k`,
-  }
-}
-
-/**
- * Calculate PowerFlex CPU factor based on granularity and protection mode.
- * Per PowerFlex spec:
- * - Standard (Medium Granularity): 100% IOPS
- * - Ultra (Fine Granularity + compression): -15% IOPS
- * - Erasure Coding: -30% IOPS
- */
-function getPowerFlexCpuFactor(topology: Topology, powerFlexOptions?: PowerFlexOptions): number {
-  if (topology.type !== 'powerflex' || !powerFlexOptions) {
-    return 1.0
-  }
-
-  // Check if using erasure coding
-  if (powerFlexOptions.protectionMode === 'erasure') {
-    return POWERFLEX_CPU_FACTOR.erasure // -30%
-  }
-
-  // Check granularity and compression
-  if (powerFlexOptions.granularity === 'fine') {
-    if (powerFlexOptions.compression) {
-      return POWERFLEX_CPU_FACTOR.fine_compressed // -15%
-    }
-    return POWERFLEX_CPU_FACTOR.fine // -5%
-  }
-
-  return POWERFLEX_CPU_FACTOR.medium // 100%
-}
-
-/**
- * Calculate estimated latency in microseconds.
- * Per Ceph spec: Latency = (Lat_media × 2) + Lat_réseau + Overhead_CPU
- *
- * The ×2 factor accounts for:
- * - Read: seek + transfer
- * - Write: journal/WAL write + data write
- */
-function calculateEstimatedLatency(
-  drive: Drive,
-  topology: Topology,
-  networkSpeed: NetworkSpeed,
-  cephOptions?: CephOptions,
-  nutanixOptions?: NutanixOptions,
-): number {
-  // Base media latency
-  const mediaLatency = DRIVE_BASE_LATENCY_US[drive.type] || DRIVE_BASE_LATENCY_US.HDD
-
-  // Network latency
-  const networkLatency = NETWORK_LATENCY_US[networkSpeed]
-
-  // CPU overhead based on operations
-  let cpuOverhead: number = CPU_OVERHEAD_US.standard
-
-  switch (topology.type) {
-    case 'ceph':
-      // Ceph formula: (Lat_media × 2) + Lat_réseau + Overhead_CPU
-      cpuOverhead =
-        cephOptions?.poolType === 'erasure'
-          ? CPU_OVERHEAD_US.erasure_coding
-          : CPU_OVERHEAD_US.replication
-      if (cephOptions?.compression) {
-        cpuOverhead += CPU_OVERHEAD_US.compression
-      }
-      // Double media latency for Ceph (primary + replica writes)
-      return mediaLatency * 2 + networkLatency + cpuOverhead
-
-    case 'powerflex':
-      // PowerFlex with compression adds CPU overhead
-      return mediaLatency * 1.5 + networkLatency + cpuOverhead
-
-    case 'objectscale':
-      // ObjectScale S3: eventual consistency, EC overhead
-      cpuOverhead = CPU_OVERHEAD_US.erasure_coding
-      // Object storage has higher protocol overhead
-      return mediaLatency * 2 + networkLatency * 1.5 + cpuOverhead
-
-    case 'powerstore':
-      // PowerStore: optimized block storage with NVMe
-      return mediaLatency * 1.2 + cpuOverhead
-
-    case 'powerscale':
-      // PowerScale: scale-out NAS with parity writes
-      cpuOverhead = CPU_OVERHEAD_US.replication
-      return mediaLatency * 1.5 + networkLatency + cpuOverhead
-
-    case 'zfs':
-      // ZFS with CoW adds some overhead
-      return mediaLatency * 1.2 + cpuOverhead
-
-    case 'nutanix': {
-      // Nutanix DSF: CVM-to-CVM replication adds network latency
-      // Per spec: NVMe/RoCE = +0.1ms, 10GbE = +0.5ms
-      cpuOverhead = CPU_OVERHEAD_US.replication
-      if (nutanixOptions?.compression) {
-        cpuOverhead += CPU_OVERHEAD_US.compression
-      }
-      if (nutanixOptions?.dedup) {
-        cpuOverhead += CPU_OVERHEAD_US.dedup
-      }
-      // Network latency based on network type
-      const nutanixNetworkLatency =
-        nutanixOptions?.networkType === 'rdma'
-          ? 100 // 0.1ms for RDMA
-          : nutanixOptions?.networkType === '25gbe'
-            ? 250 // 0.25ms for 25GbE
-            : 500 // 0.5ms for 10GbE
-      // Nutanix writes to OpLog first, then destages - similar to 2x media latency
-      return mediaLatency * 2 + nutanixNetworkLatency + cpuOverhead
-    }
-
-    default:
-      // Standard storage: single media access + overhead
-      return mediaLatency + cpuOverhead
-  }
+  return strategy.getWritePenalty(topology.level, topology)
 }
 
 /**
