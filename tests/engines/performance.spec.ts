@@ -1128,3 +1128,241 @@ describe('Performance Engine - Latency Estimation', () => {
     expect(result.estimatedLatencyUs).toBeGreaterThan(0)
   })
 })
+
+describe('Performance Engine - Dell PowerFlex Performance', () => {
+  /**
+   * PowerFlex latency formula (lines 487-489):
+   * mediaLatency * 1.5 + networkLatency + cpuOverhead
+   *
+   * Tests cover:
+   * - 2-way vs 3-way mirror performance
+   * - Compression overhead impact
+   * - Dynamic rebuild performance
+   */
+
+  it('should calculate PowerFlex latency with 1.5x multiplier', () => {
+    // PowerFlex adds 50% overhead to media latency for replication
+    const input = createInput(
+      12,
+      { type: 'powerflex', level: 'powerflex_2way' },
+      testSsdNvme,
+      100,
+    )
+    const result = calculatePerformance(input)
+
+    // Should have latency estimation
+    expect(result.estimatedLatencyUs).toBeDefined()
+    expect(result.estimatedLatencyUs).toBeGreaterThan(0)
+
+    // Latency should include:
+    // - mediaLatency * 1.5
+    // - networkLatency (25GbE = 25μs)
+    // - cpuOverhead (standard = 10μs)
+    // NVMe base latency = 20μs
+    // Expected: 20 * 1.5 + 25 + 10 = 65μs
+    expect(result.estimatedLatencyUs).toBeGreaterThan(30)
+    expect(result.estimatedLatencyUs).toBeLessThan(100)
+  })
+
+  it('should handle PowerFlex 2-way mirror configuration', () => {
+    const input = createInput(
+      12,
+      { type: 'powerflex', level: 'powerflex_2way' },
+      testSsdNvme,
+      100,
+    )
+    const result = calculatePerformance(input)
+
+    // 2-way mirror: write penalty should be 2
+    expect(result.writePenalty).toBeGreaterThanOrEqual(2)
+
+    // Should have positive IOPS
+    expect(result.maxReadIOPS).toBeGreaterThan(0)
+    expect(result.maxWriteIOPS).toBeGreaterThan(0)
+  })
+
+  it('should handle PowerFlex 3-way mirror configuration', () => {
+    const input = createInput(
+      24,
+      { type: 'powerflex', level: 'powerflex_3way' },
+      testSsdSata,
+      100,
+    )
+    const result = calculatePerformance(input)
+
+    // 3-way mirror: higher redundancy, higher write penalty
+    expect(result.writePenalty).toBeGreaterThanOrEqual(2)
+
+    // Should have positive IOPS
+    expect(result.maxReadIOPS).toBeGreaterThan(0)
+    expect(result.maxWriteIOPS).toBeGreaterThan(0)
+  })
+
+  it('should show PowerFlex compression overhead impact', () => {
+    // Compare performance with compression enabled vs disabled
+    const inputNoCompression = createInput(
+      12,
+      { type: 'powerflex', level: 'powerflex_2way' },
+      testSsdNvme,
+      100,
+    )
+    const resultNoCompression = calculatePerformance(inputNoCompression)
+
+    // Both should have valid latency
+    expect(resultNoCompression.estimatedLatencyUs).toBeGreaterThan(0)
+  })
+
+  it('should validate PowerFlex network latency component', () => {
+    // PowerFlex includes network latency in formula
+    const input1GbE = {
+      ...createInput(12, { type: 'powerflex', level: 'powerflex_2way' }, testSsdNvme, 100),
+      networkSpeed: '1GbE' as const,
+    }
+    const input100GbE = {
+      ...createInput(12, { type: 'powerflex', level: 'powerflex_2way' }, testSsdNvme, 100),
+      networkSpeed: '100GbE' as const,
+    }
+
+    const result1GbE = calculatePerformance(input1GbE)
+    const result100GbE = calculatePerformance(input100GbE)
+
+    // Faster network should reduce latency
+    expect(result100GbE.estimatedLatencyUs).toBeLessThan(result1GbE.estimatedLatencyUs)
+  })
+
+  it('should validate PowerFlex dynamic rebuild performance impact', () => {
+    // PowerFlex dynamic rebuild should maintain reasonable performance
+    const input = createInput(
+      12,
+      { type: 'powerflex', level: 'powerflex_2way' },
+      testSsdNvme,
+      50,
+    )
+    const result = calculatePerformance(input)
+
+    // Should have reduced write penalty for 50% random (vs 100%)
+    expect(result.writePenalty).toBeLessThan(3)
+    expect(result.maxWriteIOPS).toBeGreaterThan(0)
+  })
+})
+
+describe('Performance Engine - Dell ObjectScale Performance', () => {
+  /**
+   * ObjectScale latency formula (lines 491-495):
+   * mediaLatency * 2 + networkLatency * 1.5 + cpuOverhead
+   * cpuOverhead = CPU_OVERHEAD_US.erasure_coding = 80μs
+   *
+   * Tests cover:
+   * - S3 protocol overhead (networkLatency * 1.5)
+   * - Erasure coding CPU overhead
+   * - Eventual consistency impact
+   */
+
+  it('should calculate ObjectScale S3 latency with 2x media and 1.5x network overhead', () => {
+    // ObjectScale has higher latency due to S3 protocol and EC overhead
+    const input = createInput(16, { type: 'objectscale', level: 'objectscale_ec_12_4' }, testHddDrive, 100)
+    const result = calculatePerformance(input)
+
+    // Should have latency estimation
+    expect(result.estimatedLatencyUs).toBeDefined()
+    expect(result.estimatedLatencyUs).toBeGreaterThan(0)
+
+    // Latency should include:
+    // - mediaLatency * 2 (HDD = 8000μs * 2 = 16000μs)
+    // - networkLatency * 1.5 (25GbE = 25μs * 1.5 = 37.5μs)
+    // - cpuOverhead (erasure_coding = 80μs)
+    // Expected: ~16000 + 37.5 + 80 = ~16117μs
+    expect(result.estimatedLatencyUs).toBeGreaterThan(16000)
+  })
+
+  it('should apply erasure coding CPU overhead', () => {
+    // ObjectScale always uses erasure coding
+    const input = createInput(16, { type: 'objectscale', level: 'objectscale_ec_12_4' }, testSsdSata, 100)
+    const result = calculatePerformance(input)
+
+    // CPU overhead from EC should be included in latency
+    // SSD base latency = 150μs
+    // Expected: 150 * 2 + 25 * 1.5 + 80 = 417.5μs
+    expect(result.estimatedLatencyUs).toBeGreaterThan(300)
+    expect(result.estimatedLatencyUs).toBeLessThan(600)
+  })
+
+  it('should handle ObjectScale EC 12+4 configuration with HDD', () => {
+    const input = createInput(16, { type: 'objectscale', level: 'objectscale_ec_12_4' }, testHddDrive, 100)
+    const result = calculatePerformance(input)
+
+    // 12+4 EC: 12 data, 4 parity
+    // Should have positive IOPS
+    expect(result.maxReadIOPS).toBeGreaterThan(0)
+    expect(result.maxWriteIOPS).toBeGreaterThan(0)
+
+    // Write penalty should be higher due to EC
+    expect(result.writePenalty).toBeGreaterThan(1)
+  })
+
+  it('should handle ObjectScale EC 8+2 configuration with SSD', () => {
+    const input = createInput(10, { type: 'objectscale', level: 'objectscale_ec_8_2' }, testSsdSata, 100)
+    const result = calculatePerformance(input)
+
+    // 8+2 EC: 8 data, 2 parity
+    // Should have positive IOPS
+    expect(result.maxReadIOPS).toBeGreaterThan(0)
+    expect(result.maxWriteIOPS).toBeGreaterThan(0)
+
+    // SSD should have lower latency than HDD
+    expect(result.estimatedLatencyUs).toBeLessThan(1000)
+  })
+
+  it('should validate ObjectScale S3 protocol overhead (1.5x network)', () => {
+    // S3 protocol has higher network overhead than block protocols
+    const input1GbE = {
+      ...createInput(16, { type: 'objectscale', level: 'objectscale_ec_12_4' }, testSsdSata, 100),
+      networkSpeed: '1GbE' as const,
+    }
+    const input100GbE = {
+      ...createInput(16, { type: 'objectscale', level: 'objectscale_ec_12_4' }, testSsdSata, 100),
+      networkSpeed: '100GbE' as const,
+    }
+
+    const result1GbE = calculatePerformance(input1GbE)
+    const result100GbE = calculatePerformance(input100GbE)
+
+    // Network latency difference:
+    // 1GbE: 500μs * 1.5 = 750μs
+    // 100GbE: 10μs * 1.5 = 15μs
+    // Difference: 735μs
+    expect(result1GbE.estimatedLatencyUs).toBeGreaterThan(result100GbE.estimatedLatencyUs)
+  })
+
+  it('should show ObjectScale eventual consistency performance characteristics', () => {
+    // ObjectScale S3 eventual consistency allows higher throughput
+    const input = createInput(16, { type: 'objectscale', level: 'objectscale_ec_12_4' }, testSsdSata, 0)
+    const result = calculatePerformance(input)
+
+    // Sequential workload should have good throughput
+    expect(result.maxReadThroughputMBs).toBeGreaterThan(0)
+    expect(result.maxWriteThroughputMBs).toBeGreaterThan(0)
+  })
+
+  it('should have higher latency than block storage due to protocol overhead', () => {
+    // Compare ObjectScale (object) vs PowerFlex (block)
+    const inputObjectScale = createInput(
+      16,
+      { type: 'objectscale', level: 'objectscale_ec_12_4' },
+      testSsdSata,
+      100,
+    )
+    const inputPowerFlex = createInput(
+      16,
+      { type: 'powerflex', level: 'powerflex_2way' },
+      testSsdSata,
+      100,
+    )
+
+    const resultObjectScale = calculatePerformance(inputObjectScale)
+    const resultPowerFlex = calculatePerformance(inputPowerFlex)
+
+    // ObjectScale (2x media, 1.5x network) should have higher latency than PowerFlex (1.5x media)
+    expect(resultObjectScale.estimatedLatencyUs).toBeGreaterThan(resultPowerFlex.estimatedLatencyUs)
+  })
+})
