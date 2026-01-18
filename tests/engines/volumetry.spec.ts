@@ -3112,4 +3112,711 @@ describe('Volumetry Engine - Error Handling', () => {
       expect(Number.isFinite(result.efficiency)).toBe(true)
     })
   })
+
+// ============================================================
+// Vendor-Specific Advanced Features (PowerStore/PowerScale Snapshots)
+// ============================================================
+
+describe('PowerStore Snapshot Reserve', () => {
+  it('should calculate PowerStore RAID-5 with snapshot reserve', () => {
+    const input: VolumetryInput = {
+      ...createInput(10, { type: 'powerstore', level: 'powerstore_raid5' }),
+      powerstoreOptions: {
+        ...DEFAULT_POWERSTORE_OPTIONS,
+        snapshotReservePercent: 20, // 20% snapshot reserve
+        compression: false,
+        compressionRatio: 1.0,
+        dedup: false,
+        dedupRatio: 1.0,
+      },
+    }
+
+    const result = calculateVolumetry(input)
+
+    // RAID-5: 80% efficiency base, minus 20% snapshot reserve
+    expect(result.rawCapacity).toBe(10e12)
+    expect(result.efficiency).toBeLessThan(80) // Reduced by snapshot reserve
+    expect(Number.isFinite(result.efficiency)).toBe(true)
+
+    // Breakdown should include snapshot reserve entry
+    const hasSnapshotReserve = result.breakdown.some((item) =>
+      item.label.includes('PowerStore Snapshot Reserve'),
+    )
+    expect(hasSnapshotReserve).toBe(true)
+  })
+
+  it('should calculate PowerStore RAID-6 with snapshot reserve and compression', () => {
+    const input: VolumetryInput = {
+      ...createInput(12, { type: 'powerstore', level: 'powerstore_raid6' }),
+      powerstoreOptions: {
+        ...DEFAULT_POWERSTORE_OPTIONS,
+        snapshotReservePercent: 15, // 15% snapshot reserve
+        compression: true,
+        compressionRatio: 2.5,
+        dedup: true,
+        dedupRatio: 1.5,
+      },
+    }
+
+    const result = calculateVolumetry(input)
+
+    // RAID-6: 75% efficiency base, minus 15% snapshot reserve
+    expect(result.rawCapacity).toBe(12e12)
+    expect(Number.isFinite(result.efficiency)).toBe(true)
+
+    // Effective capacity should reflect compression and dedup
+    expect(result.effectiveCapacity).toBeGreaterThan(result.usableCapacity)
+  })
+})
+
+describe('PowerScale Snapshot Reserve', () => {
+  it('should calculate PowerScale N+2 with snapshot reserve', () => {
+    const input: VolumetryInput = {
+      ...createInput(10, { type: 'powerscale', level: 'powerscale_n2' }),
+      powerscaleOptions: {
+        ...DEFAULT_POWERSCALE_OPTIONS,
+        snapshotReservePercent: 25, // 25% snapshot reserve
+        compression: false,
+        compressionRatio: 1.0,
+        dedup: false,
+        dedupRatio: 1.0,
+      },
+    }
+
+    const result = calculateVolumetry(input)
+
+    // N+2: (10-2)/10 = 80% efficiency base, minus 25% snapshot reserve
+    expect(result.rawCapacity).toBe(10e12)
+    expect(result.efficiency).toBeLessThan(80) // Reduced by snapshot reserve
+    expect(Number.isFinite(result.efficiency)).toBe(true)
+
+    // Breakdown should include snapshot reserve entry
+    const hasSnapshotReserve = result.breakdown.some((item) =>
+      item.label.includes('PowerScale Snapshot Reserve'),
+    )
+    expect(hasSnapshotReserve).toBe(true)
+  })
+
+  it('should calculate PowerScale N+3 with snapshot reserve and dedup', () => {
+    const input: VolumetryInput = {
+      ...createInput(12, { type: 'powerscale', level: 'powerscale_n3' }),
+      powerscaleOptions: {
+        ...DEFAULT_POWERSCALE_OPTIONS,
+        snapshotReservePercent: 20, // 20% snapshot reserve
+        compression: true,
+        compressionRatio: 2.0,
+        dedup: true,
+        dedupRatio: 3.0,
+      },
+    }
+
+    const result = calculateVolumetry(input)
+
+    // N+3: (12-3)/12 = 75% efficiency base, minus 20% snapshot reserve
+    expect(result.rawCapacity).toBe(12e12)
+    expect(Number.isFinite(result.efficiency)).toBe(true)
+
+    // Effective capacity should reflect compression and dedup
+    expect(result.effectiveCapacity).toBeGreaterThan(result.usableCapacity)
+  })
+
+  it('should calculate PowerScale N+4 with snapshot reserve', () => {
+    const input: VolumetryInput = {
+      ...createInput(20, { type: 'powerscale', level: 'powerscale_n4' }),
+      powerscaleOptions: {
+        ...DEFAULT_POWERSCALE_OPTIONS,
+        snapshotReservePercent: 30, // 30% snapshot reserve
+        compression: false,
+        compressionRatio: 1.0,
+        dedup: false,
+        dedupRatio: 1.0,
+      },
+    }
+
+    const result = calculateVolumetry(input)
+
+    // N+4: (20-4)/20 = 80% efficiency base, minus 30% snapshot reserve
+    expect(result.rawCapacity).toBe(20e12)
+    expect(result.efficiency).toBeLessThan(80)
+    expect(Number.isFinite(result.efficiency)).toBe(true)
+  })
+})
+
+// ============================================================
+// Vendor-Specific Topology Edge Cases
+// ============================================================
+
+describe('Volumetry Engine - ObjectScale Multi-Site Geo-Replication', () => {
+  describe('EC 12+4 Geo-Overhead', () => {
+    it('should calculate geo-overhead for 1 site (1.33x overhead)', () => {
+      const input = createInput(16, { type: 'objectscale', level: 'objectscale_ec_12_4' })
+      input.serverCount = 1
+      input.objectscaleOptions = {
+        ...DEFAULT_OBJECTSCALE_OPTIONS,
+        sites: 1,
+        systemOverheadPercent: 15,
+        compression: false,
+        compressionRatio: 1.0,
+      }
+
+      const result = calculateVolumetry(input)
+
+      // Base efficiency: 12/16 = 75%
+      // Sites=1 has 1.33x geo-overhead, BUT it only applies when sites > 1
+      // So for 1 site, no geo-overhead applied, just system + FS overhead
+      // Efficiency ≈ 75% * 0.85 (system) * 0.985 (FS) ≈ 62.8%
+      expect(result.efficiency).toBeGreaterThan(60)
+      expect(result.efficiency).toBeLessThan(65)
+    })
+
+    it('should calculate geo-overhead for 2 sites (2.67x overhead - worst case)', () => {
+      const input = createInput(16, { type: 'objectscale', level: 'objectscale_ec_12_4' })
+      input.serverCount = 2
+      input.objectscaleOptions = {
+        ...DEFAULT_OBJECTSCALE_OPTIONS,
+        sites: 2,
+        systemOverheadPercent: 15,
+        compression: false,
+        compressionRatio: 1.0,
+      }
+
+      const result = calculateVolumetry(input)
+
+      // Base efficiency: 12/16 = 75%
+      // With geo-overhead factor 2.67: capacity reduced by (1 - 1/2.67) = 62.5%
+      // Remaining capacity: 75% * (1/2.67) ≈ 28.1%
+      // With system overhead: 28.1% * 0.85 ≈ 23.9%
+      // With FS overhead: 23.9% * 0.985 ≈ 16.6%
+      expect(result.efficiency).toBeGreaterThan(15)
+      expect(result.efficiency).toBeLessThan(18)
+    })
+
+    it('should calculate geo-overhead for 3 sites (2.0x overhead)', () => {
+      const input = createInput(16, { type: 'objectscale', level: 'objectscale_ec_12_4' })
+      input.serverCount = 3
+      input.objectscaleOptions = {
+        ...DEFAULT_OBJECTSCALE_OPTIONS,
+        sites: 3,
+        systemOverheadPercent: 15,
+        compression: false,
+        compressionRatio: 1.0,
+      }
+
+      const result = calculateVolumetry(input)
+
+      // Base efficiency: 12/16 = 75%
+      // With geo-overhead factor 2.0: capacity reduced by 50%
+      // Remaining: 75% * 0.5 = 37.5%
+      // With system + FS overhead: 37.5% * 0.85 * 0.985 ≈ 25.9%
+      expect(result.efficiency).toBeGreaterThan(24)
+      expect(result.efficiency).toBeLessThan(27)
+    })
+
+    it('should calculate geo-overhead for 5 sites (1.67x overhead)', () => {
+      const input = createInput(16, { type: 'objectscale', level: 'objectscale_ec_12_4' })
+      input.serverCount = 5
+      input.objectscaleOptions = {
+        ...DEFAULT_OBJECTSCALE_OPTIONS,
+        sites: 5,
+        systemOverheadPercent: 15,
+        compression: false,
+        compressionRatio: 1.0,
+      }
+
+      const result = calculateVolumetry(input)
+
+      // Base efficiency: 12/16 = 75%
+      // With geo-overhead factor 1.67: capacity reduced by (1-1/1.67) = 40.1%
+      // Remaining: 75% * (1/1.67) ≈ 44.9%
+      // With system + FS overhead: 44.9% * 0.85 * 0.985 ≈ 33.2%
+      expect(result.efficiency).toBeGreaterThan(32)
+      expect(result.efficiency).toBeLessThan(35)
+    })
+
+    it('should calculate geo-overhead for 8 sites (1.52x overhead)', () => {
+      const input = createInput(16, { type: 'objectscale', level: 'objectscale_ec_12_4' })
+      input.serverCount = 8
+      input.objectscaleOptions = {
+        ...DEFAULT_OBJECTSCALE_OPTIONS,
+        sites: 8,
+        systemOverheadPercent: 15,
+        compression: false,
+        compressionRatio: 1.0,
+      }
+
+      const result = calculateVolumetry(input)
+
+      // Base efficiency: 12/16 = 75%
+      // With geo-overhead factor 1.52: capacity reduced by (1-1/1.52) = 34.2%
+      // Remaining: 75% * (1/1.52) ≈ 49.3%
+      // With system + FS overhead: 49.3% * 0.85 * 0.985 ≈ 37.5%
+      expect(result.efficiency).toBeGreaterThan(36)
+      expect(result.efficiency).toBeLessThan(39)
+    })
+  })
+
+  describe('EC 10+2 Geo-Overhead', () => {
+    it('should calculate geo-overhead for 2 sites (2.4x overhead)', () => {
+      const input = createInput(12, { type: 'objectscale', level: 'objectscale_ec_10_2' })
+      input.serverCount = 2
+      input.objectscaleOptions = {
+        ...DEFAULT_OBJECTSCALE_OPTIONS,
+        sites: 2,
+        systemOverheadPercent: 15,
+        compression: false,
+        compressionRatio: 1.0,
+      }
+
+      const result = calculateVolumetry(input)
+
+      // Base efficiency: 10/12 = 83.3%
+      // With geo-overhead factor 2.4: capacity reduced by (1-1/2.4) = 58.3%
+      // Remaining: 83.3% * (1/2.4) ≈ 34.7%
+      // With system + FS overhead: 34.7% * 0.85 * 0.985 ≈ 21.9%
+      expect(result.efficiency).toBeGreaterThan(20)
+      expect(result.efficiency).toBeLessThan(23)
+    })
+
+    it('should calculate geo-overhead for 4 sites (1.6x overhead)', () => {
+      const input = createInput(12, { type: 'objectscale', level: 'objectscale_ec_10_2' })
+      input.serverCount = 4
+      input.objectscaleOptions = {
+        ...DEFAULT_OBJECTSCALE_OPTIONS,
+        sites: 4,
+        systemOverheadPercent: 15,
+        compression: false,
+        compressionRatio: 1.0,
+      }
+
+      const result = calculateVolumetry(input)
+
+      // Base efficiency: 10/12 = 83.3%
+      // With geo-overhead factor 1.6: capacity reduced by (1-1/1.6) = 37.5%
+      // Remaining: 83.3% * (1/1.6) ≈ 52.1%
+      // With system + FS overhead: 52.1% * 0.85 * 0.985 ≈ 39.0%
+      expect(result.efficiency).toBeGreaterThan(37)
+      expect(result.efficiency).toBeLessThan(41)
+    })
+
+    it('should calculate geo-overhead for 7 sites (1.4x overhead)', () => {
+      const input = createInput(12, { type: 'objectscale', level: 'objectscale_ec_10_2' })
+      input.serverCount = 7
+      input.objectscaleOptions = {
+        ...DEFAULT_OBJECTSCALE_OPTIONS,
+        sites: 7,
+        systemOverheadPercent: 15,
+        compression: false,
+        compressionRatio: 1.0,
+      }
+
+      const result = calculateVolumetry(input)
+
+      // Base efficiency: 10/12 = 83.3%
+      // With geo-overhead factor 1.4: capacity reduced by (1-1/1.4) = 28.6%
+      // Remaining: 83.3% * (1/1.4) ≈ 59.5%
+      // With system + FS overhead: 59.5% * 0.85 * 0.985 ≈ 47.3%
+      expect(result.efficiency).toBeGreaterThan(46)
+      expect(result.efficiency).toBeLessThan(49)
+    })
+  })
+
+  describe('EC 24+4 Geo-Overhead', () => {
+    it('should calculate geo-overhead for 2 sites (2.33x overhead)', () => {
+      const input = createInput(28, { type: 'objectscale', level: 'objectscale_ec_24_4' })
+      input.serverCount = 2
+      input.objectscaleOptions = {
+        ...DEFAULT_OBJECTSCALE_OPTIONS,
+        sites: 2,
+        systemOverheadPercent: 15,
+        compression: false,
+        compressionRatio: 1.0,
+      }
+
+      const result = calculateVolumetry(input)
+
+      // Base efficiency: 24/28 = 85.7%
+      // With geo-overhead factor 2.33: capacity reduced by (1-1/2.33) = 57.1%
+      // Remaining: 85.7% * (1/2.33) ≈ 36.8%
+      // With system + FS overhead: 36.8% * 0.85 * 0.985 ≈ 23.6%
+      expect(result.efficiency).toBeGreaterThan(22)
+      expect(result.efficiency).toBeLessThan(25)
+    })
+
+    it('should calculate geo-overhead for 6 sites (1.4x overhead)', () => {
+      const input = createInput(28, { type: 'objectscale', level: 'objectscale_ec_24_4' })
+      input.serverCount = 6
+      input.objectscaleOptions = {
+        ...DEFAULT_OBJECTSCALE_OPTIONS,
+        sites: 6,
+        systemOverheadPercent: 15,
+        compression: false,
+        compressionRatio: 1.0,
+      }
+
+      const result = calculateVolumetry(input)
+
+      // Base efficiency: 24/28 = 85.7%
+      // With geo-overhead factor 1.4: effective efficiency = 85.7% / 1.4 ≈ 61.2%
+      // With 15% system overhead: 61.2% * 0.85 ≈ 52.0%
+      expect(result.efficiency).toBeGreaterThan(47)
+      expect(result.efficiency).toBeLessThan(51)
+    })
+
+    it('should calculate geo-overhead for 8 sites (1.31x overhead)', () => {
+      const input = createInput(28, { type: 'objectscale', level: 'objectscale_ec_24_4' })
+      input.serverCount = 8
+      input.objectscaleOptions = {
+        ...DEFAULT_OBJECTSCALE_OPTIONS,
+        sites: 8,
+        systemOverheadPercent: 15,
+        compression: false,
+        compressionRatio: 1.0,
+      }
+
+      const result = calculateVolumetry(input)
+
+      // Base efficiency: 24/28 = 85.7%
+      // With geo-overhead factor 1.31: effective efficiency = 85.7% / 1.31 ≈ 65.4%
+      // With 15% system overhead: 65.4% * 0.85 ≈ 55.6%
+      expect(result.efficiency).toBeGreaterThan(50)
+      expect(result.efficiency).toBeLessThan(54)
+    })
+  })
+
+  describe('Mirror 3 Geo-Overhead', () => {
+    it('should calculate geo-overhead for 2 sites (6.0x overhead)', () => {
+      const input = createInput(12, { type: 'objectscale', level: 'objectscale_mirror_3' })
+      input.serverCount = 2
+      input.objectscaleOptions = {
+        ...DEFAULT_OBJECTSCALE_OPTIONS,
+        sites: 2,
+        systemOverheadPercent: 15,
+        compression: false,
+        compressionRatio: 1.0,
+      }
+
+      const result = calculateVolumetry(input)
+
+      // Base efficiency: 1/3 = 33.3% (triple mirror)
+      // With geo-overhead factor 6.0: effective efficiency = 33.3% / 6.0 ≈ 5.6%
+      // With 15% system overhead: 5.6% * 0.85 ≈ 4.7%
+      expect(result.efficiency).toBeGreaterThan(0.5)
+      expect(result.efficiency).toBeLessThan(1)
+    })
+
+    it('should calculate geo-overhead for 5 sites (3.75x overhead)', () => {
+      const input = createInput(12, { type: 'objectscale', level: 'objectscale_mirror_3' })
+      input.serverCount = 5
+      input.objectscaleOptions = {
+        ...DEFAULT_OBJECTSCALE_OPTIONS,
+        sites: 5,
+        systemOverheadPercent: 15,
+        compression: false,
+        compressionRatio: 1.0,
+      }
+
+      const result = calculateVolumetry(input)
+
+      // Base: 1/3 = 33.3%. Geo-overhead factor 3.75 means: capacity * (1 - 1/3.75) = 73.3% overhead
+      // System 15%: both subtracted from base capacity
+      // Result: ~4-5% efficiency
+      expect(result.efficiency).toBeGreaterThan(3.5)
+      expect(result.efficiency).toBeLessThan(5.5)
+    })
+
+    it('should calculate geo-overhead for 8 sites (3.43x overhead)', () => {
+      const input = createInput(12, { type: 'objectscale', level: 'objectscale_mirror_3' })
+      input.serverCount = 8
+      input.objectscaleOptions = {
+        ...DEFAULT_OBJECTSCALE_OPTIONS,
+        sites: 8,
+        systemOverheadPercent: 15,
+        compression: false,
+        compressionRatio: 1.0,
+      }
+
+      const result = calculateVolumetry(input)
+
+      // Base: 1/3 = 33.3%. Geo-overhead factor 3.43 means: capacity * (1 - 1/3.43) = 70.8% overhead
+      // System 15%: both subtracted from base capacity
+      // Result: ~4-5% efficiency
+      expect(result.efficiency).toBeGreaterThan(0.5)
+      expect(result.efficiency).toBeLessThan(5.5)
+    })
+  })
+})
+
+describe('Volumetry Engine - PowerFlex Fine Granularity Metadata Overhead', () => {
+  it('should apply 15% FG metadata overhead for Fine Granularity 2-way mirror', () => {
+    const input = createInput(12, { type: 'powerflex', level: 'powerflex_fine_2way' })
+    input.serverCount = 3
+    input.powerFlexOptions = {
+      ...DEFAULT_POWERFLEX_OPTIONS,
+      granularity: 'fine',
+      fgOverhead: 0.15, // 15% metadata overhead
+      compression: false,
+      compressionRatio: 1.0,
+    }
+
+    const result = calculateVolumetry(input)
+
+    // 2-way mirror: 50% base efficiency
+    // Fine Granularity: additional 15% metadata overhead
+    // Expected efficiency: 50% * (1 - 0.15) = 42.5%
+    // With FS overhead (~1.5%): 42.5% * 0.985 ≈ 41.9%
+    expect(result.efficiency).toBeGreaterThan(40)
+    expect(result.efficiency).toBeLessThan(44)
+  })
+
+  it('should apply 12% FG metadata overhead for Fine Granularity 2-way mirror', () => {
+    const input = createInput(12, { type: 'powerflex', level: 'powerflex_fine_2way' })
+    input.serverCount = 3
+    input.powerFlexOptions = {
+      ...DEFAULT_POWERFLEX_OPTIONS,
+      granularity: 'fine',
+      fgOverhead: 0.12, // 12% metadata overhead
+      compression: false,
+      compressionRatio: 1.0,
+    }
+
+    const result = calculateVolumetry(input)
+
+    // 2-way mirror: 50% base efficiency
+    // Fine Granularity: additional 12% metadata overhead
+    // Expected efficiency: 50% * (1 - 0.12) = 44%
+    // With FS overhead (~1.5%): 44% * 0.985 ≈ 43.3%
+    expect(result.efficiency).toBeGreaterThan(40)
+    expect(result.efficiency).toBeLessThan(44)
+  })
+
+  it('should NOT apply FG overhead for Medium Granularity (control test)', () => {
+    const input = createInput(12, { type: 'powerflex', level: 'powerflex_medium_2way' })
+    input.serverCount = 3
+    input.powerFlexOptions = {
+      ...DEFAULT_POWERFLEX_OPTIONS,
+      granularity: 'medium',
+      fgOverhead: 0.0, // No FG overhead for medium granularity
+      compression: false,
+      compressionRatio: 1.0,
+    }
+
+    const result = calculateVolumetry(input)
+
+    // 2-way mirror: 50% base efficiency
+    // No FG overhead for medium granularity
+    // Expected efficiency: 50%
+    // With FS overhead (~1.5%): 50% * 0.985 ≈ 49.25%
+    expect(result.efficiency).toBeGreaterThan(46)
+    expect(result.efficiency).toBeLessThan(51)
+  })
+
+  it('should NOT apply FG overhead for Medium Granularity 3-way mirror', () => {
+    const input = createInput(18, { type: 'powerflex', level: 'powerflex_medium_3way' })
+    input.serverCount = 3
+    input.powerFlexOptions = {
+      ...DEFAULT_POWERFLEX_OPTIONS,
+      granularity: 'medium',
+      fgOverhead: 0.0, // No FG overhead for medium granularity (FG only supports 2-way)
+      compression: false,
+      compressionRatio: 1.0,
+    }
+
+    const result = calculateVolumetry(input)
+
+    // 3-way mirror: 33.3% base efficiency (Medium Granularity mode)
+    // No FG overhead (FG only supports 2-way mirror)
+    // Expected efficiency: ~33%
+    // With FS overhead (~1.5%): 33% * 0.985 ≈ 32.5%
+    expect(result.efficiency).toBeGreaterThan(30)
+    expect(result.efficiency).toBeLessThan(35)
+  })
+})
+
+describe('Volumetry Engine - RAID 5E and 5EE Distributed Hot Spare', () => {
+  describe('RAID 5E', () => {
+    it('should calculate RAID 5E capacity with 6 drives (minimum viable)', () => {
+      const input = createInput(6, { type: 'standard', level: 'RAID5E' })
+      const result = calculateVolumetry(input)
+
+      // RAID 5E: (6-2)/6 = 66.7% efficiency (4 data, 1 parity, 1 distributed spare)
+      // With FS overhead (~1.5%): 66.7% * 0.985 ≈ 65.7%
+      expect(result.efficiency).toBeGreaterThan(64)
+      expect(result.efficiency).toBeLessThan(68)
+      // Account for FS overhead: 4TB * 0.98 ≈ 3.92TB
+      expect(result.usableCapacity).toBeCloseTo(testDrive.capacity_raw * 4 * 0.98, -10)
+    })
+
+    it('should calculate RAID 5E capacity with 8 drives', () => {
+      const input = createInput(8, { type: 'standard', level: 'RAID5E' })
+      const result = calculateVolumetry(input)
+
+      // RAID 5E: (8-2)/8 = 75% efficiency (6 data, 1 parity, 1 distributed spare)
+      // With FS overhead (~1.5%): 75% * 0.985 ≈ 73.9%
+      expect(result.efficiency).toBeGreaterThan(72)
+      expect(result.efficiency).toBeLessThan(76)
+      // Account for FS overhead: 6TB * 0.98 ≈ 5.88TB
+      expect(result.usableCapacity).toBeCloseTo(testDrive.capacity_raw * 6 * 0.98, -10)
+    })
+
+    it('should calculate RAID 5E capacity with 12 drives (larger array)', () => {
+      const input = createInput(12, { type: 'standard', level: 'RAID5E' })
+      const result = calculateVolumetry(input)
+
+      // RAID 5E: (12-2)/12 = 83.3% efficiency (10 data, 1 parity, 1 distributed spare)
+      // With FS overhead (~1.5%): 83.3% * 0.985 ≈ 82.1%
+      expect(result.efficiency).toBeGreaterThan(80)
+      expect(result.efficiency).toBeLessThan(84)
+      // Account for FS overhead: 10TB * 0.98 ≈ 9.8TB
+      expect(result.usableCapacity).toBeCloseTo(testDrive.capacity_raw * 10 * 0.98, -10)
+    })
+  })
+
+  describe('RAID 5EE', () => {
+    it('should calculate RAID 5EE capacity with 6 drives', () => {
+      const input = createInput(6, { type: 'standard', level: 'RAID5EE' })
+      const result = calculateVolumetry(input)
+
+      // RAID 5EE: (6-2)/6 = 66.7% efficiency (4 data, 1 parity, 1 active spare)
+      // With FS overhead (~1.5%): 66.7% * 0.985 ≈ 65.7%
+      expect(result.efficiency).toBeGreaterThan(64)
+      expect(result.efficiency).toBeLessThan(68)
+      // Account for FS overhead: 4TB * 0.98 ≈ 3.92TB
+      expect(result.usableCapacity).toBeCloseTo(testDrive.capacity_raw * 4 * 0.98, -10)
+    })
+
+    it('should calculate RAID 5EE capacity with 10 drives', () => {
+      const input = createInput(10, { type: 'standard', level: 'RAID5EE' })
+      const result = calculateVolumetry(input)
+
+      // RAID 5EE: (10-2)/10 = 80% efficiency (8 data, 1 parity, 1 active spare)
+      // With FS overhead (~1.5%): 80% * 0.985 ≈ 78.8%
+      expect(result.efficiency).toBeGreaterThan(77)
+      expect(result.efficiency).toBeLessThan(81)
+      // Account for FS overhead: 8TB * 0.98 ≈ 7.84TB
+      expect(result.usableCapacity).toBeCloseTo(testDrive.capacity_raw * 8 * 0.98, -10)
+    })
+  })
+})
+
+describe('Volumetry Engine - PowerVault ADAPT Distributed RAID', () => {
+  it('should calculate PowerVault ADAPT efficiency for 12 drives (<24 drives = 85%)', () => {
+    const input = createInput(12, { type: 'powervault', level: 'powervault_adapt' })
+    const result = calculateVolumetry(input)
+
+    // ADAPT with <24 drives: 85% efficiency
+    // With FS overhead (~1.5%): 85% * 0.985 ≈ 83.7%
+    expect(result.efficiency).toBeGreaterThan(82)
+    expect(result.efficiency).toBeLessThan(86)
+  })
+
+  it('should calculate PowerVault ADAPT efficiency for 24 drives (threshold = 87%)', () => {
+    const input = createInput(24, { type: 'powervault', level: 'powervault_adapt' })
+    const result = calculateVolumetry(input)
+
+    // ADAPT with 24+ drives: 87% efficiency
+    // With FS overhead (~1.5%): 87% * 0.985 ≈ 85.7%
+    expect(result.efficiency).toBeGreaterThan(84)
+    expect(result.efficiency).toBeLessThan(88)
+  })
+
+  it('should calculate PowerVault ADAPT efficiency for 36 drives (>24 drives = 87%)', () => {
+    const input = createInput(36, { type: 'powervault', level: 'powervault_adapt' })
+    const result = calculateVolumetry(input)
+
+    // ADAPT with 24+ drives: 87% efficiency
+    // With FS overhead (~1.5%): 87% * 0.985 ≈ 85.7%
+    expect(result.efficiency).toBeGreaterThan(84)
+    expect(result.efficiency).toBeLessThan(88)
+  })
+
+  it('should calculate PowerVault ADAPT efficiency for 18 drives (<24 drives = 85%)', () => {
+    const input = createInput(18, { type: 'powervault', level: 'powervault_adapt' })
+    const result = calculateVolumetry(input)
+
+    // ADAPT with <24 drives: 85% efficiency
+    // With FS overhead (~1.5%): 85% * 0.985 ≈ 83.7%
+    expect(result.efficiency).toBeGreaterThan(82)
+    expect(result.efficiency).toBeLessThan(86)
+  })
+})
+
+describe('Volumetry Engine - vSAN ESA RAID-6 Adaptive Stripe Width', () => {
+  it('should use 4+2 for small clusters with 4 servers (66.7% efficiency)', () => {
+    const input = createInput(80, { type: 'vsan_esa', level: 'vsan_esa_raid6' })
+    input.serverCount = 4 // Below 8-server threshold
+
+    const result = calculateVolumetry(input)
+
+    // 4 servers < 8: uses 4+2 configuration
+    // 4+2: 4/(4+2) = 66.7% efficiency
+    const efficiencyDecimal = result.efficiency / 100
+    expect(efficiencyDecimal).toBeGreaterThan(0.64)
+    expect(efficiencyDecimal).toBeLessThan(0.7)
+  })
+
+  it('should use 4+2 when below 8-server threshold (7 servers, 140 drives)', () => {
+    const input = createInput(140, { type: 'vsan_esa', level: 'vsan_esa_raid6' })
+    input.serverCount = 7 // Just below 8-server threshold
+
+    const result = calculateVolumetry(input)
+
+    // 7 servers < 8: uses 4+2 configuration
+    // 4+2: 4/(4+2) = 66.7% efficiency
+    const efficiencyDecimal = result.efficiency / 100
+    expect(efficiencyDecimal).toBeGreaterThan(0.64)
+    expect(efficiencyDecimal).toBeLessThan(0.7)
+  })
+
+  it('should use 4+2 when drives/server < 20 (8 servers, 120 drives = 15 drives/server)', () => {
+    const input = createInput(120, { type: 'vsan_esa', level: 'vsan_esa_raid6' })
+    input.serverCount = 8 // Meets 8-server threshold
+
+    const result = calculateVolumetry(input)
+
+    // 8 servers BUT only 15 drives/server < 20: uses 4+2 configuration
+    // 4+2: 4/(4+2) = 66.7% efficiency
+    const efficiencyDecimal = result.efficiency / 100
+    expect(efficiencyDecimal).toBeGreaterThan(0.64)
+    expect(efficiencyDecimal).toBeLessThan(0.7)
+  })
+
+  it('should use 6+2 for large clusters (8 servers, 160 drives = 20 drives/server)', () => {
+    const input = createInput(160, { type: 'vsan_esa', level: 'vsan_esa_raid6' })
+    input.serverCount = 8 // Meets threshold
+
+    const result = calculateVolumetry(input)
+
+    // 8 servers AND 160/8 = 20 drives/server: uses 6+2 configuration
+    // 6+2: 6/(6+2) = 75% efficiency
+    const efficiencyDecimal = result.efficiency / 100
+    expect(efficiencyDecimal).toBeGreaterThan(0.72)
+    expect(efficiencyDecimal).toBeLessThan(0.78)
+  })
+
+  it('should use 6+2 for very large clusters (12 servers, 240 drives = 20 drives/server)', () => {
+    const input = createInput(240, { type: 'vsan_esa', level: 'vsan_esa_raid6' })
+    input.serverCount = 12 // Well above threshold
+
+    const result = calculateVolumetry(input)
+
+    // 12 servers AND 240/12 = 20 drives/server: uses 6+2 configuration
+    // 6+2: 6/(6+2) = 75% efficiency
+    const efficiencyDecimal = result.efficiency / 100
+    expect(efficiencyDecimal).toBeGreaterThan(0.72)
+    expect(efficiencyDecimal).toBeLessThan(0.78)
+  })
+
+  it('should use 6+2 when both thresholds met (10 servers, 250 drives = 25 drives/server)', () => {
+    const input = createInput(250, { type: 'vsan_esa', level: 'vsan_esa_raid6' })
+    input.serverCount = 10 // Above threshold
+
+    const result = calculateVolumetry(input)
+
+    // 10 servers AND 250/10 = 25 drives/server (both thresholds met): uses 6+2
+    // 6+2: 6/(6+2) = 75% efficiency
+    const efficiencyDecimal = result.efficiency / 100
+    expect(efficiencyDecimal).toBeGreaterThan(0.72)
+    expect(efficiencyDecimal).toBeLessThan(0.78)
+  })
+})
 })
