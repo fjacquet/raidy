@@ -647,6 +647,29 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
     dedupRatio,
   } = input
 
+  // Handle edge case: zero drives (graceful degradation)
+  if (driveCount === 0) {
+    return {
+      rawCapacity: 0,
+      parityOverhead: 0,
+      hotSpareOverhead: 0,
+      filesystemOverhead: 0,
+      slopOverhead: 0,
+      usableCapacity: 0,
+      effectiveCapacity: 0,
+      efficiency: 0,
+      breakdown: [
+        {
+          label: 'No Drives',
+          bytes: 0,
+          percent: 0,
+          color: 'var(--color-overhead)',
+        },
+      ],
+      zfsDetails: undefined,
+    }
+  }
+
   // Check for tiered configuration
   let tieredCapacity: TieredCapacityResult | null = null
 

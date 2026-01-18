@@ -1658,3 +1658,151 @@ describe('Volumetry Engine - Breakdown', () => {
     expect(usableItem?.bytes).toBeGreaterThan(0)
   })
 })
+
+describe('Volumetry Engine - Edge Cases: Invalid Drive Counts', () => {
+  describe('Zero drives edge cases', () => {
+    it('should handle RAID 5 with 0 drives gracefully', () => {
+      const input = createInput(0, { type: 'standard', level: 'RAID5' })
+      const result = calculateVolumetry(input)
+
+      // Should return zero capacity (graceful degradation)
+      expect(result.rawCapacity).toBe(0)
+      expect(result.usableCapacity).toBe(0)
+    })
+
+    it('should handle RAID 6 with 0 drives gracefully', () => {
+      const input = createInput(0, { type: 'standard', level: 'RAID6' })
+      const result = calculateVolumetry(input)
+
+      expect(result.rawCapacity).toBe(0)
+      expect(result.usableCapacity).toBe(0)
+    })
+
+    it('should handle ZFS RAID-Z1 with 0 drives gracefully', () => {
+      const input = createInput(0, { type: 'zfs', level: 'raidz1' })
+      const result = calculateVolumetry(input)
+
+      expect(result.rawCapacity).toBe(0)
+      expect(result.usableCapacity).toBe(0)
+    })
+
+    it('should handle vSAN OSA with 0 drives gracefully', () => {
+      const input = createInput(0, { type: 'vsan_osa', level: 'vsan_osa_raid5' })
+      input.serverCount = 4
+      const result = calculateVolumetry(input)
+
+      expect(result.rawCapacity).toBe(0)
+      expect(result.usableCapacity).toBe(0)
+    })
+  })
+
+  describe('Below-minimum drive count tests', () => {
+    it('should handle RAID 5 with 1 drive (minimum is 3)', () => {
+      const input = createInput(1, { type: 'standard', level: 'RAID5' })
+      const result = calculateVolumetry(input)
+
+      // With 1 drive: (1-1)/1 = 0% efficiency
+      expect(result.efficiency).toBe(0)
+      expect(result.usableCapacity).toBe(0)
+    })
+
+    it('should handle RAID 5 with 2 drives (below minimum)', () => {
+      const input = createInput(2, { type: 'standard', level: 'RAID5' })
+      const result = calculateVolumetry(input)
+
+      // With 2 drives: (2-1)/2 = 50% efficiency (1TB usable)
+      // Still below recommended minimum of 3
+      expect(result.parityOverhead).toBe(1_000_000_000_000)
+      expect(result.usableCapacity).toBeGreaterThan(0)
+    })
+
+    it('should handle RAID 6 with 1 drive (minimum is 4)', () => {
+      const input = createInput(1, { type: 'standard', level: 'RAID6' })
+      const result = calculateVolumetry(input)
+
+      // With 1 drive: (1-2)/1 = -100% (negative, should clamp to 0)
+      expect(result.usableCapacity).toBeLessThanOrEqual(0)
+    })
+
+    it('should handle RAID 6 with 3 drives (still below minimum)', () => {
+      const input = createInput(3, { type: 'standard', level: 'RAID6' })
+      const result = calculateVolumetry(input)
+
+      // With 3 drives: (3-2)/3 = 33% efficiency
+      // Still below recommended minimum of 4
+      expect(result.usableCapacity).toBeGreaterThan(0)
+      expect(result.efficiency).toBeGreaterThan(30)
+      expect(result.efficiency).toBeLessThan(35)
+    })
+
+    it('should handle RAID 10 with 1 drive (minimum is 4, even number)', () => {
+      const input = createInput(1, { type: 'standard', level: 'RAID10' })
+      const result = calculateVolumetry(input)
+
+      // RAID 10 is 50% efficiency even with 1 drive (invalid config)
+      expect(result.usableCapacity).toBeGreaterThan(0)
+    })
+
+    it('should handle ZFS RAID-Z1 with 1 drive (minimum is 3)', () => {
+      const input = createInput(1, { type: 'zfs', level: 'raidz1' })
+      const result = calculateVolumetry(input)
+
+      // With 1 drive: (1-1)/1 = 0% efficiency
+      expect(result.efficiency).toBeLessThanOrEqual(5) // Close to 0 (accounting for FS overhead)
+    })
+
+    it('should handle ZFS RAID-Z2 with 2 drives (minimum is 4)', () => {
+      const input = createInput(2, { type: 'zfs', level: 'raidz2' })
+      const result = calculateVolumetry(input)
+
+      // With 2 drives: (2-2)/2 = 0% efficiency
+      expect(result.usableCapacity).toBeLessThanOrEqual(0)
+    })
+
+    it('should handle ZFS RAID-Z3 with 3 drives (minimum is 5)', () => {
+      const input = createInput(3, { type: 'zfs', level: 'raidz3' })
+      const result = calculateVolumetry(input)
+
+      // With 3 drives: (3-3)/3 = 0% efficiency
+      expect(result.usableCapacity).toBeLessThanOrEqual(0)
+    })
+  })
+
+  describe('Odd number drive tests for RAID levels requiring even counts', () => {
+    it('should handle RAID 1 with 3 drives (requires even)', () => {
+      const input = createInput(3, { type: 'standard', level: 'RAID1' })
+      const result = calculateVolumetry(input)
+
+      // RAID 1 formula: 50% efficiency regardless of drive count
+      expect(result.efficiency).toBeGreaterThan(45)
+      expect(result.efficiency).toBeLessThan(52)
+    })
+
+    it('should handle RAID 1 with 5 drives (odd)', () => {
+      const input = createInput(5, { type: 'standard', level: 'RAID1' })
+      const result = calculateVolumetry(input)
+
+      // Still 50% efficiency (odd drives not ideal but formula works)
+      expect(result.efficiency).toBeGreaterThan(45)
+      expect(result.efficiency).toBeLessThan(52)
+    })
+
+    it('should handle RAID 10 with 3 drives (requires even)', () => {
+      const input = createInput(3, { type: 'standard', level: 'RAID10' })
+      const result = calculateVolumetry(input)
+
+      // RAID 10 formula: 50% efficiency even with odd drives (invalid but formula works)
+      expect(result.efficiency).toBeGreaterThan(45)
+      expect(result.efficiency).toBeLessThan(52)
+    })
+
+    it('should handle RAID 10 with 7 drives (odd)', () => {
+      const input = createInput(7, { type: 'standard', level: 'RAID10' })
+      const result = calculateVolumetry(input)
+
+      // Still 50% efficiency
+      expect(result.efficiency).toBeGreaterThan(45)
+      expect(result.efficiency).toBeLessThan(52)
+    })
+  })
+})
