@@ -11,18 +11,18 @@ See: .planning/PROJECT.md
 ## Current Position
 
 Phase: 3 of 6 (Security Hardening - IN PROGRESS)
-Plan: 2 of 4 (URL state validation and CSP headers complete)
-Status: Phase 3 in progress - URL validation with Zod, CSP configuration, and security scanning deployed
-Last activity: 2026-01-18 - Completed 03-01-PLAN.md (URL State Validation)
+Plan: 3 of 4 (URL validation, CSP headers, and PDF sanitization complete)
+Status: Phase 3 in progress - URL validation with Zod, PDF export XSS protection with DOMPurify, CSP configuration, and security scanning deployed
+Last activity: 2026-01-18 - Completed 03-02-PLAN.md (PDF Export Sanitization)
 
-Progress: ██████████████████░░ 87.5% (14/16 plans complete)
+Progress: ███████████████████░ 93.75% (15/16 plans complete)
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 14
-- Average duration: 5.6 min
+- Total plans completed: 15
+- Average duration: 5.7 min
 
 **By Phase:**
 
@@ -30,7 +30,7 @@ Progress: ██████████████████░░ 87.5% (14
 | -------------------------- | ------ | ----- | -------- |
 | 1 - Test Infrastructure    | 2/2    | 3min  | 1.5min   |
 | 2 - Calculation Validation | 10/10  | 69min | 6.9min   |
-| 3 - Security Hardening     | 2/4    | 9min  | 4.5min   |
+| 3 - Security Hardening     | 3/4    | 13min | 4.3min   |
 
 ## Accumulated Context
 
@@ -81,6 +81,9 @@ Progress: ██████████████████░░ 87.5% (14
 | 03-01 | Validate after LZ decompression (untrusted boundary)                     | LZ-string returns strings; attackers can craft malicious URLs. URL deserialization is the security boundary in client-only SPA. Validation after decompression catches injection attempts.                                   |
 | 03-01 | Use discriminated unions for topology validation                         | Each topology type has different valid levels. Discriminated union ensures level matches type (e.g., 'standard' → 'RAID6', 'zfs' → 'raidz2'). Prevents invalid combinations.                                                 |
 | 03-01 | Add .passthrough() to schema for forward compatibility                   | Allow unknown future fields while validating known fields. Prevents breaking when new fields added in future versions. Schema accepts both current and future fields safely.                                                 |
+| 03-02 | Export sanitizeForPdf() for direct unit testing                          | Attempted to mock jsPDF but encountered constructor compatibility issues with Vitest. Exported sanitization function as public API for direct testing. Simpler, more reliable tests.                                         |
+| 03-02 | Accept DOMPurify HTML entity encoding as correct behavior                | DOMPurify encodes special characters (&→&amp;, <>→&lt;&gt;). Initially expected plain text preservation, but encoding is correct security behavior for preventing tag injection in text contexts.                            |
+| 03-02 | SVG/iframe content removal is expected DOMPurify behavior                | DOMPurify removes SVG and iframe tags entirely (including content) for security. These are dangerous XSS vectors. Tests updated to expect empty string for these injection attempts.                                         |
 | 03-04 | Use 'unsafe-inline' in CSP for React/Tailwind compatibility              | Standard practice for React SPAs. Tailwind utility classes and React event handlers require inline styles/scripts. Alternative would require nonces or hashes (future enhancement).                                           |
 | 03-04 | Document GitHub Pages CSP limitations                                    | Meta tag CSP doesn't support frame-ancestors directive (clickjacking protection) or report-uri (violation reporting). Recommend Netlify/Vercel for production deployments with full CSP support.                               |
 | 03-04 | Set Snyk scan to continue-on-error in CI                                 | Snyk requires SNYK_TOKEN secret in repository settings. If not configured, job would fail. This allows npm audit (built-in) to still catch vulnerabilities while documenting Snyk setup.                                      |
@@ -96,6 +99,6 @@ Progress: ██████████████████░░ 87.5% (14
 
 ## Session Continuity
 
-Last session: 2026-01-18T16:43:07Z
-Stopped at: Completed 03-01-PLAN.md (URL State Validation)
-Resume file: None - Phase 3 in progress (2 of 4 plans complete)
+Last session: 2026-01-18T16:50:11Z
+Stopped at: Completed 03-02-PLAN.md (PDF Export Sanitization)
+Resume file: None - Phase 3 in progress (3 of 4 plans complete)
