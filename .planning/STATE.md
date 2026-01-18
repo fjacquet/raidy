@@ -11,24 +11,24 @@ See: .planning/PROJECT.md
 ## Current Position
 
 Phase: 2 of 6 (Calculation Validation)
-Plan: 3 of X (Performance Engine Validation)
+Plan: 4 of X (Monte Carlo Resilience Validation)
 Status: In progress
-Last activity: 2026-01-18 - Completed 02-03-PLAN.md (Performance Engine Validation)
+Last activity: 2026-01-18 - Completed 02-04-PLAN.md (Monte Carlo Resilience Validation)
 
-Progress: ███░░░░░░░ 33% (5/15 plans complete)
+Progress: ████░░░░░░ 40% (6/15 plans complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 5
-- Average duration: 4.6 min
+- Total plans completed: 6
+- Average duration: 5.2 min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 1 - Test Infrastructure | 2/2 | 3min | 1.5min |
-| 2 - Calculation Validation | 3/X | 20min | 6.7min |
+| 2 - Calculation Validation | 4/X | 29min | 7.3min |
 
 ## Accumulated Context
 
@@ -53,6 +53,9 @@ Progress: ███░░░░░░░ 33% (5/15 plans complete)
 | 02-05 | Table-driven validator tests for systematic coverage | Array of test cases with expectedErrorCode ensures all topology constraints validated. Easy to extend. |
 | 02-05 | Error messages must explain WHY and HOW to fix | User-facing validation requires actionable feedback. Messages include minimum requirements and specific recommendations. |
 | 02-05 | Browser API mocking with vi.stubGlobal | URL storage uses window/navigator APIs. Per-test mocking keeps tests fast without browser automation. |
+| 02-04 | Use moderate AFR (2-4%) in URE probability tests | With very low AFR, most simulations never experience drive failures so URE probability measures as 0. Moderate AFR ensures enough rebuilds to measure URE effects. |
+| 02-04 | Validate relative comparisons vs exact theoretical values | Monte Carlo simulations include multiple interacting failure modes. Tests validate expected trends (enterprise better than consumer) rather than exact probabilities. |
+| 02-04 | Apply 95% confidence intervals for statistical validation | Industry standard for statistical significance. Formula p ± 1.96σ where σ = sqrt(p(1-p)/n) provides rigorous bounds for simulation variance. |
 
 ### Pending Todos
 
@@ -64,6 +67,6 @@ Progress: ███░░░░░░░ 33% (5/15 plans complete)
 
 ## Session Continuity
 
-Last session: 2026-01-18T06:30:05Z
-Stopped at: Completed 02-03-PLAN.md (Performance Engine Validation)
+Last session: 2026-01-18T06:30:59Z
+Stopped at: Completed 02-04-PLAN.md (Monte Carlo Resilience Validation)
 Resume file: None - Phase 2 in progress
