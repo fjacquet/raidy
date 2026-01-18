@@ -135,7 +135,7 @@
 | TEST-10 | Phase 2 | Pending |
 | TEST-11 | Phase 2 | Pending |
 | TEST-12 | Phase 2 | Pending |
-| TEST-13 | Phase 1 | Pending |
+| TEST-13 | Phase 1 | Complete |
 | TEST-14 | Phase 2 | Pending |
 | TEST-15 | Phase 2 | Pending |
 | TEST-16 | Phase 2 | Pending |
@@ -174,7 +174,7 @@
 | PERF-08 | Phase 5 | Pending |
 | BUG-01 | Phase 5 | Pending |
 | BUG-02 | Phase 5 | Pending |
-| BUG-03 | Phase 1 | Pending |
+| BUG-03 | Phase 1 | Complete |
 | PROD-01 | Phase 6 | Pending |
 | PROD-02 | Phase 6 | Pending |
 | PROD-03 | Phase 6 | Pending |
@@ -182,4 +182,4 @@
 | PROD-05 | Phase 6 | Pending |
 
 ---
-*Last updated: 2026-01-17*
+*Last updated: 2026-01-18*
