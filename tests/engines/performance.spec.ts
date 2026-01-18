@@ -1366,3 +1366,264 @@ describe('Performance Engine - Dell ObjectScale Performance', () => {
     expect(resultObjectScale.estimatedLatencyUs).toBeGreaterThan(resultPowerFlex.estimatedLatencyUs)
   })
 })
+
+describe('Performance Engine - Dell PowerStore Performance', () => {
+  /**
+   * PowerStore latency formula (lines 497-499):
+   * mediaLatency * 1.2 + cpuOverhead
+   *
+   * PowerStore optimized for NVMe with lower overhead than other platforms.
+   * Block storage focused, no network latency component.
+   */
+
+  it('should calculate PowerStore latency with 1.2x multiplier (NVMe optimized)', () => {
+    // PowerStore optimized for NVMe with minimal overhead
+    const input = createInput(
+      24,
+      { type: 'powerstore', level: 'powerstore_raid5' },
+      testSsdNvme,
+      100,
+    )
+    const result = calculatePerformance(input)
+
+    // Should have latency estimation
+    expect(result.estimatedLatencyUs).toBeDefined()
+    expect(result.estimatedLatencyUs).toBeGreaterThan(0)
+
+    // Latency should include:
+    // - mediaLatency * 1.2 (NVMe = 20μs * 1.2 = 24μs)
+    // - cpuOverhead (standard = 10μs)
+    // Expected: ~34μs
+    expect(result.estimatedLatencyUs).toBeGreaterThan(20)
+    expect(result.estimatedLatencyUs).toBeLessThan(60)
+  })
+
+  it('should have lower overhead than PowerFlex (1.2x vs 1.5x)', () => {
+    // Compare PowerStore (1.2x) vs PowerFlex (1.5x)
+    const inputPowerStore = createInput(
+      24,
+      { type: 'powerstore', level: 'powerstore_raid5' },
+      testSsdNvme,
+      100,
+    )
+    const inputPowerFlex = createInput(
+      24,
+      { type: 'powerflex', level: 'powerflex_2way' },
+      testSsdNvme,
+      100,
+    )
+
+    const resultPowerStore = calculatePerformance(inputPowerStore)
+    const resultPowerFlex = calculatePerformance(inputPowerFlex)
+
+    // PowerStore (1.2x media, no network) should be faster than PowerFlex (1.5x media + network)
+    expect(resultPowerStore.estimatedLatencyUs).toBeLessThan(resultPowerFlex.estimatedLatencyUs)
+  })
+
+  it('should handle PowerStore block storage performance characteristics', () => {
+    // PowerStore optimized block storage
+    const input = createInput(
+      24,
+      { type: 'powerstore', level: 'powerstore_raid5' },
+      testSsdNvme,
+      100,
+    )
+    const result = calculatePerformance(input)
+
+    // Should have high IOPS with NVMe
+    expect(result.maxReadIOPS).toBeGreaterThan(100_000)
+    expect(result.maxWriteIOPS).toBeGreaterThan(0)
+
+    // Write penalty for RAID 5-like behavior
+    expect(result.writePenalty).toBeGreaterThan(1)
+  })
+
+  it('should validate PowerStore NVMe optimization with different drive types', () => {
+    // Compare NVMe vs SSD performance on PowerStore
+    const inputNvme = createInput(
+      24,
+      { type: 'powerstore', level: 'powerstore_raid5' },
+      testSsdNvme,
+      100,
+    )
+    const inputSsd = createInput(
+      24,
+      { type: 'powerstore', level: 'powerstore_raid5' },
+      testSsdSata,
+      100,
+    )
+
+    const resultNvme = calculatePerformance(inputNvme)
+    const resultSsd = calculatePerformance(inputSsd)
+
+    // NVMe should have lower latency
+    // NVMe: 20μs * 1.2 + 10 = 34μs
+    // SSD: 150μs * 1.2 + 10 = 190μs
+    expect(resultNvme.estimatedLatencyUs).toBeLessThan(resultSsd.estimatedLatencyUs)
+  })
+
+  it('should not include network latency component (block storage)', () => {
+    // PowerStore is block storage, no network latency in formula
+    const input = createInput(
+      24,
+      { type: 'powerstore', level: 'powerstore_raid5' },
+      testSsdNvme,
+      100,
+    )
+    const result = calculatePerformance(input)
+
+    // Latency should be lower than PowerFlex which includes network
+    // PowerStore: 20 * 1.2 + 10 = 34μs
+    // PowerFlex: 20 * 1.5 + 25 + 10 = 65μs (25GbE)
+    expect(result.estimatedLatencyUs).toBeLessThan(50)
+  })
+
+  it('should show consistent performance across workload patterns', () => {
+    // Test random vs sequential
+    const inputRandom = createInput(
+      24,
+      { type: 'powerstore', level: 'powerstore_raid5' },
+      testSsdNvme,
+      100,
+    )
+    const inputSequential = createInput(
+      24,
+      { type: 'powerstore', level: 'powerstore_raid5' },
+      testSsdNvme,
+      0,
+    )
+
+    const resultRandom = calculatePerformance(inputRandom)
+    const resultSequential = calculatePerformance(inputSequential)
+
+    // Both should have valid performance metrics
+    expect(resultRandom.maxReadIOPS).toBeGreaterThan(0)
+    expect(resultSequential.maxReadThroughputMBs).toBeGreaterThan(0)
+  })
+})
+
+describe('Performance Engine - Dell PowerScale Performance', () => {
+  /**
+   * PowerScale latency formula (lines 501-504):
+   * mediaLatency * 1.5 + networkLatency + cpuOverhead
+   * cpuOverhead = CPU_OVERHEAD_US.replication = 20μs
+   *
+   * PowerScale is scale-out NAS with parity writes, includes network latency.
+   */
+
+  it('should calculate PowerScale latency with 1.5x multiplier and network overhead', () => {
+    // PowerScale scale-out NAS with parity writes
+    const input = createInput(
+      36,
+      { type: 'powerscale', level: 'powerscale_n_plus_2' },
+      testHddDrive,
+      100,
+    )
+    const result = calculatePerformance(input)
+
+    // Should have latency estimation
+    expect(result.estimatedLatencyUs).toBeDefined()
+    expect(result.estimatedLatencyUs).toBeGreaterThan(0)
+
+    // Latency should include:
+    // - mediaLatency * 1.5 (HDD = 8000μs * 1.5 = 12000μs)
+    // - networkLatency (25GbE = 25μs)
+    // - cpuOverhead (replication = 20μs)
+    // Expected: 12000 + 25 + 20 = 12045μs
+    expect(result.estimatedLatencyUs).toBeGreaterThan(12000)
+  })
+
+  it('should apply replication CPU overhead', () => {
+    // PowerScale uses replication CPU overhead (20μs)
+    const input = createInput(
+      36,
+      { type: 'powerscale', level: 'powerscale_n_plus_2' },
+      testSsdSata,
+      100,
+    )
+    const result = calculatePerformance(input)
+
+    // SSD base latency = 150μs
+    // Expected: 150 * 1.5 + 25 + 20 = 270μs
+    expect(result.estimatedLatencyUs).toBeGreaterThan(200)
+    expect(result.estimatedLatencyUs).toBeLessThan(400)
+  })
+
+  it('should handle PowerScale scale-out NAS configuration', () => {
+    // PowerScale with 36 HDDs in scale-out NAS
+    const input = createInput(
+      36,
+      { type: 'powerscale', level: 'powerscale_n_plus_2' },
+      testHddDrive,
+      100,
+    )
+    const result = calculatePerformance(input)
+
+    // Should have positive IOPS
+    expect(result.maxReadIOPS).toBeGreaterThan(0)
+    expect(result.maxWriteIOPS).toBeGreaterThan(0)
+
+    // Parity writes should add penalty
+    expect(result.writePenalty).toBeGreaterThan(1)
+  })
+
+  it('should include network latency impact for NAS protocol', () => {
+    // Test network latency impact on PowerScale
+    const input1GbE = {
+      ...createInput(36, { type: 'powerscale', level: 'powerscale_n_plus_2' }, testSsdSata, 100),
+      networkSpeed: '1GbE' as const,
+    }
+    const input100GbE = {
+      ...createInput(36, { type: 'powerscale', level: 'powerscale_n_plus_2' }, testSsdSata, 100),
+      networkSpeed: '100GbE' as const,
+    }
+
+    const result1GbE = calculatePerformance(input1GbE)
+    const result100GbE = calculatePerformance(input100GbE)
+
+    // Network latency difference:
+    // 1GbE: 500μs
+    // 100GbE: 10μs
+    // Difference: 490μs
+    expect(result1GbE.estimatedLatencyUs).toBeGreaterThan(result100GbE.estimatedLatencyUs)
+  })
+
+  it('should validate PowerScale parity write performance (1.5x multiplier)', () => {
+    // PowerScale with parity writes has 1.5x media latency
+    const input = createInput(
+      36,
+      { type: 'powerscale', level: 'powerscale_n_plus_2' },
+      testSsdSata,
+      100,
+    )
+    const result = calculatePerformance(input)
+
+    // Should have latency reflecting parity overhead
+    // SSD: 150μs * 1.5 = 225μs + network + CPU
+    expect(result.estimatedLatencyUs).toBeGreaterThan(200)
+  })
+
+  it('should compare PowerScale NAS vs PowerStore block latency', () => {
+    // PowerScale (NAS) should have higher latency than PowerStore (block)
+    const inputPowerScale = createInput(
+      36,
+      { type: 'powerscale', level: 'powerscale_n_plus_2' },
+      testSsdSata,
+      100,
+    )
+    const inputPowerStore = createInput(
+      36,
+      { type: 'powerstore', level: 'powerstore_raid5' },
+      testSsdSata,
+      100,
+    )
+
+    const resultPowerScale = calculatePerformance(inputPowerScale)
+    const resultPowerStore = calculatePerformance(inputPowerStore)
+
+    // PowerScale (1.5x + network) should have higher latency than PowerStore (1.2x, no network)
+    // PowerScale: 150 * 1.5 + 25 + 20 = 270μs
+    // PowerStore: 150 * 1.2 + 10 = 190μs
+    expect(resultPowerScale.estimatedLatencyUs).toBeGreaterThan(resultPowerStore.estimatedLatencyUs)
+  })
+})
