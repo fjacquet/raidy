@@ -23,11 +23,12 @@ import type {
   ZfsOptions,
 } from '@/types/topology'
 import { assertNever } from '@/utils/typeGuards'
-import { getFilesystemOverheadPercent } from './overhead/filesystem-overhead'
 // Overhead modules
-import { getObjectScaleGeoOverhead } from './overhead/objectscale-geo'
+import { calculateOverheads } from './overhead/overheadCalculator'
 // Breakdown builder
 import { buildBreakdown } from './breakdown/buildBreakdown'
+// Post-processing (compression, dedup, ZFS details)
+import { applyCompressionDedup, buildZfsDetails } from './postProcessing/capacityEnhancements'
 // Validation module
 import {
   checkTieringConfiguration,
@@ -136,12 +137,6 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
   const usableDrives = effectiveDriveCount - hotSpares
   const rawUsableCapacity = effectiveDrive.capacity_raw * usableDrives
 
-  // Synology system partition overhead (20-30GB per disk)
-  let synologySystemOverhead = 0
-  if (topology.type === 'proprietary' && topology.level.startsWith('synology_')) {
-    synologySystemOverhead = synologyOptions.systemPartitionSize * usableDrives
-  }
-
   // Calculate parity/redundancy overhead
   const dataFraction = getDataFraction(
     topology,
@@ -151,81 +146,53 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
     nutanixOptions,
     serverCount,
   )
+
+  // Synology system partition overhead must be calculated before parity
+  let synologySystemOverhead = 0
+  if (topology.type === 'proprietary' && topology.level.startsWith('synology_')) {
+    synologySystemOverhead = synologyOptions.systemPartitionSize * usableDrives
+  }
+
   const capacityAfterSysPartition = rawUsableCapacity - synologySystemOverhead
   const capacityAfterParity = capacityAfterSysPartition * dataFraction
   const parityOverhead = capacityAfterSysPartition - capacityAfterParity
 
-  // S2D rebuild reserve (per-drive or per-node based on reserveStrategy)
-  let s2dReserve = 0
-  if (topology.type === 's2d' && s2dOptions.rebuildReserve) {
-    if (s2dOptions.reserveStrategy === 'node_failure') {
-      // Reserve one node's worth of capacity
-      s2dReserve = drive.capacity_raw * (usableDrives / s2dOptions.faultDomains)
-    } else {
-      // Reserve one drive equivalent per fault domain
-      s2dReserve = drive.capacity_raw * s2dOptions.faultDomains
-    }
-  }
+  // Calculate all overhead factors
+  const overheads = calculateOverheads({
+    topology,
+    drive,
+    usableDrives,
+    rawUsableCapacity,
+    capacityAfterParity,
+    usableCapacity: 0, // Will be calculated below
+    synologyOptions,
+    s2dOptions,
+    zfsOptions,
+    powerFlexOptions,
+    netAppOptions,
+    nutanixOptions,
+    objectscaleOptions,
+    powerstoreOptions,
+    powerscaleOptions,
+    cephOptions,
+  })
 
-  // ZFS-specific overhead (slop space = 1/32)
-  let slopOverhead = 0
-  let zfsAshiftOverhead = 0
-  if (topology.type === 'zfs' && zfsOptions) {
-    const zfsOverhead = getZfsOverhead(capacityAfterParity, zfsOptions, drive.sector_size)
-    slopOverhead = zfsOverhead.slop
-    zfsAshiftOverhead = zfsOverhead.ashift
-  }
+  // Extract overhead values
+  const {
+    s2dReserve,
+    slopOverhead,
+    zfsAshiftOverhead,
+    powerFlexFgOverhead,
+    netAppSnapshotReserve,
+    nutanixSystemOverhead,
+    objectscaleSystemOverhead,
+    objectscaleGeoOverhead,
+    powerstoreSnapshotReserve,
+    powerscaleSnapshotReserve,
+    filesystemOverhead,
+  } = overheads
 
-  // PowerFlex Fine Granularity metadata overhead (12-15%)
-  let powerFlexFgOverhead = 0
-  if (topology.type === 'powerflex' && powerFlexOptions.granularity === 'fine') {
-    powerFlexFgOverhead = capacityAfterParity * powerFlexOptions.fgOverhead
-  }
-
-  // NetApp snapshot reserve
-  let netAppSnapshotReserve = 0
-  if (topology.type === 'proprietary' && topology.level.startsWith('netapp_')) {
-    netAppSnapshotReserve = capacityAfterParity * netAppOptions.snapshotReserve
-  }
-
-  // Nutanix system overhead (5-10% for snapshots, metadata, CVM, rebuild)
-  // Per spec: C_formatted = C_raw × 0.90 (10% overhead)
-  let nutanixSystemOverhead = 0
-  if (topology.type === 'nutanix') {
-    nutanixSystemOverhead = capacityAfterParity * nutanixOptions.systemOverhead
-  }
-
-  // ObjectScale system overhead (10-20% for metadata, indexes, S3 protocol overhead)
-  // Plus geo-overhead for multi-site replication (per SME spec)
-  let objectscaleSystemOverhead = 0
-  let objectscaleGeoOverhead = 0
-  if (topology.type === 'objectscale') {
-    objectscaleSystemOverhead =
-      capacityAfterParity * (objectscaleOptions.systemOverheadPercent / 100)
-    // Apply geo-overhead factor for multi-site replication
-    const geoFactor = getObjectScaleGeoOverhead(topology, objectscaleOptions.sites)
-    if (geoFactor > 1.0) {
-      // Geo-overhead reduces usable capacity by the inverse of the factor
-      objectscaleGeoOverhead = capacityAfterParity * (1 - 1 / geoFactor)
-    }
-  }
-
-  // PowerStore snapshot reserve
-  let powerstoreSnapshotReserve = 0
-  if (topology.type === 'powerstore') {
-    powerstoreSnapshotReserve =
-      capacityAfterParity * (powerstoreOptions.snapshotReservePercent / 100)
-  }
-
-  // PowerScale snapshot reserve
-  let powerscaleSnapshotReserve = 0
-  if (topology.type === 'powerscale') {
-    powerscaleSnapshotReserve =
-      capacityAfterParity * (powerscaleOptions.snapshotReservePercent / 100)
-  }
-
-  // Filesystem overhead
-  const fsOverheadPercent = getFilesystemOverheadPercent(topology, synologyOptions, netAppOptions)
+  // Usable capacity (before compression/dedup and safe capacity factor)
   const capacityForFs =
     capacityAfterParity -
     slopOverhead -
@@ -237,9 +204,6 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
     objectscaleGeoOverhead -
     powerstoreSnapshotReserve -
     powerscaleSnapshotReserve
-  const filesystemOverhead = capacityForFs * fsOverheadPercent
-
-  // Usable capacity (before compression/dedup and safe capacity factor)
   let usableCapacity = capacityForFs - filesystemOverhead
 
   // Ceph safe capacity factor (nearfull threshold, default 85%)
@@ -250,54 +214,21 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
     usableCapacity = usableCapacity * cephOptions.safeCapacityThreshold
   }
 
-  // Effective capacity (after compression and dedup)
-  // Only apply compression/dedup for topologies that support it
-  let effectiveCapacity = usableCapacity
-
-  // Standard RAID has no compression/deduplication - effectiveCapacity = usableCapacity
-  // S2D has no inline compression/dedup at storage layer
-  // ZFS supports compression and dedup via filesystem
-  if (topology.type === 'zfs') {
-    effectiveCapacity = usableCapacity * compressionRatio * dedupRatio
-  }
-
-  // NetApp DRR (Data Reduction Ratio) - applies on top of standard compression/dedup
-  // Includes zero-detection + inline dedup + inline compression + compaction
-  if (topology.type === 'proprietary' && topology.level.startsWith('netapp_')) {
-    effectiveCapacity = usableCapacity * netAppOptions.dataReductionRatio
-  }
-
-  // PowerFlex compression ratio (only for modes with compression enabled)
-  if (topology.type === 'powerflex' && powerFlexOptions.compression) {
-    effectiveCapacity = usableCapacity * powerFlexOptions.compressionRatio
-  }
-
-  // Nutanix compression and deduplication
-  // Per spec: C_effective = C_usable × (Ratio_comp × Ratio_dedup)
-  if (topology.type === 'nutanix') {
-    const nutanixCompRatio = nutanixOptions.compression ? nutanixOptions.compressionRatio : 1.0
-    const nutanixDedupRatio = nutanixOptions.dedup ? nutanixOptions.dedupRatio : 1.0
-    effectiveCapacity = usableCapacity * nutanixCompRatio * nutanixDedupRatio
-  }
-
-  // ObjectScale compression (for S3 object storage)
-  if (topology.type === 'objectscale' && objectscaleOptions.compression) {
-    effectiveCapacity = usableCapacity * objectscaleOptions.compressionRatio
-  }
-
-  // PowerStore compression and deduplication
-  if (topology.type === 'powerstore') {
-    const psCompRatio = powerstoreOptions.compression ? powerstoreOptions.compressionRatio : 1.0
-    const psDedupRatio = powerstoreOptions.dedup ? powerstoreOptions.dedupRatio : 1.0
-    effectiveCapacity = usableCapacity * psCompRatio * psDedupRatio
-  }
-
-  // PowerScale compression and deduplication
-  if (topology.type === 'powerscale') {
-    const pscCompRatio = powerscaleOptions.compression ? powerscaleOptions.compressionRatio : 1.0
-    const pscDedupRatio = powerscaleOptions.dedup ? powerscaleOptions.dedupRatio : 1.0
-    effectiveCapacity = usableCapacity * pscCompRatio * pscDedupRatio
-  }
+  // Apply compression and deduplication
+  const effectiveCapacity = applyCompressionDedup(
+    topology,
+    usableCapacity,
+    compressionRatio,
+    dedupRatio,
+    {
+      netAppOptions,
+      powerFlexOptions,
+      nutanixOptions,
+      objectscaleOptions,
+      powerstoreOptions,
+      powerscaleOptions,
+    },
+  )
 
   // Overall efficiency
   // Handle division by zero or invalid calculations
@@ -334,27 +265,18 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
   // Build ZFS-specific details if ZFS topology
   let zfsDetails: ZfsCapacityDetails | undefined
   if (topology.type === 'zfs' && zfsOptions) {
-    const zpoolUsable = rawUsableCapacity - parityOverhead - zfsAshiftOverhead
-    const zfsUsable = zpoolUsable - slopOverhead - filesystemOverhead
-    const recommendedMinFree = zfsUsable * 0.2 // 20% headroom recommendation
-    const practicalUsable = zfsUsable - recommendedMinFree
-
-    zfsDetails = {
-      totalRawCapacity: rawCapacity,
-      zpoolCapacity: rawUsableCapacity, // After hot spares
-      parityOverhead: parityOverhead,
-      ashiftPaddingOverhead: zfsAshiftOverhead,
-      zpoolUsableCapacity: zpoolUsable,
-      slopSpaceReservation: slopOverhead,
-      zfsUsableCapacity: zfsUsable,
-      recommendedMinFreeSpace: recommendedMinFree,
-      practicalUsableCapacity: practicalUsable,
-      effectiveCapacity: effectiveCapacity,
+    zfsDetails = buildZfsDetails(
+      rawCapacity,
+      rawUsableCapacity,
+      parityOverhead,
+      zfsAshiftOverhead,
+      slopOverhead,
+      filesystemOverhead,
+      effectiveCapacity,
       compressionRatio,
       dedupRatio,
-      ashift: zfsOptions.ashift,
-      recordSize: zfsOptions.recordsize,
-    }
+      zfsOptions,
+    )
   }
 
   return {
