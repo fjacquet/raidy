@@ -58,8 +58,8 @@ Plans:
 - [x] 02-06-PLAN.md — Add advanced topology performance tests (gap closure: PowerFlex, ObjectScale, PowerStore, PowerScale, Nutanix)
 - [x] 02-07-PLAN.md — Add volumetry edge case and error handling tests (gap closure: zero drives, invalid configs, boundaries)
 - [x] 02-08-PLAN.md — Fix flaky statistical test (gap closure: confidence interval narrowing test stability)
-- [ ] 02-09-PLAN.md — Add vendor-specific topology edge case tests (gap closure: ObjectScale geo-replication, PowerFlex FG, RAID 5E/5EE, PowerVault ADAPT, vSAN ESA RAID-6)
-- [ ] 02-10-PLAN.md — Add tiering and advanced ZFS tests (gap closure: S2D/Nutanix/Ceph tiering, ZFS ashift padding penalty)
+- [x] 02-09-PLAN.md — Add vendor-specific topology edge case tests (gap closure: ObjectScale geo-replication, PowerFlex FG, RAID 5E/5EE, PowerVault ADAPT, vSAN ESA RAID-6)
+- [x] 02-10-PLAN.md — Add tiering and advanced ZFS tests (gap closure: S2D/Nutanix/Ceph tiering, ZFS ashift padding penalty)
 
 ---
 
@@ -140,7 +140,7 @@ Plans:
 | Phase                      | Status                    | Completed  |
 | -------------------------- | ------------------------- | ---------- |
 | 1 - Test Infrastructure    | ✓ Complete                | 2026-01-17 |
-| 2 - Calculation Validation | In Progress (gap closure) | —          |
+| 2 - Calculation Validation | ✓ Complete                | 2026-01-18 |
 | 3 - Security Hardening     | Not started               | —          |
 | 4 - Code Quality           | Not started               | —          |
 | 5 - Performance & Fixes    | Not started               | —          |

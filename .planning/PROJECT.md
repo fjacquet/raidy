@@ -72,13 +72,14 @@ Calculation accuracy for storage infrastructure decisions. If Raidy gives wrong 
 
 ## Key Decisions
 
-| Decision | Rationale | Outcome |
-|----------|-----------|---------|
-| Vitest for testing | Already configured, Vite-native, fast | — Pending |
-| Fix-in-place vs rewrite | Existing code works, users depend on it | — Pending |
-| Industry benchmarks for validation | WintelGuy, NetApp, OpenZFS are gold standards | — Pending |
-| Static-only architecture | Original constraint, enables simple deployment | ✓ Good |
-| React 19 + Tailwind 4 | Modern stack, already in use | ⚠️ Revisit if stability issues |
+| Decision                           | Rationale                                      | Outcome                        |
+| ---------------------------------- | ---------------------------------------------- | ------------------------------ |
+| Vitest for testing                 | Already configured, Vite-native, fast          | — Pending                      |
+| Fix-in-place vs rewrite            | Existing code works, users depend on it        | — Pending                      |
+| Industry benchmarks for validation | WintelGuy, NetApp, OpenZFS are gold standards  | — Pending                      |
+| Static-only architecture           | Original constraint, enables simple deployment | ✓ Good                         |
+| React 19 + Tailwind 4              | Modern stack, already in use                   | ⚠️ Revisit if stability issues |
 
 ---
-*Last updated: 2026-01-17 after initialization*
+
+_Last updated: 2026-01-18 after Phase 2 completion_
