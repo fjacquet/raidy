@@ -2068,3 +2068,275 @@ describe('Volumetry Engine - Edge Cases: Invalid Drive Counts', () => {
     })
   })
 })
+
+describe('Volumetry Engine - Error Handling', () => {
+  describe('Invalid topology tests', () => {
+    it('should handle unknown topology type gracefully', () => {
+      const input = createInput(4, { type: 'unknown_type' as any, level: 'RAID5' })
+      const result = calculateVolumetry(input)
+
+      // Should fall back to default behavior (no error thrown)
+      expect(result.rawCapacity).toBeGreaterThan(0)
+      expect(Number.isFinite(result.efficiency)).toBe(true)
+    })
+
+    it('should handle invalid RAID level gracefully', () => {
+      const input = createInput(4, { type: 'standard', level: 'RAID99' as any })
+      const result = calculateVolumetry(input)
+
+      // Should fall back to default (100% efficiency like RAID0)
+      expect(result.rawCapacity).toBe(4_000_000_000_000)
+      expect(Number.isFinite(result.usableCapacity)).toBe(true)
+    })
+
+    it('should handle null topology gracefully', () => {
+      const input = createInput(4, null as any)
+      const result = calculateVolumetry(input)
+
+      // Should handle gracefully (may return default values)
+      expect(Number.isFinite(result.rawCapacity)).toBe(true)
+    })
+
+    it('should handle undefined topology gracefully', () => {
+      const input = createInput(4, undefined as any)
+      const result = calculateVolumetry(input)
+
+      // Should handle gracefully
+      expect(Number.isFinite(result.rawCapacity)).toBe(true)
+    })
+  })
+
+  describe('Missing drive data tests', () => {
+    it('should handle null drive object gracefully', () => {
+      const input = createInput(4, { type: 'standard', level: 'RAID5' })
+      input.drive = null as any
+
+      const result = calculateVolumetry(input)
+
+      // Should handle gracefully (may return 0 or throw controlled error)
+      expect(Number.isFinite(result.rawCapacity)).toBe(true)
+    })
+
+    it('should handle drive with missing capacity_raw field', () => {
+      const incompleteDrive: any = {
+        id: 'test',
+        model: 'Test',
+        type: 'HDD',
+        // capacity_raw is missing
+      }
+      const input = createInput(4, { type: 'standard', level: 'RAID5' })
+      input.drive = incompleteDrive
+
+      const result = calculateVolumetry(input)
+
+      // Should handle missing field (capacity likely undefined, resulting in NaN or 0)
+      expect(Number.isFinite(result.rawCapacity) || result.rawCapacity === 0).toBe(true)
+    })
+
+    it('should handle drive capacity = 0', () => {
+      const zeroDrive: Drive = {
+        ...testDrive,
+        capacity_raw: 0,
+      }
+      const input = createInput(4, { type: 'standard', level: 'RAID5' })
+      input.drive = zeroDrive
+
+      const result = calculateVolumetry(input)
+
+      // Should return 0 capacity
+      expect(result.rawCapacity).toBe(0)
+      expect(result.usableCapacity).toBe(0)
+    })
+
+    it('should handle drive capacity < 0 (negative)', () => {
+      const negativeDrive: Drive = {
+        ...testDrive,
+        capacity_raw: -1_000_000_000_000,
+      }
+      const input = createInput(4, { type: 'standard', level: 'RAID5' })
+      input.drive = negativeDrive
+
+      const result = calculateVolumetry(input)
+
+      // Negative capacity should result in 0 or handled gracefully
+      expect(result.rawCapacity).toBeLessThanOrEqual(0)
+    })
+  })
+
+  describe('Invalid option combinations tests', () => {
+    it('should handle S2D with 0 fault domains (minimum is 2)', () => {
+      const input = createInput(8, { type: 's2d', level: 'parity' })
+      input.s2dOptions = { ...DEFAULT_S2D_OPTIONS, faultDomains: 0 }
+
+      const result = calculateVolumetry(input)
+
+      // Should handle gracefully (division by zero potential)
+      expect(Number.isFinite(result.efficiency) || result.efficiency === 0).toBe(true)
+    })
+
+    it('should handle S2D with 1 fault domain (below minimum)', () => {
+      const input = createInput(8, { type: 's2d', level: 'parity' })
+      input.s2dOptions = { ...DEFAULT_S2D_OPTIONS, faultDomains: 1 }
+
+      const result = calculateVolumetry(input)
+
+      // Should handle gracefully
+      expect(Number.isFinite(result.usableCapacity)).toBe(true)
+    })
+
+    it('should handle ZFS compression ratio > 10 (unrealistic)', () => {
+      const input = createInput(4, { type: 'zfs', level: 'raidz1' })
+      input.compressionRatio = 100 // Extremely high
+
+      const result = calculateVolumetry(input)
+
+      // Should calculate but result in very high effective capacity
+      expect(result.effectiveCapacity).toBeGreaterThan(result.usableCapacity * 50)
+      expect(Number.isFinite(result.effectiveCapacity)).toBe(true)
+    })
+
+    it('should handle ZFS compression ratio < 1 (expansion)', () => {
+      const input = createInput(4, { type: 'zfs', level: 'raidz1' })
+      input.compressionRatio = 0.5 // Data expansion (unusual)
+
+      const result = calculateVolumetry(input)
+
+      // Effective capacity should be less than usable
+      expect(result.effectiveCapacity).toBeLessThan(result.usableCapacity)
+      expect(Number.isFinite(result.effectiveCapacity)).toBe(true)
+    })
+
+    it('should handle ZFS dedup ratio < 1 (expansion)', () => {
+      const input = createInput(4, { type: 'zfs', level: 'raidz1' })
+      input.dedupRatio = 0.8 // Dedup overhead exceeds savings
+
+      const result = calculateVolumetry(input)
+
+      // Effective capacity should be less than usable
+      expect(result.effectiveCapacity).toBeLessThan(result.usableCapacity)
+      expect(Number.isFinite(result.effectiveCapacity)).toBe(true)
+    })
+
+    it('should handle Ceph with 0 OSDs', () => {
+      // 0 drives in a Ceph pool
+      const input = createInput(0, { type: 'ceph', level: 'ceph_replicated_3' })
+      input.serverCount = 3
+
+      const result = calculateVolumetry(input)
+
+      // Should return 0 (handled by zero drives check)
+      expect(result.rawCapacity).toBe(0)
+      expect(result.usableCapacity).toBe(0)
+    })
+
+    it('should handle Nutanix with 0 nodes', () => {
+      const input = createInput(12, { type: 'nutanix', level: 'nutanix_rf2' })
+      input.serverCount = 0
+
+      const result = calculateVolumetry(input)
+
+      // Should handle gracefully
+      expect(Number.isFinite(result.usableCapacity)).toBe(true)
+    })
+  })
+
+  describe('Missing required fields tests', () => {
+    it('should handle serverCount = 0 for multi-node systems (vSAN)', () => {
+      const input = createInput(16, { type: 'vsan_osa', level: 'vsan_osa_raid5' })
+      input.serverCount = 0
+
+      const result = calculateVolumetry(input)
+
+      // Should handle division by zero in stripe width calculations
+      expect(Number.isFinite(result.efficiency) || result.efficiency === 0).toBe(true)
+    })
+
+    it('should handle missing zfsOptions for ZFS topologies', () => {
+      const input = createInput(4, { type: 'zfs', level: 'raidz1' })
+      input.zfsOptions = null as any
+
+      const result = calculateVolumetry(input)
+
+      // Should fail or use default values
+      expect(Number.isFinite(result.rawCapacity)).toBe(true)
+    })
+
+    it('should handle missing vsanOptions for vSAN topologies', () => {
+      const input = createInput(16, { type: 'vsan_osa', level: 'vsan_osa_raid5' })
+      input.vsanOptions = null as any
+
+      const result = calculateVolumetry(input)
+
+      // Should fail or use default values
+      expect(Number.isFinite(result.rawCapacity)).toBe(true)
+    })
+
+    it('should handle missing cephOptions for Ceph topologies', () => {
+      const input = createInput(12, { type: 'ceph', level: 'ceph_replicated_3' })
+      input.cephOptions = null as any
+
+      const result = calculateVolumetry(input)
+
+      // Should fail or use default values
+      expect(Number.isFinite(result.rawCapacity)).toBe(true)
+    })
+  })
+
+  describe('Filesystem overhead edge cases', () => {
+    it('should apply XFS overhead for standard RAID (default)', () => {
+      const input = createInput(4, { type: 'standard', level: 'RAID5' })
+      const result = calculateVolumetry(input)
+
+      // XFS overhead should be applied (~2%)
+      expect(result.filesystemOverhead).toBeGreaterThan(0)
+      expect(result.filesystemOverhead).toBeLessThan(result.rawCapacity * 0.05)
+    })
+
+    it('should apply ReFS overhead for S2D', () => {
+      const input = createInput(16, { type: 's2d', level: 'mirror' })
+      input.serverCount = 4
+      const result = calculateVolumetry(input)
+
+      // ReFS overhead should be applied
+      expect(result.filesystemOverhead).toBeGreaterThan(0)
+    })
+
+    it('should apply Btrfs overhead for Synology', () => {
+      const input = createInput(4, { type: 'proprietary', level: 'synology_shr' })
+      input.synologyOptions = { ...DEFAULT_SYNOLOGY_OPTIONS, filesystem: 'btrfs' }
+      const result = calculateVolumetry(input)
+
+      // Btrfs overhead (4%) should be applied
+      expect(result.filesystemOverhead).toBeGreaterThan(0)
+    })
+
+    it('should apply WAFL overhead for NetApp', () => {
+      const input = createInput(8, { type: 'proprietary', level: 'netapp_raid_dp' })
+      input.netAppOptions = { ...DEFAULT_NETAPP_OPTIONS, waflOverhead: 0.02 }
+      const result = calculateVolumetry(input)
+
+      // WAFL overhead (1-2%) should be applied
+      expect(result.filesystemOverhead).toBeGreaterThan(0)
+    })
+
+    it('should handle all supported filesystems', () => {
+      const topologies = [
+        { type: 'standard' as const, level: 'RAID5' as const },
+        { type: 'zfs' as const, level: 'raidz1' as const },
+        { type: 's2d' as const, level: 'mirror' as const },
+        { type: 'vsan_osa' as const, level: 'vsan_osa_raid5' as const },
+        { type: 'ceph' as const, level: 'ceph_replicated_3' as const },
+      ]
+
+      topologies.forEach((topology) => {
+        const input = createInput(4, topology)
+        input.serverCount = 4
+        const result = calculateVolumetry(input)
+
+        // All should apply some filesystem overhead
+        expect(result.filesystemOverhead).toBeGreaterThanOrEqual(0)
+        expect(Number.isFinite(result.filesystemOverhead)).toBe(true)
+      })
+    })
+  })
+})

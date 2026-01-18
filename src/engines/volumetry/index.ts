@@ -253,12 +253,16 @@ function getDataFraction(
           return 1 / s2dOptions.mirrorCopies
         case 'parity':
           // Single parity across fault domains
+          // Handle division by zero
+          if (s2dOptions.faultDomains === 0) return 0
           return (s2dOptions.faultDomains - 1) / s2dOptions.faultDomains
         case 'dual_parity':
+          if (s2dOptions.faultDomains === 0) return 0
           return (s2dOptions.faultDomains - 2) / s2dOptions.faultDomains
         case 'map': {
           // MAP uses mirror for hot data portion (estimate 20% mirror, 80% parity)
           const mirrorPortion = 0.2 / s2dOptions.mirrorCopies
+          if (s2dOptions.faultDomains === 0) return mirrorPortion
           const parityPortion = 0.8 * ((s2dOptions.faultDomains - 2) / s2dOptions.faultDomains)
           return mirrorPortion + parityPortion
         }
@@ -670,27 +674,74 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
     }
   }
 
+  // Handle edge case: null/undefined topology (graceful degradation)
+  if (!topology) {
+    return {
+      rawCapacity: drive?.capacity_raw ? drive.capacity_raw * driveCount : 0,
+      parityOverhead: 0,
+      hotSpareOverhead: 0,
+      filesystemOverhead: 0,
+      slopOverhead: 0,
+      usableCapacity: 0,
+      effectiveCapacity: 0,
+      efficiency: 0,
+      breakdown: [
+        {
+          label: 'Invalid Configuration',
+          bytes: 0,
+          percent: 0,
+          color: 'var(--color-overhead)',
+        },
+      ],
+      zfsDetails: undefined,
+    }
+  }
+
+  // Handle edge case: null/undefined drive (graceful degradation)
+  if (!drive || drive.capacity_raw === undefined || drive.capacity_raw === null) {
+    return {
+      rawCapacity: 0,
+      parityOverhead: 0,
+      hotSpareOverhead: 0,
+      filesystemOverhead: 0,
+      slopOverhead: 0,
+      usableCapacity: 0,
+      effectiveCapacity: 0,
+      efficiency: 0,
+      breakdown: [
+        {
+          label: 'Invalid Drive',
+          bytes: 0,
+          percent: 0,
+          color: 'var(--color-overhead)',
+        },
+      ],
+      zfsDetails: undefined,
+    }
+  }
+
   // Check for tiered configuration
   let tieredCapacity: TieredCapacityResult | null = null
 
   // S2D tiering
-  if (topology.type === 's2d' && s2dOptions.storageTiers && s2dOptions.tieringConfig) {
+  if (topology.type === 's2d' && s2dOptions && s2dOptions.storageTiers && s2dOptions.tieringConfig) {
     tieredCapacity = calculateTieredCapacity(s2dOptions.tieringConfig, serverCount)
   }
 
   // vSAN OSA tiering (disk groups)
-  if (topology.type === 'vsan_osa' && vsanOptions.tiering) {
+  if (topology.type === 'vsan_osa' && vsanOptions && vsanOptions.tiering) {
     tieredCapacity = calculateTieredCapacity(vsanOptions.tiering, serverCount)
   }
 
   // Ceph WAL/DB tiering
-  if (topology.type === 'ceph' && cephOptions.walDbOffload && cephOptions.tiering) {
+  if (topology.type === 'ceph' && cephOptions && cephOptions.walDbOffload && cephOptions.tiering) {
     tieredCapacity = calculateTieredCapacity(cephOptions.tiering, serverCount)
   }
 
   // Nutanix hybrid tiering (SSD cache + HDD capacity)
   if (
     topology.type === 'nutanix' &&
+    nutanixOptions &&
     nutanixOptions.clusterType === 'hybrid' &&
     nutanixOptions.tiering
   ) {
@@ -754,7 +805,7 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
   // ZFS-specific overhead (slop space = 1/32)
   let slopOverhead = 0
   let zfsAshiftOverhead = 0
-  if (topology.type === 'zfs') {
+  if (topology.type === 'zfs' && zfsOptions) {
     const zfsOverhead = getZfsOverhead(capacityAfterParity, zfsOptions, drive.sector_size)
     slopOverhead = zfsOverhead.slop
     zfsAshiftOverhead = zfsOverhead.ashift
@@ -829,7 +880,7 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
   // Ceph safe capacity factor (nearfull threshold, default 85%)
   // Per spec: C_safe = C_usable × 0.85
   let cephSafeCapacityReduction = 0
-  if (topology.type === 'ceph') {
+  if (topology.type === 'ceph' && cephOptions) {
     cephSafeCapacityReduction = usableCapacity * (1 - cephOptions.safeCapacityThreshold)
     usableCapacity = usableCapacity * cephOptions.safeCapacityThreshold
   }
@@ -884,7 +935,12 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
   }
 
   // Overall efficiency
-  const efficiency = (usableCapacity / rawCapacity) * 100
+  // Handle division by zero or invalid calculations
+  let efficiency = rawCapacity > 0 ? (usableCapacity / rawCapacity) * 100 : 0
+  // Clamp to 0 if NaN or Infinity
+  if (!Number.isFinite(efficiency)) {
+    efficiency = 0
+  }
 
   // Build breakdown for visualization
   const breakdown = [
@@ -1036,7 +1092,7 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
 
   // Build ZFS-specific details if ZFS topology
   let zfsDetails: ZfsCapacityDetails | undefined
-  if (topology.type === 'zfs') {
+  if (topology.type === 'zfs' && zfsOptions) {
     const zpoolUsable = rawUsableCapacity - parityOverhead - zfsAshiftOverhead
     const zfsUsable = zpoolUsable - slopOverhead - filesystemOverhead
     const recommendedMinFree = zfsUsable * 0.2 // 20% headroom recommendation
