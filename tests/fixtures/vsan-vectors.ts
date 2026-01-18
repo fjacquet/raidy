@@ -15,7 +15,7 @@
  * Each vector includes expected efficiency percentage with tolerance.
  */
 
-import type { VsanOsaTopology, VsanEsaTopology } from '@/types/topology'
+import type { VsanEsaTopology, VsanOsaTopology } from '@/types/topology'
 
 export interface VsanTestVector {
   /** Descriptive name for the test case */

@@ -558,7 +558,7 @@ describe('Resilience Worker - URE Probability Calculations', () => {
 
     // URE probability should be in measurable range (actual simulation results ~10-15%)
     expect(result.ureProbability).toBeGreaterThan(0.03)
-    expect(result.ureProbability).toBeLessThan(0.20)
+    expect(result.ureProbability).toBeLessThan(0.2)
   })
 
   it('should calculate URE probability for RAID 6 with 12×8TB drives at 10^14 URE rate', async () => {
@@ -635,8 +635,8 @@ describe('Resilience Worker - URE Probability Calculations', () => {
     const result = resultCall?.[0].payload
 
     // URE probability should be significant (very large array = very high URE risk)
-    expect(result.ureProbability).toBeGreaterThan(0.10)
-    expect(result.ureProbability).toBeLessThan(0.60)
+    expect(result.ureProbability).toBeGreaterThan(0.1)
+    expect(result.ureProbability).toBeLessThan(0.6)
   })
 
   it('should show 10× lower URE risk with enterprise HDD (10^15 vs 10^14)', async () => {
@@ -775,12 +775,12 @@ describe('Resilience Worker - URE Probability Calculations', () => {
     // Note: Measured value is fraction of all simulations with URE,
     // which depends on rebuild frequency, so allow wider tolerance
     expect(result.ureProbability).toBeGreaterThan(0.02)
-    expect(result.ureProbability).toBeLessThan(0.30)
+    expect(result.ureProbability).toBeLessThan(0.3)
 
     // Verify theoretical calculation matches industry formula
     // For 8×2TB RAID5: ~67% URE probability per rebuild
-    expect(expectedURE).toBeGreaterThan(0.50)
-    expect(expectedURE).toBeLessThan(0.80)
+    expect(expectedURE).toBeGreaterThan(0.5)
+    expect(expectedURE).toBeLessThan(0.8)
   })
 })
 
@@ -1141,7 +1141,7 @@ describe('Resilience Worker - Correlated Failure Modeling', () => {
 
     // With high AFR (6%) and URE 10^14, survival rate should be noticeably reduced
     // (stress factor during rebuild increases correlated failures)
-    expect(result.survivalRate).toBeLessThan(0.90)
+    expect(result.survivalRate).toBeLessThan(0.9)
   })
 })
 

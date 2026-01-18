@@ -291,8 +291,11 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
 
 ```typescript
 // src/types/index.ts
-export type { Drive, DriveConnectivity, DriveDatabase } from // ... type exports
-"./drive";
+export type {
+  Drive,
+  DriveConnectivity,
+  DriveDatabase, // ... type exports
+} from "./drive";
 export { CONNECTIVITY_TO_TYPES, getDefaultFormFactor } from "./drive";
 ```
 

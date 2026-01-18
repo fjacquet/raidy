@@ -173,7 +173,7 @@ export const performanceVectors: PerformanceVector[] = [
     driveCount: 2,
     raidLevel: 'RAID1',
     expectedReadIOPS: 2 * 150, // 300 IOPS (can read from both)
-    expectedWriteIOPS: 2 * 140 / 2, // 140 IOPS (write to both mirrors)
+    expectedWriteIOPS: (2 * 140) / 2, // 140 IOPS (write to both mirrors)
     expectedWritePenalty: 2,
     source: 'MassiveGRID - RAID 1 write penalty = 2 (mirror both copies)',
   },

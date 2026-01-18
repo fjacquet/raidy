@@ -733,7 +733,10 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
 
   // Handle edge case: null/undefined drive (graceful degradation)
   // Allow null drive if tiering is configured (tiering provides drives)
-  if ((!drive || drive.capacity_raw === undefined || drive.capacity_raw === null) && !tieredCapacity) {
+  if (
+    (!drive || drive.capacity_raw === undefined || drive.capacity_raw === null) &&
+    !tieredCapacity
+  ) {
     return {
       rawCapacity: 0,
       parityOverhead: 0,
