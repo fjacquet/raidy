@@ -11,24 +11,24 @@ See: .planning/PROJECT.md
 ## Current Position
 
 Phase: 2 of 6 (Calculation Validation)
-Plan: 8 of 8 (Phase complete - gap closure complete)
-Status: Phase 2 complete
-Last activity: 2026-01-18 - Completed 02-08-PLAN.md (Flaky Statistical Test Fix)
+Plan: 8 of 8 (Phase complete - all gap closures complete)
+Status: Phase 2 complete (including gap closure plans 02-06, 02-07, 02-08)
+Last activity: 2026-01-18 - Completed 02-07-PLAN.md (Edge Case and Error Handling Tests - Gap Closure)
 
-Progress: ████████░░ 53.3% (8/15 plans complete)
+Progress: █████████░ 60.0% (9/15 plans complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 8
-- Average duration: 5.6 min
+- Total plans completed: 9
+- Average duration: 5.7 min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 1 - Test Infrastructure | 2/2 | 3min | 1.5min |
-| 2 - Calculation Validation | 6/6 | 42min | 7.0min |
+| 2 - Calculation Validation | 7/7 | 50min | 7.1min |
 
 ## Accumulated Context
 
@@ -62,6 +62,10 @@ Progress: ████████░░ 53.3% (8/15 plans complete)
 | 02-02 | Table-driven tests over complex property tests | Remove Ceph EC property test that was failing edge cases. Table-driven tests already cover all important k+m combinations with vendor validation. |
 | 02-08 | Increased CI tolerance from 0.4 to 0.5 for statistical convergence test | Theoretical ratio is 0.316 (1/sqrt(10)) but Monte Carlo variance occasionally exceeds strict 0.4 threshold. New tolerance provides 58% variance buffer while still validating trend. Verified stable with 10 consecutive runs. |
 | 02-08 | Documented stochastic testing best practices in test file | Added comprehensive comment block explaining tolerance guidelines, flakiness prevention, and statistical validation principles. Educates maintainers on testing non-deterministic Monte Carlo code. |
+| 02-07 | Handle invalid inputs gracefully by returning zero-value results | Return safe default values (rawCapacity: 0, usableCapacity: 0, efficiency: 0) for invalid inputs instead of throwing errors. Enables UI to handle configuration errors gracefully without crashing. |
+| 02-07 | Add input validation guards at calculateVolumetry entry point | Centralize error handling by validating all inputs (drive, topology, driveCount) before any processing. Makes function more robust and easier to maintain. |
+| 02-07 | Use property-based testing (fast-check) for extreme value ranges | Generate random extreme values (100-500 drives, 1TB-20TB capacities) to validate calculations always produce finite, non-negative results. Catches edge cases manual tests would miss. |
+| 02-07 | Clamp efficiency to 0 when NaN/Infinity | Prevent downstream calculation errors in UI components that expect finite numbers. Explicit NaN/Infinity checking after division operations. |
 
 ### Pending Todos
 
@@ -73,6 +77,6 @@ Progress: ████████░░ 53.3% (8/15 plans complete)
 
 ## Session Continuity
 
-Last session: 2026-01-18T08:02:20Z
-Stopped at: Completed 02-08-PLAN.md (Flaky Statistical Test Fix - Gap Closure)
+Last session: 2026-01-18T09:13:10Z
+Stopped at: Completed 02-07-PLAN.md (Edge Case and Error Handling Tests - Gap Closure)
 Resume file: None - Phase 2 complete (including gap closure), ready for Phase 3
