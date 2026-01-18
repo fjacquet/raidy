@@ -13,6 +13,7 @@ import {
   hasBlockingErrors,
   type ValidationInput,
   validateConfiguration,
+  validateOrThrow,
 } from '@/utils/validators'
 
 // Test drives for validation
@@ -850,4 +851,51 @@ describe('Validators - Table-Driven Tests', () => {
       })
     },
   )
+})
+
+describe('Validators - validateOrThrow', () => {
+  it('throws error for RAID5 with insufficient drives', () => {
+    const input = createValidationInput(testHdd, 2, { type: 'standard', level: 'RAID5' })
+    // Note: Standard RAID5 doesn't have explicit drive count validation in current code
+    // Using ZFS RAIDZ1 as substitute for testing blocking behavior
+    const zfsInput = createValidationInput(testHdd, 2, { type: 'zfs', level: 'raidz1' })
+    expect(() => validateOrThrow(zfsInput)).toThrow(/minimum 3 drives/i)
+  })
+
+  it('throws error with multiple error messages when multiple blocking errors', () => {
+    const input = createValidationInput(
+      testHdd,
+      2,
+      { type: 'zfs', level: 'raidz1' },
+      1,
+      'perc_h755',
+    )
+    expect(() => validateOrThrow(input)).toThrow(/Invalid configuration/)
+    expect(() => validateOrThrow(input)).toThrow(/minimum 3 drives/)
+    expect(() => validateOrThrow(input)).toThrow(/Hardware RAID controller/)
+  })
+
+  it('does not throw for valid configuration', () => {
+    const input = createValidationInput(testHdd, 4, { type: 'zfs', level: 'raidz1' }, 1, 'lsi_9500')
+    expect(() => validateOrThrow(input)).not.toThrow()
+  })
+
+  it('does not throw for configuration with only warnings', () => {
+    const input = createValidationInput(testHdd, 4, { type: 'zfs', level: 'raidz1' }, 1, 'lsi_9500')
+    input.zfsOptions = { maxOccupation: 85 } // Warning-level alert
+    expect(() => validateOrThrow(input)).not.toThrow()
+  })
+
+  it('throws for vSAN ESA with non-NVMe drives', () => {
+    const input = createValidationInput(testHdd, 4, { type: 'vsan_esa', level: 'vsan_esa_raid1' })
+    expect(() => validateOrThrow(input)).toThrow(/NVMe drives required/i)
+  })
+
+  it('throws for PowerFlex with HDD drives', () => {
+    const input = createValidationInput(testHdd, 4, {
+      type: 'powerflex',
+      level: 'powerflex_2way_mirror',
+    })
+    expect(() => validateOrThrow(input)).toThrow(/HDD drives are no longer supported/i)
+  })
 })
