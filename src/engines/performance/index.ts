@@ -19,6 +19,9 @@ import type {
   Topology,
 } from '@/types/topology'
 import { CONTROLLER_LIMITS } from '@/types/topology'
+import { raidPerformanceStrategy } from './strategies/raid'
+import { zfsPerformanceStrategy } from './strategies/zfs'
+import type { PerformanceStrategy } from './strategies/PerformanceStrategy'
 
 /** PowerFlex CPU factor based on mode (per PowerFlex spec) */
 const POWERFLEX_CPU_FACTOR = {
@@ -115,46 +118,68 @@ const PCIE_LANE_COUNT: Record<PCIeLanes, number> = {
 }
 
 /**
+ * Get strategy for topology type.
+ * Returns appropriate performance calculation strategy for the given topology.
+ */
+function getStrategy(topologyType: string): PerformanceStrategy | null {
+  switch (topologyType) {
+    case 'standard':
+      return raidPerformanceStrategy
+    case 'zfs':
+      return zfsPerformanceStrategy
+    default:
+      return null // Other strategies will be added in Task 2
+  }
+}
+
+/**
  * Get RAID write penalty for random I/O.
  * This is the number of I/O operations required per write.
  */
 function getRaidWritePenalty(topology: Topology): number {
+  // Try to use strategy pattern first
+  const strategy = getStrategy(topology.type)
+  if (strategy) {
+    return strategy.getWritePenalty(topology.level, topology)
+  }
+
+  // Fallback for topologies not yet extracted to strategies
   switch (topology.type) {
     case 'standard':
+      // This should not be reached (handled by strategy)
       switch (topology.level) {
         case 'RAID0':
           return 1
         case 'RAID1':
-          return 2 // Write to both mirrors
+          return 2
         case 'RAID1E':
-          return 2 // Write to 2 mirrors (like RAID10)
+          return 2
         case 'RAID1_3WAY':
-          return 3 // Write to all 3 mirrors
+          return 3
         case 'RAID3':
-          return 2 // Dedicated parity disk, sequential optimized
+          return 2
         case 'RAID4':
-          return 3 // Dedicated parity disk becomes bottleneck for random I/O
+          return 3
         case 'RAID5':
-          return 4 // Read old data + parity, write new data + parity
+          return 4
         case 'RAID5E':
-          return 4 // Same as RAID5
+          return 4
         case 'RAID5EE':
-          return 4 // Same as RAID5
+          return 4
         case 'RAID6':
-          return 6 // Read old data + 2 parities, write new data + 2 parities
+          return 6
         case 'RAID10':
-          return 2 // Mirror penalty
+          return 2
         case 'RAID50':
-          return 4 // RAID5 penalty per group
+          return 4
         case 'RAID60':
-          return 6 // RAID6 penalty per group
+          return 6
         default:
           return 1
       }
 
     case 'zfs':
-      // ZFS uses Copy-on-Write, so write penalty is different
-      // For random writes, CoW can amplify I/O but also batches
+      // This should not be reached (handled by strategy)
       switch (topology.level) {
         case 'stripe':
           return 1
@@ -162,7 +187,7 @@ function getRaidWritePenalty(topology: Topology): number {
           return 2
         case 'raidz1':
         case 'draid1':
-          return 2 // CoW reduces traditional RAID5 penalty
+          return 2
         case 'raidz2':
         case 'draid2':
           return 3
