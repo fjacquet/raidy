@@ -5,6 +5,7 @@
 
 import { compressToEncodedURIComponent, decompressFromEncodedURIComponent } from 'lz-string'
 import type { StateStorage } from 'zustand/middleware'
+import { validateUrlState } from '@/utils/schemas'
 
 /**
  * Custom StateStorage that syncs state to URL hash with LZ compression.
@@ -23,9 +24,24 @@ export const urlHashStorage: StateStorage = {
       if (!compressed) return null
 
       const decompressed = decompressFromEncodedURIComponent(compressed)
-      return decompressed
+      if (!decompressed) return null
+
+      // Parse and validate the deserialized state
+      const parsed = JSON.parse(decompressed)
+      const validated = validateUrlState(parsed)
+
+      if (!validated) {
+        // Validation failed - notify user instead of silent failure
+        console.error('Configuration link is invalid or corrupted')
+        // TODO: Add UI notification when notification system is available
+        // showNotification('Unable to load configuration from URL', 'error')
+        return null
+      }
+
+      // Return validated state as JSON string for Zustand
+      return JSON.stringify(validated)
     } catch (error) {
-      console.warn('Failed to parse URL hash state:', error)
+      console.error('Failed to parse URL hash state:', error)
       return null
     }
   },

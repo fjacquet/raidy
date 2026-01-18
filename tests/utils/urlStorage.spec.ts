@@ -3,6 +3,7 @@
  *
  * Validates URL state serialization for shareable links.
  * Reference: Plan 02-05 TEST-14 - URL roundtrip must preserve all configuration values.
+ * Reference: Plan 03-01 - Security hardening against malicious URL manipulation.
  */
 
 import { compressToEncodedURIComponent } from 'lz-string'
@@ -504,5 +505,380 @@ describe('URL Storage - removeItem', () => {
     const newUrl = mockHistory.replaceState.mock.calls[0][2]
     expect(newUrl).toBe('/simulator')
     expect(newUrl).not.toContain('#')
+  })
+})
+
+describe('URL Storage - Security: Malicious URL Protection (SEC-01, SEC-02, SEC-10)', () => {
+  /**
+   * Helper to create minimal valid state for security tests
+   */
+  function createValidState(overrides = {}) {
+    return {
+      driveId: 'wd-gold-24tb',
+      driveCount: 12,
+      serverCount: 1,
+      serverPowerWatts: 400,
+      topology: { type: 'standard', level: 'RAID6' },
+      hotSpares: 1,
+      zfsOptions: {
+        ashift: 12,
+        compression: true,
+        compressionType: 'lz4',
+        dedup: false,
+        recordsize: 131072,
+        specialVdev: false,
+        slogDevice: false,
+        l2arcDevice: false,
+        maxOccupation: 80,
+      },
+      s2dOptions: {
+        faultDomains: 4,
+        mirrorCopies: 2,
+        rebuildReserve: true,
+        reserveStrategy: 'node_failure',
+        storageTiers: false,
+      },
+      controllerOptions: {
+        controller: 'software',
+        stripeSize: 256,
+        readPolicy: 'adaptive',
+        writePolicy: 'write-back',
+      },
+      netAppOptions: {
+        platform: 'aff_a',
+        raidType: 'raid_dp',
+        adpVersion: 'adpv2',
+        snapshotReserve: 5,
+        dataReductionRatio: 3.0,
+        waflOverhead: 0.015,
+        compression: true,
+        dedup: true,
+        zeroDetection: true,
+      },
+      synologyOptions: {
+        filesystem: 'btrfs',
+        btrfsOverhead: 0.04,
+        systemPartitionSize: 25 * 1024 * 1024 * 1024,
+        modelSeries: 'plus',
+        ssdCache: false,
+        cacheMode: 'read_only',
+      },
+      nutanixOptions: {
+        clusterType: 'all-flash',
+        replicationFactor: 2,
+        erasureCoding: false,
+        ecStripe: '4_1',
+        compression: true,
+        compressionRatio: 1.5,
+        dedup: false,
+        dedupRatio: 1.0,
+        systemOverhead: 0.1,
+        networkType: '25gbe',
+      },
+      objectscaleOptions: {
+        objectSizeKB: 1024,
+        systemOverheadPercent: 15,
+        networkEfficiencyFactor: 0.55,
+        sites: 1,
+        fillRatePercent: 80,
+        compression: false,
+        compressionRatio: 1.0,
+      },
+      powerstoreOptions: {
+        compression: true,
+        compressionRatio: 1.5,
+        dedup: false,
+        dedupRatio: 1.0,
+        snapshotReservePercent: 20,
+      },
+      powerscaleOptions: {
+        compression: true,
+        compressionRatio: 1.5,
+        dedup: false,
+        dedupRatio: 1.0,
+        snapshotReservePercent: 20,
+        smartQuotas: false,
+        syncIQ: false,
+      },
+      powervaultOptions: {
+        model: 'ME5224',
+        controllers: 2,
+        tiering: false,
+        ssdReadCache: false,
+        thinProvisioning: true,
+      },
+      readPercent: 70,
+      blockSize: '64K',
+      randomPercent: 50,
+      datasetSize: 100 * 1024 * 1024 * 1024 * 1024,
+      dailyWriteVolume: 1024 * 1024 * 1024 * 1024,
+      compressionRatio: 1.5,
+      dedupRatio: 1.0,
+      networkSpeed: '25GbE',
+      pcieGen: 'gen4',
+      pcieLanes: 'x8',
+      pue: 1.4,
+      carbonRegion: 'switzerland',
+      projectYears: 5,
+      electricityCostPerKwh: 0.12,
+      fsType: 'zfs',
+      supportsReflink: true,
+      backupRetention: 14,
+      dailyChangeRate: 5,
+      unitSystem: 'binary',
+      ...overrides,
+    }
+  }
+
+  /**
+   * Helper to set URL hash with compressed malicious state
+   */
+  function setMaliciousUrlHash(state: unknown): void {
+    const compressed = compressToEncodedURIComponent(JSON.stringify(state))
+    mockLocation.hash = `#raidy=${compressed}`
+  }
+
+  describe('SEC-01: Numeric Bounds Validation', () => {
+    it('should reject negative drive count', () => {
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const maliciousState = createValidState({ driveCount: -999 })
+      setMaliciousUrlHash(maliciousState)
+
+      const result = urlHashStorage.getItem('raidy')
+
+      expect(result).toBeNull()
+      expect(consoleErrorSpy).toHaveBeenCalled()
+      consoleErrorSpy.mockRestore()
+    })
+
+    it('should reject NaN drive count', () => {
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const maliciousState = createValidState({ driveCount: NaN })
+      setMaliciousUrlHash(maliciousState)
+
+      const result = urlHashStorage.getItem('raidy')
+
+      expect(result).toBeNull()
+      expect(consoleErrorSpy).toHaveBeenCalled()
+      consoleErrorSpy.mockRestore()
+    })
+
+    it('should reject Infinity server count (SEC-01)', () => {
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const maliciousState = createValidState({ serverCount: Infinity })
+      setMaliciousUrlHash(maliciousState)
+
+      const result = urlHashStorage.getItem('raidy')
+
+      expect(result).toBeNull()
+      expect(consoleErrorSpy).toHaveBeenCalled()
+      consoleErrorSpy.mockRestore()
+    })
+
+    it('should reject drive count exceeding maximum (1000)', () => {
+      const maliciousState = createValidState({ driveCount: 9999 })
+      setMaliciousUrlHash(maliciousState)
+
+      const result = urlHashStorage.getItem('raidy')
+
+      expect(result).toBeNull()
+    })
+
+    it('should reject zero drive count', () => {
+      const maliciousState = createValidState({ driveCount: 0 })
+      setMaliciousUrlHash(maliciousState)
+
+      const result = urlHashStorage.getItem('raidy')
+
+      expect(result).toBeNull()
+    })
+
+    it('should reject negative percentages', () => {
+      const maliciousState = createValidState({ readPercent: -50 })
+      setMaliciousUrlHash(maliciousState)
+
+      const result = urlHashStorage.getItem('raidy')
+
+      expect(result).toBeNull()
+    })
+
+    it('should reject percentages over 100', () => {
+      const maliciousState = createValidState({ randomPercent: 150 })
+      setMaliciousUrlHash(maliciousState)
+
+      const result = urlHashStorage.getItem('raidy')
+
+      expect(result).toBeNull()
+    })
+
+    it('should reject negative PUE values', () => {
+      const maliciousState = createValidState({ pue: -1.4 })
+      setMaliciousUrlHash(maliciousState)
+
+      const result = urlHashStorage.getItem('raidy')
+
+      expect(result).toBeNull()
+    })
+  })
+
+  describe('SEC-02: Enum Validation', () => {
+    it('should reject invalid topology type', () => {
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const maliciousState = createValidState({
+        topology: { type: 'hacked', level: 'RAID6' },
+      })
+      setMaliciousUrlHash(maliciousState)
+
+      const result = urlHashStorage.getItem('raidy')
+
+      expect(result).toBeNull()
+      expect(consoleErrorSpy).toHaveBeenCalled()
+      consoleErrorSpy.mockRestore()
+    })
+
+    it('should reject invalid ZFS compression type', () => {
+      const maliciousState = createValidState({
+        zfsOptions: {
+          ashift: 12,
+          compression: true,
+          compressionType: 'malicious_algorithm',
+          dedup: false,
+          recordsize: 131072,
+          specialVdev: false,
+          slogDevice: false,
+          l2arcDevice: false,
+          maxOccupation: 80,
+        },
+      })
+      setMaliciousUrlHash(maliciousState)
+
+      const result = urlHashStorage.getItem('raidy')
+
+      expect(result).toBeNull()
+    })
+
+    it('should reject invalid unit system', () => {
+      const maliciousState = createValidState({ unitSystem: 'malicious' })
+      setMaliciousUrlHash(maliciousState)
+
+      const result = urlHashStorage.getItem('raidy')
+
+      expect(result).toBeNull()
+    })
+  })
+
+  describe('SEC-10: Type Safety', () => {
+    it('should reject string instead of number for driveCount', () => {
+      const maliciousState = createValidState({ driveCount: '12' as any })
+      setMaliciousUrlHash(maliciousState)
+
+      const result = urlHashStorage.getItem('raidy')
+
+      expect(result).toBeNull()
+    })
+
+    it('should reject null topology', () => {
+      const maliciousState = createValidState({ topology: null })
+      setMaliciousUrlHash(maliciousState)
+
+      const result = urlHashStorage.getItem('raidy')
+
+      expect(result).toBeNull()
+    })
+
+    it('should allow partial state (Zustand fills defaults for missing fields)', () => {
+      // Fields are optional because Zustand persist middleware fills in defaults
+      // from getDefaultState() for any missing fields. This is expected behavior.
+      const partialState = {
+        driveId: 'wd-gold-24tb',
+        driveCount: 12,
+        topology: { type: 'standard', level: 'RAID6' },
+      }
+      setMaliciousUrlHash(partialState)
+
+      const result = urlHashStorage.getItem('raidy')
+
+      expect(result).not.toBeNull()
+      const parsed = JSON.parse(result!)
+      expect(parsed.driveId).toBe('wd-gold-24tb')
+      expect(parsed.driveCount).toBe(12)
+    })
+  })
+
+  describe('SEC-10: Decompression Error Handling', () => {
+    it('should reject corrupt LZ-string data', () => {
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      mockLocation.hash = '#raidy=INVALID_COMPRESSED_DATA!!!'
+
+      const result = urlHashStorage.getItem('raidy')
+
+      expect(result).toBeNull()
+      expect(consoleErrorSpy).toHaveBeenCalled()
+      consoleErrorSpy.mockRestore()
+    })
+
+    it('should log error message for invalid URL', () => {
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const maliciousState = createValidState({ driveCount: -999 })
+      setMaliciousUrlHash(maliciousState)
+
+      urlHashStorage.getItem('raidy')
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Configuration link is invalid or corrupted'),
+      )
+      consoleErrorSpy.mockRestore()
+    })
+  })
+
+  describe('Valid State Acceptance', () => {
+    it('should accept valid configuration with all fields', () => {
+      const validState = createValidState()
+      setMaliciousUrlHash(validState)
+
+      const result = urlHashStorage.getItem('raidy')
+
+      expect(result).not.toBeNull()
+      const parsed = JSON.parse(result!)
+      expect(parsed.driveCount).toBe(12)
+      expect(parsed.topology.type).toBe('standard')
+      expect(parsed.topology.level).toBe('RAID6')
+    })
+
+    it('should accept different valid topology types', () => {
+      const zfsState = createValidState({
+        topology: { type: 'zfs', level: 'raidz2' },
+      })
+      setMaliciousUrlHash(zfsState)
+
+      const result = urlHashStorage.getItem('raidy')
+
+      expect(result).not.toBeNull()
+      const parsed = JSON.parse(result!)
+      expect(parsed.topology.type).toBe('zfs')
+      expect(parsed.topology.level).toBe('raidz2')
+    })
+
+    it('should accept maximum valid drive count', () => {
+      const maxDrivesState = createValidState({ driveCount: 1000 })
+      setMaliciousUrlHash(maxDrivesState)
+
+      const result = urlHashStorage.getItem('raidy')
+
+      expect(result).not.toBeNull()
+      const parsed = JSON.parse(result!)
+      expect(parsed.driveCount).toBe(1000)
+    })
+
+    it('should accept minimum valid drive count', () => {
+      const minDrivesState = createValidState({ driveCount: 1 })
+      setMaliciousUrlHash(minDrivesState)
+
+      const result = urlHashStorage.getItem('raidy')
+
+      expect(result).not.toBeNull()
+      const parsed = JSON.parse(result!)
+      expect(parsed.driveCount).toBe(1)
+    })
   })
 })
