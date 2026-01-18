@@ -77,7 +77,14 @@ Plans:
 4. Production deployment has Content Security Policy headers configured for static hosting
 5. Dependency scan passes with zero high/critical vulnerabilities (Snyk or npm audit)
 
-**Plans:** (created by /gsd:plan-phase)
+**Plans:** 4 plans
+
+Plans:
+
+- [ ] 03-01-PLAN.md — URL state validation with Zod schemas and bounds checking
+- [ ] 03-02-PLAN.md — PDF export sanitization with DOMPurify and XSS review
+- [ ] 03-03-PLAN.md — Validation enforcement and error boundaries for graceful failure handling
+- [ ] 03-04-PLAN.md — Deployment security with CSP headers and automated vulnerability scanning
 
 ---
 
@@ -141,7 +148,7 @@ Plans:
 | -------------------------- | ------------------------- | ---------- |
 | 1 - Test Infrastructure    | ✓ Complete                | 2026-01-17 |
 | 2 - Calculation Validation | ✓ Complete                | 2026-01-18 |
-| 3 - Security Hardening     | Not started               | —          |
+| 3 - Security Hardening     | Planned (4 plans)         | —          |
 | 4 - Code Quality           | Not started               | —          |
 | 5 - Performance & Fixes    | Not started               | —          |
 | 6 - Production Validation  | Not started               | —          |
