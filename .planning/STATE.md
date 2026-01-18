@@ -11,18 +11,18 @@ See: .planning/PROJECT.md
 ## Current Position
 
 Phase: 4 of 6 (Code Quality)
-Plan: 1 of 3 in phase (04-01 complete)
-Status: Clean lint foundation established - zero Biome errors, exhaustive type checking ready
-Last activity: 2026-01-18 - Completed 04-01-PLAN.md (Type Safety Enforcement)
+Plan: 2 of 3 in phase (04-01, 04-02 complete)
+Status: Error handling complete - calculation logging, URL parse notifications, error boundaries verified
+Last activity: 2026-01-18 - Completed 04-02-PLAN.md (Error Logging & Notifications)
 
-Progress: █████████████████░░░░ 81.0% (17/21 plans complete)
+Progress: █████████████████░░░ 85.7% (18/21 plans complete)
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 17
-- Average duration: 5.8 min
+- Total plans completed: 18
+- Average duration: 6.1 min
 
 **By Phase:**
 
@@ -31,7 +31,7 @@ Progress: █████████████████░░░░ 81.0% 
 | 1 - Test Infrastructure    | 2/2   | 3min  | 1.5min   |
 | 2 - Calculation Validation | 10/10 | 69min | 6.9min   |
 | 3 - Security Hardening     | 4/4   | 18min | 4.5min   |
-| 4 - Code Quality           | 1/3   | 9min  | 9.0min   |
+| 4 - Code Quality           | 2/3   | 26min | 13.0min  |
 
 ## Accumulated Context
 
@@ -96,6 +96,10 @@ Progress: █████████████████░░░░ 81.0% 
 | 04-01 | Use double-cast pattern for test type violations                        | Use 'as unknown as T' instead of 'as any' for intentional type violations in tests. Biome flags 'as any' as unsafe. Double-cast is explicit about breaking type safety while satisfying linter.                               |
 | 04-01 | Explicit null checks instead of non-null assertions                     | Pattern: if (!result) throw new Error(); Biome doesn't recognize Vitest expect() as type guard. Explicit check satisfies both Biome and TypeScript.                                                                           |
 | 04-01 | Export assertNever from barrel file                                     | Added to src/utils/index.ts for project-wide access via @/utils. Enables compile-time exhaustive checking for switch statements on discriminated unions.                                                                     |
+| 04-02 | Use sonner for toast notifications                                      | Lightweight (30KB), popular (200K+ weekly downloads), simple API, TypeScript support. Chosen over react-toastify which is heavier with more features than needed.                                                             |
+| 04-02 | Structured error logging with context objects                           | Pattern: console.error('[Engine Name] Error', { message, context, timestamp }). Context includes driveId, topology, counts. Provides debugging info without exposing sensitive data to users.                                  |
+| 04-02 | Maintain console.error alongside toast notifications                    | Users see friendly toast messages, developers see technical details in console. Supports both user experience and debugging needs without compromise.                                                                         |
+| 04-02 | Safe fallback pattern for calculation errors                            | Return zero-state objects instead of crashing when calculations fail. Allows UI to remain functional with graceful degradation. Improves resilience.                                                                          |
 | 04-01 | Remove html2canvas from manual chunks                                   | It's an optionalDependency of jspdf for html() method. We only use autoTable and text methods. Vite auto-code-splits it; won't load unless jspdf.html() is called. Reduces initial bundle size.                               |
 
 ### Pending Todos
@@ -108,6 +112,6 @@ Progress: █████████████████░░░░ 81.0% 
 
 ## Session Continuity
 
-Last session: 2026-01-18T20:12:09Z
-Stopped at: Completed 04-01-PLAN.md (Type Safety Enforcement)
-Resume file: None - Ready for 04-02-PLAN.md (Component Extraction)
+Last session: 2026-01-18T21:26:59Z
+Stopped at: Completed 04-02-PLAN.md (Error Logging & Notifications)
+Resume file: None - Ready for 04-03-PLAN.md (Component Extraction)
