@@ -1627,3 +1627,422 @@ describe('Performance Engine - Dell PowerScale Performance', () => {
     expect(resultPowerScale.estimatedLatencyUs).toBeGreaterThan(resultPowerStore.estimatedLatencyUs)
   })
 })
+
+describe('Performance Engine - Nutanix DSF Performance', () => {
+  /**
+   * Nutanix latency formula (lines 510-528):
+   * mediaLatency * 2 + nutanixNetworkLatency + cpuOverhead
+   *
+   * Base cpuOverhead = CPU_OVERHEAD_US.replication = 20μs
+   * Additional overheads:
+   * - compression: +50μs (CPU_OVERHEAD_US.compression)
+   * - dedup: +100μs (CPU_OVERHEAD_US.dedup)
+   *
+   * Network type variations (lines 521-526):
+   * - RDMA: 100μs (0.1ms)
+   * - 25GbE: 250μs (0.25ms)
+   * - 10GbE: 500μs (0.5ms)
+   *
+   * OpLog write pattern: 2x media latency (OpLog + destage)
+   */
+
+  describe('Nutanix Base Latency (No Compression/Dedup)', () => {
+    it('should calculate Nutanix base latency with 2x media latency and OpLog pattern', () => {
+      // Nutanix OpLog write pattern: write to OpLog, then destage = 2x media latency
+      const input = createInput(
+        12,
+        { type: 'nutanix', level: 'nutanix_rf2' },
+        testSsdNvme,
+        100,
+      )
+      const result = calculatePerformance(input)
+
+      // Should have latency estimation
+      expect(result.estimatedLatencyUs).toBeDefined()
+      expect(result.estimatedLatencyUs).toBeGreaterThan(0)
+
+      // Base latency with no compression/dedup:
+      // - mediaLatency * 2 (NVMe = 20μs * 2 = 40μs)
+      // - nutanixNetworkLatency (default networkType should be defined in options)
+      // - cpuOverhead (replication = 20μs)
+      expect(result.estimatedLatencyUs).toBeGreaterThan(40)
+    })
+
+    it('should apply replication CPU overhead for RF2', () => {
+      const input = createInput(
+        12,
+        { type: 'nutanix', level: 'nutanix_rf2' },
+        testSsdSata,
+        100,
+      )
+      const result = calculatePerformance(input)
+
+      // RF2: 2x replication
+      // SSD: 150μs * 2 = 300μs + network + CPU
+      expect(result.estimatedLatencyUs).toBeGreaterThan(300)
+    })
+
+    it('should apply replication CPU overhead for RF3', () => {
+      const input = createInput(
+        15,
+        { type: 'nutanix', level: 'nutanix_rf3' },
+        testSsdSata,
+        100,
+      )
+      const result = calculatePerformance(input)
+
+      // RF3: 3x replication (higher overhead)
+      expect(result.estimatedLatencyUs).toBeGreaterThan(300)
+      expect(result.maxWriteIOPS).toBeGreaterThan(0)
+    })
+  })
+
+  describe('Nutanix Network Type Variations', () => {
+    it('should calculate latency with RDMA network (100μs)', () => {
+      // RDMA: lowest network latency (0.1ms = 100μs)
+      const inputRdma: PerformanceInput = {
+        ...createInput(12, { type: 'nutanix', level: 'nutanix_rf2' }, testSsdNvme, 100),
+        nutanixOptions: {
+          ...DEFAULT_NUTANIX_OPTIONS,
+          networkType: 'rdma',
+          compression: false,
+          dedup: false,
+        },
+      }
+      const resultRdma = calculatePerformance(inputRdma)
+
+      // Latency with RDMA:
+      // - mediaLatency * 2 (NVMe = 20μs * 2 = 40μs)
+      // - nutanixNetworkLatency (RDMA = 100μs)
+      // - cpuOverhead (replication = 20μs)
+      // Expected: 40 + 100 + 20 = 160μs
+      expect(resultRdma.estimatedLatencyUs).toBeGreaterThan(140)
+      expect(resultRdma.estimatedLatencyUs).toBeLessThan(200)
+    })
+
+    it('should calculate latency with 25GbE network (250μs)', () => {
+      // 25GbE: medium network latency (0.25ms = 250μs)
+      const input25GbE: PerformanceInput = {
+        ...createInput(12, { type: 'nutanix', level: 'nutanix_rf2' }, testSsdNvme, 100),
+        nutanixOptions: {
+          ...DEFAULT_NUTANIX_OPTIONS,
+          networkType: '25gbe',
+          compression: false,
+          dedup: false,
+        },
+      }
+      const result25GbE = calculatePerformance(input25GbE)
+
+      // Latency with 25GbE:
+      // - mediaLatency * 2 (NVMe = 20μs * 2 = 40μs)
+      // - nutanixNetworkLatency (25GbE = 250μs)
+      // - cpuOverhead (replication = 20μs)
+      // Expected: 40 + 250 + 20 = 310μs
+      expect(result25GbE.estimatedLatencyUs).toBeGreaterThan(280)
+      expect(result25GbE.estimatedLatencyUs).toBeLessThan(350)
+    })
+
+    it('should calculate latency with 10GbE network (500μs)', () => {
+      // 10GbE: highest network latency (0.5ms = 500μs)
+      const input10GbE: PerformanceInput = {
+        ...createInput(12, { type: 'nutanix', level: 'nutanix_rf2' }, testSsdNvme, 100),
+        nutanixOptions: {
+          ...DEFAULT_NUTANIX_OPTIONS,
+          networkType: '10gbe',
+          compression: false,
+          dedup: false,
+        },
+      }
+      const result10GbE = calculatePerformance(input10GbE)
+
+      // Latency with 10GbE:
+      // - mediaLatency * 2 (NVMe = 20μs * 2 = 40μs)
+      // - nutanixNetworkLatency (10GbE = 500μs)
+      // - cpuOverhead (replication = 20μs)
+      // Expected: 40 + 500 + 20 = 560μs
+      expect(result10GbE.estimatedLatencyUs).toBeGreaterThan(530)
+      expect(result10GbE.estimatedLatencyUs).toBeLessThan(600)
+    })
+
+    it('should show RDMA faster than 25GbE, which is faster than 10GbE', () => {
+      // Compare all three network types
+      const inputRdma: PerformanceInput = {
+        ...createInput(12, { type: 'nutanix', level: 'nutanix_rf2' }, testSsdNvme, 100),
+        nutanixOptions: {
+          ...DEFAULT_NUTANIX_OPTIONS,
+          networkType: 'rdma',
+          compression: false,
+          dedup: false,
+        },
+      }
+      const input25GbE: PerformanceInput = {
+        ...createInput(12, { type: 'nutanix', level: 'nutanix_rf2' }, testSsdNvme, 100),
+        nutanixOptions: {
+          ...DEFAULT_NUTANIX_OPTIONS,
+          networkType: '25gbe',
+          compression: false,
+          dedup: false,
+        },
+      }
+      const input10GbE: PerformanceInput = {
+        ...createInput(12, { type: 'nutanix', level: 'nutanix_rf2' }, testSsdNvme, 100),
+        nutanixOptions: {
+          ...DEFAULT_NUTANIX_OPTIONS,
+          networkType: '10gbe',
+          compression: false,
+          dedup: false,
+        },
+      }
+
+      const resultRdma = calculatePerformance(inputRdma)
+      const result25GbE = calculatePerformance(input25GbE)
+      const result10GbE = calculatePerformance(input10GbE)
+
+      // RDMA should be fastest
+      expect(resultRdma.estimatedLatencyUs).toBeLessThan(result25GbE.estimatedLatencyUs)
+      expect(result25GbE.estimatedLatencyUs).toBeLessThan(result10GbE.estimatedLatencyUs)
+
+      // Network latency differences:
+      // RDMA: 100μs
+      // 25GbE: 250μs (150μs more)
+      // 10GbE: 500μs (250μs more)
+      expect(result25GbE.estimatedLatencyUs - resultRdma.estimatedLatencyUs).toBeCloseTo(150, -1)
+      expect(result10GbE.estimatedLatencyUs - result25GbE.estimatedLatencyUs).toBeCloseTo(250, -1)
+    })
+  })
+
+  describe('Nutanix Compression and Dedup Overhead', () => {
+    it('should add compression CPU overhead when enabled', () => {
+      // Compression adds +50μs CPU overhead
+      const inputNoCompression: PerformanceInput = {
+        ...createInput(12, { type: 'nutanix', level: 'nutanix_rf2' }, testSsdNvme, 100),
+        nutanixOptions: {
+          ...DEFAULT_NUTANIX_OPTIONS,
+          networkType: 'rdma',
+          compression: false,
+          dedup: false,
+        },
+      }
+      const inputWithCompression: PerformanceInput = {
+        ...createInput(12, { type: 'nutanix', level: 'nutanix_rf2' }, testSsdNvme, 100),
+        nutanixOptions: {
+          ...DEFAULT_NUTANIX_OPTIONS,
+          networkType: 'rdma',
+          compression: true,
+          dedup: false,
+        },
+      }
+
+      const resultNoCompression = calculatePerformance(inputNoCompression)
+      const resultWithCompression = calculatePerformance(inputWithCompression)
+
+      // Compression should add 50μs CPU overhead
+      expect(resultWithCompression.estimatedLatencyUs).toBeGreaterThan(
+        resultNoCompression.estimatedLatencyUs,
+      )
+      expect(resultWithCompression.estimatedLatencyUs - resultNoCompression.estimatedLatencyUs).toBeCloseTo(
+        50,
+        -1,
+      )
+    })
+
+    it('should add dedup CPU overhead when enabled', () => {
+      // Dedup adds +100μs CPU overhead
+      const inputNoDedup: PerformanceInput = {
+        ...createInput(12, { type: 'nutanix', level: 'nutanix_rf2' }, testSsdNvme, 100),
+        nutanixOptions: {
+          ...DEFAULT_NUTANIX_OPTIONS,
+          networkType: 'rdma',
+          compression: false,
+          dedup: false,
+        },
+      }
+      const inputWithDedup: PerformanceInput = {
+        ...createInput(12, { type: 'nutanix', level: 'nutanix_rf2' }, testSsdNvme, 100),
+        nutanixOptions: {
+          ...DEFAULT_NUTANIX_OPTIONS,
+          networkType: 'rdma',
+          compression: false,
+          dedup: true,
+        },
+      }
+
+      const resultNoDedup = calculatePerformance(inputNoDedup)
+      const resultWithDedup = calculatePerformance(inputWithDedup)
+
+      // Dedup should add 100μs CPU overhead
+      expect(resultWithDedup.estimatedLatencyUs).toBeGreaterThan(resultNoDedup.estimatedLatencyUs)
+      expect(resultWithDedup.estimatedLatencyUs - resultNoDedup.estimatedLatencyUs).toBeCloseTo(
+        100,
+        -1,
+      )
+    })
+
+    it('should accumulate compression + dedup CPU overhead when both enabled', () => {
+      // Both compression and dedup add CPU overhead
+      const inputNone: PerformanceInput = {
+        ...createInput(12, { type: 'nutanix', level: 'nutanix_rf2' }, testSsdNvme, 100),
+        nutanixOptions: {
+          ...DEFAULT_NUTANIX_OPTIONS,
+          networkType: 'rdma',
+          compression: false,
+          dedup: false,
+        },
+      }
+      const inputBoth: PerformanceInput = {
+        ...createInput(12, { type: 'nutanix', level: 'nutanix_rf2' }, testSsdNvme, 100),
+        nutanixOptions: {
+          ...DEFAULT_NUTANIX_OPTIONS,
+          networkType: 'rdma',
+          compression: true,
+          dedup: true,
+        },
+      }
+
+      const resultNone = calculatePerformance(inputNone)
+      const resultBoth = calculatePerformance(inputBoth)
+
+      // Compression (50μs) + Dedup (100μs) = 150μs additional overhead
+      expect(resultBoth.estimatedLatencyUs).toBeGreaterThan(resultNone.estimatedLatencyUs)
+      expect(resultBoth.estimatedLatencyUs - resultNone.estimatedLatencyUs).toBeCloseTo(150, -1)
+    })
+
+    it('should validate compression-only overhead (no dedup)', () => {
+      const inputCompression: PerformanceInput = {
+        ...createInput(12, { type: 'nutanix', level: 'nutanix_rf2' }, testSsdSata, 100),
+        nutanixOptions: {
+          ...DEFAULT_NUTANIX_OPTIONS,
+          networkType: '25gbe',
+          compression: true,
+          dedup: false,
+        },
+      }
+      const result = calculatePerformance(inputCompression)
+
+      // SSD: 150μs * 2 = 300μs
+      // 25GbE: 250μs
+      // CPU: replication (20μs) + compression (50μs) = 70μs
+      // Expected: 300 + 250 + 70 = 620μs
+      expect(result.estimatedLatencyUs).toBeGreaterThan(600)
+      expect(result.estimatedLatencyUs).toBeLessThan(650)
+    })
+  })
+
+  describe('Nutanix Combined Scenarios', () => {
+    it('should calculate minimal overhead with RDMA and no compression/dedup', () => {
+      // Best-case Nutanix: RDMA, no compression, no dedup
+      const inputMinimal: PerformanceInput = {
+        ...createInput(12, { type: 'nutanix', level: 'nutanix_rf2' }, testSsdNvme, 100),
+        nutanixOptions: {
+          ...DEFAULT_NUTANIX_OPTIONS,
+          networkType: 'rdma',
+          compression: false,
+          dedup: false,
+        },
+      }
+      const result = calculatePerformance(inputMinimal)
+
+      // NVMe: 20μs * 2 = 40μs
+      // RDMA: 100μs
+      // CPU: 20μs
+      // Expected: 40 + 100 + 20 = 160μs
+      expect(result.estimatedLatencyUs).toBeCloseTo(160, -1)
+    })
+
+    it('should calculate maximum overhead with 10GbE and compression + dedup', () => {
+      // Worst-case Nutanix: 10GbE, compression, dedup
+      const inputMaximal: PerformanceInput = {
+        ...createInput(12, { type: 'nutanix', level: 'nutanix_rf2' }, testSsdNvme, 100),
+        nutanixOptions: {
+          ...DEFAULT_NUTANIX_OPTIONS,
+          networkType: '10gbe',
+          compression: true,
+          dedup: true,
+        },
+      }
+      const result = calculatePerformance(inputMaximal)
+
+      // NVMe: 20μs * 2 = 40μs
+      // 10GbE: 500μs
+      // CPU: replication (20μs) + compression (50μs) + dedup (100μs) = 170μs
+      // Expected: 40 + 500 + 170 = 710μs
+      expect(result.estimatedLatencyUs).toBeCloseTo(710, -1)
+    })
+
+    it('should compare medium overhead scenario (25GbE + compression only)', () => {
+      // Medium-case Nutanix: 25GbE, compression only
+      const inputMedium: PerformanceInput = {
+        ...createInput(12, { type: 'nutanix', level: 'nutanix_rf3' }, testSsdSata, 100),
+        nutanixOptions: {
+          ...DEFAULT_NUTANIX_OPTIONS,
+          networkType: '25gbe',
+          compression: true,
+          dedup: false,
+        },
+      }
+      const result = calculatePerformance(inputMedium)
+
+      // SSD: 150μs * 2 = 300μs
+      // 25GbE: 250μs
+      // CPU: replication (20μs) + compression (50μs) = 70μs
+      // Expected: 300 + 250 + 70 = 620μs
+      expect(result.estimatedLatencyUs).toBeGreaterThan(600)
+      expect(result.estimatedLatencyUs).toBeLessThan(650)
+
+      // RF3 should have higher write penalty than RF2
+      expect(result.writePenalty).toBeGreaterThan(2)
+    })
+
+    it('should validate OpLog write pattern across all configurations', () => {
+      // OpLog pattern: 2x media latency should be consistent
+      const configs = [
+        { networkType: 'rdma' as const, compression: false, dedup: false },
+        { networkType: '25gbe' as const, compression: true, dedup: false },
+        { networkType: '10gbe' as const, compression: true, dedup: true },
+      ]
+
+      for (const config of configs) {
+        const input: PerformanceInput = {
+          ...createInput(12, { type: 'nutanix', level: 'nutanix_rf2' }, testSsdNvme, 100),
+          nutanixOptions: {
+            ...DEFAULT_NUTANIX_OPTIONS,
+            ...config,
+          },
+        }
+        const result = calculatePerformance(input)
+
+        // All should have latency > 2x media latency (40μs for NVMe)
+        expect(result.estimatedLatencyUs).toBeGreaterThan(40)
+        expect(result.maxWriteIOPS).toBeGreaterThan(0)
+      }
+    })
+
+    it('should show CVM-to-CVM replication overhead across network types', () => {
+      // Nutanix CVM-to-CVM replication adds network latency
+      // Compare with PowerStore which has no network component
+      const inputNutanix: PerformanceInput = {
+        ...createInput(12, { type: 'nutanix', level: 'nutanix_rf2' }, testSsdNvme, 100),
+        nutanixOptions: {
+          ...DEFAULT_NUTANIX_OPTIONS,
+          networkType: 'rdma',
+          compression: false,
+          dedup: false,
+        },
+      }
+      const inputPowerStore = createInput(
+        12,
+        { type: 'powerstore', level: 'powerstore_raid5' },
+        testSsdNvme,
+        100,
+      )
+
+      const resultNutanix = calculatePerformance(inputNutanix)
+      const resultPowerStore = calculatePerformance(inputPowerStore)
+
+      // Nutanix (2x media + RDMA network) should have higher latency than PowerStore (1.2x media)
+      // Nutanix: 20 * 2 + 100 + 20 = 160μs
+      // PowerStore: 20 * 1.2 + 10 = 34μs
+      expect(resultNutanix.estimatedLatencyUs).toBeGreaterThan(resultPowerStore.estimatedLatencyUs)
+    })
+  })
+})
