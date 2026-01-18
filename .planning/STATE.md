@@ -11,24 +11,24 @@ See: .planning/PROJECT.md
 ## Current Position
 
 Phase: 2 of 6 (Calculation Validation)
-Plan: 5 of X (URL Storage and Validators)
+Plan: 3 of X (Performance Engine Validation)
 Status: In progress
-Last activity: 2026-01-18 - Completed 02-05-PLAN.md (URL Storage and Validator Tests)
+Last activity: 2026-01-18 - Completed 02-03-PLAN.md (Performance Engine Validation)
 
-Progress: ███░░░░░░░ 27% (4/15 plans complete)
+Progress: ███░░░░░░░ 33% (5/15 plans complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 4
-- Average duration: 3.8 min
+- Total plans completed: 5
+- Average duration: 4.6 min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 1 - Test Infrastructure | 2/2 | 3min | 1.5min |
-| 2 - Calculation Validation | 2/X | 12min | 6min |
+| 2 - Calculation Validation | 3/X | 20min | 6.7min |
 
 ## Accumulated Context
 
@@ -45,6 +45,10 @@ Progress: ███░░░░░░░ 27% (4/15 plans complete)
 | 02-01 | Table-driven testing with describe.each | Reduces code duplication, makes adding test vectors trivial, provides clear failure messages. |
 | 02-01 | Property-based testing with fast-check | Discovers edge cases manual tests miss, validates formulas across wide input ranges. 50 runs per test for balance. |
 | 02-01 | Write penalty formulas documented in tests | Critical for Module B (Performance Engine) implementation. Establishes industry-validated formulas early. |
+| 02-03 | MassiveGRID and WintelGuy as industry references | Industry-standard sources for write penalty validation, widely cited in storage documentation. Formulas match real-world behavior. |
+| 02-03 | Bottleneck chain testing approach | Test all four bottleneck layers (media/controller/bus/network) with Math.min logic to help users identify performance-limiting factors. |
+| 02-03 | Property-based IOPS validation | Validate IOPS scaling behavior across wide range of configurations. Ensures formulas work correctly for all drive counts and types. |
+| 02-03 | XFS alignment calculation validation | Correct XFS alignment critical for optimal performance. Validate sunit/swidth formulas (swidth = sunit × data_drives). |
 | 02-05 | Future URL versioning strategy documented | Prepares for v2.0 migration when breaking changes needed. Pattern: #v=2.0 param, version detection, legacy migration. |
 | 02-05 | Table-driven validator tests for systematic coverage | Array of test cases with expectedErrorCode ensures all topology constraints validated. Easy to extend. |
 | 02-05 | Error messages must explain WHY and HOW to fix | User-facing validation requires actionable feedback. Messages include minimum requirements and specific recommendations. |
@@ -60,6 +64,6 @@ Progress: ███░░░░░░░ 27% (4/15 plans complete)
 
 ## Session Continuity
 
-Last session: 2026-01-18T07:29:12Z
-Stopped at: Completed 02-05-PLAN.md (URL Storage and Validator Tests)
+Last session: 2026-01-18T06:30:05Z
+Stopped at: Completed 02-03-PLAN.md (Performance Engine Validation)
 Resume file: None - Phase 2 in progress
