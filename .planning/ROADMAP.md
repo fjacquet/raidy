@@ -102,7 +102,7 @@ Plans:
 4. Codebase passes Biome lint with zero warnings/errors and all TypeScript strict mode violations resolved
 5. Fragile switch statements use exhaustive type checking with no runtime fallbacks
 
-**Plans:** 5 plans
+**Plans:** 10 plans (5 initial + 5 gap closure)
 
 Plans:
 
@@ -111,6 +111,11 @@ Plans:
 - [ ] 04-03-PLAN.md — Split TopologyPanel into per-topology option panels
 - [ ] 04-04-PLAN.md — Refactor volumetry engine with strategy pattern
 - [ ] 04-05-PLAN.md — Refactor performance engine with strategy pattern
+- [ ] 04-06-PLAN.md — Fix lint errors in PerformanceStrategy.ts (gap closure: replace any with unknown)
+- [ ] 04-07-PLAN.md — Extract remaining Dell vendor panels (gap closure: TopologyPanel size reduction)
+- [ ] 04-08-PLAN.md — Fix TopologyPanel component tests (gap closure: mock store initialization)
+- [ ] 04-09-PLAN.md — Extract volumetry tiering and overhead logic (gap closure: orchestrator size reduction)
+- [ ] 04-10-PLAN.md — Extract performance bottleneck chain (gap closure: orchestrator size reduction)
 
 ---
 
