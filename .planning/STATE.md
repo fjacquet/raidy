@@ -13,7 +13,7 @@ See: .planning/PROJECT.md
 Phase: 2 of 6 (Calculation Validation)
 Plan: 8 of 8 (Phase complete - all gap closures complete)
 Status: Phase 2 complete (including gap closure plans 02-06, 02-07, 02-08)
-Last activity: 2026-01-18 - Completed 02-07-PLAN.md (Edge Case and Error Handling Tests - Gap Closure)
+Last activity: 2026-01-18 - Completed 02-06-PLAN.md (Advanced Topology Performance Tests - Gap Closure)
 
 Progress: █████████░ 60.0% (9/15 plans complete)
 
@@ -62,6 +62,10 @@ Progress: █████████░ 60.0% (9/15 plans complete)
 | 02-02 | Table-driven tests over complex property tests | Remove Ceph EC property test that was failing edge cases. Table-driven tests already cover all important k+m combinations with vendor validation. |
 | 02-08 | Increased CI tolerance from 0.4 to 0.5 for statistical convergence test | Theoretical ratio is 0.316 (1/sqrt(10)) but Monte Carlo variance occasionally exceeds strict 0.4 threshold. New tolerance provides 58% variance buffer while still validating trend. Verified stable with 10 consecutive runs. |
 | 02-08 | Documented stochastic testing best practices in test file | Added comprehensive comment block explaining tolerance guidelines, flakiness prevention, and statistical validation principles. Educates maintainers on testing non-deterministic Monte Carlo code. |
+| 02-06 | Test all three Nutanix network types (RDMA, 25GbE, 10GbE) | Lines 521-526 have conditional logic for each network type. Testing all three validates 150μs latency difference between RDMA and 10GbE, critical for performance predictions. |
+| 02-06 | Accumulate CPU overhead for compression + dedup combinations | Lines 514-519 show CPU overhead accumulates. Validates that Nutanix with both features enabled adds 150μs additional CPU overhead (base 20μs + compression 50μs + dedup 100μs). |
+| 02-06 | Add write penalty edge cases to reach 75% coverage | Lines 237-363 contain write penalty switch statements. Added 13 tests for ObjectScale EC, PowerStore RAID, PowerScale N+x, vSAN ESA, RAID1_3WAY, Nutanix EC, S2D, ZFS dRAID variations. |
+| 02-06 | Use table-driven tests for topology variations | Reduces code duplication when testing multiple levels of same topology type. Cleaner test code, easier to extend with new topology levels. |
 | 02-07 | Handle invalid inputs gracefully by returning zero-value results | Return safe default values (rawCapacity: 0, usableCapacity: 0, efficiency: 0) for invalid inputs instead of throwing errors. Enables UI to handle configuration errors gracefully without crashing. |
 | 02-07 | Add input validation guards at calculateVolumetry entry point | Centralize error handling by validating all inputs (drive, topology, driveCount) before any processing. Makes function more robust and easier to maintain. |
 | 02-07 | Use property-based testing (fast-check) for extreme value ranges | Generate random extreme values (100-500 drives, 1TB-20TB capacities) to validate calculations always produce finite, non-negative results. Catches edge cases manual tests would miss. |
@@ -77,6 +81,6 @@ Progress: █████████░ 60.0% (9/15 plans complete)
 
 ## Session Continuity
 
-Last session: 2026-01-18T09:13:10Z
-Stopped at: Completed 02-07-PLAN.md (Edge Case and Error Handling Tests - Gap Closure)
+Last session: 2026-01-18T08:09:40Z
+Stopped at: Completed 02-06-PLAN.md (Advanced Topology Performance Tests - Gap Closure)
 Resume file: None - Phase 2 complete (including gap closure), ready for Phase 3
