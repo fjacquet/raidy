@@ -855,7 +855,7 @@ describe('Validators - Table-Driven Tests', () => {
 
 describe('Validators - validateOrThrow', () => {
   it('throws error for RAID5 with insufficient drives', () => {
-    const input = createValidationInput(testHdd, 2, { type: 'standard', level: 'RAID5' })
+    const _input = createValidationInput(testHdd, 2, { type: 'standard', level: 'RAID5' })
     // Note: Standard RAID5 doesn't have explicit drive count validation in current code
     // Using ZFS RAIDZ1 as substitute for testing blocking behavior
     const zfsInput = createValidationInput(testHdd, 2, { type: 'zfs', level: 'raidz1' })

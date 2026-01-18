@@ -5,10 +5,9 @@
  * Reference: Plan 03-03 - Validation enforcement and error handling.
  */
 
-import React from 'react'
-import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AppErrorBoundary } from '@/components/ErrorBoundary'
 
 // Mock react-i18next
@@ -17,7 +16,8 @@ vi.mock('react-i18next', () => ({
     t: (key: string) => {
       const translations: Record<string, string> = {
         'errors.calculationError.title': 'Calculation Error',
-        'errors.calculationError.message': 'An error occurred while calculating storage configuration.',
+        'errors.calculationError.message':
+          'An error occurred while calculating storage configuration.',
         'errors.calculationError.resetButton': 'Reset Configuration',
       }
       return translations[key] || key
@@ -51,7 +51,7 @@ describe('AppErrorBoundary', () => {
     render(
       <AppErrorBoundary>
         <ThrowError />
-      </AppErrorBoundary>
+      </AppErrorBoundary>,
     )
 
     // Verify fallback UI is shown
@@ -68,7 +68,7 @@ describe('AppErrorBoundary', () => {
     render(
       <AppErrorBoundary>
         <ThrowError />
-      </AppErrorBoundary>
+      </AppErrorBoundary>,
     )
 
     // Verify technical error message is NOT visible
@@ -84,7 +84,7 @@ describe('AppErrorBoundary', () => {
     render(
       <AppErrorBoundary>
         <ThrowError />
-      </AppErrorBoundary>
+      </AppErrorBoundary>,
     )
 
     expect(screen.getByRole('button', { name: /reset configuration/i })).toBeInTheDocument()
@@ -104,7 +104,7 @@ describe('AppErrorBoundary', () => {
     render(
       <AppErrorBoundary>
         <ThrowError />
-      </AppErrorBoundary>
+      </AppErrorBoundary>,
     )
 
     const resetButton = screen.getByRole('button', { name: /reset configuration/i })
@@ -120,7 +120,7 @@ describe('AppErrorBoundary', () => {
     render(
       <AppErrorBoundary>
         <NormalComponent />
-      </AppErrorBoundary>
+      </AppErrorBoundary>,
     )
 
     expect(screen.getByText('Normal content')).toBeInTheDocument()
@@ -132,14 +132,14 @@ describe('AppErrorBoundary', () => {
     render(
       <AppErrorBoundary>
         <ThrowError />
-      </AppErrorBoundary>
+      </AppErrorBoundary>,
     )
 
     // Verify console.error was called (for developer debugging)
     expect(consoleSpy).toHaveBeenCalled()
     // Check that one of the console.error calls contains our custom message
     const callsWithOurMessage = consoleSpy.mock.calls.filter((call) =>
-      call.some((arg) => typeof arg === 'string' && arg.includes('Calculation engine error'))
+      call.some((arg) => typeof arg === 'string' && arg.includes('Calculation engine error')),
     )
     expect(callsWithOurMessage.length).toBeGreaterThan(0)
 

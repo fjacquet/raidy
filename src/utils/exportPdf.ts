@@ -3,9 +3,9 @@
  * Generates a professional storage configuration report.
  */
 
+import DOMPurify from 'dompurify'
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
-import DOMPurify from 'dompurify'
 import i18n from '@/i18n'
 import type { Drive } from '@/types/drive'
 import type { CalculationResults } from '@/types/results'

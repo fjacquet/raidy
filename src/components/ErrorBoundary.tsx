@@ -11,11 +11,14 @@ interface ErrorFallbackProps {
   resetErrorBoundary: () => void
 }
 
-function ErrorFallback({ error, resetErrorBoundary }: ErrorFallbackProps) {
+function ErrorFallback({ error: _error, resetErrorBoundary }: ErrorFallbackProps) {
   const { t } = useTranslation('common')
 
   return (
-    <div role="alert" className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+    <div
+      role="alert"
+      className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900"
+    >
       <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8">
         <h2 className="text-2xl font-bold text-red-600 dark:text-red-400 mb-4">
           {t('errors.calculationError.title')}
@@ -26,6 +29,7 @@ function ErrorFallback({ error, resetErrorBoundary }: ErrorFallbackProps) {
         {/* NEVER show error.stack or error.message in production */}
         {/* Only log to console for developer tools */}
         <button
+          type="button"
           onClick={resetErrorBoundary}
           className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded"
         >
