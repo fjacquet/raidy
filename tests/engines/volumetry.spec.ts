@@ -25,6 +25,7 @@ import {
 import type { Drive } from '@/types/drive'
 import { standardRAIDVectors } from '../fixtures/raid-vectors'
 import { zfsVectors } from '../fixtures/zfs-vectors'
+import { vsanVectors, vsanOsaVectors, vsanEsaVectors } from '../fixtures/vsan-vectors'
 
 // Test drive: 1TB capacity for easy math
 const testDrive: Drive = {
@@ -931,6 +932,262 @@ describe('Volumetry Engine - ZFS Topologies', () => {
 
             // Both should have same parity overhead (1 drive worth)
             return resultZfs.parityOverhead === resultRaid.parityOverhead
+          },
+        ),
+        { numRuns: 50 },
+      )
+    })
+  })
+})
+
+describe('Volumetry Engine - vSAN Topologies', () => {
+  // ============================================================
+  // Table-Driven Tests for vSAN OSA (Fixed Efficiency)
+  // ============================================================
+  describe('VMware Validated Tests - vSAN OSA', () => {
+    describe.each(vsanOsaVectors)(
+      '$name',
+      ({ level, drives, driveSize, serverCount, expectedEfficiency, tolerance }) => {
+        it(`should have ${expectedEfficiency * 100}% efficiency within ${tolerance * 100}% tolerance`, () => {
+          const testDrive: Drive = {
+            id: `test-${driveSize}`,
+            model: `Test Drive ${driveSize / 1_000_000_000_000}TB`,
+            type: 'SSD_NVMe',
+            formFactor: '2.5"',
+            interface: 'NVMe',
+            capacity_raw: driveSize,
+            sector_size: 4096,
+            performance: {
+              iops_read: 500000,
+              iops_write: 250000,
+              bandwidth_read_mb: 3500,
+              bandwidth_write_mb: 3000,
+            },
+            reliability: {
+              ure_rate: 17,
+              afr: 0.5,
+              dwpd: 3,
+              mtbf_hours: 2_000_000,
+            },
+            power: {
+              idle_watts: 5,
+              load_watts: 8,
+            },
+            cost_usd: 300,
+          }
+
+          const input = createInput(drives, { type: 'vsan_osa', level })
+          input.drive = testDrive
+          input.serverCount = serverCount
+
+          const result = calculateVolumetry(input)
+
+          // Validate efficiency matches VMware specifications within tolerance
+          const efficiencyDecimal = result.efficiency / 100 // Convert percentage to decimal
+          const lowerBound = expectedEfficiency * (1 - tolerance)
+          const upperBound = expectedEfficiency * (1 + tolerance)
+
+          expect(efficiencyDecimal).toBeGreaterThanOrEqual(lowerBound)
+          expect(efficiencyDecimal).toBeLessThanOrEqual(upperBound)
+        })
+      },
+    )
+  })
+
+  // ============================================================
+  // Table-Driven Tests for vSAN ESA (Adaptive Efficiency)
+  // ============================================================
+  describe('VMware Validated Tests - vSAN ESA', () => {
+    describe.each(vsanEsaVectors)(
+      '$name',
+      ({ level, drives, driveSize, serverCount, expectedEfficiency, tolerance }) => {
+        it(`should have ${expectedEfficiency * 100}% efficiency within ${tolerance * 100}% tolerance`, () => {
+          const testDrive: Drive = {
+            id: `test-${driveSize}`,
+            model: `Test Drive ${driveSize / 1_000_000_000_000}TB`,
+            type: 'SSD_NVMe',
+            formFactor: '2.5"',
+            interface: 'NVMe',
+            capacity_raw: driveSize,
+            sector_size: 4096,
+            performance: {
+              iops_read: 500000,
+              iops_write: 250000,
+              bandwidth_read_mb: 3500,
+              bandwidth_write_mb: 3000,
+            },
+            reliability: {
+              ure_rate: 17,
+              afr: 0.5,
+              dwpd: 3,
+              mtbf_hours: 2_000_000,
+            },
+            power: {
+              idle_watts: 5,
+              load_watts: 8,
+            },
+            cost_usd: 300,
+          }
+
+          const input = createInput(drives, { type: 'vsan_esa', level })
+          input.drive = testDrive
+          input.serverCount = serverCount
+
+          const result = calculateVolumetry(input)
+
+          // Validate efficiency matches VMware specifications within tolerance
+          const efficiencyDecimal = result.efficiency / 100 // Convert percentage to decimal
+          const lowerBound = expectedEfficiency * (1 - tolerance)
+          const upperBound = expectedEfficiency * (1 + tolerance)
+
+          expect(efficiencyDecimal).toBeGreaterThanOrEqual(lowerBound)
+          expect(efficiencyDecimal).toBeLessThanOrEqual(upperBound)
+        })
+      },
+    )
+  })
+
+  // ============================================================
+  // vSAN ESA Adaptive Efficiency - Threshold Tests
+  // ============================================================
+  describe('vSAN ESA Adaptive Efficiency Thresholds', () => {
+    it('RAID-5: should use 2+1 scheme (67%) for clusters with <5 hosts', () => {
+      const input = createInput(16, { type: 'vsan_esa', level: 'vsan_esa_raid5' })
+      input.serverCount = 4 // Below threshold
+
+      const result = calculateVolumetry(input)
+
+      // Should use 2+1 scheme = 2/3 = 66.67% efficiency
+      const efficiencyDecimal = result.efficiency / 100
+      expect(efficiencyDecimal).toBeGreaterThan(0.64)
+      expect(efficiencyDecimal).toBeLessThan(0.70)
+    })
+
+    it('RAID-5: should use 2+1 scheme (67%) for clusters with insufficient drives', () => {
+      const input = createInput(50, { type: 'vsan_esa', level: 'vsan_esa_raid5' })
+      input.serverCount = 5 // Meets host threshold
+      // But only 50 drives (need 5 * 20 = 100+ for 4+1)
+
+      const result = calculateVolumetry(input)
+
+      // Should use 2+1 scheme = 66.67% efficiency
+      const efficiencyDecimal = result.efficiency / 100
+      expect(efficiencyDecimal).toBeGreaterThan(0.64)
+      expect(efficiencyDecimal).toBeLessThan(0.70)
+    })
+
+    it('RAID-5: should use 4+1 scheme (80%) for clusters with ≥5 hosts and 100+ drives', () => {
+      const input = createInput(120, { type: 'vsan_esa', level: 'vsan_esa_raid5' })
+      input.serverCount = 5 // Meets threshold
+
+      const result = calculateVolumetry(input)
+
+      // Should use 4+1 scheme = 4/5 = 80% efficiency
+      const efficiencyDecimal = result.efficiency / 100
+      expect(efficiencyDecimal).toBeGreaterThan(0.77)
+      expect(efficiencyDecimal).toBeLessThan(0.83)
+    })
+
+    it('RAID-6: should use 4+2 scheme (67%) for clusters with <8 hosts', () => {
+      const input = createInput(28, { type: 'vsan_esa', level: 'vsan_esa_raid6' })
+      input.serverCount = 7 // Below threshold
+
+      const result = calculateVolumetry(input)
+
+      // Should use 4+2 scheme = 4/6 = 66.67% efficiency
+      const efficiencyDecimal = result.efficiency / 100
+      expect(efficiencyDecimal).toBeGreaterThan(0.64)
+      expect(efficiencyDecimal).toBeLessThan(0.70)
+    })
+
+    it('RAID-6: should use 6+2 scheme (75%) for clusters with ≥8 hosts and 160+ drives', () => {
+      const input = createInput(160, { type: 'vsan_esa', level: 'vsan_esa_raid6' })
+      input.serverCount = 8 // Meets threshold
+
+      const result = calculateVolumetry(input)
+
+      // Should use 6+2 scheme = 6/8 = 75% efficiency
+      const efficiencyDecimal = result.efficiency / 100
+      expect(efficiencyDecimal).toBeGreaterThan(0.72)
+      expect(efficiencyDecimal).toBeLessThan(0.78)
+    })
+  })
+
+  // ============================================================
+  // Property-Based Tests for vSAN Invariants
+  // ============================================================
+  describe('Property-Based Tests - vSAN Invariants', () => {
+    it('vSAN ESA RAID-5 efficiency should increase with cluster size (adaptive)', () => {
+      fc.assert(
+        fc.property(
+          fc.integer({ min: 3, max: 4 }), // Small cluster
+          fc.integer({ min: 5, max: 10 }), // Large cluster
+          fc.integer({ min: 1_000_000_000_000, max: 5_000_000_000_000 }), // Drive size
+          (smallServerCount, largeServerCount, driveSize) => {
+            const testDrive: Drive = {
+              id: 'test',
+              model: 'Test',
+              type: 'SSD_NVMe',
+              formFactor: '2.5"',
+              interface: 'NVMe',
+              capacity_raw: driveSize,
+              sector_size: 4096,
+              performance: { iops_read: 500000, iops_write: 250000, bandwidth_read_mb: 3500, bandwidth_write_mb: 3000 },
+              reliability: { ure_rate: 17, afr: 0.5, dwpd: 3, mtbf_hours: 2_000_000 },
+              power: { idle_watts: 5, load_watts: 8 },
+              cost_usd: 300,
+            }
+
+            // Small cluster: insufficient for 4+1
+            const inputSmall = createInput(smallServerCount * 10, { type: 'vsan_esa', level: 'vsan_esa_raid5' })
+            inputSmall.drive = testDrive
+            inputSmall.serverCount = smallServerCount
+            const resultSmall = calculateVolumetry(inputSmall)
+
+            // Large cluster: sufficient for 4+1
+            const inputLarge = createInput(largeServerCount * 20, { type: 'vsan_esa', level: 'vsan_esa_raid5' })
+            inputLarge.drive = testDrive
+            inputLarge.serverCount = largeServerCount
+            const resultLarge = calculateVolumetry(inputLarge)
+
+            // Large cluster should have higher efficiency (4+1 vs 2+1)
+            return resultLarge.efficiency > resultSmall.efficiency
+          },
+        ),
+        { numRuns: 50 },
+      )
+    })
+
+    it('vSAN OSA RAID-5 efficiency should scale with stripe width (3+1 to 7+1)', () => {
+      fc.assert(
+        fc.property(
+          fc.integer({ min: 4, max: 16 }), // Server count (min 4 for RAID-5)
+          fc.integer({ min: 1_000_000_000_000, max: 5_000_000_000_000 }), // Drive size
+          (serverCount, driveSize) => {
+            const testDrive: Drive = {
+              id: 'test',
+              model: 'Test',
+              type: 'SSD_NVMe',
+              formFactor: '2.5"',
+              interface: 'NVMe',
+              capacity_raw: driveSize,
+              sector_size: 4096,
+              performance: { iops_read: 500000, iops_write: 250000, bandwidth_read_mb: 3500, bandwidth_write_mb: 3000 },
+              reliability: { ure_rate: 17, afr: 0.5, dwpd: 3, mtbf_hours: 2_000_000 },
+              power: { idle_watts: 5, load_watts: 8 },
+              cost_usd: 300,
+            }
+
+            const input = createInput(serverCount * 10, { type: 'vsan_osa', level: 'vsan_osa_raid5' })
+            input.drive = testDrive
+            input.serverCount = serverCount
+
+            const result = calculateVolumetry(input)
+
+            // OSA RAID-5 efficiency scales from 75% (3+1) to 87.5% (7+1) based on stripe width
+            // Stripe width adapts to: min(serverCount-1, drivesPerHost/2, 7)
+            const efficiencyDecimal = result.efficiency / 100
+            return efficiencyDecimal >= 0.72 && efficiencyDecimal <= 0.90
           },
         ),
         { numRuns: 50 },
