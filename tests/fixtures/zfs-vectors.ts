@@ -96,7 +96,6 @@ function expectedZfsCapacity(
   driveSize: number,
   parityDrives: number,
 ): { expectedUsable: number; slopOverhead: number } {
-  const rawCapacity = drives * driveSize
   const afterParity = (drives - parityDrives) * driveSize
   const slopOverhead = calculateSlopOverhead(afterParity)
   const afterSlop = afterParity - slopOverhead

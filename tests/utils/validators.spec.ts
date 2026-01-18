@@ -6,15 +6,14 @@
  */
 
 import { describe, expect, it } from 'vitest'
+import type { Drive } from '@/types/drive'
+import type { Topology } from '@/types/topology'
 import {
   getAlertCounts,
   hasBlockingErrors,
-  validateConfiguration,
-  type ValidationAlert,
   type ValidationInput,
+  validateConfiguration,
 } from '@/utils/validators'
-import type { Drive } from '@/types/drive'
-import type { Topology } from '@/types/topology'
 
 // Test drives for validation
 const testHdd: Drive = {
@@ -454,7 +453,13 @@ describe('Validators - Topology Compatibility', () => {
     })
 
     it('should allow HBA for ZFS', () => {
-      const input = createValidationInput(testHdd, 4, { type: 'zfs', level: 'raidz1' }, 1, 'lsi_9500')
+      const input = createValidationInput(
+        testHdd,
+        4,
+        { type: 'zfs', level: 'raidz1' },
+        1,
+        'lsi_9500',
+      )
       const alerts = validateConfiguration(input)
 
       const controllerError = alerts.find((a) => a.code === 'RAID_CONTROLLER_INCOMPATIBLE')
@@ -476,7 +481,13 @@ describe('Validators - Topology Compatibility', () => {
     })
 
     it('should provide info when using HBA with standard RAID', () => {
-      const input = createValidationInput(testHdd, 4, { type: 'standard', level: 'RAID5' }, 1, 'lsi_9500')
+      const input = createValidationInput(
+        testHdd,
+        4,
+        { type: 'standard', level: 'RAID5' },
+        1,
+        'lsi_9500',
+      )
       const alerts = validateConfiguration(input)
 
       const hbaInfo = alerts.find((a) => a.code === 'HBA_WITH_STANDARD_RAID')
@@ -649,7 +660,13 @@ describe('Validators - Error Message Quality', () => {
   })
 
   it('should provide actionable recommendation when available', () => {
-    const input = createValidationInput(testHdd, 4, { type: 'zfs', level: 'raidz1' }, 1, 'perc_h755')
+    const input = createValidationInput(
+      testHdd,
+      4,
+      { type: 'zfs', level: 'raidz1' },
+      1,
+      'perc_h755',
+    )
     const alerts = validateConfiguration(input)
 
     const error = alerts.find((a) => a.code === 'RAID_CONTROLLER_INCOMPATIBLE')
@@ -686,7 +703,13 @@ describe('Validators - Helper Functions', () => {
   })
 
   it('should count alerts by severity', () => {
-    const input = createValidationInput(testHdd, 4, { type: 'zfs', level: 'raidz1' }, 1, 'perc_h755')
+    const input = createValidationInput(
+      testHdd,
+      4,
+      { type: 'zfs', level: 'raidz1' },
+      1,
+      'perc_h755',
+    )
     const alerts = validateConfiguration(input)
 
     const counts = getAlertCounts(alerts)
@@ -697,7 +720,13 @@ describe('Validators - Helper Functions', () => {
 
   it('should sort alerts by severity (error > warning > info)', () => {
     // Create a configuration with multiple alert types
-    const input = createValidationInput(testHdd, 2, { type: 'zfs', level: 'raidz1' }, 1, 'perc_h755')
+    const input = createValidationInput(
+      testHdd,
+      2,
+      { type: 'zfs', level: 'raidz1' },
+      1,
+      'perc_h755',
+    )
     input.zfsOptions = { maxOccupation: 85 }
     const alerts = validateConfiguration(input)
 
@@ -793,7 +822,16 @@ describe('Validators - Table-Driven Tests', () => {
   ]
 
   testCases.forEach(
-    ({ description, drive, driveCount, topology, serverCount, controller, expectedErrorCode, shouldHaveError }) => {
+    ({
+      description,
+      drive,
+      driveCount,
+      topology,
+      serverCount,
+      controller,
+      expectedErrorCode,
+      shouldHaveError,
+    }) => {
       it(description, () => {
         const input = createValidationInput(drive, driveCount, topology, serverCount, controller)
         const alerts = validateConfiguration(input)

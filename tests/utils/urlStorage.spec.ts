@@ -5,8 +5,8 @@
  * Reference: Plan 02-05 TEST-14 - URL roundtrip must preserve all configuration values.
  */
 
-import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { compressToEncodedURIComponent } from 'lz-string'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { copyShareableUrl, getShareableUrl, urlHashStorage } from '@/store/urlStorage'
 
 // Mock window object
@@ -62,7 +62,10 @@ describe('URL Storage - Serialization Roundtrip', () => {
 
     // Verify roundtrip
     expect(retrievedState).toBe(originalState)
-    expect(JSON.parse(retrievedState!)).toEqual(JSON.parse(originalState))
+    expect(retrievedState).not.toBeNull()
+    if (retrievedState) {
+      expect(JSON.parse(retrievedState)).toEqual(JSON.parse(originalState))
+    }
   })
 
   it('should roundtrip standard RAID configuration', () => {
@@ -83,10 +86,13 @@ describe('URL Storage - Serialization Roundtrip', () => {
 
     // Verify
     expect(retrieved).toBe(raidConfig)
-    const parsed = JSON.parse(retrieved!)
-    expect(parsed.topology.level).toBe('RAID5')
-    expect(parsed.driveCount).toBe(8)
-    expect(parsed.hotSpares).toBe(1)
+    expect(retrieved).not.toBeNull()
+    if (retrieved) {
+      const parsed = JSON.parse(retrieved)
+      expect(parsed.topology.level).toBe('RAID5')
+      expect(parsed.driveCount).toBe(8)
+      expect(parsed.hotSpares).toBe(1)
+    }
   })
 
   it('should roundtrip ZFS configuration with options', () => {
@@ -111,10 +117,13 @@ describe('URL Storage - Serialization Roundtrip', () => {
 
     // Verify all ZFS options preserved
     expect(retrieved).toBe(zfsConfig)
-    const parsed = JSON.parse(retrieved!)
-    expect(parsed.zfsOptions.compression).toBe('lz4')
-    expect(parsed.zfsOptions.ashift).toBe(12)
-    expect(parsed.zfsOptions.maxOccupation).toBe(80)
+    expect(retrieved).not.toBeNull()
+    if (retrieved) {
+      const parsed = JSON.parse(retrieved)
+      expect(parsed.zfsOptions.compression).toBe('lz4')
+      expect(parsed.zfsOptions.ashift).toBe(12)
+      expect(parsed.zfsOptions.maxOccupation).toBe(80)
+    }
   })
 
   it('should roundtrip vSAN ESA configuration', () => {
@@ -140,10 +149,13 @@ describe('URL Storage - Serialization Roundtrip', () => {
 
     // Verify vSAN options preserved
     expect(retrieved).toBe(vsanConfig)
-    const parsed = JSON.parse(retrieved!)
-    expect(parsed.serverCount).toBe(8)
-    expect(parsed.vsanOptions.ftt).toBe(1)
-    expect(parsed.vsanOptions.dedupEnabled).toBe(true)
+    expect(retrieved).not.toBeNull()
+    if (retrieved) {
+      const parsed = JSON.parse(retrieved)
+      expect(parsed.serverCount).toBe(8)
+      expect(parsed.vsanOptions.ftt).toBe(1)
+      expect(parsed.vsanOptions.dedupEnabled).toBe(true)
+    }
   })
 
   it('should roundtrip complete configuration with all fields', () => {
@@ -183,14 +195,17 @@ describe('URL Storage - Serialization Roundtrip', () => {
 
     // Verify all fields preserved
     expect(retrieved).toBe(completeConfig)
-    const parsed = JSON.parse(retrieved!)
-    expect(parsed.driveCount).toBe(12)
-    expect(parsed.hotSpares).toBe(2)
-    expect(parsed.workloadProfile).toBe('database')
-    expect(parsed.blockSize).toBe(8192)
-    expect(parsed.networkSpeed).toBe(25000)
-    expect(parsed.compressionRatio).toBe(1.5)
-    expect(parsed.s2dOptions.faultDomains).toBe(4)
+    expect(retrieved).not.toBeNull()
+    if (retrieved) {
+      const parsed = JSON.parse(retrieved)
+      expect(parsed.driveCount).toBe(12)
+      expect(parsed.hotSpares).toBe(2)
+      expect(parsed.workloadProfile).toBe('database')
+      expect(parsed.blockSize).toBe(8192)
+      expect(parsed.networkSpeed).toBe(25000)
+      expect(parsed.compressionRatio).toBe(1.5)
+      expect(parsed.s2dOptions.faultDomains).toBe(4)
+    }
   })
 
   it('should roundtrip empty/minimal configuration', () => {
@@ -205,7 +220,10 @@ describe('URL Storage - Serialization Roundtrip', () => {
 
     // Verify empty object preserved
     expect(retrieved).toBe(minimalConfig)
-    expect(JSON.parse(retrieved!)).toEqual({})
+    expect(retrieved).not.toBeNull()
+    if (retrieved) {
+      expect(JSON.parse(retrieved)).toEqual({})
+    }
   })
 
   it('should handle special characters in configuration values', () => {
@@ -224,9 +242,12 @@ describe('URL Storage - Serialization Roundtrip', () => {
 
     // Verify special chars preserved
     expect(retrieved).toBe(specialCharsConfig)
-    const parsed = JSON.parse(retrieved!)
-    expect(parsed.customLabel).toBe('Production Storage @ DC-01 (2024)')
-    expect(parsed.notes).toContain('admin@example.com')
+    expect(retrieved).not.toBeNull()
+    if (retrieved) {
+      const parsed = JSON.parse(retrieved)
+      expect(parsed.customLabel).toBe('Production Storage @ DC-01 (2024)')
+      expect(parsed.notes).toContain('admin@example.com')
+    }
   })
 
   it('should compress URL for complex configuration', () => {
@@ -328,10 +349,13 @@ describe('URL Storage - Serialization Roundtrip', () => {
 
     // Verify all fields preserved
     expect(retrieved).toBe(maxConfig)
-    const parsed = JSON.parse(retrieved!)
-    expect(parsed.driveCount).toBe(60)
-    expect(parsed.netAppOptions.raidType).toBe('raid_tec')
-    expect(parsed.costConstraints.maxBudgetUsd).toBe(500000)
+    expect(retrieved).not.toBeNull()
+    if (retrieved) {
+      const parsed = JSON.parse(retrieved)
+      expect(parsed.driveCount).toBe(60)
+      expect(parsed.netAppOptions.raidType).toBe('raid_tec')
+      expect(parsed.costConstraints.maxBudgetUsd).toBe(500000)
+    }
   })
 })
 
@@ -392,12 +416,15 @@ describe('URL Storage - Backward Compatibility', () => {
 
     // Retrieve and re-serialize
     const retrieved = urlHashStorage.getItem(stateKey)
+    expect(retrieved).not.toBeNull()
     mockHistory.replaceState.mockClear()
-    urlHashStorage.setItem(stateKey, retrieved!)
-    const url2 = mockHistory.replaceState.mock.calls[0][2]
+    if (retrieved) {
+      urlHashStorage.setItem(stateKey, retrieved)
+      const url2 = mockHistory.replaceState.mock.calls[0][2]
 
-    // URLs should be identical (stable serialization)
-    expect(url1).toBe(url2)
+      // URLs should be identical (stable serialization)
+      expect(url1).toBe(url2)
+    }
   })
 })
 

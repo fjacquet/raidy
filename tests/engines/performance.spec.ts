@@ -12,13 +12,15 @@ import {
   DEFAULT_CONTROLLER_OPTIONS,
   DEFAULT_NUTANIX_OPTIONS,
   DEFAULT_POWERFLEX_OPTIONS,
+  type StandardRaidLevel,
+  type ZfsTopology,
 } from '@/types'
 import type { Drive } from '@/types/drive'
 import {
   performanceVectors,
   testHdd7200,
-  testSsdSata,
   testSsdNvme,
+  testSsdSata,
 } from '../fixtures/performance-vectors'
 
 // Test drive: NVMe SSD for performance testing
@@ -222,7 +224,12 @@ describe('Performance Engine - RAID Write Penalty Validation (TEST-12)', () => {
       const driveCounts = [4, 8, 12]
 
       for (const driveCount of driveCounts) {
-        const input = createInput(driveCount, { type: 'standard', level: 'RAID5' }, testHdd7200, 100)
+        const input = createInput(
+          driveCount,
+          { type: 'standard', level: 'RAID5' },
+          testHdd7200,
+          100,
+        )
         const result = calculatePerformance(input)
 
         expect(result.writePenalty).toBe(4)
@@ -289,7 +296,12 @@ describe('Performance Engine - RAID Write Penalty Validation (TEST-12)', () => {
       const driveCounts = [6, 12, 18]
 
       for (const driveCount of driveCounts) {
-        const input = createInput(driveCount, { type: 'standard', level: 'RAID6' }, testHdd7200, 100)
+        const input = createInput(
+          driveCount,
+          { type: 'standard', level: 'RAID6' },
+          testHdd7200,
+          100,
+        )
         const result = calculatePerformance(input)
 
         expect(result.writePenalty).toBe(6)
@@ -956,10 +968,9 @@ describe('Performance Engine - Industry-Validated IOPS', () => {
   describe('Property-Based IOPS Tests', () => {
     it('should never have negative IOPS', () => {
       for (const vector of performanceVectors) {
-        const topology =
-          vector.raidLevel.startsWith('raid')
-            ? { type: 'zfs' as const, level: vector.raidLevel as any }
-            : { type: 'standard' as const, level: vector.raidLevel as any }
+        const topology = vector.raidLevel.startsWith('raid')
+          ? { type: 'zfs' as const, level: vector.raidLevel as ZfsTopology }
+          : { type: 'standard' as const, level: vector.raidLevel as StandardRaidLevel }
 
         const input = createInput(vector.driveCount, topology, vector.drive, 100)
         const result = calculatePerformance(input)
@@ -975,10 +986,9 @@ describe('Performance Engine - Industry-Validated IOPS', () => {
           continue // RAID 0 has no penalty
         }
 
-        const topology =
-          vector.raidLevel.startsWith('raid')
-            ? { type: 'zfs' as const, level: vector.raidLevel as any }
-            : { type: 'standard' as const, level: vector.raidLevel as any }
+        const topology = vector.raidLevel.startsWith('raid')
+          ? { type: 'zfs' as const, level: vector.raidLevel as ZfsTopology }
+          : { type: 'standard' as const, level: vector.raidLevel as StandardRaidLevel }
 
         const input = createInput(vector.driveCount, topology, vector.drive, 100)
         const result = calculatePerformance(input)
@@ -989,10 +999,9 @@ describe('Performance Engine - Industry-Validated IOPS', () => {
 
     it('should have write penalty >= 1 for all configurations', () => {
       for (const vector of performanceVectors) {
-        const topology =
-          vector.raidLevel.startsWith('raid')
-            ? { type: 'zfs' as const, level: vector.raidLevel as any }
-            : { type: 'standard' as const, level: vector.raidLevel as any }
+        const topology = vector.raidLevel.startsWith('raid')
+          ? { type: 'zfs' as const, level: vector.raidLevel as ZfsTopology }
+          : { type: 'standard' as const, level: vector.raidLevel as StandardRaidLevel }
 
         const input = createInput(vector.driveCount, topology, vector.drive, 100)
         const result = calculatePerformance(input)
@@ -1184,12 +1193,7 @@ describe('Performance Engine - Dell PowerFlex Performance', () => {
 
   it('should calculate PowerFlex latency with 1.5x multiplier', () => {
     // PowerFlex adds 50% overhead to media latency for replication
-    const input = createInput(
-      12,
-      { type: 'powerflex', level: 'powerflex_2way' },
-      testSsdNvme,
-      100,
-    )
+    const input = createInput(12, { type: 'powerflex', level: 'powerflex_2way' }, testSsdNvme, 100)
     const result = calculatePerformance(input)
 
     // Should have latency estimation
@@ -1207,12 +1211,7 @@ describe('Performance Engine - Dell PowerFlex Performance', () => {
   })
 
   it('should handle PowerFlex 2-way mirror configuration', () => {
-    const input = createInput(
-      12,
-      { type: 'powerflex', level: 'powerflex_2way' },
-      testSsdNvme,
-      100,
-    )
+    const input = createInput(12, { type: 'powerflex', level: 'powerflex_2way' }, testSsdNvme, 100)
     const result = calculatePerformance(input)
 
     // 2-way mirror: write penalty should be 2
@@ -1224,12 +1223,7 @@ describe('Performance Engine - Dell PowerFlex Performance', () => {
   })
 
   it('should handle PowerFlex 3-way mirror configuration', () => {
-    const input = createInput(
-      24,
-      { type: 'powerflex', level: 'powerflex_3way' },
-      testSsdSata,
-      100,
-    )
+    const input = createInput(24, { type: 'powerflex', level: 'powerflex_3way' }, testSsdSata, 100)
     const result = calculatePerformance(input)
 
     // 3-way mirror: higher redundancy, higher write penalty
@@ -1328,12 +1322,7 @@ describe('Performance Engine - Dell PowerFlex Performance', () => {
 
   it('should validate PowerFlex dynamic rebuild performance impact', () => {
     // PowerFlex dynamic rebuild should maintain reasonable performance
-    const input = createInput(
-      12,
-      { type: 'powerflex', level: 'powerflex_2way' },
-      testSsdNvme,
-      50,
-    )
+    const input = createInput(12, { type: 'powerflex', level: 'powerflex_2way' }, testSsdNvme, 50)
     const result = calculatePerformance(input)
 
     // Should have reduced write penalty for 50% random (vs 100%)
@@ -1489,7 +1478,12 @@ describe('Performance Engine - Dell ObjectScale Performance', () => {
 
   it('should calculate ObjectScale S3 latency with 2x media and 1.5x network overhead', () => {
     // ObjectScale has higher latency due to S3 protocol and EC overhead
-    const input = createInput(16, { type: 'objectscale', level: 'objectscale_ec_12_4' }, testHddDrive, 100)
+    const input = createInput(
+      16,
+      { type: 'objectscale', level: 'objectscale_ec_12_4' },
+      testHddDrive,
+      100,
+    )
     const result = calculatePerformance(input)
 
     // Should have latency estimation
@@ -1506,7 +1500,12 @@ describe('Performance Engine - Dell ObjectScale Performance', () => {
 
   it('should apply erasure coding CPU overhead', () => {
     // ObjectScale always uses erasure coding
-    const input = createInput(16, { type: 'objectscale', level: 'objectscale_ec_12_4' }, testSsdSata, 100)
+    const input = createInput(
+      16,
+      { type: 'objectscale', level: 'objectscale_ec_12_4' },
+      testSsdSata,
+      100,
+    )
     const result = calculatePerformance(input)
 
     // CPU overhead from EC should be included in latency
@@ -1517,7 +1516,12 @@ describe('Performance Engine - Dell ObjectScale Performance', () => {
   })
 
   it('should handle ObjectScale EC 12+4 configuration with HDD', () => {
-    const input = createInput(16, { type: 'objectscale', level: 'objectscale_ec_12_4' }, testHddDrive, 100)
+    const input = createInput(
+      16,
+      { type: 'objectscale', level: 'objectscale_ec_12_4' },
+      testHddDrive,
+      100,
+    )
     const result = calculatePerformance(input)
 
     // 12+4 EC: 12 data, 4 parity
@@ -1530,7 +1534,12 @@ describe('Performance Engine - Dell ObjectScale Performance', () => {
   })
 
   it('should handle ObjectScale EC 8+2 configuration with SSD', () => {
-    const input = createInput(10, { type: 'objectscale', level: 'objectscale_ec_8_2' }, testSsdSata, 100)
+    const input = createInput(
+      10,
+      { type: 'objectscale', level: 'objectscale_ec_8_2' },
+      testSsdSata,
+      100,
+    )
     const result = calculatePerformance(input)
 
     // 8+2 EC: 8 data, 2 parity
@@ -1565,7 +1574,12 @@ describe('Performance Engine - Dell ObjectScale Performance', () => {
 
   it('should show ObjectScale eventual consistency performance characteristics', () => {
     // ObjectScale S3 eventual consistency allows higher throughput
-    const input = createInput(16, { type: 'objectscale', level: 'objectscale_ec_12_4' }, testSsdSata, 0)
+    const input = createInput(
+      16,
+      { type: 'objectscale', level: 'objectscale_ec_12_4' },
+      testSsdSata,
+      0,
+    )
     const result = calculatePerformance(input)
 
     // Sequential workload should have good throughput
@@ -1878,12 +1892,7 @@ describe('Performance Engine - Nutanix DSF Performance', () => {
   describe('Nutanix Base Latency (No Compression/Dedup)', () => {
     it('should calculate Nutanix base latency with 2x media latency and OpLog pattern', () => {
       // Nutanix OpLog write pattern: write to OpLog, then destage = 2x media latency
-      const input = createInput(
-        12,
-        { type: 'nutanix', level: 'nutanix_rf2' },
-        testSsdNvme,
-        100,
-      )
+      const input = createInput(12, { type: 'nutanix', level: 'nutanix_rf2' }, testSsdNvme, 100)
       const result = calculatePerformance(input)
 
       // Should have latency estimation
@@ -1898,12 +1907,7 @@ describe('Performance Engine - Nutanix DSF Performance', () => {
     })
 
     it('should apply replication CPU overhead for RF2', () => {
-      const input = createInput(
-        12,
-        { type: 'nutanix', level: 'nutanix_rf2' },
-        testSsdSata,
-        100,
-      )
+      const input = createInput(12, { type: 'nutanix', level: 'nutanix_rf2' }, testSsdSata, 100)
       const result = calculatePerformance(input)
 
       // RF2: 2x replication
@@ -1912,12 +1916,7 @@ describe('Performance Engine - Nutanix DSF Performance', () => {
     })
 
     it('should apply replication CPU overhead for RF3', () => {
-      const input = createInput(
-        15,
-        { type: 'nutanix', level: 'nutanix_rf3' },
-        testSsdSata,
-        100,
-      )
+      const input = createInput(15, { type: 'nutanix', level: 'nutanix_rf3' }, testSsdSata, 100)
       const result = calculatePerformance(input)
 
       // RF3: 3x replication (higher overhead)
@@ -2069,10 +2068,9 @@ describe('Performance Engine - Nutanix DSF Performance', () => {
       expect(resultWithCompression.estimatedLatencyUs).toBeGreaterThan(
         resultNoCompression.estimatedLatencyUs,
       )
-      expect(resultWithCompression.estimatedLatencyUs - resultNoCompression.estimatedLatencyUs).toBeCloseTo(
-        50,
-        -1,
-      )
+      expect(
+        resultWithCompression.estimatedLatencyUs - resultNoCompression.estimatedLatencyUs,
+      ).toBeCloseTo(50, -1)
     })
 
     it('should add dedup CPU overhead when enabled', () => {

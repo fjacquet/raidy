@@ -5,8 +5,8 @@
  * Reference: CLAUDE.md requires validation within 1% of WintelGuy and NetApp calculators.
  */
 
-import { describe, expect, it } from 'vitest'
 import * as fc from 'fast-check'
+import { describe, expect, it } from 'vitest'
 import { calculateVolumetry, type VolumetryInput } from '@/engines/volumetry'
 import {
   DEFAULT_CEPH_OPTIONS,
@@ -21,11 +21,13 @@ import {
   DEFAULT_SYNOLOGY_OPTIONS,
   DEFAULT_VSAN_OPTIONS,
   DEFAULT_ZFS_OPTIONS,
+  type StandardRaidLevel,
+  type Topology,
 } from '@/types'
 import type { Drive } from '@/types/drive'
 import { standardRAIDVectors } from '../fixtures/raid-vectors'
+import { vsanEsaVectors, vsanOsaVectors } from '../fixtures/vsan-vectors'
 import { zfsVectors } from '../fixtures/zfs-vectors'
-import { vsanVectors, vsanOsaVectors, vsanEsaVectors } from '../fixtures/vsan-vectors'
 
 // Test drive: 1TB capacity for easy math
 const testDrive: Drive = {
@@ -301,7 +303,12 @@ describe('Volumetry Engine - Standard RAID', () => {
               interface: 'SATA',
               capacity_raw: driveSize,
               sector_size: 512,
-              performance: { iops_read: 150, iops_write: 150, bandwidth_read_mb: 200, bandwidth_write_mb: 200 },
+              performance: {
+                iops_read: 150,
+                iops_write: 150,
+                bandwidth_read_mb: 200,
+                bandwidth_write_mb: 200,
+              },
               reliability: { ure_rate: 14, afr: 1.0, dwpd: 0, mtbf_hours: 1_000_000 },
               power: { idle_watts: 5, load_watts: 10 },
               cost_usd: 100,
@@ -337,7 +344,12 @@ describe('Volumetry Engine - Standard RAID', () => {
               interface: 'SATA',
               capacity_raw: driveSize,
               sector_size: 512,
-              performance: { iops_read: 150, iops_write: 150, bandwidth_read_mb: 200, bandwidth_write_mb: 200 },
+              performance: {
+                iops_read: 150,
+                iops_write: 150,
+                bandwidth_read_mb: 200,
+                bandwidth_write_mb: 200,
+              },
               reliability: { ure_rate: 14, afr: 1.0, dwpd: 0, mtbf_hours: 1_000_000 },
               power: { idle_watts: 5, load_watts: 10 },
               cost_usd: 100,
@@ -366,7 +378,9 @@ describe('Volumetry Engine - Standard RAID', () => {
     it('RAID 1: capacity should equal N/2 drives (mirroring)', () => {
       fc.assert(
         fc.property(
-          fc.integer({ min: 2, max: 24 }).filter((n) => n % 2 === 0), // Even number of drives
+          fc
+            .integer({ min: 2, max: 24 })
+            .filter((n) => n % 2 === 0), // Even number of drives
           fc.integer({ min: 1_000_000_000_000, max: 10_000_000_000_000 }),
           (driveCount, driveSize) => {
             const testDrive: Drive = {
@@ -377,7 +391,12 @@ describe('Volumetry Engine - Standard RAID', () => {
               interface: 'SATA',
               capacity_raw: driveSize,
               sector_size: 512,
-              performance: { iops_read: 150, iops_write: 150, bandwidth_read_mb: 200, bandwidth_write_mb: 200 },
+              performance: {
+                iops_read: 150,
+                iops_write: 150,
+                bandwidth_read_mb: 200,
+                bandwidth_write_mb: 200,
+              },
               reliability: { ure_rate: 14, afr: 1.0, dwpd: 0, mtbf_hours: 1_000_000 },
               power: { idle_watts: 5, load_watts: 10 },
               cost_usd: 100,
@@ -388,7 +407,7 @@ describe('Volumetry Engine - Standard RAID', () => {
             const result = calculateVolumetry(input)
 
             // RAID 1: 50% efficiency - usable should be ~(N/2) drives
-            const expectedUsable = ((driveCount / 2) * driveSize) * 0.98 // ~2% FS overhead
+            const expectedUsable = (driveCount / 2) * driveSize * 0.98 // ~2% FS overhead
             const tolerance = expectedUsable * 0.05
 
             return Math.abs(result.usableCapacity - expectedUsable) < tolerance
@@ -471,7 +490,12 @@ describe('Volumetry Engine - Standard RAID', () => {
               interface: 'SATA',
               capacity_raw: driveSize,
               sector_size: 512,
-              performance: { iops_read: 150, iops_write: 150, bandwidth_read_mb: 200, bandwidth_write_mb: 200 },
+              performance: {
+                iops_read: 150,
+                iops_write: 150,
+                bandwidth_read_mb: 200,
+                bandwidth_write_mb: 200,
+              },
               reliability: { ure_rate: 14, afr: 1.0, dwpd: 0, mtbf_hours: 1_000_000 },
               power: { idle_watts: 5, load_watts: 10 },
               cost_usd: 100,
@@ -508,7 +532,12 @@ describe('Volumetry Engine - Standard RAID', () => {
               interface: 'SATA',
               capacity_raw: driveSize,
               sector_size: 512,
-              performance: { iops_read: 150, iops_write: 150, bandwidth_read_mb: 200, bandwidth_write_mb: 200 },
+              performance: {
+                iops_read: 150,
+                iops_write: 150,
+                bandwidth_read_mb: 200,
+                bandwidth_write_mb: 200,
+              },
               reliability: { ure_rate: 14, afr: 1.0, dwpd: 0, mtbf_hours: 1_000_000 },
               power: { idle_watts: 5, load_watts: 10 },
               cost_usd: 100,
@@ -519,7 +548,7 @@ describe('Volumetry Engine - Standard RAID', () => {
             const result = calculateVolumetry(input)
 
             // RAID 6: (N-2)/N efficiency - 2 drives worth for dual parity
-            const expectedUsable = ((driveCount - 2) * driveSize) * 0.98 // ~2% FS overhead
+            const expectedUsable = (driveCount - 2) * driveSize * 0.98 // ~2% FS overhead
             const tolerance = expectedUsable * 0.05
 
             return Math.abs(result.usableCapacity - expectedUsable) < tolerance
@@ -532,7 +561,9 @@ describe('Volumetry Engine - Standard RAID', () => {
     it('RAID 10: exactly 50% efficiency (mirrored stripes)', () => {
       fc.assert(
         fc.property(
-          fc.integer({ min: 4, max: 24 }).filter((n) => n % 2 === 0), // Even number required
+          fc
+            .integer({ min: 4, max: 24 })
+            .filter((n) => n % 2 === 0), // Even number required
           fc.integer({ min: 1_000_000_000_000, max: 10_000_000_000_000 }),
           (driveCount, driveSize) => {
             const testDrive: Drive = {
@@ -543,7 +574,12 @@ describe('Volumetry Engine - Standard RAID', () => {
               interface: 'SATA',
               capacity_raw: driveSize,
               sector_size: 512,
-              performance: { iops_read: 150, iops_write: 150, bandwidth_read_mb: 200, bandwidth_write_mb: 200 },
+              performance: {
+                iops_read: 150,
+                iops_write: 150,
+                bandwidth_read_mb: 200,
+                bandwidth_write_mb: 200,
+              },
               reliability: { ure_rate: 14, afr: 1.0, dwpd: 0, mtbf_hours: 1_000_000 },
               power: { idle_watts: 5, load_watts: 10 },
               cost_usd: 100,
@@ -554,7 +590,7 @@ describe('Volumetry Engine - Standard RAID', () => {
             const result = calculateVolumetry(input)
 
             // RAID 10: 50% efficiency - usable should be ~(N/2) drives
-            const expectedUsable = ((driveCount / 2) * driveSize) * 0.98
+            const expectedUsable = (driveCount / 2) * driveSize * 0.98
             const tolerance = expectedUsable * 0.05
 
             return Math.abs(result.usableCapacity - expectedUsable) < tolerance
@@ -578,7 +614,12 @@ describe('Volumetry Engine - Standard RAID', () => {
               interface: 'SATA',
               capacity_raw: driveSize,
               sector_size: 512,
-              performance: { iops_read: 150, iops_write: 150, bandwidth_read_mb: 200, bandwidth_write_mb: 200 },
+              performance: {
+                iops_read: 150,
+                iops_write: 150,
+                bandwidth_read_mb: 200,
+                bandwidth_write_mb: 200,
+              },
               reliability: { ure_rate: 14, afr: 1.0, dwpd: 0, mtbf_hours: 1_000_000 },
               power: { idle_watts: 5, load_watts: 10 },
               cost_usd: 100,
@@ -615,7 +656,12 @@ describe('Volumetry Engine - Standard RAID', () => {
               interface: 'SATA',
               capacity_raw: driveSize,
               sector_size: 512,
-              performance: { iops_read: 150, iops_write: 150, bandwidth_read_mb: 200, bandwidth_write_mb: 200 },
+              performance: {
+                iops_read: 150,
+                iops_write: 150,
+                bandwidth_read_mb: 200,
+                bandwidth_write_mb: 200,
+              },
               reliability: { ure_rate: 14, afr: 1.0, dwpd: 0, mtbf_hours: 1_000_000 },
               power: { idle_watts: 5, load_watts: 10 },
               cost_usd: 100,
@@ -699,58 +745,62 @@ describe('Volumetry Engine - ZFS Topologies', () => {
   // Table-Driven Tests for All ZFS Topologies (OpenZFS Validation)
   // ============================================================
   describe('OpenZFS Validated Tests - All Topologies', () => {
-    describe.each(zfsVectors)(
-      '$name',
-      ({ level, drives, driveSize, expectedUsable, tolerance, slopOverhead }) => {
-        it(`should calculate usable capacity within ${tolerance * 100}% of OpenZFS formula`, () => {
-          // Create test drive with specified capacity
-          const testDrive: Drive = {
-            id: `test-${driveSize}`,
-            model: `Test Drive ${driveSize / 1_000_000_000_000}TB`,
-            type: 'HDD',
-            formFactor: '3.5"',
-            interface: 'SATA',
-            capacity_raw: driveSize,
-            sector_size: 512,
-            performance: {
-              iops_read: 150,
-              iops_write: 150,
-              bandwidth_read_mb: 200,
-              bandwidth_write_mb: 200,
-            },
-            reliability: {
-              ure_rate: 14,
-              afr: 1.0,
-              dwpd: 0,
-              mtbf_hours: 1_000_000,
-            },
-            power: {
-              idle_watts: 5,
-              load_watts: 10,
-            },
-            cost_usd: 100,
-          }
+    describe.each(zfsVectors)('$name', ({
+      level,
+      drives,
+      driveSize,
+      expectedUsable,
+      tolerance,
+      slopOverhead,
+    }) => {
+      it(`should calculate usable capacity within ${tolerance * 100}% of OpenZFS formula`, () => {
+        // Create test drive with specified capacity
+        const testDrive: Drive = {
+          id: `test-${driveSize}`,
+          model: `Test Drive ${driveSize / 1_000_000_000_000}TB`,
+          type: 'HDD',
+          formFactor: '3.5"',
+          interface: 'SATA',
+          capacity_raw: driveSize,
+          sector_size: 512,
+          performance: {
+            iops_read: 150,
+            iops_write: 150,
+            bandwidth_read_mb: 200,
+            bandwidth_write_mb: 200,
+          },
+          reliability: {
+            ure_rate: 14,
+            afr: 1.0,
+            dwpd: 0,
+            mtbf_hours: 1_000_000,
+          },
+          power: {
+            idle_watts: 5,
+            load_watts: 10,
+          },
+          cost_usd: 100,
+        }
 
-          const input = createInput(drives, { type: 'zfs', level })
-          input.drive = testDrive
+        const input = createInput(drives, { type: 'zfs', level })
+        input.drive = testDrive
 
-          const result = calculateVolumetry(input)
+        const result = calculateVolumetry(input)
 
-          // Validate usable capacity matches OpenZFS within tolerance
-          const lowerBound = expectedUsable * (1 - tolerance)
-          const upperBound = expectedUsable * (1 + tolerance)
+        // Validate usable capacity matches OpenZFS within tolerance
+        const lowerBound = expectedUsable * (1 - tolerance)
+        const upperBound = expectedUsable * (1 + tolerance)
 
-          expect(result.usableCapacity).toBeGreaterThanOrEqual(lowerBound)
-          expect(result.usableCapacity).toBeLessThanOrEqual(upperBound)
+        expect(result.usableCapacity).toBeGreaterThanOrEqual(lowerBound)
+        expect(result.usableCapacity).toBeLessThanOrEqual(upperBound)
 
-          // Validate slop overhead is present and within expected range
-          const slopLowerBound = slopOverhead * 0.95
-          const slopUpperBound = slopOverhead * 1.05
-          expect(result.slopOverhead).toBeGreaterThanOrEqual(slopLowerBound)
-          expect(result.slopOverhead).toBeLessThanOrEqual(slopUpperBound)
-        })
-      },
-    )
+        // Validate slop overhead is present and within expected range
+        const slopLowerBound = slopOverhead * 0.95
+        const slopUpperBound = slopOverhead * 1.05
+        expect(result.slopOverhead).toBeGreaterThanOrEqual(slopLowerBound)
+        expect(result.slopOverhead).toBeLessThanOrEqual(slopUpperBound)
+      })
+    })
   })
 
   // ============================================================
@@ -845,7 +895,12 @@ describe('Volumetry Engine - ZFS Topologies', () => {
               interface: 'SATA',
               capacity_raw: driveSize,
               sector_size: 512,
-              performance: { iops_read: 150, iops_write: 150, bandwidth_read_mb: 200, bandwidth_write_mb: 200 },
+              performance: {
+                iops_read: 150,
+                iops_write: 150,
+                bandwidth_read_mb: 200,
+                bandwidth_write_mb: 200,
+              },
               reliability: { ure_rate: 14, afr: 1.0, dwpd: 0, mtbf_hours: 1_000_000 },
               power: { idle_watts: 5, load_watts: 10 },
               cost_usd: 100,
@@ -879,7 +934,12 @@ describe('Volumetry Engine - ZFS Topologies', () => {
               interface: 'SATA',
               capacity_raw: driveSize,
               sector_size: 512,
-              performance: { iops_read: 150, iops_write: 150, bandwidth_read_mb: 200, bandwidth_write_mb: 200 },
+              performance: {
+                iops_read: 150,
+                iops_write: 150,
+                bandwidth_read_mb: 200,
+                bandwidth_write_mb: 200,
+              },
               reliability: { ure_rate: 14, afr: 1.0, dwpd: 0, mtbf_hours: 1_000_000 },
               power: { idle_watts: 5, load_watts: 10 },
               cost_usd: 100,
@@ -916,7 +976,12 @@ describe('Volumetry Engine - ZFS Topologies', () => {
               interface: 'SATA',
               capacity_raw: driveSize,
               sector_size: 512,
-              performance: { iops_read: 150, iops_write: 150, bandwidth_read_mb: 200, bandwidth_write_mb: 200 },
+              performance: {
+                iops_read: 150,
+                iops_write: 150,
+                bandwidth_read_mb: 200,
+                bandwidth_write_mb: 200,
+              },
               reliability: { ure_rate: 14, afr: 1.0, dwpd: 0, mtbf_hours: 1_000_000 },
               power: { idle_watts: 5, load_watts: 10 },
               cost_usd: 100,
@@ -945,106 +1010,114 @@ describe('Volumetry Engine - vSAN Topologies', () => {
   // Table-Driven Tests for vSAN OSA (Fixed Efficiency)
   // ============================================================
   describe('VMware Validated Tests - vSAN OSA', () => {
-    describe.each(vsanOsaVectors)(
-      '$name',
-      ({ level, drives, driveSize, serverCount, expectedEfficiency, tolerance }) => {
-        it(`should have ${expectedEfficiency * 100}% efficiency within ${tolerance * 100}% tolerance`, () => {
-          const testDrive: Drive = {
-            id: `test-${driveSize}`,
-            model: `Test Drive ${driveSize / 1_000_000_000_000}TB`,
-            type: 'SSD_NVMe',
-            formFactor: '2.5"',
-            interface: 'NVMe',
-            capacity_raw: driveSize,
-            sector_size: 4096,
-            performance: {
-              iops_read: 500000,
-              iops_write: 250000,
-              bandwidth_read_mb: 3500,
-              bandwidth_write_mb: 3000,
-            },
-            reliability: {
-              ure_rate: 17,
-              afr: 0.5,
-              dwpd: 3,
-              mtbf_hours: 2_000_000,
-            },
-            power: {
-              idle_watts: 5,
-              load_watts: 8,
-            },
-            cost_usd: 300,
-          }
+    describe.each(vsanOsaVectors)('$name', ({
+      level,
+      drives,
+      driveSize,
+      serverCount,
+      expectedEfficiency,
+      tolerance,
+    }) => {
+      it(`should have ${expectedEfficiency * 100}% efficiency within ${tolerance * 100}% tolerance`, () => {
+        const testDrive: Drive = {
+          id: `test-${driveSize}`,
+          model: `Test Drive ${driveSize / 1_000_000_000_000}TB`,
+          type: 'SSD_NVMe',
+          formFactor: '2.5"',
+          interface: 'NVMe',
+          capacity_raw: driveSize,
+          sector_size: 4096,
+          performance: {
+            iops_read: 500000,
+            iops_write: 250000,
+            bandwidth_read_mb: 3500,
+            bandwidth_write_mb: 3000,
+          },
+          reliability: {
+            ure_rate: 17,
+            afr: 0.5,
+            dwpd: 3,
+            mtbf_hours: 2_000_000,
+          },
+          power: {
+            idle_watts: 5,
+            load_watts: 8,
+          },
+          cost_usd: 300,
+        }
 
-          const input = createInput(drives, { type: 'vsan_osa', level })
-          input.drive = testDrive
-          input.serverCount = serverCount
+        const input = createInput(drives, { type: 'vsan_osa', level })
+        input.drive = testDrive
+        input.serverCount = serverCount
 
-          const result = calculateVolumetry(input)
+        const result = calculateVolumetry(input)
 
-          // Validate efficiency matches VMware specifications within tolerance
-          const efficiencyDecimal = result.efficiency / 100 // Convert percentage to decimal
-          const lowerBound = expectedEfficiency * (1 - tolerance)
-          const upperBound = expectedEfficiency * (1 + tolerance)
+        // Validate efficiency matches VMware specifications within tolerance
+        const efficiencyDecimal = result.efficiency / 100 // Convert percentage to decimal
+        const lowerBound = expectedEfficiency * (1 - tolerance)
+        const upperBound = expectedEfficiency * (1 + tolerance)
 
-          expect(efficiencyDecimal).toBeGreaterThanOrEqual(lowerBound)
-          expect(efficiencyDecimal).toBeLessThanOrEqual(upperBound)
-        })
-      },
-    )
+        expect(efficiencyDecimal).toBeGreaterThanOrEqual(lowerBound)
+        expect(efficiencyDecimal).toBeLessThanOrEqual(upperBound)
+      })
+    })
   })
 
   // ============================================================
   // Table-Driven Tests for vSAN ESA (Adaptive Efficiency)
   // ============================================================
   describe('VMware Validated Tests - vSAN ESA', () => {
-    describe.each(vsanEsaVectors)(
-      '$name',
-      ({ level, drives, driveSize, serverCount, expectedEfficiency, tolerance }) => {
-        it(`should have ${expectedEfficiency * 100}% efficiency within ${tolerance * 100}% tolerance`, () => {
-          const testDrive: Drive = {
-            id: `test-${driveSize}`,
-            model: `Test Drive ${driveSize / 1_000_000_000_000}TB`,
-            type: 'SSD_NVMe',
-            formFactor: '2.5"',
-            interface: 'NVMe',
-            capacity_raw: driveSize,
-            sector_size: 4096,
-            performance: {
-              iops_read: 500000,
-              iops_write: 250000,
-              bandwidth_read_mb: 3500,
-              bandwidth_write_mb: 3000,
-            },
-            reliability: {
-              ure_rate: 17,
-              afr: 0.5,
-              dwpd: 3,
-              mtbf_hours: 2_000_000,
-            },
-            power: {
-              idle_watts: 5,
-              load_watts: 8,
-            },
-            cost_usd: 300,
-          }
+    describe.each(vsanEsaVectors)('$name', ({
+      level,
+      drives,
+      driveSize,
+      serverCount,
+      expectedEfficiency,
+      tolerance,
+    }) => {
+      it(`should have ${expectedEfficiency * 100}% efficiency within ${tolerance * 100}% tolerance`, () => {
+        const testDrive: Drive = {
+          id: `test-${driveSize}`,
+          model: `Test Drive ${driveSize / 1_000_000_000_000}TB`,
+          type: 'SSD_NVMe',
+          formFactor: '2.5"',
+          interface: 'NVMe',
+          capacity_raw: driveSize,
+          sector_size: 4096,
+          performance: {
+            iops_read: 500000,
+            iops_write: 250000,
+            bandwidth_read_mb: 3500,
+            bandwidth_write_mb: 3000,
+          },
+          reliability: {
+            ure_rate: 17,
+            afr: 0.5,
+            dwpd: 3,
+            mtbf_hours: 2_000_000,
+          },
+          power: {
+            idle_watts: 5,
+            load_watts: 8,
+          },
+          cost_usd: 300,
+        }
 
-          const input = createInput(drives, { type: 'vsan_esa', level })
-          input.drive = testDrive
-          input.serverCount = serverCount
+        const input = createInput(drives, { type: 'vsan_esa', level })
+        input.drive = testDrive
+        input.serverCount = serverCount
 
-          const result = calculateVolumetry(input)
+        const result = calculateVolumetry(input)
 
-          // Validate efficiency matches VMware specifications within tolerance
-          const efficiencyDecimal = result.efficiency / 100 // Convert percentage to decimal
-          const lowerBound = expectedEfficiency * (1 - tolerance)
-          const upperBound = expectedEfficiency * (1 + tolerance)
+        // Validate efficiency matches VMware specifications within tolerance
+        const efficiencyDecimal = result.efficiency / 100 // Convert percentage to decimal
+        const lowerBound = expectedEfficiency * (1 - tolerance)
+        const upperBound = expectedEfficiency * (1 + tolerance)
 
-          expect(efficiencyDecimal).toBeGreaterThanOrEqual(lowerBound)
-          expect(efficiencyDecimal).toBeLessThanOrEqual(upperBound)
-        })
-      },
-    )
+        expect(efficiencyDecimal).toBeGreaterThanOrEqual(lowerBound)
+        expect(efficiencyDecimal).toBeLessThanOrEqual(upperBound)
+      })
+    })
   })
 
   // ============================================================
@@ -1060,7 +1133,7 @@ describe('Volumetry Engine - vSAN Topologies', () => {
       // Should use 2+1 scheme = 2/3 = 66.67% efficiency
       const efficiencyDecimal = result.efficiency / 100
       expect(efficiencyDecimal).toBeGreaterThan(0.64)
-      expect(efficiencyDecimal).toBeLessThan(0.70)
+      expect(efficiencyDecimal).toBeLessThan(0.7)
     })
 
     it('RAID-5: should use 2+1 scheme (67%) for clusters with insufficient drives', () => {
@@ -1073,7 +1146,7 @@ describe('Volumetry Engine - vSAN Topologies', () => {
       // Should use 2+1 scheme = 66.67% efficiency
       const efficiencyDecimal = result.efficiency / 100
       expect(efficiencyDecimal).toBeGreaterThan(0.64)
-      expect(efficiencyDecimal).toBeLessThan(0.70)
+      expect(efficiencyDecimal).toBeLessThan(0.7)
     })
 
     it('RAID-5: should use 4+1 scheme (80%) for clusters with ≥5 hosts and 100+ drives', () => {
@@ -1097,7 +1170,7 @@ describe('Volumetry Engine - vSAN Topologies', () => {
       // Should use 4+2 scheme = 4/6 = 66.67% efficiency
       const efficiencyDecimal = result.efficiency / 100
       expect(efficiencyDecimal).toBeGreaterThan(0.64)
-      expect(efficiencyDecimal).toBeLessThan(0.70)
+      expect(efficiencyDecimal).toBeLessThan(0.7)
     })
 
     it('RAID-6: should use 6+2 scheme (75%) for clusters with ≥8 hosts and 160+ drives', () => {
@@ -1132,20 +1205,31 @@ describe('Volumetry Engine - vSAN Topologies', () => {
               interface: 'NVMe',
               capacity_raw: driveSize,
               sector_size: 4096,
-              performance: { iops_read: 500000, iops_write: 250000, bandwidth_read_mb: 3500, bandwidth_write_mb: 3000 },
+              performance: {
+                iops_read: 500000,
+                iops_write: 250000,
+                bandwidth_read_mb: 3500,
+                bandwidth_write_mb: 3000,
+              },
               reliability: { ure_rate: 17, afr: 0.5, dwpd: 3, mtbf_hours: 2_000_000 },
               power: { idle_watts: 5, load_watts: 8 },
               cost_usd: 300,
             }
 
             // Small cluster: insufficient for 4+1
-            const inputSmall = createInput(smallServerCount * 10, { type: 'vsan_esa', level: 'vsan_esa_raid5' })
+            const inputSmall = createInput(smallServerCount * 10, {
+              type: 'vsan_esa',
+              level: 'vsan_esa_raid5',
+            })
             inputSmall.drive = testDrive
             inputSmall.serverCount = smallServerCount
             const resultSmall = calculateVolumetry(inputSmall)
 
             // Large cluster: sufficient for 4+1
-            const inputLarge = createInput(largeServerCount * 20, { type: 'vsan_esa', level: 'vsan_esa_raid5' })
+            const inputLarge = createInput(largeServerCount * 20, {
+              type: 'vsan_esa',
+              level: 'vsan_esa_raid5',
+            })
             inputLarge.drive = testDrive
             inputLarge.serverCount = largeServerCount
             const resultLarge = calculateVolumetry(inputLarge)
@@ -1172,13 +1256,21 @@ describe('Volumetry Engine - vSAN Topologies', () => {
               interface: 'NVMe',
               capacity_raw: driveSize,
               sector_size: 4096,
-              performance: { iops_read: 500000, iops_write: 250000, bandwidth_read_mb: 3500, bandwidth_write_mb: 3000 },
+              performance: {
+                iops_read: 500000,
+                iops_write: 250000,
+                bandwidth_read_mb: 3500,
+                bandwidth_write_mb: 3000,
+              },
               reliability: { ure_rate: 17, afr: 0.5, dwpd: 3, mtbf_hours: 2_000_000 },
               power: { idle_watts: 5, load_watts: 8 },
               cost_usd: 300,
             }
 
-            const input = createInput(serverCount * 10, { type: 'vsan_osa', level: 'vsan_osa_raid5' })
+            const input = createInput(serverCount * 10, {
+              type: 'vsan_osa',
+              level: 'vsan_osa_raid5',
+            })
             input.drive = testDrive
             input.serverCount = serverCount
 
@@ -1187,7 +1279,7 @@ describe('Volumetry Engine - vSAN Topologies', () => {
             // OSA RAID-5 efficiency scales from 75% (3+1) to 87.5% (7+1) based on stripe width
             // Stripe width adapts to: min(serverCount-1, drivesPerHost/2, 7)
             const efficiencyDecimal = result.efficiency / 100
-            return efficiencyDecimal >= 0.72 && efficiencyDecimal <= 0.90
+            return efficiencyDecimal >= 0.72 && efficiencyDecimal <= 0.9
           },
         ),
         { numRuns: 50 },
@@ -1257,7 +1349,15 @@ describe('Volumetry Engine - Microsoft S2D', () => {
     },
   ]
 
-  describe.each(s2dVectors)('$name', ({ level, faultDomains, drives, driveSize, expectedEfficiency, tolerance, mirrorCopies }) => {
+  describe.each(s2dVectors)('$name', ({
+    level,
+    faultDomains,
+    drives,
+    driveSize,
+    expectedEfficiency,
+    tolerance,
+    mirrorCopies,
+  }) => {
     it(`should have ${expectedEfficiency * 100}% efficiency within ${tolerance * 100}% tolerance`, () => {
       const testDrive: Drive = {
         id: `test-${driveSize}`,
@@ -1313,10 +1413,18 @@ describe('Volumetry Engine - Microsoft S2D', () => {
   describe('S2D Rebuild Reserve', () => {
     it('should subtract 1 drive equivalent per fault domain when enabled', () => {
       const inputWithReserve = createInput(16, { type: 's2d', level: 'mirror' })
-      inputWithReserve.s2dOptions = { ...DEFAULT_S2D_OPTIONS, rebuildReserve: true, faultDomains: 4 }
+      inputWithReserve.s2dOptions = {
+        ...DEFAULT_S2D_OPTIONS,
+        rebuildReserve: true,
+        faultDomains: 4,
+      }
 
       const inputWithoutReserve = createInput(16, { type: 's2d', level: 'mirror' })
-      inputWithoutReserve.s2dOptions = { ...DEFAULT_S2D_OPTIONS, rebuildReserve: false, faultDomains: 4 }
+      inputWithoutReserve.s2dOptions = {
+        ...DEFAULT_S2D_OPTIONS,
+        rebuildReserve: false,
+        faultDomains: 4,
+      }
 
       const resultWith = calculateVolumetry(inputWithReserve)
       const resultWithout = calculateVolumetry(inputWithoutReserve)
@@ -1387,7 +1495,13 @@ describe('Volumetry Engine - Ceph', () => {
     },
   ]
 
-  describe.each(cephVectors)('$name', ({ level, drives, driveSize, expectedEfficiency, tolerance }) => {
+  describe.each(cephVectors)('$name', ({
+    level,
+    drives,
+    driveSize,
+    expectedEfficiency,
+    tolerance,
+  }) => {
     it(`should have ${expectedEfficiency * 100}% efficiency within ${tolerance * 100}% tolerance`, () => {
       const testDrive: Drive = {
         id: `test-${driveSize}`,
@@ -1424,7 +1538,7 @@ describe('Volumetry Engine - Ceph', () => {
 
       // Validate efficiency matches Ceph specifications
       // Note: Ceph applies safeCapacityThreshold (default 85%), so we measure pre-safe efficiency
-      const rawEfficiency = (result.usableCapacity / 0.85) / result.rawCapacity // Undo safe capacity factor
+      const rawEfficiency = result.usableCapacity / 0.85 / result.rawCapacity // Undo safe capacity factor
       const lowerBound = expectedEfficiency * (1 - tolerance)
       const upperBound = expectedEfficiency * (1 + tolerance)
 
@@ -1450,7 +1564,6 @@ describe('Volumetry Engine - Ceph', () => {
       expect(Math.abs(result.usableCapacity - expectedUsable)).toBeLessThan(tolerance)
     })
   })
-
 })
 
 describe('Volumetry Engine - Nutanix', () => {
@@ -1494,7 +1607,14 @@ describe('Volumetry Engine - Nutanix', () => {
     },
   ]
 
-  describe.each(nutanixVectors)('$name', ({ level, drives, driveSize, replicationFactor, expectedEfficiency, tolerance }) => {
+  describe.each(nutanixVectors)('$name', ({
+    level,
+    drives,
+    driveSize,
+    replicationFactor,
+    expectedEfficiency,
+    tolerance,
+  }) => {
     it(`should have ${expectedEfficiency * 100}% efficiency within ${tolerance * 100}% tolerance`, () => {
       const testDrive: Drive = {
         id: `test-${driveSize}`,
@@ -1897,7 +2017,12 @@ describe('Volumetry Engine - Boundary Conditions', () => {
               interface: 'SATA',
               capacity_raw: driveSize,
               sector_size: 512,
-              performance: { iops_read: 150, iops_write: 150, bandwidth_read_mb: 200, bandwidth_write_mb: 200 },
+              performance: {
+                iops_read: 150,
+                iops_write: 150,
+                bandwidth_read_mb: 200,
+                bandwidth_write_mb: 200,
+              },
               reliability: { ure_rate: 14, afr: 1.0, dwpd: 0, mtbf_hours: 1_000_000 },
               power: { idle_watts: 5, load_watts: 10 },
               cost_usd: 100,
@@ -2072,7 +2197,7 @@ describe('Volumetry Engine - Edge Cases: Invalid Drive Counts', () => {
 describe('Volumetry Engine - Error Handling', () => {
   describe('Invalid topology tests', () => {
     it('should handle unknown topology type gracefully', () => {
-      const input = createInput(4, { type: 'unknown_type' as any, level: 'RAID5' })
+      const input = createInput(4, { type: 'unknown_type' as unknown, level: 'RAID5' } as Topology)
       const result = calculateVolumetry(input)
 
       // Should fall back to default behavior (no error thrown)
@@ -2081,7 +2206,10 @@ describe('Volumetry Engine - Error Handling', () => {
     })
 
     it('should handle invalid RAID level gracefully', () => {
-      const input = createInput(4, { type: 'standard', level: 'RAID99' as any })
+      const input = createInput(4, {
+        type: 'standard',
+        level: 'RAID99' as unknown as StandardRaidLevel,
+      })
       const result = calculateVolumetry(input)
 
       // Should fall back to default (100% efficiency like RAID0)
@@ -2090,7 +2218,7 @@ describe('Volumetry Engine - Error Handling', () => {
     })
 
     it('should handle null topology gracefully', () => {
-      const input = createInput(4, null as any)
+      const input = createInput(4, null as unknown as Topology)
       const result = calculateVolumetry(input)
 
       // Should handle gracefully (may return default values)
@@ -2098,7 +2226,7 @@ describe('Volumetry Engine - Error Handling', () => {
     })
 
     it('should handle undefined topology gracefully', () => {
-      const input = createInput(4, undefined as any)
+      const input = createInput(4, undefined as unknown as Topology)
       const result = calculateVolumetry(input)
 
       // Should handle gracefully
@@ -2109,7 +2237,7 @@ describe('Volumetry Engine - Error Handling', () => {
   describe('Missing drive data tests', () => {
     it('should handle null drive object gracefully', () => {
       const input = createInput(4, { type: 'standard', level: 'RAID5' })
-      input.drive = null as any
+      input.drive = null as unknown as Drive
 
       const result = calculateVolumetry(input)
 
@@ -2118,12 +2246,12 @@ describe('Volumetry Engine - Error Handling', () => {
     })
 
     it('should handle drive with missing capacity_raw field', () => {
-      const incompleteDrive: any = {
+      const incompleteDrive = {
         id: 'test',
         model: 'Test',
-        type: 'HDD',
+        type: 'HDD' as const,
         // capacity_raw is missing
-      }
+      } as unknown as Drive
       const input = createInput(4, { type: 'standard', level: 'RAID5' })
       input.drive = incompleteDrive
 
@@ -2253,7 +2381,7 @@ describe('Volumetry Engine - Error Handling', () => {
 
     it('should handle missing zfsOptions for ZFS topologies', () => {
       const input = createInput(4, { type: 'zfs', level: 'raidz1' })
-      input.zfsOptions = null as any
+      input.zfsOptions = null as unknown as typeof DEFAULT_ZFS_OPTIONS
 
       const result = calculateVolumetry(input)
 
@@ -2263,7 +2391,7 @@ describe('Volumetry Engine - Error Handling', () => {
 
     it('should handle missing vsanOptions for vSAN topologies', () => {
       const input = createInput(16, { type: 'vsan_osa', level: 'vsan_osa_raid5' })
-      input.vsanOptions = null as any
+      input.vsanOptions = null as unknown as typeof DEFAULT_VSAN_OPTIONS
 
       const result = calculateVolumetry(input)
 
@@ -2273,7 +2401,7 @@ describe('Volumetry Engine - Error Handling', () => {
 
     it('should handle missing cephOptions for Ceph topologies', () => {
       const input = createInput(12, { type: 'ceph', level: 'ceph_replicated_3' })
-      input.cephOptions = null as any
+      input.cephOptions = null as unknown as typeof DEFAULT_CEPH_OPTIONS
 
       const result = calculateVolumetry(input)
 
