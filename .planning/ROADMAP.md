@@ -25,8 +25,8 @@ This roadmap takes Raidy from a functionally complete application to production-
 **Plans:** 2 plans
 
 Plans:
-- [ ] 01-01-PLAN.md — Install and configure test infrastructure
-- [ ] 01-02-PLAN.md — Complete test setup and verify infrastructure
+- [x] 01-01-PLAN.md — Install and configure test infrastructure
+- [x] 01-02-PLAN.md — Complete test setup and verify infrastructure
 
 ---
 
@@ -43,7 +43,14 @@ Plans:
 4. All major topology types (RAID, ZFS, vSAN ESA/OSA, S2D, Ceph, Nutanix) have verified test coverage
 5. URL state serialization roundtrip preserves configuration accurately with backward compatibility validation
 
-**Plans:** (created by /gsd:plan-phase)
+**Plans:** 5 plans
+
+Plans:
+- [ ] 02-01-PLAN.md — Validate standard RAID capacity calculations with WintelGuy references
+- [ ] 02-02-PLAN.md — Validate ZFS and advanced storage topologies with vendor documentation
+- [ ] 02-03-PLAN.md — Validate performance engine IOPS and write penalty calculations
+- [ ] 02-04-PLAN.md — Validate Monte Carlo resilience simulations with statistical accuracy
+- [ ] 02-05-PLAN.md — Validate URL state serialization and form validation rules
 
 ---
 
