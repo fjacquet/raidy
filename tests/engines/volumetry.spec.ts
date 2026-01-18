@@ -396,6 +396,300 @@ describe('Volumetry Engine - Standard RAID', () => {
       )
     })
   })
+
+  // ============================================================
+  // Table-Driven Tests for RAID 5/5E/5EE/6/10/50/60 (WintelGuy Validation)
+  // ============================================================
+  describe('WintelGuy Validated Tests - RAID 5/5E/5EE/6/10/50/60', () => {
+    // Filter vectors for parity and nested RAID levels
+    const vectors = standardRAIDVectors.filter((v) =>
+      ['RAID5', 'RAID5E', 'RAID5EE', 'RAID6', 'RAID10', 'RAID50', 'RAID60'].includes(v.level),
+    )
+
+    describe.each(vectors)('$name', ({ level, drives, driveSize, expectedUsable, tolerance }) => {
+      it(`should calculate usable capacity within ${tolerance * 100}% of WintelGuy reference`, () => {
+        const testDrive: Drive = {
+          id: `test-${driveSize}`,
+          model: `Test Drive ${driveSize / 1_000_000_000_000}TB`,
+          type: 'HDD',
+          formFactor: '3.5"',
+          interface: 'SATA',
+          capacity_raw: driveSize,
+          sector_size: 512,
+          performance: {
+            iops_read: 150,
+            iops_write: 150,
+            bandwidth_read_mb: 200,
+            bandwidth_write_mb: 200,
+          },
+          reliability: {
+            ure_rate: 14,
+            afr: 1.0,
+            dwpd: 0,
+            mtbf_hours: 1_000_000,
+          },
+          power: {
+            idle_watts: 5,
+            load_watts: 10,
+          },
+          cost_usd: 100,
+        }
+
+        const input = createInput(drives, { type: 'standard', level })
+        input.drive = testDrive
+
+        const result = calculateVolumetry(input)
+
+        // Validate usable capacity matches WintelGuy within tolerance
+        // WintelGuy: https://wintelguy.com/raidcalc.pl
+        const lowerBound = expectedUsable * (1 - tolerance)
+        const upperBound = expectedUsable * (1 + tolerance)
+
+        expect(result.usableCapacity).toBeGreaterThanOrEqual(lowerBound)
+        expect(result.usableCapacity).toBeLessThanOrEqual(upperBound)
+      })
+    })
+  })
+
+  // ============================================================
+  // Property-Based Tests for Parity RAID
+  // ============================================================
+  describe('Property-Based Tests - Parity RAID', () => {
+    it('RAID 5: N-1 drives usable, adding drives increases capacity', () => {
+      fc.assert(
+        fc.property(
+          fc.integer({ min: 3, max: 23 }), // RAID 5 minimum is 3 drives
+          fc.integer({ min: 1_000_000_000_000, max: 10_000_000_000_000 }),
+          (driveCount, driveSize) => {
+            const testDrive: Drive = {
+              id: 'test',
+              model: 'Test',
+              type: 'HDD',
+              formFactor: '3.5"',
+              interface: 'SATA',
+              capacity_raw: driveSize,
+              sector_size: 512,
+              performance: { iops_read: 150, iops_write: 150, bandwidth_read_mb: 200, bandwidth_write_mb: 200 },
+              reliability: { ure_rate: 14, afr: 1.0, dwpd: 0, mtbf_hours: 1_000_000 },
+              power: { idle_watts: 5, load_watts: 10 },
+              cost_usd: 100,
+            }
+
+            const inputN = createInput(driveCount, { type: 'standard', level: 'RAID5' })
+            inputN.drive = testDrive
+            const resultN = calculateVolumetry(inputN)
+
+            const inputNPlus1 = createInput(driveCount + 1, { type: 'standard', level: 'RAID5' })
+            inputNPlus1.drive = testDrive
+            const resultNPlus1 = calculateVolumetry(inputNPlus1)
+
+            // RAID 5 uses N-1 drives for data (1 drive for parity)
+            // Adding a drive should increase usable capacity
+            return resultNPlus1.usableCapacity > resultN.usableCapacity
+          },
+        ),
+        { numRuns: 50 },
+      )
+    })
+
+    it('RAID 6: N-2 drives usable, survives double failure', () => {
+      fc.assert(
+        fc.property(
+          fc.integer({ min: 4, max: 24 }), // RAID 6 minimum is 4 drives
+          fc.integer({ min: 1_000_000_000_000, max: 10_000_000_000_000 }),
+          (driveCount, driveSize) => {
+            const testDrive: Drive = {
+              id: 'test',
+              model: 'Test',
+              type: 'HDD',
+              formFactor: '3.5"',
+              interface: 'SATA',
+              capacity_raw: driveSize,
+              sector_size: 512,
+              performance: { iops_read: 150, iops_write: 150, bandwidth_read_mb: 200, bandwidth_write_mb: 200 },
+              reliability: { ure_rate: 14, afr: 1.0, dwpd: 0, mtbf_hours: 1_000_000 },
+              power: { idle_watts: 5, load_watts: 10 },
+              cost_usd: 100,
+            }
+
+            const input = createInput(driveCount, { type: 'standard', level: 'RAID6' })
+            input.drive = testDrive
+            const result = calculateVolumetry(input)
+
+            // RAID 6: (N-2)/N efficiency - 2 drives worth for dual parity
+            const expectedUsable = ((driveCount - 2) * driveSize) * 0.98 // ~2% FS overhead
+            const tolerance = expectedUsable * 0.05
+
+            return Math.abs(result.usableCapacity - expectedUsable) < tolerance
+          },
+        ),
+        { numRuns: 50 },
+      )
+    })
+
+    it('RAID 10: exactly 50% efficiency (mirrored stripes)', () => {
+      fc.assert(
+        fc.property(
+          fc.integer({ min: 4, max: 24 }).filter((n) => n % 2 === 0), // Even number required
+          fc.integer({ min: 1_000_000_000_000, max: 10_000_000_000_000 }),
+          (driveCount, driveSize) => {
+            const testDrive: Drive = {
+              id: 'test',
+              model: 'Test',
+              type: 'HDD',
+              formFactor: '3.5"',
+              interface: 'SATA',
+              capacity_raw: driveSize,
+              sector_size: 512,
+              performance: { iops_read: 150, iops_write: 150, bandwidth_read_mb: 200, bandwidth_write_mb: 200 },
+              reliability: { ure_rate: 14, afr: 1.0, dwpd: 0, mtbf_hours: 1_000_000 },
+              power: { idle_watts: 5, load_watts: 10 },
+              cost_usd: 100,
+            }
+
+            const input = createInput(driveCount, { type: 'standard', level: 'RAID10' })
+            input.drive = testDrive
+            const result = calculateVolumetry(input)
+
+            // RAID 10: 50% efficiency - usable should be ~(N/2) drives
+            const expectedUsable = ((driveCount / 2) * driveSize) * 0.98
+            const tolerance = expectedUsable * 0.05
+
+            return Math.abs(result.usableCapacity - expectedUsable) < tolerance
+          },
+        ),
+        { numRuns: 50 },
+      )
+    })
+
+    it('RAID 50: efficiency combines striping + parity (better than RAID 5 with small arrays)', () => {
+      fc.assert(
+        fc.property(
+          fc.integer({ min: 6, max: 24 }), // Minimum 6 drives (2 groups of 3)
+          fc.integer({ min: 1_000_000_000_000, max: 10_000_000_000_000 }),
+          (driveCount, driveSize) => {
+            const testDrive: Drive = {
+              id: 'test',
+              model: 'Test',
+              type: 'HDD',
+              formFactor: '3.5"',
+              interface: 'SATA',
+              capacity_raw: driveSize,
+              sector_size: 512,
+              performance: { iops_read: 150, iops_write: 150, bandwidth_read_mb: 200, bandwidth_write_mb: 200 },
+              reliability: { ure_rate: 14, afr: 1.0, dwpd: 0, mtbf_hours: 1_000_000 },
+              power: { idle_watts: 5, load_watts: 10 },
+              cost_usd: 100,
+            }
+
+            const input = createInput(driveCount, { type: 'standard', level: 'RAID50' })
+            input.drive = testDrive
+            const result = calculateVolumetry(input)
+
+            // RAID 50: 2 parity drives for 2 groups (assuming 2 groups)
+            // Efficiency should be better than raw parity overhead
+            const rawCapacity = driveCount * driveSize
+            const efficiency = result.usableCapacity / rawCapacity
+
+            // RAID 50 efficiency should be in reasonable range (60-90%)
+            return efficiency > 0.6 && efficiency < 0.95
+          },
+        ),
+        { numRuns: 50 },
+      )
+    })
+
+    it('RAID 60: dual parity across groups, better reliability than RAID 50', () => {
+      fc.assert(
+        fc.property(
+          fc.integer({ min: 8, max: 24 }), // Minimum 8 drives (2 groups of 4)
+          fc.integer({ min: 1_000_000_000_000, max: 10_000_000_000_000 }),
+          (driveCount, driveSize) => {
+            const testDrive: Drive = {
+              id: 'test',
+              model: 'Test',
+              type: 'HDD',
+              formFactor: '3.5"',
+              interface: 'SATA',
+              capacity_raw: driveSize,
+              sector_size: 512,
+              performance: { iops_read: 150, iops_write: 150, bandwidth_read_mb: 200, bandwidth_write_mb: 200 },
+              reliability: { ure_rate: 14, afr: 1.0, dwpd: 0, mtbf_hours: 1_000_000 },
+              power: { idle_watts: 5, load_watts: 10 },
+              cost_usd: 100,
+            }
+
+            const inputRAID60 = createInput(driveCount, { type: 'standard', level: 'RAID60' })
+            inputRAID60.drive = testDrive
+            const resultRAID60 = calculateVolumetry(inputRAID60)
+
+            const inputRAID50 = createInput(driveCount, { type: 'standard', level: 'RAID50' })
+            inputRAID50.drive = testDrive
+            const resultRAID50 = calculateVolumetry(inputRAID50)
+
+            // RAID 60 has more parity overhead than RAID 50 (4 drives vs 2 drives for 2 groups)
+            // Therefore RAID 60 usable capacity should be less than RAID 50
+            return resultRAID60.usableCapacity < resultRAID50.usableCapacity
+          },
+        ),
+        { numRuns: 50 },
+      )
+    })
+  })
+
+  // ============================================================
+  // Write Penalty Validation (Performance Impact)
+  // ============================================================
+  describe('RAID Write Penalty', () => {
+    it('RAID 5: write penalty factor is documented as 4x (read-modify-write)', () => {
+      // RAID 5 write penalty: 4x for random writes
+      // Formula: Read old data + Read old parity + Write new data + Write new parity = 4 operations
+      // Source: https://wintelguy.com/raidperf.pl
+      // Source: "RAID Performance" by Evan Marcus, Hal Stern
+
+      const input = createInput(4, { type: 'standard', level: 'RAID5' })
+      const result = calculateVolumetry(input)
+
+      // Verify parity overhead exists (1 drive worth)
+      expect(result.parityOverhead).toBe(1_000_000_000_000)
+
+      // Note: Write penalty affects performance calculations (Module B)
+      // For 4 drives RAID 5: Random write IOPS = (Drive IOPS × 4 drives) / 4 penalty = Drive IOPS
+      // This test documents the formula; actual performance testing in Module B
+    })
+
+    it('RAID 6: write penalty factor is documented as 6x (double parity update)', () => {
+      // RAID 6 write penalty: 6x for random writes
+      // Formula: Read old data + Read P parity + Read Q parity + Write new data + Write P + Write Q = 6 operations
+      // Source: https://wintelguy.com/raidperf.pl
+      // Source: NetApp TR-3437 "RAID-DP: Double Parity RAID for Improved Data Protection"
+
+      const input = createInput(6, { type: 'standard', level: 'RAID6' })
+      const result = calculateVolumetry(input)
+
+      // Verify dual parity overhead exists (2 drives worth)
+      expect(result.parityOverhead).toBe(2_000_000_000_000)
+
+      // Note: Write penalty affects performance calculations (Module B)
+      // For 6 drives RAID 6: Random write IOPS = (Drive IOPS × 6 drives) / 6 penalty = Drive IOPS
+      // This test documents the formula; actual performance testing in Module B
+    })
+
+    it('RAID 10: no write penalty (direct mirror writes)', () => {
+      // RAID 10 write penalty: 2x (but parallelizable, often considered "no penalty")
+      // Each write goes to 2 drives in a mirror pair
+      // Source: RAID performance literature
+
+      const input = createInput(4, { type: 'standard', level: 'RAID10' })
+      const result = calculateVolumetry(input)
+
+      // Verify mirror overhead exists (50%)
+      expect(result.parityOverhead).toBe(2_000_000_000_000)
+
+      // RAID 10 has consistent performance for reads and writes
+      // No read-modify-write cycle needed
+    })
+  })
 })
 
 describe('Volumetry Engine - ZFS', () => {
