@@ -1659,6 +1659,268 @@ describe('Volumetry Engine - Breakdown', () => {
   })
 })
 
+describe('Volumetry Engine - Boundary Conditions', () => {
+  describe('Maximum drive count tests', () => {
+    it('should handle extreme RAID 5 with 100 drives correctly', () => {
+      const input = createInput(100, { type: 'standard', level: 'RAID5' })
+      const result = calculateVolumetry(input)
+
+      // 99 data drives * 1TB = 99TB usable
+      expect(result.parityOverhead).toBe(1_000_000_000_000) // 1 drive worth
+      expect(result.efficiency).toBeGreaterThan(95) // ~99% efficiency (99/100)
+      // Validate no integer overflow
+      expect(result.usableCapacity).toBeGreaterThan(0)
+      expect(result.rawCapacity).toBe(100_000_000_000_000)
+    })
+
+    it('should handle extreme RAID 6 with 200 drives correctly', () => {
+      const largeDrive: Drive = {
+        ...testDrive,
+        capacity_raw: 20_000_000_000_000, // 20TB
+      }
+      const input = createInput(200, { type: 'standard', level: 'RAID6' })
+      input.drive = largeDrive
+
+      const result = calculateVolumetry(input)
+
+      // 198 data drives * 20TB = 3960TB usable
+      const expectedUsable = 198 * 20_000_000_000_000
+      expect(result.usableCapacity).toBeGreaterThan(expectedUsable * 0.95) // Within 5% (FS overhead)
+      expect(result.efficiency).toBeGreaterThan(96) // ~99% efficiency (198/200)
+      // Validate no floating-point errors at PB scale
+      expect(Number.isFinite(result.usableCapacity)).toBe(true)
+    })
+
+    it('should handle ZFS RAID-Z2 with 50 drives (stress test)', () => {
+      const input = createInput(50, { type: 'zfs', level: 'raidz2' })
+      const result = calculateVolumetry(input)
+
+      // 48 data drives * 1TB = 48TB usable (before slop and FS overhead)
+      expect(result.parityOverhead).toBe(2_000_000_000_000) // 2 drives worth
+      expect(result.slopOverhead).toBeGreaterThan(0) // Slop should be present
+      expect(result.slopOverhead).toBeLessThanOrEqual(128 * 1024 * 1024 * 1024) // Max 128 GiB
+      expect(result.efficiency).toBeGreaterThan(90) // ~96% efficiency (48/50)
+    })
+
+    it('should handle vSAN ESA with 64 servers (maximum cluster size)', () => {
+      const nvmeDrive: Drive = {
+        ...testDrive,
+        type: 'SSD_NVMe',
+        capacity_raw: 4_000_000_000_000, // 4TB NVMe
+      }
+      // 64 servers * 20 drives = 1280 drives
+      const input = createInput(1280, { type: 'vsan_esa', level: 'vsan_esa_raid5' })
+      input.drive = nvmeDrive
+      input.serverCount = 64
+
+      const result = calculateVolumetry(input)
+
+      // Should use 4+1 scheme (80% efficiency) at this scale
+      const efficiencyDecimal = result.efficiency / 100
+      expect(efficiencyDecimal).toBeGreaterThan(0.75) // At least 75%
+      expect(Number.isFinite(result.usableCapacity)).toBe(true)
+    })
+  })
+
+  describe('Extreme capacity tests', () => {
+    it('should handle RAID 0 with 24x 20TB drives (480TB raw)', () => {
+      const hugeDrive: Drive = {
+        ...testDrive,
+        capacity_raw: 20_000_000_000_000, // 20TB
+      }
+      const input = createInput(24, { type: 'standard', level: 'RAID0' })
+      input.drive = hugeDrive
+
+      const result = calculateVolumetry(input)
+
+      // Raw = 24 * 20TB = 480TB
+      expect(result.rawCapacity).toBe(480_000_000_000_000)
+      // Usable ~470TB (accounting for FS overhead)
+      expect(result.usableCapacity).toBeGreaterThan(470_000_000_000_000)
+      expect(result.usableCapacity).toBeLessThan(480_000_000_000_000)
+      expect(Number.isFinite(result.efficiency)).toBe(true)
+    })
+
+    it('should handle RAID 6 with 100x 20TB drives (1.96PB usable)', () => {
+      const hugeDrive: Drive = {
+        ...testDrive,
+        capacity_raw: 20_000_000_000_000, // 20TB
+      }
+      const input = createInput(100, { type: 'standard', level: 'RAID6' })
+      input.drive = hugeDrive
+
+      const result = calculateVolumetry(input)
+
+      // Raw = 2000TB = 2PB
+      expect(result.rawCapacity).toBe(2_000_000_000_000_000)
+      // Usable = 98 drives * 20TB = 1.96PB (before FS overhead)
+      const expectedUsable = 98 * 20_000_000_000_000
+      expect(result.usableCapacity).toBeGreaterThan(expectedUsable * 0.95)
+      expect(result.usableCapacity).toBeLessThan(expectedUsable)
+      // Validate capacity calculations handle large numbers
+      expect(Number.isFinite(result.usableCapacity)).toBe(true)
+    })
+
+    it('should handle ZFS with 200x 18TB drives (3.6PB raw)', () => {
+      const hugeDrive: Drive = {
+        ...testDrive,
+        capacity_raw: 18_000_000_000_000, // 18TB
+      }
+      const input = createInput(200, { type: 'zfs', level: 'raidz2' })
+      input.drive = hugeDrive
+
+      const result = calculateVolumetry(input)
+
+      // Raw = 200 * 18TB = 3.6PB
+      expect(result.rawCapacity).toBe(3_600_000_000_000_000)
+      // Validate slop factor calculations don't overflow (max 128GiB)
+      expect(result.slopOverhead).toBe(128 * 1024 * 1024 * 1024) // Should hit max
+      expect(Number.isFinite(result.efficiency)).toBe(true)
+    })
+  })
+
+  describe('Minimum capacity tests', () => {
+    it('should handle RAID 5 with 3x 100GB drives (small but valid)', () => {
+      const smallDrive: Drive = {
+        ...testDrive,
+        capacity_raw: 100_000_000_000, // 100GB
+      }
+      const input = createInput(3, { type: 'standard', level: 'RAID5' })
+      input.drive = smallDrive
+
+      const result = calculateVolumetry(input)
+
+      // Raw = 300GB, usable = 200GB (minus FS overhead)
+      expect(result.rawCapacity).toBe(300_000_000_000)
+      expect(result.usableCapacity).toBeGreaterThan(190_000_000_000)
+      expect(result.usableCapacity).toBeLessThan(200_000_000_000)
+    })
+
+    it('should handle ZFS with small drives (slop factor >= 128MiB minimum)', () => {
+      const smallDrive: Drive = {
+        ...testDrive,
+        capacity_raw: 100_000_000_000, // 100GB
+      }
+      const input = createInput(3, { type: 'zfs', level: 'raidz1' })
+      input.drive = smallDrive
+
+      const result = calculateVolumetry(input)
+
+      // Validate minimum slop space enforced correctly
+      const MIN_SLOP = 128 * 1024 * 1024 // 128 MiB
+      expect(result.slopOverhead).toBeGreaterThanOrEqual(MIN_SLOP)
+    })
+  })
+
+  describe('Hot spare boundary tests', () => {
+    it('should handle hot spares = 0 (valid, no spares)', () => {
+      const input = createInput(6, { type: 'standard', level: 'RAID6' }, 0)
+
+      const result = calculateVolumetry(input)
+
+      expect(result.hotSpareOverhead).toBe(0)
+      expect(result.usableCapacity).toBeGreaterThan(0)
+    })
+
+    it('should handle hot spares = driveCount - minimum for RAID 5 (extreme but valid)', () => {
+      // RAID 5 with 4 drives, 1 hot spare = 3 usable drives (minimum)
+      const input = createInput(4, { type: 'standard', level: 'RAID5' }, 1)
+
+      const result = calculateVolumetry(input)
+
+      expect(result.hotSpareOverhead).toBe(1_000_000_000_000)
+      // Efficiency = usable / raw = (2TB data - FS overhead) / 4TB total = ~49%
+      // (3 drives after hot spare, 2 data drives after parity)
+      expect(result.efficiency).toBeGreaterThan(45)
+      expect(result.efficiency).toBeLessThan(52)
+    })
+
+    it('should handle RAID 6 with 5 drives, 1 hot spare (4 data drives = minimum)', () => {
+      const input = createInput(5, { type: 'standard', level: 'RAID6' }, 1)
+
+      const result = calculateVolumetry(input)
+
+      expect(result.hotSpareOverhead).toBe(1_000_000_000_000)
+      // Efficiency = usable / raw = (2TB data - FS overhead) / 5TB total = ~39%
+      // (4 drives after hot spare, 2 data drives after dual parity)
+      expect(result.efficiency).toBeGreaterThan(35)
+      expect(result.efficiency).toBeLessThan(42)
+    })
+
+    it('should validate hot spares do not break capacity calculations', () => {
+      // Many hot spares (half the array)
+      const input = createInput(12, { type: 'standard', level: 'RAID6' }, 6)
+
+      const result = calculateVolumetry(input)
+
+      expect(result.hotSpareOverhead).toBe(6_000_000_000_000)
+      // 6 drives remain: (6-2)/6 = 66.67% efficiency
+      expect(result.usableCapacity).toBeGreaterThan(0)
+      expect(Number.isFinite(result.efficiency)).toBe(true)
+    })
+  })
+
+  describe('Property-based tests with extreme values', () => {
+    it('should handle extreme drive counts (100-500 drives) without errors', () => {
+      fc.assert(
+        fc.property(
+          fc.integer({ min: 100, max: 500 }), // Extreme drive counts
+          fc.constantFrom<'RAID5' | 'RAID6'>('RAID5', 'RAID6'),
+          (driveCount, level) => {
+            const input = createInput(driveCount, { type: 'standard', level })
+            const result = calculateVolumetry(input)
+
+            // Validate calculations always produce non-negative usable capacity
+            return (
+              result.usableCapacity >= 0 &&
+              Number.isFinite(result.usableCapacity) &&
+              result.efficiency >= 0 &&
+              result.efficiency <= 100
+            )
+          },
+        ),
+        { numRuns: 50 },
+      )
+    })
+
+    it('should handle extreme capacities (1TB-20TB drives) without overflow', () => {
+      fc.assert(
+        fc.property(
+          fc.integer({ min: 10, max: 100 }), // Drive count
+          fc.integer({ min: 1_000_000_000_000, max: 20_000_000_000_000 }), // 1TB - 20TB
+          (driveCount, driveSize) => {
+            const testDrive: Drive = {
+              id: 'test',
+              model: 'Test',
+              type: 'HDD',
+              formFactor: '3.5"',
+              interface: 'SATA',
+              capacity_raw: driveSize,
+              sector_size: 512,
+              performance: { iops_read: 150, iops_write: 150, bandwidth_read_mb: 200, bandwidth_write_mb: 200 },
+              reliability: { ure_rate: 14, afr: 1.0, dwpd: 0, mtbf_hours: 1_000_000 },
+              power: { idle_watts: 5, load_watts: 10 },
+              cost_usd: 100,
+            }
+
+            const input = createInput(driveCount, { type: 'standard', level: 'RAID6' })
+            input.drive = testDrive
+            const result = calculateVolumetry(input)
+
+            // Validate efficiency is always between 0 and 100
+            return (
+              result.efficiency > 0 &&
+              result.efficiency <= 100 &&
+              Number.isFinite(result.usableCapacity)
+            )
+          },
+        ),
+        { numRuns: 50 },
+      )
+    })
+  })
+})
+
 describe('Volumetry Engine - Edge Cases: Invalid Drive Counts', () => {
   describe('Zero drives edge cases', () => {
     it('should handle RAID 5 with 0 drives gracefully', () => {
