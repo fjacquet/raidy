@@ -11,6 +11,7 @@ export {
   exportToYaml,
 } from './exportConfig'
 export { exportToPdf } from './exportPdf'
+export { assertNever } from './typeGuards'
 export {
   BINARY,
   bytesToBinaryTiB,
