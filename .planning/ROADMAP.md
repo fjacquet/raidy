@@ -55,9 +55,9 @@ Plans:
 - [x] 02-03-PLAN.md — Validate performance engine IOPS and write penalty calculations
 - [x] 02-04-PLAN.md — Validate Monte Carlo resilience simulations with statistical accuracy
 - [x] 02-05-PLAN.md — Validate URL state serialization and form validation rules
-- [ ] 02-06-PLAN.md — Add advanced topology performance tests (gap closure: PowerFlex, ObjectScale, PowerStore, PowerScale, Nutanix)
-- [ ] 02-07-PLAN.md — Add volumetry edge case and error handling tests (gap closure: zero drives, invalid configs, boundaries)
-- [ ] 02-08-PLAN.md — Fix flaky statistical test (gap closure: confidence interval narrowing test stability)
+- [x] 02-06-PLAN.md — Add advanced topology performance tests (gap closure: PowerFlex, ObjectScale, PowerStore, PowerScale, Nutanix)
+- [x] 02-07-PLAN.md — Add volumetry edge case and error handling tests (gap closure: zero drives, invalid configs, boundaries)
+- [x] 02-08-PLAN.md — Fix flaky statistical test (gap closure: confidence interval narrowing test stability)
 
 ---
 

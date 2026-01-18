@@ -5,6 +5,7 @@
 ### Testing & Validation
 
 **Calculation Engine Tests:**
+
 - [ ] **TEST-01**: Volumetry engine has unit tests for all RAID levels (0/1/1E/3/4/5/5E/5EE/6/10/50/60) with known capacity values
 - [ ] **TEST-02**: Volumetry engine has unit tests for all ZFS topologies (Stripe/Mirror/RAID-Z1/Z2/Z3/dRAID1/2/3) with ZFS overhead validation
 - [ ] **TEST-03**: Volumetry engine has unit tests for vSAN (OSA/ESA), S2D, Ceph, Nutanix topologies
@@ -15,12 +16,14 @@
 - [ ] **TEST-08**: Monte Carlo resilience worker has statistical accuracy validation (confidence intervals)
 
 **Industry Validation:**
+
 - [ ] **TEST-09**: RAID 5/6 capacity calculations match WintelGuy calculator within 1% for standard configurations
 - [ ] **TEST-10**: ZFS overhead calculations match OpenZFS documentation for slop factor, ashift padding
 - [ ] **TEST-11**: vSAN efficiency matches VMware documentation for ESA/OSA adaptive efficiency ranges
 - [ ] **TEST-12**: Performance write penalties match industry formulas (RAID 5 = 4x, RAID 6 = 6x)
 
 **Infrastructure:**
+
 - [ ] **TEST-13**: Vitest configuration is properly set up with coverage thresholds and path aliases
 - [ ] **TEST-14**: URL state serialization/deserialization roundtrip tests with backward compatibility validation
 - [ ] **TEST-15**: Form validator tests for all validation rules (min drives, valid RAID configs, etc.)
@@ -29,6 +32,7 @@
 ### Security
 
 **Input Validation:**
+
 - [ ] **SEC-01**: URL state deserialization validates all numeric values against min/max bounds
 - [ ] **SEC-02**: URL state deserialization validates topology type against allowed enum values
 - [ ] **SEC-03**: All form inputs have server-side style validation before reaching calculation engines
@@ -36,6 +40,7 @@
 - [ ] **SEC-05**: Configuration state validation rejects malformed or out-of-range values with clear error messages
 
 **Application Security:**
+
 - [ ] **SEC-06**: Content Security Policy headers are configured for static deployment (Vercel/Netlify/GitHub Pages)
 - [ ] **SEC-07**: PDF export sanitizes all user-provided values before jspdf rendering
 - [ ] **SEC-08**: PDF generation has XSS vector review for text insertion points
@@ -45,6 +50,7 @@
 ### Code Quality
 
 **Component Refactoring:**
+
 - [ ] **QUAL-01**: TopologyPanel component is split into per-topology option components (ZfsOptionsPanel, VsanOptionsPanel, etc.)
 - [ ] **QUAL-02**: Topology option components use composition pattern with shared form controls
 - [ ] **QUAL-03**: Volumetry engine extracts topology-specific logic into separate modules (volumetry/raid.ts, volumetry/zfs.ts, etc.)
@@ -53,6 +59,7 @@
 - [ ] **QUAL-06**: Calculation engines have reduced cyclomatic complexity (max 10 per function)
 
 **Error Handling:**
+
 - [ ] **QUAL-07**: React error boundary wraps calculation dashboard to catch engine failures
 - [ ] **QUAL-08**: React error boundary shows user-friendly error message with "Reset Configuration" action
 - [ ] **QUAL-09**: Invalid configuration validation prevents calculations from running (not just warnings)
@@ -60,6 +67,7 @@
 - [ ] **QUAL-11**: URL hash parsing failures show user notification instead of silent console.warn
 
 **Code Health:**
+
 - [ ] **QUAL-12**: All Biome lint errors are fixed (zero warnings/errors)
 - [ ] **QUAL-13**: TypeScript strict mode violations are resolved
 - [ ] **QUAL-14**: Unused dependencies are removed (html2canvas audit)
@@ -68,6 +76,7 @@
 ### Performance
 
 **Optimization:**
+
 - [ ] **PERF-01**: Calculation hooks use useMemo with proper dependency arrays to prevent unnecessary recalculation
 - [ ] **PERF-02**: Volumetry, performance, and sustainability calculations are independently memoized
 - [ ] **PERF-03**: Monte Carlo worker supports abort/cancellation via AbortController pattern
@@ -75,6 +84,7 @@
 - [ ] **PERF-05**: Monte Carlo simulation splits into chunks with cooperative yielding (setTimeout batches)
 
 **Bundle Optimization:**
+
 - [ ] **PERF-06**: Unused dependencies are audited and removed (html2canvas, others)
 - [ ] **PERF-07**: PDF export is dynamically imported to defer loading until first use
 - [ ] **PERF-08**: Bundle size stays under 2MB total with proper chunking strategy
@@ -121,65 +131,66 @@
 
 <!-- Updated by roadmapper with phase mappings -->
 
-| Requirement | Phase | Status |
-|-------------|-------|--------|
-| TEST-01 | Phase 2 | Pending |
-| TEST-02 | Phase 2 | Pending |
-| TEST-03 | Phase 2 | Pending |
-| TEST-04 | Phase 2 | Pending |
-| TEST-05 | Phase 2 | Pending |
-| TEST-06 | Phase 2 | Pending |
-| TEST-07 | Phase 2 | Pending |
-| TEST-08 | Phase 2 | Pending |
-| TEST-09 | Phase 2 | Pending |
-| TEST-10 | Phase 2 | Pending |
-| TEST-11 | Phase 2 | Pending |
-| TEST-12 | Phase 2 | Pending |
-| TEST-13 | Phase 1 | Complete |
-| TEST-14 | Phase 2 | Pending |
-| TEST-15 | Phase 2 | Pending |
-| TEST-16 | Phase 2 | Pending |
-| SEC-01 | Phase 3 | Pending |
-| SEC-02 | Phase 3 | Pending |
-| SEC-03 | Phase 3 | Pending |
-| SEC-04 | Phase 3 | Pending |
-| SEC-05 | Phase 3 | Pending |
-| SEC-06 | Phase 3 | Pending |
-| SEC-07 | Phase 3 | Pending |
-| SEC-08 | Phase 3 | Pending |
-| SEC-09 | Phase 3 | Pending |
-| SEC-10 | Phase 3 | Pending |
-| QUAL-01 | Phase 4 | Pending |
-| QUAL-02 | Phase 4 | Pending |
-| QUAL-03 | Phase 4 | Pending |
-| QUAL-04 | Phase 4 | Pending |
-| QUAL-05 | Phase 4 | Pending |
-| QUAL-06 | Phase 4 | Pending |
-| QUAL-07 | Phase 4 | Pending |
-| QUAL-08 | Phase 4 | Pending |
-| QUAL-09 | Phase 4 | Pending |
-| QUAL-10 | Phase 4 | Pending |
-| QUAL-11 | Phase 4 | Pending |
-| QUAL-12 | Phase 4 | Pending |
-| QUAL-13 | Phase 4 | Pending |
-| QUAL-14 | Phase 4 | Pending |
-| QUAL-15 | Phase 4 | Pending |
-| PERF-01 | Phase 5 | Pending |
-| PERF-02 | Phase 5 | Pending |
-| PERF-03 | Phase 5 | Pending |
-| PERF-04 | Phase 5 | Pending |
-| PERF-05 | Phase 5 | Pending |
-| PERF-06 | Phase 5 | Pending |
-| PERF-07 | Phase 5 | Pending |
-| PERF-08 | Phase 5 | Pending |
-| BUG-01 | Phase 5 | Pending |
-| BUG-02 | Phase 5 | Pending |
-| BUG-03 | Phase 1 | Complete |
-| PROD-01 | Phase 6 | Pending |
-| PROD-02 | Phase 6 | Pending |
-| PROD-03 | Phase 6 | Pending |
-| PROD-04 | Phase 6 | Pending |
-| PROD-05 | Phase 6 | Pending |
+| Requirement | Phase   | Status   |
+| ----------- | ------- | -------- |
+| TEST-01     | Phase 2 | Complete |
+| TEST-02     | Phase 2 | Complete |
+| TEST-03     | Phase 2 | Complete |
+| TEST-04     | Phase 2 | Complete |
+| TEST-05     | Phase 2 | Complete |
+| TEST-06     | Phase 2 | Complete |
+| TEST-07     | Phase 2 | Complete |
+| TEST-08     | Phase 2 | Complete |
+| TEST-09     | Phase 2 | Complete |
+| TEST-10     | Phase 2 | Complete |
+| TEST-11     | Phase 2 | Complete |
+| TEST-12     | Phase 2 | Complete |
+| TEST-13     | Phase 1 | Complete |
+| TEST-14     | Phase 2 | Complete |
+| TEST-15     | Phase 2 | Complete |
+| TEST-16     | Phase 2 | Complete |
+| SEC-01      | Phase 3 | Pending  |
+| SEC-02      | Phase 3 | Pending  |
+| SEC-03      | Phase 3 | Pending  |
+| SEC-04      | Phase 3 | Pending  |
+| SEC-05      | Phase 3 | Pending  |
+| SEC-06      | Phase 3 | Pending  |
+| SEC-07      | Phase 3 | Pending  |
+| SEC-08      | Phase 3 | Pending  |
+| SEC-09      | Phase 3 | Pending  |
+| SEC-10      | Phase 3 | Pending  |
+| QUAL-01     | Phase 4 | Pending  |
+| QUAL-02     | Phase 4 | Pending  |
+| QUAL-03     | Phase 4 | Pending  |
+| QUAL-04     | Phase 4 | Pending  |
+| QUAL-05     | Phase 4 | Pending  |
+| QUAL-06     | Phase 4 | Pending  |
+| QUAL-07     | Phase 4 | Pending  |
+| QUAL-08     | Phase 4 | Pending  |
+| QUAL-09     | Phase 4 | Pending  |
+| QUAL-10     | Phase 4 | Pending  |
+| QUAL-11     | Phase 4 | Pending  |
+| QUAL-12     | Phase 4 | Pending  |
+| QUAL-13     | Phase 4 | Pending  |
+| QUAL-14     | Phase 4 | Pending  |
+| QUAL-15     | Phase 4 | Pending  |
+| PERF-01     | Phase 5 | Pending  |
+| PERF-02     | Phase 5 | Pending  |
+| PERF-03     | Phase 5 | Pending  |
+| PERF-04     | Phase 5 | Pending  |
+| PERF-05     | Phase 5 | Pending  |
+| PERF-06     | Phase 5 | Pending  |
+| PERF-07     | Phase 5 | Pending  |
+| PERF-08     | Phase 5 | Pending  |
+| BUG-01      | Phase 5 | Pending  |
+| BUG-02      | Phase 5 | Pending  |
+| BUG-03      | Phase 1 | Complete |
+| PROD-01     | Phase 6 | Pending  |
+| PROD-02     | Phase 6 | Pending  |
+| PROD-03     | Phase 6 | Pending  |
+| PROD-04     | Phase 6 | Pending  |
+| PROD-05     | Phase 6 | Pending  |
 
 ---
-*Last updated: 2026-01-18*
+
+_Last updated: 2026-01-18_
