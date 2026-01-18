@@ -35,6 +35,12 @@ import {
   calculateEstimatedLatency,
   getPowerFlexCpuFactor,
 } from './utils'
+import {
+  identifyBottleneck,
+  getMinThroughput,
+  calculatePcieLimits,
+  calculateNetworkLimits,
+} from './utils/bottleneck-chain'
 
 export interface PerformanceInput {
   drive: Drive
@@ -65,30 +71,6 @@ const BLOCK_SIZE_BYTES: Record<BlockSize, number> = {
   '1M': 1048576,
 }
 
-/** Network speed in MB/s */
-const NETWORK_SPEED_MBS: Record<NetworkSpeed, number> = {
-  '1GbE': 125,
-  '10GbE': 1250,
-  '25GbE': 3125,
-  '40GbE': 5000,
-  '100GbE': 12500,
-  '200GbE': 25000,
-  '400GbE': 50000,
-}
-
-/** PCIe bandwidth per lane in MB/s */
-const PCIE_LANE_BANDWIDTH: Record<PCIeGen, number> = {
-  gen3: 985, // ~1GB/s per lane
-  gen4: 1969, // ~2GB/s per lane
-  gen5: 3938, // ~4GB/s per lane
-}
-
-/** PCIe lane count */
-const PCIE_LANE_COUNT: Record<PCIeLanes, number> = {
-  x4: 4,
-  x8: 8,
-  x16: 16,
-}
 
 /**
  * Get strategy for topology type.
@@ -246,16 +228,10 @@ export function calculatePerformance(input: PerformanceInput): PerformanceResult
       : (controllerSpec?.name ?? 'Controller')
 
   // --- Bus Layer (PCIe) ---
-  // Each server has its own PCIe bus, so aggregate scales with serverCount
-  const pcieBandwidthPerServer = PCIE_LANE_BANDWIDTH[pcieGen] * PCIE_LANE_COUNT[pcieLanes]
-  const pcieBandwidth = pcieBandwidthPerServer * serverCount
-  const pcieIOPS = (pcieBandwidth * 1024 * 1024) / blockSizeBytes
+  const pcieLimits = calculatePcieLimits(pcieGen, pcieLanes, serverCount, blockSizeBytes)
 
   // --- Network Layer ---
-  // Each server has its own network uplink, so aggregate scales with serverCount
-  const networkBandwidthPerServer = NETWORK_SPEED_MBS[networkSpeed]
-  const networkBandwidth = networkBandwidthPerServer * serverCount
-  const networkIOPS = (networkBandwidth * 1024 * 1024) / blockSizeBytes
+  const networkLimits = calculateNetworkLimits(networkSpeed, serverCount, blockSizeBytes)
 
   // --- Build bottleneck layers ---
   const layers: BottleneckLayer[] = [
@@ -275,36 +251,23 @@ export function calculatePerformance(input: PerformanceInput): PerformanceResult
     },
     {
       name: `PCIe ${pcieGen} ${pcieLanes}`,
-      throughputMBs: pcieBandwidth,
-      iops: pcieIOPS,
+      throughputMBs: pcieLimits.bandwidth,
+      iops: pcieLimits.iops,
       isBottleneck: false,
       utilization: 0,
     },
     {
       name: `Network (${networkSpeed})`,
-      throughputMBs: networkBandwidth,
-      iops: networkIOPS,
+      throughputMBs: networkLimits.bandwidth,
+      iops: networkLimits.iops,
       isBottleneck: false,
       utilization: 0,
     },
   ]
 
-  // Find the bottleneck (lowest throughput)
-  const minThroughput = Math.min(...layers.map((l) => l.throughputMBs))
-  const minIOPS = Math.min(...layers.map((l) => l.iops))
-
-  // Mark bottleneck and calculate utilization
-  for (const layer of layers) {
-    if (layer.throughputMBs === minThroughput || layer.iops === minIOPS) {
-      layer.isBottleneck = true
-    }
-    layer.utilization = (minThroughput / layer.throughputMBs) * 100
-  }
-
-  const bottleneck = layers.find((l) => l.isBottleneck)
-  const bottleneckDescription = bottleneck
-    ? `Bottleneck: ${bottleneck.name} (${Math.round(minThroughput)} MB/s)`
-    : 'No bottleneck detected'
+  // Identify bottleneck and calculate utilization
+  const bottleneckDescription = identifyBottleneck(layers)
+  const minThroughput = getMinThroughput(layers)
 
   // XFS alignment
   const xfsAlignment = calculateXfsAlignment(controllerOptions.stripeSize, usableDrives, topology)
