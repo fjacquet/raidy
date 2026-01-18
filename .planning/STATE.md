@@ -11,18 +11,18 @@ See: .planning/PROJECT.md
 ## Current Position
 
 Phase: 4 of 6 (Code Quality)
-Plan: 2 of 3 in phase (04-01, 04-02 complete)
-Status: Error handling complete - calculation logging, URL parse notifications, error boundaries verified
-Last activity: 2026-01-18 - Completed 04-02-PLAN.md (Error Logging & Notifications)
+Plan: 3 of 3 in phase (04-01, 04-02, 04-04 complete)
+Status: Phase 4 complete - volumetry engine refactored to strategy pattern
+Last activity: 2026-01-18 - Completed 04-04-PLAN.md (Volumetry Strategy Pattern)
 
-Progress: █████████████████░░░ 85.7% (18/21 plans complete)
+Progress: █████████████████░░░ 90.5% (19/21 plans complete)
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 18
-- Average duration: 6.1 min
+- Total plans completed: 19
+- Average duration: 6.4 min
 
 **By Phase:**
 
@@ -31,7 +31,7 @@ Progress: █████████████████░░░ 85.7% (18
 | 1 - Test Infrastructure    | 2/2   | 3min  | 1.5min   |
 | 2 - Calculation Validation | 10/10 | 69min | 6.9min   |
 | 3 - Security Hardening     | 4/4   | 18min | 4.5min   |
-| 4 - Code Quality           | 2/3   | 26min | 13.0min  |
+| 4 - Code Quality           | 3/3   | 33min | 11.0min  |
 
 ## Accumulated Context
 
@@ -101,6 +101,11 @@ Progress: █████████████████░░░ 85.7% (18
 | 04-02 | Maintain console.error alongside toast notifications                    | Users see friendly toast messages, developers see technical details in console. Supports both user experience and debugging needs without compromise.                                                                         |
 | 04-02 | Safe fallback pattern for calculation errors                            | Return zero-state objects instead of crashing when calculations fail. Allows UI to remain functional with graceful degradation. Improves resilience.                                                                          |
 | 04-01 | Remove html2canvas from manual chunks                                   | It's an optionalDependency of jspdf for html() method. We only use autoTable and text methods. Vite auto-code-splits it; won't load unless jspdf.html() is called. Reduces initial bundle size.                               |
+| 04-04 | Use strategy interface instead of abstract class                        | TypeScript interfaces are simpler for pure data transformations. No inheritance complexity needed for stateless calculation functions.                                                                                         |
+| 04-04 | Optional calculateOverhead() method                                     | Not all topologies have overhead beyond efficiency (e.g., RAID). Optional method keeps interface flexible while supporting topologies with metadata overhead (ZFS slop, S2D reserve).                                          |
+| 04-04 | Runtime type guard before strategy lookup                               | Balances compile-time exhaustive checking (assertNever) with runtime safety for invalid topology types from URL params. Added VALID_TOPOLOGY_TYPES array and guard to handle untrusted external data gracefully.              |
+| 04-04 | Group Dell topologies into single strategy                              | PowerFlex, PowerStore, PowerScale, and ObjectScale share similar calculation patterns. Single dell.ts strategy (139 lines) reduces duplication vs 4 separate files.                                                            |
+| 04-04 | Group proprietary topologies together                                   | Synology, NetApp, and PowerVault are all vendor-specific RAID variants. Logical grouping in proprietary.ts strategy (91 lines) for easier maintenance.                                                                        |
 
 ### Pending Todos
 
@@ -112,6 +117,6 @@ Progress: █████████████████░░░ 85.7% (18
 
 ## Session Continuity
 
-Last session: 2026-01-18T21:26:59Z
-Stopped at: Completed 04-02-PLAN.md (Error Logging & Notifications)
-Resume file: None - Ready for 04-03-PLAN.md (Component Extraction)
+Last session: 2026-01-18T21:30:09Z
+Stopped at: Completed 04-04-PLAN.md (Volumetry Strategy Pattern)
+Resume file: None - Phase 4 complete, ready for Phase 5
