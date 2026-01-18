@@ -5,8 +5,8 @@
  * Includes safe capacity threshold (nearfull factor, default 85%).
  */
 
-import type { VolumetryStrategy } from './VolumetryStrategy'
 import type { CephOptions } from '@/types/topology'
+import type { VolumetryStrategy } from './VolumetryStrategy'
 
 export const cephStrategy: VolumetryStrategy = {
   calculateDataFraction(level: string, _driveCount: number, options?: CephOptions): number {

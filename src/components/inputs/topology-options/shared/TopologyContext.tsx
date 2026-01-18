@@ -4,8 +4,9 @@
  * Provides topology state and onChange handler to child panels via React Context,
  * avoiding prop drilling through deeply nested form controls.
  */
-import { createContext, useContext } from 'react'
+
 import type { ReactNode } from 'react'
+import { createContext, useContext } from 'react'
 import type { Topology } from '@/types'
 
 interface TopologyContextValue {
@@ -42,8 +43,6 @@ export function TopologyProvider({
   children: ReactNode
 }) {
   return (
-    <TopologyContext.Provider value={{ topology, onChange }}>
-      {children}
-    </TopologyContext.Provider>
+    <TopologyContext.Provider value={{ topology, onChange }}>{children}</TopologyContext.Provider>
   )
 }

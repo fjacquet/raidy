@@ -5,17 +5,70 @@
  */
 
 import React from 'react'
-import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
+import type { Mock } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { TopologyPanel } from '@/components/inputs/TopologyPanel'
-
 // Mock useConfigStore
 import { useConfigStore } from '@/store'
-import type { Mock } from 'vitest'
-import { vi } from 'vitest'
 
 vi.mock('@/store', () => ({
   useConfigStore: vi.fn(),
+}))
+
+// Mock FormControls
+vi.mock('@/components/common/FormControls', () => ({
+  Label: ({ children, htmlFor }: { children: React.ReactNode; htmlFor?: string }) => (
+    <label htmlFor={htmlFor}>{children}</label>
+  ),
+  Select: ({
+    value,
+    options,
+    onChange,
+    id,
+  }: {
+    value: string
+    options: Array<{ value: string; label: string }>
+    onChange: (v: string) => void
+    id?: string
+  }) => (
+    <select id={id} value={value} onChange={(e) => onChange(e.target.value)}>
+      {options.map((opt) => (
+        <option key={opt.value} value={opt.value}>
+          {opt.label}
+        </option>
+      ))}
+    </select>
+  ),
+  Slider: ({ value, onChange, id }: { value: number; onChange: (v: number) => void; id?: string }) => (
+    <input id={id} type="range" value={value} onChange={(e) => onChange(Number(e.target.value))} />
+  ),
+}))
+
+// Mock all topology option panels
+vi.mock('@/components/inputs/topology-options/ZfsOptionsPanel', () => ({
+  ZfsOptionsPanel: () => null,
+}))
+vi.mock('@/components/inputs/topology-options/S2dOptionsPanel', () => ({
+  S2dOptionsPanel: () => null,
+}))
+vi.mock('@/components/inputs/topology-options/VsanOptionsPanel', () => ({
+  VsanOptionsPanel: () => null,
+}))
+vi.mock('@/components/inputs/topology-options/CephOptionsPanel', () => ({
+  CephOptionsPanel: () => null,
+}))
+vi.mock('@/components/inputs/topology-options/NutanixOptionsPanel', () => ({
+  NutanixOptionsPanel: () => null,
+}))
+vi.mock('@/components/inputs/topology-options/NetAppOptionsPanel', () => ({
+  NetAppOptionsPanel: () => null,
+}))
+vi.mock('@/components/inputs/topology-options/SynologyOptionsPanel', () => ({
+  SynologyOptionsPanel: () => null,
+}))
+vi.mock('@/components/inputs/topology-options/DellOptionsPanel', () => ({
+  DellOptionsPanel: () => null,
 }))
 
 const mockUseConfigStore = useConfigStore as unknown as Mock
@@ -25,19 +78,8 @@ describe('TopologyPanel', () => {
     mockUseConfigStore.mockReturnValue({
       topology: { type: 'standard', level: 'RAID6' },
       hotSpares: 1,
-      serverCount: 1,
-      objectscaleOptions: {},
-      powerstoreOptions: {},
-      powerscaleOptions: {},
-      powerFlexOptions: {},
-      powervaultOptions: { model: 'ME5224', controllers: 2 },
       setTopology: vi.fn(),
       setHotSpares: vi.fn(),
-      setObjectScaleOptions: vi.fn(),
-      setPowerStoreOptions: vi.fn(),
-      setPowerScaleOptions: vi.fn(),
-      setPowerFlexOptions: vi.fn(),
-      setPowerVaultOptions: vi.fn(),
     })
 
     render(<TopologyPanel />)
@@ -50,19 +92,8 @@ describe('TopologyPanel', () => {
     mockUseConfigStore.mockReturnValue({
       topology: { type: 'zfs', level: 'raidz2' },
       hotSpares: 0,
-      serverCount: 1,
-      objectscaleOptions: {},
-      powerstoreOptions: {},
-      powerscaleOptions: {},
-      powerFlexOptions: {},
-      powervaultOptions: { model: 'ME5224', controllers: 2 },
       setTopology: vi.fn(),
       setHotSpares: vi.fn(),
-      setObjectScaleOptions: vi.fn(),
-      setPowerStoreOptions: vi.fn(),
-      setPowerScaleOptions: vi.fn(),
-      setPowerFlexOptions: vi.fn(),
-      setPowerVaultOptions: vi.fn(),
     })
 
     render(<TopologyPanel />)
@@ -75,19 +106,8 @@ describe('TopologyPanel', () => {
     mockUseConfigStore.mockReturnValue({
       topology: { type: 'vsan_esa', level: 'vsan_esa_raid5' },
       hotSpares: 0,
-      serverCount: 3,
-      objectscaleOptions: {},
-      powerstoreOptions: {},
-      powerscaleOptions: {},
-      powerFlexOptions: {},
-      powervaultOptions: { model: 'ME5224', controllers: 2 },
       setTopology: vi.fn(),
       setHotSpares: vi.fn(),
-      setObjectScaleOptions: vi.fn(),
-      setPowerStoreOptions: vi.fn(),
-      setPowerScaleOptions: vi.fn(),
-      setPowerFlexOptions: vi.fn(),
-      setPowerVaultOptions: vi.fn(),
     })
 
     render(<TopologyPanel />)
@@ -96,25 +116,21 @@ describe('TopologyPanel', () => {
   })
 
   it('does not crash when switching between topology types', () => {
+    mockUseConfigStore.mockReturnValue({
+      topology: { type: 'standard', level: 'RAID6' },
+      hotSpares: 1,
+      setTopology: vi.fn(),
+      setHotSpares: vi.fn(),
+    })
+
     const { rerender } = render(<TopologyPanel />)
 
     // Switch to ZFS
     mockUseConfigStore.mockReturnValue({
       topology: { type: 'zfs', level: 'raidz1' },
       hotSpares: 0,
-      serverCount: 1,
-      objectscaleOptions: {},
-      powerstoreOptions: {},
-      powerscaleOptions: {},
-      powerFlexOptions: {},
-      powervaultOptions: { model: 'ME5224', controllers: 2 },
       setTopology: vi.fn(),
       setHotSpares: vi.fn(),
-      setObjectScaleOptions: vi.fn(),
-      setPowerStoreOptions: vi.fn(),
-      setPowerScaleOptions: vi.fn(),
-      setPowerFlexOptions: vi.fn(),
-      setPowerVaultOptions: vi.fn(),
     })
 
     rerender(<TopologyPanel />)
@@ -123,19 +139,8 @@ describe('TopologyPanel', () => {
     mockUseConfigStore.mockReturnValue({
       topology: { type: 'ceph', level: 'ceph_replicated_3' },
       hotSpares: 0,
-      serverCount: 3,
-      objectscaleOptions: {},
-      powerstoreOptions: {},
-      powerscaleOptions: {},
-      powerFlexOptions: {},
-      powervaultOptions: { model: 'ME5224', controllers: 2 },
       setTopology: vi.fn(),
       setHotSpares: vi.fn(),
-      setObjectScaleOptions: vi.fn(),
-      setPowerStoreOptions: vi.fn(),
-      setPowerScaleOptions: vi.fn(),
-      setPowerFlexOptions: vi.fn(),
-      setPowerVaultOptions: vi.fn(),
     })
 
     rerender(<TopologyPanel />)

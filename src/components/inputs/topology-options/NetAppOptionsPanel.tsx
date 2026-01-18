@@ -11,8 +11,8 @@
 import { useTranslation } from 'react-i18next'
 import { Label, SegmentedControl, Select, Slider, Toggle } from '@/components/common/FormControls'
 import {
-  NETAPP_PLATFORM_OPTIONS,
   NETAPP_ADP_OPTIONS,
+  NETAPP_PLATFORM_OPTIONS,
 } from '@/components/inputs/topology-options/topologyConstants'
 import { useConfigStore } from '@/store'
 

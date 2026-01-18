@@ -12,8 +12,8 @@ import { useTranslation } from 'react-i18next'
 import { Label, NumberInput, SegmentedControl, Toggle } from '@/components/common/FormControls'
 import { TieringPanel } from '@/components/inputs/TieringPanel'
 import { useConfigStore } from '@/store'
-import { DEFAULT_TIERING_CONFIG } from '@/types'
 import type { Topology } from '@/types'
+import { DEFAULT_TIERING_CONFIG } from '@/types'
 
 interface S2dOptionsPanelProps {
   topology: Topology & { type: 's2d' }

@@ -48,7 +48,7 @@ export const cephPerformanceStrategy: PerformanceStrategy = {
     driveCount: number,
     driveIOPS: number,
     readPercent: number,
-    options?: any
+    options?: unknown,
   ): number {
     const writePenalty = this.getWritePenalty(level)
     const readFraction = readPercent / 100

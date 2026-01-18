@@ -5,11 +5,11 @@
  * Includes automatic rebuild reserve (1 drive equivalent per node).
  */
 
-import type { VolumetryStrategy } from './VolumetryStrategy'
 import type { S2DOptions } from '@/types/topology'
+import type { VolumetryStrategy } from './VolumetryStrategy'
 
 export const s2dStrategy: VolumetryStrategy = {
-  calculateDataFraction(level: string, driveCount: number, options?: S2DOptions): number {
+  calculateDataFraction(level: string, _driveCount: number, options?: S2DOptions): number {
     const s2dOptions = options as S2DOptions
 
     switch (level) {

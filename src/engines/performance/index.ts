@@ -19,27 +19,23 @@ import type {
   Topology,
 } from '@/types/topology'
 import { CONTROLLER_LIMITS, type TopologyType } from '@/types/topology'
+import { assertNever } from '@/utils/typeGuards'
+import { cephPerformanceStrategy } from './strategies/ceph'
+import { dellPerformanceStrategy } from './strategies/dell'
+import { nutanixPerformanceStrategy } from './strategies/nutanix'
+import type { PerformanceStrategy } from './strategies/PerformanceStrategy'
+import { powerFlexPerformanceStrategy } from './strategies/powerflex'
+import { proprietaryPerformanceStrategy } from './strategies/proprietary'
 import { raidPerformanceStrategy } from './strategies/raid'
-import { zfsPerformanceStrategy } from './strategies/zfs'
 import { s2dPerformanceStrategy } from './strategies/s2d'
 import { vsanPerformanceStrategy } from './strategies/vsan'
-import { cephPerformanceStrategy } from './strategies/ceph'
-import { nutanixPerformanceStrategy } from './strategies/nutanix'
-import { powerFlexPerformanceStrategy } from './strategies/powerflex'
-import { dellPerformanceStrategy } from './strategies/dell'
-import { proprietaryPerformanceStrategy } from './strategies/proprietary'
-import type { PerformanceStrategy } from './strategies/PerformanceStrategy'
-import { assertNever } from '@/utils/typeGuards'
+import { zfsPerformanceStrategy } from './strategies/zfs'
+import { calculateEstimatedLatency, calculateXfsAlignment, getPowerFlexCpuFactor } from './utils'
 import {
-  calculateXfsAlignment,
-  calculateEstimatedLatency,
-  getPowerFlexCpuFactor,
-} from './utils'
-import {
-  identifyBottleneck,
-  getMinThroughput,
-  calculatePcieLimits,
   calculateNetworkLimits,
+  calculatePcieLimits,
+  getMinThroughput,
+  identifyBottleneck,
 } from './utils/bottleneck-chain'
 
 export interface PerformanceInput {
@@ -70,7 +66,6 @@ const BLOCK_SIZE_BYTES: Record<BlockSize, number> = {
   '256K': 262144,
   '1M': 1048576,
 }
-
 
 /**
  * Get strategy for topology type.

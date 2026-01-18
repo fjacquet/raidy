@@ -22,7 +22,7 @@ describe('useCalculations', () => {
       driveCount: 8,
       serverCount: 1,
       topology: { type: 'standard', level: 'RAID6' },
-    } as any)
+    } as unknown as Parameters<typeof useConfigStore.setState>[0])
 
     const { result } = renderHook(() => useCalculations())
 
@@ -41,7 +41,7 @@ describe('useCalculations', () => {
       driveCount: 8,
       serverCount: 1,
       topology: { type: 'standard', level: 'RAID6' },
-    } as any)
+    } as unknown as Parameters<typeof useConfigStore.setState>[0])
 
     const { result } = renderHook(() => useCalculations())
 

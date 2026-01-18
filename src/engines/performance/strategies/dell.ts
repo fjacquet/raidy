@@ -103,7 +103,7 @@ export const dellPerformanceStrategy: PerformanceStrategy = {
     driveCount: number,
     driveIOPS: number,
     readPercent: number,
-    options?: any
+    _options?: unknown,
   ): number {
     const writePenalty = this.getWritePenalty(level)
     const readFraction = readPercent / 100

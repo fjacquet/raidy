@@ -6,12 +6,7 @@
 
 import type { NetworkSpeed } from '@/types/config'
 import type { Drive } from '@/types/drive'
-import type {
-  CephOptions,
-  NutanixOptions,
-  PowerFlexOptions,
-  Topology,
-} from '@/types/topology'
+import type { CephOptions, NutanixOptions, PowerFlexOptions, Topology } from '@/types/topology'
 
 /** PowerFlex CPU factor based on mode (per PowerFlex spec) */
 const POWERFLEX_CPU_FACTOR = {
@@ -115,7 +110,10 @@ export function calculateXfsAlignment(
  * - Ultra (Fine Granularity + compression): -15% IOPS
  * - Erasure Coding: -30% IOPS
  */
-export function getPowerFlexCpuFactor(topology: Topology, powerFlexOptions?: PowerFlexOptions): number {
+export function getPowerFlexCpuFactor(
+  topology: Topology,
+  powerFlexOptions?: PowerFlexOptions,
+): number {
   if (topology.type !== 'powerflex' || !powerFlexOptions) {
     return 1.0
   }

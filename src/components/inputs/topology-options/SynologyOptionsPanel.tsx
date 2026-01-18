@@ -45,9 +45,7 @@ export function SynologyOptionsPanel() {
           id="synology-model"
           value={synologyOptions.modelSeries}
           options={SYNOLOGY_MODEL_OPTIONS}
-          onChange={(v) =>
-            setSynologyOptions({ modelSeries: v as 'j' | 'value' | 'plus' | 'xs' })
-          }
+          onChange={(v) => setSynologyOptions({ modelSeries: v as 'j' | 'value' | 'plus' | 'xs' })}
         />
         <p className="text-xs text-slate-500">
           {synologyOptions.modelSeries === 'j'

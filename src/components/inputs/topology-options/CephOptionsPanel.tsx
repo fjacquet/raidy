@@ -10,7 +10,13 @@
  */
 
 import { useTranslation } from 'react-i18next'
-import { Label, NumberInput, SegmentedControl, Slider, Toggle } from '@/components/common/FormControls'
+import {
+  Label,
+  NumberInput,
+  SegmentedControl,
+  Slider,
+  Toggle,
+} from '@/components/common/FormControls'
 import { TieringPanel } from '@/components/inputs/TieringPanel'
 import { useConfigStore } from '@/store'
 import { DEFAULT_TIERING_CONFIG } from '@/types'

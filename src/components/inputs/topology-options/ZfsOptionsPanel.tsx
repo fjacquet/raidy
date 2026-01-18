@@ -10,7 +10,7 @@
  */
 
 import { useTranslation } from 'react-i18next'
-import { Label, Select, Slider, Toggle } from '@/components/common/FormControls'
+import { Label, Select, Toggle } from '@/components/common/FormControls'
 import { useConfigStore } from '@/store'
 
 const ASHIFT_OPTIONS = [

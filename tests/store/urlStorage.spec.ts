@@ -33,7 +33,7 @@ describe('urlHashStorage', () => {
       history: {
         replaceState: vi.fn(),
       },
-    } as any
+    } as unknown as Window & typeof globalThis
 
     // Clear mocks
     vi.clearAllMocks()

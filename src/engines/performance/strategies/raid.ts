@@ -45,12 +45,7 @@ export const raidPerformanceStrategy: PerformanceStrategy = {
     }
   },
 
-  calculateIOPS(
-    level: string,
-    driveCount: number,
-    driveIOPS: number,
-    readPercent: number
-  ): number {
+  calculateIOPS(level: string, driveCount: number, driveIOPS: number, readPercent: number): number {
     const writePenalty = this.getWritePenalty(level)
     const readFraction = readPercent / 100
     const writeFraction = 1 - readFraction

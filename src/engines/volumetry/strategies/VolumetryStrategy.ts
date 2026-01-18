@@ -27,7 +27,7 @@ export interface VolumetryStrategy {
    * // RAID5 with 6 drives: (6-1)/6 = 0.833 (83.3% efficiency)
    * calculateDataFraction('RAID5', 6, {}) // 0.833
    */
-  calculateDataFraction(level: string, driveCount: number, options?: any): number
+  calculateDataFraction(level: string, driveCount: number, options?: unknown): number
 
   /**
    * Calculate topology-specific overhead in bytes (optional).
@@ -43,5 +43,5 @@ export interface VolumetryStrategy {
    * // ZFS slop: clamp(rawCapacity/32, 128 MiB, 128 GiB)
    * calculateOverhead(10 * TB, {}) // ~312 GiB slop space
    */
-  calculateOverhead?(rawCapacity: number, options?: any): number
+  calculateOverhead?(rawCapacity: number, options?: unknown): number
 }

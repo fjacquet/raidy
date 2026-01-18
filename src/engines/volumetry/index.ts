@@ -17,15 +17,17 @@ import type {
   PowerVaultOptions,
   S2DOptions,
   SynologyOptions,
-  TieringConfig,
   Topology,
   TopologyType,
   VsanOptions,
   ZfsOptions,
 } from '@/types/topology'
-import { FILESYSTEM_OVERHEAD } from '@/types/topology'
 import { assertNever } from '@/utils/typeGuards'
-
+import { getFilesystemOverheadPercent } from './overhead/filesystem-overhead'
+// Overhead modules
+import { getObjectScaleGeoOverhead } from './overhead/objectscale-geo'
+// Breakdown builder
+import { buildBreakdown } from './breakdown/buildBreakdown'
 // Strategy imports
 import { cephStrategy } from './strategies/ceph'
 import { dellStrategy } from './strategies/dell'
@@ -36,18 +38,14 @@ import { s2dStrategy } from './strategies/s2d'
 import type { VolumetryStrategy } from './strategies/VolumetryStrategy'
 import { vsanStrategy } from './strategies/vsan'
 import { zfsStrategy } from './strategies/zfs'
-
 // Tiering module
 import {
   calculateTieredCapacity,
   type TieredCapacityResult,
 } from './tiering/calculateTieredCapacity'
 
-// Overhead modules
-import { getObjectScaleGeoOverhead } from './overhead/objectscale-geo'
-
 // Type assertion for the imported JSON
-const drives = drivesData as Record<string, Drive>
+const _drives = drivesData as Record<string, Drive>
 
 export interface VolumetryInput {
   drive: Drive
@@ -154,7 +152,7 @@ function getDataFraction(
   const strategy = getStrategy(topology.type)
 
   // Build options object based on topology type
-  let options: any = {}
+  let options: unknown = {}
 
   switch (topology.type) {
     case 's2d':
@@ -207,80 +205,6 @@ function getZfsOverhead(
   }
 
   return { slop, ashift: ashiftPenalty }
-}
-
-/**
- * Get filesystem overhead percentage.
- * Uses FILESYSTEM_OVERHEAD constants from specs:
- * - Btrfs: 4% (Synology spec)
- * - WAFL: 1-2% (NetApp spec)
- * - ZFS slop: 1/64 = 1.5625% (ZFS spec)
- */
-function getFilesystemOverheadPercent(
-  topology: Topology,
-  synologyOptions?: SynologyOptions,
-  netAppOptions?: NetAppOptions,
-): number {
-  switch (topology.type) {
-    case 'zfs':
-      // ZFS metadata overhead (slop handled separately)
-      return 0.01
-
-    case 'vsan_osa':
-    case 'vsan_esa':
-      // vSAN object overhead (~1-2% for metadata, witness components)
-      return 0.015
-
-    case 'objectscale':
-      // ObjectScale S3 metadata overhead (~1-2%)
-      return 0.015
-
-    case 'powerstore':
-      // PowerStore block storage minimal metadata overhead
-      return 0.01
-
-    case 'powerscale':
-      // PowerScale scale-out NAS filesystem overhead
-      return 0.015
-
-    case 's2d':
-      // S2D ReFS/CSV overhead
-      return FILESYSTEM_OVERHEAD.refs
-
-    case 'ceph':
-      // Ceph BlueStore uses ~1-2% for metadata, OSD journals
-      return 0.02
-
-    case 'powerflex':
-      // PowerFlex metadata overhead is minimal (~1%)
-      return 0.01
-
-    case 'nutanix':
-      // Nutanix AOS: CVM overhead, metadata, etc. (~1-2%)
-      return 0.015
-
-    case 'powervault':
-      // PowerVault ME5: minimal metadata overhead (~1%)
-      return 0.01
-
-    case 'proprietary':
-      // Check for Synology or NetApp based on topology level
-      if (topology.level.startsWith('synology_') && synologyOptions) {
-        // Synology: Btrfs 4%, ext4 2%
-        return synologyOptions.filesystem === 'btrfs'
-          ? FILESYSTEM_OVERHEAD.btrfs
-          : FILESYSTEM_OVERHEAD.ext4
-      }
-      if (topology.level.startsWith('netapp_') && netAppOptions) {
-        // NetApp: WAFL overhead (1-2%)
-        return netAppOptions.waflOverhead
-      }
-      return 0.02
-
-    default:
-      // ext4/XFS typically use 1-3% for metadata
-      return 0.02
-  }
 }
 
 /**
@@ -616,151 +540,27 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
   }
 
   // Build breakdown for visualization
-  const breakdown = [
-    {
-      label: 'Usable Capacity',
-      bytes: usableCapacity,
-      percent: (usableCapacity / rawCapacity) * 100,
-      color: 'var(--color-capacity)',
-    },
-    {
-      label: 'Parity/Redundancy',
-      bytes: parityOverhead,
-      percent: (parityOverhead / rawCapacity) * 100,
-      color: 'var(--color-parity)',
-    },
-    {
-      label: 'Hot Spares',
-      bytes: hotSpareOverhead,
-      percent: (hotSpareOverhead / rawCapacity) * 100,
-      color: 'var(--color-overhead)',
-    },
-  ]
-
-  // Cache tier is overhead (not usable capacity) - shown as dedicated cache
-  if (cacheTierCapacity > 0) {
-    const cacheLabel =
-      topology.type === 'ceph'
-        ? 'WAL/DB NVMe (Cache)'
-        : topology.type === 'vsan_osa'
-          ? 'vSAN OSA Cache Tier'
-          : 'Cache Tier (NVMe/SSD)'
-    breakdown.push({
-      label: cacheLabel,
-      bytes: cacheTierCapacity,
-      percent: (cacheTierCapacity / rawCapacity) * 100,
-      color: 'var(--color-cache)',
-    })
-  }
-
-  if (slopOverhead > 0) {
-    breakdown.push({
-      label: 'ZFS Slop Space (1/64)',
-      bytes: slopOverhead,
-      percent: (slopOverhead / rawCapacity) * 100,
-      color: 'var(--color-overhead)',
-    })
-  }
-
-  if (s2dReserve > 0) {
-    const reserveLabel =
-      s2dOptions.reserveStrategy === 'node_failure'
-        ? 'S2D Node Failure Reserve'
-        : 'S2D Drive Failure Reserve'
-    breakdown.push({
-      label: reserveLabel,
-      bytes: s2dReserve,
-      percent: (s2dReserve / rawCapacity) * 100,
-      color: 'var(--color-overhead)',
-    })
-  }
-
-  if (synologySystemOverhead > 0) {
-    breakdown.push({
-      label: 'Synology System Partition',
-      bytes: synologySystemOverhead,
-      percent: (synologySystemOverhead / rawCapacity) * 100,
-      color: 'var(--color-overhead)',
-    })
-  }
-
-  if (powerFlexFgOverhead > 0) {
-    breakdown.push({
-      label: 'PowerFlex FG Metadata',
-      bytes: powerFlexFgOverhead,
-      percent: (powerFlexFgOverhead / rawCapacity) * 100,
-      color: 'var(--color-overhead)',
-    })
-  }
-
-  if (netAppSnapshotReserve > 0) {
-    breakdown.push({
-      label: 'NetApp Snapshot Reserve',
-      bytes: netAppSnapshotReserve,
-      percent: (netAppSnapshotReserve / rawCapacity) * 100,
-      color: 'var(--color-overhead)',
-    })
-  }
-
-  if (nutanixSystemOverhead > 0) {
-    breakdown.push({
-      label: 'Nutanix System/CVM Reserve',
-      bytes: nutanixSystemOverhead,
-      percent: (nutanixSystemOverhead / rawCapacity) * 100,
-      color: 'var(--color-overhead)',
-    })
-  }
-
-  if (objectscaleSystemOverhead > 0) {
-    breakdown.push({
-      label: 'ObjectScale System Overhead',
-      bytes: objectscaleSystemOverhead,
-      percent: (objectscaleSystemOverhead / rawCapacity) * 100,
-      color: 'var(--color-overhead)',
-    })
-  }
-
-  if (objectscaleGeoOverhead > 0) {
-    breakdown.push({
-      label: `ObjectScale Geo-Replication (${objectscaleOptions.sites} sites)`,
-      bytes: objectscaleGeoOverhead,
-      percent: (objectscaleGeoOverhead / rawCapacity) * 100,
-      color: 'var(--color-overhead)',
-    })
-  }
-
-  if (powerstoreSnapshotReserve > 0) {
-    breakdown.push({
-      label: 'PowerStore Snapshot Reserve',
-      bytes: powerstoreSnapshotReserve,
-      percent: (powerstoreSnapshotReserve / rawCapacity) * 100,
-      color: 'var(--color-overhead)',
-    })
-  }
-
-  if (powerscaleSnapshotReserve > 0) {
-    breakdown.push({
-      label: 'PowerScale Snapshot Reserve',
-      bytes: powerscaleSnapshotReserve,
-      percent: (powerscaleSnapshotReserve / rawCapacity) * 100,
-      color: 'var(--color-overhead)',
-    })
-  }
-
-  if (cephSafeCapacityReduction > 0) {
-    breakdown.push({
-      label: 'Ceph Safe Capacity (85%)',
-      bytes: cephSafeCapacityReduction,
-      percent: (cephSafeCapacityReduction / rawCapacity) * 100,
-      color: 'var(--color-overhead)',
-    })
-  }
-
-  breakdown.push({
-    label: 'Filesystem Overhead',
-    bytes: filesystemOverhead,
-    percent: (filesystemOverhead / rawCapacity) * 100,
-    color: 'var(--color-overhead)',
+  const breakdown = buildBreakdown({
+    rawCapacity,
+    usableCapacity,
+    parityOverhead,
+    hotSpareOverhead,
+    cacheTierCapacity,
+    slopOverhead,
+    s2dReserve,
+    synologySystemOverhead,
+    powerFlexFgOverhead,
+    netAppSnapshotReserve,
+    nutanixSystemOverhead,
+    objectscaleSystemOverhead,
+    objectscaleGeoOverhead,
+    powerstoreSnapshotReserve,
+    powerscaleSnapshotReserve,
+    cephSafeCapacityReduction,
+    filesystemOverhead,
+    topology,
+    s2dOptions,
+    objectscaleOptions,
   })
 
   // Build ZFS-specific details if ZFS topology

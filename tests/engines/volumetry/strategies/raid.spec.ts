@@ -104,8 +104,8 @@ describe('RAID Volumetry Strategy', () => {
 
   describe('Unknown RAID level', () => {
     it('should return 100% efficiency for unknown levels (graceful fallback)', () => {
-      expect(raidStrategy.calculateDataFraction('RAID99' as any, 6)).toBe(1.0)
-      expect(raidStrategy.calculateDataFraction('UNKNOWN' as any, 8)).toBe(1.0)
+      expect(raidStrategy.calculateDataFraction('RAID99' as unknown as string, 6)).toBe(1.0)
+      expect(raidStrategy.calculateDataFraction('UNKNOWN' as unknown as string, 8)).toBe(1.0)
     })
   })
 

@@ -5,8 +5,8 @@
  * System overhead (5-10% for snapshots, metadata, CVM, rebuild) handled in main engine.
  */
 
-import type { VolumetryStrategy } from './VolumetryStrategy'
 import type { NutanixOptions } from '@/types/topology'
+import type { VolumetryStrategy } from './VolumetryStrategy'
 
 export const nutanixStrategy: VolumetryStrategy = {
   calculateDataFraction(level: string, _driveCount: number, options?: NutanixOptions): number {

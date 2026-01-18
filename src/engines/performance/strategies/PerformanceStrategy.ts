@@ -31,7 +31,7 @@ export interface PerformanceStrategy {
    * // RAID6: 6x penalty (1 write → 3 reads + 3 writes)
    * getWritePenalty('RAID6', {}) // 6.0
    */
-  getWritePenalty(level: string, options?: any): number
+  getWritePenalty(level: string, options?: unknown): number
 
   /**
    * Calculate effective IOPS for topology under given workload.
@@ -57,6 +57,6 @@ export interface PerformanceStrategy {
     driveCount: number,
     driveIOPS: number,
     readPercent: number,
-    options?: any
+    options?: unknown,
   ): number
 }
