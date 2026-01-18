@@ -6,23 +6,23 @@ See: .planning/PROJECT.md
 
 **Core value:** Calculation accuracy for storage infrastructure decisions. If Raidy gives wrong capacity numbers or resilience predictions, users could make incorrect (and costly) storage decisions. Everything else can fail; the math cannot.
 
-**Current focus:** Ready for Phase 4 - Code Quality
+**Current focus:** Phase 4 - Code Quality (in progress)
 
 ## Current Position
 
-Phase: 3 of 6 (Security Hardening - COMPLETE)
-Plan: 4 of 4 (all plans complete)
-Status: Phase 3 verified complete - All 10 SEC requirements met, 41 security tests passing, 100% goal achievement
-Last activity: 2026-01-18 - Phase 3 execution and verification complete
+Phase: 4 of 6 (Code Quality)
+Plan: 1 of 3 in phase (04-01 complete)
+Status: Clean lint foundation established - zero Biome errors, exhaustive type checking ready
+Last activity: 2026-01-18 - Completed 04-01-PLAN.md (Type Safety Enforcement)
 
-Progress: ████████████████░░░░ 50.0% (3/6 phases complete)
+Progress: █████████████████░░░░ 81.0% (17/21 plans complete)
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 16
-- Average duration: 5.6 min
+- Total plans completed: 17
+- Average duration: 5.8 min
 
 **By Phase:**
 
@@ -31,6 +31,7 @@ Progress: ████████████████░░░░ 50.0% (3/
 | 1 - Test Infrastructure    | 2/2   | 3min  | 1.5min   |
 | 2 - Calculation Validation | 10/10 | 69min | 6.9min   |
 | 3 - Security Hardening     | 4/4   | 18min | 4.5min   |
+| 4 - Code Quality           | 1/3   | 9min  | 9.0min   |
 
 ## Accumulated Context
 
@@ -92,6 +93,10 @@ Progress: ████████████████░░░░ 50.0% (3/
 | 03-03 | Never expose error.message or error.stack to users                      | Security risk - exposes internal file paths and implementation details. Only log to console for developer debugging. User sees friendly fallback UI instead.                                                                  |
 | 03-03 | validateOrThrow() for explicit validation enforcement                   | Provides both validateOrThrow() (throws on error) and hasBlockingErrors() (returns boolean). Allows flexibility: throwing in critical paths, checking in UI flows.                                                            |
 | 03-03 | Validation gate in useCalculations hook                                  | Single point of enforcement before calculation engines. Returns zero-state results with error messages instead of crashing. Prevents invalid configurations from reaching calculation engines.                                 |
+| 04-01 | Use double-cast pattern for test type violations                        | Use 'as unknown as T' instead of 'as any' for intentional type violations in tests. Biome flags 'as any' as unsafe. Double-cast is explicit about breaking type safety while satisfying linter.                               |
+| 04-01 | Explicit null checks instead of non-null assertions                     | Pattern: if (!result) throw new Error(); Biome doesn't recognize Vitest expect() as type guard. Explicit check satisfies both Biome and TypeScript.                                                                           |
+| 04-01 | Export assertNever from barrel file                                     | Added to src/utils/index.ts for project-wide access via @/utils. Enables compile-time exhaustive checking for switch statements on discriminated unions.                                                                     |
+| 04-01 | Remove html2canvas from manual chunks                                   | It's an optionalDependency of jspdf for html() method. We only use autoTable and text methods. Vite auto-code-splits it; won't load unless jspdf.html() is called. Reduces initial bundle size.                               |
 
 ### Pending Todos
 
@@ -103,6 +108,6 @@ Progress: ████████████████░░░░ 50.0% (3/
 
 ## Session Continuity
 
-Last session: 2026-01-18T17:30:00Z
-Stopped at: Phase 3 verified complete (100% goal achievement, all security requirements met, 41 security tests passing)
-Resume file: None - Ready for Phase 4 (Code Quality)
+Last session: 2026-01-18T20:12:09Z
+Stopped at: Completed 04-01-PLAN.md (Type Safety Enforcement)
+Resume file: None - Ready for 04-02-PLAN.md (Component Extraction)
