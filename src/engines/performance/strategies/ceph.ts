@@ -61,7 +61,8 @@ export const cephPerformanceStrategy: PerformanceStrategy = {
     const writeIOPS = (driveCount * driveIOPS * writeFraction) / writePenalty
 
     // Network latency impact (could be adjusted based on options)
-    const networkFactor = options?.networkSpeed === '100GbE' ? 1.1 : 1.0
+    const opts = options as { networkSpeed?: string } | undefined
+    const networkFactor = opts?.networkSpeed === '100GbE' ? 1.1 : 1.0
 
     return (readIOPS + writeIOPS) * networkFactor
   },

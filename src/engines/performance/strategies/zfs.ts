@@ -57,7 +57,8 @@ export const zfsPerformanceStrategy: PerformanceStrategy = {
     const writeIOPS = (driveCount * driveIOPS * writeFraction) / writePenalty
 
     // ARC cache boost (optional modeling - simplified here)
-    const arcBoost = options?.arcCacheEnabled ? 1.1 : 1.0
+    const opts = _options as { arcCacheEnabled?: boolean } | undefined
+    const arcBoost = opts?.arcCacheEnabled ? 1.1 : 1.0
 
     return (readIOPS + writeIOPS) * arcBoost
   },

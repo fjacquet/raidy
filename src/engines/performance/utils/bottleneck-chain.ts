@@ -106,7 +106,9 @@ export function calculatePcieLimits(
   }
 
   // Each server has its own PCIe bus, so aggregate scales with serverCount
-  const pcieBandwidthPerServer = PCIE_LANE_BANDWIDTH[pcieGen] * PCIE_LANE_COUNT[pcieLanes]
+  const laneBandwidth = PCIE_LANE_BANDWIDTH[pcieGen] ?? 0
+  const laneCount = PCIE_LANE_COUNT[pcieLanes] ?? 8
+  const pcieBandwidthPerServer = laneBandwidth * laneCount
   const pcieBandwidth = pcieBandwidthPerServer * serverCount
   const pcieIOPS = (pcieBandwidth * 1024 * 1024) / blockSizeBytes
 
@@ -138,7 +140,7 @@ export function calculateNetworkLimits(
   }
 
   // Each server has its own network uplink, so aggregate scales with serverCount
-  const networkBandwidthPerServer = NETWORK_SPEED_MBS[networkSpeed]
+  const networkBandwidthPerServer = NETWORK_SPEED_MBS[networkSpeed] ?? 1250 // Default to 10GbE
   const networkBandwidth = networkBandwidthPerServer * serverCount
   const networkIOPS = (networkBandwidth * 1024 * 1024) / blockSizeBytes
 

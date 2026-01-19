@@ -37,8 +37,9 @@ import {
   validateTopology,
 } from './validation/inputValidation'
 
-// Type assertion for the imported JSON
-const _drives = drivesData as Record<string, Drive>
+// Type assertion for the imported JSON - preserved for potential future drive lookup
+// drivesData imported but variable intentionally unused with underscore prefix
+void drivesData
 
 export interface VolumetryInput {
   drive: Drive
