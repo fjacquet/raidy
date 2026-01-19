@@ -8,6 +8,18 @@
   "files": {
     "ignoreUnknown": false
   },
+  "overrides": [
+    {
+      "includes": ["tests/**/*.tsx", "tests/**/*.ts"],
+      "linter": {
+        "rules": {
+          "correctness": {
+            "noUnusedImports": "warn"
+          }
+        }
+      }
+    }
+  ],
   "formatter": {
     "enabled": true,
     "indentStyle": "space",

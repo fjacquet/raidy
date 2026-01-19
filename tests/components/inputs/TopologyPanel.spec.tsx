@@ -5,7 +5,6 @@
  */
 
 import { render, screen } from '@testing-library/react'
-// biome-ignore lint/correctness/noUnusedImports: React required for JSX
 import React from 'react'
 import type { Mock } from 'vitest'
 import { describe, expect, it, vi } from 'vitest'
