@@ -76,12 +76,15 @@ Each task was committed atomically:
 ## Decisions Made
 
 **1. Extract bottleneck identification to dedicated module**
+
 - Rationale: Separates bottleneck chain logic (comparing media/controller/bus/network limits) from orchestration. Makes bottleneck algorithm easier to find and test independently.
 
 **2. Include PCIe and network calculations in bottleneck-chain.ts**
+
 - Rationale: PCIe and network constants were duplicated and tightly coupled to bottleneck analysis. Moving them to same module reduces orchestrator size and groups related functionality.
 
 **3. Mutate layers array in identifyBottleneck()**
+
 - Rationale: Existing pattern from orchestrator. Function modifies isBottleneck and utilization fields in-place rather than returning new array. Maintains backward compatibility with test expectations.
 
 ## Deviations from Plan
@@ -99,6 +102,7 @@ None - no external service configuration required.
 ## Next Phase Readiness
 
 **Phase 4 (Code Quality) complete.** All quality gaps closed:
+
 - QUAL-01: Biome linter configured ✓ (04-01)
 - QUAL-02: Toast notifications for user-facing errors ✓ (04-02)
 - QUAL-03: Engine error handling with fallbacks ✓ (04-02)
@@ -109,5 +113,6 @@ None - no external service configuration required.
 **Ready for Phase 5 (i18n - Internationalization).**
 
 ---
-*Phase: 04-code-quality*
-*Completed: 2026-01-18*
+
+_Phase: 04-code-quality_
+_Completed: 2026-01-18_

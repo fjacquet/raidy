@@ -49,18 +49,18 @@ Le cœur du calcul de capacité doit prendre en compte les pertes liées à la p
 
 $$C_{raw} = N_{nodes} \times N_{osd\_per\_node} \times C_{disk}$$
 
-2. **Efficacité du Stockage ($E$) :**
+1. **Efficacité du Stockage ($E$) :**
 
    - Pour la Réplication ($R$) :
      $$E = \frac{1}{R}$$
    - Pour l'Erasure Coding ($k, m$) :
      $$E = \frac{k}{k+m}$$
 
-3. Capacité Utile Théorique ($C_{usable}$) :
+2. Capacité Utile Théorique ($C_{usable}$) :
 
 $$C_{usable} = C_{raw} \times E$$
 
-4. Capacité Utile Réelle (Safe Max) :
+1. Capacité Utile Réelle (Safe Max) :
    Ceph ne doit jamais être rempli à 100%. Le seuil par défaut nearfull est souvent à 85%.
 
 $$C_{safe} = C_{usable} \times 0.85$$

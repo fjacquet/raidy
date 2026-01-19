@@ -50,12 +50,14 @@ Component extraction for monolithic TopologyPanel: Split 1647-line component int
 ## What Was Done
 
 **TopologyPanel Refactoring:**
+
 - Reduced TopologyPanel.tsx from 1647 lines to 564 lines (66% reduction)
 - Extracted 7 topology-specific option panels (902 total lines)
 - Moved 284 lines of topology constants to separate file
 - Created component tests for panel rendering
 
 **Extracted Panels:**
+
 1. **ZfsOptionsPanel** (104 lines) - ashift, compression, recordsize, dedup, special vdev
 2. **VsanOptionsPanel** (147 lines) - Handles both OSA and ESA modes, compression, dedup, disk groups
 3. **S2dOptionsPanel** (89 lines) - Fault domains, mirror copies, rebuild reserve, tiering
@@ -65,10 +67,12 @@ Component extraction for monolithic TopologyPanel: Split 1647-line component int
 7. **SynologyOptionsPanel** (105 lines) - Filesystem, model series, SSD cache
 
 **Shared Infrastructure:**
+
 - TopologyContext.tsx - Context provider and hook (not used in final implementation)
 - topologyConstants.ts - TOPOLOGY_TYPES, TOPOLOGY_LEVELS, platform options (350 lines)
 
 **Testing:**
+
 - TopologyPanel.spec.tsx - Component tests for panel switching
 - Smoke tests verify no crashes when changing topology types
 - Mocked store for isolated testing
@@ -76,6 +80,7 @@ Component extraction for monolithic TopologyPanel: Split 1647-line component int
 ## Deviations from Plan
 
 ### Design Decision: Direct Store Access
+
 **Original plan:** Use TopologyProvider context for shared state
 
 **Implemented:** Each panel directly accesses useConfigStore()
@@ -83,6 +88,7 @@ Component extraction for monolithic TopologyPanel: Split 1647-line component int
 **Reason:** Simpler architecture, clearer dependencies. Context would add boilerplate without benefit since panels don't share complex state logic. Direct store access provides type safety and explicit dependencies.
 
 ### Partial Extraction
+
 **Target:** TopologyPanel under 300 lines
 
 **Achieved:** 564 lines (66% reduction from 1647)
@@ -94,30 +100,39 @@ Component extraction for monolithic TopologyPanel: Split 1647-line component int
 ## Technical Details
 
 **Panel Structure:**
+
 ```typescript
 export function ZfsOptionsPanel() {
-  const { t } = useTranslation('topology')
-  const { zfsOptions, setZfsOptions } = useConfigStore()
+  const { t } = useTranslation("topology");
+  const { zfsOptions, setZfsOptions } = useConfigStore();
 
   return (
     <div className="space-y-4 pt-3 border-t border-surface-700">
       {/* Topology-specific controls */}
     </div>
-  )
+  );
 }
 ```
 
 **TopologyPanel Routing:**
+
 ```typescript
-{topology.type === 'zfs' && <ZfsOptionsPanel />}
-{topology.type === 'vsan_esa' && <VsanOptionsPanel topology={topology} />}
-{topology.type === 'ceph' && <CephOptionsPanel />}
+{
+  topology.type === "zfs" && <ZfsOptionsPanel />;
+}
+{
+  topology.type === "vsan_esa" && <VsanOptionsPanel topology={topology} />;
+}
+{
+  topology.type === "ceph" && <CephOptionsPanel />;
+}
 ```
 
 **Discriminated Union Types:**
+
 ```typescript
 interface VsanOptionsPanelProps {
-  topology: Topology & { type: 'vsan_osa' | 'vsan_esa' }
+  topology: Topology & { type: "vsan_osa" | "vsan_esa" };
 }
 ```
 
@@ -126,12 +141,14 @@ Ensures TypeScript enforces correct topology type passed to each panel.
 ## Impact
 
 **Before:**
+
 - Single 1647-line monolithic component
 - All topology options intermixed
 - Difficult to locate specific topology UI code
 - High cognitive load when modifying any topology
 
 **After:**
+
 - TopologyPanel reduced to 564 lines (routing component)
 - 7 isolated panels (80-160 lines each)
 - Clear separation of concerns
@@ -139,11 +156,13 @@ Ensures TypeScript enforces correct topology type passed to each panel.
 - Adding new topology = create single new panel file
 
 **Developer Experience:**
+
 - "Find ZFS code" → Open ZfsOptionsPanel.tsx (104 lines)
 - "Add Nutanix option" → Edit NutanixOptionsPanel.tsx (158 lines)
 - "Support new topology" → Create new panel, add route in TopologyPanel
 
 **File Structure:**
+
 ```
 src/components/inputs/
 ├── TopologyPanel.tsx (564 lines, routing component)
@@ -163,12 +182,14 @@ src/components/inputs/
 ## Next Phase Readiness
 
 **Complete:**
+
 - Topology panel extraction pattern established
 - Can easily extract remaining 5 vendors if needed
 - Component tests provide regression protection
 - Constant externalization improves maintainability
 
 **Future Enhancements:**
+
 - Extract remaining vendor panels (PowerVault, ObjectScale, PowerStore, PowerScale, PowerFlex) to reach <300 line target
 - Add per-panel component tests (currently only TopologyPanel tested)
 - Consider compound component pattern for panels with complex sub-components

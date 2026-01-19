@@ -123,6 +123,7 @@ flowchart TB
 Calculates storage capacity and efficiency.
 
 **Supported Topologies:**
+
 - Standard RAID: 0, 1, 1E, 3, 4, 5, 5E, 5EE, 6, 10, 50, 60
 - ZFS: Stripe, Mirror, RAID-Z1/Z2/Z3, dRAID1/2/3
 - Microsoft S2D: Simple, Mirror, Parity, Dual Parity, MAP
@@ -133,6 +134,7 @@ Calculates storage capacity and efficiency.
 - Nutanix, Synology, and more
 
 **Calculations:**
+
 - Raw capacity = drive capacity × drive count
 - Parity overhead (varies by topology)
 - Hot spare capacity reservation
@@ -146,12 +148,14 @@ Calculates storage capacity and efficiency.
 Calculates IOPS, throughput, and identifies bottlenecks.
 
 **Bottleneck Chain:**
+
 ```mermaid
 flowchart LR
     Media["Media<br/>(drives)"] --> Controller["Controller<br/>/HBA"] --> PCIe["PCIe<br/>Bus"] --> Network
 ```
 
 **Calculations:**
+
 - Per-drive IOPS and bandwidth
 - RAID write penalty (2x for RAID1, 4x for RAID5, 6x for RAID6)
 - Controller limits (IOPS and throughput caps)
@@ -166,6 +170,7 @@ Monte Carlo simulation for data loss probability.
 **Runs in Web Worker** (off main thread)
 
 **Simulates (100,000 iterations):**
+
 - Drive failures based on AFR
 - Rebuild time calculations
 - URE (Unrecoverable Read Error) probability
@@ -177,6 +182,7 @@ Monte Carlo simulation for data loss probability.
 Power consumption, carbon footprint, and TCO.
 
 **Calculations:**
+
 - Drive power (idle + load weighted)
 - Server power
 - Cooling overhead (based on PUE)
@@ -315,19 +321,25 @@ All input components read from and write to the Zustand store:
 ## Hooks
 
 ### `useCalculations()`
+
 Main hook that orchestrates all calculations:
+
 - Watches store state changes
 - Calls volumetry, performance, sustainability engines
 - Returns memoized `CalculationResults`
 
 ### `useResilience()`
+
 Manages Monte Carlo simulation:
+
 - Spawns Web Worker
 - Handles progress updates
 - Returns result with survival probability
 
 ### `useFormatBytes()`
+
 Formats byte values respecting unit system:
+
 - Reads `unitSystem` from store
 - Returns formatter function: `(bytes) => "1.5 TiB"` or `"1.5 TB"`
 
@@ -404,6 +416,7 @@ npm test           # Run tests
 ### Deployment
 
 The app builds to static files suitable for:
+
 - Vercel (recommended)
 - Netlify
 - GitHub Pages

@@ -73,6 +73,7 @@ completed: 2026-01-18
 - **Files modified:** 9 (8 created, 1 modified)
 
 ## Accomplishments
+
 - Reduced volumetry/index.ts from 911 lines to 294 lines (under 300-line target)
 - Extracted 8 specialized modules totaling 1,308 lines of modular code
 - Maintained 100% test pass rate (227 volumetry tests, zero regressions)
@@ -96,33 +97,40 @@ Each task was committed atomically:
 **Created modules:**
 
 1. `src/engines/volumetry/tiering/calculateTieredCapacity.ts` (97 lines)
+
    - Hybrid storage tiering calculation
    - Supports S2D, vSAN OSA, Ceph WAL/DB, and Nutanix hybrid tiers
 
 2. `src/engines/volumetry/overhead/objectscale-geo.ts` (114 lines)
+
    - Geo-replication overhead lookup tables
    - Supports EC 12+4, 10+2, 24+4, and mirror_3 configurations
    - Handles 1-8 sites with SME-validated overhead factors
 
 3. `src/engines/volumetry/overhead/filesystem-overhead.ts` (113 lines)
+
    - Filesystem overhead mapping for all topology types
    - XFS, ext4, NTFS, ReFS, ZFS, Btrfs overhead percentages
 
 4. `src/engines/volumetry/breakdown/buildBreakdown.ts` (239 lines)
+
    - Capacity breakdown visualization builder
    - Constructs breakdown entries for all overhead types
 
 5. `src/engines/volumetry/validation/inputValidation.ts` (156 lines)
+
    - Input validation and edge case handling
    - Graceful degradation with zero-state results
    - Tiering configuration checking
 
 6. `src/engines/volumetry/helpers/calculationHelpers.ts` (177 lines)
+
    - Strategy selection and data fraction calculation
    - ZFS overhead calculation (slop + ashift)
    - Helper functions for core calculations
 
 7. `src/engines/volumetry/overhead/overheadCalculator.ts` (219 lines)
+
    - Centralized overhead calculation coordinator
    - Handles 10+ different overhead types
    - S2D reserve, ZFS slop, PowerFlex FG, NetApp snapshots, Nutanix system, ObjectScale geo, PowerStore/PowerScale snapshots, Ceph safe capacity, filesystem overhead
@@ -133,20 +141,25 @@ Each task was committed atomically:
    - Supports 7 different topology compression/dedup mechanisms
 
 **Modified:**
+
 - `src/engines/volumetry/index.ts` - Reduced from 911 to 294 lines (lean orchestration logic)
 
 ## Decisions Made
 
 **1. Extracted 8 separate modules instead of 3 specified in plan**
+
 - **Rationale:** The three specified extractions (tiering, ObjectScale geo-overhead, filesystem overhead) reduced the file from 911 to 732 lines, still 432 lines above the 300-line target. Additional extractions (breakdown builder, validation, helpers, overhead calculator, capacity enhancements) were necessary to meet the must_haves requirement of "under 300 lines".
 
 **2. Grouped related overheads in single calculator module**
+
 - **Rationale:** Rather than creating 10+ separate files for each overhead type (S2D reserve, ZFS slop, PowerFlex FG, etc.), grouped them in a single `overheadCalculator.ts` module with clear separation. Reduces file proliferation while maintaining single responsibility.
 
 **3. Separated post-processing from core calculations**
+
 - **Rationale:** Compression/dedup application and ZFS details building are post-processing operations that happen after core capacity calculations. Extracting them to `capacityEnhancements.ts` clarifies the calculation flow.
 
 **4. Created validation module for graceful error handling**
+
 - **Rationale:** Input validation and edge case handling (~105 lines) was cluttering the orchestrator. Extracting to dedicated module improves readability and makes error handling testable in isolation.
 
 ## Deviations from Plan
@@ -154,6 +167,7 @@ Each task was committed atomically:
 ### Additional Extractions Beyond Plan Scope
 
 **1. Breakdown Builder Extraction**
+
 - **Found during:** Task 3 (after filesystem overhead extraction)
 - **Issue:** File at 732 lines, still 432 lines above 300-line target
 - **Fix:** Extracted breakdown visualization logic (~150 lines) to `buildBreakdown.ts`
@@ -162,6 +176,7 @@ Each task was committed atomically:
 - **Committed in:** `d5f52c4`
 
 **2. Input Validation Extraction**
+
 - **Found during:** Task 3 (after breakdown extraction)
 - **Issue:** File at 604 lines, still 304 lines above target
 - **Fix:** Extracted input validation and edge case handling (~105 lines) to `inputValidation.ts`
@@ -170,6 +185,7 @@ Each task was committed atomically:
 - **Committed in:** `838698a`
 
 **3. Calculation Helpers Extraction**
+
 - **Found during:** Task 3 (after validation extraction)
 - **Issue:** File at 526 lines, still 226 lines above target
 - **Fix:** Extracted helper functions (getStrategy, getDataFraction, getZfsOverhead, VALID_TOPOLOGY_TYPES) to `calculationHelpers.ts`
@@ -178,6 +194,7 @@ Each task was committed atomically:
 - **Committed in:** `838698a`
 
 **4. Overhead Calculator Extraction**
+
 - **Found during:** Task 3 (after helpers extraction)
 - **Issue:** File at 372 lines, still 72 lines above target
 - **Fix:** Extracted overhead calculation coordination (~95 lines) to `overheadCalculator.ts`
@@ -186,6 +203,7 @@ Each task was committed atomically:
 - **Committed in:** `ebe49d5`
 
 **5. Capacity Enhancements Extraction**
+
 - **Found during:** Task 3 (after overhead calculator extraction)
 - **Issue:** File at 334 lines, still 34 lines above target
 - **Fix:** Extracted compression/dedup application (~48 lines) and ZFS details builder (~26 lines) to `capacityEnhancements.ts`
@@ -209,6 +227,7 @@ None - no external service configuration required.
 ## Next Phase Readiness
 
 **Code quality improvements complete:**
+
 - Volumetry orchestrator meets complexity target (<300 lines)
 - 8 specialized modules with clear single responsibilities
 - All 227 tests passing (100% pass rate maintained)
@@ -216,12 +235,14 @@ None - no external service configuration required.
 - Zero regression in functionality
 
 **Ready for:**
+
 - Phase 5: Internationalization (i18n implementation)
 - Phase 6: Documentation and deployment
 - Future topology additions (clear module structure for extension)
 - Calculation maintenance (isolated modules easier to update)
 
 **Module organization:**
+
 ```
 src/engines/volumetry/
 ├── index.ts (294 lines - orchestrator)
@@ -242,11 +263,13 @@ src/engines/volumetry/
 ```
 
 **Metrics:**
+
 - **Before:** 911 lines (monolithic)
 - **After:** 294 lines (orchestrator) + 1,308 lines (8 modules)
 - **Reduction:** 68% reduction in orchestrator complexity
 - **Improvement:** Clear separation of concerns, easier maintenance, better testability
 
 ---
-*Phase: 04-code-quality*
-*Completed: 2026-01-18*
+
+_Phase: 04-code-quality_
+_Completed: 2026-01-18_

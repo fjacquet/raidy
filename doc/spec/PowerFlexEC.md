@@ -618,7 +618,7 @@ Ces valeurs sont indicatives et servent de base au calcul
 
   --------------------------------------------------------------
   Type de média        Profil d'I/O (4K     IOPS/disk (défaut)
-                       random)              
+                       random)
   -------------------- -------------------- --------------------
   HDD 10K              100 % Read           150
 
@@ -632,7 +632,7 @@ Ces valeurs sont indicatives et servent de base au calcul
 
   NVMe (U.2/U.3)       100 % Read           120 000
 
-  NVMe (U.2/U.3)       70/30 R/W            80 000
+NVMe (U.2/U.3)       70/30 R/W            80 000
   --------------------------------------------------------------
 
 #### A.2 Taux de compression par type de workload
@@ -647,18 +647,18 @@ FG (4.x) ou en EC + compression (5.0).
   Base de données OLTP / ERP DB            2:1
 
   Bases de données           Analytics     1,5:1
-  analytiques                              
+  analytiques
 
   VDI / postes virtuels      VDI           3:1
 
   Virtualisation généraliste General       2:1
-  (VM mix)                   Purpose       
+  (VM mix)                   Purpose
 
   Fichiers non structurés    File          1,5:1
-  (file share)                             
+  (file share)
 
-  Workloads non              NoComp        1,0:1
-  compressibles                            
+Workloads non              NoComp        1,0:1
+  compressibles
   ------------------------------------------------------------
 
 Le calculateur doit :
@@ -706,7 +706,7 @@ ajoute un **overhead global** (métadonnées, spare, write cache, etc.) :
 
   8+2       80 %            10 %
 
-  12+4      75 %            10 %
+12+4      75 %            10 %
   -------------------------------------------------------------
 
 \[ C\_{utile_EC} = C\_{raw} (1 - %\_{overhead_EC}) \]
@@ -725,8 +725,8 @@ Pour rendre le modèle pédagogique, le calculateur applique un
 
   EC -- compétiteur RAID 5/6     70 %
 
-  EC -- PowerFlex Ultra / SAE    85 %
-  (5.0)                          
+EC -- PowerFlex Ultra / SAE    85 %
+  (5.0)
   -------------------------------------------------------------
 
 #### A.5 Hypothèses réseau
@@ -761,13 +761,13 @@ Pour un block size donné `BS` :
   VDI             80/20                        4K             3:1
 
   VM mix          70/30                        8K             2:1
-  (vSphere)                                       
+  (vSphere)
 
   Backup /        50/50                       64K           1,5:1
-  Archive                                         
+  Archive
 
-  Non             50/50                        8K             1:1
-  compressible                                    
+Non             50/50                        8K             1:1
+  compressible
   ---------------------------------------------------------------
 
 #### A.7 Récapitulatif des principaux paramètres par défaut
@@ -790,7 +790,7 @@ Pour un block size donné `BS` :
   CPU_efficiency EC compétiteur  70 %
 
   CPU_efficiency EC PowerFlex    85 %
-  Ultra                          
+  Ultra
 
   Efficience réseau              0,8
 
@@ -800,5 +800,5 @@ Pour un block size donné `BS` :
 
   Taux de compression VDI        3:1
 
-  Taux de compression général    2:1
+Taux de compression général    2:1
   -------------------------------------------------------------

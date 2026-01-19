@@ -64,17 +64,17 @@ Le logiciel doit appliquer la cascade de calcul suivante :
 
 $$Raw_{total} = N_{nodes} \times N_{drives} \times Size_{drive}$$
 
-2. Overhead de Formatage & Système:
+1. Overhead de Formatage & Système:
    Déduire ~10-15% pour le formatage disque, l'OS (Kubernetes/Linux) et la réservation de maintenance.
 
-3. Efficacité de Protection (EC Ratio):
+2. Efficacité de Protection (EC Ratio):
    Si EC est $k+m$ (ex: 12+4), le ratio est :
 
 $$Ratio_{EC} = \frac{k}{k+m}$$
 
 (Exemple 12+4 : 12/16 = 0.75 soit 75% d'efficacité).
 
-4. Capacité Utile (Usable):
+1. Capacité Utile (Usable):
 
 $$Usable = (Raw_{total} - SystemOverhead) \times Ratio_{EC}$$
 

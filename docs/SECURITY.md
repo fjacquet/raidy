@@ -6,6 +6,7 @@
 ## Overview
 
 Raidy implements security hardening for client-side SPA applications:
+
 - URL state validation prevents malicious hash injection
 - Input sanitization protects PDF export
 - Error boundaries prevent information leakage
@@ -17,16 +18,19 @@ Raidy implements security hardening for client-side SPA applications:
 ### Deployment Platforms
 
 **Netlify (Recommended for Production)**
+
 - Configuration: `public/_headers`
 - Headers: CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy
 - Full CSP support including frame-ancestors directive
 
 **Vercel**
+
 - Configuration: `vercel.json`
 - Headers: Same as Netlify
 - Full CSP support
 
 **GitHub Pages (Limited)**
+
 - Configuration: `index.html` meta tag
 - Limitation: Meta tag CSP does NOT support:
   - `frame-ancestors` directive (clickjacking protection missing)
@@ -67,6 +71,7 @@ Tailwind CSS utility classes and React event handlers require inline styles/scri
 ### CI/CD Integration
 
 Security scans run automatically on every push:
+
 - GitHub Actions workflow: `.github/workflows/ci.yml`
 - Fails build if high/critical vulnerabilities found
 - Snyk requires `SNYK_TOKEN` secret in repository settings
@@ -79,6 +84,7 @@ Security scans run automatically on every push:
 ### Fixing Vulnerabilities
 
 When scan finds issues:
+
 1. `npm audit fix` (try automatic fix first)
 2. Review changelog for breaking changes
 3. Run `npm test` to verify no breakage
@@ -91,6 +97,7 @@ When scan finds issues:
 **Protection:** Malicious URL hash cannot inject invalid values (negative counts, NaN, wrong enums)
 
 **Implementation:**
+
 - File: `src/utils/schemas.ts`
 - Library: Zod 3.24+
 - Validation after LZ-string decompression in `src/store/urlStorage.ts`
@@ -104,6 +111,7 @@ Expected: User sees notification "Configuration link is invalid"
 **Protection:** User-controlled text fields (projectName) cannot inject XSS vectors
 
 **Implementation:**
+
 - File: `src/utils/exportPdf.ts`
 - Library: DOMPurify 3.3+
 - Sanitization before jsPDF rendering
@@ -117,6 +125,7 @@ Expected: PDF shows "Test" without script tags
 **Protection:** Invalid configurations (RAID5 with 2 drives) cannot trigger calculations
 
 **Implementation:**
+
 - File: `src/utils/validators.ts`
 - Function: `hasBlockingErrors()` prevents calculation execution
 - Error boundary: `src/components/ErrorBoundary.tsx` catches crashes
@@ -124,8 +133,9 @@ Expected: PDF shows "Test" without script tags
 ## Responsible Disclosure
 
 If you discover a security vulnerability:
+
 1. **Do NOT** create public GitHub issue
-2. Email: security@raidy.dev (update with actual contact)
+2. Email: <security@raidy.dev> (update with actual contact)
 3. Include: reproduction steps, impact assessment, suggested fix
 4. Expected response: 48 hours
 
@@ -141,6 +151,6 @@ If you discover a security vulnerability:
 
 ## References
 
-- OWASP Input Validation: https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html
-- CSP Documentation: https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP
-- React Security Best Practices: https://snyk.io/blog/10-react-security-best-practices/
+- OWASP Input Validation: <https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html>
+- CSP Documentation: <https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP>
+- React Security Best Practices: <https://snyk.io/blog/10-react-security-best-practices/>

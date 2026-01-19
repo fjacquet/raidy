@@ -76,28 +76,33 @@ Each task was committed atomically:
 ## Files Created/Modified
 
 ### Strategy Interfaces (Core Fixes)
+
 - `src/engines/performance/strategies/PerformanceStrategy.ts` - Changed options?: any → unknown (lines 34, 60)
 - `src/engines/volumetry/strategies/VolumetryStrategy.ts` - Changed options?: any → unknown (lines 30, 46)
 
 ### Performance Strategy Implementations
+
 - `src/engines/performance/strategies/ceph.ts` - Updated calculateIOPS signature
-- `src/engines/performance/strategies/dell.ts` - Updated calculateIOPS signature with _options prefix
-- `src/engines/performance/strategies/nutanix.ts` - Updated calculateIOPS signature with _options prefix
-- `src/engines/performance/strategies/powerflex.ts` - Updated calculateIOPS signature with _options prefix
-- `src/engines/performance/strategies/proprietary.ts` - Updated calculateIOPS signature with _options prefix
-- `src/engines/performance/strategies/s2d.ts` - Updated calculateIOPS signature with _options prefix
-- `src/engines/performance/strategies/vsan.ts` - Updated calculateIOPS signature with _options prefix
-- `src/engines/performance/strategies/zfs.ts` - Updated calculateIOPS signature with _options prefix
+- `src/engines/performance/strategies/dell.ts` - Updated calculateIOPS signature with \_options prefix
+- `src/engines/performance/strategies/nutanix.ts` - Updated calculateIOPS signature with \_options prefix
+- `src/engines/performance/strategies/powerflex.ts` - Updated calculateIOPS signature with \_options prefix
+- `src/engines/performance/strategies/proprietary.ts` - Updated calculateIOPS signature with \_options prefix
+- `src/engines/performance/strategies/s2d.ts` - Updated calculateIOPS signature with \_options prefix
+- `src/engines/performance/strategies/vsan.ts` - Updated calculateIOPS signature with \_options prefix
+- `src/engines/performance/strategies/zfs.ts` - Updated calculateIOPS signature with \_options prefix
 
 ### Production Code
+
 - `src/engines/volumetry/index.ts` - Fixed let options: any → unknown
 
 ### Test Files (Double-Cast Pattern)
+
 - `tests/engines/volumetry/strategies/raid.spec.ts` - Changed 'RAID99' as any → as unknown as string
 - `tests/hooks/useCalculations.spec.ts` - Changed } as any → as unknown as Parameters<...>
 - `tests/store/urlStorage.spec.ts` - Changed } as any → as unknown as Window & typeof globalThis
 
 ### Auto-Fixed Formatting (18 files)
+
 - `src/App.tsx` - Import organization
 - `src/components/inputs/TopologyPanel.tsx` - Import organization
 - `src/components/inputs/topology-options/*.tsx` (7 files) - Import organization, formatting, unused imports
@@ -108,12 +113,15 @@ Each task was committed atomically:
 ## Decisions Made
 
 **1. Use unknown instead of specific option types**
+
 - Rationale: Strategy interfaces accept different option types per topology (S2DOptions, CephOptions, etc.). Creating a union type would be complex and require frequent updates. Using `unknown` matches TypeScript best practices for truly variable-type parameters while forcing type guards before use.
 
 **2. Apply double-cast pattern in tests**
+
 - Rationale: Following Phase 04-01 decision to use `as unknown as T` instead of `as any` for intentional type violations in tests. More explicit about breaking type safety.
 
 **3. Prefix unused parameters with underscore**
+
 - Rationale: Many strategy implementations don't use the options parameter. Prefixing with `_` follows Biome's suggested fix and clearly indicates intentional non-use.
 
 ## Deviations from Plan
@@ -123,6 +131,7 @@ Plan stated "Fix 2 Biome lint errors in PerformanceStrategy.ts" but execution re
 ### Auto-fixed Issues
 
 **1. [Rule 3 - Blocking] Fixed noExplicitAny in all performance strategy implementations**
+
 - **Found during:** Task 1 (after fixing PerformanceStrategy interface)
 - **Issue:** Fixing interface revealed 8 implementation files also had `options?: any` that violated noExplicitAny rule
 - **Fix:** Changed `options?: any` to `_options?: unknown` in ceph.ts, dell.ts, nutanix.ts, powerflex.ts, proprietary.ts, s2d.ts, vsan.ts, zfs.ts
@@ -131,6 +140,7 @@ Plan stated "Fix 2 Biome lint errors in PerformanceStrategy.ts" but execution re
 - **Committed in:** 75179cf (part of task commit)
 
 **2. [Rule 3 - Blocking] Fixed noExplicitAny in VolumetryStrategy interface and index.ts**
+
 - **Found during:** Task 1 (after performance strategies fixed)
 - **Issue:** VolumetryStrategy.ts had same `any` type pattern (lines 30, 46). volumetry/index.ts had `let options: any = {}`
 - **Fix:** Changed to `unknown` in both locations
@@ -139,6 +149,7 @@ Plan stated "Fix 2 Biome lint errors in PerformanceStrategy.ts" but execution re
 - **Committed in:** 75179cf (part of task commit)
 
 **3. [Rule 3 - Blocking] Applied double-cast pattern to test files**
+
 - **Found during:** Task 1 (after production code fixed)
 - **Issue:** 4 test files used `as any` for type violations, blocking zero lint errors goal
 - **Fix:** Applied double-cast pattern `as unknown as T` per Phase 04-01 decision
@@ -147,6 +158,7 @@ Plan stated "Fix 2 Biome lint errors in PerformanceStrategy.ts" but execution re
 - **Committed in:** 75179cf (part of task commit)
 
 **4. [Rule 3 - Blocking] Auto-fixed Biome formatting and import organization**
+
 - **Found during:** Task 1 (after noExplicitAny errors fixed)
 - **Issue:** 18 files had fixable formatting/import/unused import errors blocking zero lint errors goal
 - **Fix:** Ran `biome check --write .` and `biome check --write --unsafe .`
@@ -176,5 +188,6 @@ None - no external service configuration required.
 - Future development must maintain zero lint errors standard
 
 ---
-*Phase: 04-code-quality*
-*Completed: 2026-01-18*
+
+_Phase: 04-code-quality_
+_Completed: 2026-01-18_

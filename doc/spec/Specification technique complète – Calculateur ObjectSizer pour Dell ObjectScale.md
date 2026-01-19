@@ -139,9 +139,9 @@ L'interface doit recueillir au minimum les données suivantes.
 
 Par site (VDC), l'utilisateur doit saisir :
 
-1.  **Nombre de nœuds de stockage** dans le storage pool principal.
+1. **Nombre de nœuds de stockage** dans le storage pool principal.
 
-2.  **Profil de nœud** (préconfiguré en fonction de la plateforme) :
+2. **Profil de nœud** (préconfiguré en fonction de la plateforme) :
 
     - Nombre de disques de données par nœud.
 
@@ -150,27 +150,27 @@ Par site (VDC), l'utilisateur doit saisir :
 
     - Type de média (NVMe, SSD SAS/SATA, HDD NL-SAS).
 
-3.  **Réseau** :
+3. **Réseau** :
 
     - Bande passante front-end (par nœud) : 25 GbE, 100 GbE, 200 GbE,
       etc.
 
     - Bande passante back-end (si différente).
 
-4.  **Taux de remplissage cible du storage pool** :
+4. **Taux de remplissage cible du storage pool** :
 
     - Pourcentage maximum souhaité (ex. 80 %). L'outil doit empêcher les
       designs qui amènent systématiquement le pool au-delà de \~90 %,
       seuil au-delà duquel ObjectScale peut refuser les écritures.
 
-5.  **Réserve opérationnelle / capacité libre souhaitée** :
+5. **Réserve opérationnelle / capacité libre souhaitée** :
 
     - ex. 10--20 % de marge pour rebalance, erasure coding, pannes et
       croissance.
 
 ### 3.3 Configuration logique ObjectScale par site
 
-1.  **Schéma de protection (erasure coding / mirroring)**
+1. **Schéma de protection (erasure coding / mirroring)**
 
     - Options supportées :
 
@@ -195,21 +195,21 @@ Par site (VDC), l'utilisateur doit saisir :
       - En dessous de ces seuils, le système fonctionne en triple
         mirroring pour les données.
 
-2.  **Taille moyenne des objets**
+2. **Taille moyenne des objets**
 
     - Taille d'objet typique (ex. 10 KB, 100 KB, 1 MB, 100 MB, 1 GB).
 
     - Possibilité de définir plusieurs classes (small / medium / large)
       si nécessaire.
 
-3.  **Ratio lecture / écriture**
+3. **Ratio lecture / écriture**
 
     - ex. 80 % lecture / 20 % écriture.
 
     - Possibilité de déclarer un profil « write-heavy » (par ex.
       ingestion) ou « read-heavy » (analytics / archive).
 
-4.  **Profil de workload**
+4. **Profil de workload**
 
     - Principalement objets petits (≤ 128 KB).
 
@@ -228,11 +228,11 @@ moteur de calcul.
 
 Pour chaque site :
 
-1.  **Capacité brute totale (Raw_cluster)**
+1. **Capacité brute totale (Raw_cluster)**
 
 - (Raw\_{cluster} = N\_{nodes} N\_{drives_per_node} Size\_{drive})
 
-2.  **Surcharge système / formatage / réserve**
+1. **Surcharge système / formatage / réserve**
 
     - L'outil doit appliquer un facteur d'overhead configurable (par
       défaut entre 10 et 20 %) pour refléter :
@@ -247,7 +247,7 @@ Pour chaque site :
 - (Raw\_{usable_before_protection} = Raw\_{cluster} (1 -
   Overhead\_{system}))
 
-3.  **Efficacité de protection locale (EC / mirroring)**
+1. **Efficacité de protection locale (EC / mirroring)**
 
     - Pour **triple mirroring** :
 
@@ -269,11 +269,11 @@ Pour chaque site :
 
       - 24+4 → efficacité théorique ≈ 86 % (si utilisé).
 
-4.  **Capacité utile locale (par site)**
+2. **Capacité utile locale (par site)**
 
 - (Usable\_{local} = Raw\_{usable_before_protection} Ratio\_{prot})
 
-5.  **Overhead de protection géo-distribuée (multi-sites)**
+1. **Overhead de protection géo-distribuée (multi-sites)**
 
     - Si plusieurs sites sont membres d'un même Replication Group
       global, l'outil doit appliquer un **coefficient d'overhead géo**
@@ -287,7 +287,7 @@ Pour chaque site :
       ObjectScale (table interne) et documentés dans le code/source du
       calculateur.
 
-6.  **Capacité utile globale (fédération)**
+2. **Capacité utile globale (fédération)**
 
     - En agrégant les capacités utiles par site et en appliquant, si
       nécessaire, un facteur d'efficacité globale lié à la topologie de
@@ -299,7 +299,7 @@ L'estimation de performance doit rester indicative et basée sur des
 abaques / profils validés (par plateforme et type de média). On
 distingue :
 
-1.  **IOPS (objets petits)**
+1. **IOPS (objets petits)**
 
     - Les petits objets sont généralement limités par :
 
@@ -327,7 +327,7 @@ distingue :
       - **Facteur_profil_objet** : coefficient différent selon taille
         d'objet et mix lecture/écriture.
 
-2.  **Débit séquentiel / throughput (gros objets)**
+2. **Débit séquentiel / throughput (gros objets)**
 
     - Le débit maximal est le **min** entre :
 
@@ -345,7 +345,7 @@ distingue :
       du trafic est/ouest (erasure coding, rebalance, replication
       inter-site, gestion).
 
-3.  **Latence estimée**
+1. **Latence estimée**
 
     - Basée sur :
 
@@ -468,8 +468,8 @@ Une stack moderne est recommandée :
 
   ---------------------------------------------------------------------------------
   Schéma de    Usage principal       Efficacité       Overhead    Remarques clés
-  protection                         capacité (usable (raw /      
-                                     / raw)           usable)     
+  protection                         capacité (usable (raw /
+                                     / raw)           usable)
   ------------ --------------------- ---------------- ----------- -----------------
   Triple       Données/métadonnées   ≈ 33 % (1/3)     3,0×        Protection locale
   mirroring    avant seuil EC,                                    par 3 copies
@@ -496,14 +496,14 @@ Une stack moderne est recommandée :
                                                                   nœuds
                                                                   recommandés.
 
-  EC 24+4      Haute efficacité à    ≈ 85 % (≈ 24/28) ≈ 1,18×     Option 4.2 tech
+EC 24+4      Haute efficacité à    ≈ 85 % (≈ 24/28) ≈ 1,18×     Option 4.2 tech
   (tech        très grande échelle                                preview,
   preview)                                                        nécessite min. 8
                                                                   nœuds et tolère
                                                                   jusqu'à 4 disques
                                                                   en panne ; à
                                                                   réserver aux
-                                                                  designs validés.
+                                                                  designs validés
   ---------------------------------------------------------------------------------
 
 Formule d'utilisation typique dans le moteur :
@@ -657,31 +657,31 @@ chiffres de bench internes / officiels.
   ----------------------------------------------------------------------------------------------------------
   Profil         Taille R/W (%) Plateforme / Schéma   IOPS       IOPS       BW lecture BW         Latence
   workload        objet         média        EC       lecture /  écriture / / nœud     écriture / cible (ms)
-                                                      nœud (ref) nœud (ref) (GB/s)     nœud       
-                                                                                       (GB/s)     
+                                                      nœud (ref) nœud (ref) (GB/s)     nœud
+                                                                                       (GB/s)
   ------------ -------- ------- ------------ -------- ---------- ---------- ---------- ---------- ----------
   Small object    10 KB   80/20 XF960 NVMe   12+4     (à         (à         (à         (à         (à
   OLTP                                                définir)   définir)   définir)   définir)   définir)
 
   Ingestion      100 KB   20/80 XF960 NVMe   12+4     ...        ...        ...        ...        ...
-  continue                                                                                        
+  continue
 
   Archive /        1 MB    95/5 X560 HDD /   10+2     ...        ...        ...        ...        ...
-  cold reads                    SSD QLC                                                           
+  cold reads                    SSD QLC
 
-  Analytics        4 MB   70/30 R7725xd NVMe 12+4     ...        ...        ...        ...        ...
-  séquentiel                    (SDS)                                                             
+Analytics        4 MB   70/30 R7725xd NVMe 12+4     ...        ...        ...        ...        ...
+  séquentiel                    (SDS)
   ----------------------------------------------------------------------------------------------------------
 
 Le moteur peut ensuite :
 
-1.  **Interpoler** entre ces points de référence pour des profils
+1. **Interpoler** entre ces points de référence pour des profils
     intermédiaires.
 
-2.  Appliquer les pénalités EC en écriture (plus fortes pour 12+4 que
+2. Appliquer les pénalités EC en écriture (plus fortes pour 12+4 que
     pour 10+2).
 
-3.  Appliquer la contrainte réseau :
+3. Appliquer la contrainte réseau :
 
 <!-- -->
 

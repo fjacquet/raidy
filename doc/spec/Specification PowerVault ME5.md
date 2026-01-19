@@ -113,6 +113,7 @@ The Dell PowerVault ME5 series is an entry-level to mid-range block storage plat
 | ADAPT      | 12         | 128        | 2 drives        | ~87% (distributed spare)              |
 
 **Notes:**
+
 - NRAID and RAID 0 require CLI commands (not available in GUI)
 - ADAPT is the recommended RAID level for most workloads
 
@@ -235,28 +236,33 @@ Effective_Mixed_IOPS = (Read_IOPS) + (Write_IOPS / Write_Penalty)
 ### 7.1 Usable Capacity Formulas
 
 **RAID 1:**
+
 ```
 Usable = Raw_Capacity * 0.50
 ```
 
 **RAID 5:**
+
 ```
 Usable = Raw_Capacity * ((N - 1) / N)
 Example (5 drives): 50TB raw * (4/5) = 40TB usable (80%)
 ```
 
 **RAID 6:**
+
 ```
 Usable = Raw_Capacity * ((N - 2) / N)
 Example (6 drives): 60TB raw * (4/6) = 40TB usable (66.7%)
 ```
 
 **RAID 10:**
+
 ```
 Usable = Raw_Capacity * 0.50
 ```
 
 **ADAPT:**
+
 ```
 Usable = Raw_Capacity * 0.87  (approximate, varies with drive count)
 ```
@@ -374,6 +380,7 @@ interface PowerVaultME5Performance {
 3. **RAID 5/6 Warning:** Flag non-optimal disk counts (warn on 4, 6, 7, 8 for RAID 5)
 
 4. **Efficiency Calculation:**
+
    ```
    if (raidLevel === 'ADAPT') efficiency = 0.87;
    if (raidLevel === 'RAID5') efficiency = (driveCount - 1) / driveCount;
@@ -450,6 +457,7 @@ Example: 24 × 8TB drives = 192TB raw
 ```
 
 The ~13% overhead includes:
+
 - Distributed parity (dual parity like RAID 6)
 - Distributed spare capacity
 - Metadata
@@ -469,6 +477,7 @@ The ~13% overhead includes:
 ### 11.6 When to Use ADAPT
 
 **Best for:**
+
 - Large drive counts (24+ drives)
 - Mixed capacity environments
 - Systems expecting future expansion
@@ -476,6 +485,7 @@ The ~13% overhead includes:
 - General-purpose workloads
 
 **Not ideal for:**
+
 - Small configurations (<12 drives) - not supported
 - Maximum IOPS requirements - RAID 10 is faster
 - Minimum drive count scenarios - RAID 5/6 more efficient with fewer drives
