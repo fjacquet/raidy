@@ -1538,9 +1538,10 @@ describe('Resilience Worker - Statistical Accuracy', () => {
     const p2 = highResult?.[0].payload.survivalRate
     const se2 = Math.sqrt((p2 * (1 - p2)) / 5000)
 
-    // Both should be positive and reasonable
-    expect(se1).toBeGreaterThan(0)
-    expect(se2).toBeGreaterThan(0)
+    // Standard errors should be non-negative and reasonable
+    // Note: se can be 0 when p is exactly 0 or 1 (100% survival/failure)
+    expect(se1).toBeGreaterThanOrEqual(0)
+    expect(se2).toBeGreaterThanOrEqual(0)
     expect(se1).toBeLessThan(0.05)
     expect(se2).toBeLessThan(0.05)
   })
