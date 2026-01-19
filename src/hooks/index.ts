@@ -15,4 +15,7 @@ export {
   useMediaQuery,
   usePrefersReducedMotion,
 } from './useMediaQuery'
+export { usePerformanceCalc } from './usePerformanceCalc'
 export { useResilience } from './useResilience'
+export { useSustainabilityCalc } from './useSustainabilityCalc'
+export { useVolumetryCalc } from './useVolumetryCalc'
