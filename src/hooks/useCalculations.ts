@@ -1,29 +1,24 @@
 /**
  * Hook that connects the calculation engines to the store.
- * Automatically recalculates when configuration changes.
+ * Orchestrates independent calculation hooks for optimal performance.
  */
 
-import { useMemo } from 'react'
 import drivesData from '@/data/drives.json'
-import { calculatePerformance } from '@/engines/performance'
-import { calculateSustainability } from '@/engines/sustainability'
-import { calculateVolumetry } from '@/engines/volumetry'
 import { useConfigStore } from '@/store'
 import type { Drive } from '@/types'
-import type {
-  CalculationResults,
-  PerformanceResult,
-  SustainabilityResult,
-  VolumetryResult,
-} from '@/types/results'
+import type { CalculationResults } from '@/types/results'
 import { formatBytes as formatBytesUtil } from '@/utils'
 import { hasBlockingErrors, validateConfiguration } from '@/utils/validators'
+import { usePerformanceCalc } from './usePerformanceCalc'
+import { useSustainabilityCalc } from './useSustainabilityCalc'
+import { useVolumetryCalc } from './useVolumetryCalc'
 
 // Type assertion for the imported JSON
 const drives = drivesData as Record<string, Drive>
 
 /**
  * Hook that provides all calculated results based on current configuration.
+ * Orchestrates three independent calculation hooks with focused dependencies.
  */
 export function useCalculations(): CalculationResults {
   const {
@@ -31,321 +26,92 @@ export function useCalculations(): CalculationResults {
     driveId,
     driveCount,
     serverCount,
-    serverPowerWatts,
     // Topology
     topology,
-    hotSpares,
     zfsOptions,
     s2dOptions,
     vsanOptions,
-    objectscaleOptions,
-    powerstoreOptions,
-    powerscaleOptions,
     cephOptions,
     powerFlexOptions,
     netAppOptions,
     synologyOptions,
-    nutanixOptions,
-    powervaultOptions,
     controllerOptions,
-    // Workload
-    readPercent,
-    blockSize,
-    randomPercent,
-    dailyWriteVolume,
-    // Advanced
-    compressionRatio,
-    dedupRatio,
-    networkSpeed,
-    pcieGen,
-    pcieLanes,
-    pue,
-    carbonRegion,
-    projectYears,
-    electricityCostPerKwh,
   } = useConfigStore()
 
   // Get selected drive
   const drive = drives[driveId]
 
-  // Calculate all results
-  return useMemo(() => {
-    const errors: string[] = []
+  // Call independent calculation hooks UNCONDITIONALLY (React Rules of Hooks)
+  // Each hook has its own useMemo with focused dependencies
+  // Each hook handles null drive gracefully by returning zero-state
+  const volumetry = useVolumetryCalc()
+  const performance = usePerformanceCalc()
+  const sustainability = useSustainabilityCalc(volumetry.usableCapacity)
 
-    if (!drive) {
-      errors.push(`Drive "${driveId}" not found`)
-      return {
-        volumetry: {
-          rawCapacity: 0,
-          parityOverhead: 0,
-          hotSpareOverhead: 0,
-          filesystemOverhead: 0,
-          slopOverhead: 0,
-          usableCapacity: 0,
-          effectiveCapacity: 0,
-          efficiency: 0,
-          breakdown: [],
-        },
-        performance: {
-          maxReadThroughputMBs: 0,
-          maxWriteThroughputMBs: 0,
-          maxReadIOPS: 0,
-          maxWriteIOPS: 0,
-          layers: [],
-          bottleneckDescription: 'No drive selected',
-        },
-        resilience: null,
-        sustainability: {
-          annualEnergyKwh: 0,
-          annualEnergyCost: 0,
-          annualCO2Kg: 0,
-          powerBreakdown: { drives: 0, servers: 0, cooling: 0, total: 0 },
-        },
-        tco: null,
-        lastUpdated: Date.now(),
-        errors,
-      }
-    }
+  // NOW we can check for errors and return early if needed
+  const errors: string[] = []
 
-    // Total drives across all servers
-    // driveCount = drives per server, serverCount = number of servers
-    const totalDriveCount = driveCount * serverCount
-    const totalHotSpares = hotSpares * serverCount
-
-    // Validate configuration before running calculations
-    const validationAlerts = validateConfiguration({
-      drive,
-      driveCount: totalDriveCount,
-      serverCount,
-      topology,
-      controller: controllerOptions.controller,
-      ramPerNodeGb: 16, // Default RAM (could be made configurable in store)
-      zfsOptions,
-      s2dOptions,
-      cephOptions,
-      powerFlexOptions,
-      netAppOptions,
-      synologyOptions,
-      vsanOptions,
-    })
-
-    // If blocking errors found, skip calculation and return error state
-    if (hasBlockingErrors(validationAlerts)) {
-      const blockingMessages = validationAlerts
-        .filter((a) => a.severity === 'error')
-        .map((a) => a.message)
-
-      return {
-        volumetry: {
-          rawCapacity: 0,
-          parityOverhead: 0,
-          hotSpareOverhead: 0,
-          filesystemOverhead: 0,
-          slopOverhead: 0,
-          usableCapacity: 0,
-          effectiveCapacity: 0,
-          efficiency: 0,
-          breakdown: [],
-        },
-        performance: {
-          maxReadThroughputMBs: 0,
-          maxWriteThroughputMBs: 0,
-          maxReadIOPS: 0,
-          maxWriteIOPS: 0,
-          layers: [],
-          bottleneckDescription: 'Configuration validation failed',
-        },
-        resilience: null,
-        sustainability: {
-          annualEnergyKwh: 0,
-          annualEnergyCost: 0,
-          annualCO2Kg: 0,
-          powerBreakdown: { drives: 0, servers: 0, cooling: 0, total: 0 },
-        },
-        tco: null,
-        lastUpdated: Date.now(),
-        errors: blockingMessages,
-      }
-    }
-
-    // Volumetry calculations (uses total drives across all servers)
-    let volumetry: VolumetryResult
-    try {
-      volumetry = calculateVolumetry({
-        drive,
-        driveCount: totalDriveCount,
-        hotSpares: totalHotSpares,
-        serverCount,
-        topology,
-        zfsOptions,
-        s2dOptions,
-        vsanOptions,
-        objectscaleOptions,
-        powerstoreOptions,
-        powerscaleOptions,
-        cephOptions,
-        powerFlexOptions,
-        netAppOptions,
-        synologyOptions,
-        nutanixOptions,
-        powervaultOptions,
-        compressionRatio,
-        dedupRatio,
-      })
-    } catch (error) {
-      console.error('[Volumetry Engine Error]', {
-        message: error instanceof Error ? error.message : 'Unknown error',
-        context: {
-          driveId: drive.id,
-          driveCount: totalDriveCount,
-          serverCount,
-          topology: topology.type,
-          level: topology.level,
-        },
-        timestamp: new Date().toISOString(),
-      })
-      // Set safe fallback state
-      volumetry = {
-        rawCapacity: 0,
-        parityOverhead: 0,
-        hotSpareOverhead: 0,
-        filesystemOverhead: 0,
-        slopOverhead: 0,
-        usableCapacity: 0,
-        effectiveCapacity: 0,
-        efficiency: 0,
-        breakdown: [],
-      }
-      errors.push('Volumetry calculation failed')
-    }
-
-    // Performance calculations (uses total drives across all servers)
-    let performance: PerformanceResult
-    try {
-      performance = calculatePerformance({
-        drive,
-        driveCount: totalDriveCount,
-        hotSpares: totalHotSpares,
-        serverCount,
-        topology,
-        controllerOptions,
-        readPercent,
-        randomPercent,
-        blockSize,
-        networkSpeed,
-        pcieGen,
-        pcieLanes,
-        powerFlexOptions,
-        cephOptions,
-        nutanixOptions,
-      })
-    } catch (error) {
-      console.error('[Performance Engine Error]', {
-        message: error instanceof Error ? error.message : 'Unknown error',
-        context: {
-          driveId: drive.id,
-          driveCount: totalDriveCount,
-          serverCount,
-          topology: topology.type,
-          level: topology.level,
-          readPercent,
-          randomPercent,
-        },
-        timestamp: new Date().toISOString(),
-      })
-      // Set safe fallback state
-      performance = {
-        maxReadThroughputMBs: 0,
-        maxWriteThroughputMBs: 0,
-        maxReadIOPS: 0,
-        maxWriteIOPS: 0,
-        layers: [],
-        bottleneckDescription: 'Performance calculation failed',
-      }
-      errors.push('Performance calculation failed')
-    }
-
-    // Sustainability calculations (uses total drives for power, serverCount for server power)
-    let sustainability: SustainabilityResult
-    try {
-      sustainability = calculateSustainability({
-        drive,
-        driveCount: totalDriveCount,
-        serverCount,
-        serverPowerWatts,
-        pue,
-        carbonRegion,
-        projectYears,
-        electricityCostPerKwh,
-        dailyWriteVolume,
-        usableCapacity: volumetry.usableCapacity,
-      })
-    } catch (error) {
-      console.error('[Sustainability Engine Error]', {
-        message: error instanceof Error ? error.message : 'Unknown error',
-        context: {
-          driveId: drive.id,
-          driveCount: totalDriveCount,
-          serverCount,
-          pue,
-          carbonRegion,
-        },
-        timestamp: new Date().toISOString(),
-      })
-      // Set safe fallback state
-      sustainability = {
-        annualEnergyKwh: 0,
-        annualEnergyCost: 0,
-        annualCO2Kg: 0,
-        powerBreakdown: { drives: 0, servers: 0, cooling: 0, total: 0 },
-      }
-      errors.push('Sustainability calculation failed')
-    }
-
+  // Return error state if drive not found
+  if (!drive) {
+    errors.push(`Drive "${driveId}" not found`)
     return {
       volumetry,
       performance,
-      resilience: null, // Monte Carlo is Phase 4
+      resilience: null,
       sustainability,
-      tco: null, // TCO removed
+      tco: null,
       lastUpdated: Date.now(),
       errors,
     }
-  }, [
+  }
+
+  // Total drives across all servers
+  const totalDriveCount = driveCount * serverCount
+
+  // Validate configuration before returning results
+  const validationAlerts = validateConfiguration({
     drive,
-    driveId,
-    driveCount,
+    driveCount: totalDriveCount,
     serverCount,
-    serverPowerWatts,
     topology,
-    hotSpares,
+    controller: controllerOptions.controller,
+    ramPerNodeGb: 16, // Default RAM (could be made configurable in store)
     zfsOptions,
     s2dOptions,
-    vsanOptions,
-    objectscaleOptions,
-    powerstoreOptions,
-    powerscaleOptions,
     cephOptions,
     powerFlexOptions,
     netAppOptions,
     synologyOptions,
-    nutanixOptions,
-    powervaultOptions,
-    controllerOptions,
-    readPercent,
-    blockSize,
-    randomPercent,
-    dailyWriteVolume,
-    compressionRatio,
-    dedupRatio,
-    networkSpeed,
-    pcieGen,
-    pcieLanes,
-    pue,
-    carbonRegion,
-    projectYears,
-    electricityCostPerKwh,
-  ])
+    vsanOptions,
+  })
+
+  // If blocking errors found, return error state
+  if (hasBlockingErrors(validationAlerts)) {
+    const blockingMessages = validationAlerts
+      .filter((a) => a.severity === 'error')
+      .map((a) => a.message)
+
+    return {
+      volumetry,
+      performance,
+      resilience: null,
+      sustainability,
+      tco: null,
+      lastUpdated: Date.now(),
+      errors: blockingMessages,
+    }
+  }
+
+  // All validation passed, return calculated results
+  return {
+    volumetry,
+    performance,
+    resilience: null, // Monte Carlo is Phase 4
+    sustainability,
+    tco: null, // TCO removed
+    lastUpdated: Date.now(),
+    errors,
+  }
 }
 
 /**
