@@ -9,30 +9,29 @@ import type { NutanixOptions } from '@/types/topology'
 import type { VolumetryStrategy } from './VolumetryStrategy'
 
 export const nutanixStrategy: VolumetryStrategy = {
-  calculateDataFraction(level: string, _driveCount: number, options?: NutanixOptions): number {
-    const nutanixOptions = options as NutanixOptions
-
+  calculateDataFraction(level: string, _driveCount: number, _options?: NutanixOptions): number {
     switch (level) {
       case 'nutanix_rf2':
-        // RF2: 2 copies = 50% efficiency
-        return 1 / (nutanixOptions?.replicationFactor ?? 2)
+        // RF2: 2 copies = 50% efficiency (1/2)
+        return 0.5
 
       case 'nutanix_rf3':
-        // RF3: 3 copies = 33% efficiency
-        return 1 / (nutanixOptions?.replicationFactor ?? 3)
+        // RF3: 3 copies = 33.3% efficiency (1/3)
+        return 1 / 3
 
       case 'nutanix_ec_rf2':
-        // EC-X with RF2 base: 4:1 striping = 75% efficiency (approximation)
-        // Per spec: C_usable_ec = C_formatted × 0.75
-        return 0.75
+        // EC-X with RF2: 4+1 striping = 80% efficiency (4/5)
+        // Per Nutanix TN-2032: 4 data blocks + 1 parity
+        return 4 / 5
 
       case 'nutanix_ec_rf3':
-        // EC-X with RF3 base: 6:2 striping = 75% efficiency
-        return 6 / 8
+        // EC-X with RF3: 4+2 striping = 66.7% efficiency (4/6)
+        // Per Nutanix TN-2032: 4 data blocks + 2 parity
+        return 4 / 6
 
       default:
         // Default to RF2 if not specified
-        return 1 / (nutanixOptions?.replicationFactor ?? 2)
+        return 0.5
     }
   },
 

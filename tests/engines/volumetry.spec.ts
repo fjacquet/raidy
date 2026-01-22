@@ -1588,21 +1588,21 @@ describe('Volumetry Engine - Nutanix', () => {
       tolerance: 0.05,
     },
     {
-      name: 'Nutanix EC-X RF2: 75% efficiency',
+      name: 'Nutanix EC-X RF2: 80% efficiency',
       level: 'nutanix_ec_rf2' as const,
       drives: 16,
       driveSize: 1_000_000_000_000,
       replicationFactor: 2,
-      expectedEfficiency: 0.75, // 75% (4:1 striping)
+      expectedEfficiency: 0.8, // 80% (4+1 striping = 4/5)
       tolerance: 0.05,
     },
     {
-      name: 'Nutanix EC-X RF3: 75% efficiency',
+      name: 'Nutanix EC-X RF3: 66.7% efficiency',
       level: 'nutanix_ec_rf3' as const,
       drives: 16,
       driveSize: 1_000_000_000_000,
       replicationFactor: 3,
-      expectedEfficiency: 0.75, // 75% (6:2 striping = 6/8)
+      expectedEfficiency: 4 / 6, // 66.7% (4+2 striping = 4/6)
       tolerance: 0.05,
     },
   ]
