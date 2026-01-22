@@ -5,6 +5,7 @@ export {
   useCalculations,
   useFormatBytes,
 } from './useCalculations'
+export { useConnectivityConstraints } from './useConnectivityConstraints'
 export {
   BREAKPOINTS,
   useIsDesktop,

@@ -12,7 +12,7 @@ import {
   Slider,
 } from '@/components/common/FormControls'
 import drivesData from '@/data/drives.json'
-import { useFormatBytes } from '@/hooks/useCalculations'
+import { useConnectivityConstraints, useFormatBytes } from '@/hooks'
 import { useConfigStore } from '@/store'
 import type { Drive, DriveConnectivity, FormFactorFilter } from '@/types'
 import { CONNECTIVITY_TO_TYPES, FORM_FACTOR_TO_TYPES, getDefaultFormFactor } from '@/types'
@@ -39,9 +39,6 @@ const FORM_FACTOR_VALUES: FormFactorFilter[] = [
   'm.2',
 ]
 
-/** Topologies that only support NVMe drives */
-const NVME_ONLY_TOPOLOGIES = ['powerstore', 'vsan_esa'] as const
-
 export function HardwarePanel() {
   const { t } = useTranslation('hardware')
 
@@ -66,7 +63,6 @@ export function HardwarePanel() {
   )
 
   const {
-    topology,
     driveConnectivity,
     driveFormFactor,
     driveId,
@@ -81,9 +77,13 @@ export function HardwarePanel() {
     setServerPower,
   } = useConfigStore()
 
-  // Check if topology requires NVMe-only drives
-  const requiresNvme = NVME_ONLY_TOPOLOGIES.includes(
-    topology.type as (typeof NVME_ONLY_TOPOLOGIES)[number],
+  // Get connectivity constraints based on topology and cluster options
+  const { constraint, validOptions, reasonKey } = useConnectivityConstraints()
+
+  // Filter connectivity options based on constraints
+  const filteredConnectivityOptions = useMemo(
+    () => connectivityOptions.filter((opt) => validOptions.includes(opt.value)),
+    [connectivityOptions, validOptions],
   )
 
   // Use centralized byte formatting with user's preferred unit system
@@ -107,13 +107,6 @@ export function HardwarePanel() {
   }, [driveList, driveConnectivity, driveFormFactor])
 
   const selectedDrive = drives[driveId]
-
-  // Auto-set NVMe connectivity for topologies that require it
-  useEffect(() => {
-    if (requiresNvme && driveConnectivity !== 'nvme') {
-      setDriveConnectivity('nvme')
-    }
-  }, [requiresNvme, driveConnectivity, setDriveConnectivity])
 
   // Auto-select first drive when filter changes and current drive is not in filtered list
   useEffect(() => {
@@ -139,22 +132,24 @@ export function HardwarePanel() {
       {/* Drive Connectivity Filter */}
       <div className="space-y-2">
         <Label>{t('connectivity.label')}</Label>
-        {requiresNvme ? (
+        {constraint === 'nvme_only' ? (
           <>
             <div className="px-3 py-2 bg-surface-700 rounded-lg text-sm text-slate-300">
               {t('connectivity.nvme')}
             </div>
-            <p className="text-xs text-amber-500">
-              {topology.type === 'powerstore' && t('connectivity.nvmeRequired.powerstore')}
-              {topology.type === 'vsan_esa' && t('connectivity.nvmeRequired.vsan_esa')}
-            </p>
+            {reasonKey && <p className="text-xs text-amber-500">{t(reasonKey)}</p>}
           </>
         ) : (
-          <SegmentedControl
-            value={driveConnectivity}
-            options={connectivityOptions}
-            onChange={(value) => setDriveConnectivity(value as DriveConnectivity)}
-          />
+          <>
+            <SegmentedControl
+              value={driveConnectivity}
+              options={filteredConnectivityOptions}
+              onChange={(value) => setDriveConnectivity(value as DriveConnectivity)}
+            />
+            {constraint === 'flash_only' && reasonKey && (
+              <p className="text-xs text-blue-400">{t(reasonKey)}</p>
+            )}
+          </>
         )}
       </div>
 

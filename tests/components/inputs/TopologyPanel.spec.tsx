@@ -5,7 +5,8 @@
  */
 
 import { render, screen } from '@testing-library/react'
-import type React from 'react'
+// biome-ignore lint/correctness/noUnusedImports: React is needed for JSX in mocks
+import React, { type ReactNode } from 'react'
 import type { Mock } from 'vitest'
 import { describe, expect, it, vi } from 'vitest'
 import { TopologyPanel } from '@/components/inputs/TopologyPanel'
@@ -18,7 +19,7 @@ vi.mock('@/store', () => ({
 
 // Mock FormControls
 vi.mock('@/components/common/FormControls', () => ({
-  Label: ({ children, htmlFor }: { children: React.ReactNode; htmlFor?: string }) => (
+  Label: ({ children, htmlFor }: { children: ReactNode; htmlFor?: string }) => (
     <label htmlFor={htmlFor}>{children}</label>
   ),
   Select: ({

@@ -7,6 +7,8 @@
 
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+// biome-ignore lint/correctness/noUnusedImports: React is needed for JSX in test components
+import React from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AppErrorBoundary } from '@/components/ErrorBoundary'
 

@@ -9,6 +9,11 @@
     "nvmeRequired": {
       "powerstore": "Dell PowerStore erfordert NVMe-Laufwerke",
       "vsan_esa": "VMware vSAN ESA erfordert NVMe-Laufwerke"
+    },
+    "flashOnly": {
+      "powerflex": "Dell PowerFlex erfordert SSD/NVMe (HDD nicht unterstuetzt)",
+      "nutanix": "All-Flash-Cluster unterstuetzen keine HDD",
+      "vsan_osa": "All-Flash-Modus erfordert SSD/NVMe-Laufwerke"
     }
   },
   "formFactor": {
