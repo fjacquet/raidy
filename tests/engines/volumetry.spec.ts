@@ -2498,11 +2498,11 @@ describe('Volumetry Engine - Error Handling', () => {
           tieringConfig: {
             enabled: true,
             fastTier: {
-              driveId: 'samsung-pm9a3-m2-1.92tb', // Real NVMe drive from drives.json (1.92TB)
+              driveId: 'ent-nvme-pcie4-960gb-m2-ri', // Enterprise NVMe M.2 Read-Intensive (960GB)
               driveCount: 2, // 2 NVMe per server
             },
             capacityTier: {
-              driveId: 'seagate-exos-x20', // Real 20TB HDD from drives.json
+              driveId: 'ent-hdd-7k2-sata-18tb-cmr', // Enterprise HDD 18TB
               driveCount: 12, // 12 HDD per server
             },
           },
@@ -2598,11 +2598,11 @@ describe('Volumetry Engine - Error Handling', () => {
           tieringConfig: {
             enabled: true,
             fastTier: {
-              driveId: 'samsung-pm893-3.84tb', // Real SATA SSD from drives.json (3.84TB)
+              driveId: 'ent-ssd-sata-3840gb-mu', // Enterprise SSD SATA Mixed-Use (3.84TB)
               driveCount: 4, // 4 SSD per server
             },
             capacityTier: {
-              driveId: 'wd-gold-24tb', // Real 24TB HDD from drives.json
+              driveId: 'ent-hdd-7k2-sata-24tb-cmr', // Enterprise HDD 24TB
               driveCount: 10, // 10 HDD per server
             },
           },
@@ -2652,11 +2652,11 @@ describe('Volumetry Engine - Error Handling', () => {
           tiering: {
             enabled: true,
             fastTier: {
-              driveId: 'samsung-pm893-1.92tb', // Real SATA SSD from drives.json (1.92TB)
+              driveId: 'ent-ssd-sata-1920gb-mu', // Enterprise SSD SATA Mixed-Use (1.92TB)
               driveCount: 2, // 2 SSD per node
             },
             capacityTier: {
-              driveId: 'seagate-exos-x18', // Real 18TB HDD from drives.json
+              driveId: 'ent-hdd-7k2-sata-18tb-cmr', // Enterprise HDD 18TB
               driveCount: 10, // 10 HDD per node
             },
           },
@@ -2745,11 +2745,11 @@ describe('Volumetry Engine - Error Handling', () => {
           tiering: {
             enabled: true,
             fastTier: {
-              driveId: 'samsung-pm893-3.84tb', // Real SATA SSD from drives.json (3.84TB)
+              driveId: 'ent-ssd-sata-3840gb-mu', // Enterprise SSD SATA Mixed-Use (3.84TB)
               driveCount: 3, // 3 SSD per node
             },
             capacityTier: {
-              driveId: 'seagate-exos-x22', // Real 22TB HDD from drives.json
+              driveId: 'ent-hdd-7k2-sata-24tb-cmr', // Enterprise HDD 24TB
               driveCount: 8, // 8 HDD per node
             },
           },
@@ -2798,11 +2798,11 @@ describe('Volumetry Engine - Error Handling', () => {
           tiering: {
             enabled: true,
             fastTier: {
-              driveId: 'samsung-pm9a3-m2-1.92tb', // NVMe for WAL/DB (1.92TB)
+              driveId: 'ent-nvme-pcie4-960gb-m2-ri', // NVMe for WAL/DB (960GB)
               driveCount: 1, // 1 NVMe per OSD node for WAL/DB
             },
             capacityTier: {
-              driveId: 'seagate-exos-x18', // 18TB HDD for object storage
+              driveId: 'ent-hdd-7k2-sata-18tb-cmr', // Enterprise HDD 18TB for object storage
               driveCount: 11, // 11 HDD per OSD node
             },
           },
@@ -2891,11 +2891,11 @@ describe('Volumetry Engine - Error Handling', () => {
           tiering: {
             enabled: true,
             fastTier: {
-              driveId: 'micron-7400-pro-m2-960gb', // NVMe WAL/DB (960GB)
+              driveId: 'ent-nvme-pcie4-960gb-m2-ri', // Enterprise NVMe M.2 WAL/DB (960GB)
               driveCount: 1,
             },
             capacityTier: {
-              driveId: 'wd-gold-24tb', // 24TB HDD
+              driveId: 'ent-hdd-7k2-sata-24tb-cmr', // Enterprise HDD 24TB
               driveCount: 6,
             },
           },

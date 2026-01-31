@@ -27,7 +27,7 @@ export type ConfigStore = HardwareSlice &
 // Default state for reset
 const getDefaultState = () => ({
   // Hardware defaults
-  driveId: 'wd-gold-24tb',
+  driveId: 'ent-hdd-7k2-sata-24tb-cmr',
   driveCount: 12,
   serverCount: 1,
   serverPowerWatts: 400,
