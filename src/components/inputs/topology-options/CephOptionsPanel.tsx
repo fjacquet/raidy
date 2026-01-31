@@ -23,6 +23,7 @@ import { DEFAULT_TIERING_CONFIG } from '@/types'
 
 export function CephOptionsPanel() {
   const { t } = useTranslation('topology')
+  const { t: th } = useTranslation('help')
   const { cephOptions, serverCount, setCephOptions } = useConfigStore()
 
   return (
@@ -32,7 +33,7 @@ export function CephOptionsPanel() {
       </h4>
 
       <div className="space-y-2">
-        <Label>{t('ceph.backend')}</Label>
+        <Label tooltip={th('ceph.backend')}>{t('ceph.backend')}</Label>
         <SegmentedControl
           value={cephOptions.backend}
           options={[
@@ -129,7 +130,9 @@ export function CephOptionsPanel() {
       )}
 
       <div className="space-y-2">
-        <Label htmlFor="ceph-safe-capacity">{t('ceph.safeCapacity')}</Label>
+        <Label htmlFor="ceph-safe-capacity" tooltip={th('ceph.nearfull')}>
+          {t('ceph.safeCapacity')}
+        </Label>
         <Slider
           id="ceph-safe-capacity"
           value={cephOptions.safeCapacityThreshold * 100}

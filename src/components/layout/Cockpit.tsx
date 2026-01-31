@@ -5,39 +5,56 @@
 
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { GuideView } from '@/components/guide'
 import { Header } from './Header'
 import { InputSidebar } from './InputSidebar'
 import { OutputDashboard } from './OutputDashboard'
 
-type MobileView = 'config' | 'report'
+type CockpitView = 'config' | 'report' | 'guide'
 
 export function Cockpit() {
   const { t } = useTranslation('common')
-  const [mobileView, setMobileView] = useState<MobileView>('config')
+  const [activeView, setActiveView] = useState<CockpitView>('config')
+  const isGuideOpen = activeView === 'guide'
+
+  const toggleGuide = () => {
+    setActiveView((prev) => (prev === 'guide' ? 'report' : 'guide'))
+  }
 
   return (
     <div className="h-screen flex flex-col bg-surface-900">
-      <Header />
+      <Header onToggleGuide={toggleGuide} isGuideOpen={isGuideOpen} />
 
       {/* Main content - responsive layout */}
       <div className="flex-1 flex flex-col lg:flex-row overflow-hidden pb-14 lg:pb-0">
-        {/* Input Sidebar - visible on desktop, conditionally on mobile */}
-        <div
-          className={`${
-            mobileView === 'config' ? 'block' : 'hidden'
-          } lg:block lg:flex-shrink-0 overflow-y-auto`}
-        >
-          <InputSidebar />
-        </div>
+        {/* Input Sidebar - hidden when guide is open */}
+        {!isGuideOpen && (
+          <div
+            className={`${
+              activeView === 'config' ? 'block' : 'hidden'
+            } lg:block lg:flex-shrink-0 overflow-y-auto`}
+          >
+            <InputSidebar />
+          </div>
+        )}
 
-        {/* Output Dashboard - visible on desktop, conditionally on mobile */}
-        <div
-          className={`${
-            mobileView === 'report' ? 'block' : 'hidden'
-          } lg:block flex-1 overflow-y-auto`}
-        >
-          <OutputDashboard />
-        </div>
+        {/* Output Dashboard - hidden when guide is open */}
+        {!isGuideOpen && (
+          <div
+            className={`${
+              activeView === 'report' ? 'block' : 'hidden'
+            } lg:block flex-1 overflow-y-auto`}
+          >
+            <OutputDashboard />
+          </div>
+        )}
+
+        {/* Guide View - full width when active */}
+        {isGuideOpen && (
+          <div className="flex-1 overflow-y-auto">
+            <GuideView />
+          </div>
+        )}
       </div>
 
       {/* Mobile bottom navigation - only visible on mobile */}
@@ -45,9 +62,9 @@ export function Cockpit() {
         <div className="flex">
           <button
             type="button"
-            onClick={() => setMobileView('config')}
+            onClick={() => setActiveView('config')}
             className={`flex-1 py-3 min-h-[44px] text-sm font-medium transition-colors ${
-              mobileView === 'config'
+              activeView === 'config'
                 ? 'text-accent-400 bg-surface-700'
                 : 'text-surface-300 hover:text-surface-100'
             }`}
@@ -56,14 +73,25 @@ export function Cockpit() {
           </button>
           <button
             type="button"
-            onClick={() => setMobileView('report')}
+            onClick={() => setActiveView('report')}
             className={`flex-1 py-3 min-h-[44px] text-sm font-medium transition-colors ${
-              mobileView === 'report'
+              activeView === 'report'
                 ? 'text-accent-400 bg-surface-700'
                 : 'text-surface-300 hover:text-surface-100'
             }`}
           >
             {t('nav.report')}
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveView('guide')}
+            className={`flex-1 py-3 min-h-[44px] text-sm font-medium transition-colors ${
+              activeView === 'guide'
+                ? 'text-accent-400 bg-surface-700'
+                : 'text-surface-300 hover:text-surface-100'
+            }`}
+          >
+            {t('nav.guide')}
           </button>
         </div>
       </nav>

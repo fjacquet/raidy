@@ -17,7 +17,12 @@ const CARBON_REGION_VALUES: CarbonRegion[] = [
   'china',
 ]
 
-export function Header() {
+interface HeaderProps {
+  onToggleGuide: () => void
+  isGuideOpen: boolean
+}
+
+export function Header({ onToggleGuide, isGuideOpen }: HeaderProps) {
   const { t } = useTranslation('common')
   const unitSystem = useConfigStore((state) => state.unitSystem)
   const setUnitSystem = useConfigStore((state) => state.setUnitSystem)
@@ -67,6 +72,18 @@ export function Header() {
             <span className="text-xs text-slate-400">{t('language.label')}:</span>
             <LanguageSwitcher />
           </div>
+          <button
+            type="button"
+            onClick={onToggleGuide}
+            className={`hidden lg:flex w-8 h-8 items-center justify-center rounded-lg text-sm font-bold transition-colors ${
+              isGuideOpen
+                ? 'bg-primary-600 text-white'
+                : 'bg-surface-700 text-slate-400 hover:text-white hover:bg-surface-600'
+            }`}
+            title={t('nav.guide')}
+          >
+            ?
+          </button>
         </div>
       </div>
     </header>

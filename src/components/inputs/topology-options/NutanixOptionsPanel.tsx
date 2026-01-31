@@ -19,6 +19,7 @@ interface NutanixOptionsPanelProps {
 
 export function NutanixOptionsPanel({ topology }: NutanixOptionsPanelProps) {
   const { t } = useTranslation('topology')
+  const { t: th } = useTranslation('help')
   const { nutanixOptions, setNutanixOptions } = useConfigStore()
 
   return (
@@ -56,7 +57,7 @@ export function NutanixOptionsPanel({ topology }: NutanixOptionsPanelProps) {
       </div>
 
       <div className="space-y-2">
-        <Label>{t('nutanix.clusterType')}</Label>
+        <Label tooltip={th('nutanix.rf')}>{t('nutanix.clusterType')}</Label>
         <SegmentedControl
           value={nutanixOptions.clusterType}
           options={[
@@ -141,7 +142,9 @@ export function NutanixOptionsPanel({ topology }: NutanixOptionsPanelProps) {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="nutanix-overhead">{t('common.systemOverhead')}</Label>
+        <Label htmlFor="nutanix-overhead" tooltip={th('nutanix.ec')}>
+          {t('common.systemOverhead')}
+        </Label>
         <Slider
           id="nutanix-overhead"
           value={nutanixOptions.systemOverhead * 100}

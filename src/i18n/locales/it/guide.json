@@ -1,0 +1,128 @@
+{
+  "title": "Principi di dimensionamento dello storage",
+  "subtitle": "Comprendere il funzionamento dei calcoli di storage",
+  "capacity": {
+    "title": "Come funziona la capacità",
+    "intro": "La capacità di storage segue una cascata: la capacità fisica grezza viene ridotta da diversi livelli di overhead prima di ottenere lo spazio utilizzabile. Comprendere ogni livello aiuta a dimensionare lo storage con precisione.",
+    "waterfall": {
+      "title": "La cascata della capacità",
+      "step1": "Capacità grezza: dimensione fisica del disco × numero di dischi × numero di server",
+      "step2": "Sottrarre: overhead di parità/ridondanza (dipende dal livello RAID)",
+      "step3": "Sottrarre: riserva per hot spare",
+      "step4": "Sottrarre: overhead del filesystem (ZFS slop, overhead WAFL, ecc.)",
+      "step5": "Sottrarre: riserve di sistema (Ceph nearfull, riserva di ricostruzione S2D, ecc.)",
+      "step6": "= Capacità utilizzabile",
+      "step7": "Moltiplicare: rapporto di compressione × rapporto di deduplicazione",
+      "step8": "= Capacità effettiva (ciò che è possibile memorizzare logicamente)"
+    },
+    "keyPoint": "Compressione e deduplicazione sono moltiplicative, non additive. Compressione 2x + deduplicazione 2x = capacità effettiva 4x, non 3x. Anche i livelli di overhead si accumulano in modo moltiplicativo: 10% parità + 5% filesystem ≠ 15% di perdita totale."
+  },
+  "raid": {
+    "title": "RAID e ridondanza spiegati",
+    "intro": "I livelli RAID bilanciano tre obiettivi in competizione: efficienza della capacità, prestazioni e tolleranza ai guasti. Nessun singolo livello RAID eccelle in tutti e tre.",
+    "efficiency": {
+      "title": "Formule di efficienza",
+      "raid0": "RAID 0: 100% di efficienza — nessuna ridondanza, nessuna tolleranza ai guasti",
+      "raid1": "RAID 1 / RAID 10: 50% di efficienza — mirror, sopravvive a 1 guasto disco per coppia",
+      "raid5": "RAID 5: efficienza (n−1)/n — parità singola, sopravvive a 1 guasto disco",
+      "raid6": "RAID 6: efficienza (n−2)/n — doppia parità, sopravvive a 2 guasti disco",
+      "example": "Esempio: RAID 5 con 12 dischi = (12−1)/12 = 91,7% di efficienza. RAID 6 = (12−2)/12 = 83,3%."
+    },
+    "writePenalty": {
+      "title": "Penalità di scrittura",
+      "intro": "I livelli RAID basati su parità comportano una penalità di amplificazione di scrittura per le scritture casuali:",
+      "raid5": "RAID 5: penalità 4x — lettura dati vecchi + lettura parità vecchia + scrittura nuovi dati + scrittura nuova parità",
+      "raid6": "RAID 6: penalità 6x — come RAID 5 ma con due calcoli di parità",
+      "mirror": "RAID 1/10: penalità 2x — scrittura su entrambe le metà del mirror",
+      "sequential": "Le scritture sequenziali hanno una penalità inferiore (~1,5x per RAID 5) poiché le scritture a stripe completo evitano il ciclo di lettura-modifica-scrittura.",
+      "sources": "Fonti: WintelGuy.com RAID Performance Calculator, Huawei Storage Knowledge Base"
+    }
+  },
+  "performance": {
+    "title": "Colli di bottiglia delle prestazioni",
+    "intro": "Le prestazioni dello storage sono limitate dall'anello più debole in una catena di quattro livelli. Potenziare un livello che non rappresenta il collo di bottiglia non ha alcun effetto sulle prestazioni complessive.",
+    "chain": {
+      "title": "La catena dei colli di bottiglia",
+      "media": "Livello media: aggregato di tutti gli IOPS/throughput dei dischi (somma dei singoli dischi, corretto per la penalità di scrittura RAID)",
+      "controller": "Livello controller/HBA: tetto fisso del controller RAID o dell'HBA (es. Broadcom 9500: 4M IOPS, 28 GB/s)",
+      "pcie": "Livello bus PCIe: generazione × corsie (es. Gen4 x8 = ~16 GB/s, Gen5 x16 = ~64 GB/s)",
+      "network": "Livello rete: velocità del collegamento (es. 10 GbE = 1,25 GB/s, 25 GbE = 3,1 GB/s, 100 GbE = 12,5 GB/s)"
+    },
+    "keyPoint": "Il livello con il throughput più basso rappresenta il collo di bottiglia (evidenziato in arancione nella dashboard). Potenziare sempre prima il collo di bottiglia.",
+    "alignment": "Per i filesystem XFS su array RAID, l'allineamento degli stripe (sunit/swidth) deve corrispondere alla dimensione del chunk RAID per evitare penalità di lettura-modifica-scrittura sull'I/O sequenziale."
+  },
+  "resilience": {
+    "title": "Resilienza e simulazione Monte Carlo",
+    "intro": "Il motore di resilienza stima la probabilità di sopravvivere un anno senza perdita di dati utilizzando la simulazione Monte Carlo — una tecnica statistica che esegue migliaia di scenari randomizzati.",
+    "process": {
+      "title": "Funzionamento della simulazione",
+      "step1": "1. Simulare guasti casuali dei dischi basandosi sul tasso di guasto annuale (AFR)",
+      "step2": "2. Calcolare il tempo di ricostruzione in base alla capacità del disco e alla velocità di rebuild",
+      "step3": "3. Durante il rebuild, calcolare la probabilità di errore di lettura non recuperabile (URE)",
+      "step4": "4. Simulare guasti correlati (10% di probabilità che un guasto ne provochi un altro entro 7 giorni)",
+      "step5": "5. Considerare i guasti indotti dallo stress durante il rebuild (tasso di guasto 1,3x superiore)",
+      "step6": "Ripetere oltre 10.000 volte per significatività statistica"
+    },
+    "ure": {
+      "title": "Rischio URE durante il rebuild",
+      "description": "Un URE si verifica quando un bit su un disco funzionante non può essere letto durante il rebuild. La probabilità dipende dal tasso URE del disco (da 10⁻¹⁴ a 10⁻¹⁷) e dalla quantità di dati letti. I dischi più grandi presentano un rischio URE esponenzialmente superiore durante il rebuild — ecco perché RAID 5 con dischi di grandi dimensioni (10 TB+) è rischioso."
+    },
+    "keyPoint": "Piccole differenze nel tasso di sopravvivenza rappresentano grandi differenze nel rischio assoluto: 99,9% = 1 array su 1.000 perde dati; 99,99% = 1 su 10.000; 99,999% = 1 su 100.000.",
+    "sources": "Metodologia basata sull'analisi dei guasti tramite catene di Markov standard di settore e sulla modellazione dell'affidabilità basata su AFR."
+  },
+  "sustainability": {
+    "title": "Sostenibilità e TCO",
+    "intro": "Il costo totale di proprietà va oltre l'acquisto dell'hardware e include energia, raffreddamento e impatto ambientale per l'intera durata del progetto.",
+    "pue": {
+      "title": "Power Usage Effectiveness (PUE)",
+      "description": "Il PUE è il rapporto tra la potenza totale dell'impianto e la potenza delle apparecchiature IT. Un PUE di 1,4 significa che il 40% dell'energia è destinato al raffreddamento e all'infrastruttura.",
+      "formula": "Potenza totale = (potenza dischi + potenza server) × PUE",
+      "examples": "Valori tipici: migliori hyperscaler ~1,06, buon livello enterprise ~1,3, media ~1,55, impianti datati ~2,0+"
+    },
+    "co2": {
+      "title": "Intensità di carbonio per regione",
+      "description": "Le emissioni di CO₂ dipendono dalla rete elettrica locale. Lo stesso hardware in località diverse produce emissioni molto differenti:",
+      "comparison": "Svizzera: 30 gCO₂/kWh (idroelettrico) contro Germania: 385 gCO₂/kWh (mix carbone/gas) — una differenza di 12 volte per hardware identico."
+    },
+    "endurance": {
+      "title": "Durata dei SSD (DWPD)",
+      "description": "Il DWPD (Drive Writes Per Day) misura quante volte l'intera capacità del disco può essere scritta al giorno durante il periodo di garanzia. Superare il DWPD nominale accelera l'usura e comporta il rischio di guasto prematuro.",
+      "formula": "DWPD richiesto = volume di scrittura giornaliero / capacità del disco",
+      "example": "Esempio: scrivere 2 TB/giorno su un SSD da 1 TB richiede 2 DWPD. Se il disco è classificato per 1 DWPD, si consumerà al doppio della velocità prevista."
+    }
+  },
+  "platforms": {
+    "title": "Note specifiche per piattaforma",
+    "intro": "Ogni piattaforma di storage presenta comportamenti unici che influenzano i calcoli di capacità e prestazioni. Queste sono le considerazioni specifiche per piattaforma più importanti.",
+    "zfs": {
+      "title": "ZFS",
+      "slop": "Slop Space: ZFS riserva spazio per impedire al pool di raggiungere il 100% di riempimento. Formula: MAX(128 MiB, MIN(capacità/32, 128 GiB)). Per pool inferiori a ~4 TiB, questo corrisponde a circa il 3,1% della capacità. Per pool più grandi, il limite è di 128 GiB.",
+      "ashift": "Ashift: deve corrispondere alla dimensione del settore fisico del disco. Utilizzare ashift=12 (4K) per i dischi moderni. Un ashift non corrispondente causa amplificazione di scrittura e degrado delle prestazioni.",
+      "source": "Fonte: documentazione OpenZFS, parametro spa_slop_shift (PR #11023)"
+    },
+    "vsanEsa": {
+      "title": "VMware vSAN ESA",
+      "adaptive": "RAID 5 adattivo: vSAN ESA regola automaticamente la larghezza dello stripe in base alla dimensione del cluster. Da 3 a 5 host si utilizza 2+1 (67% di efficienza). Da 6+ host si utilizza 4+1 (80% di efficienza). Se un host si guasta in un cluster a 6 host, vSAN passa automaticamente da 4+1 a 2+1 dopo 24 ore.",
+      "nvme": "Solo NVMe: ESA richiede dischi interamente NVMe. Ogni disco funge sia da cache che da capacità in un'architettura a livello singolo.",
+      "source": "Fonte: VMware VCF Blog (Adaptive RAID-5 Erasure Coding), Broadcom TechDocs"
+    },
+    "ceph": {
+      "title": "Ceph",
+      "nearfull": "Soglia nearfull: Ceph utilizza per impostazione predefinita un rapporto nearfull dell'85%. A questo punto gli OSD iniziano a emettere avvisi. Al 90% (backfillfull) il ripristino viene negato. Al 95% (full) le scritture vengono completamente bloccate. Raidy calcola la capacità utilizzabile alla soglia dell'85%.",
+      "ec": "Erasure Coding: i profili comuni includono 2+1 (67%), 4+2 (67%), 8+3 (73%) e 8+4 (67%). Rapporti dati/parità più elevati migliorano l'efficienza ma richiedono più nodi.",
+      "source": "Fonte: documentazione Ceph (mon_osd_nearfull_ratio), documentazione Red Hat Ceph Storage"
+    },
+    "s2d": {
+      "title": "Storage Spaces Direct (S2D)",
+      "reserve": "Riserva di ricostruzione: S2D riserva un equivalente di un disco di capacità per nodo per la ricostruzione automatica. In un cluster a 4 nodi con 8 dischi per nodo, questo significa che 8 dischi (25% del totale) sono destinati alla riserva di ricostruzione.",
+      "map": "MAP (Mirror-Accelerated Parity): combina circa il 20% di livello mirror per i dati caldi con circa l'80% di livello parità per i dati freddi, bilanciando prestazioni ed efficienza della capacità.",
+      "source": "Fonte: documentazione Microsoft Storage Spaces Direct"
+    },
+    "nutanix": {
+      "title": "Nutanix",
+      "ec": "EC-X: si applica solo ai dati freddi. RF2 + EC (4/1) raggiunge circa l'80% di efficienza. RF3 + EC (4/2) raggiunge circa il 67%. I dati caldi rimangono replicati al livello RF di base per le prestazioni di scrittura.",
+      "overhead": "Overhead di sistema: Nutanix riserva circa il 10% della capacità grezza per snapshot, metadati, CVM e operazioni di ricostruzione.",
+      "source": "Fonte: Nutanix TN-2032 (Data Efficiency), NutanixBible.com"
+    }
+  }
+}

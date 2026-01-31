@@ -1,0 +1,87 @@
+{
+  "topology": {
+    "type": "Die Speicherplattform bestimmt die verfuegbaren Schutzstufen, Effizienzformeln und den Funktionsumfang. Jede Plattform hat unterschiedliche Overhead-Modelle und Verwaltungswerkzeuge.",
+    "level": "Die Schutzstufe legt fest, wie viele Laufwerksausfaelle das Array ueberstehen kann und wie viel Kapazitaet durch Redundanz belegt wird. Hoeherer Schutz bedeutet weniger nutzbare Kapazitaet, aber bessere Ausfallsicherheit.",
+    "hotSpares": "Hot Spares sind bereitstehende Laufwerke, die ausgefallene Laufwerke automatisch ersetzen und so die Rebuild-Zeit verkuerzen. Sie reservieren Kapazitaet, verbessern aber die Ausfallsicherheit. Nicht erforderlich bei Plattformen mit verteilter Reservekapazitaet (z. B. ADAPT, dRAID)."
+  },
+  "hardware": {
+    "connectivity": "Die Laufwerksschnittstelle bestimmt den maximalen Durchsatz pro Laufwerk. NVMe bietet die hoechste Bandbreite (bis zu 7 GB/s pro Laufwerk). SAS und SATA sind auf ca. 2,4 GB/s bzw. 0,6 GB/s begrenzt.",
+    "formFactor": "Der physische Formfaktor beeinflusst Dichte und Kuehlung. 3,5\"-Laufwerke bieten maximale HDD-Kapazitaet. 2,5\" und neuere Formfaktoren (E3.S, EDSFF) sind fuer SSD und NVMe optimiert.",
+    "driveModel": "Die individuellen Laufwerksspezifikationen beeinflussen alle Berechnungen: Kapazitaet, IOPS, Durchsatz, Stromverbrauch, Haltbarkeit (DWPD bei SSD) und Kosten.",
+    "driveCount": "Laufwerke pro Server. Zusammen mit der Serveranzahl ergibt sich die gesamte Rohkapazitaet und die aggregierte Leistung. Mehr Laufwerke erhoehen die Rebuild-Zeit bei paritaetsbasierten Topologien.",
+    "serverCount": "Anzahl der Server oder Knoten. Beeinflusst die Gesamtzahl der Laufwerke, den Stromverbrauch und bei verteilten Plattformen (vSAN, Ceph, S2D, Nutanix) die Anzahl der Fehlerdomaenen und die Mindestanforderungen an Hosts.",
+    "serverPower": "Basis-Stromverbrauch des Servers (ohne Laufwerke). Wird zur Berechnung des Gesamtenergieverbrauchs, der jaehrlichen Kosten und der CO\u2082-Emissionen verwendet."
+  },
+  "workload": {
+    "readWrite": "Das Lese-/Schreibverhaeltnis hat erheblichen Einfluss auf die effektiven IOPS. Schreibvorgaenge bei RAID 5/6 verursachen einen Penalty (4x bei RAID-5, 6x bei RAID-6), da jeder Schreibvorgang das Lesen alter Daten, alter Paritaet sowie das Schreiben neuer Daten und neuer Paritaet erfordert.",
+    "randomSequential": "Zufaellige I/O wird in IOPS gemessen; sequenzielle I/O wird als Durchsatz (MB/s) gemessen. Datenbanken sind typischerweise zu ueber 80 % zufaellig; Video-Streaming ist nahezu 100 % sequenziell.",
+    "blockSize": "Die I/O-Blockgroesse beeinflusst sowohl Leistung als auch Ausrichtung. Kleinere Bloecke (4K-8K) maximieren IOPS fuer Datenbanken. Groessere Bloecke (128K-1M) maximieren den Durchsatz fuer sequenzielle Workloads.",
+    "datasetSize": "Gesamtmenge der zu speichernden Daten. Wird verwendet, um zu berechnen, ob der konfigurierte Speicher nach Abzug aller Overheads genuegend nutzbare Kapazitaet bietet.",
+    "dailyWriteVolume": "Das taegliche Schreibvolumen bestimmt die SSD-Haltbarkeitsanforderungen (DWPD). Hohe Schreibvolumen auf SSD koennen die angegebene Haltbarkeit des Laufwerks ueberschreiten und zu vorzeitigem Ausfall fuehren."
+  },
+  "advanced": {
+    "compression": "Das Komprimierungsverhaeltnis vervielfacht die effektive Kapazitaet. Wird nach der Berechnung der nutzbaren Kapazitaet angewendet. Ein Verhaeltnis von 2x verdoppelt die effektive Kapazitaet. Komprimierung ist multiplikativ mit Deduplizierung, nicht additiv.",
+    "dedup": "Das Deduplizierungsverhaeltnis vervielfacht die effektive Kapazitaet durch Eliminierung doppelter Datenbloecke. Multiplikativ mit Komprimierung (z. B. 2x Komprimierung + 2x Deduplizierung = 4x effektive Kapazitaet, nicht 3x).",
+    "networkSpeed": "Die Netzwerkgeschwindigkeit kann bei verteilten Speichersystemen zum Engpass werden. Bei replikationsbasierten Systemen (vSAN, Ceph, Nutanix) muessen Schreibvorgaenge ueber das Netzwerk zu den Replikatknoten uebertragen werden.",
+    "pcieGen": "Die PCIe-Generation bestimmt die Bus-Bandbreite pro Lane. Gen3: ca. 1 GB/s/Lane, Gen4: ca. 2 GB/s/Lane, Gen5: ca. 4 GB/s/Lane. In Kombination mit der Lane-Anzahl ergibt sich die maximale Bus-Bandbreite.",
+    "pcieLanes": "PCIe-Lanes multipliziert mit der Bandbreite pro Lane ergibt den gesamten Bus-Durchsatz. x4 ist Standard fuer NVMe-Laufwerke, x8/x16 fuer RAID-Controller und HBA.",
+    "pue": "Power Usage Effectiveness: Verhaeltnis des gesamten Anlagenstromverbrauchs zum IT-Geraetestromverbrauch. PUE 1,0 bedeutet keinen Kuehlungs-Overhead. PUE 1,4 bedeutet 40 % zusaetzlichen Stromverbrauch fuer Kuehlung. Der Weltdurchschnitt liegt bei ca. 1,55; die besten Rechenzentren erreichen ca. 1,1.",
+    "fsType": "Die Wahl des Dateisystems beeinflusst Overhead und Funktionen. ZFS hat ca. 3 % Slop-Space-Overhead. XFS/ReFS unterstuetzen Reflinks fuer effiziente Snapshots. Btrfs unterstuetzt Snapshots mit ca. 4 % Overhead.",
+    "controller": "Der Storage-Controller oder HBA begrenzt die Gesamt-IOPS und den Durchsatz. Software-RAID nutzt die CPU fuer Paritaetsberechnungen. Hardware-RAID-Controller haben feste IOPS-/Durchsatz-Obergrenzen.",
+    "backupRetention": "Anzahl der Tage, fuer die Backup-Kopien aufbewahrt werden. In Kombination mit der taeglichen Aenderungsrate wird der gesamte benoetigte Backup-Speicher bestimmt.",
+    "dailyChangeRate": "Prozentsatz der Daten, die sich taeglich aendern. Hoehere Aenderungsraten bedeuten groessere inkrementelle Backups und hoeheren Speicherverbrauch ueber den Aufbewahrungszeitraum."
+  },
+  "output": {
+    "rawCapacity": "Gesamte physische Kapazitaet aller Laufwerke vor jeglichem Overhead. Berechnung: Laufwerkskapazitaet x Laufwerksanzahl x Serveranzahl.",
+    "usableCapacity": "Verfuegbare Kapazitaet nach Abzug von Paritaet/Redundanz, Hot Spares, Dateisystem-Overhead und Systemreserven. Dies ist der tatsaechlich beschreibbare Speicherplatz.",
+    "effectiveCapacity": "Nutzbare Kapazitaet multipliziert mit Komprimierungs- und Deduplizierungsverhaeltnissen. Stellt das logische Datenvolumen dar, das das System speichern kann.",
+    "efficiency": "Verhaeltnis von nutzbarer Kapazitaet zu Rohkapazitaet, ausgedrueckt in Prozent. Hoeher ist besser, aber hoehere Effizienz bedeutet in der Regel weniger Redundanz.",
+    "sankeyDiagram": "Das Sankey-Diagramm zeigt den Kapazitaetsverlauf: wie die Rohkapazitaet durch verschiedene Overhead-Abzuege zur nutzbaren Kapazitaet wird. Breitere Fluesse stellen groessere Mengen dar.",
+    "readThroughput": "Maximaler sequenzieller Lesedurchsatz, begrenzt durch das schwaechste Glied der Kette: Medien-Aggregat, Controller/HBA, PCIe-Bus oder Netzwerk.",
+    "writeThroughput": "Maximaler sequenzieller Schreibdurchsatz. Bei paritaetsbasiertem RAID wird der Schreibdurchsatz durch den Write-Penalty-Faktor reduziert.",
+    "readIops": "Maximale zufaellige Lese-IOPS. Summe aller Laufwerks-Lese-IOPS, begrenzt durch Controller- und Bus-Obergrenzen.",
+    "writeIops": "Maximale zufaellige Schreib-IOPS. Bei RAID-5 durch 4 teilen (jeder Schreibvorgang benoetigt 4 I/O-Operationen). Bei RAID-6 durch 6 teilen.",
+    "bottleneck": "Die Engpasskette zeigt den Durchsatz auf jeder Ebene. Die Ebene mit dem niedrigsten Durchsatz ist der Engpass. Ein Upgrade einer anderen Ebene verbessert die Leistung nicht.",
+    "survivalRate": "Wahrscheinlichkeit, ein Jahr ohne Datenverlust zu ueberstehen, berechnet mittels Monte-Carlo-Simulation. Beruecksichtigt Laufwerksausfallraten (AFR), Rebuild-Zeit, URE-Wahrscheinlichkeit waehrend des Rebuilds und korrelierte Ausfaelle.",
+    "rebuildTime": "Geschaetzte Zeit fuer den Rebuild eines ausgefallenen Laufwerks. Laengere Rebuild-Zeiten erhoehen das Verwundbarkeitsfenster. Abhaengig von Laufwerkskapazitaet, Rebuild-Geschwindigkeit und Array-Auslastung.",
+    "totalPower": "Gesamtstromverbrauch einschliesslich Laufwerke, Server und Kuehlung (PUE-Faktor). Wird zur Berechnung der jaehrlichen Energiekosten und CO\u2082-Emissionen verwendet.",
+    "annualCo2": "Jaehrliche CO\u2082-Emissionen basierend auf dem Gesamtenergieverbrauch und der gewaehlten Netz-Kohlenstoffintensitaet. Die Schweiz (30 g/kWh) gehoert zu den saubersten; China (555 g/kWh) zu den hoechsten."
+  },
+  "zfs": {
+    "ashift": "Der ashift-Wert muss der physischen Sektorgroesse des Laufwerks entsprechen. Die Verwendung von ashift=9 (512B) auf einem Laufwerk mit 4K-Sektoren verursacht Write Amplification. Verwenden Sie ashift=12 fuer moderne Laufwerke.",
+    "compression": "ZFS-Komprimierungsalgorithmus. LZ4 wird fuer die meisten Workloads empfohlen (schnell, geringe CPU-Last). ZSTD bietet bessere Verhaeltnisse bei hoeherem CPU-Aufwand.",
+    "recordsize": "Maximale Datensatzgroesse fuer Datasets. An den Workload anpassen: 128K fuer allgemeine Dateien, 16K-64K fuer Datenbanken, 1M fuer grosse sequenzielle Workloads.",
+    "dedup": "ZFS-Deduplizierung benoetigt etwa 5 GB RAM pro TB deduplizierter Daten. Nur aktivieren, wenn genuegend RAM vorhanden ist und eine schreibintensive Arbeitslast mit vielen Duplikaten vorliegt.",
+    "specialVdev": "Ein Special vdev (NVMe) speichert Metadaten und kleine Bloecke und verbessert die zufaellige I/O-Leistung fuer HDD-basierte Pools erheblich."
+  },
+  "ceph": {
+    "nearfull": "Der Standard-Nearfull-Schwellenwert von Ceph liegt bei 85 %. OSDs akzeptieren oberhalb dieses Schwellenwerts keine Schreibvorgaenge mehr. Die nutzbare Kapazitaet wird bei diesem Schwellenwert berechnet, nicht bei 100 %.",
+    "backend": "BlueStore ist das empfohlene Backend. Es umgeht das lokale Dateisystem fuer direkten Plattenzugriff und verbessert die Leistung gegenueber dem aelteren FileStore."
+  },
+  "vsan": {
+    "adaptive": "vSAN ESA nutzt adaptives RAID-5: 2+1 Streifenbreite fuer 3-5 Hosts (67 % Effizienz) oder 4+1 fuer 6+ Hosts (80 % Effizienz). Das System passt sich automatisch an die Clustergroesse an."
+  },
+  "s2d": {
+    "reserve": "S2D reserviert pro Knoten eine Laufwerksaequivalent-Kapazitaet fuer automatischen Rebuild. Diese Reserve wird vor der Berechnung der nutzbaren Kapazitaet abgezogen.",
+    "map": "Mirror-Accelerated Parity (MAP) kombiniert eine schnelle Spiegel-Schicht (ca. 20 %) mit einer kapazitaetseffizienten Paritaets-Schicht (ca. 80 %) und bietet ein ausgewogenes Verhaeltnis von Leistung und Effizienz."
+  },
+  "nutanix": {
+    "ec": "Erasure Coding (EC-X): RF2 mit EC(4/1) erreicht ca. 80 % Effizienz. RF3 mit EC(4/2) erreicht ca. 67 % Effizienz. EC gilt nur fuer kalte Daten; heisse Daten bleiben repliziert.",
+    "rf": "RF2 speichert 2 Kopien der Daten (50 % Effizienz). RF3 speichert 3 Kopien (33 % Effizienz). Hoeherer RF bedeutet bessere Fehlertoleranz, aber geringere Kapazitaet."
+  },
+  "netapp": {
+    "wafl": "Das NetApp WAFL-Dateisystem hat einen Overhead von etwa 1,5 % fuer interne Metadaten. Dieser wird von der nutzbaren Kapazitaet abgezogen.",
+    "adp": "Advanced Data Partitioning (ADP) teilt Laufwerke zwischen Root- und Datenaggregaten und verbessert die Kapazitaetsauslastung bei kleineren Systemen.",
+    "snapshot": "Die Snapshot-Reserve (Standard 5 %) ist vorab zugewiesener Speicherplatz fuer Zeitpunktkopien. Auf 0 % setzen bei All-Flash-Arrays mit Inline-Deduplizierung."
+  },
+  "synology": {
+    "shr": "Synology Hybrid RAID (SHR) bietet Schutz vor einem Laufwerksausfall mit Unterstuetzung fuer gemischte Laufwerksgroessen. SHR-2 bietet Schutz vor zwei Laufwerksausfaellen.",
+    "systemPartition": "Synology reserviert 20-30 GB pro Laufwerk fuer Systempartitionen. Bei vielen Laufwerken kann dieser feste Overhead erheblich werden."
+  },
+  "dell": {
+    "powerFlex": "PowerFlex unterstuetzt 2-Wege- und 3-Wege-Spiegelung mit Fine Granularity (8KB) oder Medium Granularity (1MB). Fine Granularity fuegt ca. 12-15 % Metadaten-Overhead hinzu, ermoeglicht aber schnellere Rebuilds.",
+    "powerStore": "PowerStore ist eine All-Flash-Appliance mit integrierter Deduplizierung und Komprimierung. Controller-Limits bestimmen den maximalen Durchsatz.",
+    "powerScale": "PowerScale (Isilon) ist ein Scale-Out-NAS. Die Effizienz haengt von der Schutzstufe und der Knotenanzahl ab.",
+    "objectScale": "ObjectScale bietet S3-kompatiblen Objektspeicher. Multi-Site-Georeplikation kann erheblichen Kapazitaets-Overhead verursachen (bis zu 2,67x bei 2-Site EC 12+4)."
+  }
+}

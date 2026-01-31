@@ -28,6 +28,7 @@ interface DellOptionsPanelProps {
 
 export function DellOptionsPanel({ topology }: DellOptionsPanelProps) {
   const { t } = useTranslation('topology')
+  const { t: th } = useTranslation('help')
   const {
     objectscaleOptions,
     powerstoreOptions,
@@ -188,7 +189,9 @@ export function DellOptionsPanel({ topology }: DellOptionsPanelProps) {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="objectscale-overhead">{t('common.systemOverhead')}</Label>
+          <Label htmlFor="objectscale-overhead" tooltip={th('dell.objectScale')}>
+            {t('common.systemOverhead')}
+          </Label>
           <Slider
             id="objectscale-overhead"
             value={objectscaleOptions.systemOverheadPercent}
@@ -460,7 +463,9 @@ export function DellOptionsPanel({ topology }: DellOptionsPanelProps) {
         {/* FG Metadata overhead - only for Fine granularity modes */}
         {topology.level.includes('fine') && (
           <div className="space-y-2">
-            <Label htmlFor="powerflex-fg-overhead">{t('powerflex.fgOverhead')}</Label>
+            <Label htmlFor="powerflex-fg-overhead" tooltip={th('dell.powerFlex')}>
+              {t('powerflex.fgOverhead')}
+            </Label>
             <Slider
               id="powerflex-fg-overhead"
               value={powerFlexOptions.fgOverhead * 100}
@@ -475,7 +480,9 @@ export function DellOptionsPanel({ topology }: DellOptionsPanelProps) {
         )}
 
         <div className="space-y-2">
-          <Label htmlFor="powerflex-fault-sets">{t('powerflex.faultSets')}</Label>
+          <Label htmlFor="powerflex-fault-sets" tooltip={th('dell.powerFlex')}>
+            {t('powerflex.faultSets')}
+          </Label>
           <NumberInput
             id="powerflex-fault-sets"
             value={powerFlexOptions.faultSets}

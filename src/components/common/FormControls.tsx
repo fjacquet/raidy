@@ -3,19 +3,24 @@
  */
 
 import type { ReactNode } from 'react'
+import { InfoTooltip } from './InfoTooltip'
 
 interface LabelProps {
   children: ReactNode
   htmlFor?: string
   hint?: string
+  tooltip?: string
 }
 
-export function Label({ children, htmlFor, hint }: LabelProps) {
+export function Label({ children, htmlFor, hint, tooltip }: LabelProps) {
   return (
     <div className="flex items-baseline justify-between">
-      <label htmlFor={htmlFor} className="block text-sm font-medium text-slate-300">
-        {children}
-      </label>
+      <div className="flex items-center gap-1.5">
+        <label htmlFor={htmlFor} className="block text-sm font-medium text-slate-300">
+          {children}
+        </label>
+        {tooltip && <InfoTooltip content={tooltip} />}
+      </div>
       {hint && <span className="text-xs text-slate-500">{hint}</span>}
     </div>
   )

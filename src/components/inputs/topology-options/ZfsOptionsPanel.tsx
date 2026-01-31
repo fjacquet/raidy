@@ -37,6 +37,7 @@ const RECORDSIZE_OPTIONS = [
 
 export function ZfsOptionsPanel() {
   const { t } = useTranslation('topology')
+  const { t: th } = useTranslation('help')
   const { zfsOptions, setZfsOptions } = useConfigStore()
 
   return (
@@ -46,7 +47,9 @@ export function ZfsOptionsPanel() {
       </h4>
 
       <div className="space-y-2">
-        <Label htmlFor="ashift">{t('zfs.ashift')}</Label>
+        <Label htmlFor="ashift" tooltip={th('zfs.ashift')}>
+          {t('zfs.ashift')}
+        </Label>
         <Select
           id="ashift"
           value={String(zfsOptions.ashift)}
@@ -64,7 +67,9 @@ export function ZfsOptionsPanel() {
 
       {zfsOptions.compression && (
         <div className="space-y-2">
-          <Label htmlFor="compression-type">{t('zfs.compressionAlgorithm')}</Label>
+          <Label htmlFor="compression-type" tooltip={th('zfs.compression')}>
+            {t('zfs.compressionAlgorithm')}
+          </Label>
           <Select
             id="compression-type"
             value={zfsOptions.compressionType}
@@ -77,7 +82,9 @@ export function ZfsOptionsPanel() {
       )}
 
       <div className="space-y-2">
-        <Label htmlFor="recordsize">{t('zfs.recordSize')}</Label>
+        <Label htmlFor="recordsize" tooltip={th('zfs.recordsize')}>
+          {t('zfs.recordSize')}
+        </Label>
         <Select
           id="recordsize"
           value={String(zfsOptions.recordsize)}

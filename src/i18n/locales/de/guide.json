@@ -1,0 +1,128 @@
+{
+  "title": "Grundlagen der Speicherdimensionierung",
+  "subtitle": "Funktionsweise von Speicherberechnungen",
+  "capacity": {
+    "title": "Funktionsweise der Kapazität",
+    "intro": "Speicherkapazität folgt einem Wasserfallmodell: Die physische Rohkapazität wird durch mehrere Overhead-Schichten reduziert, bevor nutzbarer Speicherplatz zur Verfügung steht. Das Verständnis jeder Schicht hilft bei der genauen Speicherdimensionierung.",
+    "waterfall": {
+      "title": "Das Kapazitäts-Wasserfallmodell",
+      "step1": "Rohkapazität: Physische Laufwerksgrösse × Laufwerksanzahl × Serveranzahl",
+      "step2": "Abzug: Paritäts-/Redundanz-Overhead (abhängig vom RAID-Level)",
+      "step3": "Abzug: Hot-Spare-Reservierung",
+      "step4": "Abzug: Dateisystem-Overhead (ZFS Slop, WAFL-Overhead usw.)",
+      "step5": "Abzug: Systemreserven (Ceph Nearfull, S2D Rebuild-Reserve usw.)",
+      "step6": "= Nutzbare Kapazität",
+      "step7": "Multiplikation: Kompressionsrate × Deduplizierungsrate",
+      "step8": "= Effektive Kapazität (logisch speicherbare Datenmenge)"
+    },
+    "keyPoint": "Kompression und Deduplizierung wirken multiplikativ, nicht additiv. 2x Kompression + 2x Dedup = 4x effektive Kapazität, nicht 3x. Overhead-Schichten wirken ebenfalls multiplikativ: 10% Parität + 5% Dateisystem ≠ 15% Gesamtverlust."
+  },
+  "raid": {
+    "title": "RAID und Redundanz erklärt",
+    "intro": "RAID-Level balancieren drei konkurrierende Ziele: Kapazitätseffizienz, Leistung und Fehlertoleranz. Kein einzelnes RAID-Level ist in allen drei Bereichen überlegen.",
+    "efficiency": {
+      "title": "Effizienzformeln",
+      "raid0": "RAID 0: 100% Effizienz — keine Redundanz, keine Fehlertoleranz",
+      "raid1": "RAID 1 / RAID 10: 50% Effizienz — Spiegelung, übersteht 1 Laufwerksausfall pro Paar",
+      "raid5": "RAID 5: (n−1)/n Effizienz — einfache Parität, übersteht 1 Laufwerksausfall",
+      "raid6": "RAID 6: (n−2)/n Effizienz — doppelte Parität, übersteht 2 Laufwerksausfälle",
+      "example": "Beispiel: 12-Laufwerk RAID 5 = (12−1)/12 = 91,7% Effizienz. RAID 6 = (12−2)/12 = 83,3%."
+    },
+    "writePenalty": {
+      "title": "Schreibstrafe (Write Penalty)",
+      "intro": "Paritätsbasierte RAID-Level haben eine Schreibverstärkung bei zufälligen Schreibzugriffen:",
+      "raid5": "RAID 5: 4x Strafe — alte Daten lesen + alte Parität lesen + neue Daten schreiben + neue Parität schreiben",
+      "raid6": "RAID 6: 6x Strafe — wie RAID 5, jedoch mit zwei Paritätsberechnungen",
+      "mirror": "RAID 1/10: 2x Strafe — Schreiben auf beide Spiegelhälften",
+      "sequential": "Sequenzielle Schreibvorgänge haben eine geringere Strafe (~1,5x für RAID 5), da vollständige Stripe-Schreibvorgänge den Read-Modify-Write-Zyklus vermeiden.",
+      "sources": "Quellen: WintelGuy.com RAID Performance Calculator, Huawei Storage Knowledge Base"
+    }
+  },
+  "performance": {
+    "title": "Leistungsengpässe",
+    "intro": "Die Speicherleistung wird durch das schwächste Glied in einer Kette von vier Schichten begrenzt. Das Aufrüsten einer Schicht, die nicht der Engpass ist, hat keinerlei Auswirkung auf die Gesamtleistung.",
+    "chain": {
+      "title": "Die Engpass-Kette",
+      "media": "Medienschicht: Aggregierte IOPS/Durchsatz aller Laufwerke (Summe der einzelnen Laufwerke, bereinigt um die RAID-Schreibstrafe)",
+      "controller": "Controller/HBA-Schicht: Feste Obergrenze des RAID-Controllers oder HBA (z. B. Broadcom 9500: 4M IOPS, 28 GB/s)",
+      "pcie": "PCIe-Bus-Schicht: Generation × Lanes (z. B. Gen4 x8 = ~16 GB/s, Gen5 x16 = ~64 GB/s)",
+      "network": "Netzwerkschicht: Verbindungsgeschwindigkeit (z. B. 10 GbE = 1,25 GB/s, 25 GbE = 3,1 GB/s, 100 GbE = 12,5 GB/s)"
+    },
+    "keyPoint": "Die Schicht mit dem geringsten Durchsatz ist der Engpass (im Dashboard orange hervorgehoben). Rüsten Sie immer zuerst den Engpass auf.",
+    "alignment": "Bei XFS-Dateisystemen auf RAID-Arrays sollte die Stripe-Ausrichtung (sunit/swidth) der RAID-Chunk-Grösse entsprechen, um Read-Modify-Write-Strafen bei sequenziellem I/O zu vermeiden."
+  },
+  "resilience": {
+    "title": "Ausfallsicherheit und Monte Carlo-Simulation",
+    "intro": "Die Resilienz-Engine schätzt die Wahrscheinlichkeit, ein Jahr ohne Datenverlust zu überstehen, mithilfe einer Monte Carlo-Simulation — einer statistischen Methode, die Tausende von zufälligen Szenarien durchspielt.",
+    "process": {
+      "title": "Funktionsweise der Simulation",
+      "step1": "1. Simulation zufälliger Laufwerksausfälle basierend auf der jährlichen Ausfallrate (AFR)",
+      "step2": "2. Berechnung der Rebuild-Zeit basierend auf Laufwerkskapazität und Rebuild-Geschwindigkeit",
+      "step3": "3. Während des Rebuild: Berechnung der Wahrscheinlichkeit eines nicht behebbaren Lesefehlers (URE)",
+      "step4": "4. Simulation korrelierter Ausfälle (10% Wahrscheinlichkeit, dass ein Ausfall innerhalb von 7 Tagen einen weiteren auslöst)",
+      "step5": "5. Berücksichtigung stressbedingter Ausfälle während des Rebuild (1,3x höhere Ausfallrate)",
+      "step6": "Wiederholung 10'000+ Mal für statistische Signifikanz"
+    },
+    "ure": {
+      "title": "URE-Risiko während des Rebuild",
+      "description": "Ein URE tritt auf, wenn ein Bit auf einem verbliebenen Laufwerk während des Rebuild nicht gelesen werden kann. Die Wahrscheinlichkeit hängt von der URE-Rate des Laufwerks (10⁻¹⁴ bis 10⁻¹⁷) und der gelesenen Datenmenge ab. Grössere Laufwerke haben ein exponentiell höheres URE-Risiko während des Rebuild — deshalb ist RAID 5 mit grossen Laufwerken (10 TB+) riskant."
+    },
+    "keyPoint": "Kleine Unterschiede in der Überlebensrate bedeuten grosse Unterschiede im absoluten Risiko: 99,9% = 1 von 1'000 Arrays verliert Daten; 99,99% = 1 von 10'000; 99,999% = 1 von 100'000.",
+    "sources": "Methodik basiert auf branchenüblicher Markov-Ketten-Ausfallanalyse und AFR-basierter Zuverlässigkeitsmodellierung."
+  },
+  "sustainability": {
+    "title": "Nachhaltigkeit und TCO",
+    "intro": "Die Gesamtbetriebskosten (Total Cost of Ownership) gehen über den Hardwarekauf hinaus und umfassen Energie, Kühlung und Umweltauswirkungen über die gesamte Projektlaufzeit.",
+    "pue": {
+      "title": "Power Usage Effectiveness (PUE)",
+      "description": "PUE ist das Verhältnis der gesamten Anlagenleistung zur IT-Geräte-Leistung. Ein PUE von 1,4 bedeutet, dass 40% der Energie für Kühlung und Infrastruktur aufgewendet werden.",
+      "formula": "Gesamtleistung = (Laufwerksleistung + Serverleistung) × PUE",
+      "examples": "Typische Werte: Beste Hyperscaler ~1,06, guter Enterprise-Bereich ~1,3, Durchschnitt ~1,55, ältere Rechenzentren ~2,0+"
+    },
+    "co2": {
+      "title": "CO₂-Intensität nach Region",
+      "description": "CO₂-Emissionen hängen vom lokalen Stromnetz ab. Dieselbe Hardware erzeugt an verschiedenen Standorten sehr unterschiedliche Emissionen:",
+      "comparison": "Schweiz: 30 gCO₂/kWh (Wasserkraft) vs. Deutschland: 385 gCO₂/kWh (Kohle-/Gasmix) — ein 12-facher Unterschied bei identischer Hardware."
+    },
+    "endurance": {
+      "title": "SSD-Lebensdauer (DWPD)",
+      "description": "DWPD (Drive Writes Per Day) misst, wie oft die gesamte Laufwerkskapazität pro Tag über die Garantiezeit beschrieben werden kann. Das Überschreiten des angegebenen DWPD-Werts beschleunigt den Verschleiss und erhöht das Risiko eines vorzeitigen Ausfalls.",
+      "formula": "Erforderliche DWPD = Tägliches Schreibvolumen / Laufwerkskapazität",
+      "example": "Beispiel: 2 TB/Tag auf eine 1 TB SSD zu schreiben erfordert 2 DWPD. Wenn das Laufwerk für 1 DWPD ausgelegt ist, verschleisst es mit der doppelten erwarteten Rate."
+    }
+  },
+  "platforms": {
+    "title": "Plattformspezifische Hinweise",
+    "intro": "Jede Speicherplattform hat besondere Eigenschaften, die Kapazitäts- und Leistungsberechnungen beeinflussen. Dies sind die wichtigsten plattformspezifischen Aspekte.",
+    "zfs": {
+      "title": "ZFS",
+      "slop": "Slop Space: ZFS reserviert Speicherplatz, um zu verhindern, dass der Pool zu 100% voll wird. Formel: MAX(128 MiB, MIN(capacity/32, 128 GiB)). Für Pools unter ~4 TiB entspricht dies ~3,1% der Kapazität. Bei grösseren Pools ist die Obergrenze 128 GiB.",
+      "ashift": "Ashift: Muss zur physischen Sektorgrösse des Laufwerks passen. Verwenden Sie ashift=12 (4K) für moderne Laufwerke. Falsche Ashift-Werte verursachen Schreibverstärkung und Leistungseinbussen.",
+      "source": "Quelle: OpenZFS-Dokumentation, spa_slop_shift-Parameter (PR #11023)"
+    },
+    "vsanEsa": {
+      "title": "VMware vSAN ESA",
+      "adaptive": "Adaptive RAID-5: vSAN ESA passt die Stripe-Breite automatisch an die Clustergrösse an. 3–5 Hosts verwenden 2+1 (67% Effizienz). 6+ Hosts verwenden 4+1 (80% Effizienz). Fällt ein Host in einem 6-Host-Cluster aus, stuft vSAN nach 24 Stunden automatisch von 4+1 auf 2+1 herunter.",
+      "nvme": "Nur NVMe: ESA erfordert ausschliesslich NVMe-Laufwerke. Jedes Laufwerk dient in einer Single-Tier-Architektur gleichzeitig als Cache und Kapazität.",
+      "source": "Quelle: VMware VCF Blog (Adaptive RAID-5 Erasure Coding), Broadcom TechDocs"
+    },
+    "ceph": {
+      "title": "Ceph",
+      "nearfull": "Nearfull-Schwellenwert: Ceph verwendet standardmässig 85% als Nearfull-Ratio. Ab diesem Punkt geben OSDs Warnungen aus. Bei 90% (Backfillfull) wird die Wiederherstellung verweigert. Bei 95% (Full) werden Schreibvorgänge vollständig blockiert. Raidy berechnet die nutzbare Kapazität beim 85%-Schwellenwert.",
+      "ec": "Erasure Coding: Gängige Profile umfassen 2+1 (67%), 4+2 (67%), 8+3 (73%) und 8+4 (67%). Höhere Daten-zu-Paritäts-Verhältnisse verbessern die Effizienz, erfordern aber mehr Knoten.",
+      "source": "Quelle: Ceph-Dokumentation (mon_osd_nearfull_ratio), Red Hat Ceph Storage-Dokumentation"
+    },
+    "s2d": {
+      "title": "Storage Spaces Direct (S2D)",
+      "reserve": "Rebuild-Reserve: S2D reserviert ein Laufwerksäquivalent an Kapazität pro Knoten für den automatischen Rebuild. In einem 4-Knoten-Cluster mit 8 Laufwerken pro Knoten gehen 8 Laufwerke (25% der Gesamtkapazität) als Rebuild-Reserve verloren.",
+      "map": "MAP (Mirror-Accelerated Parity): Kombiniert ~20% Spiegel-Tier für heisse Daten mit ~80% Paritäts-Tier für kalte Daten und bietet ein ausgewogenes Verhältnis zwischen Leistung und Kapazitätseffizienz.",
+      "source": "Quelle: Microsoft Storage Spaces Direct-Dokumentation"
+    },
+    "nutanix": {
+      "title": "Nutanix",
+      "ec": "EC-X: Gilt nur für kalte Daten. RF2 + EC (4/1) erreicht ~80% Effizienz. RF3 + EC (4/2) erreicht ~67%. Heisse Daten werden weiterhin auf dem Basis-RF-Level repliziert, um die Schreibleistung zu gewährleisten.",
+      "overhead": "System-Overhead: Nutanix reserviert ~10% der Rohkapazität für Snapshots, Metadaten, CVM und Rebuild-Operationen.",
+      "source": "Quelle: Nutanix TN-2032 (Data Efficiency), NutanixBible.com"
+    }
+  }
+}

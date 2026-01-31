@@ -5,7 +5,8 @@
   },
   "nav": {
     "configuration": "Konfiguration",
-    "report": "Bericht"
+    "report": "Bericht",
+    "guide": "Dimensionierungsleitfaden"
   },
   "sections": {
     "topology": "Topologie",

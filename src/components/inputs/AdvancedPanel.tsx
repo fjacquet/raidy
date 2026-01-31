@@ -42,6 +42,7 @@ const FS_TYPES = [
 
 export function AdvancedPanel() {
   const { t } = useTranslation('advanced')
+  const { t: th } = useTranslation('help')
   const {
     topology,
     controllerOptions,
@@ -95,7 +96,11 @@ export function AdvancedPanel() {
             </h4>
 
             <div className="space-y-2">
-              <Label htmlFor="compression-ratio" hint={`${compressionRatio.toFixed(1)}x`}>
+              <Label
+                htmlFor="compression-ratio"
+                hint={`${compressionRatio.toFixed(1)}x`}
+                tooltip={th('advanced.compression')}
+              >
                 {t('dataEfficiency.compression')}
               </Label>
               <Slider
@@ -111,7 +116,11 @@ export function AdvancedPanel() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="dedup-ratio" hint={`${dedupRatio.toFixed(1)}x`}>
+              <Label
+                htmlFor="dedup-ratio"
+                hint={`${dedupRatio.toFixed(1)}x`}
+                tooltip={th('advanced.dedup')}
+              >
                 {t('dataEfficiency.dedup')}
               </Label>
               <Slider
@@ -134,7 +143,9 @@ export function AdvancedPanel() {
         </h4>
 
         <div className="space-y-2">
-          <Label htmlFor="network-speed">{t('network.speed')}</Label>
+          <Label htmlFor="network-speed" tooltip={th('advanced.networkSpeed')}>
+            {t('network.speed')}
+          </Label>
           <Select
             id="network-speed"
             value={networkSpeed}
@@ -145,7 +156,9 @@ export function AdvancedPanel() {
 
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-2">
-            <Label htmlFor="pcie-gen">{t('pcie.generation')}</Label>
+            <Label htmlFor="pcie-gen" tooltip={th('advanced.pcieGen')}>
+              {t('pcie.generation')}
+            </Label>
             <Select
               id="pcie-gen"
               value={pcieGen}
@@ -154,7 +167,9 @@ export function AdvancedPanel() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="pcie-lanes">{t('pcie.lanes')}</Label>
+            <Label htmlFor="pcie-lanes" tooltip={th('advanced.pcieLanes')}>
+              {t('pcie.lanes')}
+            </Label>
             <Select
               id="pcie-lanes"
               value={pcieLanes}
@@ -172,7 +187,7 @@ export function AdvancedPanel() {
         </h4>
 
         <div className="space-y-2">
-          <Label htmlFor="controller">
+          <Label htmlFor="controller" tooltip={th('advanced.controller')}>
             {needsHba ? t('controller.hbaModel') : t('controller.model')}
           </Label>
           <Select
@@ -208,7 +223,7 @@ export function AdvancedPanel() {
         </h4>
 
         <div className="space-y-2">
-          <Label htmlFor="pue" hint={`${pue.toFixed(2)} PUE`}>
+          <Label htmlFor="pue" hint={`${pue.toFixed(2)} PUE`} tooltip={th('advanced.pue')}>
             {t('power.pue')}
           </Label>
           <Slider
@@ -231,7 +246,9 @@ export function AdvancedPanel() {
         </h4>
 
         <div className="space-y-2">
-          <Label htmlFor="fs-type">{t('filesystem.type')}</Label>
+          <Label htmlFor="fs-type" tooltip={th('advanced.fsType')}>
+            {t('filesystem.type')}
+          </Label>
           <Select
             id="fs-type"
             value={fsType}
@@ -241,7 +258,9 @@ export function AdvancedPanel() {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="backup-retention">{t('filesystem.backupRetention')}</Label>
+          <Label htmlFor="backup-retention" tooltip={th('advanced.backupRetention')}>
+            {t('filesystem.backupRetention')}
+          </Label>
           <Slider
             id="backup-retention"
             value={backupRetention}
@@ -253,7 +272,11 @@ export function AdvancedPanel() {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="daily-change" hint={`${dailyChangeRate}%`}>
+          <Label
+            htmlFor="daily-change"
+            hint={`${dailyChangeRate}%`}
+            tooltip={th('advanced.dailyChangeRate')}
+          >
             {t('filesystem.dailyChangeRate')}
           </Label>
           <Slider

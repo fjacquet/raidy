@@ -54,6 +54,7 @@ function dailyWriteToSlider(bytes: number): number {
 
 export function WorkloadPanel() {
   const { t } = useTranslation('workload')
+  const { t: th } = useTranslation('help')
   const formatBytes = useFormatBytes()
   const {
     readPercent,
@@ -75,7 +76,9 @@ export function WorkloadPanel() {
     <div className="space-y-5">
       {/* Read/Write Mix */}
       <div className="space-y-2">
-        <Label htmlFor="read-percent">{t('ioPattern.readWrite')}</Label>
+        <Label htmlFor="read-percent" tooltip={th('workload.readWrite')}>
+          {t('ioPattern.readWrite')}
+        </Label>
         <Slider
           id="read-percent"
           value={readPercent}
@@ -96,7 +99,9 @@ export function WorkloadPanel() {
 
       {/* Random/Sequential Mix */}
       <div className="space-y-2">
-        <Label htmlFor="random-percent">{t('ioPattern.randomSequential')}</Label>
+        <Label htmlFor="random-percent" tooltip={th('workload.randomSequential')}>
+          {t('ioPattern.randomSequential')}
+        </Label>
         <Slider
           id="random-percent"
           value={randomPercent}
@@ -117,7 +122,9 @@ export function WorkloadPanel() {
 
       {/* Block Size */}
       <div className="space-y-2">
-        <Label htmlFor="block-size">{t('blockSize.label')}</Label>
+        <Label htmlFor="block-size" tooltip={th('workload.blockSize')}>
+          {t('blockSize.label')}
+        </Label>
         <Select
           id="block-size"
           value={blockSize}
@@ -137,7 +144,11 @@ export function WorkloadPanel() {
 
       {/* Dataset Size */}
       <div className="space-y-2">
-        <Label htmlFor="dataset-size" hint={formatBytes(datasetSize)}>
+        <Label
+          htmlFor="dataset-size"
+          hint={formatBytes(datasetSize)}
+          tooltip={th('workload.datasetSize')}
+        >
           {t('capacity.datasetSize')}
         </Label>
         <Slider
@@ -153,7 +164,11 @@ export function WorkloadPanel() {
 
       {/* Daily Write Volume */}
       <div className="space-y-2">
-        <Label htmlFor="daily-write" hint={`${formatBytes(dailyWriteVolume)}/day`}>
+        <Label
+          htmlFor="daily-write"
+          hint={`${formatBytes(dailyWriteVolume)}/day`}
+          tooltip={th('workload.dailyWriteVolume')}
+        >
           {t('capacity.dailyWriteVolume')}
         </Label>
         <Slider

@@ -1,0 +1,87 @@
+{
+  "topology": {
+    "type": "La piattaforma di storage determina i livelli di protezione disponibili, le formule di efficienza e le funzionalità supportate. Ogni piattaforma ha modelli di overhead e strumenti di gestione differenti.",
+    "level": "Il livello di protezione controlla quanti guasti disco l'array può tollerare e quanta capacità viene consumata dalla ridondanza. Una protezione maggiore comporta una capacità utilizzabile inferiore ma una migliore resilienza.",
+    "hotSpares": "Gli hot spare sono dischi inattivi che sostituiscono automaticamente i dischi guasti, riducendo il tempo di ricostruzione. Riservano capacità ma migliorano la resilienza. Non necessari per le piattaforme con capacità di riserva distribuita (ad es. ADAPT, dRAID)."
+  },
+  "hardware": {
+    "connectivity": "L'interfaccia del disco determina il throughput massimo per disco. NVMe offre la larghezza di banda più elevata (fino a 7 GB/s per disco). SAS e SATA sono limitati rispettivamente a ~2,4 GB/s e ~0,6 GB/s.",
+    "formFactor": "Il fattore di forma fisico influisce sulla densità e sul raffreddamento. I dischi da 3,5\" offrono la massima capacità HDD. I dischi da 2,5\" e i fattori di forma più recenti (E3.S, EDSFF) sono ottimizzati per SSD e NVMe.",
+    "driveModel": "Le specifiche del singolo disco influenzano tutti i calcoli: capacità, IOPS, throughput, consumo energetico, resistenza (DWPD per SSD) e costo.",
+    "driveCount": "Dischi per server. Combinato con il numero di server, determina la capacità grezza totale e le prestazioni aggregate. Più dischi aumentano il tempo di ricostruzione per le topologie basate su parità.",
+    "serverCount": "Numero di server o nodi. Influisce sul numero totale di dischi, sul consumo energetico e, per le piattaforme distribuite (vSAN, Ceph, S2D, Nutanix), determina il numero di domini di guasto e i requisiti minimi di host.",
+    "serverPower": "Consumo energetico base del server (esclusi i dischi). Utilizzato per calcolare l'energia totale, il costo annuale e le emissioni di CO₂."
+  },
+  "workload": {
+    "readWrite": "Il rapporto lettura/scrittura influisce significativamente sugli IOPS effettivi. Le scritture RAID 5/6 comportano una penalità (4x per RAID-5, 6x per RAID-6) poiché ogni scrittura richiede la lettura dei dati precedenti, della parità precedente, la scrittura dei nuovi dati e della nuova parità.",
+    "randomSequential": "L'I/O casuale si misura in IOPS; l'I/O sequenziale si misura in throughput (MB/s). I database sono tipicamente oltre l'80% casuali; lo streaming video è quasi al 100% sequenziale.",
+    "blockSize": "La dimensione del blocco di I/O influisce sia sulle prestazioni che sull'allineamento. Blocchi più piccoli (4K-8K) massimizzano gli IOPS per i database. Blocchi più grandi (128K-1M) massimizzano il throughput per i carichi sequenziali.",
+    "datasetSize": "Quantità totale di dati da archiviare. Utilizzata per calcolare se lo storage configurato fornisce sufficiente capacità utilizzabile dopo tutti gli overhead.",
+    "dailyWriteVolume": "Il volume di scrittura giornaliero determina i requisiti di resistenza degli SSD (DWPD). Volumi di scrittura elevati sugli SSD possono superare la resistenza nominale del disco, causando guasti prematuri."
+  },
+  "advanced": {
+    "compression": "Il rapporto di compressione moltiplica la capacità effettiva. Viene applicato dopo il calcolo della capacità utilizzabile. Un rapporto 2x raddoppia la capacità effettiva. La compressione è moltiplicativa con la deduplicazione, non additiva.",
+    "dedup": "Il rapporto di deduplicazione moltiplica la capacità effettiva eliminando i blocchi di dati duplicati. Moltiplicativo con la compressione (ad es. compressione 2x + deduplicazione 2x = capacità effettiva 4x, non 3x).",
+    "networkSpeed": "La velocità di rete può diventare il collo di bottiglia per i sistemi di storage distribuiti. Per i sistemi basati su replica (vSAN, Ceph, Nutanix), le scritture devono attraversare la rete per raggiungere i nodi di replica.",
+    "pcieGen": "La generazione PCIe determina la larghezza di banda del bus per corsia. Gen3: ~1 GB/s/corsia, Gen4: ~2 GB/s/corsia, Gen5: ~4 GB/s/corsia. Combinata con il numero di corsie, stabilisce il limite massimo di banda del bus.",
+    "pcieLanes": "Le corsie PCIe moltiplicate per la larghezza di banda per corsia danno il throughput totale del bus. x4 è lo standard per i dischi NVMe, x8/x16 per i controller RAID e gli HBA.",
+    "pue": "Power Usage Effectiveness: rapporto tra la potenza totale dell'impianto e la potenza delle apparecchiature IT. PUE 1,0 significa nessun overhead di raffreddamento. PUE 1,4 significa il 40% di potenza aggiuntiva per il raffreddamento. La media mondiale è ~1,55; i migliori data center raggiungono ~1,1.",
+    "fsType": "La scelta del filesystem influisce sull'overhead e sulle funzionalità. ZFS ha un overhead di ~3% per lo slop space. XFS/ReFS supportano i reflink per snapshot efficienti. Btrfs supporta gli snapshot con un overhead di ~4%.",
+    "controller": "Il controller di storage o HBA limita il totale di IOPS e throughput. Il RAID software utilizza la CPU per i calcoli di parità. I controller RAID hardware hanno limiti fissi di IOPS/throughput.",
+    "backupRetention": "Numero di giorni di conservazione delle copie di backup. Combinato con il tasso di variazione giornaliero, determina lo storage totale necessario per i backup.",
+    "dailyChangeRate": "Percentuale di dati che cambia ogni giorno. Tassi di variazione più elevati comportano backup incrementali più grandi e un maggiore consumo di storage nel periodo di conservazione."
+  },
+  "output": {
+    "rawCapacity": "Capacità fisica totale di tutti i dischi prima di qualsiasi overhead. Calcolata come: capacità del disco x numero di dischi x numero di server.",
+    "usableCapacity": "Capacità disponibile dopo la sottrazione di parità/ridondanza, hot spare, overhead del filesystem e riserve di sistema. Questa è la capacità su cui è effettivamente possibile scrivere.",
+    "effectiveCapacity": "Capacità utilizzabile moltiplicata per i rapporti di compressione e deduplicazione. Rappresenta il volume logico di dati che il sistema può archiviare.",
+    "efficiency": "Rapporto tra capacità utilizzabile e capacità grezza, espresso in percentuale. Valori più alti sono migliori, ma un'efficienza maggiore di solito implica una ridondanza inferiore.",
+    "sankeyDiagram": "Il diagramma Sankey mostra la cascata di capacità: come la capacità grezza fluisce attraverso le varie deduzioni di overhead fino alla capacità utilizzabile. Flussi più larghi rappresentano quantità maggiori.",
+    "readThroughput": "Throughput massimo in lettura sequenziale, limitato dall'anello più debole della catena: aggregato dei supporti, controller/HBA, bus PCIe o rete.",
+    "writeThroughput": "Throughput massimo in scrittura sequenziale. Per i RAID basati su parità, il throughput in scrittura è ridotto dal fattore di penalità di scrittura.",
+    "readIops": "IOPS massimi in lettura casuale. Somma degli IOPS in lettura di tutti i dischi, limitata dai limiti massimi del controller e del bus.",
+    "writeIops": "IOPS massimi in scrittura casuale. Per RAID-5, dividere per 4 (ogni scrittura richiede 4 operazioni di I/O). Per RAID-6, dividere per 6.",
+    "bottleneck": "La catena dei colli di bottiglia mostra il throughput a ogni livello. Il livello con il throughput più basso è il collo di bottiglia. Aggiornare qualsiasi altro livello non migliorerà le prestazioni.",
+    "survivalRate": "Probabilità di sopravvivere un anno senza perdita di dati, calcolata tramite simulazione Monte Carlo. Considera i tassi di guasto dei dischi (AFR), il tempo di ricostruzione, la probabilità di URE durante la ricostruzione e i guasti correlati.",
+    "rebuildTime": "Tempo stimato per la ricostruzione di un disco guasto. Tempi di ricostruzione più lunghi aumentano la finestra di vulnerabilità. Dipende dalla capacità del disco, dalla velocità di ricostruzione e dall'utilizzo dell'array.",
+    "totalPower": "Consumo energetico totale inclusi dischi, server e raffreddamento (fattore PUE). Utilizzato per calcolare il costo energetico annuale e le emissioni di CO₂.",
+    "annualCo2": "Emissioni annuali di CO₂ basate sul consumo energetico totale e sull'intensità carbonica della rete elettrica selezionata. La Svizzera (30 g/kWh) è tra le più pulite; la Cina (555 g/kWh) tra le più alte."
+  },
+  "zfs": {
+    "ashift": "Il valore ashift deve corrispondere alla dimensione del settore fisico del disco. Usare ashift=9 (512B) su un disco con settori da 4K causa amplificazione delle scritture. Usare ashift=12 per i dischi moderni.",
+    "compression": "Algoritmo di compressione ZFS. LZ4 è consigliato per la maggior parte dei carichi di lavoro (veloce, basso utilizzo CPU). ZSTD offre rapporti migliori con un costo CPU più elevato.",
+    "recordsize": "Dimensione massima del record per i dataset. Adattare al carico di lavoro: 128K per file generici, 16K-64K per database, 1M per carichi sequenziali di grandi dimensioni.",
+    "dedup": "La deduplicazione ZFS richiede circa 5 GB di RAM per TB di dati deduplicati. Abilitare solo se si dispone di RAM sufficiente e di un carico di lavoro con molte scritture duplicate.",
+    "specialVdev": "Un vdev speciale (NVMe) archivia i metadati e i blocchi piccoli, migliorando notevolmente le prestazioni di I/O casuale per i pool basati su HDD."
+  },
+  "ceph": {
+    "nearfull": "La soglia predefinita di nearfull di Ceph è l'85%. Gli OSD cesseranno di accettare scritture oltre questa soglia. La capacità utilizzabile viene calcolata in base a questa soglia, non al 100%.",
+    "backend": "BlueStore è il backend consigliato. Bypassa il filesystem locale per l'accesso diretto al disco, migliorando le prestazioni rispetto al legacy FileStore."
+  },
+  "vsan": {
+    "adaptive": "vSAN ESA utilizza RAID-5 adattivo: larghezza di stripe 2+1 per 3-5 host (efficienza del 67%) o 4+1 per 6+ host (efficienza dell'80%). Il sistema si regola automaticamente in base alla dimensione del cluster."
+  },
+  "s2d": {
+    "reserve": "S2D riserva l'equivalente della capacità di un disco per nodo per la ricostruzione automatica. Questa riserva viene sottratta prima del calcolo della capacità utilizzabile.",
+    "map": "Mirror-Accelerated Parity (MAP) combina un livello mirror veloce (~20%) con un livello parità ad alta efficienza di capacità (~80%), offrendo un equilibrio tra prestazioni ed efficienza."
+  },
+  "nutanix": {
+    "ec": "Erasure Coding (EC-X): RF2 con EC(4/1) raggiunge un'efficienza di ~80%. RF3 con EC(4/2) raggiunge un'efficienza di ~67%. EC si applica solo ai dati freddi; i dati caldi rimangono replicati.",
+    "rf": "RF2 archivia 2 copie dei dati (efficienza del 50%). RF3 archivia 3 copie (efficienza del 33%). Un RF più alto significa una migliore tolleranza ai guasti ma una capacità inferiore."
+  },
+  "netapp": {
+    "wafl": "Il filesystem WAFL di NetApp ha un overhead di circa l'1,5% per i metadati interni. Questo viene sottratto dalla capacità utilizzabile.",
+    "adp": "Advanced Data Partitioning (ADP) condivide i dischi tra aggregati root e dati, migliorando l'utilizzo della capacità sui sistemi più piccoli.",
+    "snapshot": "La riserva per gli snapshot (predefinita 5%) è spazio preallocato per copie point-in-time. Impostare a 0% per array all-flash con deduplicazione inline."
+  },
+  "synology": {
+    "shr": "Synology Hybrid RAID (SHR) fornisce tolleranza al guasto di 1 disco con supporto per dischi di dimensioni diverse. SHR-2 fornisce tolleranza al guasto di 2 dischi.",
+    "systemPartition": "Synology riserva 20-30 GB per disco per le partizioni di sistema. Con molti dischi, questo overhead fisso può diventare significativo."
+  },
+  "dell": {
+    "powerFlex": "PowerFlex supporta mirror a 2 e 3 vie con Fine Granularity (8KB) o Medium Granularity (1MB). Fine Granularity aggiunge un overhead di metadati del ~12-15% ma consente ricostruzioni più rapide.",
+    "powerStore": "PowerStore è un'appliance all-flash con deduplicazione e compressione integrate. I limiti del controller determinano il throughput massimo.",
+    "powerScale": "PowerScale (Isilon) è un NAS scale-out. L'efficienza dipende dal livello di protezione e dal numero di nodi.",
+    "objectScale": "ObjectScale fornisce storage a oggetti compatibile con S3. La geo-replica multi-sito può aggiungere un overhead di capacità significativo (fino a 2,67x per EC 12+4 su 2 siti)."
+  }
+}

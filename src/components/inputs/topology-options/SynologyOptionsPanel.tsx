@@ -14,6 +14,7 @@ import { useConfigStore } from '@/store'
 
 export function SynologyOptionsPanel() {
   const { t } = useTranslation('topology')
+  const { t: th } = useTranslation('help')
   const { synologyOptions, setSynologyOptions } = useConfigStore()
 
   return (
@@ -23,7 +24,7 @@ export function SynologyOptionsPanel() {
       </h4>
 
       <div className="space-y-2">
-        <Label>{t('synology.filesystem')}</Label>
+        <Label tooltip={th('synology.shr')}>{t('synology.filesystem')}</Label>
         <SegmentedControl
           value={synologyOptions.filesystem}
           options={[
@@ -85,7 +86,9 @@ export function SynologyOptionsPanel() {
       )}
 
       <div className="space-y-2">
-        <Label htmlFor="synology-system-partition">{t('synology.systemPartition')}</Label>
+        <Label htmlFor="synology-system-partition" tooltip={th('synology.systemPartition')}>
+          {t('synology.systemPartition')}
+        </Label>
         <Slider
           id="synology-system-partition"
           value={synologyOptions.systemPartitionSize / (1024 * 1024 * 1024)}

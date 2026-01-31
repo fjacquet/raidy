@@ -21,6 +21,7 @@ interface S2dOptionsPanelProps {
 
 export function S2dOptionsPanel({ topology }: S2dOptionsPanelProps) {
   const { t } = useTranslation('topology')
+  const { t: th } = useTranslation('help')
   const { s2dOptions, serverCount, setS2DOptions } = useConfigStore()
 
   return (
@@ -30,7 +31,9 @@ export function S2dOptionsPanel({ topology }: S2dOptionsPanelProps) {
       </h4>
 
       <div className="space-y-2">
-        <Label htmlFor="fault-domains">{t('s2d.faultDomains')}</Label>
+        <Label htmlFor="fault-domains" tooltip={th('s2d.reserve')}>
+          {t('s2d.faultDomains')}
+        </Label>
         <NumberInput
           id="fault-domains"
           value={s2dOptions.faultDomains}

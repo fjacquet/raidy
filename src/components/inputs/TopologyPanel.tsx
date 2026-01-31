@@ -21,6 +21,7 @@ import type { Topology, TopologyType } from '@/types'
 
 export function TopologyPanel() {
   const { t } = useTranslation('topology')
+  const { t: th } = useTranslation('help')
   const { topology, hotSpares, setTopology, setHotSpares } = useConfigStore()
 
   const handleTypeChange = (type: string) => {
@@ -39,7 +40,9 @@ export function TopologyPanel() {
     <div className="space-y-5">
       {/* Topology Type */}
       <div className="space-y-2">
-        <Label htmlFor="storage-type">{t('type.label')}</Label>
+        <Label htmlFor="storage-type" tooltip={th('topology.type')}>
+          {t('type.label')}
+        </Label>
         <Select
           id="storage-type"
           value={topology.type}
@@ -50,7 +53,9 @@ export function TopologyPanel() {
 
       {/* Topology Level */}
       <div className="space-y-2">
-        <Label htmlFor="topology-level">{t('configuration.label')}</Label>
+        <Label htmlFor="topology-level" tooltip={th('topology.level')}>
+          {t('configuration.label')}
+        </Label>
         <Select
           id="topology-level"
           value={topology.level}
@@ -64,7 +69,9 @@ export function TopologyPanel() {
 
       {/* Hot Spares */}
       <div className="space-y-2">
-        <Label htmlFor="hot-spares">{t('hotSpares.label')}</Label>
+        <Label htmlFor="hot-spares" tooltip={th('topology.hotSpares')}>
+          {t('hotSpares.label')}
+        </Label>
         <Slider id="hot-spares" value={hotSpares} min={0} max={4} onChange={setHotSpares} />
       </div>
 
