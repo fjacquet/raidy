@@ -19,7 +19,7 @@ export const createHardwareSlice: StateCreator<HardwareSlice> = (set) => ({
   // Default state
   driveConnectivity: 'all',
   driveFormFactor: 'all',
-  driveId: 'wd-gold-24tb',
+  driveId: 'ent-hdd-7k2-sata-24tb-cmr',
   driveCount: 12,
   serverCount: 1,
   serverPowerWatts: 400,

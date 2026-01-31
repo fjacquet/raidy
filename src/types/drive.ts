@@ -113,6 +113,9 @@ export type RecordingType = 'CMR' | 'SMR' | 'HAMR'
 /** NAND flash type for SSDs */
 export type NandType = 'SLC' | 'MLC' | 'TLC' | 'QLC' | '3DXPoint'
 
+/** Drive market tier classification */
+export type DriveTier = 'enterprise' | 'datacenter' | 'nas' | 'consumer'
+
 /** Storage Class Memory latency in microseconds */
 export interface SCMLatency {
   /** Read latency in microseconds */
@@ -122,9 +125,9 @@ export interface SCMLatency {
 }
 
 export interface Drive {
-  /** Unique identifier (e.g., "wd-gold-24tb") */
+  /** Unique identifier (e.g., "ent-hdd-7k2-sata-24tb-cmr") */
   id: string
-  /** Display model name (e.g., "WD Gold 24TB") */
+  /** Display model name (e.g., "Enterprise HDD 7.2K SATA 3.5\" 24TB CMR") */
   model: string
   /** Drive interface type */
   type: DriveType
@@ -154,6 +157,8 @@ export interface Drive {
   nandType?: NandType
   /** SCM latency in microseconds (optional, for Storage Class Memory) */
   latency_us?: SCMLatency
+  /** Drive market tier classification */
+  tier?: DriveTier
 }
 
 /** Drive database as a record for fast lookup */

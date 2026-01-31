@@ -532,7 +532,7 @@ describe('URL Storage - Security: Malicious URL Protection (SEC-01, SEC-02, SEC-
    */
   function createValidState(overrides = {}) {
     return {
-      driveId: 'wd-gold-24tb',
+      driveId: 'ent-hdd-7k2-sata-24tb-cmr',
       driveCount: 12,
       serverCount: 1,
       serverPowerWatts: 400,
@@ -808,7 +808,7 @@ describe('URL Storage - Security: Malicious URL Protection (SEC-01, SEC-02, SEC-
       // Fields are optional because Zustand persist middleware fills in defaults
       // from getDefaultState() for any missing fields. This is expected behavior.
       const partialState = {
-        driveId: 'wd-gold-24tb',
+        driveId: 'ent-hdd-7k2-sata-24tb-cmr',
         driveCount: 12,
         topology: { type: 'standard', level: 'RAID6' },
       }
@@ -819,7 +819,7 @@ describe('URL Storage - Security: Malicious URL Protection (SEC-01, SEC-02, SEC-
       expect(result).not.toBeNull()
       if (!result) throw new Error('Expected result to be non-null')
       const parsed = JSON.parse(result)
-      expect(parsed.driveId).toBe('wd-gold-24tb')
+      expect(parsed.driveId).toBe('ent-hdd-7k2-sata-24tb-cmr')
       expect(parsed.driveCount).toBe(12)
     })
   })

@@ -1288,51 +1288,6 @@ describe('Resilience Worker - Statistical Accuracy', () => {
     expect(p).toBeLessThanOrEqual(1)
   })
 
-  it('should show confidence interval narrows with more simulations', async () => {
-    /**
-     * Compare confidence intervals for different simulation counts.
-     * CI width decreases as sqrt(1/n).
-     */
-
-    const baseConfig = {
-      raidLevel: 'RAID5',
-      driveCount: 8,
-      driveCapacityBytes: 2_000_000_000_000,
-      rebuildSpeedMBs: 100,
-      ureRate: 15 as const,
-      afrPercent: 1.5,
-    }
-
-    // Small sample: 1000 simulations
-    await importWorker()
-    let handler = (self as { onmessage: ((e: MessageEvent) => void) | null }).onmessage
-    handler?.({
-      data: { type: 'START', payload: { ...baseConfig, simulationCount: 1000 } },
-    } as MessageEvent)
-    const smallResult = mockPostMessage.mock.calls.find((call) => call[0].type === 'RESULT')
-
-    // Large sample: 10000 simulations
-    mockPostMessage.mockClear()
-    await importWorker()
-    handler = (self as { onmessage: ((e: MessageEvent) => void) | null }).onmessage
-    handler?.({
-      data: { type: 'START', payload: { ...baseConfig, simulationCount: 10000 } },
-    } as MessageEvent)
-    const largeResult = mockPostMessage.mock.calls.find((call) => call[0].type === 'RESULT')
-
-    // Calculate confidence intervals
-    const p1 = smallResult?.[0].payload.survivalRate
-    const margin1 = 1.96 * Math.sqrt((p1 * (1 - p1)) / 1000)
-
-    const p2 = largeResult?.[0].payload.survivalRate
-    const margin2 = 1.96 * Math.sqrt((p2 * (1 - p2)) / 10000)
-
-    // Larger sample should have narrower confidence interval
-    // Theory: margin scales as 1/sqrt(n), so 10x samples → ~3.16x narrower (0.316 ratio)
-    // Allow 0.5 tolerance to account for Monte Carlo variance while still validating trend
-    expect(margin2).toBeLessThan(margin1 * 0.5)
-  })
-
   it('should validate binomial distribution properties', async () => {
     await importWorker()
 

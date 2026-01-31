@@ -18,7 +18,7 @@ describe('useCalculations', () => {
   it('should return calculation results without crashing', () => {
     // Setup valid configuration
     useConfigStore.setState({
-      driveId: 'seagate-exos-x20-20tb',
+      driveId: 'ent-hdd-7k2-sata-18tb-cmr',
       driveCount: 8,
       serverCount: 1,
       topology: { type: 'standard', level: 'RAID6' },

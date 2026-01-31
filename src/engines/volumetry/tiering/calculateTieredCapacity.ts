@@ -47,8 +47,8 @@ export interface TieredCapacityResult {
  * const result = calculateTieredCapacity(
  *   {
  *     enabled: true,
- *     fastTier: { driveId: 'samsung-pm9a3-1.92tb', driveCount: 4 },
- *     capacityTier: { driveId: 'seagate-exos-x20-20tb', driveCount: 12 },
+ *     fastTier: { driveId: 'ent-nvme-pcie4-960gb-m2-ri', driveCount: 4 },
+ *     capacityTier: { driveId: 'ent-hdd-7k2-sata-18tb-cmr', driveCount: 12 },
  *   },
  *   3
  * )
