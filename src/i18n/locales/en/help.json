@@ -1,0 +1,87 @@
+{
+  "topology": {
+    "type": "The storage platform determines available protection levels, efficiency formulas, and feature support. Each platform has different overhead models and management tools.",
+    "level": "The protection level controls how many drive failures the array can survive, and how much capacity is consumed by redundancy. Higher protection means lower usable capacity but better resilience.",
+    "hotSpares": "Hot spares are idle drives that automatically replace failed drives, reducing rebuild time. They reserve capacity but improve resilience. Not needed for platforms with distributed spare capacity (e.g., ADAPT, dRAID)."
+  },
+  "hardware": {
+    "connectivity": "Drive interface determines maximum per-drive throughput. NVMe offers the highest bandwidth (up to 7 GB/s per drive). SAS and SATA are limited to ~2.4 GB/s and ~0.6 GB/s respectively.",
+    "formFactor": "Physical form factor affects density and cooling. 3.5\" drives offer maximum HDD capacity. 2.5\" and newer form factors (E3.S, EDSFF) are optimized for SSDs and NVMe.",
+    "driveModel": "Individual drive specifications affect all calculations: capacity, IOPS, throughput, power consumption, endurance (DWPD for SSDs), and cost.",
+    "driveCount": "Drives per server. Combined with server count, this determines total raw capacity and aggregate performance. More drives increase rebuild time for parity-based topologies.",
+    "serverCount": "Number of servers or nodes. Affects total drive count, power consumption, and for distributed platforms (vSAN, Ceph, S2D, Nutanix), determines fault domain count and minimum host requirements.",
+    "serverPower": "Base server power consumption (excluding drives). Used to calculate total energy, annual cost, and CO\u2082 emissions."
+  },
+  "workload": {
+    "readWrite": "Read/write ratio significantly impacts effective IOPS. RAID 5/6 writes incur a penalty (4x for RAID-5, 6x for RAID-6) because each write requires reading old data, old parity, writing new data, and new parity.",
+    "randomSequential": "Random I/O is measured in IOPS; sequential I/O is measured in throughput (MB/s). Databases are typically 80%+ random; video streaming is nearly 100% sequential.",
+    "blockSize": "I/O block size affects both performance and alignment. Smaller blocks (4K-8K) maximize IOPS for databases. Larger blocks (128K-1M) maximize throughput for sequential workloads.",
+    "datasetSize": "Total amount of data to store. Used to calculate whether the configured storage provides enough usable capacity after all overheads.",
+    "dailyWriteVolume": "Daily write volume determines SSD endurance requirements (DWPD). High write volumes on SSDs can exceed the drive's rated endurance, leading to premature failure."
+  },
+  "advanced": {
+    "compression": "Compression ratio multiplies effective capacity. Applied after usable capacity calculation. A 2x ratio doubles effective capacity. Compression is multiplicative with deduplication, not additive.",
+    "dedup": "Deduplication ratio multiplies effective capacity by eliminating duplicate data blocks. Multiplicative with compression (e.g., 2x compression + 2x dedup = 4x effective capacity, not 3x).",
+    "networkSpeed": "Network speed can become the bottleneck for distributed storage systems. For replication-based systems (vSAN, Ceph, Nutanix), writes must traverse the network to reach replica nodes.",
+    "pcieGen": "PCIe generation determines the bus bandwidth per lane. Gen3: ~1 GB/s/lane, Gen4: ~2 GB/s/lane, Gen5: ~4 GB/s/lane. Combined with lane count, this sets the bus bandwidth ceiling.",
+    "pcieLanes": "PCIe lanes multiplied by per-lane bandwidth gives total bus throughput. x4 is standard for NVMe drives, x8/x16 for RAID controllers and HBAs.",
+    "pue": "Power Usage Effectiveness: ratio of total facility power to IT equipment power. PUE 1.0 means no cooling overhead. PUE 1.4 means 40% extra power for cooling. World average is ~1.55; best data centers achieve ~1.1.",
+    "fsType": "Filesystem choice affects overhead and features. ZFS has ~3% slop space overhead. XFS/ReFS support reflinks for efficient snapshots. Btrfs supports snapshots with ~4% overhead.",
+    "controller": "Storage controller or HBA limits total IOPS and throughput. Software RAID uses CPU for parity calculations. Hardware RAID controllers have fixed IOPS/throughput ceilings.",
+    "backupRetention": "Number of days to keep backup copies. Combined with daily change rate, determines total backup storage needed.",
+    "dailyChangeRate": "Percentage of data that changes each day. Higher change rates mean larger incremental backups and more storage consumption over the retention period."
+  },
+  "output": {
+    "rawCapacity": "Total physical capacity of all drives before any overhead. Calculated as: drive capacity x drive count x server count.",
+    "usableCapacity": "Capacity available after subtracting parity/redundancy, hot spares, filesystem overhead, and system reserves. This is what you can actually write to.",
+    "effectiveCapacity": "Usable capacity multiplied by compression and deduplication ratios. Represents the logical data volume the system can store.",
+    "efficiency": "Ratio of usable capacity to raw capacity, expressed as a percentage. Higher is better, but higher efficiency usually means less redundancy.",
+    "sankeyDiagram": "The Sankey diagram shows the capacity waterfall: how raw capacity flows through various overhead deductions to arrive at usable capacity. Wider flows represent larger quantities.",
+    "readThroughput": "Maximum sequential read throughput, limited by the weakest link in the chain: media aggregate, controller/HBA, PCIe bus, or network.",
+    "writeThroughput": "Maximum sequential write throughput. For parity-based RAID, write throughput is reduced by the write penalty factor.",
+    "readIops": "Maximum random read IOPS. Sum of all drive read IOPS, limited by controller and bus ceilings.",
+    "writeIops": "Maximum random write IOPS. For RAID-5, divide by 4 (each write needs 4 I/O operations). For RAID-6, divide by 6.",
+    "bottleneck": "The bottleneck chain shows throughput at each layer. The layer with the lowest throughput is the bottleneck. Upgrading any other layer won't improve performance.",
+    "survivalRate": "Probability of surviving one year without data loss, calculated via Monte Carlo simulation. Considers drive failure rates (AFR), rebuild time, URE probability during rebuild, and correlated failures.",
+    "rebuildTime": "Estimated time to rebuild a failed drive. Longer rebuild times increase the window of vulnerability. Depends on drive capacity, rebuild speed, and array utilization.",
+    "totalPower": "Total power consumption including drives, servers, and cooling (PUE factor). Used to calculate annual energy cost and CO\u2082 emissions.",
+    "annualCo2": "Annual CO\u2082 emissions based on total energy consumption and the selected grid carbon intensity. Switzerland (30 g/kWh) is among the cleanest; China (555 g/kWh) among the highest."
+  },
+  "zfs": {
+    "ashift": "The ashift value must match the drive's physical sector size. Using ashift=9 (512B) on a 4K-sector drive causes write amplification. Use ashift=12 for modern drives.",
+    "compression": "ZFS compression algorithm. LZ4 is recommended for most workloads (fast, low CPU). ZSTD provides better ratios at higher CPU cost.",
+    "recordsize": "Maximum record size for datasets. Match to workload: 128K for general files, 16K-64K for databases, 1M for large sequential workloads.",
+    "dedup": "ZFS deduplication requires approximately 5 GB of RAM per TB of deduplicated data. Only enable if you have sufficient RAM and a write-heavy duplicate workload.",
+    "specialVdev": "A special vdev (NVMe) stores metadata and small blocks, dramatically improving random I/O performance for HDD-based pools."
+  },
+  "ceph": {
+    "nearfull": "Ceph's default nearfull threshold is 85%. OSDs will stop accepting writes above this threshold. Usable capacity is calculated at this threshold, not 100%.",
+    "backend": "BlueStore is the recommended backend. It bypasses the local filesystem for direct disk access, improving performance over legacy FileStore."
+  },
+  "vsan": {
+    "adaptive": "vSAN ESA uses adaptive RAID-5: 2+1 stripe width for 3-5 hosts (67% efficiency) or 4+1 for 6+ hosts (80% efficiency). The system automatically adjusts based on cluster size."
+  },
+  "s2d": {
+    "reserve": "S2D reserves one drive equivalent of capacity per node for automatic rebuild. This reserve is subtracted before usable capacity is calculated.",
+    "map": "Mirror-Accelerated Parity (MAP) combines a fast mirror tier (~20%) with a capacity-efficient parity tier (~80%), offering a balance of performance and efficiency."
+  },
+  "nutanix": {
+    "ec": "Erasure Coding (EC-X): RF2 with EC(4/1) achieves ~80% efficiency. RF3 with EC(4/2) achieves ~67% efficiency. EC applies to cold data only; hot data remains replicated.",
+    "rf": "RF2 stores 2 copies of data (50% efficiency). RF3 stores 3 copies (33% efficiency). Higher RF means better fault tolerance but lower capacity."
+  },
+  "netapp": {
+    "wafl": "NetApp WAFL filesystem has approximately 1.5% overhead for internal metadata. This is subtracted from usable capacity.",
+    "adp": "Advanced Data Partitioning (ADP) shares drives between root and data aggregates, improving capacity utilization on smaller systems.",
+    "snapshot": "Snapshot reserve (default 5%) is pre-allocated space for point-in-time copies. Set to 0% for all-flash arrays with inline dedup."
+  },
+  "synology": {
+    "shr": "Synology Hybrid RAID (SHR) provides 1-drive fault tolerance with mixed-size drive support. SHR-2 provides 2-drive fault tolerance.",
+    "systemPartition": "Synology reserves 20-30 GB per disk for system partitions. With many drives, this fixed overhead can become significant."
+  },
+  "dell": {
+    "powerFlex": "PowerFlex supports 2-way and 3-way mirrors with Fine Granularity (8KB) or Medium Granularity (1MB). Fine Granularity adds ~12-15% metadata overhead but enables faster rebuilds.",
+    "powerStore": "PowerStore is an all-flash appliance with integrated deduplication and compression. Controller limits determine maximum throughput.",
+    "powerScale": "PowerScale (Isilon) is a scale-out NAS. Efficiency depends on protection level and node count.",
+    "objectScale": "ObjectScale provides S3-compatible object storage. Multi-site geo-replication can add significant capacity overhead (up to 2.67x for 2-site EC 12+4)."
+  }
+}

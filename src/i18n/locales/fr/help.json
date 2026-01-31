@@ -1,0 +1,87 @@
+{
+  "topology": {
+    "type": "La plateforme de stockage determine les niveaux de protection disponibles, les formules d'efficacite et les fonctionnalites prises en charge. Chaque plateforme possede un modele de surcharge et des outils de gestion differents.",
+    "level": "Le niveau de protection definit le nombre de pannes de disques que la baie peut tolerer, ainsi que la capacite consommee par la redondance. Une protection plus elevee signifie moins de capacite utilisable mais une meilleure resilience.",
+    "hotSpares": "Les disques de secours (hot spares) sont des disques inactifs qui remplacent automatiquement les disques defaillants, reduisant le temps de reconstruction. Ils reservent de la capacite mais ameliorent la resilience. Non necessaires pour les plateformes a capacite de secours distribuee (par ex. ADAPT, dRAID)."
+  },
+  "hardware": {
+    "connectivity": "L'interface du disque determine le debit maximal par disque. NVMe offre la bande passante la plus elevee (jusqu'a 7 Go/s par disque). SAS et SATA sont limites a environ 2,4 Go/s et 0,6 Go/s respectivement.",
+    "formFactor": "Le format physique affecte la densite et le refroidissement. Les disques 3,5\" offrent la capacite HDD maximale. Les formats 2,5\" et plus recents (E3.S, EDSFF) sont optimises pour les SSD et NVMe.",
+    "driveModel": "Les specifications individuelles du disque affectent tous les calculs : capacite, IOPS, debit, consommation electrique, endurance (DWPD pour les SSD) et cout.",
+    "driveCount": "Nombre de disques par serveur. Combine au nombre de serveurs, cela determine la capacite brute totale et les performances agregees. Plus de disques augmentent le temps de reconstruction pour les topologies a parite.",
+    "serverCount": "Nombre de serveurs ou de noeuds. Affecte le nombre total de disques, la consommation electrique, et pour les plateformes distribuees (vSAN, Ceph, S2D, Nutanix), determine le nombre de domaines de panne et les exigences minimales d'hotes.",
+    "serverPower": "Consommation electrique de base du serveur (hors disques). Utilisee pour calculer l'energie totale, le cout annuel et les emissions de CO\u2082."
+  },
+  "workload": {
+    "readWrite": "Le ratio lecture/ecriture impacte significativement les IOPS effectives. Les ecritures RAID 5/6 engendrent une penalite (4x pour RAID-5, 6x pour RAID-6) car chaque ecriture necessite la lecture des anciennes donnees, de l'ancienne parite, puis l'ecriture des nouvelles donnees et de la nouvelle parite.",
+    "randomSequential": "Les E/S aleatoires se mesurent en IOPS ; les E/S sequentielles en debit (Mo/s). Les bases de donnees sont generalement a 80 %+ d'E/S aleatoires ; le streaming video est quasiment 100 % sequentiel.",
+    "blockSize": "La taille de bloc d'E/S affecte les performances et l'alignement. Les blocs plus petits (4K-8K) maximisent les IOPS pour les bases de donnees. Les blocs plus grands (128K-1M) maximisent le debit pour les charges sequentielles.",
+    "datasetSize": "Volume total de donnees a stocker. Utilise pour verifier si le stockage configure fournit suffisamment de capacite utilisable apres deduction de toutes les surcharges.",
+    "dailyWriteVolume": "Le volume d'ecriture quotidien determine les exigences d'endurance des SSD (DWPD). Des volumes d'ecriture eleves sur les SSD peuvent depasser l'endurance nominale du disque, entrainant une defaillance prematuree."
+  },
+  "advanced": {
+    "compression": "Le taux de compression multiplie la capacite effective. Applique apres le calcul de la capacite utilisable. Un ratio de 2x double la capacite effective. La compression est multiplicative avec la deduplication, et non additive.",
+    "dedup": "Le taux de deduplication multiplie la capacite effective en eliminant les blocs de donnees en double. Multiplicatif avec la compression (par ex. compression 2x + deduplication 2x = capacite effective 4x, et non 3x).",
+    "networkSpeed": "La vitesse reseau peut devenir le goulot d'etranglement pour les systemes de stockage distribues. Pour les systemes bases sur la replication (vSAN, Ceph, Nutanix), les ecritures doivent transiter par le reseau pour atteindre les noeuds repliques.",
+    "pcieGen": "La generation PCIe determine la bande passante du bus par voie. Gen3 : environ 1 Go/s/voie, Gen4 : environ 2 Go/s/voie, Gen5 : environ 4 Go/s/voie. Combinee au nombre de voies, elle fixe le plafond de bande passante du bus.",
+    "pcieLanes": "Les voies PCIe multipliees par la bande passante par voie donnent le debit total du bus. x4 est le standard pour les disques NVMe, x8/x16 pour les controleurs RAID et les HBA.",
+    "pue": "Power Usage Effectiveness : ratio entre la puissance totale de l'installation et la puissance des equipements informatiques. Un PUE de 1,0 signifie aucune surcharge de refroidissement. Un PUE de 1,4 signifie 40 % d'energie supplementaire pour le refroidissement. La moyenne mondiale est d'environ 1,55 ; les meilleurs centres de donnees atteignent environ 1,1.",
+    "fsType": "Le choix du systeme de fichiers affecte la surcharge et les fonctionnalites. ZFS a environ 3 % de surcharge (slop space). XFS/ReFS prennent en charge les reflinks pour des snapshots efficaces. Btrfs prend en charge les snapshots avec environ 4 % de surcharge.",
+    "controller": "Le controleur de stockage ou HBA limite le total des IOPS et du debit. Le RAID logiciel utilise le processeur pour les calculs de parite. Les controleurs RAID materiels ont des plafonds d'IOPS et de debit fixes.",
+    "backupRetention": "Nombre de jours de conservation des copies de sauvegarde. Combine au taux de modification quotidien, il determine le stockage de sauvegarde total necessaire.",
+    "dailyChangeRate": "Pourcentage des donnees modifiees chaque jour. Un taux de modification plus eleve signifie des sauvegardes incrementales plus volumineuses et une consommation de stockage accrue sur la periode de retention."
+  },
+  "output": {
+    "rawCapacity": "Capacite physique totale de tous les disques avant toute surcharge. Calculee comme suit : capacite du disque x nombre de disques x nombre de serveurs.",
+    "usableCapacity": "Capacite disponible apres soustraction de la parite/redondance, des disques de secours, de la surcharge du systeme de fichiers et des reserves systeme. C'est ce que vous pouvez reellement ecrire.",
+    "effectiveCapacity": "Capacite utilisable multipliee par les ratios de compression et de deduplication. Represente le volume logique de donnees que le systeme peut stocker.",
+    "efficiency": "Ratio entre la capacite utilisable et la capacite brute, exprime en pourcentage. Plus c'est eleve, mieux c'est, mais une efficacite plus elevee signifie generalement moins de redondance.",
+    "sankeyDiagram": "Le diagramme de Sankey illustre la cascade de capacite : comment la capacite brute est reduite par les differentes surcharges pour aboutir a la capacite utilisable. Les flux plus larges representent des quantites plus importantes.",
+    "readThroughput": "Debit maximal en lecture sequentielle, limite par le maillon le plus faible de la chaine : agregat des medias, controleur/HBA, bus PCIe ou reseau.",
+    "writeThroughput": "Debit maximal en ecriture sequentielle. Pour le RAID a parite, le debit en ecriture est reduit par le facteur de penalite d'ecriture.",
+    "readIops": "IOPS maximales en lecture aleatoire. Somme des IOPS en lecture de tous les disques, limitee par les plafonds du controleur et du bus.",
+    "writeIops": "IOPS maximales en ecriture aleatoire. Pour RAID-5, diviser par 4 (chaque ecriture necessite 4 operations d'E/S). Pour RAID-6, diviser par 6.",
+    "bottleneck": "La chaine de goulots d'etranglement affiche le debit a chaque couche. La couche avec le debit le plus faible est le goulot d'etranglement. Ameliorer toute autre couche n'ameliorera pas les performances.",
+    "survivalRate": "Probabilite de survivre un an sans perte de donnees, calculee par simulation Monte Carlo. Prend en compte le taux de defaillance des disques (AFR), le temps de reconstruction, la probabilite d'URE pendant la reconstruction et les defaillances correlees.",
+    "rebuildTime": "Temps estime de reconstruction d'un disque defaillant. Des temps de reconstruction plus longs augmentent la fenetre de vulnerabilite. Depend de la capacite du disque, de la vitesse de reconstruction et de l'utilisation de la baie.",
+    "totalPower": "Consommation electrique totale incluant les disques, les serveurs et le refroidissement (facteur PUE). Utilisee pour calculer le cout energetique annuel et les emissions de CO\u2082.",
+    "annualCo2": "Emissions annuelles de CO\u2082 basees sur la consommation energetique totale et l'intensite carbone du reseau electrique selectionne. La Suisse (30 g/kWh) est parmi les plus propres ; la Chine (555 g/kWh) parmi les plus elevees."
+  },
+  "zfs": {
+    "ashift": "La valeur ashift doit correspondre a la taille du secteur physique du disque. Utiliser ashift=9 (512 octets) sur un disque a secteurs de 4K provoque une amplification des ecritures. Utilisez ashift=12 pour les disques modernes.",
+    "compression": "Algorithme de compression ZFS. LZ4 est recommande pour la plupart des charges de travail (rapide, faible utilisation processeur). ZSTD offre de meilleurs ratios mais avec un cout processeur plus eleve.",
+    "recordsize": "Taille maximale des enregistrements pour les datasets. Adapter a la charge de travail : 128K pour les fichiers generaux, 16K-64K pour les bases de donnees, 1M pour les charges sequentielles volumineuses.",
+    "dedup": "La deduplication ZFS necessite environ 5 Go de RAM par To de donnees dedupliquees. A n'activer que si vous disposez de suffisamment de RAM et d'une charge de travail en ecriture avec beaucoup de doublons.",
+    "specialVdev": "Un vdev special (NVMe) stocke les metadonnees et les petits blocs, ameliorant considerablement les performances d'E/S aleatoires pour les pools bases sur des HDD."
+  },
+  "ceph": {
+    "nearfull": "Le seuil par defaut nearfull de Ceph est de 85 %. Les OSD cessent d'accepter les ecritures au-dela de ce seuil. La capacite utilisable est calculee a ce seuil, et non a 100 %.",
+    "backend": "BlueStore est le backend recommande. Il contourne le systeme de fichiers local pour un acces direct au disque, ameliorant les performances par rapport a l'ancien FileStore."
+  },
+  "vsan": {
+    "adaptive": "vSAN ESA utilise un RAID-5 adaptatif : largeur de bande de 2+1 pour 3 a 5 hotes (67 % d'efficacite) ou 4+1 pour 6 hotes et plus (80 % d'efficacite). Le systeme s'ajuste automatiquement en fonction de la taille du cluster."
+  },
+  "s2d": {
+    "reserve": "S2D reserve l'equivalent d'un disque de capacite par noeud pour la reconstruction automatique. Cette reserve est soustraite avant le calcul de la capacite utilisable.",
+    "map": "Mirror-Accelerated Parity (MAP) combine un niveau miroir rapide (environ 20 %) avec un niveau parite a haute capacite (environ 80 %), offrant un equilibre entre performances et efficacite."
+  },
+  "nutanix": {
+    "ec": "Erasure Coding (EC-X) : RF2 avec EC(4/1) atteint environ 80 % d'efficacite. RF3 avec EC(4/2) atteint environ 67 % d'efficacite. EC s'applique uniquement aux donnees froides ; les donnees chaudes restent repliquees.",
+    "rf": "RF2 stocke 2 copies des donnees (50 % d'efficacite). RF3 stocke 3 copies (33 % d'efficacite). Un RF plus eleve signifie une meilleure tolerance aux pannes mais une capacite reduite."
+  },
+  "netapp": {
+    "wafl": "Le systeme de fichiers WAFL de NetApp a environ 1,5 % de surcharge pour les metadonnees internes. Ce montant est soustrait de la capacite utilisable.",
+    "adp": "Advanced Data Partitioning (ADP) partage les disques entre les agregats racine et de donnees, ameliorant l'utilisation de la capacite sur les systemes de petite taille.",
+    "snapshot": "La reserve de snapshots (5 % par defaut) est un espace pre-alloue pour les copies instantanees. Definie a 0 % pour les baies tout-flash avec deduplication en ligne."
+  },
+  "synology": {
+    "shr": "Synology Hybrid RAID (SHR) offre une tolerance a la panne d'un disque avec prise en charge de disques de tailles differentes. SHR-2 offre une tolerance a la panne de deux disques.",
+    "systemPartition": "Synology reserve 20 a 30 Go par disque pour les partitions systeme. Avec un grand nombre de disques, cette surcharge fixe peut devenir significative."
+  },
+  "dell": {
+    "powerFlex": "PowerFlex prend en charge les miroirs 2 voies et 3 voies avec une granularite Fine (8 Ko) ou Medium (1 Mo). La granularite Fine ajoute environ 12-15 % de surcharge de metadonnees mais permet des reconstructions plus rapides.",
+    "powerStore": "PowerStore est une appliance tout-flash avec deduplication et compression integrees. Les limites du controleur determinent le debit maximal.",
+    "powerScale": "PowerScale (Isilon) est un NAS scale-out. L'efficacite depend du niveau de protection et du nombre de noeuds.",
+    "objectScale": "ObjectScale fournit un stockage objet compatible S3. La geo-replication multi-site peut ajouter une surcharge de capacite significative (jusqu'a 2,67x pour un EC 12+4 sur 2 sites)."
+  }
+}

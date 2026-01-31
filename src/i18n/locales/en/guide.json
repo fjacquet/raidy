@@ -1,0 +1,128 @@
+{
+  "title": "Storage Sizing Principles",
+  "subtitle": "Understanding how storage calculations work",
+  "capacity": {
+    "title": "How Capacity Works",
+    "intro": "Storage capacity follows a waterfall: raw physical capacity is reduced by several layers of overhead before you get usable space. Understanding each layer helps you size storage accurately.",
+    "waterfall": {
+      "title": "The Capacity Waterfall",
+      "step1": "Raw Capacity: Physical drive size \u00d7 drive count \u00d7 server count",
+      "step2": "Subtract: Parity/redundancy overhead (depends on RAID level)",
+      "step3": "Subtract: Hot spare reservation",
+      "step4": "Subtract: Filesystem overhead (ZFS slop, WAFL overhead, etc.)",
+      "step5": "Subtract: System reserves (Ceph nearfull, S2D rebuild reserve, etc.)",
+      "step6": "= Usable Capacity",
+      "step7": "Multiply: Compression ratio \u00d7 Deduplication ratio",
+      "step8": "= Effective Capacity (what you can logically store)"
+    },
+    "keyPoint": "Compression and deduplication are multiplicative, not additive. 2x compression + 2x dedup = 4x effective capacity, not 3x. Overhead layers stack multiplicatively too: 10% parity + 5% filesystem \u2260 15% total loss."
+  },
+  "raid": {
+    "title": "RAID & Redundancy Explained",
+    "intro": "RAID levels balance three competing goals: capacity efficiency, performance, and fault tolerance. No single RAID level wins on all three.",
+    "efficiency": {
+      "title": "Efficiency Formulas",
+      "raid0": "RAID 0: 100% efficiency \u2014 no redundancy, no fault tolerance",
+      "raid1": "RAID 1 / RAID 10: 50% efficiency \u2014 mirror, survives 1 drive failure per pair",
+      "raid5": "RAID 5: (n\u22121)/n efficiency \u2014 single parity, survives 1 drive failure",
+      "raid6": "RAID 6: (n\u22122)/n efficiency \u2014 double parity, survives 2 drive failures",
+      "example": "Example: 12-drive RAID 5 = (12\u22121)/12 = 91.7% efficiency. RAID 6 = (12\u22122)/12 = 83.3%."
+    },
+    "writePenalty": {
+      "title": "Write Penalty",
+      "intro": "Parity-based RAID levels have a write amplification penalty for random writes:",
+      "raid5": "RAID 5: 4x penalty \u2014 read old data + read old parity + write new data + write new parity",
+      "raid6": "RAID 6: 6x penalty \u2014 same as RAID-5 but with two parity calculations",
+      "mirror": "RAID 1/10: 2x penalty \u2014 write to both mirror halves",
+      "sequential": "Sequential writes have lower penalty (~1.5x for RAID-5) because full-stripe writes avoid the read-modify-write cycle.",
+      "sources": "Sources: WintelGuy.com RAID Performance Calculator, Huawei Storage Knowledge Base"
+    }
+  },
+  "performance": {
+    "title": "Performance Bottlenecks",
+    "intro": "Storage performance is limited by the weakest link in a chain of four layers. Upgrading a non-bottleneck layer has zero effect on overall performance.",
+    "chain": {
+      "title": "The Bottleneck Chain",
+      "media": "Media Layer: Aggregate of all drive IOPS/throughput (sum of individual drives, adjusted for RAID write penalty)",
+      "controller": "Controller/HBA Layer: Fixed ceiling of the RAID controller or HBA (e.g., Broadcom 9500: 4M IOPS, 28 GB/s)",
+      "pcie": "PCIe Bus Layer: Generation \u00d7 lanes (e.g., Gen4 x8 = ~16 GB/s, Gen5 x16 = ~64 GB/s)",
+      "network": "Network Layer: Link speed (e.g., 10 GbE = 1.25 GB/s, 25 GbE = 3.1 GB/s, 100 GbE = 12.5 GB/s)"
+    },
+    "keyPoint": "The layer with the lowest throughput is the bottleneck (highlighted in orange in the dashboard). Always upgrade the bottleneck first.",
+    "alignment": "For XFS filesystems on RAID arrays, stripe alignment (sunit/swidth) should match the RAID chunk size to avoid read-modify-write penalties on sequential I/O."
+  },
+  "resilience": {
+    "title": "Resilience & Monte Carlo Simulation",
+    "intro": "The resilience engine estimates the probability of surviving one year without data loss using Monte Carlo simulation \u2014 a statistical technique that runs thousands of randomized scenarios.",
+    "process": {
+      "title": "How the Simulation Works",
+      "step1": "1. Simulate random drive failures based on Annual Failure Rate (AFR)",
+      "step2": "2. Calculate rebuild time based on drive capacity and rebuild speed",
+      "step3": "3. During rebuild, calculate probability of Unrecoverable Read Error (URE)",
+      "step4": "4. Simulate correlated failures (10% chance a failure triggers another within 7 days)",
+      "step5": "5. Account for stress-induced failures during rebuild (1.3x higher failure rate)",
+      "step6": "Repeat 10,000+ times for statistical significance"
+    },
+    "ure": {
+      "title": "URE Risk During Rebuild",
+      "description": "A URE occurs when a bit on a surviving drive cannot be read during rebuild. The probability depends on the drive's URE rate (10\u207b\u00b9\u2074 to 10\u207b\u00b9\u2077) and the amount of data read. Larger drives have exponentially higher URE risk during rebuild \u2014 this is why RAID-5 with large (10TB+) drives is risky."
+    },
+    "keyPoint": "Small differences in survival rate represent large differences in absolute risk: 99.9% = 1 in 1,000 arrays lose data; 99.99% = 1 in 10,000; 99.999% = 1 in 100,000.",
+    "sources": "Methodology based on industry-standard Markov chain failure analysis and AFR-based reliability modeling."
+  },
+  "sustainability": {
+    "title": "Sustainability & TCO",
+    "intro": "Total Cost of Ownership extends beyond the hardware purchase to include energy, cooling, and environmental impact over the project lifetime.",
+    "pue": {
+      "title": "Power Usage Effectiveness (PUE)",
+      "description": "PUE is the ratio of total facility power to IT equipment power. A PUE of 1.4 means 40% of power goes to cooling and infrastructure.",
+      "formula": "Total Power = (Drive Power + Server Power) \u00d7 PUE",
+      "examples": "Typical values: Best hyperscale ~1.06, Good enterprise ~1.3, Average ~1.55, Older facilities ~2.0+"
+    },
+    "co2": {
+      "title": "Carbon Intensity by Region",
+      "description": "CO\u2082 emissions depend on the local electricity grid. The same hardware in different locations produces vastly different emissions:",
+      "comparison": "Switzerland: 30 gCO\u2082/kWh (hydro) vs. Germany: 385 gCO\u2082/kWh (coal/gas mix) \u2014 a 12x difference for identical hardware."
+    },
+    "endurance": {
+      "title": "SSD Endurance (DWPD)",
+      "description": "DWPD (Drive Writes Per Day) measures how many times the full drive capacity can be written per day over its warranty period. Exceeding the rated DWPD accelerates wear and risks premature failure.",
+      "formula": "Required DWPD = Daily Write Volume / Drive Capacity",
+      "example": "Example: Writing 2 TB/day to a 1 TB SSD requires 2 DWPD. If the drive is rated for 1 DWPD, it will wear out at 2x the expected rate."
+    }
+  },
+  "platforms": {
+    "title": "Platform-Specific Notes",
+    "intro": "Each storage platform has unique behaviors that affect capacity and performance calculations. These are the most important platform-specific considerations.",
+    "zfs": {
+      "title": "ZFS",
+      "slop": "Slop Space: ZFS reserves space to prevent the pool from reaching 100% full. Formula: MAX(128 MiB, MIN(capacity/32, 128 GiB)). For pools under ~4 TiB, this is ~3.1% of capacity. For larger pools, it caps at 128 GiB.",
+      "ashift": "Ashift: Must match the drive's physical sector size. Use ashift=12 (4K) for modern drives. Mismatched ashift causes write amplification and performance degradation.",
+      "source": "Source: OpenZFS documentation, spa_slop_shift parameter (PR #11023)"
+    },
+    "vsanEsa": {
+      "title": "VMware vSAN ESA",
+      "adaptive": "Adaptive RAID-5: vSAN ESA automatically adjusts stripe width based on cluster size. 3\u20135 hosts use 2+1 (67% efficiency). 6+ hosts use 4+1 (80% efficiency). If a host fails in a 6-host cluster, vSAN automatically downgrades from 4+1 to 2+1 after 24 hours.",
+      "nvme": "NVMe Only: ESA requires all-NVMe drives. Each drive serves both cache and capacity in a single-tier architecture.",
+      "source": "Source: VMware VCF Blog (Adaptive RAID-5 Erasure Coding), Broadcom TechDocs"
+    },
+    "ceph": {
+      "title": "Ceph",
+      "nearfull": "Nearfull Threshold: Ceph defaults to 85% nearfull ratio. At this point, OSDs begin warning. At 90% (backfillfull), recovery is denied. At 95% (full), writes are blocked entirely. Raidy calculates usable capacity at the 85% threshold.",
+      "ec": "Erasure Coding: Common profiles include 2+1 (67%), 4+2 (67%), 8+3 (73%), and 8+4 (67%). Higher data-to-parity ratios improve efficiency but require more nodes.",
+      "source": "Source: Ceph documentation (mon_osd_nearfull_ratio), Red Hat Ceph Storage documentation"
+    },
+    "s2d": {
+      "title": "Storage Spaces Direct (S2D)",
+      "reserve": "Rebuild Reserve: S2D reserves one drive equivalent of capacity per node for automatic rebuild. In a 4-node cluster with 8 drives per node, this means 8 drives (25% of total) are lost to rebuild reserve.",
+      "map": "MAP (Mirror-Accelerated Parity): Combines ~20% mirror tier for hot data with ~80% parity tier for cold data, balancing performance and capacity efficiency.",
+      "source": "Source: Microsoft Storage Spaces Direct documentation"
+    },
+    "nutanix": {
+      "title": "Nutanix",
+      "ec": "EC-X: Applies to cold data only. RF2 + EC (4/1) achieves ~80% efficiency. RF3 + EC (4/2) achieves ~67%. Hot data remains replicated at the base RF level for write performance.",
+      "overhead": "System Overhead: Nutanix reserves ~10% of raw capacity for snapshots, metadata, CVM, and rebuild operations.",
+      "source": "Source: Nutanix TN-2032 (Data Efficiency), NutanixBible.com"
+    }
+  }
+}

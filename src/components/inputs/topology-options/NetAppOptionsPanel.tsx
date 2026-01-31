@@ -18,6 +18,7 @@ import { useConfigStore } from '@/store'
 
 export function NetAppOptionsPanel() {
   const { t } = useTranslation('topology')
+  const { t: th } = useTranslation('help')
   const { netAppOptions, setNetAppOptions } = useConfigStore()
 
   return (
@@ -69,7 +70,9 @@ export function NetAppOptionsPanel() {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="netapp-adp">{t('netapp.adp')}</Label>
+        <Label htmlFor="netapp-adp" tooltip={th('netapp.adp')}>
+          {t('netapp.adp')}
+        </Label>
         <Select
           id="netapp-adp"
           value={netAppOptions.adpVersion}
@@ -86,7 +89,9 @@ export function NetAppOptionsPanel() {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="netapp-snapshot-reserve">{t('common.snapshotReserve')}</Label>
+        <Label htmlFor="netapp-snapshot-reserve" tooltip={th('netapp.snapshot')}>
+          {t('common.snapshotReserve')}
+        </Label>
         <Slider
           id="netapp-snapshot-reserve"
           value={netAppOptions.snapshotReserve}
@@ -141,7 +146,9 @@ export function NetAppOptionsPanel() {
       )}
 
       <div className="space-y-2">
-        <Label htmlFor="netapp-wafl">{t('netapp.waflOverhead')}</Label>
+        <Label htmlFor="netapp-wafl" tooltip={th('netapp.wafl')}>
+          {t('netapp.waflOverhead')}
+        </Label>
         <Slider
           id="netapp-wafl"
           value={netAppOptions.waflOverhead * 100}

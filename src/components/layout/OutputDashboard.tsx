@@ -3,6 +3,7 @@
  */
 
 import { useTranslation } from 'react-i18next'
+import { InfoTooltip } from '@/components/common'
 import {
   AnimatedBytes,
   AnimatedPercent,
@@ -90,6 +91,7 @@ function ProgressBar({
 
 export function OutputDashboard() {
   const { t } = useTranslation('output')
+  const { t: th } = useTranslation('help')
   const { topology, zfsOptions, driveId, driveCount, hotSpares, controllerOptions, unitSystem } =
     useConfigStore()
   const formatBytes = useFormatBytes()
@@ -208,7 +210,9 @@ export function OutputDashboard() {
         {/* Capacity Overview Card */}
         <div className="panel xl:col-span-2">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-white">{t('capacity.title')}</h3>
+            <h3 className="text-lg font-semibold text-white flex items-center gap-1.5">
+              {t('capacity.title')} <InfoTooltip content={th('output.sankeyDiagram')} />
+            </h3>
             <span className="text-sm font-medium">
               <AnimatedPercent value={volumetry.efficiency} className="text-primary-400" />{' '}
               {t('capacity.efficiency')}
@@ -279,7 +283,9 @@ export function OutputDashboard() {
 
         {/* Performance Gauges Card */}
         <div className="panel">
-          <h3 className="text-lg font-semibold text-white mb-4">{t('performance.title')}</h3>
+          <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-1.5">
+            {t('performance.title')} <InfoTooltip content={th('output.bottleneck')} />
+          </h3>
 
           {/* Responsive speedometer grid */}
           <div className="grid grid-cols-2 gap-2 sm:gap-4">
@@ -330,7 +336,9 @@ export function OutputDashboard() {
 
         {/* Power & Sustainability Card */}
         <div className="panel">
-          <h3 className="text-lg font-semibold text-white mb-4">{t('power.title')}</h3>
+          <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-1.5">
+            {t('power.title')} <InfoTooltip content={th('output.totalPower')} />
+          </h3>
 
           <div className="grid grid-cols-2 gap-4 mb-4">
             <MetricCard label={t('power.totalPower')}>
@@ -405,8 +413,8 @@ export function OutputDashboard() {
 
         {/* Bottleneck Analysis Card */}
         <div className="panel">
-          <h3 className="text-lg font-semibold text-white mb-4">
-            {t('performance.bottleneck.title')}
+          <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-1.5">
+            {t('performance.bottleneck.title')} <InfoTooltip content={th('output.bottleneck')} />
           </h3>
 
           <div className="space-y-3">
@@ -441,7 +449,9 @@ export function OutputDashboard() {
         {/* Resilience Simulation Card */}
         <div className="panel">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-white">{t('resilience.title')}</h3>
+            <h3 className="text-lg font-semibold text-white flex items-center gap-1.5">
+              {t('resilience.title')} <InfoTooltip content={th('output.survivalRate')} />
+            </h3>
             <button
               type="button"
               onClick={runSimulation}

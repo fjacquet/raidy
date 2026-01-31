@@ -6,175 +6,142 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Raidy** is a browser-based simulator for modern storage infrastructure including RAID, ZFS, VMware vSAN (ESA/OSA), Microsoft S2D, Nutanix, Dell PowerFlex/PowerStore/PowerScale, NetApp ONTAP, and Ceph. It's a Single Page Application (SPA) / Progressive Web App (PWA) with no backend - all intelligence lives in typed JSON definitions and client-side calculation engines.
-
-## Technology Stack
-
-- **Framework**: React (Functional Components + Hooks) or Svelte 5
-- **Language**: TypeScript (Strict Mode) - critical for complex math type-safety
-- **State Management**: URL-based state via Zustand or Recoil (enables "Copy URL to Share")
-- **Math Engine**: Pure TypeScript; Web Workers for Monte Carlo simulations
-- **Visualization**: Recharts (simple graphs) + D3.js (custom Capacity Waterfall/Sankey)
-- **Styling**: Tailwind CSS (mobile responsive, dark mode native)
-- **i18n**: react-i18next (Swiss languages: EN/FR/DE/IT)
-- **Deployment**: Static hosting (Vercel/Netlify/GitHub Pages)
+**Raidy** is a browser-based simulator for modern storage infrastructure (RAID, ZFS, vSAN, S2D, Nutanix, Dell, NetApp, Ceph, Synology). Single Page Application with no backend — all calculation logic runs client-side. State is persisted in the URL hash via LZ-String compression, enabling "Copy URL to Share".
 
 ## Build & Development Commands
 
 ```bash
-# Install dependencies
-npm install
+npm install            # Install dependencies
+npm run dev            # Development server (Vite HMR)
+npm run build          # Type check + production build
+npm run typecheck      # TypeScript strict mode validation
+npm run lint           # Biome linter
+npm run lint:fix       # Biome auto-fix
+npm run format         # Biome formatter
+npm test               # Run tests (Vitest, watch mode)
+npm test -- path/to/test.spec.ts   # Single test file
+npm run test:coverage  # Coverage report (75% threshold on engines/workers/utils)
+npm run test:ui        # Vitest browser UI
+```
 
-# Development server
-npm run dev
+A `Makefile` wraps these commands: `make dev`, `make build`, `make test`, `make all` (lint + typecheck + build).
 
-# Production build
-npm run build
+## Code Style (Biome)
 
-# Type checking
-npm run typecheck
+- **Formatter**: 2-space indent, 100-char line width, single quotes, semicolons as-needed
+- **Linter**: `noUnusedImports: error`, `noUnusedVariables: error`, `useConst: error`, `noNonNullAssertion: warn`
+- Run `npm run lint:fix` before committing
 
-# Linting
-npm run lint
+## Path Aliases
 
-# Run tests
-npm test
+Configured in both `tsconfig.app.json` and `vitest.config.ts`:
 
-# Run single test file
-npm test -- path/to/test.spec.ts
+```
+@/*          → src/*
+@engines/*   → src/engines/*
+@components/* → src/components/*
+@store/*     → src/store/*
+@types/*     → src/types/*
+@utils/*     → src/utils/*
+@data/*      → src/data/*
+@hooks/*     → src/hooks/*
 ```
 
 ## Architecture
 
 ### Data Flow
 
-1. **Initialization**: App loads `drive_db.json` (static asset with drive definitions)
-2. **Input**: User modifies configuration (RAID level, drive count, file system)
-3. **Process**: React `useEffect` hooks trigger recalculation across 4 Logic Modules
-4. **Output**: Dashboard updates real-time; URL hash updates silently
+1. User modifies configuration → Zustand store updates → URL hash updates (LZ-compressed)
+2. `useCalculations()` hook watches store, delegates to independent calculation hooks
+3. Each hook calls its engine (pure functions) and returns memoized results
+4. `OutputDashboard` renders results (Sankey, gauges, charts)
 
-### Core Logic Modules
+### Four Calculation Engines
 
-#### Module A: Volumetry & Efficiency Engine
+All engines are pure functions in `src/engines/` using the **strategy pattern** — each storage platform has its own strategy implementation.
 
-Answers "How much space do I actually get?"
+| Engine | Location | Purpose |
+|--------|----------|---------|
+| **Volumetry** | `src/engines/volumetry/` | Usable capacity, parity overhead, filesystem losses, compression/dedup |
+| **Performance** | `src/engines/performance/` | IOPS, throughput, bottleneck chain (Media→Controller→PCIe→Network) |
+| **Resilience** | `src/workers/resilienceWorker.ts` | Monte Carlo simulation (100K iterations in Web Worker) |
+| **Sustainability** | `src/engines/sustainability/` | Power, CO2 emissions, flash endurance, TCO |
 
-- Supported topologies:
-  - Standard RAID: 0/1/1E/3/4/5/5E/5EE/6/10/50/60
-  - ZFS: Stripe/Mirror/RAID-Z1/Z2/Z3/dRAID1/2/3
-  - Microsoft S2D: Simple/Mirror/Parity/Dual Parity/MAP
-  - VMware vSAN OSA: RAID-1/RAID-5/RAID-6 (disk groups, dynamic stripe width)
-  - VMware vSAN ESA: Adaptive RAID-5/RAID-6 (NVMe only, scales with cluster size)
-  - Nutanix: RF2/RF3, Erasure Coding
-  - Dell PowerFlex: 2-way/3-way mirror, dynamic rebuild
-  - Dell PowerStore/PowerScale/ObjectScale
-  - NetApp ONTAP: RAID-DP/RAID-TEC, ADP
-  - Ceph: Replicated/Erasure Coded pools
-  - Synology SHR/SHR-2
-- ZFS overhead: Apply 1/32 "slop" factor, compression ratio, ashift padding penalty
-- S2D reserve: Subtract 1 drive equivalent per node for automatic rebuild reserve
-- vSAN ESA: Adaptive efficiency (67-80%) based on cluster size and drive count
-- Veeam/Reflink logic: Toggle for XFS/ReFS reflink support affects backup size calculations
+### Engine Strategy Pattern
 
-#### Module B: Performance & Bottleneck Engine
+Each engine follows the same structure:
 
-Answers "Where is my choke point?"
-
-- Chain calculation: Compare Media Limit → Controller/CPU Limit → Bus Limit → Network Limit
-- RAID 5/6 write penalty: Divide by 4 (R5) or 6 (R6) for random I/O
-- Output includes XFS stripe alignment (`sunit`/`swidth`) based on RAID chunk size
-
-#### Module C: Resilience Engine (Monte Carlo)
-
-Answers "Will I lose data?"
-
-- Runs 10,000 simulations in Web Worker
-- Simulates: drive failure → rebuild time → URE probability → 2nd failure probability
-- Output: Survival probability (e.g., "99.999%")
-
-#### Module D: Sustainability & TCO Engine
-
-Answers "What is the Carbon/Financial Cost?"
-
-- Energy calculation: drives + server + PUE cooling overhead
-- CO2 emissions: kWh × grid carbon intensity (region-selectable)
-- Flash endurance: SSD survival based on DWPD vs 5-year workload
-
-### Data Structures
-
-Drive definitions in `drives.json`:
-
-```typescript
-interface Drive {
-  id: string;                    // e.g., "wd-gold-24tb"
-  model: string;
-  type: "HDD" | "SSD_SATA" | "SSD_SAS" | "SSD_NVMe";
-  capacity_raw: number;          // Bytes
-  sector_size: 512 | 4096;
-  performance: { iops_read, iops_write, bandwidth_read_mb, bandwidth_write_mb };
-  reliability: { ure_rate: 14|15|16|17, afr: number, dwpd: number };
-  power: { idle_watts, load_watts };
-  cost_avg: number;              // USD
-}
+```
+src/engines/<module>/
+├── index.ts           # Orchestrator — selects and calls strategy
+├── strategies/
+│   ├── VolumetryStrategy.ts  # Interface
+│   ├── raid.ts        # Standard RAID implementation
+│   ├── zfs.ts         # ZFS implementation
+│   ├── vsan.ts        # vSAN implementation
+│   └── ...            # One per platform
+├── helpers/           # Shared calculation utilities
+└── overhead/          # Filesystem/platform overhead calculators
 ```
 
-## UI Layout
+To add a new platform: add a strategy file, register it in `index.ts`, add types in `src/types/topology.ts`, add store options in the topology slice, and create a UI options panel.
 
-"Cockpit" split-screen design:
+### Hook Architecture
 
-- **Left (Fixed)**: Accordion-style inputs (Hardware, Topology, Workload, Advanced)
-- **Right (Reactive)**: Visual outputs (Sankey diagram, Performance gauge, Command matrix)
+Calculation hooks have focused dependencies to avoid unnecessary recalculations:
 
-## Key Features
+- `useCalculations()` — Main orchestrator, composes results from sub-hooks
+- `useVolumetryCalc()` — Watches topology + hardware + advanced settings
+- `usePerformanceCalc()` — Watches workload + hardware + topology
+- `useSustainabilityCalc()` — Watches hardware + advanced (PUE, carbon region)
+- `useResilience()` — Coordinates Web Worker, watches drive reliability + topology
 
-- **Share Link**: Serializes state → Base64 → URL hash
-- **PDF Export**: Uses jspdf-autotable for white-labeled reports
-- **Config Export**: JSON/YAML blocks for Ansible/Terraform
+### State Management
 
-## Internationalization (i18n)
+Zustand store composed of slices (`src/store/slices/`):
 
-All calculators and UI components must be available in the main Swiss languages:
+- **HardwareSlice**: driveId, driveCount, serverCount, connectivity
+- **TopologySlice**: topology type+level, hotSpares, platform-specific options (zfsOptions, vsanOptions, etc.)
+- **WorkloadSlice**: readPercent, blockSize, randomPercent, dailyWriteVolume
+- **AdvancedSlice**: compressionRatio, networkSpeed, pue, carbonRegion, unitSystem
 
-- **English** (en) - Default
-- **French** (fr)
-- **German** (de)
-- **Italian** (it)
+URL persistence via `src/store/urlStorage.ts` — state serialized to JSON, compressed with LZ-String, stored in `#raidy=<data>`.
 
-### i18n Implementation
+### UI Layout
 
-- **Library**: `react-i18next` with `i18next-browser-languagedetector`
-- **Translations**: `/src/i18n/locales/{lang}/` with 8 namespaces:
-  - `common.json` - App title, buttons, units, navigation
-  - `topology.json` - RAID/ZFS/vSAN names & descriptions
-  - `hardware.json` - Drive types, form factors, properties
-  - `workload.json` - Workload presets, block sizes
-  - `advanced.json` - Network, power, filesystem settings
-  - `output.json` - Dashboard metrics, capacity breakdown
-  - `validation.json` - Error/warning messages
-  - `pdf.json` - PDF export labels
-- **Language detection**: URL param (`?lang=fr`) → localStorage → browser preference → fallback to English
-- **Number formatting**: Swiss locale variants (apostrophe separator: `1'000.50`)
-- **Language switcher**: Located in UI header
-- **Technical terms**: RAID, ZFS, NVMe, IOPS, etc. remain untranslated
+Split-screen "Cockpit" (`src/components/layout/Cockpit.tsx`):
+- **Left**: `InputSidebar` with accordion panels (Topology, Hardware, Workload, Advanced)
+- **Right**: `OutputDashboard` with Sankey diagram, speedometer, donut chart, breakdown list
 
-### Translation Key Convention
+Platform-specific input panels live in `src/components/inputs/topology-options/`.
 
-```typescript
-// Usage: t('topology:level.raid5.description')
-// File: src/i18n/locales/en/topology.json
-{
-  "level": {
-    "raid5": {
-      "label": "RAID 5",
-      "description": "Single distributed parity, n-1 capacity"
-    }
-  }
-}
-```
+## Key Data Files
 
-## Validation Requirements
+- **Drive database**: `src/data/drives.json` (~4K lines) — all drive specs loaded at startup
+- **Type definitions**: `src/types/topology.ts` (~730 lines) — the Topology discriminated union is central to the entire app
+- **i18n translations**: `src/i18n/locales/{en,fr,de,it}/` — 8 namespace files per language
 
-- Unit test RAID 5/6 math against industry formulas
-- Verify ZFS overhead matches OpenZFS documentation
-- Ensure Web Worker doesn't crash mobile browsers
-- Validate results within 1% of WintelGuy and NetApp Storage Efficiency Calculator
+## Internationalization
+
+Four Swiss languages: EN (default), FR, DE, IT. Uses `react-i18next` with 8 namespaces (common, topology, hardware, workload, advanced, output, validation, pdf).
+
+- Swiss locale number formatting: apostrophe separator (`1'000.50`)
+- Language detection: URL param (`?lang=fr`) → localStorage → browser → fallback EN
+- Technical terms (RAID, ZFS, NVMe, IOPS) remain untranslated
+- Key convention: `t('topology:level.raid5.description')`
+
+## Testing
+
+- **Framework**: Vitest with jsdom environment, globals enabled
+- **Test files**: `tests/` directory mirrors `src/` structure
+- **Fixtures**: `tests/fixtures/` contains validation vectors (raid-vectors.ts, zfs-vectors.ts, vsan-vectors.ts, performance-vectors.ts)
+- **Property-based testing**: Uses `fast-check` for exhaustive input validation
+- **Coverage**: v8 provider, 75% threshold on `src/engines/**`, `src/workers/**`, `src/utils/**`
+- **Validation target**: Results must be within 1% of WintelGuy and NetApp Storage Efficiency Calculator
+
+## Git & CI
+
+- **Main branch**: `maincd`
+- **CI** (`.github/workflows/ci.yml`): Runs `npm test`, `npm run typecheck`, `npm run lint` on push/PR
+- **Deployment** (`.github/workflows/static.yml`): Builds and deploys to GitHub Pages on push to `maincd`
+- **Base path**: `/raidy/` (configured in `vite.config.ts` for GitHub Pages)

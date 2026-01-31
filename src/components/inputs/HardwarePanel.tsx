@@ -41,6 +41,7 @@ const FORM_FACTOR_VALUES: FormFactorFilter[] = [
 
 export function HardwarePanel() {
   const { t } = useTranslation('hardware')
+  const { t: th } = useTranslation('help')
 
   // Translated connectivity options
   const connectivityOptions = useMemo(
@@ -131,7 +132,7 @@ export function HardwarePanel() {
     <div className="space-y-5">
       {/* Drive Connectivity Filter */}
       <div className="space-y-2">
-        <Label>{t('connectivity.label')}</Label>
+        <Label tooltip={th('hardware.connectivity')}>{t('connectivity.label')}</Label>
         {constraint === 'nvme_only' ? (
           <>
             <div className="px-3 py-2 bg-surface-700 rounded-lg text-sm text-slate-300">
@@ -155,7 +156,9 @@ export function HardwarePanel() {
 
       {/* Form Factor Filter */}
       <div className="space-y-2">
-        <Label htmlFor="form-factor">{t('formFactor.label')}</Label>
+        <Label htmlFor="form-factor" tooltip={th('hardware.formFactor')}>
+          {t('formFactor.label')}
+        </Label>
         <Select
           id="form-factor"
           value={driveFormFactor}
@@ -169,6 +172,7 @@ export function HardwarePanel() {
         <Label
           htmlFor="drive-select"
           hint={`${filteredDrives.length} ${t('properties.title').toLowerCase()}`}
+          tooltip={th('hardware.driveModel')}
         >
           {t('drive.label')}
         </Label>
@@ -204,7 +208,7 @@ export function HardwarePanel() {
 
       {/* Drive Count per Server */}
       <div className="space-y-2">
-        <Label htmlFor="drive-count" hint={`${driveCount}`}>
+        <Label htmlFor="drive-count" hint={`${driveCount}`} tooltip={th('hardware.driveCount')}>
           {t('drive.count')}
         </Label>
         <Slider id="drive-count" value={driveCount} min={1} max={100} onChange={setDriveCount} />
@@ -215,6 +219,7 @@ export function HardwarePanel() {
         <Label
           htmlFor="server-count"
           hint={t('drive.countHint', { total: driveCount * serverCount })}
+          tooltip={th('hardware.serverCount')}
         >
           {t('server.label')}
         </Label>
@@ -223,7 +228,11 @@ export function HardwarePanel() {
 
       {/* Server Power */}
       <div className="space-y-2">
-        <Label htmlFor="server-power" hint={t('server.powerHint')}>
+        <Label
+          htmlFor="server-power"
+          hint={t('server.powerHint')}
+          tooltip={th('hardware.serverPower')}
+        >
           {t('server.power')}
         </Label>
         <NumberInput

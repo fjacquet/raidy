@@ -1,3 +1,4 @@
+export { AccordionItem } from './AccordionItem'
 export {
   Label,
   NumberInput,
@@ -6,4 +7,5 @@ export {
   Slider,
   Toggle,
 } from './FormControls'
+export { InfoTooltip } from './InfoTooltip'
 export { LanguageSwitcher } from './LanguageSwitcher'
