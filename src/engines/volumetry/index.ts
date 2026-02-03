@@ -61,6 +61,7 @@ export interface VolumetryInput {
   powervaultOptions: PowerVaultOptions
   compressionRatio: number
   dedupRatio: number
+  fsType: 'xfs' | 'ext4' | 'zfs' | 'refs' | 'ntfs' | 'btrfs'
 }
 
 /**
@@ -92,6 +93,7 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
     nutanixOptions,
     compressionRatio,
     dedupRatio,
+    fsType,
   } = input
 
   // Validate topology
@@ -173,6 +175,7 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
     powerstoreOptions,
     powerscaleOptions,
     cephOptions,
+    fsType,
   })
 
   // Extract overhead values

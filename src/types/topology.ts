@@ -633,12 +633,14 @@ export const DEFAULT_NETAPP_OPTIONS: NetAppOptions = {
 
 /** Filesystem overhead constants */
 export const FILESYSTEM_OVERHEAD = {
-  btrfs: 0.04, // 4% for Btrfs metadata
-  ext4: 0.02, // 2% for ext4
-  xfs: 0.02, // 2% for XFS
+  btrfs: 0.04, // 4% for Btrfs metadata + CoW
+  ext4: 0.05, // 5% for ext4 (default root reservation)
+  xfs: 0.01, // 1% for XFS (minimal metadata)
+  zfs: 0.01, // 1% for ZFS metadata (slop handled separately)
   zfs_slop: 1 / 64, // 1.5625% ZFS slop space
   wafl: 0.015, // 1.5% WAFL default
-  refs: 0.02, // 2% for ReFS
+  refs: 0.02, // 2% for ReFS (integrity streams)
+  ntfs: 0.02, // 2% for NTFS (MFT reservation)
 } as const
 
 /** Controller/HBA performance limits (IOPS, throughput in MB/s) */

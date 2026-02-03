@@ -17,33 +17,40 @@
 import type { NetAppOptions, SynologyOptions, Topology } from '@/types/topology'
 import { FILESYSTEM_OVERHEAD } from '@/types/topology'
 
+/** Filesystem type for user selection */
+type FsType = 'xfs' | 'ext4' | 'zfs' | 'refs' | 'ntfs' | 'btrfs'
+
 /**
  * Get filesystem overhead percentage for topology.
  *
  * Returns the decimal overhead percentage (e.g., 0.015 = 1.5%).
  *
  * @param topology - Storage topology configuration
+ * @param fsType - User-selected filesystem type (used for standard RAID)
  * @param synologyOptions - Synology-specific options (filesystem type)
  * @param netAppOptions - NetApp-specific options (WAFL overhead)
  * @returns Overhead percentage as decimal (0-1)
  *
  * @example
- * // ZFS topology
+ * // Standard RAID with XFS
  * const overhead = getFilesystemOverheadPercent(
- *   { type: 'zfs', level: 'raidz2' }
+ *   { type: 'standard', level: 'raid5' },
+ *   'xfs'
  * )
- * // Returns: 0.01 (1% metadata overhead)
+ * // Returns: 0.01 (1% XFS overhead)
  *
  * @example
  * // Synology with Btrfs
  * const overhead = getFilesystemOverheadPercent(
  *   { type: 'proprietary', level: 'synology_shr2' },
+ *   'ext4',
  *   { filesystem: 'btrfs' }
  * )
  * // Returns: 0.04 (4% Btrfs overhead)
  */
 export function getFilesystemOverheadPercent(
   topology: Topology,
+  fsType: FsType,
   synologyOptions?: SynologyOptions,
   netAppOptions?: NetAppOptions,
 ): number {
@@ -89,6 +96,10 @@ export function getFilesystemOverheadPercent(
       // PowerVault ME5: minimal metadata overhead (~1%)
       return 0.01
 
+    case 'standard':
+      // Standard RAID: use user-selected filesystem overhead
+      return getFsTypeOverhead(fsType)
+
     case 'proprietary':
       // Check for Synology or NetApp based on topology level
       if (topology.level.startsWith('synology_') && synologyOptions) {
@@ -104,7 +115,29 @@ export function getFilesystemOverheadPercent(
       return 0.02
 
     default:
-      // ext4/XFS typically use 1-3% for metadata
-      return 0.02
+      // For other topologies, use user-selected filesystem overhead
+      return getFsTypeOverhead(fsType)
+  }
+}
+
+/**
+ * Get overhead percentage for a specific filesystem type.
+ */
+function getFsTypeOverhead(fsType: FsType): number {
+  switch (fsType) {
+    case 'xfs':
+      return FILESYSTEM_OVERHEAD.xfs
+    case 'ext4':
+      return FILESYSTEM_OVERHEAD.ext4
+    case 'zfs':
+      return FILESYSTEM_OVERHEAD.zfs
+    case 'btrfs':
+      return FILESYSTEM_OVERHEAD.btrfs
+    case 'refs':
+      return FILESYSTEM_OVERHEAD.refs
+    case 'ntfs':
+      return FILESYSTEM_OVERHEAD.ntfs
+    default:
+      return 0.02 // Fallback
   }
 }
