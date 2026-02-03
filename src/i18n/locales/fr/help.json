@@ -46,7 +46,8 @@
     "survivalRate": "Probabilite de survivre un an sans perte de donnees, calculee par simulation Monte Carlo. Prend en compte le taux de defaillance des disques (AFR), le temps de reconstruction, la probabilite d'URE pendant la reconstruction et les defaillances correlees.",
     "rebuildTime": "Temps estime de reconstruction d'un disque defaillant. Des temps de reconstruction plus longs augmentent la fenetre de vulnerabilite. Depend de la capacite du disque, de la vitesse de reconstruction et de l'utilisation de la baie.",
     "totalPower": "Consommation electrique totale incluant les disques, les serveurs et le refroidissement (facteur PUE). Utilisee pour calculer le cout energetique annuel et les emissions de CO\u2082.",
-    "annualCo2": "Emissions annuelles de CO\u2082 basees sur la consommation energetique totale et l'intensite carbone du reseau electrique selectionne. La Suisse (30 g/kWh) est parmi les plus propres ; la Chine (555 g/kWh) parmi les plus elevees."
+    "annualCo2": "Emissions annuelles de CO\u2082 basees sur la consommation energetique totale et l'intensite carbone du reseau electrique selectionne. La Suisse (30 g/kWh) est parmi les plus propres ; la Chine (555 g/kWh) parmi les plus elevees.",
+    "backupRequirements": "Stockage estimé requis pour les sauvegardes incrémentielles basé sur le taux de changement quotidien et la période de rétention. Il s'agit de la capacité cible de sauvegarde, séparée du stockage principal."
   },
   "zfs": {
     "ashift": "La valeur ashift doit correspondre a la taille du secteur physique du disque. Utiliser ashift=9 (512 octets) sur un disque a secteurs de 4K provoque une amplification des ecritures. Utilisez ashift=12 pour les disques modernes.",

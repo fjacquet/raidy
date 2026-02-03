@@ -7,6 +7,7 @@ import { InfoTooltip } from '@/components/common'
 import {
   AnimatedBytes,
   AnimatedPercent,
+  BackupCard,
   CapacityBreakdownList,
   DonutChart,
   DonutLegend,
@@ -110,7 +111,7 @@ export function OutputDashboard() {
   const isMobile = useIsMobile()
   const isDesktop = useIsDesktop()
 
-  const { volumetry, performance, sustainability } = results
+  const { volumetry, performance, sustainability, backup } = results
 
   // Calculate operational limit when performance threshold is active
   const operationalLimit =
@@ -433,6 +434,13 @@ export function OutputDashboard() {
             </div>
           )}
         </div>
+
+        {/* Backup Requirements Card */}
+        {backup && (
+          <div className="panel">
+            <BackupCard backup={backup} />
+          </div>
+        )}
 
         {/* Bottleneck Analysis Card */}
         <div className="panel">

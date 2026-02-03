@@ -46,7 +46,8 @@
     "survivalRate": "Wahrscheinlichkeit, ein Jahr ohne Datenverlust zu ueberstehen, berechnet mittels Monte-Carlo-Simulation. Beruecksichtigt Laufwerksausfallraten (AFR), Rebuild-Zeit, URE-Wahrscheinlichkeit waehrend des Rebuilds und korrelierte Ausfaelle.",
     "rebuildTime": "Geschaetzte Zeit fuer den Rebuild eines ausgefallenen Laufwerks. Laengere Rebuild-Zeiten erhoehen das Verwundbarkeitsfenster. Abhaengig von Laufwerkskapazitaet, Rebuild-Geschwindigkeit und Array-Auslastung.",
     "totalPower": "Gesamtstromverbrauch einschliesslich Laufwerke, Server und Kuehlung (PUE-Faktor). Wird zur Berechnung der jaehrlichen Energiekosten und CO\u2082-Emissionen verwendet.",
-    "annualCo2": "Jaehrliche CO\u2082-Emissionen basierend auf dem Gesamtenergieverbrauch und der gewaehlten Netz-Kohlenstoffintensitaet. Die Schweiz (30 g/kWh) gehoert zu den saubersten; China (555 g/kWh) zu den hoechsten."
+    "annualCo2": "Jaehrliche CO\u2082-Emissionen basierend auf dem Gesamtenergieverbrauch und der gewaehlten Netz-Kohlenstoffintensitaet. Die Schweiz (30 g/kWh) gehoert zu den saubersten; China (555 g/kWh) zu den hoechsten.",
+    "backupRequirements": "Geschätzter Speicherbedarf für inkrementelle Backups basierend auf der täglichen Änderungsrate und dem Aufbewahrungszeitraum. Dies ist Backup-Zielkapazität, getrennt vom Primärspeicher."
   },
   "zfs": {
     "ashift": "Der ashift-Wert muss der physischen Sektorgroesse des Laufwerks entsprechen. Die Verwendung von ashift=9 (512B) auf einem Laufwerk mit 4K-Sektoren verursacht Write Amplification. Verwenden Sie ashift=12 fuer moderne Laufwerke.",

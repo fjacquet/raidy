@@ -114,6 +114,14 @@
       "referVendor": "Consultez la documentation du fournisseur pour les commandes de configuration {{level}}."
     }
   },
+  "backup": {
+    "title": "Besoins de sauvegarde",
+    "totalStorage": "Stockage total de sauvegarde",
+    "dailyChange": "Changement quotidien",
+    "incremental": "Incrémental",
+    "retention": "{{days}} jours de rétention",
+    "changeRate": "{{rate}}% changement quotidien"
+  },
   "export": {
     "title": "Exporter la configuration",
     "pdf": "Rapport PDF",

@@ -46,7 +46,8 @@
     "survivalRate": "Probabilità di sopravvivere un anno senza perdita di dati, calcolata tramite simulazione Monte Carlo. Considera i tassi di guasto dei dischi (AFR), il tempo di ricostruzione, la probabilità di URE durante la ricostruzione e i guasti correlati.",
     "rebuildTime": "Tempo stimato per la ricostruzione di un disco guasto. Tempi di ricostruzione più lunghi aumentano la finestra di vulnerabilità. Dipende dalla capacità del disco, dalla velocità di ricostruzione e dall'utilizzo dell'array.",
     "totalPower": "Consumo energetico totale inclusi dischi, server e raffreddamento (fattore PUE). Utilizzato per calcolare il costo energetico annuale e le emissioni di CO₂.",
-    "annualCo2": "Emissioni annuali di CO₂ basate sul consumo energetico totale e sull'intensità carbonica della rete elettrica selezionata. La Svizzera (30 g/kWh) è tra le più pulite; la Cina (555 g/kWh) tra le più alte."
+    "annualCo2": "Emissioni annuali di CO₂ basate sul consumo energetico totale e sull'intensità carbonica della rete elettrica selezionata. La Svizzera (30 g/kWh) è tra le più pulite; la Cina (555 g/kWh) tra le più alte.",
+    "backupRequirements": "Spazio di archiviazione stimato necessario per i backup incrementali basato sul tasso di variazione giornaliero e sul periodo di conservazione. Questa è la capacità di destinazione del backup, separata dallo storage primario."
   },
   "zfs": {
     "ashift": "Il valore ashift deve corrispondere alla dimensione del settore fisico del disco. Usare ashift=9 (512B) su un disco con settori da 4K causa amplificazione delle scritture. Usare ashift=12 per i dischi moderni.",

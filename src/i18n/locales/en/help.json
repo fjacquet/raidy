@@ -46,7 +46,8 @@
     "survivalRate": "Probability of surviving one year without data loss, calculated via Monte Carlo simulation. Considers drive failure rates (AFR), rebuild time, URE probability during rebuild, and correlated failures.",
     "rebuildTime": "Estimated time to rebuild a failed drive. Longer rebuild times increase the window of vulnerability. Depends on drive capacity, rebuild speed, and array utilization.",
     "totalPower": "Total power consumption including drives, servers, and cooling (PUE factor). Used to calculate annual energy cost and CO\u2082 emissions.",
-    "annualCo2": "Annual CO\u2082 emissions based on total energy consumption and the selected grid carbon intensity. Switzerland (30 g/kWh) is among the cleanest; China (555 g/kWh) among the highest."
+    "annualCo2": "Annual CO\u2082 emissions based on total energy consumption and the selected grid carbon intensity. Switzerland (30 g/kWh) is among the cleanest; China (555 g/kWh) among the highest.",
+    "backupRequirements": "Estimated storage required for incremental backups based on daily change rate and retention period. This is backup target capacity, separate from primary storage."
   },
   "zfs": {
     "ashift": "The ashift value must match the drive's physical sector size. Using ashift=9 (512B) on a 4K-sector drive causes write amplification. Use ashift=12 for modern drives.",

@@ -114,6 +114,14 @@
       "referVendor": "Refer to vendor documentation for {{level}} setup commands."
     }
   },
+  "backup": {
+    "title": "Backup Requirements",
+    "totalStorage": "Total Backup Storage",
+    "dailyChange": "Daily Change",
+    "incremental": "Incremental",
+    "retention": "{{days}} days retention",
+    "changeRate": "{{rate}}% daily change"
+  },
   "export": {
     "title": "Export Configuration",
     "pdf": "PDF Report",

@@ -9,6 +9,7 @@ import type { Drive } from '@/types'
 import type { CalculationResults } from '@/types/results'
 import { formatBytes as formatBytesUtil } from '@/utils'
 import { hasBlockingErrors, validateConfiguration } from '@/utils/validators'
+import { useBackupCalc } from './useBackupCalc'
 import { usePerformanceCalc } from './usePerformanceCalc'
 import { useSustainabilityCalc } from './useSustainabilityCalc'
 import { useVolumetryCalc } from './useVolumetryCalc'
@@ -45,6 +46,7 @@ export function useCalculations(): CalculationResults {
   // Each hook has its own useMemo with focused dependencies
   // Each hook handles null drive gracefully by returning zero-state
   const volumetry = useVolumetryCalc()
+  const backup = useBackupCalc(volumetry.usableCapacity)
   const performance = usePerformanceCalc()
   const sustainability = useSustainabilityCalc(volumetry.usableCapacity)
 
@@ -60,6 +62,7 @@ export function useCalculations(): CalculationResults {
       resilience: null,
       sustainability,
       tco: null,
+      backup,
       lastUpdated: Date.now(),
       errors,
     }
@@ -97,6 +100,7 @@ export function useCalculations(): CalculationResults {
       resilience: null,
       sustainability,
       tco: null,
+      backup,
       lastUpdated: Date.now(),
       errors: blockingMessages,
     }
@@ -109,6 +113,7 @@ export function useCalculations(): CalculationResults {
     resilience: null, // Monte Carlo is Phase 4
     sustainability,
     tco: null, // TCO removed
+    backup,
     lastUpdated: Date.now(),
     errors,
   }

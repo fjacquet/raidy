@@ -114,6 +114,14 @@
       "referVendor": "Siehe Herstellerdokumentation für {{level}}-Setup-Befehle."
     }
   },
+  "backup": {
+    "title": "Backup-Anforderungen",
+    "totalStorage": "Gesamter Backup-Speicher",
+    "dailyChange": "Tägliche Änderung",
+    "incremental": "Inkrementell",
+    "retention": "{{days}} Tage Aufbewahrung",
+    "changeRate": "{{rate}}% tägliche Änderung"
+  },
   "export": {
     "title": "Konfiguration exportieren",
     "pdf": "PDF-Bericht",

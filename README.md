@@ -20,6 +20,7 @@ Browser-based storage infrastructure simulator for enterprise storage platforms.
 - **Performance Engine**: Identify bottlenecks across media, controller, bus, and network layers
 - **Resilience Engine**: Monte Carlo simulations for data loss probability
 - **Sustainability Engine**: Energy consumption, CO2 emissions, and flash endurance analysis
+- **Backup Engine**: Estimate backup storage requirements based on change rate and retention
 - **Unit System Toggle**: Display capacity in binary (TiB/GiB) or decimal (TB/GB) units
 - **Multi-Server Support**: Scale calculations across multiple servers/nodes
 

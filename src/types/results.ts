@@ -189,6 +189,22 @@ export interface TCOResult {
   carbonCost?: number
 }
 
+/** Backup storage requirements (Module E) */
+export interface BackupResult {
+  /** Daily data change volume in bytes */
+  dailyChange: number
+  /** Cumulative incremental backup storage in bytes */
+  incrementalRaw: number
+  /** Full backup storage in bytes (reserved for v2) */
+  fullRaw: number
+  /** Total backup storage required in bytes */
+  totalRaw: number
+  /** Number of retention days used */
+  retentionDays: number
+  /** Daily change rate percentage used */
+  changeRatePercent: number
+}
+
 /** Complete calculation results from all modules */
 export interface CalculationResults {
   volumetry: VolumetryResult
@@ -196,6 +212,8 @@ export interface CalculationResults {
   resilience: ResilienceResult | null
   sustainability: SustainabilityResult
   tco: TCOResult | null
+  /** Backup storage requirements (optional for backward compatibility) */
+  backup?: BackupResult
   /** Timestamp of last calculation */
   lastUpdated: number
   /** Any calculation errors */

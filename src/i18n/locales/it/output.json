@@ -114,6 +114,14 @@
       "referVendor": "Consultare la documentazione del fornitore per i comandi di setup {{level}}."
     }
   },
+  "backup": {
+    "title": "Requisiti di Backup",
+    "totalStorage": "Storage Backup Totale",
+    "dailyChange": "Variazione Giornaliera",
+    "incremental": "Incrementale",
+    "retention": "{{days}} giorni di ritenzione",
+    "changeRate": "{{rate}}% variazione giornaliera"
+  },
   "export": {
     "title": "Esporta configurazione",
     "pdf": "Report PDF",
