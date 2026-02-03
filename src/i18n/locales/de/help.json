@@ -29,7 +29,8 @@
     "fsType": "Die Wahl des Dateisystems beeinflusst Overhead und Funktionen. ZFS hat ca. 3 % Slop-Space-Overhead. XFS/ReFS unterstuetzen Reflinks fuer effiziente Snapshots. Btrfs unterstuetzt Snapshots mit ca. 4 % Overhead.",
     "controller": "Der Storage-Controller oder HBA begrenzt die Gesamt-IOPS und den Durchsatz. Software-RAID nutzt die CPU fuer Paritaetsberechnungen. Hardware-RAID-Controller haben feste IOPS-/Durchsatz-Obergrenzen.",
     "backupRetention": "Anzahl der Tage, fuer die Backup-Kopien aufbewahrt werden. In Kombination mit der taeglichen Aenderungsrate wird der gesamte benoetigte Backup-Speicher bestimmt.",
-    "dailyChangeRate": "Prozentsatz der Daten, die sich taeglich aendern. Hoehere Aenderungsraten bedeuten groessere inkrementelle Backups und hoeheren Speicherverbrauch ueber den Aufbewahrungszeitraum."
+    "dailyChangeRate": "Prozentsatz der Daten, die sich taeglich aendern. Hoehere Aenderungsraten bedeuten groessere inkrementelle Backups und hoeheren Speicherverbrauch ueber den Aufbewahrungszeitraum.",
+    "performanceThreshold": "Die Leistungsschwelle begrenzt, wie voll der Speicher werden darf, bevor die Leistung abnimmt. Die meisten Speichersysteme werden langsamer, wenn sie sich der Kapazitaetsgrenze naehern. Eine Einstellung von 85% bedeutet, dass nur 85% der nutzbaren Kapazitaet als Betriebsgrenze angezeigt werden. Standard 100% (keine Begrenzung)."
   },
   "output": {
     "rawCapacity": "Gesamte physische Kapazitaet aller Laufwerke vor jeglichem Overhead. Berechnung: Laufwerkskapazitaet x Laufwerksanzahl x Serveranzahl.",

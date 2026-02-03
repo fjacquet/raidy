@@ -29,7 +29,8 @@
     "fsType": "Filesystem choice affects overhead and features. ZFS has ~3% slop space overhead. XFS/ReFS support reflinks for efficient snapshots. Btrfs supports snapshots with ~4% overhead.",
     "controller": "Storage controller or HBA limits total IOPS and throughput. Software RAID uses CPU for parity calculations. Hardware RAID controllers have fixed IOPS/throughput ceilings.",
     "backupRetention": "Number of days to keep backup copies. Combined with daily change rate, determines total backup storage needed.",
-    "dailyChangeRate": "Percentage of data that changes each day. Higher change rates mean larger incremental backups and more storage consumption over the retention period."
+    "dailyChangeRate": "Percentage of data that changes each day. Higher change rates mean larger incremental backups and more storage consumption over the retention period.",
+    "performanceThreshold": "Performance threshold limits how full the storage can be before degradation. Most storage systems slow down as they approach capacity. Setting 85% means only 85% of usable capacity is shown as the operational limit. Default 100% (no limit)."
   },
   "output": {
     "rawCapacity": "Total physical capacity of all drives before any overhead. Calculated as: drive capacity x drive count x server count.",

@@ -56,5 +56,10 @@
     "reflinkHint": "Copy-on-Write-Klone fuer effiziente Backups",
     "backupRetention": "Backup-Aufbewahrung (Tage)",
     "dailyChangeRate": "Taegliche Aenderungsrate (%)"
+  },
+  "capacityManagement": {
+    "title": "Kapazitaetsverwaltung",
+    "performanceThreshold": "Leistungsschwelle",
+    "performanceThresholdHint": "Betriebskapazitaet begrenzen um Leistung zu erhalten (Standard 100%)"
   }
 }

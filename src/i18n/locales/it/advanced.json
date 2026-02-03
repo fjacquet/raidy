@@ -56,5 +56,10 @@
     "reflinkHint": "Cloni copy-on-write per backup efficienti",
     "backupRetention": "Retention backup (Giorni)",
     "dailyChangeRate": "Tasso cambio giornaliero (%)"
+  },
+  "capacityManagement": {
+    "title": "Gestione capacita",
+    "performanceThreshold": "Soglia prestazioni",
+    "performanceThresholdHint": "Limitare la capacita operativa per mantenere le prestazioni (default 100%)"
   }
 }

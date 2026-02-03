@@ -29,7 +29,8 @@
     "fsType": "Le choix du systeme de fichiers affecte la surcharge et les fonctionnalites. ZFS a environ 3 % de surcharge (slop space). XFS/ReFS prennent en charge les reflinks pour des snapshots efficaces. Btrfs prend en charge les snapshots avec environ 4 % de surcharge.",
     "controller": "Le controleur de stockage ou HBA limite le total des IOPS et du debit. Le RAID logiciel utilise le processeur pour les calculs de parite. Les controleurs RAID materiels ont des plafonds d'IOPS et de debit fixes.",
     "backupRetention": "Nombre de jours de conservation des copies de sauvegarde. Combine au taux de modification quotidien, il determine le stockage de sauvegarde total necessaire.",
-    "dailyChangeRate": "Pourcentage des donnees modifiees chaque jour. Un taux de modification plus eleve signifie des sauvegardes incrementales plus volumineuses et une consommation de stockage accrue sur la periode de retention."
+    "dailyChangeRate": "Pourcentage des donnees modifiees chaque jour. Un taux de modification plus eleve signifie des sauvegardes incrementales plus volumineuses et une consommation de stockage accrue sur la periode de retention.",
+    "performanceThreshold": "Le seuil de performance limite le taux de remplissage du stockage avant degradation. La plupart des systemes de stockage ralentissent a mesure qu'ils approchent de leur capacite. Fixer 85% signifie que seuls 85% de la capacite utilisable sont affiches comme limite operationnelle. Par defaut 100% (pas de limite)."
   },
   "output": {
     "rawCapacity": "Capacite physique totale de tous les disques avant toute surcharge. Calculee comme suit : capacite du disque x nombre de disques x nombre de serveurs.",

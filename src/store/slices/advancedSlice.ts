@@ -24,6 +24,7 @@ export interface AdvancedSlice extends AdvancedState, FilesystemState {
   setProjectYears: (years: number) => void
   setElectricityCost: (cost: number) => void
   setUnitSystem: (system: 'binary' | 'decimal') => void
+  setPerformanceThreshold: (threshold: number) => void
 
   // Filesystem actions
   setFsType: (type: FilesystemState['fsType']) => void
@@ -44,6 +45,7 @@ export const createAdvancedSlice: StateCreator<AdvancedSlice> = (set) => ({
   projectYears: 5,
   electricityCostPerKwh: 0.12,
   unitSystem: 'binary', // Default to binary (TiB/GiB) - more accurate for storage
+  performanceThreshold: 1.0, // Default 100% = no limit
 
   // Default filesystem state
   fsType: 'zfs',
@@ -64,6 +66,8 @@ export const createAdvancedSlice: StateCreator<AdvancedSlice> = (set) => ({
   setElectricityCost: (electricityCostPerKwh) =>
     set({ electricityCostPerKwh: Math.max(0, electricityCostPerKwh) }),
   setUnitSystem: (unitSystem) => set({ unitSystem }),
+  setPerformanceThreshold: (performanceThreshold) =>
+    set({ performanceThreshold: Math.min(1.0, Math.max(0.5, performanceThreshold)) }),
 
   // Filesystem actions
   setFsType: (fsType) => set({ fsType }),
