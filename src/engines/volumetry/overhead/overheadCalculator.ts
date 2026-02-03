@@ -71,6 +71,7 @@ export interface OverheadInput {
   powerstoreOptions: PowerStoreOptions
   powerscaleOptions: PowerScaleOptions
   cephOptions: CephOptions
+  fsType: 'xfs' | 'ext4' | 'zfs' | 'refs' | 'ntfs' | 'btrfs'
 }
 
 /**
@@ -96,6 +97,7 @@ export function calculateOverheads(input: OverheadInput): OverheadResult {
     powerstoreOptions,
     powerscaleOptions,
     cephOptions,
+    fsType,
   } = input
 
   // Synology system partition overhead (20-30GB per disk)
@@ -174,7 +176,12 @@ export function calculateOverheads(input: OverheadInput): OverheadResult {
   }
 
   // Filesystem overhead
-  const fsOverheadPercent = getFilesystemOverheadPercent(topology, synologyOptions, netAppOptions)
+  const fsOverheadPercent = getFilesystemOverheadPercent(
+    topology,
+    fsType,
+    synologyOptions,
+    netAppOptions,
+  )
   const capacityForFs =
     capacityAfterParity -
     slopOverhead -

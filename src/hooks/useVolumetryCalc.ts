@@ -41,6 +41,8 @@ export function useVolumetryCalc(): VolumetryResult {
     // Advanced (capacity modifiers only)
     compressionRatio,
     dedupRatio,
+    // Filesystem type for overhead calculation
+    fsType,
   } = useConfigStore()
 
   // Get selected drive
@@ -87,6 +89,7 @@ export function useVolumetryCalc(): VolumetryResult {
         powervaultOptions,
         compressionRatio,
         dedupRatio,
+        fsType,
       })
     } catch (error) {
       console.error('[Volumetry Engine Error]', {
@@ -135,5 +138,6 @@ export function useVolumetryCalc(): VolumetryResult {
     powervaultOptions,
     compressionRatio,
     dedupRatio,
+    fsType,
   ])
 }
