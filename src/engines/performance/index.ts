@@ -107,9 +107,11 @@ function getStrategy(topologyType: TopologyType): PerformanceStrategy {
  * This is the number of I/O operations required per write.
  * Delegates to topology-specific strategy for calculation.
  */
-function getRaidWritePenalty(topology: Topology): number {
+function getRaidWritePenalty(topology: Topology, serverCount: number): number {
   const strategy = getStrategy(topology.type)
-  return strategy.getWritePenalty(topology.level, topology)
+  // For standard RAID, pass serverCount as number of RAID groups for RAID 50/60
+  const options = topology.type === 'standard' ? { serverCount } : topology
+  return strategy.getWritePenalty(topology.level, options)
 }
 
 /**
@@ -140,7 +142,7 @@ export function calculatePerformance(input: PerformanceInput): PerformanceResult
   const blockSizeBytes = BLOCK_SIZE_BYTES[blockSize]
 
   // Calculate write penalty for random I/O
-  const randomWritePenalty = getRaidWritePenalty(topology)
+  const randomWritePenalty = getRaidWritePenalty(topology, serverCount)
 
   // Sequential write penalty is reduced (full-stripe writes avoid read-modify-write)
   // For RAID 5/6, sequential penalty ≈ 1 + parity_drives/data_drives

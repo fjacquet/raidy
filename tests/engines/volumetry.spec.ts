@@ -62,12 +62,13 @@ function createInput(
   driveCount: number,
   topology: VolumetryInput['topology'],
   hotSpares = 0,
+  serverCount = 1,
 ): VolumetryInput {
   return {
     drive: testDrive,
     driveCount,
     hotSpares,
-    serverCount: 1,
+    serverCount,
     topology,
     zfsOptions: DEFAULT_ZFS_OPTIONS,
     s2dOptions: DEFAULT_S2D_OPTIONS,
@@ -206,27 +207,52 @@ describe('Volumetry Engine - Standard RAID', () => {
   describe('RAID 50 (Striped RAID 5)', () => {
     it('should calculate with 2 parity drives across 2 groups', () => {
       // 8 drives in 2 groups of 4: 2 parity drives total
-      // Efficiency: (8-2)/8 = 75%
-      const input = createInput(8, { type: 'standard', level: 'RAID50' })
+      // Data efficiency: (8-2)/8 = 75%, minus XFS overhead (1%) ≈ 74%
+      const input = createInput(8, { type: 'standard', level: 'RAID50' }, 0, 2)
       const result = calculateVolumetry(input)
 
       expect(result.rawCapacity).toBe(8_000_000_000_000)
-      // Efficiency should be similar to RAID 5 with more drives (percentage 0-100)
-      expect(result.efficiency).toBeGreaterThan(70)
+      // Efficiency includes filesystem overhead, expect ~73-76%
+      expect(result.efficiency).toBeGreaterThan(72)
+      expect(result.efficiency).toBeLessThan(76)
+    })
+
+    it('should calculate with 3 parity drives across 3 groups', () => {
+      // 12 drives in 3 groups of 4: 3 parity drives total
+      // Data efficiency: (12-3)/12 = 75%, minus XFS overhead ≈ 74%
+      const input = createInput(12, { type: 'standard', level: 'RAID50' }, 0, 3)
+      const result = calculateVolumetry(input)
+
+      expect(result.rawCapacity).toBe(12_000_000_000_000)
+      // Efficiency includes filesystem overhead, expect ~73-76%
+      expect(result.efficiency).toBeGreaterThan(72)
+      expect(result.efficiency).toBeLessThan(76)
     })
   })
 
   describe('RAID 60 (Striped RAID 6)', () => {
     it('should calculate with 4 parity drives across 2 groups', () => {
       // 12 drives in 2 groups of 6: 4 parity drives total
-      // Efficiency: (12-4)/12 = 66.67%
-      const input = createInput(12, { type: 'standard', level: 'RAID60' })
+      // Data efficiency: (12-4)/12 = 66.67%, minus XFS overhead (1%) ≈ 66%
+      const input = createInput(12, { type: 'standard', level: 'RAID60' }, 0, 2)
       const result = calculateVolumetry(input)
 
       expect(result.rawCapacity).toBe(12_000_000_000_000)
-      // Efficiency should be ~64-67% (percentage 0-100)
-      expect(result.efficiency).toBeGreaterThan(62)
-      expect(result.efficiency).toBeLessThan(70)
+      // Efficiency includes filesystem overhead, expect ~65-67%
+      expect(result.efficiency).toBeGreaterThan(64)
+      expect(result.efficiency).toBeLessThan(68)
+    })
+
+    it('should calculate with 6 parity drives across 3 groups', () => {
+      // 18 drives in 3 groups of 6: 6 parity drives total
+      // Data efficiency: (18-6)/18 = 66.67%, minus XFS overhead ≈ 66%
+      const input = createInput(18, { type: 'standard', level: 'RAID60' }, 0, 3)
+      const result = calculateVolumetry(input)
+
+      expect(result.rawCapacity).toBe(18_000_000_000_000)
+      // Efficiency includes filesystem overhead, expect ~65-67%
+      expect(result.efficiency).toBeGreaterThan(64)
+      expect(result.efficiency).toBeLessThan(68)
     })
   })
 
@@ -456,7 +482,9 @@ describe('Volumetry Engine - Standard RAID', () => {
           cost_usd: 100,
         }
 
-        const input = createInput(drives, { type: 'standard', level })
+        // RAID 50/60 vectors assume 2 groups per WintelGuy reference
+        const serverCount = level === 'RAID50' || level === 'RAID60' ? 2 : 1
+        const input = createInput(drives, { type: 'standard', level }, 0, serverCount)
         input.drive = testDrive
 
         const result = calculateVolumetry(input)
@@ -625,11 +653,12 @@ describe('Volumetry Engine - Standard RAID', () => {
               cost_usd: 100,
             }
 
-            const input = createInput(driveCount, { type: 'standard', level: 'RAID50' })
+            // Use serverCount=2 for realistic RAID 50 testing (2 groups)
+            const input = createInput(driveCount, { type: 'standard', level: 'RAID50' }, 0, 2)
             input.drive = testDrive
             const result = calculateVolumetry(input)
 
-            // RAID 50: 2 parity drives for 2 groups (assuming 2 groups)
+            // RAID 50: 2 parity drives for 2 groups
             // Efficiency should be better than raw parity overhead
             const rawCapacity = driveCount * driveSize
             const efficiency = result.usableCapacity / rawCapacity
@@ -667,11 +696,12 @@ describe('Volumetry Engine - Standard RAID', () => {
               cost_usd: 100,
             }
 
-            const inputRAID60 = createInput(driveCount, { type: 'standard', level: 'RAID60' })
+            // Use serverCount=2 for realistic testing (2 groups)
+            const inputRAID60 = createInput(driveCount, { type: 'standard', level: 'RAID60' }, 0, 2)
             inputRAID60.drive = testDrive
             const resultRAID60 = calculateVolumetry(inputRAID60)
 
-            const inputRAID50 = createInput(driveCount, { type: 'standard', level: 'RAID50' })
+            const inputRAID50 = createInput(driveCount, { type: 'standard', level: 'RAID50' }, 0, 2)
             inputRAID50.drive = testDrive
             const resultRAID50 = calculateVolumetry(inputRAID50)
 

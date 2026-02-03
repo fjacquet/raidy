@@ -133,6 +133,10 @@ export function getDataFraction(
       // vSAN strategies need serverCount for adaptive stripe width
       options = { serverCount }
       break
+    case 'standard':
+      // RAID 50/60 need serverCount as number of RAID groups
+      options = { serverCount }
+      break
     default:
       // Other topologies don't need special options
       options = {}

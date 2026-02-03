@@ -33,6 +33,7 @@
   },
   "server": {
     "label": "Server / Knoten",
+    "labelRaidGroups": "RAID-Gruppen",
     "power": "Serverleistung (W)",
     "powerHint": "Ohne Laufwerke"
   },

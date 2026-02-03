@@ -89,16 +89,52 @@ describe('RAID Volumetry Strategy', () => {
   })
 
   describe('RAID 50', () => {
-    it('should calculate (n-2)/n efficiency (RAID 5 stripes, assume 2 groups)', () => {
-      expect(raidStrategy.calculateDataFraction('RAID50', 6)).toBe(4 / 6) // 66.7%
-      expect(raidStrategy.calculateDataFraction('RAID50', 12)).toBeCloseTo(10 / 12, 5) // 83.3%
+    it('should calculate (n-groups)/n efficiency with 2 groups', () => {
+      // 2 groups = 2 parity drives
+      expect(raidStrategy.calculateDataFraction('RAID50', 6, { serverCount: 2 })).toBe(4 / 6) // 66.7%
+      expect(raidStrategy.calculateDataFraction('RAID50', 12, { serverCount: 2 })).toBeCloseTo(
+        10 / 12,
+        5,
+      ) // 83.3%
+    })
+
+    it('should calculate (n-groups)/n efficiency with 3 groups', () => {
+      // 3 groups = 3 parity drives
+      expect(raidStrategy.calculateDataFraction('RAID50', 12, { serverCount: 3 })).toBe(9 / 12) // 75%
+      expect(raidStrategy.calculateDataFraction('RAID50', 24, { serverCount: 3 })).toBeCloseTo(
+        21 / 24,
+        5,
+      ) // 87.5%
+    })
+
+    it('should default to 1 group when serverCount not provided', () => {
+      // 1 group = RAID 5 equivalent
+      expect(raidStrategy.calculateDataFraction('RAID50', 6)).toBe(5 / 6) // 83.3%
     })
   })
 
   describe('RAID 60', () => {
-    it('should calculate (n-4)/n efficiency (RAID 6 stripes, assume 2 groups)', () => {
-      expect(raidStrategy.calculateDataFraction('RAID60', 8)).toBe(4 / 8) // 50%
-      expect(raidStrategy.calculateDataFraction('RAID60', 12)).toBeCloseTo(8 / 12, 5) // 66.7%
+    it('should calculate (n-groups*2)/n efficiency with 2 groups', () => {
+      // 2 groups = 4 parity drives
+      expect(raidStrategy.calculateDataFraction('RAID60', 8, { serverCount: 2 })).toBe(4 / 8) // 50%
+      expect(raidStrategy.calculateDataFraction('RAID60', 12, { serverCount: 2 })).toBeCloseTo(
+        8 / 12,
+        5,
+      ) // 66.7%
+    })
+
+    it('should calculate (n-groups*2)/n efficiency with 3 groups', () => {
+      // 3 groups = 6 parity drives
+      expect(raidStrategy.calculateDataFraction('RAID60', 12, { serverCount: 3 })).toBe(6 / 12) // 50%
+      expect(raidStrategy.calculateDataFraction('RAID60', 24, { serverCount: 3 })).toBeCloseTo(
+        18 / 24,
+        5,
+      ) // 75%
+    })
+
+    it('should default to 1 group when serverCount not provided', () => {
+      // 1 group = RAID 6 equivalent
+      expect(raidStrategy.calculateDataFraction('RAID60', 8)).toBe(6 / 8) // 75%
     })
   })
 

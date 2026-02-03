@@ -445,6 +445,76 @@ describe('Resilience Worker - RAID Level Coverage', () => {
   it('should handle netapp_raid_tec', () => testRaidLevel('netapp_raid_tec', 0.8))
 })
 
+describe('Resilience Worker - 3-way Mirror (mirrorCopies=3)', () => {
+  beforeEach(() => {
+    mockPostMessage.mockClear()
+  })
+
+  it('should have much higher survival than 2-way mirror with same drives', async () => {
+    await importWorker()
+    const handler = (self as { onmessage: ((e: MessageEvent) => void) | null }).onmessage
+
+    // 2-way mirror: 32 drives, 32TB, consumer URE (10^-14), high AFR for faster test
+    handler?.({
+      data: {
+        type: 'START',
+        payload: {
+          driveCount: 32,
+          driveCapacityBytes: 32_000_000_000_000,
+          rebuildSpeedMBs: 200,
+          ureRate: 14 as const,
+          afrPercent: 2.0,
+          simulationCount: 5000,
+          raidLevel: 'mirror',
+          mirrorCopies: 2,
+        },
+      },
+    } as MessageEvent)
+
+    const result2Way = mockPostMessage.mock.calls.find((c) => c[0].type === 'RESULT')?.[0].payload
+    expect(result2Way).toBeDefined()
+
+    mockPostMessage.mockClear()
+    vi.resetModules()
+    await import('@/workers/resilienceWorker')
+    const handler3 = (self as { onmessage: ((e: MessageEvent) => void) | null }).onmessage
+
+    // 3-way mirror: same drives, mirrorCopies=3
+    handler3?.({
+      data: {
+        type: 'START',
+        payload: {
+          driveCount: 30, // Divisible by 3
+          driveCapacityBytes: 32_000_000_000_000,
+          rebuildSpeedMBs: 200,
+          ureRate: 14 as const,
+          afrPercent: 2.0,
+          simulationCount: 5000,
+          raidLevel: 'mirror',
+          mirrorCopies: 3,
+        },
+      },
+    } as MessageEvent)
+
+    const result3Way = mockPostMessage.mock.calls.find((c) => c[0].type === 'RESULT')?.[0].payload
+    expect(result3Way).toBeDefined()
+
+    // 3-way mirror should be MUCH more resilient than 2-way
+    expect(result3Way.survivalRate).toBeGreaterThan(0.99)
+    // 3-way URE should be near zero (URE only triggers on 2nd failure in same group)
+    expect(result3Way.ureProbability).toBeLessThan(0.01)
+    // 2-way should have significant URE risk (URE triggers on every first failure)
+    expect(result2Way.ureProbability).toBeGreaterThan(0.05)
+
+    console.log(
+      `2-way mirror: ${(result2Way.survivalRate * 100).toFixed(1)}% survival, ${(result2Way.ureProbability * 100).toFixed(1)}% URE`,
+    )
+    console.log(
+      `3-way mirror: ${(result3Way.survivalRate * 100).toFixed(1)}% survival, ${(result3Way.ureProbability * 100).toFixed(1)}% URE`,
+    )
+  })
+})
+
 describe('Resilience Worker - Abort Handling', () => {
   beforeEach(() => {
     mockPostMessage.mockClear()
@@ -565,15 +635,14 @@ describe('Resilience Worker - URE Probability Calculations', () => {
     await importWorker()
 
     /**
-     * Calculation example:
-     * - Bytes read during rebuild = 10 drives × 8TB = 80TB
-     * - Bits read = 80TB × 8 = 640 × 10^12 bits
-     * - URE rate per bit = 10^-14
-     * - P_ure = 1 - (1 - 10^-14)^(640×10^12)
-     * - P_ure ≈ 0.064 = 6.4% per rebuild
+     * RAID 6 with dual parity: URE is only fatal during rebuild when already at last parity level.
+     * - First drive failure: rebuild reads all remaining drives, but URE is NOT fatal
+     *   because RAID 6 still has 1 parity drive to correct the error.
+     * - Second drive failure during rebuild: NOW URE is fatal (no remaining parity).
      *
-     * With moderate AFR, measured URE should be detectable.
-     * Expected range: 1% to 15%
+     * With moderate AFR (2%), the probability of a second failure during the ~22h rebuild
+     * window is very low, so RAID 6 URE-related data loss should be near zero.
+     * This is the key advantage of dual parity: URE protection during single-failure rebuilds.
      */
 
     const handler = (self as { onmessage: ((e: MessageEvent) => void) | null }).onmessage
@@ -595,9 +664,9 @@ describe('Resilience Worker - URE Probability Calculations', () => {
     const resultCall = mockPostMessage.mock.calls.find((call) => call[0].type === 'RESULT')
     const result = resultCall?.[0].payload
 
-    // URE probability should be measurable (larger array = higher URE risk)
-    expect(result.ureProbability).toBeGreaterThan(0.08)
-    expect(result.ureProbability).toBeLessThan(0.35)
+    // RAID 6 URE risk should be very low: URE only fatal after 2nd failure
+    // P(2nd failure during rebuild) is very small, so URE-caused data loss ≈ 0%
+    expect(result.ureProbability).toBeLessThan(0.02)
   })
 
   it('should show significant URE risk for large RAID 5 (24×12TB drives at 10^14)', async () => {

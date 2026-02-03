@@ -9,9 +9,14 @@
 
 import type { VolumetryStrategy } from './VolumetryStrategy'
 
+interface RaidOptions {
+  serverCount?: number
+}
+
 export const raidStrategy: VolumetryStrategy = {
-  calculateDataFraction(level: string, driveCount: number): number {
+  calculateDataFraction(level: string, driveCount: number, options?: unknown): number {
     const usableDrives = driveCount
+    const { serverCount = 1 } = (options as RaidOptions) || {}
 
     switch (level) {
       case 'RAID0':
@@ -65,14 +70,16 @@ export const raidStrategy: VolumetryStrategy = {
         return 0.5
 
       case 'RAID50':
-        // RAID 5 stripes: assume 2 groups
-        // (n-2)/n accounting for parity per stripe
-        return (usableDrives - 2) / usableDrives
+        // RAID 5 stripes: 1 parity drive per group
+        // Groups = serverCount (each server has one RAID 5 group)
+        // Parity drives = serverCount × 1
+        return (usableDrives - serverCount) / usableDrives
 
       case 'RAID60':
-        // RAID 6 stripes: assume 2 groups
-        // (n-4)/n accounting for dual parity per stripe
-        return (usableDrives - 4) / usableDrives
+        // RAID 6 stripes: 2 parity drives per group
+        // Groups = serverCount (each server has one RAID 6 group)
+        // Parity drives = serverCount × 2
+        return (usableDrives - serverCount * 2) / usableDrives
 
       default:
         // Unknown RAID level - return 100% (no redundancy assumed)

@@ -16,6 +16,26 @@ function random(): number {
 }
 
 /**
+ * Check if a RAID level uses mirror-based redundancy (pairs of drives).
+ * Mirror topologies have a different failure model: data loss only occurs
+ * when both drives in the same mirror pair fail, not just any N+1 failures.
+ */
+function isMirrorTopology(raidLevel: string): boolean {
+  const level = raidLevel.toLowerCase()
+  return level === 'raid10' || level === 'raid1' || level === 'mirror' || level === 'raid1e'
+}
+
+/**
+ * Check if a RAID level uses group-based redundancy (RAID 50/60).
+ * Group topologies stripe across independent RAID groups. Data loss only occurs
+ * when a single group exceeds its parity tolerance, not from failures across groups.
+ */
+function isGroupTopology(raidLevel: string): boolean {
+  const level = raidLevel.toLowerCase()
+  return level === 'raid50' || level === 'raid60'
+}
+
+/**
  * Calculate number of parity drives (fault tolerance) for a RAID level.
  */
 function getParityDrives(raidLevel: string): number {
@@ -62,7 +82,16 @@ function runSingleSimulation(input: SimulationInput): {
   hadURE: boolean
   hadDualFailure: boolean
 } {
-  const { driveCount, raidLevel, driveCapacityBytes, rebuildSpeedMBs, ureRate, afrPercent } = input
+  const {
+    driveCount,
+    raidLevel,
+    driveCapacityBytes,
+    rebuildSpeedMBs,
+    ureRate,
+    afrPercent,
+    serverCount = 1,
+    mirrorCopies = 0,
+  } = input
 
   const parityDrives = getParityDrives(raidLevel)
 
@@ -93,15 +122,42 @@ function runSingleSimulation(input: SimulationInput): {
   const driveCapacityMB = driveCapacityBytes / (1024 * 1024)
   const rebuildTimeHours = driveCapacityMB / rebuildSpeedMBs / 3600
 
+  // Topology classification (prefer mirrorCopies from input over level-based detection)
+  const isMirror = mirrorCopies >= 2 || isMirrorTopology(raidLevel)
+  const effectiveMirrorCopies = mirrorCopies >= 2 ? mirrorCopies : 2
+  const isGroup = !isMirror && isGroupTopology(raidLevel)
+
+  // Mirror topology: N-way mirror groups (e.g., 2-way pairs, 3-way triplets)
+  const numMirrorGroups = isMirror ? Math.floor(driveCount / effectiveMirrorCopies) : 0
+  const mirrorParityPerGroup = effectiveMirrorCopies - 1 // Can lose N-1 copies per group
+
+  // Group topology: RAID 50/60 stripe across independent RAID groups
+  const numGroups = isGroup ? serverCount : 0
+  const drivesPerGroup = isGroup && numGroups > 0 ? Math.floor(driveCount / numGroups) : 0
+  const parityPerGroup = parityDrives // 1 for RAID 50, 2 for RAID 60
+
   // URE probability during rebuild
-  // URE rate is 10^-ureRate per bit read
-  // Total bits read during rebuild = drive capacity in bits
-  const bitsRead = driveCapacityBytes * 8 * (driveCount - 1)
   const ureRatePerBit = 10 ** -ureRate
+
+  // Bits read during rebuild depends on topology:
+  // Mirror: reads only 1 good copy (any surviving mirror partner)
+  // Group: reads all drives in the group minus the failed one
+  // Parity: reads ALL surviving drives (N-1 drives)
+  let bitsRead: number
+  if (isMirror) {
+    bitsRead = driveCapacityBytes * 8 // 1 drive
+  } else if (isGroup && drivesPerGroup > 1) {
+    bitsRead = driveCapacityBytes * 8 * (drivesPerGroup - 1)
+  } else {
+    bitsRead = driveCapacityBytes * 8 * (driveCount - 1)
+  }
   const ureProbability = 1 - (1 - ureRatePerBit) ** bitsRead
 
   // Simulate one year of operation
   let failedDrives = 0
+  // Mirror: per-group failure tracking (supports 2-way, 3-way, N-way mirrors)
+  const mirrorGroupFailures = isMirror ? (new Array(numMirrorGroups).fill(0) as number[]) : []
+  const groupFailures = isGroup ? (new Array(numGroups).fill(0) as number[]) : []
   let isRebuilding = false
   let rebuildDaysRemaining = 0
   let correlatedFailureWindow = 0
@@ -135,26 +191,104 @@ function runSingleSimulation(input: SimulationInput): {
           correlatedFailureWindow = correlatedFailureWindowDays
         }
 
-        if (failedDrives > parityDrives) {
-          hadDualFailure = true
-          return { survived: false, rebuildTimeHours, hadURE, hadDualFailure }
-        }
+        if (isMirror) {
+          // Mirror topology: N-way mirror groups (2-way, 3-way, etc.)
+          // Assign failure to a mirror group weighted by surviving drives in each group
+          const survivingPerGroup = mirrorGroupFailures.map(
+            (_f, g) => effectiveMirrorCopies - mirrorGroupFailures[g],
+          )
+          const totalSurviving = survivingPerGroup.reduce((a, b) => a + b, 0)
 
-        // Start or extend rebuild
-        if (!isRebuilding) {
-          isRebuilding = true
-          rebuildDaysRemaining = Math.ceil(rebuildTimeHours / 24)
+          let r = random() * totalSurviving
+          let hitGroup = 0
+          for (let g = 0; g < numMirrorGroups; g++) {
+            r -= survivingPerGroup[g]
+            if (r <= 0) {
+              hitGroup = g
+              break
+            }
+          }
 
-          // Check for URE during rebuild
-          if (random() < ureProbability) {
+          mirrorGroupFailures[hitGroup]++
+
+          // Data loss if all copies in a mirror group are lost
+          if (mirrorGroupFailures[hitGroup] > mirrorParityPerGroup) {
+            hadDualFailure = true
+            return { survived: false, rebuildTimeHours, hadURE, hadDualFailure }
+          }
+
+          // Start or extend rebuild
+          if (!isRebuilding) {
+            isRebuilding = true
+            rebuildDaysRemaining = Math.ceil(rebuildTimeHours / 24)
+          }
+
+          // URE only fatal when mirror group is at its parity limit (last copy being rebuilt)
+          if (mirrorGroupFailures[hitGroup] >= mirrorParityPerGroup && random() < ureProbability) {
             hadURE = true
             return { survived: false, rebuildTimeHours, hadURE, hadDualFailure }
           }
-        } else {
-          // Additional failure during rebuild - check URE again
-          if (random() < ureProbability) {
-            hadURE = true
+        } else if (isGroup) {
+          // Group topology: assign failure to a group weighted by surviving drives
+          // Each group has (drivesPerGroup - groupFailures[g]) surviving drives
+          const survivingPerGroup = groupFailures.map((_f, g) => drivesPerGroup - groupFailures[g])
+          const totalSurviving = survivingPerGroup.reduce((a, b) => a + b, 0)
+
+          // Pick which group the failure hits (weighted by surviving drives in each group)
+          let r = random() * totalSurviving
+          let hitGroup = 0
+          for (let g = 0; g < numGroups; g++) {
+            r -= survivingPerGroup[g]
+            if (r <= 0) {
+              hitGroup = g
+              break
+            }
+          }
+
+          groupFailures[hitGroup]++
+
+          // Data loss if any group exceeds its parity tolerance
+          if (groupFailures[hitGroup] > parityPerGroup) {
+            hadDualFailure = true
             return { survived: false, rebuildTimeHours, hadURE, hadDualFailure }
+          }
+
+          // Start or extend rebuild
+          if (!isRebuilding) {
+            isRebuilding = true
+            rebuildDaysRemaining = Math.ceil(rebuildTimeHours / 24)
+
+            // URE fatal only when the hit group is at its parity limit
+            if (groupFailures[hitGroup] >= parityPerGroup && random() < ureProbability) {
+              hadURE = true
+              return { survived: false, rebuildTimeHours, hadURE, hadDualFailure }
+            }
+          } else {
+            if (groupFailures[hitGroup] >= parityPerGroup && random() < ureProbability) {
+              hadURE = true
+              return { survived: false, rebuildTimeHours, hadURE, hadDualFailure }
+            }
+          }
+        } else {
+          // Standard parity topology: global failure count determines data loss
+          if (failedDrives > parityDrives) {
+            hadDualFailure = true
+            return { survived: false, rebuildTimeHours, hadURE, hadDualFailure }
+          }
+
+          if (!isRebuilding) {
+            isRebuilding = true
+            rebuildDaysRemaining = Math.ceil(rebuildTimeHours / 24)
+
+            if (failedDrives >= parityDrives && random() < ureProbability) {
+              hadURE = true
+              return { survived: false, rebuildTimeHours, hadURE, hadDualFailure }
+            }
+          } else {
+            if (failedDrives >= parityDrives && random() < ureProbability) {
+              hadURE = true
+              return { survived: false, rebuildTimeHours, hadURE, hadDualFailure }
+            }
           }
         }
       }
@@ -165,9 +299,25 @@ function runSingleSimulation(input: SimulationInput): {
       rebuildDaysRemaining--
       if (rebuildDaysRemaining <= 0) {
         isRebuilding = false
-        failedDrives = Math.max(0, failedDrives - 1) // One drive rebuilt
+        failedDrives = Math.max(0, failedDrives - 1)
+        if (isMirror) {
+          // Repair the most degraded mirror group first
+          let maxIdx = 0
+          for (let g = 1; g < numMirrorGroups; g++) {
+            if (mirrorGroupFailures[g] > mirrorGroupFailures[maxIdx]) maxIdx = g
+          }
+          if (mirrorGroupFailures[maxIdx] > 0) mirrorGroupFailures[maxIdx]--
+        }
+        if (isGroup) {
+          // Rebuild the most degraded group first
+          let maxIdx = 0
+          for (let g = 1; g < numGroups; g++) {
+            if (groupFailures[g] > groupFailures[maxIdx]) maxIdx = g
+          }
+          if (groupFailures[maxIdx] > 0) groupFailures[maxIdx]--
+        }
         if (failedDrives === 0) {
-          correlatedFailureWindow = 0 // Reset correlated window on full recovery
+          correlatedFailureWindow = 0
         }
       }
     }

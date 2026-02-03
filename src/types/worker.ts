@@ -20,6 +20,10 @@ export interface SimulationInput {
   afrPercent: number
   /** Number of simulations to run */
   simulationCount: number
+  /** Number of servers/groups (for RAID 50/60 group-based failure model) */
+  serverCount?: number
+  /** Mirror copies per group (2 or 3) — 0 or undefined = not a mirror topology */
+  mirrorCopies?: number
 }
 
 /** Result from Monte Carlo simulation */

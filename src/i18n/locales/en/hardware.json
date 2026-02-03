@@ -33,6 +33,7 @@
   },
   "server": {
     "label": "Servers / Nodes",
+    "labelRaidGroups": "RAID Groups",
     "power": "Server Power (W)",
     "powerHint": "Excluding drives"
   },

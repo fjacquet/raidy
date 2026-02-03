@@ -33,6 +33,7 @@
   },
   "server": {
     "label": "Serveurs / Noeuds",
+    "labelRaidGroups": "Groupes RAID",
     "power": "Puissance serveur (W)",
     "powerHint": "Hors disques"
   },

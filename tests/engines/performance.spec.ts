@@ -86,12 +86,13 @@ function createInput(
   topology: PerformanceInput['topology'],
   drive: Drive = testNvmeDrive,
   randomPercent = 50,
+  serverCount = 1,
 ): PerformanceInput {
   return {
     drive,
     driveCount,
     hotSpares: 0,
-    serverCount: 1,
+    serverCount,
     topology,
     controllerOptions: DEFAULT_CONTROLLER_OPTIONS,
     readPercent: 70,
@@ -163,22 +164,46 @@ describe('Performance Engine - Write Penalties', () => {
   })
 
   describe('RAID 50', () => {
-    it('should have write penalty of 4', () => {
+    it('should have write penalty of 4 with 1 group (default)', () => {
       const input = createInput(8, { type: 'standard', level: 'RAID50' }, testNvmeDrive, 100)
       const result = calculatePerformance(input)
 
-      // RAID 50: RAID 5 penalty per group
+      // RAID 50 with 1 group: full RAID 5 penalty
       expect(result.writePenalty).toBe(4)
+    })
+
+    it('should have reduced write penalty with multiple groups', () => {
+      // 2 groups: each write only affects one group
+      const input2 = createInput(8, { type: 'standard', level: 'RAID50' }, testNvmeDrive, 100, 2)
+      const result2 = calculatePerformance(input2)
+      expect(result2.writePenalty).toBe(2) // 4/2
+
+      // 4 groups
+      const input4 = createInput(16, { type: 'standard', level: 'RAID50' }, testNvmeDrive, 100, 4)
+      const result4 = calculatePerformance(input4)
+      expect(result4.writePenalty).toBe(1) // 4/4
     })
   })
 
   describe('RAID 60', () => {
-    it('should have write penalty of 6', () => {
+    it('should have write penalty of 6 with 1 group (default)', () => {
       const input = createInput(12, { type: 'standard', level: 'RAID60' }, testNvmeDrive, 100)
       const result = calculatePerformance(input)
 
-      // RAID 60: RAID 6 penalty per group
+      // RAID 60 with 1 group: full RAID 6 penalty
       expect(result.writePenalty).toBe(6)
+    })
+
+    it('should have reduced write penalty with multiple groups', () => {
+      // 2 groups: each write only affects one group
+      const input2 = createInput(12, { type: 'standard', level: 'RAID60' }, testNvmeDrive, 100, 2)
+      const result2 = calculatePerformance(input2)
+      expect(result2.writePenalty).toBe(3) // 6/2
+
+      // 3 groups
+      const input3 = createInput(18, { type: 'standard', level: 'RAID60' }, testNvmeDrive, 100, 3)
+      const result3 = calculatePerformance(input3)
+      expect(result3.writePenalty).toBe(2) // 6/3
     })
   })
 })

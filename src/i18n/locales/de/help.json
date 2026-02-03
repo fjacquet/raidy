@@ -10,6 +10,7 @@
     "driveModel": "Die individuellen Laufwerksspezifikationen beeinflussen alle Berechnungen: Kapazitaet, IOPS, Durchsatz, Stromverbrauch, Haltbarkeit (DWPD bei SSD) und Kosten.",
     "driveCount": "Laufwerke pro Server. Zusammen mit der Serveranzahl ergibt sich die gesamte Rohkapazitaet und die aggregierte Leistung. Mehr Laufwerke erhoehen die Rebuild-Zeit bei paritaetsbasierten Topologien.",
     "serverCount": "Anzahl der Server oder Knoten. Beeinflusst die Gesamtzahl der Laufwerke, den Stromverbrauch und bei verteilten Plattformen (vSAN, Ceph, S2D, Nutanix) die Anzahl der Fehlerdomaenen und die Mindestanforderungen an Hosts.",
+    "serverCountRaidGroups": "Anzahl der RAID-Gruppen fuer Striped Arrays. RAID 50 verteilt ueber mehrere RAID-5-Gruppen (1 Paritaetslaufwerk pro Gruppe). RAID 60 verteilt ueber mehrere RAID-6-Gruppen (2 Paritaetslaufwerke pro Gruppe). Mehr Gruppen verbessern die Schreibleistung, erhoehen aber den Paritaets-Overhead.",
     "serverPower": "Basis-Stromverbrauch des Servers (ohne Laufwerke). Wird zur Berechnung des Gesamtenergieverbrauchs, der jaehrlichen Kosten und der CO\u2082-Emissionen verwendet."
   },
   "workload": {

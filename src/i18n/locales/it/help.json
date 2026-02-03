@@ -10,6 +10,7 @@
     "driveModel": "Le specifiche del singolo disco influenzano tutti i calcoli: capacità, IOPS, throughput, consumo energetico, resistenza (DWPD per SSD) e costo.",
     "driveCount": "Dischi per server. Combinato con il numero di server, determina la capacità grezza totale e le prestazioni aggregate. Più dischi aumentano il tempo di ricostruzione per le topologie basate su parità.",
     "serverCount": "Numero di server o nodi. Influisce sul numero totale di dischi, sul consumo energetico e, per le piattaforme distribuite (vSAN, Ceph, S2D, Nutanix), determina il numero di domini di guasto e i requisiti minimi di host.",
+    "serverCountRaidGroups": "Numero di gruppi RAID per array striped. RAID 50 distribuisce su piu gruppi RAID 5 (1 disco di parita per gruppo). RAID 60 distribuisce su piu gruppi RAID 6 (2 dischi di parita per gruppo). Piu gruppi migliorano le prestazioni in scrittura ma aumentano l'overhead di parita.",
     "serverPower": "Consumo energetico base del server (esclusi i dischi). Utilizzato per calcolare l'energia totale, il costo annuale e le emissioni di CO₂."
   },
   "workload": {

@@ -30,16 +30,26 @@ describe('RAID Performance Strategy', () => {
       expect(raidPerformanceStrategy.getWritePenalty('RAID5')).toBe(4.0)
     })
 
-    it('returns 4.0 for RAID50 (RAID5 penalty per group)', () => {
+    it('returns RAID5 penalty divided by serverCount for RAID50', () => {
+      // Default: 1 group = full RAID5 penalty
       expect(raidPerformanceStrategy.getWritePenalty('RAID50')).toBe(4.0)
+      // 2 groups: each write only affects one group
+      expect(raidPerformanceStrategy.getWritePenalty('RAID50', { serverCount: 2 })).toBe(2.0)
+      // 4 groups
+      expect(raidPerformanceStrategy.getWritePenalty('RAID50', { serverCount: 4 })).toBe(1.0)
     })
 
     it('returns 6.0 for RAID6 (industry formula: 3 reads + 3 writes)', () => {
       expect(raidPerformanceStrategy.getWritePenalty('RAID6')).toBe(6.0)
     })
 
-    it('returns 6.0 for RAID60 (RAID6 penalty per group)', () => {
+    it('returns RAID6 penalty divided by serverCount for RAID60', () => {
+      // Default: 1 group = full RAID6 penalty
       expect(raidPerformanceStrategy.getWritePenalty('RAID60')).toBe(6.0)
+      // 2 groups: each write only affects one group
+      expect(raidPerformanceStrategy.getWritePenalty('RAID60', { serverCount: 2 })).toBe(3.0)
+      // 3 groups
+      expect(raidPerformanceStrategy.getWritePenalty('RAID60', { serverCount: 3 })).toBe(2.0)
     })
 
     it('returns 2.0 for RAID1E', () => {

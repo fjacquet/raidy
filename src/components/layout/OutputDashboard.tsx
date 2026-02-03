@@ -98,10 +98,13 @@ export function OutputDashboard() {
     zfsOptions,
     driveId,
     driveCount,
+    serverCount,
     hotSpares,
     controllerOptions,
     unitSystem,
     performanceThreshold,
+    s2dOptions,
+    powerFlexOptions,
   } = useConfigStore()
   const formatBytes = useFormatBytes()
   const results = useCalculations()
@@ -117,6 +120,48 @@ export function OutputDashboard() {
   const operationalLimit =
     performanceThreshold < 1.0 ? volumetry.usableCapacity * performanceThreshold : null
 
+  // Determine mirror copies for mirror-based topologies
+  const mirrorCopies = (() => {
+    const level = topology.level.toLowerCase()
+    // S2D mirror/MAP: use explicit mirrorCopies setting
+    if (topology.type === 's2d' && (level === 'mirror' || level === 'map')) {
+      return s2dOptions.mirrorCopies
+    }
+    // PowerFlex mirror: use explicit mirrorCopies setting
+    if (topology.type === 'powerflex' && powerFlexOptions.protectionMode === 'mirror') {
+      return powerFlexOptions.mirrorCopies
+    }
+    // 3-way mirrors (by level name)
+    if (
+      level === 'ceph_replicated_3' ||
+      level === 'nutanix_rf3' ||
+      level === 'objectscale_mirror_3' ||
+      level === 'powerscale_mirror_3x' ||
+      level === 'vsan_osa_raid1_ftt2' ||
+      level.includes('3way')
+    ) {
+      return 3
+    }
+    // 2-way mirrors (by level name)
+    if (
+      level === 'raid1' ||
+      level === 'raid10' ||
+      level === 'raid1e' ||
+      level === 'ceph_replicated_2' ||
+      level === 'nutanix_rf2' ||
+      level === 'powerscale_mirror_2x' ||
+      level === 'vsan_osa_raid1' ||
+      level === 'vsan_esa_raid1' ||
+      level === 'powervault_raid1' ||
+      level === 'powervault_raid10' ||
+      level === 'powerstore_raid10' ||
+      level.includes('2way')
+    ) {
+      return 2
+    }
+    return 0 // Not a mirror topology
+  })()
+
   // Resilience simulation - reduce iterations on mobile for battery/performance
   const {
     result: resilienceResult,
@@ -126,10 +171,12 @@ export function OutputDashboard() {
   } = useResilience({
     drive: selectedDrive,
     driveCount,
+    serverCount,
     topology,
     rebuildSpeedMBs: 150,
     simulationCount: isMobile ? 1000 : 10000, // 1K on mobile, 10K on desktop
     autoRun: false,
+    mirrorCopies,
   })
 
   // Export handlers

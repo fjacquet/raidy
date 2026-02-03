@@ -1,5 +1,9 @@
 import type { PerformanceStrategy } from './PerformanceStrategy'
 
+interface RaidOptions {
+  serverCount?: number
+}
+
 /**
  * RAID performance strategy.
  *
@@ -9,9 +13,13 @@ import type { PerformanceStrategy } from './PerformanceStrategy'
  * - RAID5: 4x (read-modify-write: 2 reads + 2 writes)
  * - RAID6: 6x (dual parity: 3 reads + 3 writes)
  * - RAID10: 2x (mirrored writes)
+ *
+ * For RAID 50/60, write penalty is reduced by number of groups (serverCount)
+ * because each write only affects one group, leaving other groups free.
  */
 export const raidPerformanceStrategy: PerformanceStrategy = {
-  getWritePenalty(level: string): number {
+  getWritePenalty(level: string, options?: unknown): number {
+    const { serverCount = 1 } = (options as RaidOptions) || {}
     switch (level) {
       case 'RAID0':
         return 1.0 // No redundancy, no penalty
@@ -23,12 +31,22 @@ export const raidPerformanceStrategy: PerformanceStrategy = {
       case 'RAID3':
       case 'RAID4':
       case 'RAID5':
-      case 'RAID50':
         return 4.0 // Read-modify-write: 2 reads + 2 writes
 
+      case 'RAID50':
+        // RAID 50: Multiple RAID 5 groups operating in parallel
+        // Each write only affects one group, so effective penalty is reduced
+        // serverCount = number of RAID 5 groups
+        return 4.0 / serverCount
+
       case 'RAID6':
-      case 'RAID60':
         return 6.0 // Dual parity: 3 reads + 3 writes
+
+      case 'RAID60':
+        // RAID 60: Multiple RAID 6 groups operating in parallel
+        // Each write only affects one group, so effective penalty is reduced
+        // serverCount = number of RAID 6 groups
+        return 6.0 / serverCount
 
       case 'RAID1E':
         return 2.0 // Similar to RAID1

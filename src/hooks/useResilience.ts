@@ -11,10 +11,13 @@ import type { SimulationInput, SimulationOutput, WorkerOutputMessage } from '@/t
 interface UseResilienceOptions {
   drive: Drive | null
   driveCount: number
+  serverCount?: number
   topology: Topology
   rebuildSpeedMBs?: number
   simulationCount?: number
   autoRun?: boolean
+  /** Mirror copies per group (2 or 3). 0 = not a mirror topology. */
+  mirrorCopies?: number
 }
 
 interface UseResilienceResult {
@@ -108,10 +111,12 @@ export function useResilience(options: UseResilienceOptions): UseResilienceResul
   const {
     drive,
     driveCount,
+    serverCount = 1,
     topology,
     rebuildSpeedMBs = 200, // Default 200 MB/s rebuild speed (modern RAID controllers)
     simulationCount = 100000, // 100K iterations for better precision on rare events
     autoRun = false,
+    mirrorCopies = 0,
   } = options
 
   const [result, setResult] = useState<ResilienceResult | null>(null)
@@ -215,18 +220,22 @@ export function useResilience(options: UseResilienceOptions): UseResilienceResul
     }
 
     // Start simulation
+    // driveCount from store is per-server; worker needs total drives (matching other engines)
+    const totalDriveCount = driveCount * serverCount
     const input: SimulationInput = {
-      driveCount,
+      driveCount: totalDriveCount,
       raidLevel: getRaidLevel(topology),
       driveCapacityBytes: drive.capacity_raw,
       rebuildSpeedMBs,
       ureRate: drive.reliability.ure_rate,
       afrPercent: drive.reliability.afr,
       simulationCount,
+      serverCount,
+      mirrorCopies,
     }
 
     worker.postMessage({ type: 'START', payload: input })
-  }, [drive, driveCount, topology, rebuildSpeedMBs, simulationCount])
+  }, [drive, driveCount, serverCount, topology, rebuildSpeedMBs, simulationCount, mirrorCopies])
 
   // Abort simulation
   const abort = useCallback(() => {

@@ -33,6 +33,7 @@
   },
   "server": {
     "label": "Server / Nodi",
+    "labelRaidGroups": "Gruppi RAID",
     "power": "Potenza server (W)",
     "powerHint": "Esclusi i dischi"
   },

@@ -10,6 +10,7 @@
     "driveModel": "Individual drive specifications affect all calculations: capacity, IOPS, throughput, power consumption, endurance (DWPD for SSDs), and cost.",
     "driveCount": "Drives per server. Combined with server count, this determines total raw capacity and aggregate performance. More drives increase rebuild time for parity-based topologies.",
     "serverCount": "Number of servers or nodes. Affects total drive count, power consumption, and for distributed platforms (vSAN, Ceph, S2D, Nutanix), determines fault domain count and minimum host requirements.",
+    "serverCountRaidGroups": "Number of RAID groups for striped arrays. RAID 50 stripes across multiple RAID 5 groups (1 parity drive per group). RAID 60 stripes across multiple RAID 6 groups (2 parity drives per group). More groups improve write performance but increase parity overhead.",
     "serverPower": "Base server power consumption (excluding drives). Used to calculate total energy, annual cost, and CO\u2082 emissions."
   },
   "workload": {

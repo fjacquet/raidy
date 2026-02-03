@@ -70,6 +70,7 @@ export function HardwarePanel() {
     driveCount,
     serverCount,
     serverPowerWatts,
+    topology,
     setDriveConnectivity,
     setDriveFormFactor,
     setDriveId,
@@ -77,6 +78,9 @@ export function HardwarePanel() {
     setServerCount,
     setServerPower,
   } = useConfigStore()
+
+  // RAID 50/60 use serverCount as number of RAID groups
+  const isRaidGroupMode = topology.level === 'RAID50' || topology.level === 'RAID60'
 
   // Get connectivity constraints based on topology and cluster options
   const { constraint, validOptions, reasonKey } = useConnectivityConstraints()
@@ -214,14 +218,14 @@ export function HardwarePanel() {
         <Slider id="drive-count" value={driveCount} min={1} max={100} onChange={setDriveCount} />
       </div>
 
-      {/* Server Count */}
+      {/* Server Count / RAID Groups */}
       <div className="space-y-2">
         <Label
           htmlFor="server-count"
           hint={t('drive.countHint', { total: driveCount * serverCount })}
-          tooltip={th('hardware.serverCount')}
+          tooltip={th(isRaidGroupMode ? 'hardware.serverCountRaidGroups' : 'hardware.serverCount')}
         >
-          {t('server.label')}
+          {t(isRaidGroupMode ? 'server.labelRaidGroups' : 'server.label')}
         </Label>
         <Slider id="server-count" value={serverCount} min={1} max={16} onChange={setServerCount} />
       </div>
