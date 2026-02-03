@@ -92,8 +92,16 @@ function ProgressBar({
 export function OutputDashboard() {
   const { t } = useTranslation('output')
   const { t: th } = useTranslation('help')
-  const { topology, zfsOptions, driveId, driveCount, hotSpares, controllerOptions, unitSystem } =
-    useConfigStore()
+  const {
+    topology,
+    zfsOptions,
+    driveId,
+    driveCount,
+    hotSpares,
+    controllerOptions,
+    unitSystem,
+    performanceThreshold,
+  } = useConfigStore()
   const formatBytes = useFormatBytes()
   const results = useCalculations()
   const selectedDrive = drives[driveId] || null
@@ -103,6 +111,10 @@ export function OutputDashboard() {
   const isDesktop = useIsDesktop()
 
   const { volumetry, performance, sustainability } = results
+
+  // Calculate operational limit when performance threshold is active
+  const operationalLimit =
+    performanceThreshold < 1.0 ? volumetry.usableCapacity * performanceThreshold : null
 
   // Resilience simulation - reduce iterations on mobile for battery/performance
   const {
@@ -228,13 +240,24 @@ export function OutputDashboard() {
               </div>
 
               {/* Metrics */}
-              <div className="grid grid-cols-3 gap-4 pt-4 border-t border-surface-700">
+              <div
+                className={`grid gap-4 pt-4 border-t border-surface-700 ${operationalLimit !== null ? 'grid-cols-4' : 'grid-cols-3'}`}
+              >
                 <MetricCard label={t('capacity.raw')}>
                   <AnimatedBytes value={volumetry.rawCapacity} />
                 </MetricCard>
                 <MetricCard label={t('capacity.usable')} color="text-primary-400">
                   <AnimatedBytes value={volumetry.usableCapacity} />
                 </MetricCard>
+                {operationalLimit !== null && (
+                  <MetricCard
+                    label={t('capacity.operationalLimit')}
+                    color="text-cyan-400"
+                    subvalue={`@ ${Math.round(performanceThreshold * 100)}%`}
+                  >
+                    <AnimatedBytes value={operationalLimit} />
+                  </MetricCard>
+                )}
                 <MetricCard
                   label={t('capacity.effective')}
                   color="text-green-400"

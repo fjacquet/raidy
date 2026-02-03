@@ -129,6 +129,8 @@ export interface AdvancedState {
   electricityCostPerKwh: number
   /** Unit system for display: binary (TiB/GiB) or decimal (TB/GB) */
   unitSystem: 'binary' | 'decimal'
+  /** Performance threshold for display (0.5-1.0, default 1.0 = 100% = no limit) */
+  performanceThreshold: number
 }
 
 /** File system options for backup calculations */

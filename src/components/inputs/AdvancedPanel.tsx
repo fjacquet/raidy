@@ -65,6 +65,8 @@ export function AdvancedPanel() {
     setFsType,
     setBackupRetention,
     setDailyChangeRate,
+    performanceThreshold,
+    setPerformanceThreshold,
   } = useConfigStore()
 
   // Get available controller options based on topology type (HBA for ZFS/vSAN/S2D, RAID for others)
@@ -236,6 +238,35 @@ export function AdvancedPanel() {
             formatValue={(v) => v.toFixed(2)}
           />
           <p className="text-xs text-slate-500">{t('power.pueHint')}</p>
+        </div>
+      </div>
+
+      {/* Capacity Management Section */}
+      <div className="space-y-4 pt-4 border-t border-surface-700">
+        <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+          {t('capacityManagement.title')}
+        </h4>
+
+        <div className="space-y-2">
+          <Label
+            htmlFor="performance-threshold"
+            hint={`${Math.round(performanceThreshold * 100)}%`}
+            tooltip={th('advanced.performanceThreshold')}
+          >
+            {t('capacityManagement.performanceThreshold')}
+          </Label>
+          <Slider
+            id="performance-threshold"
+            value={performanceThreshold * 100}
+            min={50}
+            max={100}
+            step={5}
+            onChange={(v) => setPerformanceThreshold(v / 100)}
+            formatValue={(v) => `${v}%`}
+          />
+          <p className="text-xs text-slate-500">
+            {t('capacityManagement.performanceThresholdHint')}
+          </p>
         </div>
       </div>
 

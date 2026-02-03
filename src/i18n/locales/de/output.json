@@ -4,6 +4,7 @@
     "raw": "Bruttokapazität",
     "usable": "Nutzbare Kapazität",
     "effective": "Effektive Kapazität",
+    "operationalLimit": "Betriebsgrenze",
     "afterCompression": "Nach Komprimierung",
     "efficiency": "Effizienz",
     "zfsBreakdown": "ZFS-Kapazitätsaufschlüsselung",

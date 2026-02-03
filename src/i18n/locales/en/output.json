@@ -4,6 +4,7 @@
     "raw": "Raw Capacity",
     "usable": "Usable Capacity",
     "effective": "Effective Capacity",
+    "operationalLimit": "Operational Limit",
     "afterCompression": "After compression",
     "efficiency": "Efficiency",
     "zfsBreakdown": "ZFS Capacity Breakdown",

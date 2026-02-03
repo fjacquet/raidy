@@ -56,5 +56,10 @@
     "reflinkHint": "Copy-on-write clones for backup efficiency",
     "backupRetention": "Backup Retention (Days)",
     "dailyChangeRate": "Daily Change Rate (%)"
+  },
+  "capacityManagement": {
+    "title": "Capacity Management",
+    "performanceThreshold": "Performance Threshold",
+    "performanceThresholdHint": "Limit operational capacity to maintain performance (default 100%)"
   }
 }
