@@ -14,9 +14,9 @@ Requirements for milestone v1.1 Dependency Maintenance. Each maps to roadmap pha
 
 ### Dev Dependencies
 
-- [ ] **DEVDEP-01**: Update @biomejs/biome from 2.3.11 to 2.4.6 (linter minor version)
-- [ ] **DEVDEP-02**: Update jsdom from 27.4.0 to 28.1.0 (test environment minor version)
-- [ ] **DEVDEP-03**: Update @types/node from 24.11.0 to 25.3.3 (Node.js type definitions major version)
+- [x] **DEVDEP-01**: Update @biomejs/biome from 2.3.11 to 2.4.6 (linter minor version)
+- [x] **DEVDEP-02**: Update jsdom from 27.4.0 to 28.1.0 (test environment minor version)
+- [x] **DEVDEP-03**: Update @types/node from 24.11.0 to 25.3.3 (Node.js type definitions major version)
 
 ### Verification
 
@@ -46,9 +46,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 |-------------|-------|--------|
 | DEP-01 | Phase 7 | Complete |
 | DEP-02 | Phase 7 | Complete |
-| DEVDEP-01 | Phase 7 | Pending |
-| DEVDEP-02 | Phase 7 | Pending |
-| DEVDEP-03 | Phase 7 | Pending |
+| DEVDEP-01 | Phase 7 | Complete |
+| DEVDEP-02 | Phase 7 | Complete |
+| DEVDEP-03 | Phase 7 | Complete |
 | VERIFY-01 | Phase 7 | Pending |
 | VERIFY-02 | Phase 7 | Pending |
 | VERIFY-03 | Phase 7 | Pending |
