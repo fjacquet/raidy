@@ -70,6 +70,25 @@ Calculation accuracy for storage infrastructure decisions. If Raidy gives wrong 
 - **Bundle size**: Static hosting with limited bandwidth — keep total bundle under reasonable limits (currently ~2MB with chunking).
 - **Deployment target**: GitHub Pages at `/raidy/` base path — build must work with this configuration.
 
+## Current Milestone: v1.1 Dependency Maintenance
+
+**Goal:** Keep all npm dependencies current to maintain security posture and benefit from bug fixes.
+
+**Target features:**
+- Update @biomejs/biome 2.3.11 → 2.4.6 (linter improvements)
+- Update @types/node 24.11.0 → 25.3.3 (Node.js type definitions)
+- Update dompurify 3.3.1 → 3.3.2 (security library patch)
+- Update jsdom 27.4.0 → 28.1.0 (test environment update)
+- Update react-i18next 16.5.4 → 16.5.5 (i18n library patch)
+
+### Active
+
+<!-- Current scope for v1.1 — Dependency Maintenance -->
+
+- [ ] Update all outdated npm packages to latest compatible versions
+- [ ] Verify all tests pass after updates
+- [ ] Verify lint and typecheck pass after updates
+
 ## Key Decisions
 
 | Decision                           | Rationale                                      | Outcome                        |
@@ -82,4 +101,4 @@ Calculation accuracy for storage infrastructure decisions. If Raidy gives wrong 
 
 ---
 
-_Last updated: 2026-01-18 after Phase 2 completion_
+_Last updated: 2026-03-05 after milestone v1.1 started_

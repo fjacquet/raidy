@@ -6,16 +6,14 @@ See: .planning/PROJECT.md
 
 **Core value:** Calculation accuracy for storage infrastructure decisions. If Raidy gives wrong capacity numbers or resilience predictions, users could make incorrect (and costly) storage decisions. Everything else can fail; the math cannot.
 
-**Current focus:** Phase 5 - Performance & Fixes (in progress)
+**Current focus:** Milestone v1.1 — Dependency Maintenance
 
 ## Current Position
 
-Phase: 5 of 6 (Performance & Fixes)
-Plan: 1 of 10 in phase
-Status: All 593 tests passing, 2 lint warnings (JSX React imports)
-Last activity: 2026-01-19 - Completed 05-01-PLAN.md (Split Monolithic useCalculations Hook)
-
-Progress: ██████████████████████░ 95.7% (23/24 plans complete)
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-03-05 — Milestone v1.1 started
 
 ## Performance Metrics
 
