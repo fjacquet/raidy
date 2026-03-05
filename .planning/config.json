@@ -1,6 +1,9 @@
 {
   "mode": "yolo",
-  "depth": "standard",
   "parallelization": "enabled",
-  "created": "2026-01-17"
+  "created": "2026-01-17",
+  "granularity": "standard",
+  "workflow": {
+    "research": false
+  }
 }
