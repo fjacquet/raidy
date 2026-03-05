@@ -2,11 +2,13 @@
 
 **Project:** Raidy - Production Readiness
 **Created:** 2026-01-17
-**Phases:** 6
+**Phases:** 7
 
 ## Overview
 
 This roadmap takes Raidy from a functionally complete application to production-ready deployment. Phases are derived from natural delivery boundaries: establish test infrastructure, validate calculation accuracy (core value), harden security, improve code maintainability, optimize performance, and validate production deployment. Every v1 requirement maps to exactly one phase.
+
+Phase 7 covers milestone v1.1 Dependency Maintenance — keeping all npm dependencies current to maintain security posture and benefit from bug fixes.
 
 ## Phases
 
@@ -162,17 +164,36 @@ Plans:
 
 ---
 
+### Phase 7: Dependency Maintenance
+
+**Goal:** All npm dependencies are current, the security posture is maintained, and the application continues to build and test cleanly
+**Depends on:** Nothing (independent maintenance milestone, can run alongside other phases)
+**Requirements:** DEP-01, DEP-02, DEVDEP-01, DEVDEP-02, DEVDEP-03, VERIFY-01, VERIFY-02, VERIFY-03, VERIFY-04
+
+**Success Criteria:**
+
+1. Running `npm outdated` shows dompurify, react-i18next, @biomejs/biome, jsdom, and @types/node all at their target versions (no listed outdated packages for these five)
+2. Running `npm test` completes with all tests green after the dependency updates
+3. Running `npm run lint` exits with zero errors after the updates (including any biome rule changes in 2.4.x)
+4. Running `npm run typecheck` exits with zero TypeScript errors after the @types/node major version bump
+5. Running `npm run build` produces a successful production bundle with no warnings
+
+**Plans:** TBD
+
+---
+
 ## Progress
 
 | Phase                      | Status                    | Completed  |
 | -------------------------- | ------------------------- | ---------- |
-| 1 - Test Infrastructure    | ✓ Complete                | 2026-01-17 |
-| 2 - Calculation Validation | ✓ Complete                | 2026-01-18 |
-| 3 - Security Hardening     | ✓ Complete                | 2026-01-18 |
-| 4 - Code Quality           | ✓ Complete                | 2026-01-18 |
+| 1 - Test Infrastructure    | Complete                  | 2026-01-17 |
+| 2 - Calculation Validation | Complete                  | 2026-01-18 |
+| 3 - Security Hardening     | Complete                  | 2026-01-18 |
+| 4 - Code Quality           | Complete                  | 2026-01-18 |
 | 5 - Performance & Fixes    | Ready for execution       | —          |
 | 6 - Production Validation  | Not started               | —          |
+| 7 - Dependency Maintenance | Not started               | —          |
 
 ---
 
-_Roadmap for milestone: v1.0 - Production Ready_
+_Roadmap covers milestones: v1.0 - Production Ready, v1.1 - Dependency Maintenance_
