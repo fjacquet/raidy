@@ -9,8 +9,8 @@ Requirements for milestone v1.1 Dependency Maintenance. Each maps to roadmap pha
 
 ### Dependencies (Production)
 
-- [ ] **DEP-01**: Update dompurify from 3.3.1 to 3.3.2 (security library patch)
-- [ ] **DEP-02**: Update react-i18next from 16.5.4 to 16.5.5 (i18n library patch)
+- [x] **DEP-01**: Update dompurify from 3.3.1 to 3.3.2 (security library patch)
+- [x] **DEP-02**: Update react-i18next from 16.5.4 to 16.5.5 (i18n library patch)
 
 ### Dev Dependencies
 
@@ -44,8 +44,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DEP-01 | Phase 7 | Pending |
-| DEP-02 | Phase 7 | Pending |
+| DEP-01 | Phase 7 | Complete |
+| DEP-02 | Phase 7 | Complete |
 | DEVDEP-01 | Phase 7 | Pending |
 | DEVDEP-02 | Phase 7 | Pending |
 | DEVDEP-03 | Phase 7 | Pending |
