@@ -178,7 +178,13 @@ Plans:
 4. Running `npm run typecheck` exits with zero TypeScript errors after the @types/node major version bump
 5. Running `npm run build` produces a successful production bundle with no warnings
 
-**Plans:** TBD
+**Plans:** 3 plans
+
+Plans:
+
+- [ ] 07-01-PLAN.md — Update production dependencies (dompurify 3.3.2, react-i18next 16.5.5)
+- [ ] 07-02-PLAN.md — Update dev dependencies (@biomejs/biome 2.4.6, jsdom 28.1.0, @types/node 25.3.3)
+- [ ] 07-03-PLAN.md — Verify all quality gates pass and fix any compatibility issues
 
 ---
 
