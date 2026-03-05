@@ -7,8 +7,8 @@ import { ErrorBoundary as ReactErrorBoundary } from 'react-error-boundary'
 import { useTranslation } from 'react-i18next'
 
 interface ErrorFallbackProps {
-  error: Error
-  resetErrorBoundary: () => void
+  error: unknown
+  resetErrorBoundary: (...args: unknown[]) => void
 }
 
 function ErrorFallback({ error: _error, resetErrorBoundary }: ErrorFallbackProps) {

@@ -4,6 +4,7 @@
   "created": "2026-01-17",
   "granularity": "standard",
   "workflow": {
-    "research": false
+    "research": false,
+    "_auto_chain_active": false
   }
 }

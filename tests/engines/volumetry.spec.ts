@@ -404,9 +404,7 @@ describe('Volumetry Engine - Standard RAID', () => {
     it('RAID 1: capacity should equal N/2 drives (mirroring)', () => {
       fc.assert(
         fc.property(
-          fc
-            .integer({ min: 2, max: 24 })
-            .filter((n) => n % 2 === 0), // Even number of drives
+          fc.integer({ min: 2, max: 24 }).filter((n) => n % 2 === 0), // Even number of drives
           fc.integer({ min: 1_000_000_000_000, max: 10_000_000_000_000 }),
           (driveCount, driveSize) => {
             const testDrive: Drive = {
@@ -589,9 +587,7 @@ describe('Volumetry Engine - Standard RAID', () => {
     it('RAID 10: exactly 50% efficiency (mirrored stripes)', () => {
       fc.assert(
         fc.property(
-          fc
-            .integer({ min: 4, max: 24 })
-            .filter((n) => n % 2 === 0), // Even number required
+          fc.integer({ min: 4, max: 24 }).filter((n) => n % 2 === 0), // Even number required
           fc.integer({ min: 1_000_000_000_000, max: 10_000_000_000_000 }),
           (driveCount, driveSize) => {
             const testDrive: Drive = {
