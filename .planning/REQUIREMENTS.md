@@ -20,10 +20,10 @@ Requirements for milestone v1.1 Dependency Maintenance. Each maps to roadmap pha
 
 ### Verification
 
-- [ ] **VERIFY-01**: All automated tests pass after dependency updates (npm test — all tests green)
-- [ ] **VERIFY-02**: Linter passes with zero errors after updates (npm run lint)
-- [ ] **VERIFY-03**: TypeScript strict-mode typecheck passes after updates (npm run typecheck)
-- [ ] **VERIFY-04**: Production build succeeds without warnings after updates (npm run build)
+- [x] **VERIFY-01**: All automated tests pass after dependency updates (npm test — all tests green)
+- [x] **VERIFY-02**: Linter passes with zero errors after updates (npm run lint)
+- [x] **VERIFY-03**: TypeScript strict-mode typecheck passes after updates (npm run typecheck)
+- [x] **VERIFY-04**: Production build succeeds without warnings after updates (npm run build)
 
 ## v2 Requirements
 
@@ -49,10 +49,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DEVDEP-01 | Phase 7 | Complete |
 | DEVDEP-02 | Phase 7 | Complete |
 | DEVDEP-03 | Phase 7 | Complete |
-| VERIFY-01 | Phase 7 | Pending |
-| VERIFY-02 | Phase 7 | Pending |
-| VERIFY-03 | Phase 7 | Pending |
-| VERIFY-04 | Phase 7 | Pending |
+| VERIFY-01 | Phase 7 | Complete |
+| VERIFY-02 | Phase 7 | Complete |
+| VERIFY-03 | Phase 7 | Complete |
+| VERIFY-04 | Phase 7 | Complete |
 
 **Coverage:**
 - v1.1 requirements: 9 total
