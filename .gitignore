@@ -64,3 +64,8 @@ temp/
 *.temp
 *.backup
 *.bak
+
+
+.mcp.json
+.mcp.local.json
+.mcp_servers.json
