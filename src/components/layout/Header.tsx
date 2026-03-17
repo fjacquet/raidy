@@ -38,9 +38,11 @@ export function Header({ onToggleGuide, isGuideOpen }: HeaderProps) {
     <header className="bg-surface-800 border-b border-surface-700 px-6 py-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-primary-500 rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold text-sm">R</span>
-          </div>
+          <img
+            src={`${import.meta.env.BASE_URL}icons/icon-96x96.png`}
+            alt="Raidy"
+            className="w-8 h-8 rounded-lg"
+          />
           <div>
             <h1 className="text-xl font-bold text-white">{t('app.title')}</h1>
             <p className="text-xs text-slate-400">{t('app.subtitle')}</p>
