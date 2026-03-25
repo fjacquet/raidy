@@ -3,11 +3,11 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Dell Calculation Accuracy
 status: Roadmap defined, ready for plan-phase
-stopped_at: Milestone v1.2 initialized — requirements defined, roadmap pending
+stopped_at: Phases 8–13 defined — ready to plan Phase 8
 last_updated: "2026-03-25T00:00:00.000Z"
-last_activity: 2026-03-25 — Milestone v1.2 started
+last_activity: 2026-03-25 — Roadmap phases 8-13 created for v1.2
 progress:
-  total_phases: 0
+  total_phases: 6
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -25,10 +25,12 @@ See: .planning/PROJECT.md
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: 8 (PowerVault ADAPT Formula Fix) — Not started
 Plan: —
-Status: Defining requirements
-Last activity: 2026-03-25 — Milestone v1.2 started
+Status: Roadmap defined, ready for plan-phase
+Last activity: 2026-03-25 — Phases 8–13 defined
+
+Progress bar: [----------] 0/6 phases complete
 
 ## Performance Metrics
 
@@ -55,8 +57,11 @@ Last activity: 2026-03-25 — Milestone v1.2 started
 | ----- | --------- | --------- |
 | v1.2  | Dell Sizer as primary reference | Official Dell capacity planning tool — output is ground truth for ADAPT/PowerStore/PowerScale |
 | v1.2  | Fix formula, then update tests | Tests currently encode wrong expected values — fix engine first, then update test vectors |
-| v1.2  | PowerVault ADAPT formula: `(N - 2×protection) / N` | Dell Sizer confirms: 12 drives + ADAPT(8+2) → 27.93/41.9 TiB = 66.67% = (12-4)/12 |
-| v1.2  | PowerStore has ~7.8% system overhead on top of RAID parity | Dell Sizer confirms: 35 drives + RAID(16+2) → 801.57/977.89 TiB = 82%, vs pure RAID 88.89% |
+| v1.2  | PowerVault ADAPT formula: `((N-2)/N) × stripe_efficiency` | Dynamic per drive count: ≤18 drives uses 8+2 (×0.80), >18 drives uses 16+2 (×16/18) |
+| v1.2  | PowerStore RAID geometry: DRE drive-count thresholds | RAID-6: <8→4+2, 8-19→8+2, ≥20→16+2; RAID-5: <10→4+1, ≥10→8+1 (from Dell KB 000188491) |
+| v1.2  | PowerStore system overhead: ~5% default | Back-calculated from Dell Sizer reference (35-drive 5200Q); configurable via systemOverheadPercent |
+| v1.2  | PowerScale fix: use serverCount not driveCount | driveCount bug produces near-100% efficiency for multi-drive-per-node configs |
+| v1.2  | Test protocol: skip→add correct→delete skipped | Never update test expected values by running the (possibly wrong) formula |
 
 ### Reference Documents
 
@@ -65,15 +70,19 @@ Last activity: 2026-03-25 — Milestone v1.2 started
 
 ### Pending Todos
 
-(None yet)
+- Clarify ADAPT 8+2 vs 16+2 threshold: research says >18 drives in one place, >20 in another — resolve from ME5 Admin Guide before Phase 8 implementation
+- Validate PowerStore system overhead for smaller models (1000T, 3200) — 5% may be large-model only
+- Confirm PowerScale minimum stripe width fallback for small clusters (3–4 nodes with N+2)
+- Dell Sizer access required for Phase 12 validation of PowerFlex and ObjectScale
 
 ### Blockers/Concerns
 
-- PowerScale, PowerFlex, ObjectScale formulas need research before we can determine if fixes are needed
 - Phases 5 (Performance & Fixes) and 6 (Production Validation) from v1.0 are still pending — can be addressed in v1.3
+- Dell Sizer requires authenticated Dell partner/customer login — if access unavailable, contact Dell SE
+- Phase 10 (PowerStore system overhead) is the most invasive change: touches types, overhead pipeline, breakdown builder, and OverheadResult interface
 
 ## Session Continuity
 
 Last session: 2026-03-25
-Stopped at: Milestone v1.2 initialized
+Stopped at: Roadmap phases 8–13 created — ready to run /gsd:plan-phase 8
 Resume file: None

@@ -2,7 +2,7 @@
 
 **Project:** Raidy - Production Readiness
 **Created:** 2026-01-17
-**Phases:** 7
+**Phases:** 13
 
 ## Overview
 
@@ -10,7 +10,12 @@ This roadmap takes Raidy from a functionally complete application to production-
 
 Phase 7 covers milestone v1.1 Dependency Maintenance — keeping all npm dependencies current to maintain security posture and benefit from bug fixes.
 
+Phases 8–13 cover milestone v1.2 Dell Calculation Accuracy — fixing Dell storage platform formulas (PowerVault ADAPT, PowerStore DRE, PowerScale OneFS, PowerFlex, ObjectScale) to match official Dell Sizer output within 1% tolerance.
+
 ## Phases
+
+<details>
+<summary>✅ v1.0 Production Ready (Phases 1–6) — shipped 2026-01-18</summary>
 
 ### Phase 1: Test Infrastructure
 
@@ -162,7 +167,10 @@ Plans:
 
 **Plans:** (created by /gsd:plan-phase)
 
----
+</details>
+
+<details>
+<summary>✅ v1.1 Dependency Maintenance (Phase 7) — shipped 2026-03-05</summary>
 
 ### Phase 7: Dependency Maintenance
 
@@ -186,20 +194,129 @@ Plans:
 - [x] 07-02-PLAN.md — Update dev dependencies (@biomejs/biome 2.4.6, jsdom 28.1.0, @types/node 25.3.3)
 - [x] 07-03-PLAN.md — Verify all quality gates pass and fix any compatibility issues
 
+</details>
+
+### v1.2 Dell Calculation Accuracy (In Progress)
+
+**Milestone Goal:** Fix Dell storage calculation formulas to match official Dell Sizer output within 1% tolerance across PowerVault ADAPT, PowerStore DRE, PowerScale OneFS, PowerFlex, and ObjectScale.
+
+#### Phase 8: PowerVault ADAPT Formula Fix
+
+**Goal:** Users calculating PowerVault ME5 capacity get accurate usable capacity based on their actual drive count
+**Depends on:** Nothing (independent of other v1.2 phases)
+**Requirements:** DELL-01, DELL-02
+
+**Success Criteria:**
+
+1. User configuring a ME5224 with 12 drives sees ~27.93 TiB usable from 41.9 TiB raw (67% efficiency, within 1% of Dell Sizer)
+2. User configuring a PowerVault array with 20+ drives sees 16+2 stripe efficiency (~88.9%) rather than the previous hardcoded 87%
+3. User configuring a PowerVault array with 18 or fewer drives sees 8+2 stripe efficiency (~80% times (N-2)/N) rather than the previous hardcoded 85%
+4. Calculated ADAPT efficiency varies with drive count (not static) — visibly different results for 12, 18, 24, and 36 drive configurations
+
+**Plans:** TBD
+
+---
+
+#### Phase 9: PowerStore Data Fraction Fix
+
+**Goal:** Users calculating PowerStore RAID-5 and RAID-6 capacity see drive-count-aware efficiency from the actual DRE geometry
+**Depends on:** Nothing (independent; must precede Phase 10)
+**Requirements:** DELL-03, DELL-04
+
+**Success Criteria:**
+
+1. User configuring PowerStore RAID-6 with fewer than 8 drives sees 4+2 stripe efficiency (66.7%) instead of the previous hardcoded 75%
+2. User configuring PowerStore RAID-6 with 8–19 drives sees 8+2 stripe efficiency (80%) instead of the previous hardcoded 75%
+3. User configuring PowerStore RAID-6 with 20 or more drives sees 16+2 stripe efficiency (88.9%) instead of the previous hardcoded 75%
+4. User configuring PowerStore RAID-5 with fewer than 10 drives sees 4+1 stripe efficiency (80%) and with 10+ drives sees 8+1 efficiency (88.9%) instead of the previous hardcoded 80%
+
+**Plans:** TBD
+
+---
+
+#### Phase 10: PowerStore System Overhead Addition
+
+**Goal:** Users calculating PowerStore capacity see the full system overhead deduction, matching Dell Sizer end-to-end
+**Depends on:** Phase 9
+**Requirements:** DELL-05, DELL-06
+
+**Success Criteria:**
+
+1. User configuring PowerStore 5200Q with 35 NVMe drives in RAID 16+2 sees ~801.57 TiB usable from 977.89 TiB raw (within 1% of Dell Sizer)
+2. User can see system overhead as a distinct line item in the capacity breakdown (separate from parity overhead)
+3. User configuring any PowerStore topology sees usable capacity that is lower than the post-parity capacity by the configured system overhead percentage (default ~5%)
+
+**Plans:** TBD
+
+---
+
+#### Phase 11: PowerScale serverCount Fix
+
+**Goal:** Users calculating PowerScale capacity for multi-drive-per-node clusters get correct N+x efficiency rather than near-100% false results
+**Depends on:** Nothing (independent of PowerStore phases)
+**Requirements:** DELL-07, DELL-08
+
+**Success Criteria:**
+
+1. User configuring a 10-node PowerScale cluster with 36 drives per node and N+2 protection sees ~80% efficiency (matching OneFS formula M/(N+M) where N=10, M=2) instead of the near-100% efficiency produced by the driveCount bug
+2. User configuring a 4-node PowerScale cluster with N+1 protection sees 80% efficiency (4 nodes, 1 parity = 4/5) consistent with Dell OneFS documentation
+3. Calculated PowerScale efficiency changes when node count changes but drive-per-node count stays constant, demonstrating the serverCount parameter is active
+
+**Plans:** TBD
+
+---
+
+#### Phase 12: PowerFlex and ObjectScale Validation
+
+**Goal:** Users can trust PowerFlex and ObjectScale capacity calculations are accurate against Dell documentation
+**Depends on:** Nothing (independent validation phase)
+**Requirements:** DELL-09, DELL-10
+
+**Success Criteria:**
+
+1. PowerFlex 2-way mirror, 3-way mirror, 4+1, 4+2, 8+2, and 12+4 EC configurations each produce usable capacity within 1% of the Dell documentation reference values
+2. ObjectScale 12+4, 10+2, 24+4, and mirror-3 EC configurations each produce usable capacity within 1% of the Dell documentation reference values
+3. Any formula divergence found during validation is corrected, and the correction is verified against at least one Dell Sizer reference case
+
+**Plans:** TBD
+
+---
+
+#### Phase 13: Test Suite Cleanup
+
+**Goal:** The Dell test suite reflects correct Dell Sizer reference values with zero skipped tests and no regressions
+**Depends on:** Phase 8, Phase 9, Phase 10, Phase 11, Phase 12
+**Requirements:** DELL-11, DELL-12
+
+**Success Criteria:**
+
+1. Running `npm test` shows zero `.skip` markers in any Dell-related test block — every Dell test runs and passes
+2. `tests/fixtures/dell-vectors.ts` exists and contains at minimum the ME5224 ADAPT 12-drive and PowerStore 5200Q 35-drive reference vectors with TB-to-TiB normalization documented
+3. Running `npm run test:coverage` passes the 75% coverage threshold with no regressions in non-Dell topology tests
+4. Every Dell test assertion is traceable to a Dell Sizer reference value (comment citing source) rather than a back-calculated engine output
+
+**Plans:** TBD
+
 ---
 
 ## Progress
 
-| Phase                      | Status                    | Completed  |
-| -------------------------- | ------------------------- | ---------- |
-| 1 - Test Infrastructure    | Complete                  | 2026-01-17 |
-| 2 - Calculation Validation | Complete                  | 2026-01-18 |
-| 3 - Security Hardening     | Complete                  | 2026-01-18 |
-| 4 - Code Quality           | Complete                  | 2026-01-18 |
-| 5 - Performance & Fixes    | Ready for execution       | —          |
-| 6 - Production Validation  | Not started               | —          |
-| 7 - Dependency Maintenance | Complete                  | 2026-03-05 |
+| Phase | Milestone | Status | Completed |
+|-------|-----------|--------|-----------|
+| 1 - Test Infrastructure | v1.0 | Complete | 2026-01-17 |
+| 2 - Calculation Validation | v1.0 | Complete | 2026-01-18 |
+| 3 - Security Hardening | v1.0 | Complete | 2026-01-18 |
+| 4 - Code Quality | v1.0 | Complete | 2026-01-18 |
+| 5 - Performance & Fixes | v1.0 | Ready for execution | — |
+| 6 - Production Validation | v1.0 | Not started | — |
+| 7 - Dependency Maintenance | v1.1 | Complete | 2026-03-05 |
+| 8 - PowerVault ADAPT Formula Fix | v1.2 | Not started | — |
+| 9 - PowerStore Data Fraction Fix | v1.2 | Not started | — |
+| 10 - PowerStore System Overhead Addition | v1.2 | Not started | — |
+| 11 - PowerScale serverCount Fix | v1.2 | Not started | — |
+| 12 - PowerFlex and ObjectScale Validation | v1.2 | Not started | — |
+| 13 - Test Suite Cleanup | v1.2 | Not started | — |
 
 ---
 
-_Roadmap covers milestones: v1.0 - Production Ready, v1.1 - Dependency Maintenance_
+_Roadmap covers milestones: v1.0 - Production Ready, v1.1 - Dependency Maintenance, v1.2 - Dell Calculation Accuracy_
