@@ -16,8 +16,8 @@ Requirements for milestone v1.2 — Dell Calculation Accuracy. Each maps to road
 
 - [x] **DELL-03**: PowerStore RAID-6 efficiency computed from DRE geometry selection (4+2 for <8 drives, 8+2 for 8–19 drives, 16+2 for ≥20 drives) — replacing hardcoded 0.75 constant
 - [x] **DELL-04**: PowerStore RAID-5 efficiency computed from DRE geometry selection (4+1 for <10 drives, 8+1 for ≥10 drives) — replacing hardcoded 0.80 constant
-- [ ] **DELL-05**: PowerStore applies system overhead (~5% default, configurable via `systemOverheadPercent`) on top of RAID parity efficiency
-- [ ] **DELL-06**: PowerStore results match Dell Sizer within 1% for the 5200Q reference configuration (35 × 30.72TB NVMe QLC, RAID 16+2: expected 801.57 TiB usable from 977.89 TiB raw)
+- [x] **DELL-05**: PowerStore applies system overhead (~5% default, configurable via `systemOverheadPercent`) on top of RAID parity efficiency
+- [x] **DELL-06**: PowerStore results match Dell Sizer within 1% for the 5200Q reference configuration (35 × 30.72TB NVMe QLC, RAID 16+2: expected 801.57 TiB usable from 977.89 TiB raw)
 
 ### PowerScale
 
@@ -76,8 +76,8 @@ Deferred to future release. Tracked but not in current roadmap.
 | DELL-02 | Phase 8 | Complete |
 | DELL-03 | Phase 9 | Complete |
 | DELL-04 | Phase 9 | Complete |
-| DELL-05 | Phase 10 | Pending |
-| DELL-06 | Phase 10 | Pending |
+| DELL-05 | Phase 10 | Complete |
+| DELL-06 | Phase 10 | Complete |
 | DELL-07 | Phase 11 | Pending |
 | DELL-08 | Phase 11 | Pending |
 | DELL-09 | Phase 12 | Pending |
@@ -86,6 +86,7 @@ Deferred to future release. Tracked but not in current roadmap.
 | DELL-12 | Phase 13 | Pending |
 
 **Coverage:**
+
 - v1.2 requirements: 12 total
 - Mapped to phases: 12
 - Unmapped: 0 ✓
