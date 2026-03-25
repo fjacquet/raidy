@@ -50,13 +50,22 @@ export const dellStrategy: VolumetryStrategy = {
     // PowerStore (Block Storage)
     if (level.startsWith('powerstore_')) {
       switch (level) {
-        case 'powerstore_raid5':
-          // PowerStore RAID-5: typically 4+1 or 8+1 stripes, ~80% efficiency
-          return 0.8
+        case 'powerstore_raid5': {
+          // PowerStore RAID-5 DRE geometry (Dell KB 000188491):
+          //   <10 drives: 4+1 stripe -> 4/5 = 80%
+          //   >=10 drives: 8+1 stripe -> 8/9 = 88.89%
+          return usableDrives < 10 ? 4 / 5 : 8 / 9
+        }
 
-        case 'powerstore_raid6':
-          // PowerStore RAID-6: typically 4+2 or 8+2 stripes, ~75% efficiency
-          return 0.75
+        case 'powerstore_raid6': {
+          // PowerStore RAID-6 DRE geometry (Dell KB 000188491):
+          //   <8 drives: 4+2 stripe -> 4/6 = 66.67%
+          //   8-19 drives: 8+2 stripe -> 8/10 = 80%
+          //   >=20 drives: 16+2 stripe -> 16/18 = 88.89%
+          if (usableDrives < 8) return 4 / 6
+          if (usableDrives < 20) return 8 / 10
+          return 16 / 18
+        }
 
         case 'powerstore_raid10':
           // PowerStore RAID-10: mirrored stripes, 50% efficiency

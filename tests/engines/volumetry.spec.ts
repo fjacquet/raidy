@@ -3817,9 +3817,7 @@ describe('Volumetry Engine - Error Handling', () => {
     describe.each(dellPowerstoreVectors)('$name', ({
       driveCount,
       raidLevel,
-      driveCapacityBytes,
       expectedDataFraction,
-      tolerance,
     }) => {
       it(`should return data fraction ${(expectedDataFraction * 100).toFixed(2)}% for ${driveCount} drives ${raidLevel}`, () => {
         const result = dellStrategy.calculateDataFraction(raidLevel, driveCount)
@@ -3827,17 +3825,27 @@ describe('Volumetry Engine - Error Handling', () => {
       })
 
       it(`should produce correct usable capacity for ${driveCount} drives ${raidLevel}`, () => {
-        const input = {
+        // Use snapshotReservePercent: 0 to isolate DRE data fraction from snapshot reserve
+        const input: VolumetryInput = {
           ...createInput(driveCount, { type: 'powerstore', level: raidLevel }),
+          powerstoreOptions: {
+            ...DEFAULT_POWERSTORE_OPTIONS,
+            snapshotReservePercent: 0,
+            compression: false,
+            compressionRatio: 1.0,
+            dedup: false,
+            dedupRatio: 1.0,
+          },
         }
         const result = calculateVolumetry(input)
-        const expectedRaw = driveCount * driveCapacityBytes
+        // Raw capacity uses testDrive (1TB)
+        const expectedRaw = driveCount * testDrive.capacity_raw
         expect(result.rawCapacity).toBe(expectedRaw)
-        // Usable capacity should reflect DRE data fraction (before FS overhead)
-        // Allow tolerance for filesystem overhead deductions
+        // Usable capacity should reflect DRE data fraction minus only FS overhead (~1-2%)
         const expectedUsableBeforeFs = expectedRaw * expectedDataFraction
-        expect(result.usableCapacity).toBeLessThanOrEqual(expectedUsableBeforeFs * (1 + tolerance))
-        expect(result.usableCapacity).toBeGreaterThan(expectedUsableBeforeFs * 0.9) // At least 90% of expected (allows FS overhead)
+        // Allow up to 5% for filesystem overhead deductions, must be at least 95% of expected
+        expect(result.usableCapacity).toBeLessThanOrEqual(expectedUsableBeforeFs * 1.01)
+        expect(result.usableCapacity).toBeGreaterThan(expectedUsableBeforeFs * 0.95)
       })
     })
   })
