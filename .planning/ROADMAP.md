@@ -233,7 +233,10 @@ Plans:
 3. User configuring PowerStore RAID-6 with 20 or more drives sees 16+2 stripe efficiency (88.9%) instead of the previous hardcoded 75%
 4. User configuring PowerStore RAID-5 with fewer than 10 drives sees 4+1 stripe efficiency (80%) and with 10+ drives sees 8+1 efficiency (88.9%) instead of the previous hardcoded 80%
 
-**Plans:** TBD
+**Plans:** 1 plan
+
+Plans:
+- [ ] 09-01-PLAN.md — Fix PowerStore DRE geometry with drive-count-aware RAID-5/RAID-6 efficiency and Dell KB reference vectors
 
 ---
 
