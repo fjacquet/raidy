@@ -294,7 +294,11 @@ Plans:
 2. ObjectScale 12+4, 10+2, 24+4, and mirror-3 EC configurations each produce usable capacity within 1% of the Dell documentation reference values
 3. Any formula divergence found during validation is corrected, and the correction is verified against at least one Dell Sizer reference case
 
-**Plans:** TBD
+**Plans:** 1 plan
+
+Plans:
+
+- [ ] 12-01-PLAN.md — Validate PowerFlex and ObjectScale EC/mirror data fraction formulas with Dell documentation reference vectors
 
 ---
 
