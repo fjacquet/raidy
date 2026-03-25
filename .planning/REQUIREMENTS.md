@@ -21,8 +21,8 @@ Requirements for milestone v1.2 — Dell Calculation Accuracy. Each maps to road
 
 ### PowerScale
 
-- [ ] **DELL-07**: PowerScale N+x calculations use `serverCount` (node count) as the denominator instead of `driveCount`, fixing near-100% efficiency bug on multi-drive-per-node configurations
-- [ ] **DELL-08**: PowerScale N+x efficiency formulas validated against Dell OneFS documentation and confirmed within 1% tolerance
+- [x] **DELL-07**: PowerScale N+x calculations use `serverCount` (node count) as the denominator instead of `driveCount`, fixing near-100% efficiency bug on multi-drive-per-node configurations
+- [x] **DELL-08**: PowerScale N+x efficiency formulas validated against Dell OneFS documentation and confirmed within 1% tolerance
 
 ### PowerFlex
 
@@ -78,8 +78,8 @@ Deferred to future release. Tracked but not in current roadmap.
 | DELL-04 | Phase 9 | Complete |
 | DELL-05 | Phase 10 | Complete |
 | DELL-06 | Phase 10 | Complete |
-| DELL-07 | Phase 11 | Pending |
-| DELL-08 | Phase 11 | Pending |
+| DELL-07 | Phase 11 | Complete |
+| DELL-08 | Phase 11 | Complete |
 | DELL-09 | Phase 12 | Pending |
 | DELL-10 | Phase 12 | Pending |
 | DELL-11 | Phase 13 | Pending |

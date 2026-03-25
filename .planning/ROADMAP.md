@@ -271,10 +271,10 @@ Plans:
 **Success Criteria:**
 
 1. User configuring a 10-node PowerScale cluster with 36 drives per node and N+2 protection sees ~80% efficiency (matching OneFS formula M/(N+M) where N=10, M=2) instead of the near-100% efficiency produced by the driveCount bug
-2. User configuring a 4-node PowerScale cluster with N+1 protection sees 80% efficiency (4 nodes, 1 parity = 4/5) consistent with Dell OneFS documentation
+2. User configuring a 4-node PowerScale cluster with N+1 protection sees 75% efficiency ((4-1)/4 = 3/4, where 4 total nodes minus 1 parity node) consistent with Dell OneFS documentation
 3. Calculated PowerScale efficiency changes when node count changes but drive-per-node count stays constant, demonstrating the serverCount parameter is active
 
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 
 Plans:
 
@@ -329,7 +329,7 @@ Plans:
 | 8 - PowerVault ADAPT Formula Fix | 1/1 | Complete   | 2026-03-25 |
 | 9 - PowerStore Data Fraction Fix | 1/1 | Complete   | 2026-03-25 |
 | 10 - PowerStore System Overhead Addition | 1/1 | Complete    | 2026-03-25 |
-| 11 - PowerScale serverCount Fix | v1.2 | Not started | — |
+| 11 - PowerScale serverCount Fix | 1/1 | Complete   | 2026-03-25 |
 | 12 - PowerFlex and ObjectScale Validation | v1.2 | Not started | — |
 | 13 - Test Suite Cleanup | v1.2 | Not started | — |
 

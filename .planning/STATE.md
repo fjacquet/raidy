@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Dell Calculation Accuracy
 status: unknown
-stopped_at: Completed 10-01-PLAN.md
-last_updated: "2026-03-25T20:08:14.932Z"
+stopped_at: Completed 11-01-PLAN.md
+last_updated: "2026-03-25T20:35:31.982Z"
 progress:
   total_phases: 6
-  completed_phases: 3
-  total_plans: 3
-  completed_plans: 3
+  completed_phases: 4
+  total_plans: 4
+  completed_plans: 4
 ---
 
 # Project State
@@ -20,11 +20,11 @@ See: .planning/PROJECT.md
 
 **Core value:** Calculation accuracy for storage infrastructure decisions. If Raidy gives wrong capacity numbers or resilience predictions, users could make incorrect (and costly) storage decisions. Everything else can fail; the math cannot.
 
-**Current focus:** Phase 10 — powerstore-system-overhead-addition
+**Current focus:** Phase 11 — powerscale-servercount-fix
 
 ## Current Position
 
-Phase: 10 (powerstore-system-overhead-addition) — EXECUTING
+Phase: 11 (powerscale-servercount-fix) — EXECUTING
 Plan: 1 of 1
 
 ## Performance Metrics
@@ -46,6 +46,7 @@ Plan: 1 of 1
 | Phase 08 P01 | 8 | 3 tasks | 3 files |
 | Phase 09-powerstore-data-fraction-fix P01 | 8 | 3 tasks | 3 files |
 | Phase 10-powerstore-system-overhead-addition P01 | 23 | 3 tasks | 7 files |
+| Phase 11 P01 | 7 | 3 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -67,6 +68,7 @@ Plan: 1 of 1
 - [Phase 09]: PowerStore RAID-5 DRE geometry: <10 drives=4/5 (80%), >=10=8/9 (88.89%) per Dell KB 000188491
 - [Phase 09]: DRE test isolation: set snapshotReservePercent:0 in usable capacity tests to separate DRE data fraction from snapshot overhead
 - [Phase 10-powerstore-system-overhead-addition]: PowerStore system overhead 5% default applied to capacityAfterParity, configurable via systemOverheadPercent on PowerStoreOptions
+- [Phase 11]: PowerScale N+x uses nodeCount (serverCount) not driveCount: OneFS protection is node-level, corrects 19pp error for multi-drive-per-node clusters
 
 ### Reference Documents
 
@@ -88,6 +90,6 @@ Plan: 1 of 1
 
 ## Session Continuity
 
-Last session: 2026-03-25T20:02:30.395Z
-Stopped at: Completed 10-01-PLAN.md
+Last session: 2026-03-25T20:35:31.979Z
+Stopped at: Completed 11-01-PLAN.md
 Resume file: None
