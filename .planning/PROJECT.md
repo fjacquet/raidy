@@ -75,6 +75,7 @@ Calculation accuracy for storage infrastructure decisions. If Raidy gives wrong 
 **Goal:** Fix Dell storage calculation formulas to match official Dell Sizer output within 1% tolerance.
 
 **Target features:**
+
 - Fix PowerVault ADAPT formula (currently hardcoded 85-87%, actual is `(N - 2×protection) / N` ≈ 67% for 12 drives)
 - Fix PowerStore RAID-5/6 formulas (currently hardcoded constants, actual uses stripe width + system overhead)
 - Validate/fix PowerScale N+x protection formulas
@@ -90,7 +91,7 @@ Calculation accuracy for storage infrastructure decisions. If Raidy gives wrong 
 - [x] **DELL-02**: PowerVault ADAPT results match Dell Sizer within 1% for reference configurations — Validated in Phase 8: PowerVault ADAPT Formula Fix
 - [x] **DELL-03**: PowerStore RAID-6 uses stripe-width-aware efficiency + system overhead — Validated in Phase 9: PowerStore Data Fraction Fix
 - [x] **DELL-04**: PowerStore RAID-5 formula validated and corrected against Dell Sizer — Validated in Phase 9: PowerStore Data Fraction Fix
-- [ ] **DELL-05**: PowerStore results match Dell Sizer within 1% for reference configurations
+- [x] **DELL-05**: PowerStore results match Dell Sizer within 1% for reference configurations — Validated in Phase 10: PowerStore System Overhead Addition
 - [ ] **DELL-06**: PowerScale N+x formulas validated against Dell documentation
 - [ ] **DELL-07**: PowerFlex EC formulas validated against Dell documentation
 - [ ] **DELL-08**: ObjectScale EC and geo-replication formulas validated against Dell documentation
@@ -110,4 +111,4 @@ Calculation accuracy for storage infrastructure decisions. If Raidy gives wrong 
 
 ---
 
-_Last updated: 2026-03-25 after Phase 9 (PowerStore Data Fraction Fix) complete_
+_Last updated: 2026-03-25 after Phase 10 (PowerStore System Overhead Addition) complete_
