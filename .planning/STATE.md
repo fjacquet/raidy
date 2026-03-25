@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Dell Calculation Accuracy
-status: phase_complete
-stopped_at: Phase 11 complete — next Phase 12
-last_updated: "2026-03-25T21:00:00.000Z"
+status: unknown
+stopped_at: Completed 12-01-PLAN.md — Phase 12 and v1.2 milestone complete
+last_updated: "2026-03-25T20:59:18.998Z"
 progress:
   total_phases: 6
   completed_phases: 5
@@ -24,8 +24,8 @@ See: .planning/PROJECT.md
 
 ## Current Position
 
-Phase: 11 (powerscale-servercount-fix) — COMPLETE
-Next: Phase 12 (powerflex-objectscale-validation)
+Phase: 12 (powerflex-objectscale-validation) — COMPLETE
+Plan: 1 of 1 (all complete)
 
 ## Performance Metrics
 
@@ -47,6 +47,7 @@ Next: Phase 12 (powerflex-objectscale-validation)
 | Phase 09-powerstore-data-fraction-fix P01 | 8 | 3 tasks | 3 files |
 | Phase 10-powerstore-system-overhead-addition P01 | 23 | 3 tasks | 7 files |
 | Phase 11 P01 | 7 | 3 tasks | 4 files |
+| Phase 12 P01 | 5 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -69,6 +70,7 @@ Next: Phase 12 (powerflex-objectscale-validation)
 - [Phase 09]: DRE test isolation: set snapshotReservePercent:0 in usable capacity tests to separate DRE data fraction from snapshot overhead
 - [Phase 10-powerstore-system-overhead-addition]: PowerStore system overhead 5% default applied to capacityAfterParity, configurable via systemOverheadPercent on PowerStoreOptions
 - [Phase 11]: PowerScale N+x uses nodeCount (serverCount) not driveCount: OneFS protection is node-level, corrects 19pp error for multi-drive-per-node clusters
+- [Phase 12]: No formula fix needed: all PowerFlex and ObjectScale formulas use correct k/(k+m) EC math
 
 ### Reference Documents
 
@@ -90,6 +92,6 @@ Next: Phase 12 (powerflex-objectscale-validation)
 
 ## Session Continuity
 
-Last session: 2026-03-25T21:00:00.000Z
-Stopped at: Phase 11 complete — ready for Phase 12
+Last session: 2026-03-25T20:59:18.995Z
+Stopped at: Completed 12-01-PLAN.md — Phase 12 and v1.2 milestone complete
 Resume file: None

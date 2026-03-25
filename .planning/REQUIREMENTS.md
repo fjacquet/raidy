@@ -26,11 +26,11 @@ Requirements for milestone v1.2 — Dell Calculation Accuracy. Each maps to road
 
 ### PowerFlex
 
-- [ ] **DELL-09**: PowerFlex EC formulas (2-way mirror, 3-way mirror, 4+1, 4+2, 8+2, 12+4) validated against Dell documentation; fixes applied only if divergence found
+- [x] **DELL-09**: PowerFlex EC formulas (2-way mirror, 3-way mirror, 4+1, 4+2, 8+2, 12+4) validated against Dell documentation; fixes applied only if divergence found
 
 ### ObjectScale
 
-- [ ] **DELL-10**: ObjectScale EC formulas (12+4, 10+2, 24+4, mirror-3) validated against Dell documentation; fixes applied only if divergence found
+- [x] **DELL-10**: ObjectScale EC formulas (12+4, 10+2, 24+4, mirror-3) validated against Dell documentation; fixes applied only if divergence found
 
 ### Test Suite
 
@@ -80,8 +80,8 @@ Deferred to future release. Tracked but not in current roadmap.
 | DELL-06 | Phase 10 | Complete |
 | DELL-07 | Phase 11 | Complete |
 | DELL-08 | Phase 11 | Complete |
-| DELL-09 | Phase 12 | Pending |
-| DELL-10 | Phase 12 | Pending |
+| DELL-09 | Phase 12 | Complete |
+| DELL-10 | Phase 12 | Complete |
 | DELL-11 | Phase 13 | Pending |
 | DELL-12 | Phase 13 | Pending |
 

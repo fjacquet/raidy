@@ -294,7 +294,7 @@ Plans:
 2. ObjectScale 12+4, 10+2, 24+4, and mirror-3 EC configurations each produce usable capacity within 1% of the Dell documentation reference values
 3. Any formula divergence found during validation is corrected, and the correction is verified against at least one Dell Sizer reference case
 
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 
 Plans:
 
@@ -334,7 +334,7 @@ Plans:
 | 9 - PowerStore Data Fraction Fix | 1/1 | Complete   | 2026-03-25 |
 | 10 - PowerStore System Overhead Addition | 1/1 | Complete    | 2026-03-25 |
 | 11 - PowerScale serverCount Fix | 1/1 | Complete   | 2026-03-25 |
-| 12 - PowerFlex and ObjectScale Validation | v1.2 | Not started | — |
+| 12 - PowerFlex and ObjectScale Validation | 1/1 | Complete   | 2026-03-25 |
 | 13 - Test Suite Cleanup | v1.2 | Not started | — |
 
 ---
