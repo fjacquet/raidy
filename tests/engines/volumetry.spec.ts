@@ -3772,46 +3772,46 @@ describe('Volumetry Engine - Error Handling', () => {
   })
 
   describe('Volumetry Engine - PowerVault ADAPT (Dell Sizer Reference)', () => {
-    describe.each(dellAdaptVectors)(
-      '$name',
-      ({ driveCount, driveCapacityBytes, expectedEfficiency, expectedUsableBytes, tolerance }) => {
-        it(`should produce ~${expectedEfficiency}% ADAPT efficiency for ${driveCount} drives`, () => {
-          const input = createInput(driveCount, { type: 'powervault', level: 'powervault_adapt' })
-          const result = calculateVolumetry(input)
+    describe.each(dellAdaptVectors)('$name', ({
+      driveCount,
+      driveCapacityBytes,
+      expectedEfficiency,
+      expectedUsableBytes,
+      tolerance,
+    }) => {
+      it(`should produce ~${expectedEfficiency}% ADAPT efficiency for ${driveCount} drives`, () => {
+        const input = createInput(driveCount, { type: 'powervault', level: 'powervault_adapt' })
+        const result = calculateVolumetry(input)
 
-          // Dell Sizer reference: ADAPT formula is ((N-2)/N) * stripe_efficiency
-          // FS overhead (~1.5%) reduces efficiency slightly below the pure formula value
-          const fsOverheadPp = 2.0 // Max expected FS overhead in percentage points
-          const minEfficiency = expectedEfficiency - fsOverheadPp
-          const maxEfficiency = expectedEfficiency + 0.5 // Small upward tolerance
-          expect(result.efficiency).toBeGreaterThan(minEfficiency)
-          expect(result.efficiency).toBeLessThan(maxEfficiency)
-        })
+        // Dell Sizer reference: ADAPT formula is ((N-2)/N) * stripe_efficiency
+        // FS overhead (~1.5%) reduces efficiency slightly below the pure formula value
+        const fsOverheadPp = 2.0 // Max expected FS overhead in percentage points
+        const minEfficiency = expectedEfficiency - fsOverheadPp
+        const maxEfficiency = expectedEfficiency + 0.5 // Small upward tolerance
+        expect(result.efficiency).toBeGreaterThan(minEfficiency)
+        expect(result.efficiency).toBeLessThan(maxEfficiency)
+      })
 
-        it(
-          `should produce usable capacity within ${tolerance * 100}% of Dell Sizer reference for ${driveCount} drives`,
-          () => {
-            const refDrive: Drive = {
-              ...testDrive,
-              id: `dell-adapt-ref-${driveCount}`,
-              capacity_raw: driveCapacityBytes,
-            }
-            const input: VolumetryInput = {
-              ...createInput(driveCount, { type: 'powervault', level: 'powervault_adapt' }),
-              drive: refDrive,
-            }
-            const result = calculateVolumetry(input)
+      it(`should produce usable capacity within ${tolerance * 100}% of Dell Sizer reference for ${driveCount} drives`, () => {
+        const refDrive: Drive = {
+          ...testDrive,
+          id: `dell-adapt-ref-${driveCount}`,
+          capacity_raw: driveCapacityBytes,
+        }
+        const input: VolumetryInput = {
+          ...createInput(driveCount, { type: 'powervault', level: 'powervault_adapt' }),
+          drive: refDrive,
+        }
+        const result = calculateVolumetry(input)
 
-            // Verify usable capacity is within tolerance of expected (pre-FS-overhead reference value)
-            // Allow an additional 2% for FS overhead model differences
-            const allowedDeviation = tolerance + 0.02
-            expect(
-              Math.abs(result.usableCapacity - expectedUsableBytes) / expectedUsableBytes,
-            ).toBeLessThan(allowedDeviation)
-          },
-        )
-      },
-    )
+        // Verify usable capacity is within tolerance of expected (pre-FS-overhead reference value)
+        // Allow an additional 2% for FS overhead model differences
+        const allowedDeviation = tolerance + 0.02
+        expect(
+          Math.abs(result.usableCapacity - expectedUsableBytes) / expectedUsableBytes,
+        ).toBeLessThan(allowedDeviation)
+      })
+    })
 
     it('should produce different efficiency for 12 vs 24 drives (not static)', () => {
       const input12 = createInput(12, { type: 'powervault', level: 'powervault_adapt' })
@@ -3847,8 +3847,7 @@ describe('Volumetry Engine - Error Handling', () => {
       // After FS overhead (~1.5%): ~30.26 TB = ~27.52 TiB
       // Dell Sizer says 27.93 TiB — tolerance: within 1.5% of 27.93 TiB
       const dellSizerUsableTiB = 27.93
-      const dellSizerUsableBytes = dellSizerUsableTiB * Math.pow(1024, 4)
-      const resultUsableTiB = result.usableCapacity / Math.pow(1024, 4)
+      const resultUsableTiB = result.usableCapacity / 1024 ** 4
 
       // Within 1.5% of Dell Sizer (allows for FS overhead model differences while enforcing phase success criterion)
       expect(Math.abs(resultUsableTiB - dellSizerUsableTiB) / dellSizerUsableTiB).toBeLessThan(

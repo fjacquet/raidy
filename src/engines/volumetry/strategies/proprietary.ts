@@ -69,10 +69,16 @@ export const proprietaryStrategy: VolumetryStrategy = {
           // RAID 10: mirrored stripes, 50% efficiency
           return 0.5
 
-        case 'powervault_adapt':
-          // ADAPT: distributed RAID with ~87% efficiency for 24+ drives
-          // Uses distributed spare capacity and parity across all drives
-          return usableDrives >= 24 ? 0.87 : 0.85
+        case 'powervault_adapt': {
+          // ADAPT: distributed RAID with 2 parity drives and stripe-width-dependent efficiency
+          // Formula: ((N-2)/N) * stripe_efficiency
+          //   - N <= 18 drives: 8+2 stripe -> stripe_efficiency = 8/10 = 0.80
+          //   - N > 18 drives: 16+2 stripe -> stripe_efficiency = 16/18 = 0.8889
+          // Source: Dell ME5 Admin Guide, validated against Dell MidRange Sizer
+          const parityDrives = 2
+          const stripeEfficiency = usableDrives > 18 ? 16 / 18 : 8 / 10
+          return ((usableDrives - parityDrives) / usableDrives) * stripeEfficiency
+        }
 
         default:
           return 0.8
