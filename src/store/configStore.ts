@@ -105,6 +105,7 @@ const getDefaultState = () => ({
     dedup: false,
     dedupRatio: 1.0,
     snapshotReservePercent: 20,
+    systemOverheadPercent: 5,
   },
   powerscaleOptions: {
     compression: true,
