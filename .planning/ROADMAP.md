@@ -324,7 +324,7 @@ Plans:
 | 7 - Dependency Maintenance | v1.1 | Complete | 2026-03-05 |
 | 8 - PowerVault ADAPT Formula Fix | 1/1 | Complete   | 2026-03-25 |
 | 9 - PowerStore Data Fraction Fix | 1/1 | Complete   | 2026-03-25 |
-| 10 - PowerStore System Overhead Addition | 1/1 | Complete   | 2026-03-25 |
+| 10 - PowerStore System Overhead Addition | 1/1 | Complete    | 2026-03-25 |
 | 11 - PowerScale serverCount Fix | v1.2 | Not started | — |
 | 12 - PowerFlex and ObjectScale Validation | v1.2 | Not started | — |
 | 13 - Test Suite Cleanup | v1.2 | Not started | — |
