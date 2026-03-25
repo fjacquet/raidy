@@ -92,7 +92,7 @@ Calculation accuracy for storage infrastructure decisions. If Raidy gives wrong 
 - [x] **DELL-03**: PowerStore RAID-6 uses stripe-width-aware efficiency + system overhead — Validated in Phase 9: PowerStore Data Fraction Fix
 - [x] **DELL-04**: PowerStore RAID-5 formula validated and corrected against Dell Sizer — Validated in Phase 9: PowerStore Data Fraction Fix
 - [x] **DELL-05**: PowerStore results match Dell Sizer within 1% for reference configurations — Validated in Phase 10: PowerStore System Overhead Addition
-- [ ] **DELL-06**: PowerScale N+x formulas validated against Dell documentation
+- [x] **DELL-06**: PowerScale N+x formulas validated against Dell documentation — Validated in Phase 11: PowerScale serverCount Fix
 - [ ] **DELL-07**: PowerFlex EC formulas validated against Dell documentation
 - [ ] **DELL-08**: ObjectScale EC and geo-replication formulas validated against Dell documentation
 - [ ] **DELL-09**: Dell Sizer reference test vectors added for all corrected formulas
@@ -111,4 +111,4 @@ Calculation accuracy for storage infrastructure decisions. If Raidy gives wrong 
 
 ---
 
-_Last updated: 2026-03-25 after Phase 10 (PowerStore System Overhead Addition) complete_
+_Last updated: 2026-03-25 after Phase 11 (PowerScale serverCount Fix) complete_
