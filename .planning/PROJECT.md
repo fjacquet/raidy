@@ -95,8 +95,8 @@ Calculation accuracy for storage infrastructure decisions. If Raidy gives wrong 
 - [x] **DELL-06**: PowerScale N+x formulas validated against Dell documentation — Validated in Phase 11: PowerScale serverCount Fix
 - [x] **DELL-07**: PowerFlex EC formulas validated against Dell documentation — Validated in Phase 12: PowerFlex and ObjectScale Validation
 - [x] **DELL-08**: ObjectScale EC and geo-replication formulas validated against Dell documentation — Validated in Phase 12: PowerFlex and ObjectScale Validation
-- [ ] **DELL-09**: Dell Sizer reference test vectors added for all corrected formulas
-- [ ] **DELL-10**: All existing Dell tests updated with correct reference values (no regressions)
+- [x] **DELL-09**: Dell Sizer reference test vectors added for all corrected formulas — Validated in Phase 13: Test Suite Cleanup
+- [x] **DELL-10**: All existing Dell tests updated with correct reference values (no regressions) — Validated in Phase 13: Test Suite Cleanup
 
 ## Key Decisions
 
@@ -111,4 +111,4 @@ Calculation accuracy for storage infrastructure decisions. If Raidy gives wrong 
 
 ---
 
-_Last updated: 2026-03-25 after Phase 12 (PowerFlex and ObjectScale Validation) complete_
+_Last updated: 2026-03-25 after Phase 13 (Test Suite Cleanup) complete — v1.2 milestone complete_
