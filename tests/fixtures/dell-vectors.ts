@@ -419,7 +419,11 @@ export const dellPowerflexVectors: DellPowerflexVector[] = [
  */
 export interface DellObjectscaleVector {
   name: string
-  level: 'objectscale_ec_12_4' | 'objectscale_ec_10_2' | 'objectscale_ec_24_4' | 'objectscale_mirror_3'
+  level:
+    | 'objectscale_ec_12_4'
+    | 'objectscale_ec_10_2'
+    | 'objectscale_ec_24_4'
+    | 'objectscale_mirror_3'
   driveCount: number
   expectedDataFraction: number // decimal (0-1)
   expectedEfficiency: number // percentage (0-100)
