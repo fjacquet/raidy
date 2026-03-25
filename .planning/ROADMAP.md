@@ -274,7 +274,11 @@ Plans:
 2. User configuring a 4-node PowerScale cluster with N+1 protection sees 80% efficiency (4 nodes, 1 parity = 4/5) consistent with Dell OneFS documentation
 3. Calculated PowerScale efficiency changes when node count changes but drive-per-node count stays constant, demonstrating the serverCount parameter is active
 
-**Plans:** TBD
+**Plans:** 1 plan
+
+Plans:
+
+- [ ] 11-01-PLAN.md — Fix PowerScale N+x formula to use serverCount (node count) with OneFS reference vectors and TDD test protocol
 
 ---
 
