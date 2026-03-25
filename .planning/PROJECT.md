@@ -93,8 +93,8 @@ Calculation accuracy for storage infrastructure decisions. If Raidy gives wrong 
 - [x] **DELL-04**: PowerStore RAID-5 formula validated and corrected against Dell Sizer — Validated in Phase 9: PowerStore Data Fraction Fix
 - [x] **DELL-05**: PowerStore results match Dell Sizer within 1% for reference configurations — Validated in Phase 10: PowerStore System Overhead Addition
 - [x] **DELL-06**: PowerScale N+x formulas validated against Dell documentation — Validated in Phase 11: PowerScale serverCount Fix
-- [ ] **DELL-07**: PowerFlex EC formulas validated against Dell documentation
-- [ ] **DELL-08**: ObjectScale EC and geo-replication formulas validated against Dell documentation
+- [x] **DELL-07**: PowerFlex EC formulas validated against Dell documentation — Validated in Phase 12: PowerFlex and ObjectScale Validation
+- [x] **DELL-08**: ObjectScale EC and geo-replication formulas validated against Dell documentation — Validated in Phase 12: PowerFlex and ObjectScale Validation
 - [ ] **DELL-09**: Dell Sizer reference test vectors added for all corrected formulas
 - [ ] **DELL-10**: All existing Dell tests updated with correct reference values (no regressions)
 
@@ -111,4 +111,4 @@ Calculation accuracy for storage infrastructure decisions. If Raidy gives wrong 
 
 ---
 
-_Last updated: 2026-03-25 after Phase 11 (PowerScale serverCount Fix) complete_
+_Last updated: 2026-03-25 after Phase 12 (PowerFlex and ObjectScale Validation) complete_
