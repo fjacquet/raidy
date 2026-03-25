@@ -3290,7 +3290,9 @@ describe('Volumetry Engine - Error Handling', () => {
     }) => {
       it(`should return data fraction ${(expectedDataFraction * 100).toFixed(2)}% for ${nodeCount} nodes`, () => {
         // Pass serverCount via options (mirrors vSAN pattern)
-        const result = dellStrategy.calculateDataFraction(level, totalDriveCount, { serverCount: nodeCount })
+        const result = dellStrategy.calculateDataFraction(level, totalDriveCount, {
+          serverCount: nodeCount,
+        })
         expect(result).toBeCloseTo(expectedDataFraction, 3)
       })
 
