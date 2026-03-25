@@ -137,6 +137,10 @@ export function getDataFraction(
       // RAID 50/60 need serverCount as number of RAID groups
       options = { serverCount }
       break
+    case 'powerscale':
+      // PowerScale N+x protection is node-level: formula uses serverCount (nodes), not driveCount
+      options = { serverCount }
+      break
     default:
       // Other topologies don't need special options
       options = {}

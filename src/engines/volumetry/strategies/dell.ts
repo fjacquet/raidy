@@ -10,8 +10,12 @@
 
 import type { VolumetryStrategy } from './VolumetryStrategy'
 
+interface DellPowerscaleOptions {
+  serverCount: number
+}
+
 export const dellStrategy: VolumetryStrategy = {
-  calculateDataFraction(level: string, driveCount: number): number {
+  calculateDataFraction(level: string, driveCount: number, options?: unknown): number {
     const usableDrives = driveCount
 
     // PowerFlex (Software-Defined Storage)
@@ -77,38 +81,43 @@ export const dellStrategy: VolumetryStrategy = {
     }
 
     // PowerScale (Scale-out NAS)
+    // OneFS protection is NODE-level: formula N/(N+M) where N = data nodes, M = protection nodes
+    // serverCount (node count) is threaded via options from calculationHelpers.ts
     if (level.startsWith('powerscale_')) {
+      const opts = options as DellPowerscaleOptions | undefined
+      const nodeCount = opts?.serverCount ?? usableDrives // fallback to driveCount if no serverCount passed
+
       switch (level) {
         case 'powerscale_n1':
-          // N+1 protection: (n-1)/n
-          return (usableDrives - 1) / usableDrives
+          // N+1 protection: (N-1)/N where N = node count
+          return (nodeCount - 1) / nodeCount
 
         case 'powerscale_n2':
-          // N+2 protection: (n-2)/n
-          return (usableDrives - 2) / usableDrives
+          // N+2 protection: (N-2)/N where N = node count
+          return (nodeCount - 2) / nodeCount
 
         case 'powerscale_n2_1':
-          // N+2:1 protection: (n-2)/n with 1 stripe failure tolerance
-          return (usableDrives - 2) / usableDrives
+          // N+2:1 protection: (N-2)/N with 1 stripe failure tolerance
+          return (nodeCount - 2) / nodeCount
 
         case 'powerscale_n3':
-          // N+3 protection: (n-3)/n
-          return (usableDrives - 3) / usableDrives
+          // N+3 protection: (N-3)/N where N = node count
+          return (nodeCount - 3) / nodeCount
 
         case 'powerscale_n4':
-          // N+4 protection: (n-4)/n
-          return (usableDrives - 4) / usableDrives
+          // N+4 protection: (N-4)/N where N = node count
+          return (nodeCount - 4) / nodeCount
 
         case 'powerscale_mirror_2x':
-          // 2x mirrored: 50% efficiency
+          // 2x mirrored: 50% efficiency (independent of node count)
           return 0.5
 
         case 'powerscale_mirror_3x':
-          // 3x mirrored: 33.3% efficiency
+          // 3x mirrored: 33.3% efficiency (independent of node count)
           return 1 / 3
 
         default:
-          return (usableDrives - 2) / usableDrives // Default to N+2
+          return (nodeCount - 2) / nodeCount // Default to N+2
       }
     }
 
