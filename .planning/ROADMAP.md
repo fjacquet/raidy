@@ -216,6 +216,7 @@ Plans:
 **Plans:** 1/1 plans complete
 
 Plans:
+
 - [ ] 08-01-PLAN.md — Fix ADAPT formula with Dell Sizer reference vectors and TDD test protocol
 
 ---
@@ -236,6 +237,7 @@ Plans:
 **Plans:** 1/1 plans complete
 
 Plans:
+
 - [ ] 09-01-PLAN.md — Fix PowerStore DRE geometry with drive-count-aware RAID-5/RAID-6 efficiency and Dell KB reference vectors
 
 ---
@@ -252,7 +254,10 @@ Plans:
 2. User can see system overhead as a distinct line item in the capacity breakdown (separate from parity overhead)
 3. User configuring any PowerStore topology sees usable capacity that is lower than the post-parity capacity by the configured system overhead percentage (default ~5%)
 
-**Plans:** TBD
+**Plans:** 1 plans
+
+Plans:
+- [ ] 10-01-PLAN.md — Add PowerStore system overhead to volumetry pipeline with Dell Sizer 5200Q reference test
 
 ---
 
@@ -318,7 +323,7 @@ Plans:
 | 7 - Dependency Maintenance | v1.1 | Complete | 2026-03-05 |
 | 8 - PowerVault ADAPT Formula Fix | 1/1 | Complete   | 2026-03-25 |
 | 9 - PowerStore Data Fraction Fix | 1/1 | Complete   | 2026-03-25 |
-| 10 - PowerStore System Overhead Addition | v1.2 | Not started | — |
+| 10 - PowerStore System Overhead Addition | v1.2 | Planned | — |
 | 11 - PowerScale serverCount Fix | v1.2 | Not started | — |
 | 12 - PowerFlex and ObjectScale Validation | v1.2 | Not started | — |
 | 13 - Test Suite Cleanup | v1.2 | Not started | — |
