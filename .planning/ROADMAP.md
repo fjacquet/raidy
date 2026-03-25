@@ -213,7 +213,7 @@ Plans:
 3. User configuring a PowerVault array with 18 or fewer drives sees 8+2 stripe efficiency (~80% times (N-2)/N) rather than the previous hardcoded 85%
 4. Calculated ADAPT efficiency varies with drive count (not static) — visibly different results for 12, 18, 24, and 36 drive configurations
 
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 
 Plans:
 - [ ] 08-01-PLAN.md — Fix ADAPT formula with Dell Sizer reference vectors and TDD test protocol
@@ -313,7 +313,7 @@ Plans:
 | 5 - Performance & Fixes | v1.0 | Ready for execution | — |
 | 6 - Production Validation | v1.0 | Not started | — |
 | 7 - Dependency Maintenance | v1.1 | Complete | 2026-03-05 |
-| 8 - PowerVault ADAPT Formula Fix | v1.2 | Planned | — |
+| 8 - PowerVault ADAPT Formula Fix | 1/1 | Complete   | 2026-03-25 |
 | 9 - PowerStore Data Fraction Fix | v1.2 | Not started | — |
 | 10 - PowerStore System Overhead Addition | v1.2 | Not started | — |
 | 11 - PowerScale serverCount Fix | v1.2 | Not started | — |

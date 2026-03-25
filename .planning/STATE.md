@@ -2,15 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Dell Calculation Accuracy
-status: Roadmap defined, ready for plan-phase
-stopped_at: Phases 8–13 defined — ready to plan Phase 8
-last_updated: "2026-03-25T00:00:00.000Z"
-last_activity: 2026-03-25 — Roadmap phases 8-13 created for v1.2
+status: unknown
+stopped_at: Completed 08-01-PLAN.md
+last_updated: "2026-03-25T18:12:39.794Z"
 progress:
   total_phases: 6
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  completed_phases: 1
+  total_plans: 1
+  completed_plans: 1
 ---
 
 # Project State
@@ -21,16 +20,12 @@ See: .planning/PROJECT.md
 
 **Core value:** Calculation accuracy for storage infrastructure decisions. If Raidy gives wrong capacity numbers or resilience predictions, users could make incorrect (and costly) storage decisions. Everything else can fail; the math cannot.
 
-**Current focus:** Milestone v1.2 — Dell Calculation Accuracy
+**Current focus:** Phase 08 — powervault-adapt-formula-fix
 
 ## Current Position
 
-Phase: 8 (PowerVault ADAPT Formula Fix) — Not started
-Plan: —
-Status: Roadmap defined, ready for plan-phase
-Last activity: 2026-03-25 — Phases 8–13 defined
-
-Progress bar: [----------] 0/6 phases complete
+Phase: 08 (powervault-adapt-formula-fix) — EXECUTING
+Plan: 1 of 1
 
 ## Performance Metrics
 
@@ -48,6 +43,7 @@ Progress bar: [----------] 0/6 phases complete
 | 3 - Security Hardening     | 4/4   | 18min | 4.5min   |
 | 4 - Code Quality           | 10/10 | 80min | 8.0min   |
 | 7 - Dependency Maintenance | 3/3   | —     | —        |
+| Phase 08 P01 | 8 | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -62,6 +58,9 @@ Progress bar: [----------] 0/6 phases complete
 | v1.2  | PowerStore system overhead: ~5% default | Back-calculated from Dell Sizer reference (35-drive 5200Q); configurable via systemOverheadPercent |
 | v1.2  | PowerScale fix: use serverCount not driveCount | driveCount bug produces near-100% efficiency for multi-drive-per-node configs |
 | v1.2  | Test protocol: skip→add correct→delete skipped | Never update test expected values by running the (possibly wrong) formula |
+
+- [Phase 08]: ADAPT threshold at >18 drives: 8+2 stripe for <=18, 16+2 for >18 per Dell ME5 Admin Guide
+- [Phase 08]: TDD protocol: skip wrong tests first, add correct reference tests (RED), fix formula (GREEN), then delete skipped tests
 
 ### Reference Documents
 
@@ -83,6 +82,6 @@ Progress bar: [----------] 0/6 phases complete
 
 ## Session Continuity
 
-Last session: 2026-03-25
-Stopped at: Roadmap phases 8–13 created — ready to run /gsd:plan-phase 8
+Last session: 2026-03-25T18:12:39.792Z
+Stopped at: Completed 08-01-PLAN.md
 Resume file: None

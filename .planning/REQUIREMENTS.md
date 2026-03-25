@@ -9,8 +9,8 @@ Requirements for milestone v1.2 — Dell Calculation Accuracy. Each maps to road
 
 ### PowerVault ADAPT
 
-- [ ] **DELL-01**: PowerVault ADAPT usable capacity uses dynamic formula `((N-2)/N) × (8/10)` for ≤18 drives, `((N-2)/N) × (16/18)` for >18 drives — replacing hardcoded 85%/87% constants
-- [ ] **DELL-02**: PowerVault ADAPT results match Dell Sizer within 1% for the ME5224 reference configuration (12 × 3.84TB SSD, ADAPT 8+2: expected 27.93 TiB usable from 41.9 TiB raw)
+- [x] **DELL-01**: PowerVault ADAPT usable capacity uses dynamic formula `((N-2)/N) × (8/10)` for ≤18 drives, `((N-2)/N) × (16/18)` for >18 drives — replacing hardcoded 85%/87% constants
+- [x] **DELL-02**: PowerVault ADAPT results match Dell Sizer within 1% for the ME5224 reference configuration (12 × 3.84TB SSD, ADAPT 8+2: expected 27.93 TiB usable from 41.9 TiB raw)
 
 ### PowerStore
 
@@ -72,8 +72,8 @@ Deferred to future release. Tracked but not in current roadmap.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DELL-01 | Phase 8 | Pending |
-| DELL-02 | Phase 8 | Pending |
+| DELL-01 | Phase 8 | Complete |
+| DELL-02 | Phase 8 | Complete |
 | DELL-03 | Phase 9 | Pending |
 | DELL-04 | Phase 9 | Pending |
 | DELL-05 | Phase 10 | Pending |
