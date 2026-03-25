@@ -70,24 +70,32 @@ Calculation accuracy for storage infrastructure decisions. If Raidy gives wrong 
 - **Bundle size**: Static hosting with limited bandwidth — keep total bundle under reasonable limits (currently ~2MB with chunking).
 - **Deployment target**: GitHub Pages at `/raidy/` base path — build must work with this configuration.
 
-## Current Milestone: v1.1 Dependency Maintenance
+## Current Milestone: v1.2 Dell Calculation Accuracy
 
-**Goal:** Keep all npm dependencies current to maintain security posture and benefit from bug fixes.
+**Goal:** Fix Dell storage calculation formulas to match official Dell Sizer output within 1% tolerance.
 
 **Target features:**
-- Update @biomejs/biome 2.3.11 → 2.4.6 (linter improvements)
-- Update @types/node 24.11.0 → 25.3.3 (Node.js type definitions)
-- Update dompurify 3.3.1 → 3.3.2 (security library patch)
-- Update jsdom 27.4.0 → 28.1.0 (test environment update)
-- Update react-i18next 16.5.4 → 16.5.5 (i18n library patch)
+- Fix PowerVault ADAPT formula (currently hardcoded 85-87%, actual is `(N - 2×protection) / N` ≈ 67% for 12 drives)
+- Fix PowerStore RAID-5/6 formulas (currently hardcoded constants, actual uses stripe width + system overhead)
+- Validate/fix PowerScale N+x protection formulas
+- Validate/fix PowerFlex EC formulas
+- Validate/fix ObjectScale EC and geo-replication formulas
+- Add Dell Sizer reference test vectors for all fixed formulas
 
 ### Active
 
-<!-- Current scope for v1.1 — Dependency Maintenance -->
+<!-- Current scope for v1.2 — Dell Calculation Accuracy -->
 
-- [ ] Update all outdated npm packages to latest compatible versions
-- [ ] Verify all tests pass after updates
-- [ ] Verify lint and typecheck pass after updates
+- [ ] **DELL-01**: PowerVault ADAPT usable capacity uses dynamic formula `(N - 2×protection) / N`
+- [ ] **DELL-02**: PowerVault ADAPT results match Dell Sizer within 1% for reference configurations
+- [ ] **DELL-03**: PowerStore RAID-6 uses stripe-width-aware efficiency + system overhead
+- [ ] **DELL-04**: PowerStore RAID-5 formula validated and corrected against Dell Sizer
+- [ ] **DELL-05**: PowerStore results match Dell Sizer within 1% for reference configurations
+- [ ] **DELL-06**: PowerScale N+x formulas validated against Dell documentation
+- [ ] **DELL-07**: PowerFlex EC formulas validated against Dell documentation
+- [ ] **DELL-08**: ObjectScale EC and geo-replication formulas validated against Dell documentation
+- [ ] **DELL-09**: Dell Sizer reference test vectors added for all corrected formulas
+- [ ] **DELL-10**: All existing Dell tests updated with correct reference values (no regressions)
 
 ## Key Decisions
 
@@ -96,9 +104,10 @@ Calculation accuracy for storage infrastructure decisions. If Raidy gives wrong 
 | Vitest for testing                 | Already configured, Vite-native, fast          | — Pending                      |
 | Fix-in-place vs rewrite            | Existing code works, users depend on it        | — Pending                      |
 | Industry benchmarks for validation | WintelGuy, NetApp, OpenZFS are gold standards  | — Pending                      |
+| Dell Sizer as reference for Dell products | Official Dell capacity planning tool, output is ground truth for ADAPT/PowerStore/etc | — Pending |
 | Static-only architecture           | Original constraint, enables simple deployment | ✓ Good                         |
 | React 19 + Tailwind 4              | Modern stack, already in use                   | ⚠️ Revisit if stability issues |
 
 ---
 
-_Last updated: 2026-03-05 after milestone v1.1 started_
+_Last updated: 2026-03-25 after milestone v1.2 started_
