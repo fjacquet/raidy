@@ -3146,8 +3146,7 @@ describe('Volumetry Engine - Error Handling', () => {
   // ============================================================
 
   describe('PowerStore Snapshot Reserve', () => {
-    // SKIP: uses hardcoded 80% RAID-5 efficiency — correct DRE value for 10 drives is 88.9% (8+1)
-    it.skip('should calculate PowerStore RAID-5 with snapshot reserve', () => {
+    it('should calculate PowerStore RAID-5 with snapshot reserve', () => {
       const input: VolumetryInput = {
         ...createInput(10, { type: 'powerstore', level: 'powerstore_raid5' }),
         powerstoreOptions: {
@@ -3162,7 +3161,7 @@ describe('Volumetry Engine - Error Handling', () => {
 
       const result = calculateVolumetry(input)
 
-      // RAID-5: 80% efficiency base, minus 20% snapshot reserve
+      // RAID-5 DRE: 10 drives uses 8+1 = 88.89% efficiency base, minus 20% snapshot reserve
       expect(result.rawCapacity).toBe(10e12)
       expect(result.efficiency).toBeLessThan(80) // Reduced by snapshot reserve
       expect(Number.isFinite(result.efficiency)).toBe(true)
@@ -3174,8 +3173,7 @@ describe('Volumetry Engine - Error Handling', () => {
       expect(hasSnapshotReserve).toBe(true)
     })
 
-    // SKIP: uses hardcoded 75% RAID-6 efficiency — correct DRE value for 12 drives is 80% (8+2)
-    it.skip('should calculate PowerStore RAID-6 with snapshot reserve and compression', () => {
+    it('should calculate PowerStore RAID-6 with snapshot reserve and compression', () => {
       const input: VolumetryInput = {
         ...createInput(12, { type: 'powerstore', level: 'powerstore_raid6' }),
         powerstoreOptions: {
@@ -3190,7 +3188,7 @@ describe('Volumetry Engine - Error Handling', () => {
 
       const result = calculateVolumetry(input)
 
-      // RAID-6: 75% efficiency base, minus 15% snapshot reserve
+      // RAID-6 DRE: 12 drives uses 8+2 = 80% efficiency base, minus 15% snapshot reserve
       expect(result.rawCapacity).toBe(12e12)
       expect(Number.isFinite(result.efficiency)).toBe(true)
 
