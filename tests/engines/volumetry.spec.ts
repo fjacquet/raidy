@@ -25,6 +25,7 @@ import {
   type Topology,
 } from '@/types'
 import type { Drive } from '@/types/drive'
+import { dellAdaptVectors } from '../fixtures/dell-vectors'
 import { standardRAIDVectors } from '../fixtures/raid-vectors'
 import { vsanEsaVectors, vsanOsaVectors } from '../fixtures/vsan-vectors'
 import { zfsVectors } from '../fixtures/zfs-vectors'
@@ -3725,7 +3726,8 @@ describe('Volumetry Engine - Error Handling', () => {
   })
 
   describe('Volumetry Engine - PowerVault ADAPT Distributed RAID', () => {
-    it('should calculate PowerVault ADAPT efficiency for 12 drives (<24 drives = 85%)', () => {
+    // SKIP: Encodes wrong hardcoded 85%/87% efficiency. Correct formula is ((N-2)/N) * stripe_efficiency. See Dell Sizer ME5224 reference.
+    it.skip('should calculate PowerVault ADAPT efficiency for 12 drives (<24 drives = 85%)', () => {
       const input = createInput(12, { type: 'powervault', level: 'powervault_adapt' })
       const result = calculateVolumetry(input)
 
@@ -3735,7 +3737,8 @@ describe('Volumetry Engine - Error Handling', () => {
       expect(result.efficiency).toBeLessThan(86)
     })
 
-    it('should calculate PowerVault ADAPT efficiency for 24 drives (threshold = 87%)', () => {
+    // SKIP: Encodes wrong hardcoded 85%/87% efficiency. Correct formula is ((N-2)/N) * stripe_efficiency. See Dell Sizer ME5224 reference.
+    it.skip('should calculate PowerVault ADAPT efficiency for 24 drives (threshold = 87%)', () => {
       const input = createInput(24, { type: 'powervault', level: 'powervault_adapt' })
       const result = calculateVolumetry(input)
 
@@ -3745,7 +3748,8 @@ describe('Volumetry Engine - Error Handling', () => {
       expect(result.efficiency).toBeLessThan(88)
     })
 
-    it('should calculate PowerVault ADAPT efficiency for 36 drives (>24 drives = 87%)', () => {
+    // SKIP: Encodes wrong hardcoded 85%/87% efficiency. Correct formula is ((N-2)/N) * stripe_efficiency. See Dell Sizer ME5224 reference.
+    it.skip('should calculate PowerVault ADAPT efficiency for 36 drives (>24 drives = 87%)', () => {
       const input = createInput(36, { type: 'powervault', level: 'powervault_adapt' })
       const result = calculateVolumetry(input)
 
@@ -3755,7 +3759,8 @@ describe('Volumetry Engine - Error Handling', () => {
       expect(result.efficiency).toBeLessThan(88)
     })
 
-    it('should calculate PowerVault ADAPT efficiency for 18 drives (<24 drives = 85%)', () => {
+    // SKIP: Encodes wrong hardcoded 85%/87% efficiency. Correct formula is ((N-2)/N) * stripe_efficiency. See Dell Sizer ME5224 reference.
+    it.skip('should calculate PowerVault ADAPT efficiency for 18 drives (<24 drives = 85%)', () => {
       const input = createInput(18, { type: 'powervault', level: 'powervault_adapt' })
       const result = calculateVolumetry(input)
 
@@ -3763,6 +3768,92 @@ describe('Volumetry Engine - Error Handling', () => {
       // With FS overhead (~1.5%): 85% * 0.985 ≈ 83.7%
       expect(result.efficiency).toBeGreaterThan(82)
       expect(result.efficiency).toBeLessThan(86)
+    })
+  })
+
+  describe('Volumetry Engine - PowerVault ADAPT (Dell Sizer Reference)', () => {
+    describe.each(dellAdaptVectors)(
+      '$name',
+      ({ driveCount, driveCapacityBytes, expectedEfficiency, expectedUsableBytes, tolerance }) => {
+        it(`should produce ~${expectedEfficiency}% ADAPT efficiency for ${driveCount} drives`, () => {
+          const input = createInput(driveCount, { type: 'powervault', level: 'powervault_adapt' })
+          const result = calculateVolumetry(input)
+
+          // Dell Sizer reference: ADAPT formula is ((N-2)/N) * stripe_efficiency
+          // FS overhead (~1.5%) reduces efficiency slightly below the pure formula value
+          const fsOverheadPp = 2.0 // Max expected FS overhead in percentage points
+          const minEfficiency = expectedEfficiency - fsOverheadPp
+          const maxEfficiency = expectedEfficiency + 0.5 // Small upward tolerance
+          expect(result.efficiency).toBeGreaterThan(minEfficiency)
+          expect(result.efficiency).toBeLessThan(maxEfficiency)
+        })
+
+        it(
+          `should produce usable capacity within ${tolerance * 100}% of Dell Sizer reference for ${driveCount} drives`,
+          () => {
+            const refDrive: Drive = {
+              ...testDrive,
+              id: `dell-adapt-ref-${driveCount}`,
+              capacity_raw: driveCapacityBytes,
+            }
+            const input: VolumetryInput = {
+              ...createInput(driveCount, { type: 'powervault', level: 'powervault_adapt' }),
+              drive: refDrive,
+            }
+            const result = calculateVolumetry(input)
+
+            // Verify usable capacity is within tolerance of expected (pre-FS-overhead reference value)
+            // Allow an additional 2% for FS overhead model differences
+            const allowedDeviation = tolerance + 0.02
+            expect(
+              Math.abs(result.usableCapacity - expectedUsableBytes) / expectedUsableBytes,
+            ).toBeLessThan(allowedDeviation)
+          },
+        )
+      },
+    )
+
+    it('should produce different efficiency for 12 vs 24 drives (not static)', () => {
+      const input12 = createInput(12, { type: 'powervault', level: 'powervault_adapt' })
+      const input24 = createInput(24, { type: 'powervault', level: 'powervault_adapt' })
+      const result12 = calculateVolumetry(input12)
+      const result24 = calculateVolumetry(input24)
+
+      // 12-drive (8+2): ~66.67% vs 24-drive (16+2): ~81.48% — must differ by >10pp
+      expect(Math.abs(result24.efficiency - result12.efficiency)).toBeGreaterThan(10)
+    })
+
+    it('should match Dell Sizer ME5224 reference: 12x3.84TB -> ~27.93 TiB usable', () => {
+      // Create a 3.84TB drive matching the Dell Sizer reference
+      const me5Drive: Drive = {
+        ...testDrive,
+        id: 'me5-ssd-384tb',
+        model: 'Dell ME5 3.84TB SSD',
+        type: 'SSD',
+        formFactor: '2.5"',
+        interface: 'SAS',
+        capacity_raw: 3_840_000_000_000, // 3.84 TB (base-10)
+      }
+
+      const input: VolumetryInput = {
+        ...createInput(12, { type: 'powervault', level: 'powervault_adapt' }),
+        drive: me5Drive,
+      }
+      const result = calculateVolumetry(input)
+
+      // Dell Sizer reference: 27.93 TiB usable = 27.93 * 1024^4 = ~30,716,332,359,270 bytes
+      // Raw: 12 * 3.84TB = 46.08TB = 41.9 TiB
+      // Formula usable (before FS overhead): 12 * 3.84TB * ((12-2)/12) * (8/10) = 30.72 TB
+      // After FS overhead (~1.5%): ~30.26 TB = ~27.52 TiB
+      // Dell Sizer says 27.93 TiB — tolerance: within 1.5% of 27.93 TiB
+      const dellSizerUsableTiB = 27.93
+      const dellSizerUsableBytes = dellSizerUsableTiB * Math.pow(1024, 4)
+      const resultUsableTiB = result.usableCapacity / Math.pow(1024, 4)
+
+      // Within 1.5% of Dell Sizer (allows for FS overhead model differences while enforcing phase success criterion)
+      expect(Math.abs(resultUsableTiB - dellSizerUsableTiB) / dellSizerUsableTiB).toBeLessThan(
+        0.015,
+      )
     })
   })
 
