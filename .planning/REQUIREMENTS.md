@@ -34,8 +34,8 @@ Requirements for milestone v1.2 — Dell Calculation Accuracy. Each maps to road
 
 ### Test Suite
 
-- [ ] **DELL-11**: Dell Sizer reference test vectors added to `tests/fixtures/dell-vectors.ts` covering all corrected formulas (minimum: ME5224 ADAPT 12-drive and PowerStore 5200Q 35-drive reference cases)
-- [ ] **DELL-12**: All existing Dell topology tests updated with correct reference values derived from Dell Sizer; zero `.skip` markers remain; all tests pass; no regressions in other topology tests
+- [x] **DELL-11**: Dell Sizer reference test vectors added to `tests/fixtures/dell-vectors.ts` covering all corrected formulas (minimum: ME5224 ADAPT 12-drive and PowerStore 5200Q 35-drive reference cases)
+- [x] **DELL-12**: All existing Dell topology tests updated with correct reference values derived from Dell Sizer; zero `.skip` markers remain; all tests pass; no regressions in other topology tests
 
 ## v1.1 Requirements (complete)
 
@@ -82,8 +82,8 @@ Deferred to future release. Tracked but not in current roadmap.
 | DELL-08 | Phase 11 | Complete |
 | DELL-09 | Phase 12 | Complete |
 | DELL-10 | Phase 12 | Complete |
-| DELL-11 | Phase 13 | Pending |
-| DELL-12 | Phase 13 | Pending |
+| DELL-11 | Phase 13 | Complete |
+| DELL-12 | Phase 13 | Complete |
 
 **Coverage:**
 

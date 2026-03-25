@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Dell Calculation Accuracy
 status: unknown
-stopped_at: Completed 12-01-PLAN.md — Phase 12 and v1.2 milestone complete
-last_updated: "2026-03-25T21:03:27.081Z"
+stopped_at: Completed 13-01-PLAN.md
+last_updated: "2026-03-25T21:35:40.574Z"
 progress:
   total_phases: 6
   completed_phases: 5
-  total_plans: 5
-  completed_plans: 5
+  total_plans: 7
+  completed_plans: 6
 ---
 
 # Project State
@@ -20,12 +20,12 @@ See: .planning/PROJECT.md
 
 **Core value:** Calculation accuracy for storage infrastructure decisions. If Raidy gives wrong capacity numbers or resilience predictions, users could make incorrect (and costly) storage decisions. Everything else can fail; the math cannot.
 
-**Current focus:** Phase 12 — powerflex-objectscale-validation
+**Current focus:** Phase 13 — test-suite-cleanup
 
 ## Current Position
 
-Phase: 12 (powerflex-objectscale-validation) — COMPLETE
-Plan: 1 of 1 (all complete)
+Phase: 13 (test-suite-cleanup) — EXECUTING
+Plan: 2 of 2
 
 ## Performance Metrics
 
@@ -48,6 +48,7 @@ Plan: 1 of 1 (all complete)
 | Phase 10-powerstore-system-overhead-addition P01 | 23 | 3 tasks | 7 files |
 | Phase 11 P01 | 7 | 3 tasks | 4 files |
 | Phase 12 P01 | 5 | 2 tasks | 2 files |
+| Phase 13 P01 | 6 | 3 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -71,6 +72,7 @@ Plan: 1 of 1 (all complete)
 - [Phase 10-powerstore-system-overhead-addition]: PowerStore system overhead 5% default applied to capacityAfterParity, configurable via systemOverheadPercent on PowerStoreOptions
 - [Phase 11]: PowerScale N+x uses nodeCount (serverCount) not driveCount: OneFS protection is node-level, corrects 19pp error for multi-drive-per-node clusters
 - [Phase 12]: No formula fix needed: all PowerFlex and ObjectScale formulas use correct k/(k+m) EC math
+- [Phase 13]: units.ts + connectivityConstraints.ts provide sufficient coverage gain to reach 75% threshold without additional test files
 
 ### Reference Documents
 
@@ -92,6 +94,6 @@ Plan: 1 of 1 (all complete)
 
 ## Session Continuity
 
-Last session: 2026-03-25T20:59:18.995Z
-Stopped at: Completed 12-01-PLAN.md — Phase 12 and v1.2 milestone complete
+Last session: 2026-03-25T21:35:40.571Z
+Stopped at: Completed 13-01-PLAN.md
 Resume file: None
