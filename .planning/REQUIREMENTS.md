@@ -1,64 +1,95 @@
-# Requirements: Raidy — Dependency Maintenance
+# Requirements: Raidy
 
-**Defined:** 2026-03-05
+**Defined:** 2026-03-25
 **Core Value:** Calculation accuracy for storage infrastructure decisions. If Raidy gives wrong capacity numbers or resilience predictions, users could make incorrect (and costly) storage decisions. Everything else can fail; the math cannot.
 
-## v1.1 Requirements
+## v1.2 Requirements
 
-Requirements for milestone v1.1 Dependency Maintenance. Each maps to roadmap phases.
+Requirements for milestone v1.2 — Dell Calculation Accuracy. Each maps to roadmap phases 8–13.
 
-### Dependencies (Production)
+### PowerVault ADAPT
 
-- [x] **DEP-01**: Update dompurify from 3.3.1 to 3.3.2 (security library patch)
-- [x] **DEP-02**: Update react-i18next from 16.5.4 to 16.5.5 (i18n library patch)
+- [ ] **DELL-01**: PowerVault ADAPT usable capacity uses dynamic formula `((N-2)/N) × (8/10)` for ≤18 drives, `((N-2)/N) × (16/18)` for >18 drives — replacing hardcoded 85%/87% constants
+- [ ] **DELL-02**: PowerVault ADAPT results match Dell Sizer within 1% for the ME5224 reference configuration (12 × 3.84TB SSD, ADAPT 8+2: expected 27.93 TiB usable from 41.9 TiB raw)
 
-### Dev Dependencies
+### PowerStore
 
-- [x] **DEVDEP-01**: Update @biomejs/biome from 2.3.11 to 2.4.6 (linter minor version)
-- [x] **DEVDEP-02**: Update jsdom from 27.4.0 to 28.1.0 (test environment minor version)
-- [x] **DEVDEP-03**: Update @types/node from 24.11.0 to 25.3.3 (Node.js type definitions major version)
+- [ ] **DELL-03**: PowerStore RAID-6 efficiency computed from DRE geometry selection (4+2 for <8 drives, 8+2 for 8–19 drives, 16+2 for ≥20 drives) — replacing hardcoded 0.75 constant
+- [ ] **DELL-04**: PowerStore RAID-5 efficiency computed from DRE geometry selection (4+1 for <10 drives, 8+1 for ≥10 drives) — replacing hardcoded 0.80 constant
+- [ ] **DELL-05**: PowerStore applies system overhead (~5% default, configurable via `systemOverheadPercent`) on top of RAID parity efficiency
+- [ ] **DELL-06**: PowerStore results match Dell Sizer within 1% for the 5200Q reference configuration (35 × 30.72TB NVMe QLC, RAID 16+2: expected 801.57 TiB usable from 977.89 TiB raw)
 
-### Verification
+### PowerScale
 
-- [x] **VERIFY-01**: All automated tests pass after dependency updates (npm test — all tests green)
-- [x] **VERIFY-02**: Linter passes with zero errors after updates (npm run lint)
-- [x] **VERIFY-03**: TypeScript strict-mode typecheck passes after updates (npm run typecheck)
-- [x] **VERIFY-04**: Production build succeeds without warnings after updates (npm run build)
+- [ ] **DELL-07**: PowerScale N+x calculations use `serverCount` (node count) as the denominator instead of `driveCount`, fixing near-100% efficiency bug on multi-drive-per-node configurations
+- [ ] **DELL-08**: PowerScale N+x efficiency formulas validated against Dell OneFS documentation and confirmed within 1% tolerance
+
+### PowerFlex
+
+- [ ] **DELL-09**: PowerFlex EC formulas (2-way mirror, 3-way mirror, 4+1, 4+2, 8+2, 12+4) validated against Dell documentation; fixes applied only if divergence found
+
+### ObjectScale
+
+- [ ] **DELL-10**: ObjectScale EC formulas (12+4, 10+2, 24+4, mirror-3) validated against Dell documentation; fixes applied only if divergence found
+
+### Test Suite
+
+- [ ] **DELL-11**: Dell Sizer reference test vectors added to `tests/fixtures/dell-vectors.ts` covering all corrected formulas (minimum: ME5224 ADAPT 12-drive and PowerStore 5200Q 35-drive reference cases)
+- [ ] **DELL-12**: All existing Dell topology tests updated with correct reference values derived from Dell Sizer; zero `.skip` markers remain; all tests pass; no regressions in other topology tests
+
+## v1.1 Requirements (complete)
+
+### Dependency Maintenance
+
+- [x] **DEP-01**: Update dompurify from 3.3.1 to 3.3.2
+- [x] **DEP-02**: Update react-i18next from 16.5.4 to 16.5.5
+- [x] **DEVDEP-01**: Update @biomejs/biome from 2.3.11 to 2.4.6
+- [x] **DEVDEP-02**: Update jsdom from 27.4.0 to 28.1.0
+- [x] **DEVDEP-03**: Update @types/node from 24.11.0 to 25.3.3
+- [x] **VERIFY-01–04**: All tests, lint, typecheck, and build pass
 
 ## v2 Requirements
 
-(None — dependency updates are fully scoped to v1.1)
+Deferred to future release. Tracked but not in current roadmap.
+
+### Dell Advanced Features
+
+- PowerStore system overhead per appliance model class (1000T vs 3200 vs 5200Q differ)
+- ObjectScale two-site geo-replication factor (2.67× overhead for two-site XOR protection)
+- PowerScale small-file overhead modeling (requires workload file-size distribution as input)
+- PowerFlex FG metadata overhead per pool (varies with snapshot density)
 
 ## Out of Scope
 
 | Feature | Reason |
 |---------|--------|
-| Updating React, Vite, or Tailwind | Major framework versions — separate milestone due to higher risk |
-| Adding new dependencies | Not part of this maintenance pass |
-| Removing unused dependencies | Separate cleanup effort |
-| Updating non-listed packages | Only packages flagged by `npm outdated` in scope |
+| Backend services or APIs | Raidy must remain a static client-side SPA |
+| Breaking changes to URL hash schema | Existing shared links must remain valid |
+| New storage topologies | v1.2 scope is fixing existing Dell calculations, not adding new platforms |
+| Architectural rewrites | Fix surgically within existing strategy pattern |
 
 ## Traceability
 
-Which phases cover which requirements. Updated during roadmap creation.
-
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DEP-01 | Phase 7 | Complete |
-| DEP-02 | Phase 7 | Complete |
-| DEVDEP-01 | Phase 7 | Complete |
-| DEVDEP-02 | Phase 7 | Complete |
-| DEVDEP-03 | Phase 7 | Complete |
-| VERIFY-01 | Phase 7 | Complete |
-| VERIFY-02 | Phase 7 | Complete |
-| VERIFY-03 | Phase 7 | Complete |
-| VERIFY-04 | Phase 7 | Complete |
+| DELL-01 | Phase 8 | Pending |
+| DELL-02 | Phase 8 | Pending |
+| DELL-03 | Phase 9 | Pending |
+| DELL-04 | Phase 9 | Pending |
+| DELL-05 | Phase 10 | Pending |
+| DELL-06 | Phase 10 | Pending |
+| DELL-07 | Phase 11 | Pending |
+| DELL-08 | Phase 11 | Pending |
+| DELL-09 | Phase 12 | Pending |
+| DELL-10 | Phase 12 | Pending |
+| DELL-11 | Phase 13 | Pending |
+| DELL-12 | Phase 13 | Pending |
 
 **Coverage:**
-- v1.1 requirements: 9 total
-- Mapped to phases: 9
+- v1.2 requirements: 12 total
+- Mapped to phases: 12
 - Unmapped: 0 ✓
 
 ---
-*Requirements defined: 2026-03-05*
-*Last updated: 2026-03-05 after initial definition*
+*Requirements defined: 2026-03-25*
+*Last updated: 2026-03-25 after v1.2 initial definition*
