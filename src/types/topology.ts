@@ -326,6 +326,8 @@ export interface PowerStoreOptions {
   dedupRatio: number
   /** Snapshot reserve percentage */
   snapshotReservePercent: number
+  /** System overhead percentage (metadata, distributed spare, formatting). Default 5% from Dell Sizer 5200Q reference. */
+  systemOverheadPercent: number
 }
 
 /** Dell PowerScale-specific configuration options (Scale-out NAS) */
@@ -534,6 +536,7 @@ export const DEFAULT_POWERSTORE_OPTIONS: PowerStoreOptions = {
   dedup: false,
   dedupRatio: 1.0,
   snapshotReservePercent: 20,
+  systemOverheadPercent: 5,
 }
 
 /** Default PowerScale options */

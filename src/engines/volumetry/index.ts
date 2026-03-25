@@ -189,6 +189,7 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
     objectscaleSystemOverhead,
     objectscaleGeoOverhead,
     powerstoreSnapshotReserve,
+    powerstoreSystemOverhead,
     powerscaleSnapshotReserve,
     filesystemOverhead,
   } = overheads
@@ -204,6 +205,7 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
     objectscaleSystemOverhead -
     objectscaleGeoOverhead -
     powerstoreSnapshotReserve -
+    powerstoreSystemOverhead -
     powerscaleSnapshotReserve
   let usableCapacity = capacityForFs - filesystemOverhead
 
@@ -255,6 +257,7 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
     objectscaleSystemOverhead,
     objectscaleGeoOverhead,
     powerstoreSnapshotReserve,
+    powerstoreSystemOverhead,
     powerscaleSnapshotReserve,
     cephSafeCapacityReduction,
     filesystemOverhead,

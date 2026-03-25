@@ -34,6 +34,7 @@ export interface BreakdownInput {
   objectscaleSystemOverhead: number
   objectscaleGeoOverhead: number
   powerstoreSnapshotReserve: number
+  powerstoreSystemOverhead: number
   powerscaleSnapshotReserve: number
   cephSafeCapacityReduction: number
   filesystemOverhead: number
@@ -80,6 +81,7 @@ export function buildBreakdown(input: BreakdownInput): BreakdownEntry[] {
     objectscaleSystemOverhead,
     objectscaleGeoOverhead,
     powerstoreSnapshotReserve,
+    powerstoreSystemOverhead,
     powerscaleSnapshotReserve,
     cephSafeCapacityReduction,
     filesystemOverhead,
@@ -206,6 +208,15 @@ export function buildBreakdown(input: BreakdownInput): BreakdownEntry[] {
       label: 'PowerStore Snapshot Reserve',
       bytes: powerstoreSnapshotReserve,
       percent: (powerstoreSnapshotReserve / rawCapacity) * 100,
+      color: 'var(--color-overhead)',
+    })
+  }
+
+  if (powerstoreSystemOverhead > 0) {
+    breakdown.push({
+      label: 'PowerStore System Overhead',
+      bytes: powerstoreSystemOverhead,
+      percent: (powerstoreSystemOverhead / rawCapacity) * 100,
       color: 'var(--color-overhead)',
     })
   }

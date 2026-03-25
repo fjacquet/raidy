@@ -5,6 +5,7 @@
  * Reference: CLAUDE.md requires validation within 1% of WintelGuy and NetApp calculators.
  */
 
+import { dellStrategy } from '@engines/volumetry/strategies/dell'
 import * as fc from 'fast-check'
 import { describe, expect, it } from 'vitest'
 import { calculateVolumetry, type VolumetryInput } from '@/engines/volumetry'
@@ -25,8 +26,11 @@ import {
   type Topology,
 } from '@/types'
 import type { Drive } from '@/types/drive'
-import { dellAdaptVectors, dellPowerstore5200QVector, dellPowerstoreVectors } from '../fixtures/dell-vectors'
-import { dellStrategy } from '@engines/volumetry/strategies/dell'
+import {
+  dellAdaptVectors,
+  dellPowerstore5200QVector,
+  dellPowerstoreVectors,
+} from '../fixtures/dell-vectors'
 import { standardRAIDVectors } from '../fixtures/raid-vectors'
 import { vsanEsaVectors, vsanOsaVectors } from '../fixtures/vsan-vectors'
 import { zfsVectors } from '../fixtures/zfs-vectors'
@@ -3823,12 +3827,13 @@ describe('Volumetry Engine - Error Handling', () => {
       })
 
       it(`should produce correct usable capacity for ${driveCount} drives ${raidLevel}`, () => {
-        // Use snapshotReservePercent: 0 to isolate DRE data fraction from snapshot reserve
+        // Use snapshotReservePercent: 0 and systemOverheadPercent: 0 to isolate DRE data fraction
         const input: VolumetryInput = {
           ...createInput(driveCount, { type: 'powerstore', level: raidLevel }),
           powerstoreOptions: {
             ...DEFAULT_POWERSTORE_OPTIONS,
             snapshotReservePercent: 0,
+            systemOverheadPercent: 0, // Isolate DRE data fraction from system overhead
             compression: false,
             compressionRatio: 1.0,
             dedup: false,
@@ -3998,7 +4003,7 @@ describe('Volumetry Engine - Error Handling', () => {
       })
 
       const systemOverheadEntry = result.breakdown.find(
-        (e) => e.label === 'PowerStore System Overhead'
+        (e) => e.label === 'PowerStore System Overhead',
       )
       expect(systemOverheadEntry).toBeDefined()
       expect(systemOverheadEntry!.bytes).toBeGreaterThan(0)

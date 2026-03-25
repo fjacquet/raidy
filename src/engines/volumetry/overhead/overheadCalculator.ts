@@ -44,6 +44,7 @@ export interface OverheadResult {
   objectscaleSystemOverhead: number
   objectscaleGeoOverhead: number
   powerstoreSnapshotReserve: number
+  powerstoreSystemOverhead: number
   powerscaleSnapshotReserve: number
   cephSafeCapacityReduction: number
   filesystemOverhead: number
@@ -168,6 +169,13 @@ export function calculateOverheads(input: OverheadInput): OverheadResult {
       capacityAfterParity * (powerstoreOptions.snapshotReservePercent / 100)
   }
 
+  // PowerStore system overhead (metadata, distributed spare, formatting)
+  // Default 5% from Dell Sizer 5200Q reference case
+  let powerstoreSystemOverhead = 0
+  if (topology.type === 'powerstore') {
+    powerstoreSystemOverhead = capacityAfterParity * (powerstoreOptions.systemOverheadPercent / 100)
+  }
+
   // PowerScale snapshot reserve
   let powerscaleSnapshotReserve = 0
   if (topology.type === 'powerscale') {
@@ -192,6 +200,7 @@ export function calculateOverheads(input: OverheadInput): OverheadResult {
     objectscaleSystemOverhead -
     objectscaleGeoOverhead -
     powerstoreSnapshotReserve -
+    powerstoreSystemOverhead -
     powerscaleSnapshotReserve
   const filesystemOverhead = capacityForFs * fsOverheadPercent
 
@@ -213,6 +222,7 @@ export function calculateOverheads(input: OverheadInput): OverheadResult {
     objectscaleSystemOverhead +
     objectscaleGeoOverhead +
     powerstoreSnapshotReserve +
+    powerstoreSystemOverhead +
     powerscaleSnapshotReserve +
     cephSafeCapacityReduction +
     filesystemOverhead
@@ -228,6 +238,7 @@ export function calculateOverheads(input: OverheadInput): OverheadResult {
     objectscaleSystemOverhead,
     objectscaleGeoOverhead,
     powerstoreSnapshotReserve,
+    powerstoreSystemOverhead,
     powerscaleSnapshotReserve,
     cephSafeCapacityReduction,
     filesystemOverhead,
