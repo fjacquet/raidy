@@ -25,7 +25,7 @@ import {
   type Topology,
 } from '@/types'
 import type { Drive } from '@/types/drive'
-import { dellAdaptVectors, dellPowerstoreVectors } from '../fixtures/dell-vectors'
+import { dellAdaptVectors, dellPowerstore5200QVector, dellPowerstoreVectors } from '../fixtures/dell-vectors'
 import { dellStrategy } from '@engines/volumetry/strategies/dell'
 import { standardRAIDVectors } from '../fixtures/raid-vectors'
 import { vsanEsaVectors, vsanOsaVectors } from '../fixtures/vsan-vectors'
@@ -3925,6 +3925,144 @@ describe('Volumetry Engine - Error Handling', () => {
       const efficiencyDecimal = result.efficiency / 100
       expect(efficiencyDecimal).toBeGreaterThan(0.72)
       expect(efficiencyDecimal).toBeLessThan(0.78)
+    })
+  })
+
+  describe('PowerStore System Overhead (Dell Sizer 5200Q reference)', () => {
+    it('should produce usable capacity within 2% of Dell Sizer for 5200Q 35-drive RAID-6', () => {
+      const vec = dellPowerstore5200QVector
+      const TiB = 1024 ** 4
+
+      const result = calculateVolumetry({
+        drive: { ...testDrive, capacity_raw: vec.driveCapacityBytes },
+        driveCount: vec.driveCount,
+        hotSpares: 0,
+        serverCount: 1,
+        topology: { type: 'powerstore', level: vec.raidLevel },
+        zfsOptions: DEFAULT_ZFS_OPTIONS,
+        s2dOptions: DEFAULT_S2D_OPTIONS,
+        vsanOptions: DEFAULT_VSAN_OPTIONS,
+        objectscaleOptions: DEFAULT_OBJECTSCALE_OPTIONS,
+        powerstoreOptions: {
+          ...DEFAULT_POWERSTORE_OPTIONS,
+          snapshotReservePercent: vec.snapshotReservePercent,
+          systemOverheadPercent: vec.systemOverheadPercent,
+        },
+        powerscaleOptions: DEFAULT_POWERSCALE_OPTIONS,
+        cephOptions: DEFAULT_CEPH_OPTIONS,
+        powerFlexOptions: DEFAULT_POWERFLEX_OPTIONS,
+        netAppOptions: DEFAULT_NETAPP_OPTIONS,
+        synologyOptions: DEFAULT_SYNOLOGY_OPTIONS,
+        nutanixOptions: DEFAULT_NUTANIX_OPTIONS,
+        powervaultOptions: DEFAULT_POWERVAULT_OPTIONS,
+        compressionRatio: 1.0,
+        dedupRatio: 1.0,
+        fsType: 'xfs',
+      })
+
+      const usableTiB = result.usableCapacity / TiB
+      const lowerBound = vec.expectedUsableTiB * (1 - vec.tolerance)
+      const upperBound = vec.expectedUsableTiB * (1 + vec.tolerance)
+      expect(usableTiB).toBeGreaterThanOrEqual(lowerBound)
+      expect(usableTiB).toBeLessThanOrEqual(upperBound)
+    })
+
+    it('should show PowerStore System Overhead as distinct breakdown line item', () => {
+      const vec = dellPowerstore5200QVector
+
+      const result = calculateVolumetry({
+        drive: { ...testDrive, capacity_raw: vec.driveCapacityBytes },
+        driveCount: vec.driveCount,
+        hotSpares: 0,
+        serverCount: 1,
+        topology: { type: 'powerstore', level: vec.raidLevel },
+        zfsOptions: DEFAULT_ZFS_OPTIONS,
+        s2dOptions: DEFAULT_S2D_OPTIONS,
+        vsanOptions: DEFAULT_VSAN_OPTIONS,
+        objectscaleOptions: DEFAULT_OBJECTSCALE_OPTIONS,
+        powerstoreOptions: {
+          ...DEFAULT_POWERSTORE_OPTIONS,
+          snapshotReservePercent: 0,
+          systemOverheadPercent: 5,
+        },
+        powerscaleOptions: DEFAULT_POWERSCALE_OPTIONS,
+        cephOptions: DEFAULT_CEPH_OPTIONS,
+        powerFlexOptions: DEFAULT_POWERFLEX_OPTIONS,
+        netAppOptions: DEFAULT_NETAPP_OPTIONS,
+        synologyOptions: DEFAULT_SYNOLOGY_OPTIONS,
+        nutanixOptions: DEFAULT_NUTANIX_OPTIONS,
+        powervaultOptions: DEFAULT_POWERVAULT_OPTIONS,
+        compressionRatio: 1.0,
+        dedupRatio: 1.0,
+        fsType: 'xfs',
+      })
+
+      const systemOverheadEntry = result.breakdown.find(
+        (e) => e.label === 'PowerStore System Overhead'
+      )
+      expect(systemOverheadEntry).toBeDefined()
+      expect(systemOverheadEntry!.bytes).toBeGreaterThan(0)
+    })
+
+    it('should reduce usable capacity below post-parity by systemOverheadPercent', () => {
+      const result5 = calculateVolumetry({
+        drive: { ...testDrive, capacity_raw: 1_000_000_000_000 },
+        driveCount: 20,
+        hotSpares: 0,
+        serverCount: 1,
+        topology: { type: 'powerstore', level: 'powerstore_raid6' },
+        zfsOptions: DEFAULT_ZFS_OPTIONS,
+        s2dOptions: DEFAULT_S2D_OPTIONS,
+        vsanOptions: DEFAULT_VSAN_OPTIONS,
+        objectscaleOptions: DEFAULT_OBJECTSCALE_OPTIONS,
+        powerstoreOptions: {
+          ...DEFAULT_POWERSTORE_OPTIONS,
+          snapshotReservePercent: 0,
+          systemOverheadPercent: 5,
+        },
+        powerscaleOptions: DEFAULT_POWERSCALE_OPTIONS,
+        cephOptions: DEFAULT_CEPH_OPTIONS,
+        powerFlexOptions: DEFAULT_POWERFLEX_OPTIONS,
+        netAppOptions: DEFAULT_NETAPP_OPTIONS,
+        synologyOptions: DEFAULT_SYNOLOGY_OPTIONS,
+        nutanixOptions: DEFAULT_NUTANIX_OPTIONS,
+        powervaultOptions: DEFAULT_POWERVAULT_OPTIONS,
+        compressionRatio: 1.0,
+        dedupRatio: 1.0,
+        fsType: 'xfs',
+      })
+
+      const result0 = calculateVolumetry({
+        drive: { ...testDrive, capacity_raw: 1_000_000_000_000 },
+        driveCount: 20,
+        hotSpares: 0,
+        serverCount: 1,
+        topology: { type: 'powerstore', level: 'powerstore_raid6' },
+        zfsOptions: DEFAULT_ZFS_OPTIONS,
+        s2dOptions: DEFAULT_S2D_OPTIONS,
+        vsanOptions: DEFAULT_VSAN_OPTIONS,
+        objectscaleOptions: DEFAULT_OBJECTSCALE_OPTIONS,
+        powerstoreOptions: {
+          ...DEFAULT_POWERSTORE_OPTIONS,
+          snapshotReservePercent: 0,
+          systemOverheadPercent: 0,
+        },
+        powerscaleOptions: DEFAULT_POWERSCALE_OPTIONS,
+        cephOptions: DEFAULT_CEPH_OPTIONS,
+        powerFlexOptions: DEFAULT_POWERFLEX_OPTIONS,
+        netAppOptions: DEFAULT_NETAPP_OPTIONS,
+        synologyOptions: DEFAULT_SYNOLOGY_OPTIONS,
+        nutanixOptions: DEFAULT_NUTANIX_OPTIONS,
+        powervaultOptions: DEFAULT_POWERVAULT_OPTIONS,
+        compressionRatio: 1.0,
+        dedupRatio: 1.0,
+        fsType: 'xfs',
+      })
+
+      // With 5% system overhead, usable should be ~5% less than without
+      const reduction = (result0.usableCapacity - result5.usableCapacity) / result0.usableCapacity
+      expect(reduction).toBeGreaterThan(0.04) // At least 4% reduction
+      expect(reduction).toBeLessThan(0.06) // At most 6% reduction
     })
   })
 })

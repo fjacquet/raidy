@@ -157,3 +157,46 @@ export const dellPowerstoreVectors: DellPowerstoreVector[] = [
     source: 'Dell KB 000188491: >=10 drives uses 8+1 DRE geometry',
   },
 ]
+
+/**
+ * Dell Sizer end-to-end reference vector for PowerStore 5200Q.
+ *
+ * Reference: Dell Sizer PPTX — PowerStore 5200Q, 35x30.72TB NVMe QLC, RAID(16+2)
+ * Raw: 977.89 TiB = 35 * 30.72TB / (1024^4/1e12) = 35 * 30_720_000_000_000 bytes
+ * Dell Sizer Usable: 801.57 TiB
+ *
+ * Calculation chain:
+ *   rawBytes = 35 * 30_720_000_000_000 = 1_075_200_000_000_000
+ *   dataFraction (16+2 DRE, >=20 drives) = 16/18 = 0.88889
+ *   capacityAfterParity = 1_075_200_000_000_000 * (16/18) = 955_733_333_333_333
+ *   systemOverhead (5%) = 955_733_333_333_333 * 0.05 = 47_786_666_666_667
+ *   snapshotReserve (0% for this test) = 0
+ *   afterOverheads = 955_733_333_333_333 - 47_786_666_666_667 = 907_946_666_666_666
+ *   Dell Sizer usable = 801.57 TiB = 881_326_213_857_689 bytes (approx)
+ *   Tolerance: 2% (accounts for FS overhead and model-specific variation)
+ */
+export interface DellPowerstore5200QVector {
+  name: string
+  driveCount: number
+  driveCapacityBytes: number
+  raidLevel: 'powerstore_raid6'
+  systemOverheadPercent: number
+  snapshotReservePercent: number
+  expectedUsableTiB: number
+  expectedRawTiB: number
+  tolerance: number
+  source: string
+}
+
+export const dellPowerstore5200QVector: DellPowerstore5200QVector = {
+  name: 'PowerStore 5200Q 35x30.72TB NVMe RAID(16+2) — Dell Sizer reference',
+  driveCount: 35,
+  driveCapacityBytes: 30_720_000_000_000, // 30.72 TB
+  raidLevel: 'powerstore_raid6',
+  systemOverheadPercent: 5,
+  snapshotReservePercent: 0, // Isolate system overhead from snapshot reserve
+  expectedUsableTiB: 801.57,
+  expectedRawTiB: 977.89,
+  tolerance: 0.02, // 2% tolerance (accounts for FS overhead differences)
+  source: 'Dell Sizer PPTX: PowerStore 5200Q 35x30.72TB NVMe QLC RAID(16+2)',
+}
