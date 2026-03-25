@@ -3725,52 +3725,6 @@ describe('Volumetry Engine - Error Handling', () => {
     })
   })
 
-  describe('Volumetry Engine - PowerVault ADAPT Distributed RAID', () => {
-    // SKIP: Encodes wrong hardcoded 85%/87% efficiency. Correct formula is ((N-2)/N) * stripe_efficiency. See Dell Sizer ME5224 reference.
-    it.skip('should calculate PowerVault ADAPT efficiency for 12 drives (<24 drives = 85%)', () => {
-      const input = createInput(12, { type: 'powervault', level: 'powervault_adapt' })
-      const result = calculateVolumetry(input)
-
-      // ADAPT with <24 drives: 85% efficiency
-      // With FS overhead (~1.5%): 85% * 0.985 ≈ 83.7%
-      expect(result.efficiency).toBeGreaterThan(82)
-      expect(result.efficiency).toBeLessThan(86)
-    })
-
-    // SKIP: Encodes wrong hardcoded 85%/87% efficiency. Correct formula is ((N-2)/N) * stripe_efficiency. See Dell Sizer ME5224 reference.
-    it.skip('should calculate PowerVault ADAPT efficiency for 24 drives (threshold = 87%)', () => {
-      const input = createInput(24, { type: 'powervault', level: 'powervault_adapt' })
-      const result = calculateVolumetry(input)
-
-      // ADAPT with 24+ drives: 87% efficiency
-      // With FS overhead (~1.5%): 87% * 0.985 ≈ 85.7%
-      expect(result.efficiency).toBeGreaterThan(84)
-      expect(result.efficiency).toBeLessThan(88)
-    })
-
-    // SKIP: Encodes wrong hardcoded 85%/87% efficiency. Correct formula is ((N-2)/N) * stripe_efficiency. See Dell Sizer ME5224 reference.
-    it.skip('should calculate PowerVault ADAPT efficiency for 36 drives (>24 drives = 87%)', () => {
-      const input = createInput(36, { type: 'powervault', level: 'powervault_adapt' })
-      const result = calculateVolumetry(input)
-
-      // ADAPT with 24+ drives: 87% efficiency
-      // With FS overhead (~1.5%): 87% * 0.985 ≈ 85.7%
-      expect(result.efficiency).toBeGreaterThan(84)
-      expect(result.efficiency).toBeLessThan(88)
-    })
-
-    // SKIP: Encodes wrong hardcoded 85%/87% efficiency. Correct formula is ((N-2)/N) * stripe_efficiency. See Dell Sizer ME5224 reference.
-    it.skip('should calculate PowerVault ADAPT efficiency for 18 drives (<24 drives = 85%)', () => {
-      const input = createInput(18, { type: 'powervault', level: 'powervault_adapt' })
-      const result = calculateVolumetry(input)
-
-      // ADAPT with <24 drives: 85% efficiency
-      // With FS overhead (~1.5%): 85% * 0.985 ≈ 83.7%
-      expect(result.efficiency).toBeGreaterThan(82)
-      expect(result.efficiency).toBeLessThan(86)
-    })
-  })
-
   describe('Volumetry Engine - PowerVault ADAPT (Dell Sizer Reference)', () => {
     describe.each(dellAdaptVectors)('$name', ({
       driveCount,
