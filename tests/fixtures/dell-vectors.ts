@@ -200,3 +200,117 @@ export const dellPowerstore5200QVector: DellPowerstore5200QVector = {
   tolerance: 0.02, // 2% tolerance (accounts for FS overhead differences)
   source: 'Dell Sizer PPTX: PowerStore 5200Q 35x30.72TB NVMe QLC RAID(16+2)',
 }
+
+/**
+ * Dell OneFS reference vectors for PowerScale N+x protection.
+ *
+ * OneFS protection formula: N/(N+M) where:
+ *   N = number of data nodes
+ *   M = protection level (1 for N+1, 2 for N+2, etc.)
+ *
+ * CRITICAL: The denominator is NODE COUNT, not drive count.
+ * A 10-node cluster with 36 drives per node has efficiency (10-2)/10 = 80%,
+ * NOT (360-2)/360 = 99.4%.
+ *
+ * Reference: Dell Info Hub -- OneFS protection overhead formula M/(N+M)
+ */
+export interface DellPowerscaleVector {
+  name: string
+  level:
+    | 'powerscale_n1'
+    | 'powerscale_n2'
+    | 'powerscale_n2_1'
+    | 'powerscale_n3'
+    | 'powerscale_n4'
+    | 'powerscale_mirror_2x'
+    | 'powerscale_mirror_3x'
+  nodeCount: number
+  drivesPerNode: number
+  totalDriveCount: number // nodeCount * drivesPerNode
+  expectedDataFraction: number // decimal (0-1)
+  tolerance: number
+  source: string
+}
+
+export const dellPowerscaleVectors: DellPowerscaleVector[] = [
+  {
+    name: 'PowerScale N+1 4 nodes x 36 drives (75%)',
+    level: 'powerscale_n1',
+    nodeCount: 4,
+    drivesPerNode: 36,
+    totalDriveCount: 144,
+    expectedDataFraction: 3 / 4, // (4-1)/4 = 0.75
+    tolerance: 0.001,
+    source: 'Dell OneFS: N+1 protection, N/(N+M) where N=4, M=1',
+  },
+  {
+    name: 'PowerScale N+2 10 nodes x 36 drives (80%)',
+    level: 'powerscale_n2',
+    nodeCount: 10,
+    drivesPerNode: 36,
+    totalDriveCount: 360,
+    expectedDataFraction: 8 / 10, // (10-2)/10 = 0.80
+    tolerance: 0.001,
+    source: 'Dell OneFS: N+2 protection, N/(N+M) where N=10, M=2',
+  },
+  {
+    name: 'PowerScale N+2 5 nodes x 12 drives (60%)',
+    level: 'powerscale_n2',
+    nodeCount: 5,
+    drivesPerNode: 12,
+    totalDriveCount: 60,
+    expectedDataFraction: 3 / 5, // (5-2)/5 = 0.60
+    tolerance: 0.001,
+    source: 'Dell OneFS: N+2 protection, N/(N+M) where N=5, M=2',
+  },
+  {
+    name: 'PowerScale N+2:1 6 nodes x 24 drives (66.67%)',
+    level: 'powerscale_n2_1',
+    nodeCount: 6,
+    drivesPerNode: 24,
+    totalDriveCount: 144,
+    expectedDataFraction: 4 / 6, // (6-2)/6 = 0.6667
+    tolerance: 0.001,
+    source: 'Dell OneFS: N+2:1 protection, N/(N+M) where N=6, M=2',
+  },
+  {
+    name: 'PowerScale N+3 8 nodes x 24 drives (62.5%)',
+    level: 'powerscale_n3',
+    nodeCount: 8,
+    drivesPerNode: 24,
+    totalDriveCount: 192,
+    expectedDataFraction: 5 / 8, // (8-3)/8 = 0.625
+    tolerance: 0.001,
+    source: 'Dell OneFS: N+3 protection, N/(N+M) where N=8, M=3',
+  },
+  {
+    name: 'PowerScale N+4 10 nodes x 20 drives (60%)',
+    level: 'powerscale_n4',
+    nodeCount: 10,
+    drivesPerNode: 20,
+    totalDriveCount: 200,
+    expectedDataFraction: 6 / 10, // (10-4)/10 = 0.60
+    tolerance: 0.001,
+    source: 'Dell OneFS: N+4 protection, N/(N+M) where N=10, M=4',
+  },
+  {
+    name: 'PowerScale mirror_2x (always 50%)',
+    level: 'powerscale_mirror_2x',
+    nodeCount: 6,
+    drivesPerNode: 12,
+    totalDriveCount: 72,
+    expectedDataFraction: 0.5,
+    tolerance: 0.001,
+    source: 'Dell OneFS: 2x mirroring is always 50% regardless of node count',
+  },
+  {
+    name: 'PowerScale mirror_3x (always 33.33%)',
+    level: 'powerscale_mirror_3x',
+    nodeCount: 6,
+    drivesPerNode: 12,
+    totalDriveCount: 72,
+    expectedDataFraction: 1 / 3,
+    tolerance: 0.001,
+    source: 'Dell OneFS: 3x mirroring is always 33.33% regardless of node count',
+  },
+]

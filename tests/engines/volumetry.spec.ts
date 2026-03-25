@@ -28,6 +28,7 @@ import {
 import type { Drive } from '@/types/drive'
 import {
   dellAdaptVectors,
+  dellPowerscaleVectors,
   dellPowerstore5200QVector,
   dellPowerstoreVectors,
 } from '../fixtures/dell-vectors'
@@ -3204,7 +3205,7 @@ describe('Volumetry Engine - Error Handling', () => {
   describe('PowerScale Snapshot Reserve', () => {
     it('should calculate PowerScale N+2 with snapshot reserve', () => {
       const input: VolumetryInput = {
-        ...createInput(10, { type: 'powerscale', level: 'powerscale_n2' }),
+        ...createInput(10, { type: 'powerscale', level: 'powerscale_n2' }, 0, 10),
         powerscaleOptions: {
           ...DEFAULT_POWERSCALE_OPTIONS,
           snapshotReservePercent: 25, // 25% snapshot reserve
@@ -3231,7 +3232,7 @@ describe('Volumetry Engine - Error Handling', () => {
 
     it('should calculate PowerScale N+3 with snapshot reserve and dedup', () => {
       const input: VolumetryInput = {
-        ...createInput(12, { type: 'powerscale', level: 'powerscale_n3' }),
+        ...createInput(12, { type: 'powerscale', level: 'powerscale_n3' }, 0, 12),
         powerscaleOptions: {
           ...DEFAULT_POWERSCALE_OPTIONS,
           snapshotReservePercent: 20, // 20% snapshot reserve
@@ -3254,7 +3255,7 @@ describe('Volumetry Engine - Error Handling', () => {
 
     it('should calculate PowerScale N+4 with snapshot reserve', () => {
       const input: VolumetryInput = {
-        ...createInput(20, { type: 'powerscale', level: 'powerscale_n4' }),
+        ...createInput(20, { type: 'powerscale', level: 'powerscale_n4' }, 0, 20),
         powerscaleOptions: {
           ...DEFAULT_POWERSCALE_OPTIONS,
           snapshotReservePercent: 30, // 30% snapshot reserve
@@ -3268,9 +3269,89 @@ describe('Volumetry Engine - Error Handling', () => {
       const result = calculateVolumetry(input)
 
       // N+4: (20-4)/20 = 80% efficiency base, minus 30% snapshot reserve
+      // serverCount=N: 1 drive per node (single-drive-per-node cluster)
       expect(result.rawCapacity).toBe(20e12)
       expect(result.efficiency).toBeLessThan(80)
       expect(Number.isFinite(result.efficiency)).toBe(true)
+    })
+  })
+
+  // ============================================================
+  // PowerScale OneFS Reference Vectors (Phase 11)
+  // ============================================================
+
+  describe('Volumetry Engine - PowerScale OneFS (Dell Info Hub Reference)', () => {
+    describe.each(dellPowerscaleVectors)('$name', ({
+      level,
+      nodeCount,
+      totalDriveCount,
+      expectedDataFraction,
+      tolerance,
+    }) => {
+      it(`should return data fraction ${(expectedDataFraction * 100).toFixed(2)}% for ${nodeCount} nodes`, () => {
+        // Pass serverCount via options (mirrors vSAN pattern)
+        const result = dellStrategy.calculateDataFraction(level, totalDriveCount, { serverCount: nodeCount })
+        expect(result).toBeCloseTo(expectedDataFraction, 3)
+      })
+
+      it(`should produce correct usable capacity for ${nodeCount} nodes x ${totalDriveCount} drives`, () => {
+        const input: VolumetryInput = {
+          ...createInput(totalDriveCount, { type: 'powerscale', level }, 0, nodeCount),
+          powerscaleOptions: {
+            ...DEFAULT_POWERSCALE_OPTIONS,
+            snapshotReservePercent: 0, // Isolate data fraction from snapshot reserve
+            compression: false,
+            compressionRatio: 1.0,
+            dedup: false,
+            dedupRatio: 1.0,
+          },
+        }
+        const result = calculateVolumetry(input)
+        const expectedRaw = totalDriveCount * 1_000_000_000_000
+        expect(result.rawCapacity).toBe(expectedRaw)
+        // Usable capacity should reflect node-based data fraction (before FS overhead)
+        const expectedUsableBeforeFs = expectedRaw * expectedDataFraction
+        expect(result.usableCapacity).toBeLessThanOrEqual(expectedUsableBeforeFs * (1 + tolerance))
+        expect(result.usableCapacity).toBeGreaterThan(expectedUsableBeforeFs * 0.95) // Allow FS overhead
+      })
+    })
+
+    it('should change efficiency when nodeCount changes but driveCount stays constant', () => {
+      // Same total drives (120), different node counts
+      // 4 nodes x 30 drives: N+2 = (4-2)/4 = 50%
+      const input4 = {
+        ...createInput(120, { type: 'powerscale', level: 'powerscale_n2' }, 0, 4),
+        powerscaleOptions: {
+          ...DEFAULT_POWERSCALE_OPTIONS,
+          snapshotReservePercent: 0,
+          compression: false,
+          compressionRatio: 1.0,
+          dedup: false,
+          dedupRatio: 1.0,
+        },
+      }
+      // 10 nodes x 12 drives: N+2 = (10-2)/10 = 80%
+      const input10 = {
+        ...createInput(120, { type: 'powerscale', level: 'powerscale_n2' }, 0, 10),
+        powerscaleOptions: {
+          ...DEFAULT_POWERSCALE_OPTIONS,
+          snapshotReservePercent: 0,
+          compression: false,
+          compressionRatio: 1.0,
+          dedup: false,
+          dedupRatio: 1.0,
+        },
+      }
+      const result4 = calculateVolumetry(input4)
+      const result10 = calculateVolumetry(input10)
+
+      // Same raw capacity
+      expect(result4.rawCapacity).toBe(result10.rawCapacity)
+      // Different efficiencies: 4-node should be LOWER than 10-node
+      expect(result4.efficiency).toBeLessThan(result10.efficiency)
+      // 4-node N+2: ~50% efficiency, 10-node N+2: ~80% efficiency
+      expect(result4.efficiency).toBeLessThan(55)
+      expect(result10.efficiency).toBeGreaterThan(75)
     })
   })
 
@@ -4006,7 +4087,7 @@ describe('Volumetry Engine - Error Handling', () => {
         (e) => e.label === 'PowerStore System Overhead',
       )
       expect(systemOverheadEntry).toBeDefined()
-      expect(systemOverheadEntry!.bytes).toBeGreaterThan(0)
+      expect(systemOverheadEntry?.bytes).toBeGreaterThan(0)
     })
 
     it('should reduce usable capacity below post-parity by systemOverheadPercent', () => {
