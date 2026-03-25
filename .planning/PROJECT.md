@@ -88,8 +88,8 @@ Calculation accuracy for storage infrastructure decisions. If Raidy gives wrong 
 
 - [x] **DELL-01**: PowerVault ADAPT usable capacity uses dynamic formula `(N - 2×protection) / N` — Validated in Phase 8: PowerVault ADAPT Formula Fix
 - [x] **DELL-02**: PowerVault ADAPT results match Dell Sizer within 1% for reference configurations — Validated in Phase 8: PowerVault ADAPT Formula Fix
-- [ ] **DELL-03**: PowerStore RAID-6 uses stripe-width-aware efficiency + system overhead
-- [ ] **DELL-04**: PowerStore RAID-5 formula validated and corrected against Dell Sizer
+- [x] **DELL-03**: PowerStore RAID-6 uses stripe-width-aware efficiency + system overhead — Validated in Phase 9: PowerStore Data Fraction Fix
+- [x] **DELL-04**: PowerStore RAID-5 formula validated and corrected against Dell Sizer — Validated in Phase 9: PowerStore Data Fraction Fix
 - [ ] **DELL-05**: PowerStore results match Dell Sizer within 1% for reference configurations
 - [ ] **DELL-06**: PowerScale N+x formulas validated against Dell documentation
 - [ ] **DELL-07**: PowerFlex EC formulas validated against Dell documentation
@@ -110,4 +110,4 @@ Calculation accuracy for storage infrastructure decisions. If Raidy gives wrong 
 
 ---
 
-_Last updated: 2026-03-25 after Phase 8 (PowerVault ADAPT Formula Fix) complete_
+_Last updated: 2026-03-25 after Phase 9 (PowerStore Data Fraction Fix) complete_
