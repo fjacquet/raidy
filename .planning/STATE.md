@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Dell Calculation Accuracy
 status: unknown
-stopped_at: Completed 08-01-PLAN.md
-last_updated: "2026-03-25T18:17:32.044Z"
+stopped_at: Completed 09-01-PLAN.md
+last_updated: "2026-03-25T18:45:29.778Z"
 progress:
   total_phases: 6
-  completed_phases: 1
-  total_plans: 1
-  completed_plans: 1
+  completed_phases: 2
+  total_plans: 2
+  completed_plans: 2
 ---
 
 # Project State
@@ -20,11 +20,11 @@ See: .planning/PROJECT.md
 
 **Core value:** Calculation accuracy for storage infrastructure decisions. If Raidy gives wrong capacity numbers or resilience predictions, users could make incorrect (and costly) storage decisions. Everything else can fail; the math cannot.
 
-**Current focus:** Phase 08 — powervault-adapt-formula-fix
+**Current focus:** Phase 09 — powerstore-data-fraction-fix
 
 ## Current Position
 
-Phase: 08 (powervault-adapt-formula-fix) — EXECUTING
+Phase: 09 (powerstore-data-fraction-fix) — EXECUTING
 Plan: 1 of 1
 
 ## Performance Metrics
@@ -44,6 +44,7 @@ Plan: 1 of 1
 | 4 - Code Quality           | 10/10 | 80min | 8.0min   |
 | 7 - Dependency Maintenance | 3/3   | —     | —        |
 | Phase 08 P01 | 8 | 3 tasks | 3 files |
+| Phase 09-powerstore-data-fraction-fix P01 | 8 | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -61,6 +62,9 @@ Plan: 1 of 1
 
 - [Phase 08]: ADAPT threshold at >18 drives: 8+2 stripe for <=18, 16+2 for >18 per Dell ME5 Admin Guide
 - [Phase 08]: TDD protocol: skip wrong tests first, add correct reference tests (RED), fix formula (GREEN), then delete skipped tests
+- [Phase 09]: PowerStore RAID-6 DRE geometry: <8 drives=4/6 (66.67%), 8-19=8/10 (80%), >=20=16/18 (88.89%) per Dell KB 000188491
+- [Phase 09]: PowerStore RAID-5 DRE geometry: <10 drives=4/5 (80%), >=10=8/9 (88.89%) per Dell KB 000188491
+- [Phase 09]: DRE test isolation: set snapshotReservePercent:0 in usable capacity tests to separate DRE data fraction from snapshot overhead
 
 ### Reference Documents
 
@@ -82,6 +86,6 @@ Plan: 1 of 1
 
 ## Session Continuity
 
-Last session: 2026-03-25T18:12:39.792Z
-Stopped at: Completed 08-01-PLAN.md
+Last session: 2026-03-25T18:45:29.775Z
+Stopped at: Completed 09-01-PLAN.md
 Resume file: None
