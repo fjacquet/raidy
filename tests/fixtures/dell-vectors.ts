@@ -62,3 +62,98 @@ export const dellAdaptVectors: DellAdaptVector[] = [
     source: 'Dell ME5 Admin Guide: 16+2 stripe for >18 drives',
   },
 ]
+
+/**
+ * Dell KB 000188491 reference vectors for PowerStore DRE geometry.
+ *
+ * PowerStore uses Drive Rebuild Efficiency (DRE) with drive-count-aware stripe widths:
+ * - RAID-6: <8 drives uses 4+2 (66.67%), 8-19 drives uses 8+2 (80%), >=20 drives uses 16+2 (88.89%)
+ * - RAID-5: <10 drives uses 4+1 (80%), >=10 drives uses 8+1 (88.89%)
+ *
+ * Reference: Dell KB 000188491, PowerStore 5200Q (35x30.72TB NVMe, RAID(16+2))
+ */
+export interface DellPowerstoreVector {
+  name: string
+  driveCount: number
+  raidLevel: 'powerstore_raid5' | 'powerstore_raid6'
+  driveCapacityBytes: number
+  expectedEfficiency: number // percentage (0-100)
+  expectedDataFraction: number // decimal (0-1), the raw return from calculateDataFraction
+  tolerance: number
+  source: string
+}
+
+export const dellPowerstoreVectors: DellPowerstoreVector[] = [
+  // RAID-6 DRE geometry (Dell KB 000188491)
+  {
+    name: 'PowerStore RAID-6 6 drives — 4+2 DRE (66.67%)',
+    driveCount: 6,
+    raidLevel: 'powerstore_raid6',
+    driveCapacityBytes: 1_000_000_000_000,
+    expectedEfficiency: 66.67,
+    expectedDataFraction: 4 / 6, // 0.6667
+    tolerance: 0.001,
+    source: 'Dell KB 000188491: <8 drives uses 4+2 DRE geometry',
+  },
+  {
+    name: 'PowerStore RAID-6 12 drives — 8+2 DRE (80%)',
+    driveCount: 12,
+    raidLevel: 'powerstore_raid6',
+    driveCapacityBytes: 1_000_000_000_000,
+    expectedEfficiency: 80.0,
+    expectedDataFraction: 8 / 10, // 0.80
+    tolerance: 0.001,
+    source: 'Dell KB 000188491: 8-19 drives uses 8+2 DRE geometry',
+  },
+  {
+    name: 'PowerStore RAID-6 20 drives — 16+2 DRE (88.89%)',
+    driveCount: 20,
+    raidLevel: 'powerstore_raid6',
+    driveCapacityBytes: 1_000_000_000_000,
+    expectedEfficiency: 88.89,
+    expectedDataFraction: 16 / 18, // 0.8889
+    tolerance: 0.001,
+    source: 'Dell KB 000188491: >=20 drives uses 16+2 DRE geometry',
+  },
+  {
+    name: 'PowerStore RAID-6 35 drives — 16+2 DRE (88.89%)',
+    driveCount: 35,
+    raidLevel: 'powerstore_raid6',
+    driveCapacityBytes: 30_720_000_000_000, // 30.72 TB NVMe
+    expectedEfficiency: 88.89,
+    expectedDataFraction: 16 / 18, // 0.8889
+    tolerance: 0.001,
+    source: 'Dell KB 000188491: >=20 drives uses 16+2 DRE geometry (PowerStore 5200Q reference)',
+  },
+  // RAID-5 DRE geometry (Dell KB 000188491)
+  {
+    name: 'PowerStore RAID-5 8 drives — 4+1 DRE (80%)',
+    driveCount: 8,
+    raidLevel: 'powerstore_raid5',
+    driveCapacityBytes: 1_000_000_000_000,
+    expectedEfficiency: 80.0,
+    expectedDataFraction: 4 / 5, // 0.80
+    tolerance: 0.001,
+    source: 'Dell KB 000188491: <10 drives uses 4+1 DRE geometry',
+  },
+  {
+    name: 'PowerStore RAID-5 10 drives — 8+1 DRE (88.89%)',
+    driveCount: 10,
+    raidLevel: 'powerstore_raid5',
+    driveCapacityBytes: 1_000_000_000_000,
+    expectedEfficiency: 88.89,
+    expectedDataFraction: 8 / 9, // 0.8889
+    tolerance: 0.001,
+    source: 'Dell KB 000188491: >=10 drives uses 8+1 DRE geometry',
+  },
+  {
+    name: 'PowerStore RAID-5 20 drives — 8+1 DRE (88.89%)',
+    driveCount: 20,
+    raidLevel: 'powerstore_raid5',
+    driveCapacityBytes: 1_000_000_000_000,
+    expectedEfficiency: 88.89,
+    expectedDataFraction: 8 / 9, // 0.8889
+    tolerance: 0.001,
+    source: 'Dell KB 000188491: >=10 drives uses 8+1 DRE geometry',
+  },
+]
