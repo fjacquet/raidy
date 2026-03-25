@@ -334,7 +334,7 @@ Plans:
 | 9 - PowerStore Data Fraction Fix | 1/1 | Complete   | 2026-03-25 |
 | 10 - PowerStore System Overhead Addition | 1/1 | Complete    | 2026-03-25 |
 | 11 - PowerScale serverCount Fix | 1/1 | Complete   | 2026-03-25 |
-| 12 - PowerFlex and ObjectScale Validation | 1/1 | Complete   | 2026-03-25 |
+| 12 - PowerFlex and ObjectScale Validation | 1/1 | Complete    | 2026-03-25 |
 | 13 - Test Suite Cleanup | v1.2 | Not started | — |
 
 ---
