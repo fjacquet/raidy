@@ -315,7 +315,11 @@ Plans:
 3. Running `npm run test:coverage` passes the 75% coverage threshold with no regressions in non-Dell topology tests
 4. Every Dell test assertion is traceable to a Dell Sizer reference value (comment citing source) rather than a back-calculated engine output
 
-**Plans:** TBD
+**Plans:** 2 plans
+
+Plans:
+- [ ] 13-01-PLAN.md — Add utility test coverage (units.ts, connectivityConstraints.ts) to reach 75% threshold and verify DELL-11/DELL-12
+- [ ] 13-02-PLAN.md — Add performance strategy and sustainability engine test coverage for robustness above 75%
 
 ---
 
