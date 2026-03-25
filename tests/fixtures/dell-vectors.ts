@@ -314,3 +314,154 @@ export const dellPowerscaleVectors: DellPowerscaleVector[] = [
     source: 'Dell OneFS: 3x mirroring is always 33.33% regardless of node count',
   },
 ]
+
+/**
+ * Dell PowerFlex reference vectors for EC/mirror data fraction validation.
+ *
+ * PowerFlex protection formulas:
+ * - 2-way mirror: k/(k+m) where m=k → 50%
+ * - 3-way mirror: k/(k+m) where m=2k → 33.33%
+ * - EC k+m: k/(k+m) — standard erasure coding math
+ *
+ * Reference: Dell PowerFlex documentation, standard EC math
+ */
+export interface DellPowerflexVector {
+  name: string
+  level:
+    | 'powerflex_medium_2way'
+    | 'powerflex_fine_2way'
+    | 'powerflex_medium_3way'
+    | 'powerflex_ec_4_1'
+    | 'powerflex_ec_4_2'
+    | 'powerflex_ec_8_2'
+    | 'powerflex_ec_12_4'
+  driveCount: number
+  expectedDataFraction: number // decimal (0-1)
+  expectedEfficiency: number // percentage (0-100)
+  tolerance: number
+  source: string
+}
+
+export const dellPowerflexVectors: DellPowerflexVector[] = [
+  {
+    name: 'PowerFlex 2-way mirror medium granularity (50%)',
+    level: 'powerflex_medium_2way',
+    driveCount: 12,
+    expectedDataFraction: 0.5,
+    expectedEfficiency: 50.0,
+    tolerance: 0.001,
+    source: 'Dell PowerFlex documentation: 2-way mirror k/(k+m) where m=k',
+  },
+  {
+    name: 'PowerFlex 2-way mirror fine granularity (50%)',
+    level: 'powerflex_fine_2way',
+    driveCount: 12,
+    expectedDataFraction: 0.5,
+    expectedEfficiency: 50.0,
+    tolerance: 0.001,
+    source: 'Dell PowerFlex documentation: Fine Granularity 2-way mirror',
+  },
+  {
+    name: 'PowerFlex 3-way mirror medium granularity (33.33%)',
+    level: 'powerflex_medium_3way',
+    driveCount: 18,
+    expectedDataFraction: 1 / 3,
+    expectedEfficiency: 33.33,
+    tolerance: 0.001,
+    source: 'Dell PowerFlex documentation: 3-way mirror 1/3 efficiency',
+  },
+  {
+    name: 'PowerFlex EC 4+1 (80%)',
+    level: 'powerflex_ec_4_1',
+    driveCount: 10,
+    expectedDataFraction: 4 / 5,
+    expectedEfficiency: 80.0,
+    tolerance: 0.001,
+    source: 'Dell PowerFlex documentation: EC 4+1 = 4/(4+1) = 80%',
+  },
+  {
+    name: 'PowerFlex EC 4+2 (66.67%)',
+    level: 'powerflex_ec_4_2',
+    driveCount: 12,
+    expectedDataFraction: 4 / 6,
+    expectedEfficiency: 66.67,
+    tolerance: 0.001,
+    source: 'Dell PowerFlex documentation: EC 4+2 = 4/(4+2) = 66.67%',
+  },
+  {
+    name: 'PowerFlex EC 8+2 (80%)',
+    level: 'powerflex_ec_8_2',
+    driveCount: 16,
+    expectedDataFraction: 8 / 10,
+    expectedEfficiency: 80.0,
+    tolerance: 0.001,
+    source: 'Dell PowerFlex documentation: EC 8+2 = 8/(8+2) = 80%',
+  },
+  {
+    name: 'PowerFlex EC 12+4 (75%)',
+    level: 'powerflex_ec_12_4',
+    driveCount: 24,
+    expectedDataFraction: 12 / 16,
+    expectedEfficiency: 75.0,
+    tolerance: 0.001,
+    source: 'Dell PowerFlex documentation: EC 12+4 = 12/(12+4) = 75%',
+  },
+]
+
+/**
+ * Dell ObjectScale reference vectors for EC/mirror data fraction validation.
+ *
+ * ObjectScale protection formulas:
+ * - EC k+m: k/(k+m) — standard erasure coding math
+ * - Triple mirror: 1/3 — always 33.33%
+ *
+ * Reference: Dell ObjectScale documentation, standard EC math
+ */
+export interface DellObjectscaleVector {
+  name: string
+  level: 'objectscale_ec_12_4' | 'objectscale_ec_10_2' | 'objectscale_ec_24_4' | 'objectscale_mirror_3'
+  driveCount: number
+  expectedDataFraction: number // decimal (0-1)
+  expectedEfficiency: number // percentage (0-100)
+  tolerance: number
+  source: string
+}
+
+export const dellObjectscaleVectors: DellObjectscaleVector[] = [
+  {
+    name: 'ObjectScale EC 12+4 (75%)',
+    level: 'objectscale_ec_12_4',
+    driveCount: 16,
+    expectedDataFraction: 12 / 16,
+    expectedEfficiency: 75.0,
+    tolerance: 0.001,
+    source: 'Dell ObjectScale documentation: EC 12+4 = 12/(12+4) = 75%',
+  },
+  {
+    name: 'ObjectScale EC 10+2 (83.33%)',
+    level: 'objectscale_ec_10_2',
+    driveCount: 12,
+    expectedDataFraction: 10 / 12,
+    expectedEfficiency: 83.33,
+    tolerance: 0.001,
+    source: 'Dell ObjectScale documentation: EC 10+2 = 10/(10+2) = 83.33%',
+  },
+  {
+    name: 'ObjectScale EC 24+4 (85.71%)',
+    level: 'objectscale_ec_24_4',
+    driveCount: 28,
+    expectedDataFraction: 24 / 28,
+    expectedEfficiency: 85.71,
+    tolerance: 0.001,
+    source: 'Dell ObjectScale documentation: EC 24+4 = 24/(24+4) = 85.71%',
+  },
+  {
+    name: 'ObjectScale mirror-3 (33.33%)',
+    level: 'objectscale_mirror_3',
+    driveCount: 6,
+    expectedDataFraction: 1 / 3,
+    expectedEfficiency: 33.33,
+    tolerance: 0.001,
+    source: 'Dell ObjectScale documentation: Triple mirror = 1/3 = 33.33%',
+  },
+]

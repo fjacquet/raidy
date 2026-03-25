@@ -28,6 +28,8 @@ import {
 import type { Drive } from '@/types/drive'
 import {
   dellAdaptVectors,
+  dellObjectscaleVectors,
+  dellPowerflexVectors,
   dellPowerscaleVectors,
   dellPowerstore5200QVector,
   dellPowerstoreVectors,
@@ -4153,4 +4155,28 @@ describe('Volumetry Engine - Error Handling', () => {
       expect(reduction).toBeLessThan(0.06) // At most 6% reduction
     })
   })
+})
+
+describe('Volumetry Engine - PowerFlex Data Fraction (Dell Documentation Reference)', () => {
+  describe.each(dellPowerflexVectors)(
+    '$name',
+    ({ level, driveCount, expectedDataFraction }) => {
+      it(`should return data fraction ${(expectedDataFraction * 100).toFixed(2)}% for ${level}`, () => {
+        const result = dellStrategy.calculateDataFraction(level, driveCount)
+        expect(result).toBeCloseTo(expectedDataFraction, 3)
+      })
+    },
+  )
+})
+
+describe('Volumetry Engine - ObjectScale Data Fraction (Dell Documentation Reference)', () => {
+  describe.each(dellObjectscaleVectors)(
+    '$name',
+    ({ level, driveCount, expectedDataFraction }) => {
+      it(`should return data fraction ${(expectedDataFraction * 100).toFixed(2)}% for ${level}`, () => {
+        const result = dellStrategy.calculateDataFraction(level, driveCount)
+        expect(result).toBeCloseTo(expectedDataFraction, 3)
+      })
+    },
+  )
 })
