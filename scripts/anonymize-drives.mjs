@@ -132,7 +132,7 @@ function buildId(tier, type, rpm, iface, capacity, extras) {
   else if (rpm === 7200) rpmStr = '7k2'
   else if (rpm && rpm < 7200) rpmStr = '5k4'
 
-  const ifaceStr = iface.toLowerCase().replace('pcie', 'pcie')
+  const ifaceStr = iface.toLowerCase()
 
   // Format capacity
   let capStr
@@ -286,7 +286,7 @@ for (const [key, members] of groups) {
     } else {
       if (nand) idExtras = nand.toLowerCase()
       if (ff && !['2.5"', '3.5"'].includes(ff)) {
-        idExtras += (idExtras ? '-' : '') + ff.toLowerCase().replace('.', '').replace('"', '')
+        idExtras += (idExtras ? '-' : '') + ff.toLowerCase().replaceAll('.', '').replaceAll('"', '')
       }
       if (workload === 'ri') idExtras += '-ri'
       else if (workload === 'mu') idExtras += '-mu'
