@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Dell Calculation Accuracy
-status: unknown
-stopped_at: Completed 13-02-PLAN.md -- Phase 13 test-suite-cleanup complete
-last_updated: "2026-03-25T21:44:27.749Z"
+status: complete
+stopped_at: Milestone v1.2 archived
+last_updated: "2026-03-26"
 progress:
   total_phases: 6
   completed_phases: 6
@@ -16,86 +16,44 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md
+See: .planning/PROJECT.md (updated 2026-03-26)
 
 **Core value:** Calculation accuracy for storage infrastructure decisions. If Raidy gives wrong capacity numbers or resilience predictions, users could make incorrect (and costly) storage decisions. Everything else can fail; the math cannot.
-
-**Current focus:** Phase 13 — test-suite-cleanup
+**Current focus:** Planning next milestone
 
 ## Current Position
 
-Phase: 13 (test-suite-cleanup) — COMPLETE
-Plan: 2 of 2 (all complete)
+Milestone v1.2 Dell Calculation Accuracy — COMPLETE (archived)
 
 ## Performance Metrics
 
-**Velocity (from v1.0/v1.1):**
+**v1.2 Dell Calculation Accuracy:**
 
-- Total plans completed: 30
-- Average duration: 6.7 min
+| Phase | Plans | Duration | Files |
+|-------|-------|----------|-------|
+| Phase 8: PowerVault ADAPT Formula Fix | 1/1 | 8min | 3 |
+| Phase 9: PowerStore Data Fraction Fix | 1/1 | 8min | 3 |
+| Phase 10: PowerStore System Overhead Addition | 1/1 | 23min | 7 |
+| Phase 11: PowerScale serverCount Fix | 1/1 | 7min | 4 |
+| Phase 12: PowerFlex and ObjectScale Validation | 1/1 | 5min | 2 |
+| Phase 13: Test Suite Cleanup | 2/2 | 14min | 4 |
 
-**By Phase (prior milestones):**
-
-| Phase                      | Plans | Total | Avg/Plan |
-| -------------------------- | ----- | ----- | -------- |
-| 1 - Test Infrastructure    | 2/2   | 3min  | 1.5min   |
-| 2 - Calculation Validation | 10/10 | 69min | 6.9min   |
-| 3 - Security Hardening     | 4/4   | 18min | 4.5min   |
-| 4 - Code Quality           | 10/10 | 80min | 8.0min   |
-| 7 - Dependency Maintenance | 3/3   | —     | —        |
-| Phase 08 P01 | 8 | 3 tasks | 3 files |
-| Phase 09-powerstore-data-fraction-fix P01 | 8 | 3 tasks | 3 files |
-| Phase 10-powerstore-system-overhead-addition P01 | 23 | 3 tasks | 7 files |
-| Phase 11 P01 | 7 | 3 tasks | 4 files |
-| Phase 12 P01 | 5 | 2 tasks | 2 files |
-| Phase 13 P01 | 6 | 3 tasks | 2 files |
-| Phase 13 P02 | 8 | 2 tasks | 2 files |
+**Totals:** 7 plans, ~65min, 45 files changed, 8042 insertions
 
 ## Accumulated Context
 
 ### Decisions
 
-| Phase | Decision | Rationale |
-| ----- | --------- | --------- |
-| v1.2  | Dell Sizer as primary reference | Official Dell capacity planning tool — output is ground truth for ADAPT/PowerStore/PowerScale |
-| v1.2  | Fix formula, then update tests | Tests currently encode wrong expected values — fix engine first, then update test vectors |
-| v1.2  | PowerVault ADAPT formula: `((N-2)/N) × stripe_efficiency` | Dynamic per drive count: ≤18 drives uses 8+2 (×0.80), >18 drives uses 16+2 (×16/18) |
-| v1.2  | PowerStore RAID geometry: DRE drive-count thresholds | RAID-6: <8→4+2, 8-19→8+2, ≥20→16+2; RAID-5: <10→4+1, ≥10→8+1 (from Dell KB 000188491) |
-| v1.2  | PowerStore system overhead: ~5% default | Back-calculated from Dell Sizer reference (35-drive 5200Q); configurable via systemOverheadPercent |
-| v1.2  | PowerScale fix: use serverCount not driveCount | driveCount bug produces near-100% efficiency for multi-drive-per-node configs |
-| v1.2  | Test protocol: skip→add correct→delete skipped | Never update test expected values by running the (possibly wrong) formula |
-
-- [Phase 08]: ADAPT threshold at >18 drives: 8+2 stripe for <=18, 16+2 for >18 per Dell ME5 Admin Guide
-- [Phase 08]: TDD protocol: skip wrong tests first, add correct reference tests (RED), fix formula (GREEN), then delete skipped tests
-- [Phase 09]: PowerStore RAID-6 DRE geometry: <8 drives=4/6 (66.67%), 8-19=8/10 (80%), >=20=16/18 (88.89%) per Dell KB 000188491
-- [Phase 09]: PowerStore RAID-5 DRE geometry: <10 drives=4/5 (80%), >=10=8/9 (88.89%) per Dell KB 000188491
-- [Phase 09]: DRE test isolation: set snapshotReservePercent:0 in usable capacity tests to separate DRE data fraction from snapshot overhead
-- [Phase 10-powerstore-system-overhead-addition]: PowerStore system overhead 5% default applied to capacityAfterParity, configurable via systemOverheadPercent on PowerStoreOptions
-- [Phase 11]: PowerScale N+x uses nodeCount (serverCount) not driveCount: OneFS protection is node-level, corrects 19pp error for multi-drive-per-node clusters
-- [Phase 12]: No formula fix needed: all PowerFlex and ObjectScale formulas use correct k/(k+m) EC math
-- [Phase 13]: units.ts + connectivityConstraints.ts provide sufficient coverage gain to reach 75% threshold without additional test files
-- [Phase 13]: Used describe.each pattern for parametric write penalty tests across 60+ level/value pairs
+See .planning/PROJECT.md Key Decisions table for full list.
 
 ### Reference Documents
 
-- `/Users/fjacquet/Library/CloudStorage/OneDrive-Home/PowerStore/powerstore NAS.pptx` — PowerStore 5200Q, 35×30.72TB NVMe, RAID(16+2), Raw=977.89TiB, Usable=801.57TiB, DRR=2:1
-- `/Users/fjacquet/Library/CloudStorage/OneDrive-Home/PowerStore/powervault test.pptx` — ME5224, 12×3.84TB SSD, ADAPT(8+2), Raw=41.9TiB, Usable=27.93TiB
-
-### Pending Todos
-
-- Clarify ADAPT 8+2 vs 16+2 threshold: research says >18 drives in one place, >20 in another — resolve from ME5 Admin Guide before Phase 8 implementation
-- Validate PowerStore system overhead for smaller models (1000T, 3200) — 5% may be large-model only
-- Confirm PowerScale minimum stripe width fallback for small clusters (3–4 nodes with N+2)
-- Dell Sizer access required for Phase 12 validation of PowerFlex and ObjectScale
-
-### Blockers/Concerns
-
-- Phases 5 (Performance & Fixes) and 6 (Production Validation) from v1.0 are still pending — can be addressed in v1.3
-- Dell Sizer requires authenticated Dell partner/customer login — if access unavailable, contact Dell SE
-- Phase 10 (PowerStore system overhead) is the most invasive change: touches types, overhead pipeline, breakdown builder, and OverheadResult interface
+- Dell MidRange Sizer ME5224 reference: 12x3.84TB SSD, ADAPT(8+2), Raw=41.9TiB, Usable=27.93TiB
+- Dell Sizer PowerStore 5200Q reference: 35x30.72TB NVMe, RAID(16+2), Raw=977.89TiB, Usable=801.57TiB
+- Dell KB 000188491: PowerStore DRE geometry thresholds
 
 ## Session Continuity
 
-Last session: 2026-03-25T21:37:28.786Z
-Stopped at: Completed 13-02-PLAN.md -- Phase 13 test-suite-cleanup complete
+Last session: 2026-03-26
+Stopped at: Milestone v1.2 archived
 Resume file: None

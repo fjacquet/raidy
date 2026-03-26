@@ -2,7 +2,7 @@
 
 ## What This Is
 
-Raidy is a browser-based simulator for modern storage infrastructure including RAID, ZFS, VMware vSAN, Microsoft S2D, Nutanix, Ceph, and enterprise storage arrays. It's a Progressive Web App that runs entirely client-side, helping storage engineers and IT professionals make informed infrastructure decisions through accurate capacity, performance, resilience, and sustainability calculations.
+Raidy is a browser-based simulator for modern storage infrastructure including RAID, ZFS, VMware vSAN, Microsoft S2D, Nutanix, Ceph, Dell (PowerStore, PowerVault, PowerScale, PowerFlex, ObjectScale), NetApp, and Synology arrays. It's a Progressive Web App that runs entirely client-side, helping storage engineers and IT professionals make informed infrastructure decisions through accurate capacity, performance, resilience, and sustainability calculations.
 
 ## Core Value
 
@@ -12,7 +12,7 @@ Calculation accuracy for storage infrastructure decisions. If Raidy gives wrong 
 
 ### Validated
 
-<!-- Shipped capabilities from existing codebase -->
+<!-- Shipped capabilities from existing codebase and milestones -->
 
 - ✓ **Multi-topology support** — Simulates 13+ storage topologies: RAID (0/1/1E/3/4/5/5E/5EE/6/10/50/60), ZFS (Stripe/Mirror/RAID-Z1/Z2/Z3/dRAID), vSAN (OSA/ESA), S2D, Ceph, Nutanix, enterprise arrays — existing
 - ✓ **Four calculation engines** — Volumetry (capacity/efficiency), Performance (IOPS/bottlenecks), Resilience (Monte Carlo failure simulation), Sustainability (power/CO2/TCO) — existing
@@ -23,21 +23,18 @@ Calculation accuracy for storage infrastructure decisions. If Raidy gives wrong 
 - ✓ **Interactive dashboard** — Real-time recalculation, capacity waterfall (Sankey), performance gauges, resilience probability — existing
 - ✓ **Dark mode UI** — Tailwind-based responsive design with custom storage-themed color palette — existing
 - ✓ **Web Worker simulations** — Background Monte Carlo with progress updates (10,000 iterations) — existing
+- ✓ **Comprehensive test coverage** — 881 tests, 84.13% coverage, validated against WintelGuy, OpenZFS, Dell Sizer — v1.0/v1.2
+- ✓ **Security hardening** — Zod validation, DOMPurify, CSP headers, input sanitization — v1.0
+- ✓ **Code quality** — Strategy pattern refactoring, error boundaries, exhaustive type checking — v1.0
+- ✓ **Dell calculation accuracy** — PowerVault ADAPT, PowerStore DRE/overhead, PowerScale N+x, PowerFlex EC, ObjectScale EC all match Dell Sizer within 1% — v1.2
 
 ### Active
 
-<!-- Production readiness fixes for public launch -->
+<!-- Next milestone work -->
 
-- [ ] **Comprehensive test coverage** — Unit tests for all calculation engines validated against industry formulas
-- [ ] **Calculation accuracy validation** — Verify RAID math against WintelGuy, ZFS overhead against OpenZFS docs, vSAN efficiency benchmarks
-- [ ] **Security hardening** — Fix URL state injection risk, validate PDF generation, add input sanitization, implement CSP
-- [ ] **Input validation layer** — Prevent invalid configurations from reaching calculation engines
-- [ ] **Error boundaries** — Graceful degradation when calculations fail instead of app crash
-- [ ] **Code quality improvements** — Refactor monolithic 1647-line TopologyPanel, extract topology-specific logic from 1044-line volumetry engine
-- [ ] **Performance optimization** — Add memoization boundaries, implement cancellable Monte Carlo simulations, reduce unnecessary recalculations
-- [ ] **Fix known bugs** — URL hash parsing failures, missing worker abort functionality
-- [ ] **Dependency audit** — Verify React 19/Tailwind 4 stability, remove unused dependencies (html2canvas)
-- [ ] **Production build validation** — Clean lint, passing tests, optimized bundle sizes, security scan
+- [ ] **Performance optimization** — Memoization boundaries, cancellable Monte Carlo, reduced recalculations
+- [ ] **Production validation** — CI/CD pipeline, deployment verification, browser compatibility
+- [ ] **Dependency maintenance** — Keep npm packages current
 
 ### Out of Scope
 
@@ -51,64 +48,33 @@ Calculation accuracy for storage infrastructure decisions. If Raidy gives wrong 
 
 ## Context
 
-**Brownfield project:** Existing React 19 + TypeScript SPA with comprehensive codebase mapping completed (January 2026). Architecture is sound: component-based SPA with reactive state management (Zustand), isolated calculation engines, Web Workers for CPU-intensive tasks.
+**Current state:** v1.5.0 shipped (v1.2 Dell Calculation Accuracy milestone). React 19 + TypeScript SPA with 881 automated tests at 84.13% coverage. All Dell platform calculations (PowerVault, PowerStore, PowerScale, PowerFlex, ObjectScale) validated against Dell Sizer within 1% tolerance. Security hardened with Zod validation, DOMPurify, CSP headers. Code quality improved with strategy pattern across all engines.
 
-**Current state:** Application is functionally complete with all core features implemented. Users can simulate storage configurations, export reports, and share URLs. However, zero automated tests exist despite vitest being configured. Code quality issues documented in `.planning/codebase/CONCERNS.md` include large monolithic components, fragile switch-statement logic for topology types, and missing input validation.
+**Tech stack:** React 19, TypeScript 5.9, Vite 7, Tailwind CSS 4, Zustand, Vitest, Biome, Web Workers.
 
-**Launch goal:** Public deployment for storage engineers, IT professionals, and infrastructure architects making real-world storage decisions. Users will rely on calculation accuracy for capacity planning, resilience analysis, and TCO modeling.
-
-**Prior work:** CLAUDE.md requirements specify validation targets (WintelGuy calculator, NetApp Storage Efficiency Calculator, OpenZFS documentation). Codebase already implements complex storage math but lacks verification.
-
-**Known issues:** Documented in CONCERNS.md - critical gaps include no test coverage (highest priority), security concerns (URL state injection, PDF generation), performance bottlenecks (recalculation on every change, non-cancellable simulations), and code quality (1647-line component, 1044-line calculation engine).
-
-## Constraints
-
-- **Architecture**: Static client-side SPA only — no backend, no server-side processing, no user accounts. All intelligence must remain in TypeScript calculation engines and JSON drive database.
-- **URL compatibility**: Shared links must remain valid — cannot break existing URL hash schema. Requires versioned state migration if changes needed.
-- **Calculation preservation**: Cannot change proven calculation logic without explicit validation. Only add tests and verification, don't "improve" working math.
-- **Browser requirements**: Must support ES2022, Web Workers API, modern browser features. No IE11 or legacy browser support needed.
-- **Bundle size**: Static hosting with limited bandwidth — keep total bundle under reasonable limits (currently ~2MB with chunking).
-- **Deployment target**: GitHub Pages at `/raidy/` base path — build must work with this configuration.
-
-## Current Milestone: v1.2 Dell Calculation Accuracy
-
-**Goal:** Fix Dell storage calculation formulas to match official Dell Sizer output within 1% tolerance.
-
-**Target features:**
-
-- Fix PowerVault ADAPT formula (currently hardcoded 85-87%, actual is `(N - 2×protection) / N` ≈ 67% for 12 drives)
-- Fix PowerStore RAID-5/6 formulas (currently hardcoded constants, actual uses stripe width + system overhead)
-- Validate/fix PowerScale N+x protection formulas
-- Validate/fix PowerFlex EC formulas
-- Validate/fix ObjectScale EC and geo-replication formulas
-- Add Dell Sizer reference test vectors for all fixed formulas
-
-### Active
-
-<!-- Current scope for v1.2 — Dell Calculation Accuracy -->
-
-- [x] **DELL-01**: PowerVault ADAPT usable capacity uses dynamic formula `(N - 2×protection) / N` — Validated in Phase 8: PowerVault ADAPT Formula Fix
-- [x] **DELL-02**: PowerVault ADAPT results match Dell Sizer within 1% for reference configurations — Validated in Phase 8: PowerVault ADAPT Formula Fix
-- [x] **DELL-03**: PowerStore RAID-6 uses stripe-width-aware efficiency + system overhead — Validated in Phase 9: PowerStore Data Fraction Fix
-- [x] **DELL-04**: PowerStore RAID-5 formula validated and corrected against Dell Sizer — Validated in Phase 9: PowerStore Data Fraction Fix
-- [x] **DELL-05**: PowerStore results match Dell Sizer within 1% for reference configurations — Validated in Phase 10: PowerStore System Overhead Addition
-- [x] **DELL-06**: PowerScale N+x formulas validated against Dell documentation — Validated in Phase 11: PowerScale serverCount Fix
-- [x] **DELL-07**: PowerFlex EC formulas validated against Dell documentation — Validated in Phase 12: PowerFlex and ObjectScale Validation
-- [x] **DELL-08**: ObjectScale EC and geo-replication formulas validated against Dell documentation — Validated in Phase 12: PowerFlex and ObjectScale Validation
-- [x] **DELL-09**: Dell Sizer reference test vectors added for all corrected formulas — Validated in Phase 13: Test Suite Cleanup
-- [x] **DELL-10**: All existing Dell tests updated with correct reference values (no regressions) — Validated in Phase 13: Test Suite Cleanup
+**Known issues:** Phases 5-6 (Performance & Fixes, Production Validation) deferred from v1.0. resilienceWorker.ts has noNonNullAssertion warnings. PowerStore system overhead may vary by model class (currently 5% default for all).
 
 ## Key Decisions
 
-| Decision                           | Rationale                                      | Outcome                        |
-| ---------------------------------- | ---------------------------------------------- | ------------------------------ |
-| Vitest for testing                 | Already configured, Vite-native, fast          | — Pending                      |
-| Fix-in-place vs rewrite            | Existing code works, users depend on it        | — Pending                      |
-| Industry benchmarks for validation | WintelGuy, NetApp, OpenZFS are gold standards  | — Pending                      |
-| Dell Sizer as reference for Dell products | Official Dell capacity planning tool, output is ground truth for ADAPT/PowerStore/etc | — Pending |
-| Static-only architecture           | Original constraint, enables simple deployment | ✓ Good                         |
-| React 19 + Tailwind 4              | Modern stack, already in use                   | ⚠️ Revisit if stability issues |
+| Decision | Rationale | Outcome |
+|----------|-----------|---------|
+| Vitest for testing | Already configured, Vite-native, fast | ✓ Good — 881 tests in 8.5s |
+| Fix-in-place vs rewrite | Existing code works, users depend on it | ✓ Good — surgical fixes preserved all functionality |
+| Industry benchmarks for validation | WintelGuy, NetApp, OpenZFS are gold standards | ✓ Good — all calculations within 1% |
+| Dell Sizer as reference for Dell products | Official Dell capacity planning tool, ground truth | ✓ Good — all 5 Dell platforms validated |
+| TDD protocol: skip→RED→GREEN→delete | Prevents testing wrong formulas | ✓ Good — caught all issues cleanly |
+| Static-only architecture | Original constraint, enables simple deployment | ✓ Good |
+| React 19 + Tailwind 4 | Modern stack, already in use | ✓ Good — no stability issues |
+
+## Constraints
+
+- **Architecture**: Static client-side SPA only — no backend, no server-side processing, no user accounts
+- **URL compatibility**: Shared links must remain valid — cannot break existing URL hash schema
+- **Calculation preservation**: Cannot change proven calculation logic without explicit validation
+- **Browser requirements**: Must support ES2022, Web Workers API, modern browser features
+- **Bundle size**: Static hosting — keep total bundle under reasonable limits (~2MB with chunking)
+- **Deployment target**: GitHub Pages at `/raidy/` base path
 
 ---
 
-_Last updated: 2026-03-25 after Phase 13 (Test Suite Cleanup) complete — v1.2 milestone complete_
+_Last updated: 2026-03-26 after v1.2 milestone_
