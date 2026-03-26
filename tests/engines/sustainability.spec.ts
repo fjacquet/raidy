@@ -8,12 +8,12 @@
  * - TCO: hardware + energy + maintenance + replacement costs
  */
 
-import { describe, expect, it } from 'vitest'
 import {
   calculateSustainability,
   calculateTCO,
   type SustainabilityInput,
 } from '@engines/sustainability'
+import { describe, expect, it } from 'vitest'
 import type { Drive } from '@/types/drive'
 
 // ─── Test Fixtures ──────────────────────────────────────────────────────────
@@ -102,9 +102,7 @@ describe('calculateSustainability', () => {
     it('satisfies total = drives + servers + cooling', () => {
       const result = calculateSustainability(baseInput)
       const sum =
-        result.powerBreakdown.drives +
-        result.powerBreakdown.servers +
-        result.powerBreakdown.cooling
+        result.powerBreakdown.drives + result.powerBreakdown.servers + result.powerBreakdown.cooling
       expect(result.powerBreakdown.total).toBeCloseTo(sum, 1)
     })
   })
@@ -127,7 +125,7 @@ describe('calculateSustainability', () => {
     it('calculates annualCO2Kg for switzerland (30 gCO2/kWh)', () => {
       const result = calculateSustainability(baseInput)
       // annualCO2Kg = 13061.16 * 30 / 1000 = 391.83 kg
-      expect(result.annualCO2Kg).toBeCloseTo(result.annualEnergyKwh * 30 / 1000, 2)
+      expect(result.annualCO2Kg).toBeCloseTo((result.annualEnergyKwh * 30) / 1000, 2)
     })
 
     it('produces higher CO2 for germany (385 gCO2/kWh) vs switzerland (30)', () => {
@@ -221,8 +219,7 @@ describe('calculateTCO', () => {
 
   it('calculates totalCost as sum of all cost components', () => {
     const tco = calculateTCO(testSsdDrive, 10, 5, sustainability, 8e12, 16e12)
-    const sum =
-      tco.hardwareCost + tco.totalEnergyCost + tco.maintenanceCost + tco.replacementCost
+    const sum = tco.hardwareCost + tco.totalEnergyCost + tco.maintenanceCost + tco.replacementCost
     expect(tco.totalCost).toBeCloseTo(sum, 2)
   })
 

@@ -8,19 +8,19 @@
  * Reference: Phase 13 Plan 01 Task 1 — raise test coverage to >= 75%.
  */
 
-import { describe, expect, it } from 'vitest'
 import {
   BINARY,
-  DECIMAL,
   bytesToBinaryTiB,
   bytesToDecimalTB,
   convertUnits,
+  DECIMAL,
   driveCapacityToBytes,
   formatBytes,
   formatBytesBoth,
   getConversionFactor,
   parseCapacity,
 } from '@utils/units'
+import { describe, expect, it } from 'vitest'
 
 describe('units.ts', () => {
   describe('BINARY and DECIMAL constants', () => {

@@ -5,15 +5,15 @@
  * Dell, Proprietary (Synology/NetApp), PowerFlex, S2D, vSAN, Ceph, ZFS, Nutanix
  */
 
-import { describe, expect, it } from 'vitest'
+import { cephPerformanceStrategy } from '@engines/performance/strategies/ceph'
 import { dellPerformanceStrategy } from '@engines/performance/strategies/dell'
-import { proprietaryPerformanceStrategy } from '@engines/performance/strategies/proprietary'
+import { nutanixPerformanceStrategy } from '@engines/performance/strategies/nutanix'
 import { powerFlexPerformanceStrategy } from '@engines/performance/strategies/powerflex'
+import { proprietaryPerformanceStrategy } from '@engines/performance/strategies/proprietary'
 import { s2dPerformanceStrategy } from '@engines/performance/strategies/s2d'
 import { vsanPerformanceStrategy } from '@engines/performance/strategies/vsan'
-import { cephPerformanceStrategy } from '@engines/performance/strategies/ceph'
 import { zfsPerformanceStrategy } from '@engines/performance/strategies/zfs'
-import { nutanixPerformanceStrategy } from '@engines/performance/strategies/nutanix'
+import { describe, expect, it } from 'vitest'
 
 // Common test parameters for calculateIOPS
 const DRIVES = 10

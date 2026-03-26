@@ -8,11 +8,11 @@
  * Reference: Phase 13 Plan 01 Task 2 — raise test coverage to >= 75%.
  */
 
-import { describe, expect, it } from 'vitest'
 import {
   type ConnectivityConstraintInput,
   getConnectivityConstraint,
 } from '@utils/connectivityConstraints'
+import { describe, expect, it } from 'vitest'
 
 describe('connectivityConstraints', () => {
   describe('NVMe-only topologies', () => {
