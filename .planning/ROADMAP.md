@@ -84,7 +84,7 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 15-01-PLAN.md — Fix resilienceWorker.ts noNonNullAssertion warnings (QUALITY-01)
+- [x] 15-01-PLAN.md — Fix resilienceWorker.ts noNonNullAssertion warnings (QUALITY-01)
 - [ ] 15-02-PLAN.md — Add PowerStore per-model overhead rates and model selector UI (QUALITY-02)
 
 ### Phase 16: PPTX Foundation
@@ -140,7 +140,7 @@ Plans:
 | 12 - PowerFlex and ObjectScale Validation | v1.2 | 1/1 | Complete | 2026-03-25 |
 | 13 - Test Suite Cleanup | v1.2 | 2/2 | Complete | 2026-03-25 |
 | 14 - Dependency Maintenance | v1.3 | 2/3 | In Progress|  |
-| 15 - Code Quality Fixes | v1.3 | 0/2 | Not started | — |
+| 15 - Code Quality Fixes | v1.3 | 1/2 | In Progress|  |
 | 16 - PPTX Foundation | v1.3 | 0/? | Not started | — |
 | 17 - PPTX Content | v1.3 | 0/? | Not started | — |
 | 18 - PDF Revamp | v1.3 | 0/? | Not started | — |

@@ -23,7 +23,7 @@
 
 ### Code Quality
 
-- [ ] **QUALITY-01**: resilienceWorker.ts compiles with zero noNonNullAssertion TypeScript warnings
+- [x] **QUALITY-01**: resilienceWorker.ts compiles with zero noNonNullAssertion TypeScript warnings
 - [ ] **QUALITY-02**: PowerStore capacity calculation applies per-model overhead rates (5200T, 5200Q, 3200, etc.) instead of a flat 5% for all models
 
 ### Dependencies
