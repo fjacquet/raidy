@@ -117,7 +117,7 @@ Plans:
 **UI hint**: yes
 
 Plans:
-- [ ] 17-01-PLAN.md — Add DOM ids to Speedometer and DonutChart; add captureSpeedometer() and captureDonutChart() to captureChart.ts
+- [x] 17-01-PLAN.md — Add DOM ids to Speedometer and DonutChart; add captureSpeedometer() and captureDonutChart() to captureChart.ts
 - [ ] 17-02-PLAN.md — Expand exportPptx.ts to 7-slide deck (exec summary, 4 engine detail slides, BOM) with embedded charts; add pptx i18n keys to all 4 locales
 
 ### Phase 18: PDF Revamp
@@ -151,7 +151,7 @@ Plans:
 | 14 - Dependency Maintenance | v1.3 | 2/3 | In Progress|  |
 | 15 - Code Quality Fixes | v1.3 | 1/2 | In Progress|  |
 | 16 - PPTX Foundation | v1.3 | 3/3 | Complete   | 2026-04-01 |
-| 17 - PPTX Content | v1.3 | 0/2 | Not started | — |
+| 17 - PPTX Content | v1.3 | 1/2 | In Progress|  |
 | 18 - PDF Revamp | v1.3 | 0/? | Not started | — |
 
 ---

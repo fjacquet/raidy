@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Rich Export & Polish
-status: planning
-last_updated: "2026-04-01T09:40:34.664Z"
-last_activity: 2026-04-01 — Milestone v1.3 roadmap created (5 phases, 13 requirements)
+status: executing
+last_updated: "2026-04-01T09:56:30.674Z"
+last_activity: 2026-04-01
 progress:
   total_phases: 5
   completed_phases: 3
-  total_plans: 8
-  completed_plans: 8
+  total_plans: 10
+  completed_plans: 9
 ---
 
 # Project State
@@ -19,14 +19,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-01)
 
 **Core value:** Calculation accuracy for storage infrastructure decisions. If Raidy gives wrong capacity numbers or resilience predictions, users could make incorrect (and costly) storage decisions. Everything else can fail; the math cannot.
-**Current focus:** Milestone v1.3 — Rich Export & Polish
+**Current focus:** Phase 17 — pptx-content
 
 ## Current Position
 
-Phase: Not started (roadmap defined, phases 14-18)
-Plan: —
-Status: Ready to plan Phase 14
-Last activity: 2026-04-01 — Milestone v1.3 roadmap created (5 phases, 13 requirements)
+Phase: 17 (pptx-content) — EXECUTING
+Plan: 2 of 2
+Status: Ready to execute
+Last activity: 2026-04-01
 
 ```
 Progress [          ] 0/5 phases complete
@@ -44,6 +44,7 @@ See .planning/PROJECT.md Key Decisions table for full list.
 - [Phase 16]: Corrected VolumetryResult field names: bytes-based rawCapacity/usableCapacity/effectiveCapacity with ÷1e12 TB conversion; plan template had non-existent .TB suffixed fields
 - [Phase 16]: Drive model field used for display; no brand field on Drive interface; drive capacity from capacity_raw (bytes)
 - [Phase 16-pptx-foundation]: Fire-and-forget pattern for exportToPptx call, matching existing exportToPdf
+- [Phase 17-pptx-content]: id on outermost HTML wrapper div (not SVG) because html-to-image requires HTMLElement; both DonutChart branches get same id for consistent capture
 
 ### Reference Documents
 
