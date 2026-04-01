@@ -100,7 +100,7 @@ Plans:
 **UI hint**: yes
 
 Plans:
-- [ ] 16-01-PLAN.md — Install pptxgenjs + html-to-image, add Sankey id, create captureChart.ts
+- [x] 16-01-PLAN.md — Install pptxgenjs + html-to-image, add Sankey id, create captureChart.ts
 - [ ] 16-02-PLAN.md — Create exportPptx.ts with brand constants, title slide, and capacity slide
 - [ ] 16-03-PLAN.md — Add PPTX button to OutputDashboard export card + i18n in all 4 locales
 
@@ -146,7 +146,7 @@ Plans:
 | 13 - Test Suite Cleanup | v1.2 | 2/2 | Complete | 2026-03-25 |
 | 14 - Dependency Maintenance | v1.3 | 2/3 | In Progress|  |
 | 15 - Code Quality Fixes | v1.3 | 1/2 | In Progress|  |
-| 16 - PPTX Foundation | v1.3 | 0/3 | Not started | — |
+| 16 - PPTX Foundation | v1.3 | 1/3 | In Progress|  |
 | 17 - PPTX Content | v1.3 | 0/? | Not started | — |
 | 18 - PDF Revamp | v1.3 | 0/? | Not started | — |
 
