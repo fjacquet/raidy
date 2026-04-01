@@ -70,7 +70,7 @@ This roadmap takes Raidy from a functionally complete application to production-
 
 Plans:
 - [x] 14-01-PLAN.md — Patch low-risk packages (dompurify, recharts, zustand, fast-check, snyk, @types/node, tailwindcss)
-- [ ] 14-02-PLAN.md — Update tool chain (biome 2.4.10, vitest suite 4.1.2)
+- [x] 14-02-PLAN.md — Update tool chain (biome 2.4.10, vitest suite 4.1.2)
 - [ ] 14-03-PLAN.md — Update i18n stack and build plugin (@vitejs/plugin-react 5.2.0, i18next 25.10.10, react-i18next 16.6.6) + browser verify
 
 ### Phase 15: Code Quality Fixes
@@ -135,7 +135,7 @@ Plans:
 | 11 - PowerScale serverCount Fix | v1.2 | 1/1 | Complete | 2026-03-25 |
 | 12 - PowerFlex and ObjectScale Validation | v1.2 | 1/1 | Complete | 2026-03-25 |
 | 13 - Test Suite Cleanup | v1.2 | 2/2 | Complete | 2026-03-25 |
-| 14 - Dependency Maintenance | v1.3 | 1/3 | In Progress|  |
+| 14 - Dependency Maintenance | v1.3 | 2/3 | In Progress|  |
 | 15 - Code Quality Fixes | v1.3 | 0/? | Not started | — |
 | 16 - PPTX Foundation | v1.3 | 0/? | Not started | — |
 | 17 - PPTX Content | v1.3 | 0/? | Not started | — |
