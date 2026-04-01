@@ -3,10 +3,10 @@ gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Rich Export & Polish
 status: in_progress
-stopped_at: Defining requirements
+stopped_at: Roadmap created — ready to plan Phase 14
 last_updated: "2026-04-01"
 progress:
-  total_phases: 0
+  total_phases: 5
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -23,10 +23,14 @@ See: .planning/PROJECT.md (updated 2026-04-01)
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: Not started (roadmap defined, phases 14-18)
 Plan: —
-Status: Defining requirements
-Last activity: 2026-04-01 — Milestone v1.3 started
+Status: Ready to plan Phase 14
+Last activity: 2026-04-01 — Milestone v1.3 roadmap created (5 phases, 13 requirements)
+
+```
+Progress [          ] 0/5 phases complete
+```
 
 ## Accumulated Context
 
@@ -39,3 +43,13 @@ See .planning/PROJECT.md Key Decisions table for full list.
 - Dell MidRange Sizer ME5224 reference: 12x3.84TB SSD, ADAPT(8+2), Raw=41.9TiB, Usable=27.93TiB
 - Dell Sizer PowerStore 5200Q reference: 35x30.72TB NVMe, RAID(16+2), Raw=977.89TiB, Usable=801.57TiB
 - Dell KB 000188491: PowerStore DRE geometry thresholds
+
+### v1.3 Phase Map
+
+| Phase | Name | Requirements | Status |
+|-------|------|--------------|--------|
+| 14 | Dependency Maintenance | DEPS-01 | Not started |
+| 15 | Code Quality Fixes | QUALITY-01, QUALITY-02 | Not started |
+| 16 | PPTX Foundation | EXPORT-01, EXPORT-06, EXPORT-10 | Not started |
+| 17 | PPTX Content | EXPORT-02, EXPORT-03, EXPORT-04, EXPORT-05 | Not started |
+| 18 | PDF Revamp | EXPORT-07, EXPORT-08, EXPORT-09 | Not started |

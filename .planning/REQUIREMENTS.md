@@ -53,20 +53,18 @@
 
 ## Traceability
 
-<!-- Filled by roadmapper — REQ-ID → Phase mapping -->
-
 | REQ-ID | Requirement | Phase |
 |--------|-------------|-------|
-| EXPORT-01 | User can generate and download PPTX | TBD |
-| EXPORT-02 | PPTX executive summary slide | TBD |
-| EXPORT-03 | PPTX per-engine detail slides | TBD |
-| EXPORT-04 | PPTX embedded charts as images | TBD |
-| EXPORT-05 | PPTX hardware BOM slide | TBD |
-| EXPORT-06 | PPTX dark storage-themed styling | TBD |
-| EXPORT-07 | User can generate and download redesigned PDF | TBD |
-| EXPORT-08 | PDF matches PPTX visual style | TBD |
-| EXPORT-09 | PDF same content sections as PPTX | TBD |
-| EXPORT-10 | Both generate fully in-browser | TBD |
-| QUALITY-01 | resilienceWorker zero TS warnings | TBD |
-| QUALITY-02 | PowerStore per-model overhead rates | TBD |
-| DEPS-01 | npm dependencies up to date | TBD |
+| EXPORT-01 | User can generate and download PPTX | Phase 16 |
+| EXPORT-02 | PPTX executive summary slide | Phase 17 |
+| EXPORT-03 | PPTX per-engine detail slides | Phase 17 |
+| EXPORT-04 | PPTX embedded charts as images | Phase 17 |
+| EXPORT-05 | PPTX hardware BOM slide | Phase 17 |
+| EXPORT-06 | PPTX dark storage-themed styling | Phase 16 |
+| EXPORT-07 | User can generate and download redesigned PDF | Phase 18 |
+| EXPORT-08 | PDF matches PPTX visual style | Phase 18 |
+| EXPORT-09 | PDF same content sections as PPTX | Phase 18 |
+| EXPORT-10 | Both generate fully in-browser | Phase 16 |
+| QUALITY-01 | resilienceWorker zero TS warnings | Phase 15 |
+| QUALITY-02 | PowerStore per-model overhead rates | Phase 15 |
+| DEPS-01 | npm dependencies up to date | Phase 14 |
