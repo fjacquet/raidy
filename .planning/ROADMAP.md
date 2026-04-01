@@ -113,8 +113,12 @@ Plans:
   2. The deck contains four detail slides — one each for Volumetry, Performance, Resilience, and Sustainability — with the key metrics for that engine
   3. The Sankey waterfall, performance gauge, and resilience donut chart appear as embedded images in the appropriate slides
   4. A BOM slide lists drive model, specs, drive count, server count, and topology settings
-**Plans**: TBD
+**Plans**: 2 plans
 **UI hint**: yes
+
+Plans:
+- [ ] 17-01-PLAN.md — Add DOM ids to Speedometer and DonutChart; add captureSpeedometer() and captureDonutChart() to captureChart.ts
+- [ ] 17-02-PLAN.md — Expand exportPptx.ts to 7-slide deck (exec summary, 4 engine detail slides, BOM) with embedded charts; add pptx i18n keys to all 4 locales
 
 ### Phase 18: PDF Revamp
 **Goal**: The PDF export matches the PPTX visual quality and covers the same content sections
@@ -147,7 +151,7 @@ Plans:
 | 14 - Dependency Maintenance | v1.3 | 2/3 | In Progress|  |
 | 15 - Code Quality Fixes | v1.3 | 1/2 | In Progress|  |
 | 16 - PPTX Foundation | v1.3 | 3/3 | Complete   | 2026-04-01 |
-| 17 - PPTX Content | v1.3 | 0/? | Not started | — |
+| 17 - PPTX Content | v1.3 | 0/2 | Not started | — |
 | 18 - PDF Revamp | v1.3 | 0/? | Not started | — |
 
 ---
