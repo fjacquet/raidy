@@ -53,7 +53,7 @@ This roadmap takes Raidy from a functionally complete application to production-
 - [ ] **Phase 14: Dependency Maintenance** — Update all npm packages to latest compatible versions
 - [ ] **Phase 15: Code Quality Fixes** — Fix resilienceWorker TS warnings and PowerStore per-model overhead
 - [x] **Phase 16: PPTX Foundation** — Library integration, chart capture infrastructure, brand system, in-browser constraint (completed 2026-04-01)
-- [ ] **Phase 17: PPTX Content** — Executive summary, per-engine detail slides, embedded charts, BOM slide
+- [x] **Phase 17: PPTX Content** — Executive summary, per-engine detail slides, embedded charts, BOM slide (completed 2026-04-01)
 - [ ] **Phase 18: PDF Revamp** — Redesign PDF export to match PPTX brand and content parity
 
 ## Phase Details
@@ -118,7 +118,7 @@ Plans:
 
 Plans:
 - [x] 17-01-PLAN.md — Add DOM ids to Speedometer and DonutChart; add captureSpeedometer() and captureDonutChart() to captureChart.ts
-- [ ] 17-02-PLAN.md — Expand exportPptx.ts to 7-slide deck (exec summary, 4 engine detail slides, BOM) with embedded charts; add pptx i18n keys to all 4 locales
+- [x] 17-02-PLAN.md — Expand exportPptx.ts to 7-slide deck (exec summary, 4 engine detail slides, BOM) with embedded charts; add pptx i18n keys to all 4 locales
 
 ### Phase 18: PDF Revamp
 **Goal**: The PDF export matches the PPTX visual quality and covers the same content sections
@@ -151,7 +151,7 @@ Plans:
 | 14 - Dependency Maintenance | v1.3 | 2/3 | In Progress|  |
 | 15 - Code Quality Fixes | v1.3 | 1/2 | In Progress|  |
 | 16 - PPTX Foundation | v1.3 | 3/3 | Complete   | 2026-04-01 |
-| 17 - PPTX Content | v1.3 | 1/2 | In Progress|  |
+| 17 - PPTX Content | v1.3 | 2/2 | Complete   | 2026-04-01 |
 | 18 - PDF Revamp | v1.3 | 0/? | Not started | — |
 
 ---

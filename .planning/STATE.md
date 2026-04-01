@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Rich Export & Polish
-status: executing
-last_updated: "2026-04-01T09:56:30.674Z"
+status: verifying
+last_updated: "2026-04-01T10:03:05.471Z"
 last_activity: 2026-04-01
 progress:
   total_phases: 5
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 10
-  completed_plans: 9
+  completed_plans: 10
 ---
 
 # Project State
@@ -25,7 +25,7 @@ See: .planning/PROJECT.md (updated 2026-04-01)
 
 Phase: 17 (pptx-content) — EXECUTING
 Plan: 2 of 2
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-04-01
 
 ```
@@ -45,6 +45,7 @@ See .planning/PROJECT.md Key Decisions table for full list.
 - [Phase 16]: Drive model field used for display; no brand field on Drive interface; drive capacity from capacity_raw (bytes)
 - [Phase 16-pptx-foundation]: Fire-and-forget pattern for exportToPptx call, matching existing exportToPdf
 - [Phase 17-pptx-content]: id on outermost HTML wrapper div (not SVG) because html-to-image requires HTMLElement; both DonutChart branches get same id for consistent capture
+- [Phase 17-pptx-content]: Used Promise.all to capture all three chart images in parallel before building slides for faster export
 
 ### Reference Documents
 

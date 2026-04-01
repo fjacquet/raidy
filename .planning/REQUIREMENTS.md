@@ -11,10 +11,10 @@
 ### Export (PPTX + PDF)
 
 - [x] **EXPORT-01**: User can generate and download a PPTX file from the current simulation configuration
-- [ ] **EXPORT-02**: PPTX executive summary slide displays topology name, usable capacity, and key IOPS/resilience/sustainability metrics
-- [ ] **EXPORT-03**: PPTX includes dedicated detail slides for each calculation engine (Volumetry, Performance, Resilience, Sustainability)
+- [x] **EXPORT-02**: PPTX executive summary slide displays topology name, usable capacity, and key IOPS/resilience/sustainability metrics
+- [x] **EXPORT-03**: PPTX includes dedicated detail slides for each calculation engine (Volumetry, Performance, Resilience, Sustainability)
 - [x] **EXPORT-04**: PPTX embeds rendered Sankey waterfall diagram, performance gauge, and resilience donut chart as slide images
-- [ ] **EXPORT-05**: PPTX includes a hardware BOM slide listing drive model/specs, drive count, server count, and topology settings
+- [x] **EXPORT-05**: PPTX includes a hardware BOM slide listing drive model/specs, drive count, server count, and topology settings
 - [x] **EXPORT-06**: PPTX slides use the app's dark storage-themed color palette, typography, and visual style
 - [ ] **EXPORT-07**: User can generate and download a redesigned PDF from the current simulation configuration
 - [ ] **EXPORT-08**: PDF visual design matches the PPTX style (dark theme, consistent typography, branded layout)
