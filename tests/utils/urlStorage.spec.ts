@@ -603,11 +603,13 @@ describe('URL Storage - Security: Malicious URL Protection (SEC-01, SEC-02, SEC-
         compressionRatio: 1.0,
       },
       powerstoreOptions: {
+        model: 'powerstore_5200q' as const,
         compression: true,
         compressionRatio: 1.5,
         dedup: false,
         dedupRatio: 1.0,
         snapshotReservePercent: 20,
+        systemOverheadPercent: 5,
       },
       powerscaleOptions: {
         compression: true,

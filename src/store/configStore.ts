@@ -100,6 +100,7 @@ const getDefaultState = () => ({
     compressionRatio: 1.0,
   },
   powerstoreOptions: {
+    model: 'powerstore_5200q' as const,
     compression: true,
     compressionRatio: 1.5,
     dedup: false,

@@ -316,6 +316,8 @@ export interface ObjectScaleOptions {
 
 /** Dell PowerStore-specific configuration options (Block Storage) */
 export interface PowerStoreOptions {
+  /** Hardware model class — determines default system overhead */
+  model: 'powerstore_3200' | 'powerstore_5200t' | 'powerstore_5200q' | 'custom'
   /** Enable compression */
   compression: boolean
   /** Compression ratio (1.0 = none, 2.0 = 2:1) */
@@ -529,8 +531,26 @@ export const DEFAULT_OBJECTSCALE_OPTIONS: ObjectScaleOptions = {
   compressionRatio: 1.0,
 }
 
+/**
+ * Per-model system overhead rates for PowerStore appliances.
+ * Sources:
+ *   - 5200Q: Dell Sizer 5200Q reference case (35x30.72TB NVMe) → 5%
+ *   - 3200:  Entry-level model, simpler metadata footprint → 5%
+ *   - 5200T: T-Series all-flash, larger metadata density → 7%
+ *   - custom: User-specified via UI slider
+ */
+export const POWERSTORE_MODEL_OVERHEAD: Record<
+  Exclude<PowerStoreOptions['model'], 'custom'>,
+  number
+> = {
+  powerstore_3200: 5,
+  powerstore_5200q: 5,
+  powerstore_5200t: 7,
+}
+
 /** Default PowerStore options */
 export const DEFAULT_POWERSTORE_OPTIONS: PowerStoreOptions = {
+  model: 'powerstore_5200q',
   compression: true,
   compressionRatio: 1.5,
   dedup: false,

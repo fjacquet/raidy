@@ -101,6 +101,7 @@ export {
   FILESYSTEM_OVERHEAD,
   getControllerOptions,
   HBA_REQUIRED_TOPOLOGIES,
+  POWERSTORE_MODEL_OVERHEAD,
   requiresHba,
 } from './topology'
 
