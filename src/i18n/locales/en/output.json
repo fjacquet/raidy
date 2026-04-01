@@ -136,5 +136,13 @@
     "terraformDesc": "GCP Config",
     "json": "JSON Export",
     "footer": "Export your storage configuration for documentation or infrastructure automation."
+  },
+  "pptx": {
+    "executiveSummary": "Executive Summary",
+    "volumetry": "Volumetry",
+    "performance": "Performance",
+    "resilience": "Resilience",
+    "sustainability": "Sustainability",
+    "bom": "Bill of Materials"
   }
 }

@@ -136,5 +136,13 @@
     "terraformDesc": "GCP-Konfiguration",
     "json": "JSON-Export",
     "footer": "Exportieren Sie Ihre Speicherkonfiguration für Dokumentation oder Infrastrukturautomatisierung."
+  },
+  "pptx": {
+    "executiveSummary": "Zusammenfassung",
+    "volumetry": "Volumetrie",
+    "performance": "Leistung",
+    "resilience": "Ausfallsicherheit",
+    "sustainability": "Nachhaltigkeit",
+    "bom": "Stückliste"
   }
 }
