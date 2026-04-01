@@ -126,6 +126,8 @@
     "title": "Esporta configurazione",
     "pdf": "Report PDF",
     "pdfDesc": "Report completo",
+    "pptx": "PowerPoint",
+    "pptxDesc": "Presentazione",
     "yaml": "YAML",
     "yamlDesc": "Configurazione",
     "ansible": "Ansible",

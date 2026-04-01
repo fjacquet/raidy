@@ -126,6 +126,8 @@
     "title": "Exporter la configuration",
     "pdf": "Rapport PDF",
     "pdfDesc": "Rapport complet",
+    "pptx": "PowerPoint",
+    "pptxDesc": "Présentation",
     "yaml": "YAML",
     "yamlDesc": "Configuration",
     "ansible": "Ansible",
