@@ -12,6 +12,7 @@ export {
   exportToYaml,
 } from './exportConfig'
 export { exportToPdf } from './exportPdf'
+export { BRAND, exportToPptx } from './exportPptx'
 export { assertNever } from './typeGuards'
 export {
   BINARY,
