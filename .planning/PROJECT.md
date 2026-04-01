@@ -32,8 +32,10 @@ Calculation accuracy for storage infrastructure decisions. If Raidy gives wrong 
 
 <!-- Next milestone work -->
 
-- [ ] **Performance optimization** — Memoization boundaries, cancellable Monte Carlo, reduced recalculations
-- [ ] **Production validation** — CI/CD pipeline, deployment verification, browser compatibility
+- [ ] **PPTX export** — Client-side PowerPoint generation: executive summary, per-engine detail slides, embedded Sankey/charts, BOM slide; styled to match app dark/storage-themed design
+- [ ] **PDF revamp** — Redesign existing PDF export to match PPTX visual quality and consistent brand style
+- [ ] **resilienceWorker TS fix** — Resolve noNonNullAssertion warnings in resilienceWorker.ts
+- [ ] **PowerStore model-class overhead** — Per-model overhead rates (5200T vs 5200Q etc.) instead of flat 5%
 - [ ] **Dependency maintenance** — Keep npm packages current
 
 ### Out of Scope
@@ -52,7 +54,7 @@ Calculation accuracy for storage infrastructure decisions. If Raidy gives wrong 
 
 **Tech stack:** React 19, TypeScript 5.9, Vite 7, Tailwind CSS 4, Zustand, Vitest, Biome, Web Workers.
 
-**Known issues:** Phases 5-6 (Performance & Fixes, Production Validation) deferred from v1.0. resilienceWorker.ts has noNonNullAssertion warnings. PowerStore system overhead may vary by model class (currently 5% default for all).
+**Known issues:** Phases 5-6 (Performance & Fixes, Production Validation) deferred from v1.0. resilienceWorker.ts has noNonNullAssertion warnings (to be fixed in v1.3). PowerStore system overhead may vary by model class — currently flat 5% (to be refined in v1.3).
 
 ## Key Decisions
 
@@ -77,4 +79,34 @@ Calculation accuracy for storage infrastructure decisions. If Raidy gives wrong 
 
 ---
 
-_Last updated: 2026-03-26 after v1.2 milestone_
+## Current Milestone: v1.3 Rich Export & Polish
+
+**Goal:** Add fully offline, visually rich PPTX export and revamp PDF export to match the app's dark storage-themed identity, while fixing known TypeScript and calculation accuracy issues.
+
+**Target features:**
+- PPTX export (executive summary, per-engine slides, embedded charts, BOM slide)
+- PDF revamp (consistent brand style matching PPTX quality)
+- Fix resilienceWorker.ts noNonNullAssertion TS warnings
+- PowerStore per-model-class overhead rates
+- Dependency maintenance
+
+## Evolution
+
+This document evolves at phase transitions and milestone boundaries.
+
+**After each phase transition** (via `/gsd:transition`):
+1. Requirements invalidated? → Move to Out of Scope with reason
+2. Requirements validated? → Move to Validated with phase reference
+3. New requirements emerged? → Add to Active
+4. Decisions to log? → Add to Key Decisions
+5. "What This Is" still accurate? → Update if drifted
+
+**After each milestone** (via `/gsd:complete-milestone`):
+1. Full review of all sections
+2. Core Value check — still the right priority?
+3. Audit Out of Scope — reasons still valid?
+4. Update Context with current state
+
+---
+
+_Last updated: 2026-04-01 — Milestone v1.3 started_
