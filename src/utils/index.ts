@@ -2,6 +2,7 @@
  * Utility exports.
  */
 
+export { captureSankeyDiagram } from './captureChart'
 export {
   downloadAnsible,
   downloadTerraform,

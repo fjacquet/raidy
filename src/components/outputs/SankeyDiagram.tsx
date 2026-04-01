@@ -163,81 +163,83 @@ export function SankeyDiagram({ volumetry, width = 600, height = 300 }: SankeyDi
   }
 
   return (
-    <svg
-      width={width}
-      height={height}
-      className="overflow-visible"
-      aria-label="Capacity waterfall diagram"
-    >
-      <title>Capacity Waterfall Diagram</title>
-      {/* Links */}
-      <g fill="none">
-        {sankeyData.links.map((link, i) => {
-          const linkData = link as {
-            width?: number
-            source: { x1?: number }
-            target: { x0?: number }
-            y0?: number
-            y1?: number
-          }
-          const path = sankeyLinkHorizontal()(
-            link as Parameters<ReturnType<typeof sankeyLinkHorizontal>>[0],
-          )
-          const linkId = `link-${links[i]?.source ?? 0}-${links[i]?.target ?? 0}-${i}`
-          return (
-            <path
-              key={linkId}
-              d={path || ''}
-              stroke={links[i]?.color || '#475569'}
-              strokeWidth={Math.max(1, linkData.width || 1)}
-              strokeOpacity={0.5}
-              className="transition-all duration-300 hover:stroke-opacity-80"
-            />
-          )
-        })}
-      </g>
-
-      {/* Nodes */}
-      <g>
-        {sankeyData.nodes.map((node, i) => {
-          const n = node as { x0: number; x1: number; y0: number; y1: number; name?: string }
-          const nodeHeight = n.y1 - n.y0
-          const nodeWidth = n.x1 - n.x0
-          const nodeId = `node-${nodes[i]?.name?.replace(/\s+/g, '-').toLowerCase() ?? i}`
-
-          return (
-            <g key={nodeId} transform={`translate(${n.x0}, ${n.y0})`}>
-              <rect
-                width={nodeWidth}
-                height={nodeHeight}
-                fill={nodes[i]?.color || '#475569'}
-                rx={3}
-                className="transition-all duration-300"
+    <div id="sankey-diagram">
+      <svg
+        width={width}
+        height={height}
+        className="overflow-visible"
+        aria-label="Capacity waterfall diagram"
+      >
+        <title>Capacity Waterfall Diagram</title>
+        {/* Links */}
+        <g fill="none">
+          {sankeyData.links.map((link, i) => {
+            const linkData = link as {
+              width?: number
+              source: { x1?: number }
+              target: { x0?: number }
+              y0?: number
+              y1?: number
+            }
+            const path = sankeyLinkHorizontal()(
+              link as Parameters<ReturnType<typeof sankeyLinkHorizontal>>[0],
+            )
+            const linkId = `link-${links[i]?.source ?? 0}-${links[i]?.target ?? 0}-${i}`
+            return (
+              <path
+                key={linkId}
+                d={path || ''}
+                stroke={links[i]?.color || '#475569'}
+                strokeWidth={Math.max(1, linkData.width || 1)}
+                strokeOpacity={0.5}
+                className="transition-all duration-300 hover:stroke-opacity-80"
               />
-              {/* Label */}
-              <text
-                x={i === 0 ? nodeWidth + 8 : -8}
-                y={nodeHeight / 2}
-                dy="0.35em"
-                textAnchor={i === 0 ? 'start' : 'end'}
-                className="text-xs fill-slate-300"
-              >
-                {nodes[i]?.name}
-              </text>
-              {/* Value */}
-              <text
-                x={i === 0 ? nodeWidth + 8 : -8}
-                y={nodeHeight / 2 + 14}
-                dy="0.35em"
-                textAnchor={i === 0 ? 'start' : 'end'}
-                className="text-xs fill-slate-500 font-mono"
-              >
-                {formatBytes(nodes[i]?.value || 0)}
-              </text>
-            </g>
-          )
-        })}
-      </g>
-    </svg>
+            )
+          })}
+        </g>
+
+        {/* Nodes */}
+        <g>
+          {sankeyData.nodes.map((node, i) => {
+            const n = node as { x0: number; x1: number; y0: number; y1: number; name?: string }
+            const nodeHeight = n.y1 - n.y0
+            const nodeWidth = n.x1 - n.x0
+            const nodeId = `node-${nodes[i]?.name?.replace(/\s+/g, '-').toLowerCase() ?? i}`
+
+            return (
+              <g key={nodeId} transform={`translate(${n.x0}, ${n.y0})`}>
+                <rect
+                  width={nodeWidth}
+                  height={nodeHeight}
+                  fill={nodes[i]?.color || '#475569'}
+                  rx={3}
+                  className="transition-all duration-300"
+                />
+                {/* Label */}
+                <text
+                  x={i === 0 ? nodeWidth + 8 : -8}
+                  y={nodeHeight / 2}
+                  dy="0.35em"
+                  textAnchor={i === 0 ? 'start' : 'end'}
+                  className="text-xs fill-slate-300"
+                >
+                  {nodes[i]?.name}
+                </text>
+                {/* Value */}
+                <text
+                  x={i === 0 ? nodeWidth + 8 : -8}
+                  y={nodeHeight / 2 + 14}
+                  dy="0.35em"
+                  textAnchor={i === 0 ? 'start' : 'end'}
+                  className="text-xs fill-slate-500 font-mono"
+                >
+                  {formatBytes(nodes[i]?.value || 0)}
+                </text>
+              </g>
+            )
+          })}
+        </g>
+      </svg>
+    </div>
   )
 }
