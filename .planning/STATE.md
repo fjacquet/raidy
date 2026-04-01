@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Rich Export & Polish
 status: planning
-last_updated: "2026-04-01T09:30:36.117Z"
+last_updated: "2026-04-01T09:35:14.622Z"
 last_activity: 2026-04-01 — Milestone v1.3 roadmap created (5 phases, 13 requirements)
 progress:
   total_phases: 5
   completed_phases: 2
   total_plans: 8
-  completed_plans: 6
+  completed_plans: 7
 ---
 
 # Project State
@@ -41,6 +41,8 @@ See .planning/PROJECT.md Key Decisions table for full list.
 - [Phase 14]: Updated biome.json schema URL from 2.4.6 to 2.4.10 to eliminate version mismatch diagnostic
 - [Phase 15]: Used arr[i] ?? 0 over optional chaining in resilienceWorker.ts — arrays initialized with .fill(0) so semantically identical to ! with no behavioral change
 - [Phase 16]: Wrapped SVG in div for html-to-image compatibility — requires HTMLElement not SVGElement
+- [Phase 16]: Corrected VolumetryResult field names: bytes-based rawCapacity/usableCapacity/effectiveCapacity with ÷1e12 TB conversion; plan template had non-existent .TB suffixed fields
+- [Phase 16]: Drive model field used for display; no brand field on Drive interface; drive capacity from capacity_raw (bytes)
 
 ### Reference Documents
 

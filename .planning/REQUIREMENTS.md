@@ -15,7 +15,7 @@
 - [ ] **EXPORT-03**: PPTX includes dedicated detail slides for each calculation engine (Volumetry, Performance, Resilience, Sustainability)
 - [ ] **EXPORT-04**: PPTX embeds rendered Sankey waterfall diagram, performance gauge, and resilience donut chart as slide images
 - [ ] **EXPORT-05**: PPTX includes a hardware BOM slide listing drive model/specs, drive count, server count, and topology settings
-- [ ] **EXPORT-06**: PPTX slides use the app's dark storage-themed color palette, typography, and visual style
+- [x] **EXPORT-06**: PPTX slides use the app's dark storage-themed color palette, typography, and visual style
 - [ ] **EXPORT-07**: User can generate and download a redesigned PDF from the current simulation configuration
 - [ ] **EXPORT-08**: PDF visual design matches the PPTX style (dark theme, consistent typography, branded layout)
 - [ ] **EXPORT-09**: PDF includes the same content sections as PPTX (executive summary, per-engine details, charts, BOM)
