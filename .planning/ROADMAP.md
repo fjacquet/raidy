@@ -81,7 +81,11 @@ Plans:
   1. `npm run typecheck` produces zero noNonNullAssertion warnings in resilienceWorker.ts
   2. PowerStore 5200T, 5200Q, and 3200 model classes each apply their own distinct overhead rate instead of a flat 5%
   3. Existing PowerStore tests continue to pass after the per-model overhead change
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [ ] 15-01-PLAN.md — Fix resilienceWorker.ts noNonNullAssertion warnings (QUALITY-01)
+- [ ] 15-02-PLAN.md — Add PowerStore per-model overhead rates and model selector UI (QUALITY-02)
 
 ### Phase 16: PPTX Foundation
 **Goal**: A working PPTX generation pipeline exists in-browser with brand styling and chart capture capability
@@ -136,7 +140,7 @@ Plans:
 | 12 - PowerFlex and ObjectScale Validation | v1.2 | 1/1 | Complete | 2026-03-25 |
 | 13 - Test Suite Cleanup | v1.2 | 2/2 | Complete | 2026-03-25 |
 | 14 - Dependency Maintenance | v1.3 | 2/3 | In Progress|  |
-| 15 - Code Quality Fixes | v1.3 | 0/? | Not started | — |
+| 15 - Code Quality Fixes | v1.3 | 0/2 | Not started | — |
 | 16 - PPTX Foundation | v1.3 | 0/? | Not started | — |
 | 17 - PPTX Content | v1.3 | 0/? | Not started | — |
 | 18 - PDF Revamp | v1.3 | 0/? | Not started | — |
