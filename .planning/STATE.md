@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Rich Export & Polish
 status: planning
-last_updated: "2026-04-01T09:35:14.622Z"
+last_updated: "2026-04-01T09:40:34.664Z"
 last_activity: 2026-04-01 — Milestone v1.3 roadmap created (5 phases, 13 requirements)
 progress:
   total_phases: 5
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 8
-  completed_plans: 7
+  completed_plans: 8
 ---
 
 # Project State
@@ -43,6 +43,7 @@ See .planning/PROJECT.md Key Decisions table for full list.
 - [Phase 16]: Wrapped SVG in div for html-to-image compatibility — requires HTMLElement not SVGElement
 - [Phase 16]: Corrected VolumetryResult field names: bytes-based rawCapacity/usableCapacity/effectiveCapacity with ÷1e12 TB conversion; plan template had non-existent .TB suffixed fields
 - [Phase 16]: Drive model field used for display; no brand field on Drive interface; drive capacity from capacity_raw (bytes)
+- [Phase 16-pptx-foundation]: Fire-and-forget pattern for exportToPptx call, matching existing exportToPdf
 
 ### Reference Documents
 
