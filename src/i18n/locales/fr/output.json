@@ -143,6 +143,8 @@
     "performance": "Performance",
     "resilience": "Résilience",
     "sustainability": "Durabilité",
+    "backup": "Sauvegarde",
+    "bottleneck": "Goulots d'étranglement",
     "bom": "Nomenclature"
   }
 }

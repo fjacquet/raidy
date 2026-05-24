@@ -12,6 +12,8 @@ interface SpeedometerProps {
   unit: string
   size?: number
   thresholds?: { value: number; color: string }[]
+  /** Optional DOM id (used to capture an individual gauge for PPTX export). */
+  id?: string
 }
 
 // Default color thresholds (percentage of max)
@@ -28,6 +30,7 @@ export function Speedometer({
   unit,
   size = 180,
   thresholds = DEFAULT_THRESHOLDS,
+  id,
 }: SpeedometerProps) {
   const { angle, color, formattedValue } = useMemo(() => {
     const percent = Math.min(value / max, 1)
@@ -136,7 +139,7 @@ export function Speedometer({
   }, [center, innerRadius, strokeWidth])
 
   return (
-    <div id="speedometer-chart" className="flex flex-col items-center">
+    <div id={id} className="flex flex-col items-center">
       <svg
         width={size}
         height={size * 0.7}

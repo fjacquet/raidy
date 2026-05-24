@@ -143,6 +143,8 @@
     "performance": "Performance",
     "resilience": "Resilience",
     "sustainability": "Sustainability",
+    "backup": "Backup",
+    "bottleneck": "Bottlenecks",
     "bom": "Bill of Materials"
   }
 }
