@@ -18,8 +18,8 @@ export function SynologyOptionsPanel() {
   const { synologyOptions, setSynologyOptions } = useConfigStore()
 
   return (
-    <div className="space-y-4 pt-3 border-t border-surface-700">
-      <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+    <div className="space-y-4 pt-3 border-t border-slate-200 dark:border-surface-700">
+      <h4 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
         {t('synology.title')}
       </h4>
 

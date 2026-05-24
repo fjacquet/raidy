@@ -42,6 +42,22 @@ export const BRAND = {
   parity: 'E05C3A', // orange-red
 } as const
 
+type Brand = Record<keyof typeof BRAND, string>
+
+/** Light-theme palette — white paper + ink text. Accent/semantic colors are
+ * shared (they read on both). Selected at export time to match the app theme. */
+const BRAND_LIGHT: Brand = {
+  ...BRAND,
+  bg: 'FFFFFF',
+  panel: 'F1F5F9',
+  border: 'E2E8F0',
+  textWhite: '0F172A', // ink — primary text on light
+  textMuted: '475569', // slate-600
+}
+
+/** Active palette for the slide being built; set by exportToPptx per theme. */
+let brand: Brand = BRAND
+
 /** Convert bytes to decimal terabytes (1 TB = 1e12 bytes). */
 function bytesToTB(bytes: number): number {
   return bytes / 1e12
@@ -61,8 +77,8 @@ function addAccentBar(slide: pptxgen.Slide, prs: pptxgen): void {
     y: 0,
     w: 13.33,
     h: 0.08,
-    fill: { color: BRAND.accent },
-    line: { color: BRAND.accent },
+    fill: { color: brand.accent },
+    line: { color: brand.accent },
   })
 }
 
@@ -104,7 +120,7 @@ function addChartOrFallback(
       w: box.w,
       h: 0.5,
       fontSize: 11,
-      color: BRAND.textMuted,
+      color: brand.textMuted,
       italic: true,
       fontFace: FONT,
       align: 'center',
@@ -125,11 +141,11 @@ function addStatLine(
   const runs: pptxgen.TextProps[] = []
   stats.forEach((stat, i) => {
     if (i > 0) {
-      runs.push({ text: '   ·   ', options: { color: BRAND.border, fontFace: FONT, fontSize } })
+      runs.push({ text: '   ·   ', options: { color: brand.border, fontFace: FONT, fontSize } })
     }
     runs.push({
       text: `${stat.label} `,
-      options: { color: BRAND.textMuted, fontFace: FONT, fontSize },
+      options: { color: brand.textMuted, fontFace: FONT, fontSize },
     })
     runs.push({
       text: stat.value,
@@ -146,7 +162,7 @@ function buildSummarySlide(
   charts: { sankey: string | null; gauges: (string | null)[] },
 ): void {
   const slide = prs.addSlide()
-  slide.background = { fill: BRAND.bg }
+  slide.background = { fill: brand.bg }
   addAccentBar(slide, prs)
 
   const { volumetry: vol, performance: perf, resilience, sustainability: sus } = config.results
@@ -161,7 +177,7 @@ function buildSummarySlide(
     h: 0.5,
     fontSize: 22,
     bold: true,
-    color: BRAND.textWhite,
+    color: brand.textWhite,
     fontFace: FONT,
   })
 
@@ -186,7 +202,7 @@ function buildSummarySlide(
     w: 12.6,
     h: 0.28,
     fontSize: 11,
-    color: BRAND.textMuted,
+    color: brand.textMuted,
     fontFace: FONT,
   })
 
@@ -197,7 +213,7 @@ function buildSummarySlide(
   const chartBottom = chartTop + chartH
 
   // Wider Sankey (reads like the web); smaller gauges packed to the right.
-  addSectionLabel(slide, i18n.t('output:pptx.volumetry'), BRAND.capacity, 0.4, 1.0)
+  addSectionLabel(slide, i18n.t('output:pptx.volumetry'), brand.capacity, 0.4, 1.0)
   addChartOrFallback(
     slide,
     charts.sankey,
@@ -205,7 +221,7 @@ function buildSummarySlide(
     'Capacity chart unavailable',
   )
 
-  addSectionLabel(slide, i18n.t('output:pptx.performance'), BRAND.accent, 8.0, 1.0)
+  addSectionLabel(slide, i18n.t('output:pptx.performance'), brand.accent, 8.0, 1.0)
   const gaugeColX: [number, number] = [8.0, 10.5]
   const gaugeRowY: [number, number] = [chartTop + 0.1, chartTop + chartH / 2 + 0.05]
   const gaugeW = 2.45
@@ -230,19 +246,19 @@ function buildSummarySlide(
       {
         label: 'Raw',
         value: `${bytesToTB(vol.rawCapacity).toFixed(1)} TB`,
-        color: BRAND.textWhite,
+        color: brand.textWhite,
       },
       {
         label: 'Usable',
         value: `${bytesToTB(vol.usableCapacity).toFixed(1)} TB`,
-        color: BRAND.capacity,
+        color: brand.capacity,
       },
       {
         label: 'Effective',
         value: `${bytesToTB(vol.effectiveCapacity).toFixed(1)} TB`,
-        color: BRAND.accent,
+        color: brand.accent,
       },
-      { label: 'Efficiency', value: `${vol.efficiency.toFixed(1)}%`, color: BRAND.overhead },
+      { label: 'Efficiency', value: `${vol.efficiency.toFixed(1)}%`, color: brand.overhead },
     ],
     0.4,
     nl0,
@@ -254,17 +270,17 @@ function buildSummarySlide(
       {
         label: 'Parity',
         value: `${bytesToTB(vol.parityOverhead).toFixed(1)} TB`,
-        color: BRAND.parity,
+        color: brand.parity,
       },
       {
         label: 'Spares',
         value: `${bytesToTB(vol.hotSpareOverhead).toFixed(1)} TB`,
-        color: BRAND.overhead,
+        color: brand.overhead,
       },
       {
         label: 'FS',
         value: `${bytesToTB(vol.filesystemOverhead).toFixed(1)} TB`,
-        color: BRAND.textMuted,
+        color: brand.textMuted,
       },
     ],
     0.4,
@@ -275,8 +291,8 @@ function buildSummarySlide(
   addStatLine(
     slide,
     [
-      { label: 'Max Read', value: `${formatIops(perf.maxReadIOPS)} IOPS`, color: BRAND.accent },
-      { label: '/', value: `${perf.maxReadThroughputMBs.toFixed(0)} MB/s`, color: BRAND.textWhite },
+      { label: 'Max Read', value: `${formatIops(perf.maxReadIOPS)} IOPS`, color: brand.accent },
+      { label: '/', value: `${perf.maxReadThroughputMBs.toFixed(0)} MB/s`, color: brand.textWhite },
     ],
     8.0,
     nl0,
@@ -285,11 +301,11 @@ function buildSummarySlide(
   addStatLine(
     slide,
     [
-      { label: 'Max Write', value: `${formatIops(perf.maxWriteIOPS)} IOPS`, color: BRAND.accent },
+      { label: 'Max Write', value: `${formatIops(perf.maxWriteIOPS)} IOPS`, color: brand.accent },
       {
         label: '/',
         value: `${perf.maxWriteThroughputMBs.toFixed(0)} MB/s`,
-        color: BRAND.textWhite,
+        color: brand.textWhite,
       },
     ],
     8.0,
@@ -300,56 +316,56 @@ function buildSummarySlide(
   // ── Extras spread to fill the page ────────────────────────────────────
   let y = nl1 + 0.5
 
-  addSectionLabel(slide, i18n.t('output:pptx.sustainability'), BRAND.overhead, 0.4, y)
+  addSectionLabel(slide, i18n.t('output:pptx.sustainability'), brand.overhead, 0.4, y)
   const energyStats: StatRun[] = [
-    { label: 'Total', value: `${sus.powerBreakdown.total.toFixed(0)} W`, color: BRAND.accent },
-    { label: 'Drives', value: `${sus.powerBreakdown.drives.toFixed(0)} W`, color: BRAND.textMuted },
+    { label: 'Total', value: `${sus.powerBreakdown.total.toFixed(0)} W`, color: brand.accent },
+    { label: 'Drives', value: `${sus.powerBreakdown.drives.toFixed(0)} W`, color: brand.textMuted },
     {
       label: 'Servers',
       value: `${sus.powerBreakdown.servers.toFixed(0)} W`,
-      color: BRAND.textMuted,
+      color: brand.textMuted,
     },
     {
       label: 'Cooling',
       value: `${sus.powerBreakdown.cooling.toFixed(0)} W`,
-      color: BRAND.textMuted,
+      color: brand.textMuted,
     },
-    { label: 'Energy', value: `${sus.annualEnergyKwh.toFixed(0)} kWh/yr`, color: BRAND.textWhite },
-    { label: 'CO₂', value: `${sus.annualCO2Kg.toFixed(0)} kg/yr`, color: BRAND.textWhite },
+    { label: 'Energy', value: `${sus.annualEnergyKwh.toFixed(0)} kWh/yr`, color: brand.textWhite },
+    { label: 'CO₂', value: `${sus.annualCO2Kg.toFixed(0)} kg/yr`, color: brand.textWhite },
   ]
   if (sus.flashEndurance) {
     energyStats.push({
       label: 'Endurance',
       value: `${sus.flashEndurance.expectedLifeYears.toFixed(1)} yr`,
-      color: BRAND.capacity,
+      color: brand.capacity,
     })
   }
   addStatLine(slide, energyStats, 0.4, y + 0.33, 12.6)
   y += 0.85
 
-  addSectionLabel(slide, i18n.t('output:pptx.bottleneck'), BRAND.parity, 0.4, y)
+  addSectionLabel(slide, i18n.t('output:pptx.bottleneck'), brand.parity, 0.4, y)
   const layerStats: StatRun[] = perf.layers.slice(0, 6).map((layer) => ({
     label: layer.name.replace(/\s*\(.*\)\s*$/, ''),
     value: `${layer.throughputMBs.toFixed(0)} MB/s`,
-    color: layer.isBottleneck ? BRAND.parity : BRAND.textWhite,
+    color: layer.isBottleneck ? brand.parity : brand.textWhite,
   }))
   addStatLine(slide, layerStats, 0.4, y + 0.33, 12.6)
   y += 0.85
 
   // Resilience — only when the simulation has actually been run.
   if (resilience) {
-    addSectionLabel(slide, i18n.t('output:pptx.resilience'), BRAND.capacity, 0.4, y)
+    addSectionLabel(slide, i18n.t('output:pptx.resilience'), brand.capacity, 0.4, y)
     addStatLine(
       slide,
       [
-        { label: 'Survival', value: resilience.survivalPercent, color: BRAND.capacity },
-        { label: 'Durability', value: `${resilience.nines} nines`, color: BRAND.capacity },
+        { label: 'Survival', value: resilience.survivalPercent, color: brand.capacity },
+        { label: 'Durability', value: `${resilience.nines} nines`, color: brand.capacity },
         {
           label: 'Rebuild',
           value: `${resilience.avgRebuildTimeHours.toFixed(1)} h`,
-          color: BRAND.textMuted,
+          color: brand.textMuted,
         },
-        { label: 'Risk', value: resilience.riskLevel.toUpperCase(), color: BRAND.overhead },
+        { label: 'Risk', value: resilience.riskLevel.toUpperCase(), color: brand.overhead },
       ],
       0.4,
       y + 0.33,
@@ -363,6 +379,9 @@ function buildSummarySlide(
  * Runs entirely in the browser — no server request is made.
  */
 export async function exportToPptx(config: ExportConfig): Promise<void> {
+  // Follow the app theme: light deck for light mode, dark deck for dark.
+  brand = document.documentElement.classList.contains('dark') ? BRAND : BRAND_LIGHT
+
   // Capture the charts in parallel before building the slide.
   const [sankey, gauges] = await Promise.all([captureSankeyDiagram(), capturePerfGauges()])
 

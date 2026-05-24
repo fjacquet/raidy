@@ -154,7 +154,7 @@ export function Speedometer({
           stroke="currentColor"
           strokeWidth={strokeWidth}
           strokeLinecap="round"
-          className="text-surface-700"
+          className="text-slate-200 dark:text-surface-700"
         />
 
         {/* Colored gradient segments */}
@@ -208,7 +208,7 @@ export function Speedometer({
             y2={tick.y2}
             stroke="currentColor"
             strokeWidth={tick.major ? 2 : 1}
-            className="text-slate-500"
+            className="text-slate-400 dark:text-slate-500"
           />
         ))}
 
@@ -216,17 +216,25 @@ export function Speedometer({
         <path d={needlePath} fill={color} className="transition-all duration-500" />
 
         {/* Center circle */}
-        <circle cx={center} cy={center} r={8} fill="currentColor" className="text-slate-400" />
+        <circle
+          cx={center}
+          cy={center}
+          r={8}
+          fill="currentColor"
+          className="text-slate-500 dark:text-slate-400"
+        />
       </svg>
 
       {/* Value display */}
       <div className="text-center -mt-2">
-        <p className="text-2xl font-bold text-white font-mono">{formattedValue}</p>
-        <p className="text-xs text-slate-400">{unit}</p>
+        <p className="text-2xl font-bold text-slate-900 dark:text-white font-mono">
+          {formattedValue}
+        </p>
+        <p className="text-xs text-slate-500 dark:text-slate-400">{unit}</p>
       </div>
 
       {/* Label */}
-      <p className="text-sm text-slate-300 mt-1">{label}</p>
+      <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">{label}</p>
     </div>
   )
 }

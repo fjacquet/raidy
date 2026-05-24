@@ -92,8 +92,8 @@ export function AdvancedPanel() {
         topology.type !== 'objectscale' &&
         topology.type !== 'powerflex' &&
         topology.type !== 'nutanix' && (
-          <div className="space-y-4 pt-4 border-t border-surface-700">
-            <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+          <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-surface-700">
+            <h4 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
               {t('dataEfficiency.title')}
             </h4>
 
@@ -139,8 +139,8 @@ export function AdvancedPanel() {
         )}
 
       {/* Network & Bus Section */}
-      <div className="space-y-4 pt-4 border-t border-surface-700">
-        <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+      <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-surface-700">
+        <h4 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
           {t('network.title')}
         </h4>
 
@@ -183,8 +183,8 @@ export function AdvancedPanel() {
       </div>
 
       {/* Controller / HBA Section */}
-      <div className="space-y-4 pt-4 border-t border-surface-700">
-        <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+      <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-surface-700">
+        <h4 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
           {needsHba ? t('pcie.title') : t('controller.title')}
         </h4>
 
@@ -199,14 +199,16 @@ export function AdvancedPanel() {
             onChange={(v) => setControllerOptions({ controller: v as ControllerType })}
           />
           {selectedController && (
-            <div className="grid grid-cols-2 gap-2 mt-2 text-xs text-slate-400">
+            <div className="grid grid-cols-2 gap-2 mt-2 text-xs text-slate-500 dark:text-slate-400">
               <div>
                 {t('controller.maxIops')}:{' '}
-                <span className="text-slate-300">{selectedController.iops.toLocaleString()}</span>
+                <span className="text-slate-600 dark:text-slate-300">
+                  {selectedController.iops.toLocaleString()}
+                </span>
               </div>
               <div>
                 {t('controller.maxThroughput')}:{' '}
-                <span className="text-slate-300">
+                <span className="text-slate-600 dark:text-slate-300">
                   {selectedController.throughputMBs.toLocaleString()} MB/s
                 </span>
               </div>
@@ -219,8 +221,8 @@ export function AdvancedPanel() {
       </div>
 
       {/* Power & Sustainability Section */}
-      <div className="space-y-4 pt-4 border-t border-surface-700">
-        <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+      <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-surface-700">
+        <h4 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
           {t('power.title')}
         </h4>
 
@@ -242,8 +244,8 @@ export function AdvancedPanel() {
       </div>
 
       {/* Capacity Management Section */}
-      <div className="space-y-4 pt-4 border-t border-surface-700">
-        <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+      <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-surface-700">
+        <h4 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
           {t('capacityManagement.title')}
         </h4>
 
@@ -271,8 +273,8 @@ export function AdvancedPanel() {
       </div>
 
       {/* Filesystem & Backup Section */}
-      <div className="space-y-4 pt-4 border-t border-surface-700">
-        <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+      <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-surface-700">
+        <h4 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
           {t('filesystem.title')}
         </h4>
 

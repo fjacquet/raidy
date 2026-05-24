@@ -22,7 +22,7 @@ export function Cockpit() {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-surface-900">
+    <div className="h-screen flex flex-col bg-slate-50 dark:bg-surface-900">
       <Header onToggleGuide={toggleGuide} isGuideOpen={isGuideOpen} />
 
       {/* Main content - responsive layout */}
@@ -58,15 +58,15 @@ export function Cockpit() {
       </div>
 
       {/* Mobile bottom navigation - only visible on mobile */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-surface-800 border-t border-surface-700 z-50">
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-surface-800 border-t border-slate-200 dark:border-surface-700 z-50">
         <div className="flex">
           <button
             type="button"
             onClick={() => setActiveView('config')}
             className={`flex-1 py-3 min-h-[44px] text-sm font-medium transition-colors ${
               activeView === 'config'
-                ? 'text-accent-400 bg-surface-700'
-                : 'text-surface-300 hover:text-surface-100'
+                ? 'text-accent-400 bg-slate-100 dark:bg-surface-700'
+                : 'text-slate-600 dark:text-surface-300 hover:text-slate-900 dark:hover:text-surface-100'
             }`}
           >
             {t('nav.configuration')}
@@ -76,8 +76,8 @@ export function Cockpit() {
             onClick={() => setActiveView('report')}
             className={`flex-1 py-3 min-h-[44px] text-sm font-medium transition-colors ${
               activeView === 'report'
-                ? 'text-accent-400 bg-surface-700'
-                : 'text-surface-300 hover:text-surface-100'
+                ? 'text-accent-400 bg-slate-100 dark:bg-surface-700'
+                : 'text-slate-600 dark:text-surface-300 hover:text-slate-900 dark:hover:text-surface-100'
             }`}
           >
             {t('nav.report')}
@@ -87,8 +87,8 @@ export function Cockpit() {
             onClick={() => setActiveView('guide')}
             className={`flex-1 py-3 min-h-[44px] text-sm font-medium transition-colors ${
               activeView === 'guide'
-                ? 'text-accent-400 bg-surface-700'
-                : 'text-surface-300 hover:text-surface-100'
+                ? 'text-accent-400 bg-slate-100 dark:bg-surface-700'
+                : 'text-slate-600 dark:text-surface-300 hover:text-slate-900 dark:hover:text-surface-100'
             }`}
           >
             {t('nav.guide')}

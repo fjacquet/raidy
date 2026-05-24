@@ -149,7 +149,7 @@ export function TieringPanel({
       )}
 
       {/* Fast Tier Section */}
-      <div className="space-y-3 p-3 bg-surface-800 rounded-lg">
+      <div className="space-y-3 p-3 bg-white dark:bg-surface-800 rounded-lg">
         <h5 className="text-sm font-medium text-blue-400">{labels.fastTier}</h5>
         <p className="text-xs text-slate-500">{labels.fastTierHint}</p>
 
@@ -180,15 +180,17 @@ export function TieringPanel({
         </div>
 
         {selectedFastDrive && (
-          <div className="text-xs text-slate-400">
+          <div className="text-xs text-slate-500 dark:text-slate-400">
             {t('tiering.fastTierCapacity')}:{' '}
-            <span className="text-white font-medium">{formatBytes(totalFastCapacity)}</span>
+            <span className="text-slate-900 dark:text-white font-medium">
+              {formatBytes(totalFastCapacity)}
+            </span>
           </div>
         )}
       </div>
 
       {/* Capacity Tier Section */}
-      <div className="space-y-3 p-3 bg-surface-800 rounded-lg">
+      <div className="space-y-3 p-3 bg-white dark:bg-surface-800 rounded-lg">
         <h5 className="text-sm font-medium text-emerald-400">{labels.capacityTier}</h5>
         <p className="text-xs text-slate-500">{labels.capacityTierHint}</p>
 
@@ -221,9 +223,11 @@ export function TieringPanel({
         </div>
 
         {selectedCapacityDrive && (
-          <div className="text-xs text-slate-400">
+          <div className="text-xs text-slate-500 dark:text-slate-400">
             {t('tiering.capacityTier')}:{' '}
-            <span className="text-white font-medium">{formatBytes(totalCapacityCapacity)}</span>
+            <span className="text-slate-900 dark:text-white font-medium">
+              {formatBytes(totalCapacityCapacity)}
+            </span>
           </div>
         )}
       </div>
@@ -265,20 +269,20 @@ export function TieringPanel({
       )}
 
       {/* Summary */}
-      <div className="pt-3 border-t border-surface-700">
+      <div className="pt-3 border-t border-slate-200 dark:border-surface-700">
         <div className="grid grid-cols-2 gap-2 text-sm">
-          <div className="text-slate-400">{t('tiering.totalDrivesLabel')}:</div>
-          <div className="text-right font-medium text-white">
+          <div className="text-slate-500 dark:text-slate-400">{t('tiering.totalDrivesLabel')}:</div>
+          <div className="text-right font-medium text-slate-900 dark:text-white">
             {totalFastDrives + totalCapacityDrives}
           </div>
-          <div className="text-slate-400">{t('tiering.cacheRatio')}:</div>
+          <div className="text-slate-500 dark:text-slate-400">{t('tiering.cacheRatio')}:</div>
           <div className={`text-right font-medium ${ratioColor}`}>
             {cacheRatio.toFixed(1)}%
             <span className="text-xs ml-1">
               ({ratioStatus === 'optimal' ? '✓' : ratioStatus === 'low' ? '↓' : '↑'})
             </span>
           </div>
-          <div className="text-slate-400">{t('tiering.recommended')}:</div>
+          <div className="text-slate-500 dark:text-slate-400">{t('tiering.recommended')}:</div>
           <div className="text-right text-xs text-slate-500">10-20%</div>
         </div>
       </div>

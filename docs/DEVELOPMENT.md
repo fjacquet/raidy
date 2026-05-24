@@ -55,3 +55,9 @@ Path aliases are mirrored in `vite.config.ts` and `vitest.config.ts` `resolve.al
 - Default branch: **`maincd`**.
 - Conventional-commit style with phase/scope: `<type>(<scope>): …`, e.g. `feat(17-02): …`, `fix(pptx): …`, `chore(deps): …`.
 - CI runs the full gate set on push/PR to `maincd` — run `npm run typecheck`, `npm run lint`, and `npm run test:run` locally first.
+
+## Theming (light/dark)
+
+Class-based dark mode via Tailwind's `@custom-variant dark` (see `src/index.css`). The `dark` class on `<html>` is driven by `src/hooks/useTheme.ts` (states: `auto`/`light`/`dark`, persisted as `localStorage['raidy-theme']`, `auto` follows the OS). An inline FOUC script in `index.html` applies the theme before first paint. The header `ThemeToggle` (`src/components/common/ThemeToggle.tsx`) switches it.
+
+**Convention:** every color utility needs both a light default and a `dark:` override — e.g. `bg-white dark:bg-surface-800`, `text-slate-900 dark:text-white`, `text-slate-500 dark:text-slate-400`. A class with no `dark:` counterpart renders invisible in one theme. Saturated/semantic colors (`primary-*`, `capacity`/`overhead`/`parity`, explicit chart palette colors) read on both — leave them. Shared classes `.panel`/`.label`/`.accordion-trigger` already carry both variants. The PPTX export and chart captures follow the active theme (`exportPptx.ts` `BRAND`/`BRAND_LIGHT`, `captureChart.ts` background).

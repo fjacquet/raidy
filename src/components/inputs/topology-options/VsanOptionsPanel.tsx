@@ -26,58 +26,59 @@ export function VsanOptionsPanel({ topology }: VsanOptionsPanelProps) {
   const isEsa = topology.type === 'vsan_esa'
 
   return (
-    <div className="space-y-4 pt-3 border-t border-surface-700">
-      <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+    <div className="space-y-4 pt-3 border-t border-slate-200 dark:border-surface-700">
+      <h4 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
         {isOsa ? t('vsanOsa.title') : t('vsanEsa.title')}
       </h4>
 
       {/* Configuration info box */}
-      <div className="p-3 bg-surface-800 rounded-lg text-xs text-slate-400">
+      <div className="p-3 bg-white dark:bg-surface-800 rounded-lg text-xs text-slate-500 dark:text-slate-400">
         {isOsa && topology.level === 'vsan_osa_raid1' && (
           <p>
-            <strong className="text-slate-300">RAID-1 FTT=1:</strong> 2-way mirror, requires minimum
-            3 hosts. 50% storage efficiency. Best read performance.
+            <strong className="text-slate-600 dark:text-slate-300">RAID-1 FTT=1:</strong> 2-way
+            mirror, requires minimum 3 hosts. 50% storage efficiency. Best read performance.
           </p>
         )}
         {isOsa && topology.level === 'vsan_osa_raid1_ftt2' && (
           <p>
-            <strong className="text-slate-300">RAID-1 FTT=2:</strong> 3-way mirror, requires minimum
-            5 hosts. 33% storage efficiency. Maximum fault tolerance.
+            <strong className="text-slate-600 dark:text-slate-300">RAID-1 FTT=2:</strong> 3-way
+            mirror, requires minimum 5 hosts. 33% storage efficiency. Maximum fault tolerance.
           </p>
         )}
         {isOsa && topology.level === 'vsan_osa_raid5' && (
           <p>
-            <strong className="text-slate-300">RAID-5 (3+1):</strong> Single parity, requires
-            minimum 4 hosts. 75% efficiency. 4x write penalty vs mirror.
+            <strong className="text-slate-600 dark:text-slate-300">RAID-5 (3+1):</strong> Single
+            parity, requires minimum 4 hosts. 75% efficiency. 4x write penalty vs mirror.
           </p>
         )}
         {isOsa && topology.level === 'vsan_osa_raid6' && (
           <p>
-            <strong className="text-slate-300">RAID-6 (4+2):</strong> Dual parity, requires minimum
-            6 hosts. 67% efficiency. 6x write penalty vs mirror.
+            <strong className="text-slate-600 dark:text-slate-300">RAID-6 (4+2):</strong> Dual
+            parity, requires minimum 6 hosts. 67% efficiency. 6x write penalty vs mirror.
           </p>
         )}
         {isEsa && topology.level === 'vsan_esa_raid5' && (
           <>
             <p>
-              <strong className="text-slate-300">Adaptive RAID-5:</strong> Uses 2+1 for 3-5 hosts
-              (67% efficiency) or 4+1 for 6+ hosts (80% efficiency). Near RAID-1 performance with
-              ~2.5x write penalty.
+              <strong className="text-slate-600 dark:text-slate-300">Adaptive RAID-5:</strong> Uses
+              2+1 for 3-5 hosts (67% efficiency) or 4+1 for 6+ hosts (80% efficiency). Near RAID-1
+              performance with ~2.5x write penalty.
             </p>
             <p className="mt-1 text-green-400">Recommended for most ESA deployments.</p>
           </>
         )}
         {isEsa && topology.level === 'vsan_esa_raid6' && (
           <p>
-            <strong className="text-slate-300">RAID-6 (4+2):</strong> FTT=2, requires minimum 6
-            hosts. 67% efficiency. ~3.5x write penalty (much better than OSA RAID-6).
+            <strong className="text-slate-600 dark:text-slate-300">RAID-6 (4+2):</strong> FTT=2,
+            requires minimum 6 hosts. 67% efficiency. ~3.5x write penalty (much better than OSA
+            RAID-6).
           </p>
         )}
         {isEsa && topology.level === 'vsan_esa_raid1' && (
           <p>
-            <strong className="text-slate-300">RAID-1 (Mirror):</strong> Only recommended for 2-node
-            stretched clusters. 50% efficiency. Use RAID-5 for better efficiency in 3+ node
-            clusters.
+            <strong className="text-slate-600 dark:text-slate-300">RAID-1 (Mirror):</strong> Only
+            recommended for 2-node stretched clusters. 50% efficiency. Use RAID-5 for better
+            efficiency in 3+ node clusters.
           </p>
         )}
         <p className="mt-2 text-slate-500">
@@ -118,8 +119,8 @@ export function VsanOptionsPanel({ topology }: VsanOptionsPanelProps) {
       {/* Disk Group Tiering (OSA only) */}
       {isOsa && (
         <>
-          <div className="pt-3 border-t border-surface-700">
-            <h5 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
+          <div className="pt-3 border-t border-slate-200 dark:border-surface-700">
+            <h5 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">
               {t('vsanOsa.diskGroupConfig')}
             </h5>
           </div>

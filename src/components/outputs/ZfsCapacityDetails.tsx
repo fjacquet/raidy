@@ -20,7 +20,7 @@ function CapacityRow({
   description,
   isSubtraction = false,
   highlight = false,
-  color = 'text-slate-300',
+  color = 'text-slate-600 dark:text-slate-300',
 }: {
   label: string
   bytes: number
@@ -34,22 +34,30 @@ function CapacityRow({
 
   return (
     <div
-      className={`flex flex-col sm:flex-row sm:items-center sm:justify-between py-2 ${highlight ? 'bg-surface-800 -mx-3 px-3 rounded' : ''}`}
+      className={`flex flex-col sm:flex-row sm:items-center sm:justify-between py-2 ${highlight ? 'bg-white dark:bg-surface-800 -mx-3 px-3 rounded' : ''}`}
     >
       <div className="flex-1 min-w-0">
-        <span className={`font-medium ${highlight ? 'text-white' : color}`}>{label}</span>
-        {description && <p className="text-xs text-slate-500 mt-0.5">{description}</p>}
+        <span className={`font-medium ${highlight ? 'text-slate-900 dark:text-white' : color}`}>
+          {label}
+        </span>
+        {description && (
+          <p className="text-xs text-slate-500 dark:text-slate-500 mt-0.5">{description}</p>
+        )}
       </div>
       <div className="font-mono text-sm mt-1 sm:mt-0 sm:text-right flex-shrink-0">
         <span
           className={
-            isSubtraction ? 'text-orange-400' : highlight ? 'text-green-400' : 'text-slate-200'
+            isSubtraction
+              ? 'text-orange-400'
+              : highlight
+                ? 'text-green-400'
+                : 'text-slate-800 dark:text-slate-200'
           }
         >
           {sign}
           {formatted.binary}
         </span>
-        <span className="text-slate-500 ml-2">
+        <span className="text-slate-500 dark:text-slate-500 ml-2">
           ({sign}
           {formatted.decimal})
         </span>
@@ -64,10 +72,10 @@ function CapacityRow({
 function SectionDivider({ label }: { label: string }) {
   return (
     <div className="flex items-center gap-2 my-2">
-      <div className="h-px flex-1 bg-surface-600" />
-      <span className="text-xs text-slate-500 px-2">{label}</span>
+      <div className="h-px flex-1 bg-slate-200 dark:bg-surface-600" />
+      <span className="text-xs text-slate-500 dark:text-slate-500 px-2">{label}</span>
       <svg
-        className="w-4 h-4 text-slate-500"
+        className="w-4 h-4 text-slate-500 dark:text-slate-500"
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
@@ -80,7 +88,7 @@ function SectionDivider({ label }: { label: string }) {
           d="M19 14l-7 7m0 0l-7-7m7 7V3"
         />
       </svg>
-      <div className="h-px flex-1 bg-surface-600" />
+      <div className="h-px flex-1 bg-slate-200 dark:bg-surface-600" />
     </div>
   )
 }
@@ -198,42 +206,44 @@ export function ZfsCapacityDetails({ details }: ZfsCapacityDetailsProps) {
       )}
 
       {/* ZFS Configuration Summary */}
-      <div className="mt-4 pt-4 border-t border-surface-700">
-        <h4 className="text-sm font-semibold text-white mb-2">ZFS Configuration</h4>
+      <div className="mt-4 pt-4 border-t border-slate-200 dark:border-surface-700">
+        <h4 className="text-sm font-semibold text-slate-900 dark:text-white mb-2">
+          ZFS Configuration
+        </h4>
         <div className="grid grid-cols-2 gap-2 text-sm">
           <div>
-            <span className="text-slate-500">Ashift:</span>
-            <span className="text-slate-200 ml-2">{ashift}</span>
-            <span className="text-slate-500 ml-1">({2 ** ashift} bytes)</span>
+            <span className="text-slate-500 dark:text-slate-500">Ashift:</span>
+            <span className="text-slate-800 dark:text-slate-200 ml-2">{ashift}</span>
+            <span className="text-slate-500 dark:text-slate-500 ml-1">({2 ** ashift} bytes)</span>
           </div>
           <div>
-            <span className="text-slate-500">Recordsize:</span>
-            <span className="text-slate-200 ml-2">{recordSize / 1024}K</span>
+            <span className="text-slate-500 dark:text-slate-500">Recordsize:</span>
+            <span className="text-slate-800 dark:text-slate-200 ml-2">{recordSize / 1024}K</span>
           </div>
           {compressionRatio > 1 && (
             <div>
-              <span className="text-slate-500">Compression:</span>
-              <span className="text-slate-200 ml-2">{compressionRatio}×</span>
+              <span className="text-slate-500 dark:text-slate-500">Compression:</span>
+              <span className="text-slate-800 dark:text-slate-200 ml-2">{compressionRatio}×</span>
             </div>
           )}
           {dedupRatio > 1 && (
             <div>
-              <span className="text-slate-500">Deduplication:</span>
-              <span className="text-slate-200 ml-2">{dedupRatio}×</span>
+              <span className="text-slate-500 dark:text-slate-500">Deduplication:</span>
+              <span className="text-slate-800 dark:text-slate-200 ml-2">{dedupRatio}×</span>
             </div>
           )}
         </div>
       </div>
 
       {/* Efficiency Summary */}
-      <div className="mt-4 p-3 bg-surface-800 rounded-lg">
+      <div className="mt-4 p-3 bg-white dark:bg-surface-800 rounded-lg">
         <div className="flex items-center justify-between">
-          <span className="text-sm text-slate-400">Overall Efficiency</span>
+          <span className="text-sm text-slate-500 dark:text-slate-400">Overall Efficiency</span>
           <span className="text-lg font-bold text-primary-400">
             {((practicalUsableCapacity / totalRawCapacity) * 100).toFixed(1)}%
           </span>
         </div>
-        <p className="text-xs text-slate-500 mt-1">
+        <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">
           Practical usable capacity as percentage of raw
         </p>
       </div>

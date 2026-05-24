@@ -30,9 +30,9 @@ export function InputSidebar() {
   }
 
   return (
-    <aside className="w-80 flex-shrink-0 bg-surface-800 border-r border-surface-700 overflow-y-auto">
-      <div className="p-4 border-b border-surface-700">
-        <h2 className="text-sm font-semibold text-slate-300 uppercase tracking-wider">
+    <aside className="w-80 flex-shrink-0 bg-white dark:bg-surface-800 border-r border-slate-200 dark:border-surface-700 overflow-y-auto">
+      <div className="p-4 border-b border-slate-200 dark:border-surface-700">
+        <h2 className="text-sm font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
           {t('nav.configuration')}
         </h2>
       </div>

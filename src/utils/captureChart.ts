@@ -4,13 +4,16 @@
  */
 import { toPng } from 'html-to-image'
 
-const PNG_OPTIONS = { backgroundColor: '#1A1B2E', pixelRatio: 2 } as const
+/** Capture background matches the active theme so exports aren't dark-on-light. */
+function captureBackground(): string {
+  return document.documentElement.classList.contains('dark') ? '#1A1B2E' : '#ffffff'
+}
 
 /** Rasterize a DOM element (by id) to a PNG data URL, or null if not mounted. */
 async function captureById(id: string): Promise<string | null> {
   const el = document.getElementById(id)
   if (!el) return null
-  return toPng(el, PNG_OPTIONS)
+  return toPng(el, { backgroundColor: captureBackground(), pixelRatio: 2 })
 }
 
 /**

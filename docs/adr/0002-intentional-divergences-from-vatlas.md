@@ -19,6 +19,7 @@ That convergence is deliberate and ongoing. This ADR records the places where ra
 | **Charts** | Centralized ECharts (SVG renderer), bundle-gated | Recharts + D3-sankey + custom gauges | raidy's visuals (capacity waterfall/Sankey, speedometers, donut) predate the convergence and are not worth a rewrite. |
 | **Service worker / PWA** | `vite-plugin-pwa` (audited `src/sw.ts`) | none | Not a product requirement for raidy. |
 | **Supply-chain checks** | SheetJS CDN-tarball pin + SW privacy-guard envelope | telemetry denylist only | raidy has no `xlsx` dependency and no service worker, so those checks are inapplicable. |
+| **PPTX export theme** | Fixed "Midnight" deck — ignores the app theme | Follows the app's light/dark theme (light deck in light mode, dark deck in dark) | raidy users wanted the export to match what they see; charts are already theme-aware, so the deck adapts via a light/dark `BRAND` palette + theme-matched capture background. |
 
 ## Consequences
 

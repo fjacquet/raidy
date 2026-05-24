@@ -1,7 +1,7 @@
 {
   "name": "raidy",
   "private": true,
-  "version": "1.6.1",
+  "version": "1.7.0",
   "type": "module",
   "description": "Browser-based simulator for modern storage infrastructure (RAID, ZFS, vSAN, S2D, Nutanix, Dell, NetApp, Ceph, Synology). 100% client-side.",
   "scripts": {

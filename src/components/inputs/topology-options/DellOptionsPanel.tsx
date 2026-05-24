@@ -46,43 +46,45 @@ export function DellOptionsPanel({ topology }: DellOptionsPanelProps) {
   // PowerVault ME5 Options
   if (topology.type === 'powervault') {
     return (
-      <div className="space-y-4 pt-3 border-t border-surface-700">
-        <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+      <div className="space-y-4 pt-3 border-t border-slate-200 dark:border-surface-700">
+        <h4 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
           {t('powervault.title')}
         </h4>
 
         {/* Show mode description based on selected topology level */}
-        <div className="p-3 bg-surface-800 rounded-lg text-xs text-slate-400">
+        <div className="p-3 bg-white dark:bg-surface-800 rounded-lg text-xs text-slate-500 dark:text-slate-400">
           {topology.level === 'powervault_raid1' && (
             <p>
-              <strong className="text-slate-300">RAID 1:</strong> 2-way mirror with 50% storage
-              efficiency. Simple, fast rebuilds. Best for boot volumes and small deployments.
+              <strong className="text-slate-600 dark:text-slate-300">RAID 1:</strong> 2-way mirror
+              with 50% storage efficiency. Simple, fast rebuilds. Best for boot volumes and small
+              deployments.
             </p>
           )}
           {topology.level === 'powervault_raid5' && (
             <p>
-              <strong className="text-slate-300">RAID 5:</strong> Single distributed parity with
-              (n-1)/n efficiency. 4x write penalty. Not recommended for write-intensive workloads.
+              <strong className="text-slate-600 dark:text-slate-300">RAID 5:</strong> Single
+              distributed parity with (n-1)/n efficiency. 4x write penalty. Not recommended for
+              write-intensive workloads.
             </p>
           )}
           {topology.level === 'powervault_raid6' && (
             <p>
-              <strong className="text-slate-300">RAID 6:</strong> Dual distributed parity with
-              (n-2)/n efficiency. 6x write penalty. Better data protection for large capacity
-              drives.
+              <strong className="text-slate-600 dark:text-slate-300">RAID 6:</strong> Dual
+              distributed parity with (n-2)/n efficiency. 6x write penalty. Better data protection
+              for large capacity drives.
             </p>
           )}
           {topology.level === 'powervault_raid10' && (
             <p>
-              <strong className="text-slate-300">RAID 10:</strong> Mirrored stripes with 50%
-              efficiency. Best random IOPS performance. Ideal for databases.
+              <strong className="text-slate-600 dark:text-slate-300">RAID 10:</strong> Mirrored
+              stripes with 50% efficiency. Best random IOPS performance. Ideal for databases.
             </p>
           )}
           {topology.level === 'powervault_adapt' && (
             <p>
-              <strong className="text-slate-300">ADAPT:</strong> Distributed RAID with ~87%
-              efficiency. Spare capacity distributed across all drives. Fastest rebuilds (8-10x
-              faster). Requires 12-128 drives.
+              <strong className="text-slate-600 dark:text-slate-300">ADAPT:</strong> Distributed
+              RAID with ~87% efficiency. Spare capacity distributed across all drives. Fastest
+              rebuilds (8-10x faster). Requires 12-128 drives.
             </p>
           )}
         </div>
@@ -166,8 +168,8 @@ export function DellOptionsPanel({ topology }: DellOptionsPanelProps) {
   // ObjectScale Options
   if (topology.type === 'objectscale') {
     return (
-      <div className="space-y-4 pt-3 border-t border-surface-700">
-        <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+      <div className="space-y-4 pt-3 border-t border-slate-200 dark:border-surface-700">
+        <h4 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
           {t('objectscale.title')}
         </h4>
 
@@ -250,8 +252,8 @@ export function DellOptionsPanel({ topology }: DellOptionsPanelProps) {
   // PowerStore Options
   if (topology.type === 'powerstore') {
     return (
-      <div className="space-y-4 pt-3 border-t border-surface-700">
-        <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+      <div className="space-y-4 pt-3 border-t border-slate-200 dark:border-surface-700">
+        <h4 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
           {t('powerstore.title')}
         </h4>
 
@@ -372,8 +374,8 @@ export function DellOptionsPanel({ topology }: DellOptionsPanelProps) {
   // PowerScale Options
   if (topology.type === 'powerscale') {
     return (
-      <div className="space-y-4 pt-3 border-t border-surface-700">
-        <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+      <div className="space-y-4 pt-3 border-t border-slate-200 dark:border-surface-700">
+        <h4 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
           {t('powerscale.title')}
         </h4>
 
@@ -459,29 +461,33 @@ export function DellOptionsPanel({ topology }: DellOptionsPanelProps) {
   // PowerFlex Options
   if (topology.type === 'powerflex') {
     return (
-      <div className="space-y-4 pt-3 border-t border-surface-700">
-        <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+      <div className="space-y-4 pt-3 border-t border-slate-200 dark:border-surface-700">
+        <h4 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
           {t('powerflex.title')}
         </h4>
 
         {/* Show mode description based on selected topology level */}
-        <div className="p-3 bg-surface-800 rounded-lg text-xs text-slate-400">
+        <div className="p-3 bg-white dark:bg-surface-800 rounded-lg text-xs text-slate-500 dark:text-slate-400">
           {topology.level.includes('medium') && (
             <p>
-              <strong className="text-slate-300">Medium Granularity (1MB):</strong> Standard mode
-              with lower metadata overhead. Supports 2-way and 3-way mirroring.
+              <strong className="text-slate-600 dark:text-slate-300">
+                Medium Granularity (1MB):
+              </strong>{' '}
+              Standard mode with lower metadata overhead. Supports 2-way and 3-way mirroring.
             </p>
           )}
           {topology.level.includes('fine') && (
             <p>
-              <strong className="text-slate-300">Fine Granularity (8KB):</strong> Better for small
-              random I/O. Only supports 2-way mirroring. 12-15% metadata overhead.
+              <strong className="text-slate-600 dark:text-slate-300">
+                Fine Granularity (8KB):
+              </strong>{' '}
+              Better for small random I/O. Only supports 2-way mirroring. 12-15% metadata overhead.
             </p>
           )}
           {topology.level.includes('ec_') && (
             <p>
-              <strong className="text-slate-300">Erasure Coding:</strong> Higher capacity efficiency
-              but ~30% lower IOPS due to CPU overhead. Requires PowerFlex 4.5+.
+              <strong className="text-slate-600 dark:text-slate-300">Erasure Coding:</strong> Higher
+              capacity efficiency but ~30% lower IOPS due to CPU overhead. Requires PowerFlex 4.5+.
             </p>
           )}
         </div>

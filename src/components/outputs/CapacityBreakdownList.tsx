@@ -128,7 +128,7 @@ export function CapacityBreakdownList({ volumetry }: CapacityBreakdownListProps)
             <li key={item.label} className="space-y-1">
               {/* Label row */}
               <div className="flex justify-between items-center text-sm">
-                <span className="text-surface-300 flex items-center gap-2">
+                <span className="text-slate-600 dark:text-surface-300 flex items-center gap-2">
                   {/* Color indicator */}
                   <span
                     className="w-3 h-3 rounded-sm flex-shrink-0"
@@ -137,16 +137,18 @@ export function CapacityBreakdownList({ volumetry }: CapacityBreakdownListProps)
                   />
                   {item.label}
                 </span>
-                <span className="font-mono text-surface-200">
+                <span className="font-mono text-slate-800 dark:text-surface-200">
                   {item.isOverhead ? '−' : ''}
                   {formatBytes(absValue)}
-                  <span className="text-surface-500 ml-1">({displayPercentage}%)</span>
+                  <span className="text-slate-500 dark:text-surface-500 ml-1">
+                    ({displayPercentage}%)
+                  </span>
                 </span>
               </div>
 
               {/* Progress bar */}
               <div
-                className="h-2 bg-surface-700 rounded-full overflow-hidden"
+                className="h-2 bg-slate-100 dark:bg-surface-700 rounded-full overflow-hidden"
                 role="progressbar"
                 aria-valuenow={percentage}
                 aria-valuemin={0}
@@ -168,12 +170,14 @@ export function CapacityBreakdownList({ volumetry }: CapacityBreakdownListProps)
       </ul>
 
       {/* Summary line */}
-      <div className="pt-2 mt-2 border-t border-surface-700">
+      <div className="pt-2 mt-2 border-t border-slate-200 dark:border-surface-700">
         <div className="flex justify-between items-center text-sm font-medium">
-          <span className="text-surface-200">{t('capacity.breakdown.effectiveCapacity')}</span>
+          <span className="text-slate-800 dark:text-surface-200">
+            {t('capacity.breakdown.effectiveCapacity')}
+          </span>
           <span className="font-mono text-green-400">{formatBytes(effectiveCapacity)}</span>
         </div>
-        <div className="text-xs text-surface-500 mt-1">
+        <div className="text-xs text-slate-500 dark:text-surface-500 mt-1">
           {((effectiveCapacity / rawCapacity) * 100).toFixed(1)}% {t('capacity.breakdown.ofRaw')}
         </div>
       </div>

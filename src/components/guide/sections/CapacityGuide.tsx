@@ -10,11 +10,13 @@ export function CapacityGuide() {
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-slate-300">{t('capacity.intro')}</p>
+      <p className="text-sm text-slate-600 dark:text-slate-300">{t('capacity.intro')}</p>
 
       <div className="space-y-2">
-        <h5 className="text-sm font-semibold text-slate-200">{t('capacity.waterfall.title')}</h5>
-        <ol className="space-y-1.5 text-sm text-slate-400">
+        <h5 className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+          {t('capacity.waterfall.title')}
+        </h5>
+        <ol className="space-y-1.5 text-sm text-slate-500 dark:text-slate-400">
           <li className="flex items-start gap-2">
             <span className="text-primary-400 font-mono text-xs mt-0.5">1</span>
             <span>{t('capacity.waterfall.step1')}</span>
@@ -37,7 +39,9 @@ export function CapacityGuide() {
           </li>
           <li className="flex items-start gap-2">
             <span className="text-green-400 font-mono text-xs mt-0.5">=</span>
-            <span className="text-slate-200 font-medium">{t('capacity.waterfall.step6')}</span>
+            <span className="text-slate-800 dark:text-slate-200 font-medium">
+              {t('capacity.waterfall.step6')}
+            </span>
           </li>
           <li className="flex items-start gap-2">
             <span className="text-blue-400 font-mono text-xs mt-0.5">×</span>

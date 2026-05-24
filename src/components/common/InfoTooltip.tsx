@@ -49,7 +49,7 @@ export function InfoTooltip({ content }: InfoTooltipProps) {
         onFocus={isTouch ? undefined : open}
         onBlur={isTouch ? undefined : close}
         aria-describedby={isOpen ? tooltipId : undefined}
-        className="text-slate-500 hover:text-primary-400 focus:text-primary-400 transition-colors focus:outline-none"
+        className="text-slate-500 dark:text-slate-400 hover:text-primary-400 focus:text-primary-400 transition-colors focus:outline-none"
         aria-label="Help"
       >
         <svg
@@ -72,7 +72,7 @@ export function InfoTooltip({ content }: InfoTooltipProps) {
         <div
           id={tooltipId}
           role="tooltip"
-          className="absolute left-0 top-full mt-1 z-50 bg-surface-700 border border-surface-600 rounded-lg p-3 shadow-lg text-xs text-slate-300 leading-relaxed max-w-xs sm:max-w-sm animate-tooltip-in"
+          className="absolute left-0 top-full mt-1 z-50 bg-slate-100 dark:bg-surface-700 border border-slate-200 dark:border-surface-600 rounded-lg p-3 shadow-lg text-xs text-slate-600 dark:text-slate-300 leading-relaxed max-w-xs sm:max-w-sm animate-tooltip-in"
         >
           {content}
         </div>

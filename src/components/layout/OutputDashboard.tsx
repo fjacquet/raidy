@@ -39,7 +39,7 @@ function MetricCard({
   label,
   children,
   subvalue,
-  color = 'text-white',
+  color = 'text-slate-900 dark:text-white',
 }: {
   label: string
   children: React.ReactNode
@@ -49,8 +49,8 @@ function MetricCard({
   return (
     <div className="text-center">
       <div className={`text-2xl font-bold ${color}`}>{children}</div>
-      <p className="text-xs text-slate-400">{label}</p>
-      {subvalue && <p className="text-xs text-slate-500 mt-1">{subvalue}</p>}
+      <p className="text-xs text-slate-500 dark:text-slate-400">{label}</p>
+      {subvalue && <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">{subvalue}</p>}
     </div>
   )
 }
@@ -76,12 +76,14 @@ function ProgressBar({
   return (
     <div className="space-y-1">
       <div className="flex justify-between text-sm">
-        <span className="text-slate-400">{label}</span>
+        <span className="text-slate-500 dark:text-slate-400">{label}</span>
         {showValue && (
-          <span className="font-mono text-slate-300">{formatNumber(Math.round(value))}</span>
+          <span className="font-mono text-slate-600 dark:text-slate-300">
+            {formatNumber(Math.round(value))}
+          </span>
         )}
       </div>
-      <div className="h-2 bg-surface-700 rounded-full overflow-hidden">
+      <div className="h-2 bg-slate-100 dark:bg-surface-700 rounded-full overflow-hidden">
         <div
           className={`h-full rounded-full transition-all duration-500 ${color}`}
           style={{ width: `${percent}%` }}
@@ -287,7 +289,7 @@ export function OutputDashboard() {
         {/* Capacity Overview Card */}
         <div className="panel xl:col-span-2">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-white flex items-center gap-1.5">
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-1.5">
               {t('capacity.title')} <InfoTooltip content={th('output.sankeyDiagram')} />
             </h3>
             <span className="text-sm font-medium">
@@ -306,7 +308,7 @@ export function OutputDashboard() {
 
               {/* Metrics */}
               <div
-                className={`grid gap-4 pt-4 border-t border-surface-700 ${operationalLimit !== null ? 'grid-cols-4' : 'grid-cols-3'}`}
+                className={`grid gap-4 pt-4 border-t border-slate-200 dark:border-surface-700 ${operationalLimit !== null ? 'grid-cols-4' : 'grid-cols-3'}`}
               >
                 <MetricCard label={t('capacity.raw')}>
                   <AnimatedBytes value={volumetry.rawCapacity} />
@@ -351,7 +353,7 @@ export function OutputDashboard() {
               </div>
 
               {/* Capacity Breakdown List - Mobile */}
-              <div className="pt-4 border-t border-surface-700">
+              <div className="pt-4 border-t border-slate-200 dark:border-surface-700">
                 <CapacityBreakdownList volumetry={volumetry} />
               </div>
             </div>
@@ -362,8 +364,12 @@ export function OutputDashboard() {
         {topology.type === 'zfs' && volumetry.zfsDetails && (
           <div className="panel xl:col-span-2">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-white">{t('capacity.zfsBreakdown')}</h3>
-              <span className="text-xs text-slate-500">{t('capacity.dualUnitHint')}</span>
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+                {t('capacity.zfsBreakdown')}
+              </h3>
+              <span className="text-xs text-slate-500 dark:text-slate-500">
+                {t('capacity.dualUnitHint')}
+              </span>
             </div>
             <ZfsCapacityDetails details={volumetry.zfsDetails} />
           </div>
@@ -371,7 +377,7 @@ export function OutputDashboard() {
 
         {/* Performance Gauges Card */}
         <div className="panel">
-          <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-1.5">
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4 flex items-center gap-1.5">
             {t('performance.title')} <InfoTooltip content={th('output.bottleneck')} />
           </h3>
 
@@ -421,14 +427,16 @@ export function OutputDashboard() {
             />
           </div>
 
-          <div className="mt-4 pt-4 border-t border-surface-700">
-            <p className="text-sm text-slate-400">{performance.bottleneckDescription}</p>
+          <div className="mt-4 pt-4 border-t border-slate-200 dark:border-surface-700">
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              {performance.bottleneckDescription}
+            </p>
           </div>
         </div>
 
         {/* Power & Sustainability Card */}
         <div className="panel">
-          <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-1.5">
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4 flex items-center gap-1.5">
             {t('power.title')} <InfoTooltip content={th('output.totalPower')} />
           </h3>
 
@@ -437,13 +445,13 @@ export function OutputDashboard() {
               <span className="font-mono">
                 {formatNumber(Math.round(sustainability.powerBreakdown.total))}
               </span>
-              <span className="text-sm text-slate-400 ml-1">W</span>
+              <span className="text-sm text-slate-500 dark:text-slate-400 ml-1">W</span>
             </MetricCard>
             <MetricCard label={t('power.annualEnergy')}>
               <span className="font-mono">
                 {formatNumber(Math.round(sustainability.annualEnergyKwh))}
               </span>
-              <span className="text-sm text-slate-400 ml-1">kWh</span>
+              <span className="text-sm text-slate-500 dark:text-slate-400 ml-1">kWh</span>
             </MetricCard>
           </div>
 
@@ -468,17 +476,19 @@ export function OutputDashboard() {
             />
           </div>
 
-          <div className="mt-4 pt-4 border-t border-surface-700 flex justify-between items-center">
-            <span className="text-slate-400">{t('power.annualCo2')}</span>
-            <span className="text-lg font-bold text-white">
+          <div className="mt-4 pt-4 border-t border-slate-200 dark:border-surface-700 flex justify-between items-center">
+            <span className="text-slate-500 dark:text-slate-400">{t('power.annualCo2')}</span>
+            <span className="text-lg font-bold text-slate-900 dark:text-white">
               {formatNumber(Math.round(sustainability.annualCO2Kg))} kg
             </span>
           </div>
 
           {sustainability.flashEndurance && (
-            <div className="mt-4 pt-4 border-t border-surface-700">
+            <div className="mt-4 pt-4 border-t border-slate-200 dark:border-surface-700">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-slate-300">{t('ssd.title')}</span>
+                <span className="text-sm font-medium text-slate-600 dark:text-slate-300">
+                  {t('ssd.title')}
+                </span>
                 <span
                   className={`text-sm font-medium ${
                     sustainability.flashEndurance.surviveProject ? 'text-green-400' : 'text-red-400'
@@ -512,7 +522,7 @@ export function OutputDashboard() {
 
         {/* Bottleneck Analysis Card */}
         <div className="panel">
-          <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-1.5">
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4 flex items-center gap-1.5">
             {t('performance.bottleneck.title')} <InfoTooltip content={th('output.bottleneck')} />
           </h3>
 
@@ -522,17 +532,19 @@ export function OutputDashboard() {
                 <div className="flex justify-between text-sm">
                   <span
                     className={
-                      layer.isBottleneck ? 'text-orange-400 font-medium' : 'text-slate-400'
+                      layer.isBottleneck
+                        ? 'text-orange-400 font-medium'
+                        : 'text-slate-500 dark:text-slate-400'
                     }
                   >
                     {layer.name}
                     {layer.isBottleneck && ' ⚠'}
                   </span>
-                  <span className="text-slate-300 font-mono text-xs">
+                  <span className="text-slate-600 dark:text-slate-300 font-mono text-xs">
                     {formatNumber(Math.round(layer.throughputMBs))} MB/s
                   </span>
                 </div>
-                <div className="h-1.5 bg-surface-700 rounded-full overflow-hidden">
+                <div className="h-1.5 bg-slate-100 dark:bg-surface-700 rounded-full overflow-hidden">
                   <div
                     className={`h-full rounded-full transition-all duration-500 ${
                       layer.isBottleneck ? 'bg-orange-500' : 'bg-primary-500'
@@ -548,7 +560,7 @@ export function OutputDashboard() {
         {/* Resilience Simulation Card */}
         <div className="panel">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-white flex items-center gap-1.5">
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-1.5">
               {t('resilience.title')} <InfoTooltip content={th('output.survivalRate')} />
             </h3>
             <button
@@ -563,11 +575,11 @@ export function OutputDashboard() {
 
           {resilienceRunning && (
             <div className="mb-4">
-              <div className="flex justify-between text-xs text-slate-400 mb-1">
+              <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400 mb-1">
                 <span>{t('resilience.monteCarloSimulation')}</span>
                 <span>{resilienceProgress.percent.toFixed(0)}%</span>
               </div>
-              <div className="h-2 bg-surface-700 rounded-full overflow-hidden">
+              <div className="h-2 bg-slate-100 dark:bg-surface-700 rounded-full overflow-hidden">
                 <div
                   className="h-full bg-primary-500 rounded-full transition-all duration-200"
                   style={{ width: `${resilienceProgress.percent}%` }}
@@ -579,7 +591,7 @@ export function OutputDashboard() {
           {resilienceResult ? (
             <div className="space-y-4">
               {/* Survival Rate */}
-              <div className="text-center py-4 bg-surface-900 rounded-lg">
+              <div className="text-center py-4 bg-slate-50 dark:bg-surface-900 rounded-lg">
                 <p
                   className={`text-4xl font-bold font-mono ${
                     resilienceResult.riskLevel === 'low'
@@ -593,7 +605,7 @@ export function OutputDashboard() {
                 >
                   {resilienceResult.survivalPercent}
                 </p>
-                <p className="text-xs text-slate-400 mt-1">
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                   {t('resilience.annualSurvivalRate', { nines: resilienceResult.nines })}
                 </p>
               </div>
@@ -601,25 +613,29 @@ export function OutputDashboard() {
               {/* Risk Metrics */}
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div>
-                  <p className="text-slate-400">{t('resilience.rebuildTime')}</p>
-                  <p className="text-white font-mono">
+                  <p className="text-slate-500 dark:text-slate-400">
+                    {t('resilience.rebuildTime')}
+                  </p>
+                  <p className="text-slate-900 dark:text-white font-mono">
                     {resilienceResult.avgRebuildTimeHours.toFixed(1)}h
                   </p>
                 </div>
                 <div>
-                  <p className="text-slate-400">{t('resilience.ureRisk')}</p>
-                  <p className="text-white font-mono">
+                  <p className="text-slate-500 dark:text-slate-400">{t('resilience.ureRisk')}</p>
+                  <p className="text-slate-900 dark:text-white font-mono">
                     {(resilienceResult.ureProbability * 100).toFixed(3)}%
                   </p>
                 </div>
                 <div>
-                  <p className="text-slate-400">{t('resilience.dualFailure')}</p>
-                  <p className="text-white font-mono">
+                  <p className="text-slate-500 dark:text-slate-400">
+                    {t('resilience.dualFailure')}
+                  </p>
+                  <p className="text-slate-900 dark:text-white font-mono">
                     {(resilienceResult.dualFailureProbability * 100).toFixed(3)}%
                   </p>
                 </div>
                 <div>
-                  <p className="text-slate-400">{t('resilience.riskLevel')}</p>
+                  <p className="text-slate-500 dark:text-slate-400">{t('resilience.riskLevel')}</p>
                   <p
                     className={`font-medium capitalize ${
                       resilienceResult.riskLevel === 'low'
@@ -638,11 +654,11 @@ export function OutputDashboard() {
 
               {/* Recommendations */}
               {resilienceResult.recommendations.length > 0 && (
-                <div className="pt-3 border-t border-surface-700">
-                  <p className="text-xs font-semibold text-slate-400 uppercase mb-2">
+                <div className="pt-3 border-t border-slate-200 dark:border-surface-700">
+                  <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase mb-2">
                     {t('resilience.recommendations')}
                   </p>
-                  <ul className="space-y-1 text-xs text-slate-300">
+                  <ul className="space-y-1 text-xs text-slate-600 dark:text-slate-300">
                     {resilienceResult.recommendations.map((rec) => (
                       <li
                         key={`rec-${rec.slice(0, 30).replace(/\s+/g, '-')}`}
@@ -657,25 +673,29 @@ export function OutputDashboard() {
               )}
             </div>
           ) : (
-            <div className="text-center py-8 text-slate-500">
+            <div className="text-center py-8 text-slate-500 dark:text-slate-500">
               <p>{t('resilience.clickToRun')}</p>
               <p className="text-xs mt-1">
                 {isMobile ? '1,000' : '10,000'} {t('resilience.iterations')}
               </p>
-              <p className="text-xs text-slate-600">{t('resilience.includesCorrelated')}</p>
+              <p className="text-xs text-slate-400 dark:text-slate-600">
+                {t('resilience.includesCorrelated')}
+              </p>
             </div>
           )}
         </div>
 
         {/* Commands Card */}
         <div className="panel xl:col-span-3 lg:col-span-2">
-          <h3 className="text-lg font-semibold text-white mb-4">{t('commands.title')}</h3>
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
+            {t('commands.title')}
+          </h3>
 
-          <div className="bg-surface-900 rounded-lg p-4 font-mono text-sm overflow-x-auto">
+          <div className="bg-slate-50 dark:bg-surface-900 rounded-lg p-4 font-mono text-sm overflow-x-auto">
             {topology.type === 'zfs' && (
               <div className="space-y-4">
                 <div>
-                  <p className="text-slate-500">
+                  <p className="text-slate-500 dark:text-slate-500">
                     # {t('commands.zfs.createPool', { level: topology.level })}
                   </p>
                   <p className="text-green-400">
@@ -684,7 +704,7 @@ export function OutputDashboard() {
                 </div>
                 {zfsOptions.compression && (
                   <div>
-                    <p className="text-slate-500">
+                    <p className="text-slate-500 dark:text-slate-500">
                       # {t('commands.zfs.enableCompression', { type: zfsOptions.compressionType })}
                     </p>
                     <p className="text-green-400">
@@ -693,7 +713,7 @@ export function OutputDashboard() {
                   </div>
                 )}
                 <div>
-                  <p className="text-slate-500">
+                  <p className="text-slate-500 dark:text-slate-500">
                     # {t('commands.zfs.setRecordsize', { size: zfsOptions.recordsize / 1024 })}
                   </p>
                   <p className="text-green-400">
@@ -702,7 +722,9 @@ export function OutputDashboard() {
                 </div>
                 {zfsOptions.dedup && (
                   <div>
-                    <p className="text-slate-500"># {t('commands.zfs.enableDedup')}</p>
+                    <p className="text-slate-500 dark:text-slate-500">
+                      # {t('commands.zfs.enableDedup')}
+                    </p>
                     <p className="text-yellow-400">zfs set dedup=on tank</p>
                   </div>
                 )}
@@ -712,7 +734,7 @@ export function OutputDashboard() {
             {topology.type === 'standard' && (
               <div className="space-y-4">
                 <div>
-                  <p className="text-slate-500">
+                  <p className="text-slate-500 dark:text-slate-500">
                     # {t('commands.mdadm.createArray', { level: topology.level })}
                   </p>
                   <p className="text-green-400">
@@ -722,7 +744,9 @@ export function OutputDashboard() {
                 </div>
                 {performance.xfsAlignment && (
                   <div>
-                    <p className="text-slate-500"># {t('commands.mdadm.formatXfs')}</p>
+                    <p className="text-slate-500 dark:text-slate-500">
+                      # {t('commands.mdadm.formatXfs')}
+                    </p>
                     <p className="text-green-400">
                       mkfs.xfs -d su={performance.xfsAlignment.suValue},sw=
                       {Math.floor(performance.xfsAlignment.swidth / performance.xfsAlignment.sunit)}{' '}
@@ -736,7 +760,9 @@ export function OutputDashboard() {
             {topology.type === 's2d' && (
               <div className="space-y-4">
                 <div>
-                  <p className="text-slate-500"># {t('commands.s2d.createPool')}</p>
+                  <p className="text-slate-500 dark:text-slate-500">
+                    # {t('commands.s2d.createPool')}
+                  </p>
                   <p className="text-green-400">
                     New-StoragePool -StorageSubSystemFriendlyName "Clustered*" `
                   </p>
@@ -746,7 +772,7 @@ export function OutputDashboard() {
                   </p>
                 </div>
                 <div>
-                  <p className="text-slate-500">
+                  <p className="text-slate-500 dark:text-slate-500">
                     # {t('commands.s2d.createVdisk', { level: topology.level })}
                   </p>
                   <p className="text-green-400">
@@ -759,10 +785,10 @@ export function OutputDashboard() {
 
             {topology.type === 'proprietary' && (
               <div>
-                <p className="text-slate-500">
+                <p className="text-slate-500 dark:text-slate-500">
                   # {t('commands.proprietary.config', { level: topology.level })}
                 </p>
-                <p className="text-slate-400">
+                <p className="text-slate-500 dark:text-slate-400">
                   {t('commands.proprietary.referVendor', { level: topology.level })}
                 </p>
               </div>
@@ -772,14 +798,16 @@ export function OutputDashboard() {
 
         {/* Export Card */}
         <div className="panel xl:col-span-3 lg:col-span-2">
-          <h3 className="text-lg font-semibold text-white mb-4">{t('export.title')}</h3>
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
+            {t('export.title')}
+          </h3>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <button
               type="button"
               onClick={handleExportPdf}
               disabled={!selectedDrive}
-              className="flex flex-col items-center gap-2 p-4 rounded-lg bg-surface-700 hover:bg-surface-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="flex flex-col items-center gap-2 p-4 rounded-lg bg-slate-100 dark:bg-surface-700 hover:bg-slate-200 dark:hover:bg-surface-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               <svg
                 className="w-8 h-8 text-red-400"
@@ -795,15 +823,19 @@ export function OutputDashboard() {
                   d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
                 />
               </svg>
-              <span className="text-sm font-medium text-white">{t('export.pdf')}</span>
-              <span className="text-xs text-slate-400">{t('export.pdfDesc')}</span>
+              <span className="text-sm font-medium text-slate-900 dark:text-white">
+                {t('export.pdf')}
+              </span>
+              <span className="text-xs text-slate-500 dark:text-slate-400">
+                {t('export.pdfDesc')}
+              </span>
             </button>
 
             <button
               type="button"
               onClick={handleExportPptx}
               disabled={!selectedDrive}
-              className="flex flex-col items-center gap-2 p-4 rounded-lg bg-surface-700 hover:bg-surface-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="flex flex-col items-center gap-2 p-4 rounded-lg bg-slate-100 dark:bg-surface-700 hover:bg-slate-200 dark:hover:bg-surface-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               <svg
                 className="w-8 h-8 text-orange-400"
@@ -819,15 +851,19 @@ export function OutputDashboard() {
                   d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"
                 />
               </svg>
-              <span className="text-sm font-medium text-white">{t('export.pptx')}</span>
-              <span className="text-xs text-slate-400">{t('export.pptxDesc')}</span>
+              <span className="text-sm font-medium text-slate-900 dark:text-white">
+                {t('export.pptx')}
+              </span>
+              <span className="text-xs text-slate-500 dark:text-slate-400">
+                {t('export.pptxDesc')}
+              </span>
             </button>
 
             <button
               type="button"
               onClick={handleExportYaml}
               disabled={!selectedDrive}
-              className="flex flex-col items-center gap-2 p-4 rounded-lg bg-surface-700 hover:bg-surface-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="flex flex-col items-center gap-2 p-4 rounded-lg bg-slate-100 dark:bg-surface-700 hover:bg-slate-200 dark:hover:bg-surface-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               <svg
                 className="w-8 h-8 text-yellow-400"
@@ -843,15 +879,19 @@ export function OutputDashboard() {
                   d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                 />
               </svg>
-              <span className="text-sm font-medium text-white">{t('export.yaml')}</span>
-              <span className="text-xs text-slate-400">{t('export.yamlDesc')}</span>
+              <span className="text-sm font-medium text-slate-900 dark:text-white">
+                {t('export.yaml')}
+              </span>
+              <span className="text-xs text-slate-500 dark:text-slate-400">
+                {t('export.yamlDesc')}
+              </span>
             </button>
 
             <button
               type="button"
               onClick={handleExportAnsible}
               disabled={!selectedDrive}
-              className="flex flex-col items-center gap-2 p-4 rounded-lg bg-surface-700 hover:bg-surface-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="flex flex-col items-center gap-2 p-4 rounded-lg bg-slate-100 dark:bg-surface-700 hover:bg-slate-200 dark:hover:bg-surface-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               <svg
                 className="w-8 h-8 text-blue-400"
@@ -867,15 +907,19 @@ export function OutputDashboard() {
                   d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"
                 />
               </svg>
-              <span className="text-sm font-medium text-white">{t('export.ansible')}</span>
-              <span className="text-xs text-slate-400">{t('export.ansibleDesc')}</span>
+              <span className="text-sm font-medium text-slate-900 dark:text-white">
+                {t('export.ansible')}
+              </span>
+              <span className="text-xs text-slate-500 dark:text-slate-400">
+                {t('export.ansibleDesc')}
+              </span>
             </button>
 
             <button
               type="button"
               onClick={handleExportTerraform}
               disabled={!selectedDrive}
-              className="flex flex-col items-center gap-2 p-4 rounded-lg bg-surface-700 hover:bg-surface-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="flex flex-col items-center gap-2 p-4 rounded-lg bg-slate-100 dark:bg-surface-700 hover:bg-slate-200 dark:hover:bg-surface-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               <svg
                 className="w-8 h-8 text-purple-400"
@@ -891,12 +935,18 @@ export function OutputDashboard() {
                   d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
                 />
               </svg>
-              <span className="text-sm font-medium text-white">{t('export.terraform')}</span>
-              <span className="text-xs text-slate-400">{t('export.terraformDesc')}</span>
+              <span className="text-sm font-medium text-slate-900 dark:text-white">
+                {t('export.terraform')}
+              </span>
+              <span className="text-xs text-slate-500 dark:text-slate-400">
+                {t('export.terraformDesc')}
+              </span>
             </button>
           </div>
 
-          <p className="text-xs text-slate-500 mt-4 text-center">{t('export.footer')}</p>
+          <p className="text-xs text-slate-500 dark:text-slate-500 mt-4 text-center">
+            {t('export.footer')}
+          </p>
         </div>
       </div>
     </main>

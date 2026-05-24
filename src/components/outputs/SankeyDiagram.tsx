@@ -159,7 +159,7 @@ export function SankeyDiagram({ volumetry, width = 600, height = 300 }: SankeyDi
   }, [volumetry, width, height])
 
   if (!sankeyData.nodes.length) {
-    return <div className="text-slate-500">No data to display</div>
+    return <div className="text-slate-500 dark:text-slate-400">No data to display</div>
   }
 
   return (
@@ -221,7 +221,7 @@ export function SankeyDiagram({ volumetry, width = 600, height = 300 }: SankeyDi
                   y={nodeHeight / 2}
                   dy="0.35em"
                   textAnchor={i === 0 ? 'start' : 'end'}
-                  className="text-xs fill-slate-300"
+                  className="text-xs fill-slate-600 dark:fill-slate-300"
                 >
                   {nodes[i]?.name}
                 </text>
@@ -231,7 +231,7 @@ export function SankeyDiagram({ volumetry, width = 600, height = 300 }: SankeyDi
                   y={nodeHeight / 2 + 14}
                   dy="0.35em"
                   textAnchor={i === 0 ? 'start' : 'end'}
-                  className="text-xs fill-slate-500 font-mono"
+                  className="text-xs fill-slate-500 dark:fill-slate-400 font-mono"
                 >
                   {formatBytes(nodes[i]?.value || 0)}
                 </text>

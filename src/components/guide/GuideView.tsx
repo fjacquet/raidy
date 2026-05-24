@@ -52,8 +52,8 @@ export function GuideView() {
     <main className="flex-1 overflow-y-auto p-6">
       <div className="max-w-3xl mx-auto">
         <div className="mb-6">
-          <h2 className="text-2xl font-bold text-white">{t('title')}</h2>
-          <p className="text-sm text-slate-400 mt-1">{t('subtitle')}</p>
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">{t('title')}</h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{t('subtitle')}</p>
         </div>
 
         <div className="panel">

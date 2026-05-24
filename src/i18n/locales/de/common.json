@@ -39,6 +39,12 @@
     "de": "Deutsch",
     "it": "Italiano"
   },
+  "theme": {
+    "label": "Design",
+    "auto": "Auto",
+    "light": "Hell",
+    "dark": "Dunkel"
+  },
   "buttons": {
     "export": "Exportieren",
     "reset": "Zuruecksetzen",
