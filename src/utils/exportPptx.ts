@@ -196,26 +196,27 @@ function buildSummarySlide(
   const chartH = resilience ? 2.7 : 3.2
   const chartBottom = chartTop + chartH
 
+  // Wider Sankey (reads like the web); smaller gauges packed to the right.
   addSectionLabel(slide, i18n.t('output:pptx.volumetry'), BRAND.capacity, 0.4, 1.0)
   addChartOrFallback(
     slide,
     charts.sankey,
-    { x: 0.25, y: chartTop, w: 6.8, h: chartH },
+    { x: 0.25, y: chartTop, w: 7.6, h: chartH },
     'Capacity chart unavailable',
   )
 
-  addSectionLabel(slide, i18n.t('output:pptx.performance'), BRAND.accent, 7.05, 1.0)
-  const gaugeColX: [number, number] = [7.05, 10.05]
-  const gaugeRowY: [number, number] = [chartTop, chartTop + chartH / 2]
-  const gaugeW = 2.95
-  const gaugeH = chartH / 2 - 0.05
+  addSectionLabel(slide, i18n.t('output:pptx.performance'), BRAND.accent, 8.0, 1.0)
+  const gaugeColX: [number, number] = [8.0, 10.5]
+  const gaugeRowY: [number, number] = [chartTop + 0.1, chartTop + chartH / 2 + 0.05]
+  const gaugeW = 2.45
+  const gaugeH = chartH / 2 - 0.35
   charts.gauges.forEach((gauge, i) => {
     const col = i % 2
     const row = i < 2 ? 0 : 1
     addChartOrFallback(
       slide,
       gauge,
-      { x: gaugeColX[col] ?? 7.05, y: gaugeRowY[row] ?? chartTop, w: gaugeW, h: gaugeH },
+      { x: gaugeColX[col] ?? 8.0, y: gaugeRowY[row] ?? chartTop, w: gaugeW, h: gaugeH },
       '',
     )
   })
@@ -245,7 +246,7 @@ function buildSummarySlide(
     ],
     0.4,
     nl0,
-    6.8,
+    7.6,
   )
   addStatLine(
     slide,
@@ -268,7 +269,7 @@ function buildSummarySlide(
     ],
     0.4,
     nl1,
-    6.8,
+    7.6,
     10,
   )
   addStatLine(
@@ -277,9 +278,9 @@ function buildSummarySlide(
       { label: 'Max Read', value: `${formatIops(perf.maxReadIOPS)} IOPS`, color: BRAND.accent },
       { label: '/', value: `${perf.maxReadThroughputMBs.toFixed(0)} MB/s`, color: BRAND.textWhite },
     ],
-    7.05,
+    8.0,
     nl0,
-    6.0,
+    5.0,
   )
   addStatLine(
     slide,
@@ -291,9 +292,9 @@ function buildSummarySlide(
         color: BRAND.textWhite,
       },
     ],
-    7.05,
+    8.0,
     nl1,
-    6.0,
+    5.0,
   )
 
   // ── Extras spread to fill the page ────────────────────────────────────
