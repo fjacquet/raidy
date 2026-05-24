@@ -136,7 +136,7 @@ export function Speedometer({
   }, [center, innerRadius, strokeWidth])
 
   return (
-    <div id="speedometer-chart" className="flex flex-col items-center">
+    <div className="flex flex-col items-center">
       <svg
         width={size}
         height={size * 0.7}

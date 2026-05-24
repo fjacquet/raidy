@@ -143,6 +143,8 @@
     "performance": "Leistung",
     "resilience": "Ausfallsicherheit",
     "sustainability": "Nachhaltigkeit",
+    "backup": "Backup",
+    "bottleneck": "Engpässe",
     "bom": "Stückliste"
   }
 }

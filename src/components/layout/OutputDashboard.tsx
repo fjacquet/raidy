@@ -376,7 +376,7 @@ export function OutputDashboard() {
           </h3>
 
           {/* Responsive speedometer grid */}
-          <div className="grid grid-cols-2 gap-2 sm:gap-4">
+          <div id="speedometer-chart" className="grid grid-cols-2 gap-2 sm:gap-4">
             <Speedometer
               value={performance.maxReadThroughputMBs}
               max={50000}
