@@ -23,35 +23,35 @@ export function NutanixOptionsPanel({ topology }: NutanixOptionsPanelProps) {
   const { nutanixOptions, setNutanixOptions } = useConfigStore()
 
   return (
-    <div className="space-y-4 pt-3 border-t border-surface-700">
-      <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+    <div className="space-y-4 pt-3 border-t border-slate-200 dark:border-surface-700">
+      <h4 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
         {t('nutanix.title')}
       </h4>
 
       {/* Show mode description based on selected topology level */}
-      <div className="p-3 bg-surface-800 rounded-lg text-xs text-slate-400">
+      <div className="p-3 bg-white dark:bg-surface-800 rounded-lg text-xs text-slate-500 dark:text-slate-400">
         {topology.level === 'nutanix_rf2' && (
           <p>
-            <strong className="text-slate-300">RF2:</strong> 2 copies of data, 50% storage
-            efficiency. Tolerates single node failure.
+            <strong className="text-slate-600 dark:text-slate-300">RF2:</strong> 2 copies of data,
+            50% storage efficiency. Tolerates single node failure.
           </p>
         )}
         {topology.level === 'nutanix_rf3' && (
           <p>
-            <strong className="text-slate-300">RF3:</strong> 3 copies of data, 33% storage
-            efficiency. Tolerates dual node failure.
+            <strong className="text-slate-600 dark:text-slate-300">RF3:</strong> 3 copies of data,
+            33% storage efficiency. Tolerates dual node failure.
           </p>
         )}
         {topology.level === 'nutanix_ec_rf2' && (
           <p>
-            <strong className="text-slate-300">EC-X (RF2):</strong> Erasure coding 4:1 for cold
-            data, ~75% efficiency. Hot data remains RF2.
+            <strong className="text-slate-600 dark:text-slate-300">EC-X (RF2):</strong> Erasure
+            coding 4:1 for cold data, ~75% efficiency. Hot data remains RF2.
           </p>
         )}
         {topology.level === 'nutanix_ec_rf3' && (
           <p>
-            <strong className="text-slate-300">EC-X (RF3):</strong> Erasure coding 6:2 for cold
-            data, ~75% efficiency. Hot data remains RF3.
+            <strong className="text-slate-600 dark:text-slate-300">EC-X (RF3):</strong> Erasure
+            coding 6:2 for cold data, ~75% efficiency. Hot data remains RF3.
           </p>
         )}
       </div>

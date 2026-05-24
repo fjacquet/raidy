@@ -75,7 +75,7 @@ export function DonutChart({
       <div
         id="donut-chart"
         style={{ width: size, height: size }}
-        className="flex items-center justify-center text-slate-500"
+        className="flex items-center justify-center text-slate-500 dark:text-slate-400"
       >
         No data
       </div>
@@ -94,7 +94,7 @@ export function DonutChart({
           fill="none"
           stroke="currentColor"
           strokeWidth={thickness}
-          className="text-surface-700"
+          className="text-slate-200 dark:text-surface-700"
         />
 
         {/* Segments */}
@@ -118,8 +118,12 @@ export function DonutChart({
       {/* Center text */}
       {(centerLabel || centerValue) && (
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          {centerValue && <span className="text-2xl font-bold text-white">{centerValue}</span>}
-          {centerLabel && <span className="text-xs text-slate-400">{centerLabel}</span>}
+          {centerValue && (
+            <span className="text-2xl font-bold text-slate-900 dark:text-white">{centerValue}</span>
+          )}
+          {centerLabel && (
+            <span className="text-xs text-slate-500 dark:text-slate-400">{centerLabel}</span>
+          )}
         </div>
       )}
     </div>
@@ -147,8 +151,10 @@ export function DonutLegend({ segments }: { segments: DonutSegment[] }) {
                 className="w-3 h-3 rounded-sm flex-shrink-0"
                 style={{ backgroundColor: segment.color }}
               />
-              <span className="text-slate-400 flex-1">{segment.label}</span>
-              <span className="text-slate-300 font-mono">{percent.toFixed(1)}%</span>
+              <span className="text-slate-500 dark:text-slate-400 flex-1">{segment.label}</span>
+              <span className="text-slate-600 dark:text-slate-300 font-mono">
+                {percent.toFixed(1)}%
+              </span>
             </div>
           )
         })}

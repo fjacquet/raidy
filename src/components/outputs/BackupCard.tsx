@@ -18,37 +18,39 @@ export function BackupCard({ backup }: BackupCardProps) {
 
   return (
     <>
-      <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-1.5">
+      <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4 flex items-center gap-1.5">
         {t('backup.title')}
         <InfoTooltip content={th('output.backupRequirements')} />
       </h3>
 
       {/* Main metric: Total backup storage */}
-      <div className="text-center py-4 bg-surface-900 rounded-lg mb-4">
+      <div className="text-center py-4 bg-slate-50 dark:bg-surface-900 rounded-lg mb-4">
         <div className="text-3xl font-bold text-cyan-400">
           <AnimatedBytes value={backup.totalRaw} />
         </div>
-        <p className="text-xs text-slate-400 mt-1">{t('backup.totalStorage')}</p>
+        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+          {t('backup.totalStorage')}
+        </p>
       </div>
 
       {/* Breakdown grid */}
       <div className="grid grid-cols-2 gap-4">
         <div className="text-center">
-          <div className="text-xl font-bold text-white">
+          <div className="text-xl font-bold text-slate-900 dark:text-white">
             <AnimatedBytes value={backup.dailyChange} />
           </div>
-          <p className="text-xs text-slate-400">{t('backup.dailyChange')}</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">{t('backup.dailyChange')}</p>
         </div>
         <div className="text-center">
-          <div className="text-xl font-bold text-white">
+          <div className="text-xl font-bold text-slate-900 dark:text-white">
             <AnimatedBytes value={backup.incrementalRaw} />
           </div>
-          <p className="text-xs text-slate-400">{t('backup.incremental')}</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">{t('backup.incremental')}</p>
         </div>
       </div>
 
       {/* Parameters summary */}
-      <div className="mt-4 pt-4 border-t border-surface-700 flex justify-between text-sm text-slate-400">
+      <div className="mt-4 pt-4 border-t border-slate-200 dark:border-surface-700 flex justify-between text-sm text-slate-500 dark:text-slate-400">
         <span>{t('backup.retention', { days: backup.retentionDays })}</span>
         <span>{t('backup.changeRate', { rate: backup.changeRatePercent })}</span>
       </div>

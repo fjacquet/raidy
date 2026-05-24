@@ -16,8 +16,8 @@ const drives = drivesData as Record<string, Drive>
 function PropertyRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="flex justify-between py-1">
-      <span className="text-slate-400 text-sm">{label}</span>
-      <span className="text-white text-sm font-medium">{value}</span>
+      <span className="text-slate-500 dark:text-slate-400 text-sm">{label}</span>
+      <span className="text-slate-900 dark:text-white text-sm font-medium">{value}</span>
     </div>
   )
 }

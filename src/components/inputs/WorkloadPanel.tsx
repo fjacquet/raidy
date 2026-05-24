@@ -184,7 +184,7 @@ export function WorkloadPanel() {
       </div>
 
       {/* Workload Presets */}
-      <div className="pt-3 border-t border-surface-700">
+      <div className="pt-3 border-t border-slate-200 dark:border-surface-700">
         <Label>{t('presets.label')}</Label>
         <div className="grid grid-cols-2 gap-2 mt-2">
           <button
@@ -194,7 +194,7 @@ export function WorkloadPanel() {
               setRandomPercent(80)
               setBlockSize('8K')
             }}
-            className="px-3 py-2 text-xs bg-surface-700 hover:bg-surface-600 rounded-lg text-slate-300 transition-colors"
+            className="px-3 py-2 text-xs bg-slate-100 dark:bg-surface-700 hover:bg-slate-200 dark:hover:bg-surface-600 rounded-lg text-slate-600 dark:text-slate-300 transition-colors"
           >
             {t('presets.database')}
           </button>
@@ -205,7 +205,7 @@ export function WorkloadPanel() {
               setRandomPercent(20)
               setBlockSize('128K')
             }}
-            className="px-3 py-2 text-xs bg-surface-700 hover:bg-surface-600 rounded-lg text-slate-300 transition-colors"
+            className="px-3 py-2 text-xs bg-slate-100 dark:bg-surface-700 hover:bg-slate-200 dark:hover:bg-surface-600 rounded-lg text-slate-600 dark:text-slate-300 transition-colors"
           >
             {t('presets.fileServer')}
           </button>
@@ -216,7 +216,7 @@ export function WorkloadPanel() {
               setRandomPercent(10)
               setBlockSize('1M')
             }}
-            className="px-3 py-2 text-xs bg-surface-700 hover:bg-surface-600 rounded-lg text-slate-300 transition-colors"
+            className="px-3 py-2 text-xs bg-slate-100 dark:bg-surface-700 hover:bg-slate-200 dark:hover:bg-surface-600 rounded-lg text-slate-600 dark:text-slate-300 transition-colors"
           >
             {t('presets.videoStreaming')}
           </button>
@@ -227,7 +227,7 @@ export function WorkloadPanel() {
               setRandomPercent(5)
               setBlockSize('1M')
             }}
-            className="px-3 py-2 text-xs bg-surface-700 hover:bg-surface-600 rounded-lg text-slate-300 transition-colors"
+            className="px-3 py-2 text-xs bg-slate-100 dark:bg-surface-700 hover:bg-slate-200 dark:hover:bg-surface-600 rounded-lg text-slate-600 dark:text-slate-300 transition-colors"
           >
             {t('presets.backup')}
           </button>

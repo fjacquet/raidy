@@ -12,7 +12,7 @@ interface AccordionItemProps {
 
 export function AccordionItem({ title, isOpen, onToggle, children }: AccordionItemProps) {
   return (
-    <div className="border-b border-surface-700 last:border-b-0">
+    <div className="border-b border-slate-200 dark:border-surface-700 last:border-b-0">
       <button type="button" onClick={onToggle} className="accordion-trigger">
         <span>{title}</span>
         <svg

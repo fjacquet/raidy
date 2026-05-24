@@ -139,7 +139,7 @@ export function HardwarePanel() {
         <Label tooltip={th('hardware.connectivity')}>{t('connectivity.label')}</Label>
         {constraint === 'nvme_only' ? (
           <>
-            <div className="px-3 py-2 bg-surface-700 rounded-lg text-sm text-slate-300">
+            <div className="px-3 py-2 bg-slate-100 dark:bg-surface-700 rounded-lg text-sm text-slate-600 dark:text-slate-300">
               {t('connectivity.nvme')}
             </div>
             {reasonKey && <p className="text-xs text-amber-500">{t(reasonKey)}</p>}
@@ -182,27 +182,29 @@ export function HardwarePanel() {
         </Label>
         <Select id="drive-select" value={driveId} options={driveOptions} onChange={setDriveId} />
         {selectedDrive && (
-          <div className="grid grid-cols-2 gap-2 mt-2 text-xs text-slate-400">
+          <div className="grid grid-cols-2 gap-2 mt-2 text-xs text-slate-500 dark:text-slate-400">
             <div>
               {t('properties.type')}:{' '}
-              <span className="text-slate-300">
+              <span className="text-slate-600 dark:text-slate-300">
                 {selectedDrive.type}
                 {selectedDrive.formFactor ? ` (${selectedDrive.formFactor})` : ''}
               </span>
             </div>
             <div>
               {t('properties.cost')}:{' '}
-              <span className="text-slate-300">{formatPrice(selectedDrive.cost_usd)}</span>
+              <span className="text-slate-600 dark:text-slate-300">
+                {formatPrice(selectedDrive.cost_usd)}
+              </span>
             </div>
             <div>
               {t('properties.readIops').replace(' IOPS', '')}:{' '}
-              <span className="text-slate-300">
+              <span className="text-slate-600 dark:text-slate-300">
                 {selectedDrive.performance.iops_read.toLocaleString()} IOPS
               </span>
             </div>
             <div>
               {t('properties.writeIops').replace(' IOPS', '')}:{' '}
-              <span className="text-slate-300">
+              <span className="text-slate-600 dark:text-slate-300">
                 {selectedDrive.performance.iops_write.toLocaleString()} IOPS
               </span>
             </div>
@@ -251,12 +253,16 @@ export function HardwarePanel() {
       </div>
 
       {/* Summary */}
-      <div className="pt-3 border-t border-surface-700">
+      <div className="pt-3 border-t border-slate-200 dark:border-surface-700">
         <div className="grid grid-cols-2 gap-2 text-sm">
-          <div className="text-slate-400">{t('summary.rawCapacity')}:</div>
-          <div className="text-right font-medium text-white">{formatBytes(totalRawCapacity)}</div>
-          <div className="text-slate-400">{t('summary.hardwareCost')}:</div>
-          <div className="text-right font-medium text-white">{formatPrice(totalCost)}</div>
+          <div className="text-slate-500 dark:text-slate-400">{t('summary.rawCapacity')}:</div>
+          <div className="text-right font-medium text-slate-900 dark:text-white">
+            {formatBytes(totalRawCapacity)}
+          </div>
+          <div className="text-slate-500 dark:text-slate-400">{t('summary.hardwareCost')}:</div>
+          <div className="text-right font-medium text-slate-900 dark:text-white">
+            {formatPrice(totalCost)}
+          </div>
         </div>
       </div>
     </div>

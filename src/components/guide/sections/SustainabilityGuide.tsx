@@ -10,34 +10,48 @@ export function SustainabilityGuide() {
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-slate-300">{t('sustainability.intro')}</p>
+      <p className="text-sm text-slate-600 dark:text-slate-300">{t('sustainability.intro')}</p>
 
       <div className="space-y-2">
-        <h5 className="text-sm font-semibold text-slate-200">{t('sustainability.pue.title')}</h5>
-        <p className="text-sm text-slate-400">{t('sustainability.pue.description')}</p>
-        <div className="p-2 bg-surface-700 rounded font-mono text-xs text-green-400">
+        <h5 className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+          {t('sustainability.pue.title')}
+        </h5>
+        <p className="text-sm text-slate-500 dark:text-slate-400">
+          {t('sustainability.pue.description')}
+        </p>
+        <div className="p-2 bg-slate-100 dark:bg-surface-700 rounded font-mono text-xs text-green-400">
           {t('sustainability.pue.formula')}
         </div>
-        <p className="text-xs text-slate-500">{t('sustainability.pue.examples')}</p>
+        <p className="text-xs text-slate-500 dark:text-slate-400">
+          {t('sustainability.pue.examples')}
+        </p>
       </div>
 
       <div className="space-y-2">
-        <h5 className="text-sm font-semibold text-slate-200">{t('sustainability.co2.title')}</h5>
-        <p className="text-sm text-slate-400">{t('sustainability.co2.description')}</p>
-        <div className="p-2 bg-surface-700 rounded text-xs text-slate-300">
+        <h5 className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+          {t('sustainability.co2.title')}
+        </h5>
+        <p className="text-sm text-slate-500 dark:text-slate-400">
+          {t('sustainability.co2.description')}
+        </p>
+        <div className="p-2 bg-slate-100 dark:bg-surface-700 rounded text-xs text-slate-600 dark:text-slate-300">
           {t('sustainability.co2.comparison')}
         </div>
       </div>
 
       <div className="space-y-2">
-        <h5 className="text-sm font-semibold text-slate-200">
+        <h5 className="text-sm font-semibold text-slate-800 dark:text-slate-200">
           {t('sustainability.endurance.title')}
         </h5>
-        <p className="text-sm text-slate-400">{t('sustainability.endurance.description')}</p>
-        <div className="p-2 bg-surface-700 rounded font-mono text-xs text-cyan-400">
+        <p className="text-sm text-slate-500 dark:text-slate-400">
+          {t('sustainability.endurance.description')}
+        </p>
+        <div className="p-2 bg-slate-100 dark:bg-surface-700 rounded font-mono text-xs text-cyan-400">
           {t('sustainability.endurance.formula')}
         </div>
-        <p className="text-xs text-slate-500 italic">{t('sustainability.endurance.example')}</p>
+        <p className="text-xs text-slate-500 dark:text-slate-400 italic">
+          {t('sustainability.endurance.example')}
+        </p>
       </div>
     </div>
   )
