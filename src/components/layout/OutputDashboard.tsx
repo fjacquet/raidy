@@ -376,8 +376,9 @@ export function OutputDashboard() {
           </h3>
 
           {/* Responsive speedometer grid */}
-          <div id="speedometer-chart" className="grid grid-cols-2 gap-2 sm:gap-4">
+          <div className="grid grid-cols-2 gap-2 sm:gap-4">
             <Speedometer
+              id="gauge-read-mbps"
               value={performance.maxReadThroughputMBs}
               max={50000}
               label={t('performance.read')}
@@ -385,6 +386,7 @@ export function OutputDashboard() {
               size={isMobile ? 100 : 140}
             />
             <Speedometer
+              id="gauge-write-mbps"
               value={performance.maxWriteThroughputMBs}
               max={50000}
               label={t('performance.write')}
@@ -392,6 +394,7 @@ export function OutputDashboard() {
               size={isMobile ? 100 : 140}
             />
             <Speedometer
+              id="gauge-read-iops"
               value={performance.maxReadIOPS}
               max={2000000}
               label={t('performance.readIops')}
@@ -404,6 +407,7 @@ export function OutputDashboard() {
               ]}
             />
             <Speedometer
+              id="gauge-write-iops"
               value={performance.maxWriteIOPS}
               max={2000000}
               label={t('performance.writeIops')}

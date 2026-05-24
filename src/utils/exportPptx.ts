@@ -1,9 +1,10 @@
 /**
  * PPTX Export utility using pptxgenjs.
  * Single dense executive one-pager: a crystal-clear VOLUME spec and PERFORMANCE
- * maximums on top (Sankey + gauges plus explicit number lines), with energy,
- * bottlenecks, and resilience compressed underneath. Charts are captured from
- * the DOM via html-to-image. No server requests — pptxgenjs runs client-side.
+ * maximums on top (a large Sankey + a tight 2×2 of gauges, each with explicit
+ * number lines), with energy, bottlenecks, and resilience spread underneath to
+ * fill the page. Charts are captured from the DOM via html-to-image. No server
+ * requests — pptxgenjs runs entirely client-side.
  */
 import pptxgen from 'pptxgenjs'
 
@@ -12,7 +13,7 @@ import type { Drive } from '@/types/drive'
 import type { CalculationResults } from '@/types/results'
 import type { Topology, ZfsOptions } from '@/types/topology'
 
-import { captureSankeyDiagram, captureSpeedometer } from './captureChart'
+import { capturePerfGauges, captureSankeyDiagram } from './captureChart'
 import type { UnitSystem } from './units'
 
 export interface ExportConfig {
@@ -96,7 +97,7 @@ function addChartOrFallback(
 ): void {
   if (dataUrl) {
     slide.addImage({ data: dataUrl, sizing: { type: 'contain', w: box.w, h: box.h }, ...box })
-  } else {
+  } else if (fallback) {
     slide.addText(fallback, {
       x: box.x,
       y: box.y + box.h / 2 - 0.25,
@@ -111,7 +112,7 @@ function addChartOrFallback(
   }
 }
 
-/** A dense "label: value · label: value" stat line built from text runs. */
+/** A dense "label value · label value" stat line built from text runs. */
 type StatRun = { label: string; value: string; color: string }
 function addStatLine(
   slide: pptxgen.Slide,
@@ -142,7 +143,7 @@ function addStatLine(
 function buildSummarySlide(
   prs: pptxgen,
   config: ExportConfig,
-  charts: { sankey: string | null; speedometer: string | null },
+  charts: { sankey: string | null; gauges: (string | null)[] },
 ): void {
   const slide = prs.addSlide()
   slide.background = { fill: BRAND.bg }
@@ -189,14 +190,39 @@ function buildSummarySlide(
     fontFace: FONT,
   })
 
-  // ── VOLUME (top-left): Sankey + crystal-clear capacity breakdown ──────
+  // ── Top charts: large Sankey (left) + tight 2×2 gauges (right) ────────
+  // Shorter charts when resilience is shown, to leave room for its row.
+  const chartTop = 1.4
+  const chartH = resilience ? 2.7 : 3.2
+  const chartBottom = chartTop + chartH
+
   addSectionLabel(slide, i18n.t('output:pptx.volumetry'), BRAND.capacity, 0.4, 1.0)
   addChartOrFallback(
     slide,
     charts.sankey,
-    { x: 0.3, y: 1.3, w: 6.5, h: 2.3 },
+    { x: 0.25, y: chartTop, w: 6.8, h: chartH },
     'Capacity chart unavailable',
   )
+
+  addSectionLabel(slide, i18n.t('output:pptx.performance'), BRAND.accent, 7.05, 1.0)
+  const gaugeColX: [number, number] = [7.05, 10.05]
+  const gaugeRowY: [number, number] = [chartTop, chartTop + chartH / 2]
+  const gaugeW = 2.95
+  const gaugeH = chartH / 2 - 0.05
+  charts.gauges.forEach((gauge, i) => {
+    const col = i % 2
+    const row = i < 2 ? 0 : 1
+    addChartOrFallback(
+      slide,
+      gauge,
+      { x: gaugeColX[col] ?? 7.05, y: gaugeRowY[row] ?? chartTop, w: gaugeW, h: gaugeH },
+      '',
+    )
+  })
+
+  // ── Crystal-clear number lines beneath each chart ─────────────────────
+  const nl0 = chartBottom + 0.14
+  const nl1 = nl0 + 0.36
   addStatLine(
     slide,
     [
@@ -218,8 +244,8 @@ function buildSummarySlide(
       { label: 'Efficiency', value: `${vol.efficiency.toFixed(1)}%`, color: BRAND.overhead },
     ],
     0.4,
-    3.66,
-    6.5,
+    nl0,
+    6.8,
   )
   addStatLine(
     slide,
@@ -241,18 +267,9 @@ function buildSummarySlide(
       },
     ],
     0.4,
-    4.06,
-    6.5,
+    nl1,
+    6.8,
     10,
-  )
-
-  // ── PERFORMANCE (top-right): gauges + crystal-clear maximums ──────────
-  addSectionLabel(slide, i18n.t('output:pptx.performance'), BRAND.accent, 7.0, 1.0)
-  addChartOrFallback(
-    slide,
-    charts.speedometer,
-    { x: 7.0, y: 1.3, w: 6.0, h: 2.3 },
-    'Performance chart unavailable',
   )
   addStatLine(
     slide,
@@ -260,8 +277,8 @@ function buildSummarySlide(
       { label: 'Max Read', value: `${formatIops(perf.maxReadIOPS)} IOPS`, color: BRAND.accent },
       { label: '/', value: `${perf.maxReadThroughputMBs.toFixed(0)} MB/s`, color: BRAND.textWhite },
     ],
-    7.0,
-    3.66,
+    7.05,
+    nl0,
     6.0,
   )
   addStatLine(
@@ -274,13 +291,15 @@ function buildSummarySlide(
         color: BRAND.textWhite,
       },
     ],
-    7.0,
-    4.06,
+    7.05,
+    nl1,
     6.0,
   )
 
-  // ── EXTRAS (compact, full-width dense lines) ──────────────────────────
-  addSectionLabel(slide, i18n.t('output:pptx.sustainability'), BRAND.overhead, 0.4, 4.65)
+  // ── Extras spread to fill the page ────────────────────────────────────
+  let y = nl1 + 0.5
+
+  addSectionLabel(slide, i18n.t('output:pptx.sustainability'), BRAND.overhead, 0.4, y)
   const energyStats: StatRun[] = [
     { label: 'Total', value: `${sus.powerBreakdown.total.toFixed(0)} W`, color: BRAND.accent },
     { label: 'Drives', value: `${sus.powerBreakdown.drives.toFixed(0)} W`, color: BRAND.textMuted },
@@ -304,19 +323,21 @@ function buildSummarySlide(
       color: BRAND.capacity,
     })
   }
-  addStatLine(slide, energyStats, 0.4, 4.98, 12.6)
+  addStatLine(slide, energyStats, 0.4, y + 0.33, 12.6)
+  y += 0.85
 
-  addSectionLabel(slide, i18n.t('output:pptx.bottleneck'), BRAND.parity, 0.4, 5.5)
+  addSectionLabel(slide, i18n.t('output:pptx.bottleneck'), BRAND.parity, 0.4, y)
   const layerStats: StatRun[] = perf.layers.slice(0, 6).map((layer) => ({
     label: layer.name.replace(/\s*\(.*\)\s*$/, ''),
     value: `${layer.throughputMBs.toFixed(0)} MB/s`,
     color: layer.isBottleneck ? BRAND.parity : BRAND.textWhite,
   }))
-  addStatLine(slide, layerStats, 0.4, 5.83, 12.6)
+  addStatLine(slide, layerStats, 0.4, y + 0.33, 12.6)
+  y += 0.85
 
-  // ── RESILIENCE — only when the simulation has actually been run ───────
+  // Resilience — only when the simulation has actually been run.
   if (resilience) {
-    addSectionLabel(slide, i18n.t('output:pptx.resilience'), BRAND.capacity, 0.4, 6.35)
+    addSectionLabel(slide, i18n.t('output:pptx.resilience'), BRAND.capacity, 0.4, y)
     addStatLine(
       slide,
       [
@@ -330,7 +351,7 @@ function buildSummarySlide(
         { label: 'Risk', value: resilience.riskLevel.toUpperCase(), color: BRAND.overhead },
       ],
       0.4,
-      6.68,
+      y + 0.33,
       12.6,
     )
   }
@@ -342,7 +363,7 @@ function buildSummarySlide(
  */
 export async function exportToPptx(config: ExportConfig): Promise<void> {
   // Capture the charts in parallel before building the slide.
-  const [sankey, speedometer] = await Promise.all([captureSankeyDiagram(), captureSpeedometer()])
+  const [sankey, gauges] = await Promise.all([captureSankeyDiagram(), capturePerfGauges()])
 
   const prs = new pptxgen()
   prs.layout = 'LAYOUT_WIDE' // 13.33" × 7.5"
@@ -350,7 +371,7 @@ export async function exportToPptx(config: ExportConfig): Promise<void> {
   prs.subject = 'Storage Configuration'
   prs.title = config.projectName ?? 'Storage Report'
 
-  buildSummarySlide(prs, config, { sankey, speedometer })
+  buildSummarySlide(prs, config, { sankey, gauges })
 
   const safeLabel = (config.topology.type ?? 'storage').replace(/[^a-z0-9]/gi, '-')
   await prs.writeFile({ fileName: `raidy-${safeLabel}.pptx` })

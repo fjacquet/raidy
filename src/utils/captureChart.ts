@@ -4,41 +4,36 @@
  */
 import { toPng } from 'html-to-image'
 
+const PNG_OPTIONS = { backgroundColor: '#1A1B2E', pixelRatio: 2 } as const
+
+/** Rasterize a DOM element (by id) to a PNG data URL, or null if not mounted. */
+async function captureById(id: string): Promise<string | null> {
+  const el = document.getElementById(id)
+  if (!el) return null
+  return toPng(el, PNG_OPTIONS)
+}
+
 /**
  * Capture the Sankey diagram as a PNG data URL.
  * Returns null if the element is not mounted in the DOM (e.g. collapsed panel).
  */
-export async function captureSankeyDiagram(): Promise<string | null> {
-  const el = document.getElementById('sankey-diagram')
-  if (!el) return null
-  return toPng(el, {
-    backgroundColor: '#1A1B2E',
-    pixelRatio: 2,
-  })
+export function captureSankeyDiagram(): Promise<string | null> {
+  return captureById('sankey-diagram')
 }
 
-/**
- * Capture the performance speedometer as a PNG data URL.
- * Returns null if the element is not mounted in the DOM.
- */
-export async function captureSpeedometer(): Promise<string | null> {
-  const el = document.getElementById('speedometer-chart')
-  if (!el) return null
-  return toPng(el, {
-    backgroundColor: '#1A1B2E',
-    pixelRatio: 2,
-  })
-}
+/** Ids of the four performance gauges, in display order (R/W MB/s, R/W IOPS). */
+export const GAUGE_IDS = [
+  'gauge-read-mbps',
+  'gauge-write-mbps',
+  'gauge-read-iops',
+  'gauge-write-iops',
+] as const
 
 /**
- * Capture the resilience donut chart as a PNG data URL.
- * Returns null if the element is not mounted in the DOM.
+ * Capture the four performance gauges individually so they can be laid out in a
+ * tight grid in the export (the dashboard's responsive grid spreads them apart).
+ * Returns one data URL (or null) per gauge, in GAUGE_IDS order.
  */
-export async function captureDonutChart(): Promise<string | null> {
-  const el = document.getElementById('donut-chart')
-  if (!el) return null
-  return toPng(el, {
-    backgroundColor: '#1A1B2E',
-    pixelRatio: 2,
-  })
+export function capturePerfGauges(): Promise<(string | null)[]> {
+  return Promise.all(GAUGE_IDS.map(captureById))
 }
