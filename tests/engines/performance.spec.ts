@@ -29,7 +29,7 @@ const testNvmeDrive: Drive = {
   model: 'Test NVMe 1TB',
   type: 'SSD_NVMe',
   formFactor: '2.5"',
-  interface: 'NVMe',
+  interface: 'PCIe4',
   capacity_raw: 1_000_000_000_000,
   sector_size: 512,
   performance: {
@@ -369,7 +369,7 @@ describe('Performance Engine - RAID Write Penalty Validation (TEST-12)', () => {
       const resultRaid5 = calculatePerformance(inputRaid5)
       const resultRaid6 = calculatePerformance(inputRaid6)
 
-      expect(resultRaid6.writePenalty).toBeGreaterThan(resultRaid5.writePenalty)
+      expect(resultRaid6.writePenalty).toBeGreaterThan(resultRaid5.writePenalty!)
       expect(resultRaid6.maxWriteIOPS).toBeLessThan(resultRaid5.maxWriteIOPS)
     })
 
@@ -943,7 +943,7 @@ describe('Performance Engine - Industry-Validated IOPS', () => {
       const resultSequential = calculatePerformance(inputSequential)
 
       // Sequential has reduced penalty (full-stripe writes)
-      expect(resultSequential.writePenalty).toBeLessThan(resultRandom.writePenalty)
+      expect(resultSequential.writePenalty).toBeLessThan(resultRandom.writePenalty!)
     })
 
     it('should have higher write throughput for sequential vs random (if not bottlenecked)', () => {
@@ -1218,7 +1218,12 @@ describe('Performance Engine - Dell PowerFlex Performance', () => {
 
   it('should calculate PowerFlex latency with 1.5x multiplier', () => {
     // PowerFlex adds 50% overhead to media latency for replication
-    const input = createInput(12, { type: 'powerflex', level: 'powerflex_2way' }, testSsdNvme, 100)
+    const input = createInput(
+      12,
+      { type: 'powerflex', level: 'powerflex_medium_2way' },
+      testSsdNvme,
+      100,
+    )
     const result = calculatePerformance(input)
 
     // Should have latency estimation
@@ -1236,7 +1241,12 @@ describe('Performance Engine - Dell PowerFlex Performance', () => {
   })
 
   it('should handle PowerFlex 2-way mirror configuration', () => {
-    const input = createInput(12, { type: 'powerflex', level: 'powerflex_2way' }, testSsdNvme, 100)
+    const input = createInput(
+      12,
+      { type: 'powerflex', level: 'powerflex_medium_2way' },
+      testSsdNvme,
+      100,
+    )
     const result = calculatePerformance(input)
 
     // 2-way mirror: write penalty should be 2
@@ -1248,7 +1258,12 @@ describe('Performance Engine - Dell PowerFlex Performance', () => {
   })
 
   it('should handle PowerFlex 3-way mirror configuration', () => {
-    const input = createInput(24, { type: 'powerflex', level: 'powerflex_3way' }, testSsdSata, 100)
+    const input = createInput(
+      24,
+      { type: 'powerflex', level: 'powerflex_medium_3way' },
+      testSsdSata,
+      100,
+    )
     const result = calculatePerformance(input)
 
     // 3-way mirror: higher redundancy, higher write penalty
@@ -1263,7 +1278,7 @@ describe('Performance Engine - Dell PowerFlex Performance', () => {
     // Compare performance with compression enabled vs disabled
     const inputNoCompression = createInput(
       12,
-      { type: 'powerflex', level: 'powerflex_2way' },
+      { type: 'powerflex', level: 'powerflex_medium_2way' },
       testSsdNvme,
       100,
     )
@@ -1276,11 +1291,11 @@ describe('Performance Engine - Dell PowerFlex Performance', () => {
   it('should validate PowerFlex network latency component', () => {
     // PowerFlex includes network latency in formula
     const input1GbE = {
-      ...createInput(12, { type: 'powerflex', level: 'powerflex_2way' }, testSsdNvme, 100),
+      ...createInput(12, { type: 'powerflex', level: 'powerflex_medium_2way' }, testSsdNvme, 100),
       networkSpeed: '1GbE' as const,
     }
     const input100GbE = {
-      ...createInput(12, { type: 'powerflex', level: 'powerflex_2way' }, testSsdNvme, 100),
+      ...createInput(12, { type: 'powerflex', level: 'powerflex_medium_2way' }, testSsdNvme, 100),
       networkSpeed: '100GbE' as const,
     }
 
@@ -1288,13 +1303,13 @@ describe('Performance Engine - Dell PowerFlex Performance', () => {
     const result100GbE = calculatePerformance(input100GbE)
 
     // Faster network should reduce latency
-    expect(result100GbE.estimatedLatencyUs).toBeLessThan(result1GbE.estimatedLatencyUs)
+    expect(result100GbE.estimatedLatencyUs).toBeLessThan(result1GbE.estimatedLatencyUs!)
   })
 
   it('should apply PowerFlex erasure coding CPU factor (-30% IOPS)', () => {
     // PowerFlex with erasure coding has -30% IOPS penalty (line 436)
     const inputErasure: PerformanceInput = {
-      ...createInput(12, { type: 'powerflex', level: 'powerflex_2way' }, testSsdNvme, 100),
+      ...createInput(12, { type: 'powerflex', level: 'powerflex_medium_2way' }, testSsdNvme, 100),
       powerFlexOptions: {
         ...DEFAULT_POWERFLEX_OPTIONS,
         protectionMode: 'erasure',
@@ -1312,7 +1327,7 @@ describe('Performance Engine - Dell PowerFlex Performance', () => {
   it('should apply PowerFlex fine granularity with compression CPU factor (-15% IOPS)', () => {
     // PowerFlex fine granularity with compression has -15% IOPS penalty (lines 441-442)
     const inputFineCompressed: PerformanceInput = {
-      ...createInput(12, { type: 'powerflex', level: 'powerflex_2way' }, testSsdNvme, 100),
+      ...createInput(12, { type: 'powerflex', level: 'powerflex_medium_2way' }, testSsdNvme, 100),
       powerFlexOptions: {
         ...DEFAULT_POWERFLEX_OPTIONS,
         protectionMode: 'mirror',
@@ -1330,7 +1345,7 @@ describe('Performance Engine - Dell PowerFlex Performance', () => {
   it('should apply PowerFlex fine granularity without compression CPU factor (-5% IOPS)', () => {
     // PowerFlex fine granularity without compression has -5% IOPS penalty (line 444)
     const inputFine: PerformanceInput = {
-      ...createInput(12, { type: 'powerflex', level: 'powerflex_2way' }, testSsdNvme, 100),
+      ...createInput(12, { type: 'powerflex', level: 'powerflex_medium_2way' }, testSsdNvme, 100),
       powerFlexOptions: {
         ...DEFAULT_POWERFLEX_OPTIONS,
         protectionMode: 'mirror',
@@ -1347,7 +1362,12 @@ describe('Performance Engine - Dell PowerFlex Performance', () => {
 
   it('should validate PowerFlex dynamic rebuild performance impact', () => {
     // PowerFlex dynamic rebuild should maintain reasonable performance
-    const input = createInput(12, { type: 'powerflex', level: 'powerflex_2way' }, testSsdNvme, 50)
+    const input = createInput(
+      12,
+      { type: 'powerflex', level: 'powerflex_medium_2way' },
+      testSsdNvme,
+      50,
+    )
     const result = calculatePerformance(input)
 
     // Should have reduced write penalty for 50% random (vs 100%)
@@ -1430,13 +1450,13 @@ describe('Performance Engine - Write Penalty Edge Cases', () => {
     // Test Nutanix EC levels to cover more write penalty cases
     const inputEc41 = createInput(
       10,
-      { type: 'nutanix', level: 'nutanix_ec_4_1' },
+      { type: 'nutanix', level: 'nutanix_ec_rf2' },
       testSsdSata,
       100,
     )
     const inputEc62 = createInput(
       16,
-      { type: 'nutanix', level: 'nutanix_ec_6_2' },
+      { type: 'nutanix', level: 'nutanix_ec_rf3' },
       testSsdSata,
       100,
     )
@@ -1451,15 +1471,15 @@ describe('Performance Engine - Write Penalty Edge Cases', () => {
   it('should calculate write penalty for S2D variations', () => {
     // Test S2D levels to cover more cases (S2D requires serverCount >= 3)
     const inputMirror: PerformanceInput = {
-      ...createInput(12, { type: 's2d', level: 's2d_mirror_3way' }, testSsdNvme, 100),
+      ...createInput(12, { type: 's2d', level: 'mirror' }, testSsdNvme, 100),
       serverCount: 4,
     }
     const inputParity: PerformanceInput = {
-      ...createInput(12, { type: 's2d', level: 's2d_parity_single' }, testSsdSata, 100),
+      ...createInput(12, { type: 's2d', level: 'parity' }, testSsdSata, 100),
       serverCount: 4,
     }
     const inputDualParity: PerformanceInput = {
-      ...createInput(16, { type: 's2d', level: 's2d_parity_dual' }, testSsdSata, 100),
+      ...createInput(16, { type: 's2d', level: 'dual_parity' }, testSsdSata, 100),
       serverCount: 4,
     }
 
@@ -1561,7 +1581,7 @@ describe('Performance Engine - Dell ObjectScale Performance', () => {
   it('should handle ObjectScale EC 8+2 configuration with SSD', () => {
     const input = createInput(
       10,
-      { type: 'objectscale', level: 'objectscale_ec_8_2' },
+      { type: 'objectscale', level: 'objectscale_ec_10_2' },
       testSsdSata,
       100,
     )
@@ -1594,7 +1614,7 @@ describe('Performance Engine - Dell ObjectScale Performance', () => {
     // 1GbE: 500μs * 1.5 = 750μs
     // 100GbE: 10μs * 1.5 = 15μs
     // Difference: 735μs
-    expect(result1GbE.estimatedLatencyUs).toBeGreaterThan(result100GbE.estimatedLatencyUs)
+    expect(result1GbE.estimatedLatencyUs).toBeGreaterThan(result100GbE.estimatedLatencyUs!)
   })
 
   it('should show ObjectScale eventual consistency performance characteristics', () => {
@@ -1622,7 +1642,7 @@ describe('Performance Engine - Dell ObjectScale Performance', () => {
     )
     const inputPowerFlex = createInput(
       16,
-      { type: 'powerflex', level: 'powerflex_2way' },
+      { type: 'powerflex', level: 'powerflex_medium_2way' },
       testSsdSata,
       100,
     )
@@ -1631,7 +1651,9 @@ describe('Performance Engine - Dell ObjectScale Performance', () => {
     const resultPowerFlex = calculatePerformance(inputPowerFlex)
 
     // ObjectScale (2x media, 1.5x network) should have higher latency than PowerFlex (1.5x media)
-    expect(resultObjectScale.estimatedLatencyUs).toBeGreaterThan(resultPowerFlex.estimatedLatencyUs)
+    expect(resultObjectScale.estimatedLatencyUs).toBeGreaterThan(
+      resultPowerFlex.estimatedLatencyUs!,
+    )
   })
 })
 
@@ -1676,7 +1698,7 @@ describe('Performance Engine - Dell PowerStore Performance', () => {
     )
     const inputPowerFlex = createInput(
       24,
-      { type: 'powerflex', level: 'powerflex_2way' },
+      { type: 'powerflex', level: 'powerflex_medium_2way' },
       testSsdNvme,
       100,
     )
@@ -1685,7 +1707,7 @@ describe('Performance Engine - Dell PowerStore Performance', () => {
     const resultPowerFlex = calculatePerformance(inputPowerFlex)
 
     // PowerStore (1.2x media, no network) should be faster than PowerFlex (1.5x media + network)
-    expect(resultPowerStore.estimatedLatencyUs).toBeLessThan(resultPowerFlex.estimatedLatencyUs)
+    expect(resultPowerStore.estimatedLatencyUs).toBeLessThan(resultPowerFlex.estimatedLatencyUs!)
   })
 
   it('should handle PowerStore block storage performance characteristics', () => {
@@ -1727,7 +1749,7 @@ describe('Performance Engine - Dell PowerStore Performance', () => {
     // NVMe should have lower latency
     // NVMe: 20μs * 1.2 + 10 = 34μs
     // SSD: 150μs * 1.2 + 10 = 190μs
-    expect(resultNvme.estimatedLatencyUs).toBeLessThan(resultSsd.estimatedLatencyUs)
+    expect(resultNvme.estimatedLatencyUs).toBeLessThan(resultSsd.estimatedLatencyUs!)
   })
 
   it('should not include network latency component (block storage)', () => {
@@ -1781,12 +1803,7 @@ describe('Performance Engine - Dell PowerScale Performance', () => {
 
   it('should calculate PowerScale latency with 1.5x multiplier and network overhead', () => {
     // PowerScale scale-out NAS with parity writes
-    const input = createInput(
-      36,
-      { type: 'powerscale', level: 'powerscale_n_plus_2' },
-      testHddDrive,
-      100,
-    )
+    const input = createInput(36, { type: 'powerscale', level: 'powerscale_n2' }, testHddDrive, 100)
     const result = calculatePerformance(input)
 
     // Should have latency estimation
@@ -1803,12 +1820,7 @@ describe('Performance Engine - Dell PowerScale Performance', () => {
 
   it('should apply replication CPU overhead', () => {
     // PowerScale uses replication CPU overhead (20μs)
-    const input = createInput(
-      36,
-      { type: 'powerscale', level: 'powerscale_n_plus_2' },
-      testSsdSata,
-      100,
-    )
+    const input = createInput(36, { type: 'powerscale', level: 'powerscale_n2' }, testSsdSata, 100)
     const result = calculatePerformance(input)
 
     // SSD base latency = 150μs
@@ -1819,12 +1831,7 @@ describe('Performance Engine - Dell PowerScale Performance', () => {
 
   it('should handle PowerScale scale-out NAS configuration', () => {
     // PowerScale with 36 HDDs in scale-out NAS
-    const input = createInput(
-      36,
-      { type: 'powerscale', level: 'powerscale_n_plus_2' },
-      testHddDrive,
-      100,
-    )
+    const input = createInput(36, { type: 'powerscale', level: 'powerscale_n2' }, testHddDrive, 100)
     const result = calculatePerformance(input)
 
     // Should have positive IOPS
@@ -1838,11 +1845,11 @@ describe('Performance Engine - Dell PowerScale Performance', () => {
   it('should include network latency impact for NAS protocol', () => {
     // Test network latency impact on PowerScale
     const input1GbE = {
-      ...createInput(36, { type: 'powerscale', level: 'powerscale_n_plus_2' }, testSsdSata, 100),
+      ...createInput(36, { type: 'powerscale', level: 'powerscale_n2' }, testSsdSata, 100),
       networkSpeed: '1GbE' as const,
     }
     const input100GbE = {
-      ...createInput(36, { type: 'powerscale', level: 'powerscale_n_plus_2' }, testSsdSata, 100),
+      ...createInput(36, { type: 'powerscale', level: 'powerscale_n2' }, testSsdSata, 100),
       networkSpeed: '100GbE' as const,
     }
 
@@ -1853,17 +1860,12 @@ describe('Performance Engine - Dell PowerScale Performance', () => {
     // 1GbE: 500μs
     // 100GbE: 10μs
     // Difference: 490μs
-    expect(result1GbE.estimatedLatencyUs).toBeGreaterThan(result100GbE.estimatedLatencyUs)
+    expect(result1GbE.estimatedLatencyUs).toBeGreaterThan(result100GbE.estimatedLatencyUs!)
   })
 
   it('should validate PowerScale parity write performance (1.5x multiplier)', () => {
     // PowerScale with parity writes has 1.5x media latency
-    const input = createInput(
-      36,
-      { type: 'powerscale', level: 'powerscale_n_plus_2' },
-      testSsdSata,
-      100,
-    )
+    const input = createInput(36, { type: 'powerscale', level: 'powerscale_n2' }, testSsdSata, 100)
     const result = calculatePerformance(input)
 
     // Should have latency reflecting parity overhead
@@ -1875,7 +1877,7 @@ describe('Performance Engine - Dell PowerScale Performance', () => {
     // PowerScale (NAS) should have higher latency than PowerStore (block)
     const inputPowerScale = createInput(
       36,
-      { type: 'powerscale', level: 'powerscale_n_plus_2' },
+      { type: 'powerscale', level: 'powerscale_n2' },
       testSsdSata,
       100,
     )
@@ -1892,7 +1894,9 @@ describe('Performance Engine - Dell PowerScale Performance', () => {
     // PowerScale (1.5x + network) should have higher latency than PowerStore (1.2x, no network)
     // PowerScale: 150 * 1.5 + 25 + 20 = 270μs
     // PowerStore: 150 * 1.2 + 10 = 190μs
-    expect(resultPowerScale.estimatedLatencyUs).toBeGreaterThan(resultPowerStore.estimatedLatencyUs)
+    expect(resultPowerScale.estimatedLatencyUs).toBeGreaterThan(
+      resultPowerStore.estimatedLatencyUs!,
+    )
   })
 })
 
@@ -2052,15 +2056,15 @@ describe('Performance Engine - Nutanix DSF Performance', () => {
       const result10GbE = calculatePerformance(input10GbE)
 
       // RDMA should be fastest
-      expect(resultRdma.estimatedLatencyUs).toBeLessThan(result25GbE.estimatedLatencyUs)
-      expect(result25GbE.estimatedLatencyUs).toBeLessThan(result10GbE.estimatedLatencyUs)
+      expect(resultRdma.estimatedLatencyUs).toBeLessThan(result25GbE.estimatedLatencyUs!)
+      expect(result25GbE.estimatedLatencyUs).toBeLessThan(result10GbE.estimatedLatencyUs!)
 
       // Network latency differences:
       // RDMA: 100μs
       // 25GbE: 250μs (150μs more)
       // 10GbE: 500μs (250μs more)
-      expect(result25GbE.estimatedLatencyUs - resultRdma.estimatedLatencyUs).toBeCloseTo(150, -1)
-      expect(result10GbE.estimatedLatencyUs - result25GbE.estimatedLatencyUs).toBeCloseTo(250, -1)
+      expect(result25GbE.estimatedLatencyUs! - resultRdma.estimatedLatencyUs!).toBeCloseTo(150, -1)
+      expect(result10GbE.estimatedLatencyUs! - result25GbE.estimatedLatencyUs!).toBeCloseTo(250, -1)
     })
   })
 
@@ -2091,10 +2095,10 @@ describe('Performance Engine - Nutanix DSF Performance', () => {
 
       // Compression should add 50μs CPU overhead
       expect(resultWithCompression.estimatedLatencyUs).toBeGreaterThan(
-        resultNoCompression.estimatedLatencyUs,
+        resultNoCompression.estimatedLatencyUs!,
       )
       expect(
-        resultWithCompression.estimatedLatencyUs - resultNoCompression.estimatedLatencyUs,
+        resultWithCompression.estimatedLatencyUs! - resultNoCompression.estimatedLatencyUs!,
       ).toBeCloseTo(50, -1)
     })
 
@@ -2123,8 +2127,8 @@ describe('Performance Engine - Nutanix DSF Performance', () => {
       const resultWithDedup = calculatePerformance(inputWithDedup)
 
       // Dedup should add 100μs CPU overhead
-      expect(resultWithDedup.estimatedLatencyUs).toBeGreaterThan(resultNoDedup.estimatedLatencyUs)
-      expect(resultWithDedup.estimatedLatencyUs - resultNoDedup.estimatedLatencyUs).toBeCloseTo(
+      expect(resultWithDedup.estimatedLatencyUs).toBeGreaterThan(resultNoDedup.estimatedLatencyUs!)
+      expect(resultWithDedup.estimatedLatencyUs! - resultNoDedup.estimatedLatencyUs!).toBeCloseTo(
         100,
         -1,
       )
@@ -2155,8 +2159,8 @@ describe('Performance Engine - Nutanix DSF Performance', () => {
       const resultBoth = calculatePerformance(inputBoth)
 
       // Compression (50μs) + Dedup (100μs) = 150μs additional overhead
-      expect(resultBoth.estimatedLatencyUs).toBeGreaterThan(resultNone.estimatedLatencyUs)
-      expect(resultBoth.estimatedLatencyUs - resultNone.estimatedLatencyUs).toBeCloseTo(150, -1)
+      expect(resultBoth.estimatedLatencyUs).toBeGreaterThan(resultNone.estimatedLatencyUs!)
+      expect(resultBoth.estimatedLatencyUs! - resultNone.estimatedLatencyUs!).toBeCloseTo(150, -1)
     })
 
     it('should validate compression-only overhead (no dedup)', () => {
@@ -2294,7 +2298,7 @@ describe('Performance Engine - Nutanix DSF Performance', () => {
       // Nutanix (2x media + RDMA network) should have higher latency than PowerStore (1.2x media)
       // Nutanix: 20 * 2 + 100 + 20 = 160μs
       // PowerStore: 20 * 1.2 + 10 = 34μs
-      expect(resultNutanix.estimatedLatencyUs).toBeGreaterThan(resultPowerStore.estimatedLatencyUs)
+      expect(resultNutanix.estimatedLatencyUs).toBeGreaterThan(resultPowerStore.estimatedLatencyUs!)
     })
   })
 })

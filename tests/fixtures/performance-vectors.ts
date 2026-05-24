@@ -84,7 +84,7 @@ export const testSsdNvme: Drive = {
   model: 'Test SSD NVMe 2TB',
   type: 'SSD_NVMe',
   formFactor: '2.5"',
-  interface: 'NVMe',
+  interface: 'PCIe4',
   capacity_raw: 2_000_000_000_000,
   sector_size: 512,
   performance: {

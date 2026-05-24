@@ -2,6 +2,11 @@ import { resolve } from 'node:path'
 import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
+  // Use the automatic JSX runtime for the test transform (matches tsconfig
+  // `jsx: react-jsx`). Without this, Vite's esbuild falls back to the classic
+  // `React.createElement` transform and .tsx tests would need an explicit
+  // `import React`. Automatic runtime keeps test files import-free of React.
+  esbuild: { jsx: 'automatic' },
   test: {
     globals: true,
     environment: 'jsdom',

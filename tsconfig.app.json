@@ -15,6 +15,7 @@
     "moduleDetection": "force",
     "noEmit": true,
     "jsx": "react-jsx",
+    "resolveJsonModule": true,
 
     /* Strict Mode - Critical for math type-safety */
     "strict": true,
@@ -33,18 +34,28 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
 
-    /* Path aliases */
-    "baseUrl": ".",
+    /* Path aliases — `baseUrl` removed (deprecated, TS5101→error on the
+     * TS7.0 track). Under `moduleResolution: "bundler"` the `paths` map
+     * resolves relative to this tsconfig, so baseUrl is unnecessary;
+     * resolution behavior is unchanged. Flows to tsconfig.test.json via
+     * `extends`. (Vite/Vitest aliases live in their own configs.) */
     "paths": {
-      "@/*": ["src/*"],
-      "@engines/*": ["src/engines/*"],
-      "@components/*": ["src/components/*"],
-      "@store/*": ["src/store/*"],
-      "@types/*": ["src/types/*"],
-      "@utils/*": ["src/utils/*"],
-      "@data/*": ["src/data/*"],
-      "@hooks/*": ["src/hooks/*"]
+      "@/*": ["./src/*"],
+      "@engines/*": ["./src/engines/*"],
+      "@components/*": ["./src/components/*"],
+      "@store/*": ["./src/store/*"],
+      "@types/*": ["./src/types/*"],
+      "@utils/*": ["./src/utils/*"],
+      "@data/*": ["./src/data/*"],
+      "@hooks/*": ["./src/hooks/*"]
     }
   },
-  "include": ["src"]
+  "include": ["src"],
+  "exclude": [
+    "src/**/*.test.ts",
+    "src/**/*.test.tsx",
+    "src/**/*.spec.ts",
+    "src/**/*.spec.tsx",
+    "src/test/**"
+  ]
 }

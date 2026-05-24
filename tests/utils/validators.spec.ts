@@ -7,7 +7,14 @@
 
 import { describe, expect, it } from 'vitest'
 import type { Drive } from '@/types/drive'
-import type { Topology } from '@/types/topology'
+import type { ControllerType } from '@/types/topology'
+import {
+  DEFAULT_NETAPP_OPTIONS,
+  DEFAULT_POWERFLEX_OPTIONS,
+  DEFAULT_SYNOLOGY_OPTIONS,
+  DEFAULT_ZFS_OPTIONS,
+  type Topology,
+} from '@/types/topology'
 import {
   getAlertCounts,
   hasBlockingErrors,
@@ -49,7 +56,7 @@ const testNvme: Drive = {
   model: 'Test NVMe 2TB',
   type: 'SSD_NVMe',
   formFactor: 'U.2',
-  interface: 'NVMe',
+  interface: 'PCIe4',
   capacity_raw: 2_000_000_000_000,
   sector_size: 4096,
   performance: {
@@ -87,7 +94,7 @@ function createValidationInput(
   driveCount: number,
   topology: Topology,
   serverCount = 1,
-  controller = 'hardware' as const,
+  controller: ControllerType = 'hardware',
 ): ValidationInput {
   return {
     drive,
@@ -166,7 +173,7 @@ describe('Validators - Drive Count Validation', () => {
     })
 
     it('should require minimum 4 drives for S2D mirror', () => {
-      const input = createValidationInput(testHdd, 3, { type: 's2d', level: 's2d_mirror' })
+      const input = createValidationInput(testHdd, 3, { type: 's2d', level: 'mirror' })
       const alerts = validateConfiguration(input)
 
       const driveCountError = alerts.find((a) => a.code === 'S2D_MIN_DRIVES')
@@ -176,7 +183,7 @@ describe('Validators - Drive Count Validation', () => {
     })
 
     it('should require minimum 4 drives for S2D parity', () => {
-      const input = createValidationInput(testHdd, 3, { type: 's2d', level: 's2d_parity' })
+      const input = createValidationInput(testHdd, 3, { type: 's2d', level: 'parity' })
       const alerts = validateConfiguration(input)
 
       const driveCountError = alerts.find((a) => a.code === 'S2D_MIN_DRIVES')
@@ -185,7 +192,7 @@ describe('Validators - Drive Count Validation', () => {
     })
 
     it('should allow 4+ drives for S2D redundant configurations', () => {
-      const input = createValidationInput(testHdd, 4, { type: 's2d', level: 's2d_mirror' })
+      const input = createValidationInput(testHdd, 4, { type: 's2d', level: 'mirror' })
       const alerts = validateConfiguration(input)
 
       const driveCountError = alerts.find((a) => a.code === 'S2D_MIN_DRIVES')
@@ -359,7 +366,7 @@ describe('Validators - Topology Compatibility', () => {
     it('should reject HDD drives for PowerFlex', () => {
       const input = createValidationInput(testHdd, 4, {
         type: 'powerflex',
-        level: 'powerflex_2way_mirror',
+        level: 'powerflex_medium_2way',
       })
       const alerts = validateConfiguration(input)
 
@@ -373,7 +380,7 @@ describe('Validators - Topology Compatibility', () => {
     it('should allow SSD/NVMe drives for PowerFlex', () => {
       const input = createValidationInput(testNvme, 4, {
         type: 'powerflex',
-        level: 'powerflex_2way_mirror',
+        level: 'powerflex_medium_2way',
       })
       const alerts = validateConfiguration(input)
 
@@ -385,11 +392,12 @@ describe('Validators - Topology Compatibility', () => {
       const input = createValidationInput(
         testNvme,
         6,
-        { type: 'powerflex', level: 'powerflex_3way_mirror' },
+        { type: 'powerflex', level: 'powerflex_medium_3way' },
         1,
-        'smartpqi_gen5',
+        'hba_nvme',
       )
       input.powerFlexOptions = {
+        ...DEFAULT_POWERFLEX_OPTIONS,
         granularity: 'fine',
         protectionMode: 'mirror',
         mirrorCopies: 3,
@@ -427,7 +435,7 @@ describe('Validators - Topology Compatibility', () => {
       const input = createValidationInput(
         testHdd,
         4,
-        { type: 's2d', level: 's2d_mirror' },
+        { type: 's2d', level: 'mirror' },
         1,
         'perc_h755',
       )
@@ -503,7 +511,7 @@ describe('Validators - Configuration Constraints', () => {
   describe('ZFS Constraints', () => {
     it('should warn when ZFS occupation exceeds 80%', () => {
       const input = createValidationInput(testHdd, 4, { type: 'zfs', level: 'raidz1' })
-      input.zfsOptions = { maxOccupation: 85 }
+      input.zfsOptions = { ...DEFAULT_ZFS_OPTIONS, maxOccupation: 85 }
       const alerts = validateConfiguration(input)
 
       const occupationWarning = alerts.find((a) => a.code === 'ZFS_OCCUPATION_HIGH')
@@ -516,7 +524,7 @@ describe('Validators - Configuration Constraints', () => {
 
     it('should not warn when ZFS occupation is 80% or below', () => {
       const input = createValidationInput(testHdd, 4, { type: 'zfs', level: 'raidz1' })
-      input.zfsOptions = { maxOccupation: 80 }
+      input.zfsOptions = { ...DEFAULT_ZFS_OPTIONS, maxOccupation: 80 }
       const alerts = validateConfiguration(input)
 
       const occupationWarning = alerts.find((a) => a.code === 'ZFS_OCCUPATION_HIGH')
@@ -569,7 +577,7 @@ describe('Validators - Configuration Constraints', () => {
         type: 'proprietary',
         level: 'netapp_raid_dp',
       })
-      input.netAppOptions = { raidType: 'raid_dp' }
+      input.netAppOptions = { ...DEFAULT_NETAPP_OPTIONS, raidType: 'raid_dp' }
       const alerts = validateConfiguration(input)
 
       const raidTecWarning = alerts.find((a) => a.code === 'NETAPP_RAID_TEC_RECOMMENDED')
@@ -584,7 +592,7 @@ describe('Validators - Configuration Constraints', () => {
         type: 'proprietary',
         level: 'netapp_raid_dp',
       })
-      input.netAppOptions = { raidType: 'raid_dp' }
+      input.netAppOptions = { ...DEFAULT_NETAPP_OPTIONS, raidType: 'raid_dp' }
       const alerts = validateConfiguration(input)
 
       const raidTecWarning = alerts.find((a) => a.code === 'NETAPP_RAID_TEC_RECOMMENDED')
@@ -598,7 +606,7 @@ describe('Validators - Configuration Constraints', () => {
         type: 'proprietary',
         level: 'synology_shr',
       })
-      input.synologyOptions = { filesystem: 'ext4' }
+      input.synologyOptions = { ...DEFAULT_SYNOLOGY_OPTIONS, filesystem: 'ext4' }
       const alerts = validateConfiguration(input)
 
       const fsInfo = alerts.find((a) => a.code === 'SYNOLOGY_BTRFS_RECOMMENDED')
@@ -614,7 +622,7 @@ describe('Validators - Configuration Constraints', () => {
         type: 'proprietary',
         level: 'synology_shr',
       })
-      input.synologyOptions = { filesystem: 'btrfs' }
+      input.synologyOptions = { ...DEFAULT_SYNOLOGY_OPTIONS, filesystem: 'btrfs' }
       const alerts = validateConfiguration(input)
 
       const fsInfo = alerts.find((a) => a.code === 'SYNOLOGY_BTRFS_RECOMMENDED')
@@ -678,7 +686,7 @@ describe('Validators - Error Message Quality', () => {
   })
 
   it('should include specific values in error messages', () => {
-    const input = createValidationInput(testHdd, 2, { type: 's2d', level: 's2d_mirror' })
+    const input = createValidationInput(testHdd, 2, { type: 's2d', level: 'mirror' })
     const alerts = validateConfiguration(input)
 
     const error = alerts.find((a) => a.code === 'S2D_MIN_DRIVES')
@@ -728,15 +736,15 @@ describe('Validators - Helper Functions', () => {
       1,
       'perc_h755',
     )
-    input.zfsOptions = { maxOccupation: 85 }
+    input.zfsOptions = { ...DEFAULT_ZFS_OPTIONS, maxOccupation: 85 }
     const alerts = validateConfiguration(input)
 
     // First alert should be highest severity
     if (alerts.length > 1) {
       const severityOrder = ['error', 'warning', 'info']
       for (let i = 0; i < alerts.length - 1; i++) {
-        const currentIndex = severityOrder.indexOf(alerts[i].severity)
-        const nextIndex = severityOrder.indexOf(alerts[i + 1].severity)
+        const currentIndex = severityOrder.indexOf(alerts[i]!.severity)
+        const nextIndex = severityOrder.indexOf(alerts[i + 1]!.severity)
         expect(currentIndex).toBeLessThanOrEqual(nextIndex)
       }
     }
@@ -774,7 +782,7 @@ describe('Validators - Table-Driven Tests', () => {
       description: 'S2D mirror with insufficient drives',
       drive: testHdd,
       driveCount: 3,
-      topology: { type: 's2d', level: 's2d_mirror' },
+      topology: { type: 's2d', level: 'mirror' },
       expectedErrorCode: 'S2D_MIN_DRIVES',
       shouldHaveError: true,
     },
@@ -790,7 +798,7 @@ describe('Validators - Table-Driven Tests', () => {
       description: 'PowerFlex with HDD (should fail)',
       drive: testHdd,
       driveCount: 4,
-      topology: { type: 'powerflex', level: 'powerflex_2way_mirror' },
+      topology: { type: 'powerflex', level: 'powerflex_medium_2way' },
       expectedErrorCode: 'POWERFLEX_HDD_NOT_SUPPORTED',
       shouldHaveError: true,
     },
@@ -855,7 +863,6 @@ describe('Validators - Table-Driven Tests', () => {
 
 describe('Validators - validateOrThrow', () => {
   it('throws error for RAID5 with insufficient drives', () => {
-    const _input = createValidationInput(testHdd, 2, { type: 'standard', level: 'RAID5' })
     // Note: Standard RAID5 doesn't have explicit drive count validation in current code
     // Using ZFS RAIDZ1 as substitute for testing blocking behavior
     const zfsInput = createValidationInput(testHdd, 2, { type: 'zfs', level: 'raidz1' })
@@ -882,7 +889,7 @@ describe('Validators - validateOrThrow', () => {
 
   it('does not throw for configuration with only warnings', () => {
     const input = createValidationInput(testHdd, 4, { type: 'zfs', level: 'raidz1' }, 1, 'lsi_9500')
-    input.zfsOptions = { maxOccupation: 85 } // Warning-level alert
+    input.zfsOptions = { ...DEFAULT_ZFS_OPTIONS, maxOccupation: 85 } // Warning-level alert
     expect(() => validateOrThrow(input)).not.toThrow()
   })
 
@@ -894,7 +901,7 @@ describe('Validators - validateOrThrow', () => {
   it('throws for PowerFlex with HDD drives', () => {
     const input = createValidationInput(testHdd, 4, {
       type: 'powerflex',
-      level: 'powerflex_2way_mirror',
+      level: 'powerflex_medium_2way',
     })
     expect(() => validateOrThrow(input)).toThrow(/HDD drives are no longer supported/i)
   })

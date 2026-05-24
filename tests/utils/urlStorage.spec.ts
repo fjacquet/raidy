@@ -10,6 +10,17 @@ import { compressToEncodedURIComponent } from 'lz-string'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { copyShareableUrl, getShareableUrl, urlHashStorage } from '@/store/urlStorage'
 
+/**
+ * Narrows the sync-or-async union returned by the Zustand StateStorage API.
+ * These tests use the synchronous URL-hash implementation, so getItem always
+ * returns a string here; this runtime guard makes that explicit for the type
+ * checker without an unsafe cast.
+ */
+function expectSyncString(v: string | Promise<string | null>): string {
+  if (typeof v !== 'string') throw new Error('expected a synchronous string from storage')
+  return v
+}
+
 // Mock window object
 const mockLocation = {
   hash: '',
@@ -54,7 +65,7 @@ describe('URL Storage - Serialization Roundtrip', () => {
 
     // Extract from mocked replaceState call
     expect(mockHistory.replaceState).toHaveBeenCalled()
-    const newUrl = mockHistory.replaceState.mock.calls[0][2]
+    const newUrl = mockHistory.replaceState.mock.calls[0]![2]
     const hashPart = newUrl.split('#')[1]
     mockLocation.hash = `#${hashPart}`
 
@@ -65,7 +76,7 @@ describe('URL Storage - Serialization Roundtrip', () => {
     expect(retrievedState).toBe(originalState)
     expect(retrievedState).not.toBeNull()
     if (retrievedState) {
-      expect(JSON.parse(retrievedState)).toEqual(JSON.parse(originalState))
+      expect(JSON.parse(expectSyncString(retrievedState))).toEqual(JSON.parse(originalState))
     }
   })
 
@@ -81,14 +92,14 @@ describe('URL Storage - Serialization Roundtrip', () => {
 
     // Roundtrip
     urlHashStorage.setItem(stateKey, JSON.stringify(raidConfig))
-    const newUrl = mockHistory.replaceState.mock.calls[0][2]
+    const newUrl = mockHistory.replaceState.mock.calls[0]![2]
     mockLocation.hash = `#${newUrl.split('#')[1]}`
     const retrieved = urlHashStorage.getItem(stateKey)
 
     // Verify
     expect(retrieved).not.toBeNull()
     if (retrieved) {
-      const parsed = JSON.parse(retrieved)
+      const parsed = JSON.parse(expectSyncString(retrieved))
       expect(parsed).toMatchObject(raidConfig)
       expect(parsed.topology.level).toBe('RAID5')
       expect(parsed.driveCount).toBe(8)
@@ -117,14 +128,14 @@ describe('URL Storage - Serialization Roundtrip', () => {
 
     // Roundtrip
     urlHashStorage.setItem(stateKey, JSON.stringify(zfsConfig))
-    const newUrl = mockHistory.replaceState.mock.calls[0][2]
+    const newUrl = mockHistory.replaceState.mock.calls[0]![2]
     mockLocation.hash = `#${newUrl.split('#')[1]}`
     const retrieved = urlHashStorage.getItem(stateKey)
 
     // Verify all ZFS options preserved
     expect(retrieved).not.toBeNull()
     if (retrieved) {
-      const parsed = JSON.parse(retrieved)
+      const parsed = JSON.parse(expectSyncString(retrieved))
       expect(parsed).toMatchObject(zfsConfig)
       expect(parsed.zfsOptions.compression).toBe(true)
       expect(parsed.zfsOptions.compressionType).toBe('lz4')
@@ -150,14 +161,14 @@ describe('URL Storage - Serialization Roundtrip', () => {
 
     // Roundtrip
     urlHashStorage.setItem(stateKey, JSON.stringify(vsanConfig))
-    const newUrl = mockHistory.replaceState.mock.calls[0][2]
+    const newUrl = mockHistory.replaceState.mock.calls[0]![2]
     mockLocation.hash = `#${newUrl.split('#')[1]}`
     const retrieved = urlHashStorage.getItem(stateKey)
 
     // Verify vSAN options preserved
     expect(retrieved).not.toBeNull()
     if (retrieved) {
-      const parsed = JSON.parse(retrieved)
+      const parsed = JSON.parse(expectSyncString(retrieved))
       expect(parsed).toMatchObject(vsanConfig)
       expect(parsed.serverCount).toBe(8)
       expect(parsed.vsanOptions.ftt).toBe(1)
@@ -198,14 +209,14 @@ describe('URL Storage - Serialization Roundtrip', () => {
 
     // Roundtrip
     urlHashStorage.setItem(stateKey, JSON.stringify(completeConfig))
-    const newUrl = mockHistory.replaceState.mock.calls[0][2]
+    const newUrl = mockHistory.replaceState.mock.calls[0]![2]
     mockLocation.hash = `#${newUrl.split('#')[1]}`
     const retrieved = urlHashStorage.getItem(stateKey)
 
     // Verify all fields preserved
     expect(retrieved).not.toBeNull()
     if (retrieved) {
-      const parsed = JSON.parse(retrieved)
+      const parsed = JSON.parse(expectSyncString(retrieved))
       expect(parsed).toMatchObject(completeConfig)
       expect(parsed.driveCount).toBe(12)
       expect(parsed.hotSpares).toBe(2)
@@ -223,7 +234,7 @@ describe('URL Storage - Serialization Roundtrip', () => {
 
     // Roundtrip
     urlHashStorage.setItem(stateKey, minimalConfig)
-    const newUrl = mockHistory.replaceState.mock.calls[0][2]
+    const newUrl = mockHistory.replaceState.mock.calls[0]![2]
     mockLocation.hash = `#${newUrl.split('#')[1]}`
     const retrieved = urlHashStorage.getItem(stateKey)
 
@@ -231,7 +242,7 @@ describe('URL Storage - Serialization Roundtrip', () => {
     expect(retrieved).toBe(minimalConfig)
     expect(retrieved).not.toBeNull()
     if (retrieved) {
-      expect(JSON.parse(retrieved)).toEqual({})
+      expect(JSON.parse(expectSyncString(retrieved))).toEqual({})
     }
   })
 
@@ -245,7 +256,7 @@ describe('URL Storage - Serialization Roundtrip', () => {
 
     // Roundtrip
     urlHashStorage.setItem(stateKey, specialCharsConfig)
-    const newUrl = mockHistory.replaceState.mock.calls[0][2]
+    const newUrl = mockHistory.replaceState.mock.calls[0]![2]
     mockLocation.hash = `#${newUrl.split('#')[1]}`
     const retrieved = urlHashStorage.getItem(stateKey)
 
@@ -253,7 +264,7 @@ describe('URL Storage - Serialization Roundtrip', () => {
     expect(retrieved).toBe(specialCharsConfig)
     expect(retrieved).not.toBeNull()
     if (retrieved) {
-      const parsed = JSON.parse(retrieved)
+      const parsed = JSON.parse(expectSyncString(retrieved))
       expect(parsed.customLabel).toBe('Production Storage @ DC-01 (2024)')
       expect(parsed.notes).toContain('admin@example.com')
     }
@@ -297,14 +308,14 @@ describe('URL Storage - Serialization Roundtrip', () => {
 
     // Roundtrip
     urlHashStorage.setItem(stateKey, largeConfigStr)
-    const newUrl = mockHistory.replaceState.mock.calls[0][2]
+    const newUrl = mockHistory.replaceState.mock.calls[0]![2]
     mockLocation.hash = `#${newUrl.split('#')[1]}`
     const retrieved = urlHashStorage.getItem(stateKey)
 
     // Verify
     expect(retrieved).not.toBeNull()
     if (retrieved) {
-      const parsed = JSON.parse(retrieved)
+      const parsed = JSON.parse(expectSyncString(retrieved))
       expect(parsed).toMatchObject(largeConfig)
     }
   })
@@ -317,7 +328,7 @@ describe('URL Storage - Serialization Roundtrip', () => {
     })
 
     urlHashStorage.setItem(stateKey, config)
-    const newUrl = mockHistory.replaceState.mock.calls[0][2]
+    const newUrl = mockHistory.replaceState.mock.calls[0]![2]
 
     // Snapshot the URL format
     expect(newUrl).toMatchSnapshot()
@@ -362,14 +373,14 @@ describe('URL Storage - Serialization Roundtrip', () => {
 
     // Roundtrip
     urlHashStorage.setItem(stateKey, JSON.stringify(maxConfig))
-    const newUrl = mockHistory.replaceState.mock.calls[0][2]
+    const newUrl = mockHistory.replaceState.mock.calls[0]![2]
     mockLocation.hash = `#${newUrl.split('#')[1]}`
     const retrieved = urlHashStorage.getItem(stateKey)
 
     // Verify all fields preserved
     expect(retrieved).not.toBeNull()
     if (retrieved) {
-      const parsed = JSON.parse(retrieved)
+      const parsed = JSON.parse(expectSyncString(retrieved))
       expect(parsed).toMatchObject(maxConfig)
       expect(parsed.driveCount).toBe(60)
       expect(parsed.netAppOptions.raidType).toBe('raid_tec')
@@ -430,7 +441,7 @@ describe('URL Storage - Backward Compatibility', () => {
 
     // First serialization
     urlHashStorage.setItem(stateKey, config)
-    const url1 = mockHistory.replaceState.mock.calls[0][2]
+    const url1 = mockHistory.replaceState.mock.calls[0]![2]
     mockLocation.hash = `#${url1.split('#')[1]}`
 
     // Retrieve and re-serialize
@@ -438,8 +449,8 @@ describe('URL Storage - Backward Compatibility', () => {
     expect(retrieved).not.toBeNull()
     mockHistory.replaceState.mockClear()
     if (retrieved) {
-      urlHashStorage.setItem(stateKey, retrieved)
-      const url2 = mockHistory.replaceState.mock.calls[0][2]
+      urlHashStorage.setItem(stateKey, expectSyncString(retrieved))
+      const url2 = mockHistory.replaceState.mock.calls[0]![2]
 
       // URLs should be identical (stable serialization)
       expect(url1).toBe(url2)
@@ -490,7 +501,7 @@ describe('URL Storage - removeItem', () => {
 
     // Add item
     urlHashStorage.setItem(stateKey, config)
-    const urlWithItem = mockHistory.replaceState.mock.calls[0][2]
+    const urlWithItem = mockHistory.replaceState.mock.calls[0]![2]
     mockLocation.hash = `#${urlWithItem.split('#')[1]}`
 
     // Remove item
@@ -499,7 +510,7 @@ describe('URL Storage - removeItem', () => {
 
     // Verify removal
     expect(mockHistory.replaceState).toHaveBeenCalled()
-    const urlAfterRemove = mockHistory.replaceState.mock.calls[0][2]
+    const urlAfterRemove = mockHistory.replaceState.mock.calls[0]![2]
     expect(urlAfterRemove).not.toContain(stateKey)
   })
 
@@ -508,7 +519,7 @@ describe('URL Storage - removeItem', () => {
 
     urlHashStorage.removeItem('key1')
 
-    const newUrl = mockHistory.replaceState.mock.calls[0][2]
+    const newUrl = mockHistory.replaceState.mock.calls[0]![2]
     expect(newUrl).toContain('key2=value2')
     expect(newUrl).not.toContain('key1')
   })
@@ -520,7 +531,7 @@ describe('URL Storage - removeItem', () => {
 
     urlHashStorage.removeItem('storage-state')
 
-    const newUrl = mockHistory.replaceState.mock.calls[0][2]
+    const newUrl = mockHistory.replaceState.mock.calls[0]![2]
     expect(newUrl).toBe('/simulator')
     expect(newUrl).not.toContain('#')
   })
@@ -820,7 +831,7 @@ describe('URL Storage - Security: Malicious URL Protection (SEC-01, SEC-02, SEC-
 
       expect(result).not.toBeNull()
       if (!result) throw new Error('Expected result to be non-null')
-      const parsed = JSON.parse(result)
+      const parsed = JSON.parse(expectSyncString(result))
       expect(parsed.driveId).toBe('ent-hdd-7k2-sata-24tb-cmr')
       expect(parsed.driveCount).toBe(12)
     })
@@ -861,7 +872,7 @@ describe('URL Storage - Security: Malicious URL Protection (SEC-01, SEC-02, SEC-
 
       expect(result).not.toBeNull()
       if (!result) throw new Error('Expected result to be non-null')
-      const parsed = JSON.parse(result)
+      const parsed = JSON.parse(expectSyncString(result))
       expect(parsed.driveCount).toBe(12)
       expect(parsed.topology.type).toBe('standard')
       expect(parsed.topology.level).toBe('RAID6')
@@ -877,7 +888,7 @@ describe('URL Storage - Security: Malicious URL Protection (SEC-01, SEC-02, SEC-
 
       expect(result).not.toBeNull()
       if (!result) throw new Error('Expected result to be non-null')
-      const parsed = JSON.parse(result)
+      const parsed = JSON.parse(expectSyncString(result))
       expect(parsed.topology.type).toBe('zfs')
       expect(parsed.topology.level).toBe('raidz2')
     })
@@ -890,7 +901,7 @@ describe('URL Storage - Security: Malicious URL Protection (SEC-01, SEC-02, SEC-
 
       expect(result).not.toBeNull()
       if (!result) throw new Error('Expected result to be non-null')
-      const parsed = JSON.parse(result)
+      const parsed = JSON.parse(expectSyncString(result))
       expect(parsed.driveCount).toBe(1000)
     })
 
@@ -902,7 +913,7 @@ describe('URL Storage - Security: Malicious URL Protection (SEC-01, SEC-02, SEC-
 
       expect(result).not.toBeNull()
       if (!result) throw new Error('Expected result to be non-null')
-      const parsed = JSON.parse(result)
+      const parsed = JSON.parse(expectSyncString(result))
       expect(parsed.driveCount).toBe(1)
     })
   })
