@@ -73,6 +73,7 @@ export function DonutChart({
   if (paths.length === 0) {
     return (
       <div
+        id="donut-chart"
         style={{ width: size, height: size }}
         className="flex items-center justify-center text-slate-500"
       >
@@ -82,7 +83,7 @@ export function DonutChart({
   }
 
   return (
-    <div className="relative" style={{ width: size, height: size }}>
+    <div id="donut-chart" className="relative" style={{ width: size, height: size }}>
       <svg width={size} height={size} aria-label="Capacity breakdown chart">
         <title>Capacity Breakdown</title>
         {/* Background circle */}

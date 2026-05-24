@@ -27,6 +27,7 @@ import {
 import { useConfigStore } from '@/store'
 import type { Drive } from '@/types'
 import { downloadAnsible, downloadTerraform, downloadYaml, exportToPdf } from '@/utils'
+import { exportToPptx } from '@/utils/exportPptx'
 
 // Type assertion for the imported JSON
 const drives = drivesData as Record<string, Drive>
@@ -183,6 +184,22 @@ export function OutputDashboard() {
   const handleExportPdf = () => {
     if (!selectedDrive) return
     exportToPdf({
+      drive: selectedDrive,
+      driveCount,
+      topology,
+      zfsOptions: topology.type === 'zfs' ? zfsOptions : undefined,
+      results: {
+        ...results,
+        resilience: resilienceResult,
+      },
+      projectName: 'Storage Configuration',
+      unitSystem,
+    })
+  }
+
+  const handleExportPptx = () => {
+    if (!selectedDrive) return
+    exportToPptx({
       drive: selectedDrive,
       driveCount,
       topology,
@@ -776,6 +793,30 @@ export function OutputDashboard() {
               </svg>
               <span className="text-sm font-medium text-white">{t('export.pdf')}</span>
               <span className="text-xs text-slate-400">{t('export.pdfDesc')}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleExportPptx}
+              disabled={!selectedDrive}
+              className="flex flex-col items-center gap-2 p-4 rounded-lg bg-surface-700 hover:bg-surface-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              <svg
+                className="w-8 h-8 text-orange-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"
+                />
+              </svg>
+              <span className="text-sm font-medium text-white">{t('export.pptx')}</span>
+              <span className="text-xs text-slate-400">{t('export.pptxDesc')}</span>
             </button>
 
             <button

@@ -1,44 +1,36 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.2
-milestone_name: Dell Calculation Accuracy
-status: complete
-stopped_at: Milestone v1.2 archived
-last_updated: "2026-03-26"
+milestone: v1.3
+milestone_name: Rich Export & Polish
+status: verifying
+last_updated: "2026-04-01T10:03:05.471Z"
+last_activity: 2026-04-01
 progress:
-  total_phases: 6
-  completed_phases: 6
-  total_plans: 7
-  completed_plans: 7
+  total_phases: 5
+  completed_phases: 4
+  total_plans: 10
+  completed_plans: 10
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-03-26)
+See: .planning/PROJECT.md (updated 2026-04-01)
 
 **Core value:** Calculation accuracy for storage infrastructure decisions. If Raidy gives wrong capacity numbers or resilience predictions, users could make incorrect (and costly) storage decisions. Everything else can fail; the math cannot.
-**Current focus:** Planning next milestone
+**Current focus:** Phase 17 — pptx-content
 
 ## Current Position
 
-Milestone v1.2 Dell Calculation Accuracy — COMPLETE (archived)
+Phase: 17 (pptx-content) — EXECUTING
+Plan: 2 of 2
+Status: Phase complete — ready for verification
+Last activity: 2026-04-01
 
-## Performance Metrics
-
-**v1.2 Dell Calculation Accuracy:**
-
-| Phase | Plans | Duration | Files |
-|-------|-------|----------|-------|
-| Phase 8: PowerVault ADAPT Formula Fix | 1/1 | 8min | 3 |
-| Phase 9: PowerStore Data Fraction Fix | 1/1 | 8min | 3 |
-| Phase 10: PowerStore System Overhead Addition | 1/1 | 23min | 7 |
-| Phase 11: PowerScale serverCount Fix | 1/1 | 7min | 4 |
-| Phase 12: PowerFlex and ObjectScale Validation | 1/1 | 5min | 2 |
-| Phase 13: Test Suite Cleanup | 2/2 | 14min | 4 |
-
-**Totals:** 7 plans, ~65min, 45 files changed, 8042 insertions
+```
+Progress [          ] 0/5 phases complete
+```
 
 ## Accumulated Context
 
@@ -46,14 +38,27 @@ Milestone v1.2 Dell Calculation Accuracy — COMPLETE (archived)
 
 See .planning/PROJECT.md Key Decisions table for full list.
 
+- [Phase 14]: Updated biome.json schema URL from 2.4.6 to 2.4.10 to eliminate version mismatch diagnostic
+- [Phase 15]: Used arr[i] ?? 0 over optional chaining in resilienceWorker.ts — arrays initialized with .fill(0) so semantically identical to ! with no behavioral change
+- [Phase 16]: Wrapped SVG in div for html-to-image compatibility — requires HTMLElement not SVGElement
+- [Phase 16]: Corrected VolumetryResult field names: bytes-based rawCapacity/usableCapacity/effectiveCapacity with ÷1e12 TB conversion; plan template had non-existent .TB suffixed fields
+- [Phase 16]: Drive model field used for display; no brand field on Drive interface; drive capacity from capacity_raw (bytes)
+- [Phase 16-pptx-foundation]: Fire-and-forget pattern for exportToPptx call, matching existing exportToPdf
+- [Phase 17-pptx-content]: id on outermost HTML wrapper div (not SVG) because html-to-image requires HTMLElement; both DonutChart branches get same id for consistent capture
+- [Phase 17-pptx-content]: Used Promise.all to capture all three chart images in parallel before building slides for faster export
+
 ### Reference Documents
 
 - Dell MidRange Sizer ME5224 reference: 12x3.84TB SSD, ADAPT(8+2), Raw=41.9TiB, Usable=27.93TiB
 - Dell Sizer PowerStore 5200Q reference: 35x30.72TB NVMe, RAID(16+2), Raw=977.89TiB, Usable=801.57TiB
 - Dell KB 000188491: PowerStore DRE geometry thresholds
 
-## Session Continuity
+### v1.3 Phase Map
 
-Last session: 2026-03-26
-Stopped at: Milestone v1.2 archived
-Resume file: None
+| Phase | Name | Requirements | Status |
+|-------|------|--------------|--------|
+| 14 | Dependency Maintenance | DEPS-01 | Not started |
+| 15 | Code Quality Fixes | QUALITY-01, QUALITY-02 | Not started |
+| 16 | PPTX Foundation | EXPORT-01, EXPORT-06, EXPORT-10 | Not started |
+| 17 | PPTX Content | EXPORT-02, EXPORT-03, EXPORT-04, EXPORT-05 | Not started |
+| 18 | PDF Revamp | EXPORT-07, EXPORT-08, EXPORT-09 | Not started |

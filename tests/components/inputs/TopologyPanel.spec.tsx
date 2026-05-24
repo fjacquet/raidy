@@ -5,8 +5,7 @@
  */
 
 import { render, screen } from '@testing-library/react'
-// biome-ignore lint/correctness/noUnusedImports: React is needed for JSX in mocks
-import React, { type ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import type { Mock } from 'vitest'
 import { describe, expect, it, vi } from 'vitest'
 import { TopologyPanel } from '@/components/inputs/TopologyPanel'

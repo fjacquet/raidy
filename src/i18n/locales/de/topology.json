@@ -225,7 +225,9 @@
     "enableDedup": "Deduplizierung aktivieren",
     "dedupRatio": "Deduplizierungsverhältnis",
     "snapshotReserve": "Snapshot-Reserve",
-    "snapshotReserveDesc": "Snapshot-Reserve: {{percent}}%"
+    "snapshotReserveDesc": "Snapshot-Reserve: {{percent}}%",
+    "model": "Modell",
+    "systemOverhead": "Systemoverhead"
   },
   "powerscale": {
     "title": "PowerScale-Optionen",

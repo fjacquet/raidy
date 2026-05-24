@@ -195,24 +195,24 @@ function runSingleSimulation(input: SimulationInput): {
           // Mirror topology: N-way mirror groups (2-way, 3-way, etc.)
           // Assign failure to a mirror group weighted by surviving drives in each group
           const survivingPerGroup = mirrorGroupFailures.map(
-            (_f, g) => effectiveMirrorCopies - mirrorGroupFailures[g]!,
+            (_f, g) => effectiveMirrorCopies - (mirrorGroupFailures[g] ?? 0),
           )
           const totalSurviving = survivingPerGroup.reduce((a, b) => a + b, 0)
 
           let r = random() * totalSurviving
           let hitGroup = 0
           for (let g = 0; g < numMirrorGroups; g++) {
-            r -= survivingPerGroup[g]!
+            r -= survivingPerGroup[g] ?? 0
             if (r <= 0) {
               hitGroup = g
               break
             }
           }
 
-          mirrorGroupFailures[hitGroup]!++
+          mirrorGroupFailures[hitGroup] = (mirrorGroupFailures[hitGroup] ?? 0) + 1
 
           // Data loss if all copies in a mirror group are lost
-          if (mirrorGroupFailures[hitGroup]! > mirrorParityPerGroup) {
+          if ((mirrorGroupFailures[hitGroup] ?? 0) > mirrorParityPerGroup) {
             hadDualFailure = true
             return { survived: false, rebuildTimeHours, hadURE, hadDualFailure }
           }
@@ -224,31 +224,36 @@ function runSingleSimulation(input: SimulationInput): {
           }
 
           // URE only fatal when mirror group is at its parity limit (last copy being rebuilt)
-          if (mirrorGroupFailures[hitGroup]! >= mirrorParityPerGroup && random() < ureProbability) {
+          if (
+            (mirrorGroupFailures[hitGroup] ?? 0) >= mirrorParityPerGroup &&
+            random() < ureProbability
+          ) {
             hadURE = true
             return { survived: false, rebuildTimeHours, hadURE, hadDualFailure }
           }
         } else if (isGroup) {
           // Group topology: assign failure to a group weighted by surviving drives
           // Each group has (drivesPerGroup - groupFailures[g]) surviving drives
-          const survivingPerGroup = groupFailures.map((_f, g) => drivesPerGroup - groupFailures[g]!)
+          const survivingPerGroup = groupFailures.map(
+            (_f, g) => drivesPerGroup - (groupFailures[g] ?? 0),
+          )
           const totalSurviving = survivingPerGroup.reduce((a, b) => a + b, 0)
 
           // Pick which group the failure hits (weighted by surviving drives in each group)
           let r = random() * totalSurviving
           let hitGroup = 0
           for (let g = 0; g < numGroups; g++) {
-            r -= survivingPerGroup[g]!
+            r -= survivingPerGroup[g] ?? 0
             if (r <= 0) {
               hitGroup = g
               break
             }
           }
 
-          groupFailures[hitGroup]!++
+          groupFailures[hitGroup] = (groupFailures[hitGroup] ?? 0) + 1
 
           // Data loss if any group exceeds its parity tolerance
-          if (groupFailures[hitGroup]! > parityPerGroup) {
+          if ((groupFailures[hitGroup] ?? 0) > parityPerGroup) {
             hadDualFailure = true
             return { survived: false, rebuildTimeHours, hadURE, hadDualFailure }
           }
@@ -259,12 +264,12 @@ function runSingleSimulation(input: SimulationInput): {
             rebuildDaysRemaining = Math.ceil(rebuildTimeHours / 24)
 
             // URE fatal only when the hit group is at its parity limit
-            if (groupFailures[hitGroup]! >= parityPerGroup && random() < ureProbability) {
+            if ((groupFailures[hitGroup] ?? 0) >= parityPerGroup && random() < ureProbability) {
               hadURE = true
               return { survived: false, rebuildTimeHours, hadURE, hadDualFailure }
             }
           } else {
-            if (groupFailures[hitGroup]! >= parityPerGroup && random() < ureProbability) {
+            if ((groupFailures[hitGroup] ?? 0) >= parityPerGroup && random() < ureProbability) {
               hadURE = true
               return { survived: false, rebuildTimeHours, hadURE, hadDualFailure }
             }
@@ -304,17 +309,23 @@ function runSingleSimulation(input: SimulationInput): {
           // Repair the most degraded mirror group first
           let maxIdx = 0
           for (let g = 1; g < numMirrorGroups; g++) {
-            if (mirrorGroupFailures[g]! > mirrorGroupFailures[maxIdx]!) maxIdx = g
+            if ((mirrorGroupFailures[g] ?? 0) > (mirrorGroupFailures[maxIdx] ?? 0)) maxIdx = g
           }
-          if (mirrorGroupFailures[maxIdx]! > 0) mirrorGroupFailures[maxIdx]!--
+          {
+            const cur = mirrorGroupFailures[maxIdx] ?? 0
+            if (cur > 0) mirrorGroupFailures[maxIdx] = cur - 1
+          }
         }
         if (isGroup) {
           // Rebuild the most degraded group first
           let maxIdx = 0
           for (let g = 1; g < numGroups; g++) {
-            if (groupFailures[g]! > groupFailures[maxIdx]!) maxIdx = g
+            if ((groupFailures[g] ?? 0) > (groupFailures[maxIdx] ?? 0)) maxIdx = g
           }
-          if (groupFailures[maxIdx]! > 0) groupFailures[maxIdx]!--
+          {
+            const cur = groupFailures[maxIdx] ?? 0
+            if (cur > 0) groupFailures[maxIdx] = cur - 1
+          }
         }
         if (failedDrives === 0) {
           correlatedFailureWindow = 0

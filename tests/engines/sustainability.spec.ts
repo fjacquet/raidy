@@ -23,7 +23,7 @@ const testSsdDrive: Drive = {
   model: 'Test SSD 1TB',
   type: 'SSD_NVMe',
   formFactor: '2.5"',
-  interface: 'NVMe',
+  interface: 'PCIe4',
   capacity_raw: 1_000_000_000_000,
   sector_size: 512,
   performance: {

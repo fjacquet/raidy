@@ -126,6 +126,8 @@
     "title": "Esporta configurazione",
     "pdf": "Report PDF",
     "pdfDesc": "Report completo",
+    "pptx": "PowerPoint",
+    "pptxDesc": "Presentazione",
     "yaml": "YAML",
     "yamlDesc": "Configurazione",
     "ansible": "Ansible",
@@ -134,5 +136,13 @@
     "terraformDesc": "Config GCP",
     "json": "Export JSON",
     "footer": "Esporta la configurazione storage per documentazione o automazione infrastruttura."
+  },
+  "pptx": {
+    "executiveSummary": "Sommario Esecutivo",
+    "volumetry": "Volumetria",
+    "performance": "Prestazioni",
+    "resilience": "Resilienza",
+    "sustainability": "Sostenibilità",
+    "bom": "Distinta Materiali"
   }
 }

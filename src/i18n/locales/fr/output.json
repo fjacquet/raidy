@@ -126,6 +126,8 @@
     "title": "Exporter la configuration",
     "pdf": "Rapport PDF",
     "pdfDesc": "Rapport complet",
+    "pptx": "PowerPoint",
+    "pptxDesc": "Présentation",
     "yaml": "YAML",
     "yamlDesc": "Configuration",
     "ansible": "Ansible",
@@ -134,5 +136,13 @@
     "terraformDesc": "Config GCP",
     "json": "Export JSON",
     "footer": "Exportez votre configuration de stockage pour la documentation ou l'automatisation d'infrastructure."
+  },
+  "pptx": {
+    "executiveSummary": "Résumé Exécutif",
+    "volumetry": "Volumétrie",
+    "performance": "Performance",
+    "resilience": "Résilience",
+    "sustainability": "Durabilité",
+    "bom": "Nomenclature"
   }
 }

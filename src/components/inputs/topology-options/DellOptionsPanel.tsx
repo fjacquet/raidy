@@ -18,7 +18,8 @@ import {
   Toggle,
 } from '@/components/common/FormControls'
 import { useConfigStore } from '@/store'
-import type { Topology } from '@/types'
+import type { PowerStoreOptions, Topology } from '@/types'
+import { POWERSTORE_MODEL_OVERHEAD } from '@/types'
 
 interface DellOptionsPanelProps {
   topology: Topology & {
@@ -254,6 +255,39 @@ export function DellOptionsPanel({ topology }: DellOptionsPanelProps) {
           {t('powerstore.title')}
         </h4>
 
+        <div className="space-y-2">
+          <Label>{t('powerstore.model')}</Label>
+          <SegmentedControl
+            value={powerstoreOptions.model}
+            options={[
+              { value: 'powerstore_3200', label: '3200' },
+              { value: 'powerstore_5200q', label: '5200Q' },
+              { value: 'powerstore_5200t', label: '5200T' },
+              { value: 'custom', label: 'Custom' },
+            ]}
+            onChange={(v) => {
+              const model = v as PowerStoreOptions['model']
+              if (model !== 'custom') {
+                setPowerStoreOptions({
+                  model,
+                  systemOverheadPercent: POWERSTORE_MODEL_OVERHEAD[model],
+                })
+              } else {
+                setPowerStoreOptions({ model })
+              }
+            }}
+          />
+          <p className="text-xs text-slate-500">
+            {powerstoreOptions.model === 'powerstore_3200'
+              ? '3200: Entry-level, 5% system overhead'
+              : powerstoreOptions.model === 'powerstore_5200t'
+                ? '5200T: All-flash T-Series, 7% system overhead'
+                : powerstoreOptions.model === 'powerstore_5200q'
+                  ? '5200Q: Quad-controller, 5% system overhead (Dell Sizer reference)'
+                  : `Custom: ${powerstoreOptions.systemOverheadPercent}% user-specified`}
+          </p>
+        </div>
+
         <Toggle
           id="powerstore-compression"
           label={t('common.enableCompression')}
@@ -315,6 +349,22 @@ export function DellOptionsPanel({ topology }: DellOptionsPanelProps) {
             Snapshot reserve: {powerstoreOptions.snapshotReservePercent}%
           </p>
         </div>
+
+        {powerstoreOptions.model === 'custom' && (
+          <div className="space-y-2">
+            <Label htmlFor="powerstore-overhead">{t('powerstore.systemOverhead')}</Label>
+            <Slider
+              id="powerstore-overhead"
+              value={powerstoreOptions.systemOverheadPercent}
+              min={1}
+              max={15}
+              onChange={(v) => setPowerStoreOptions({ systemOverheadPercent: v })}
+            />
+            <p className="text-xs text-slate-500">
+              System overhead: {powerstoreOptions.systemOverheadPercent}%
+            </p>
+          </div>
+        )}
       </div>
     )
   }

@@ -24,6 +24,9 @@ import {
   DEFAULT_ZFS_OPTIONS,
   type StandardRaidLevel,
   type Topology,
+  type VsanEsaTopology,
+  type VsanOsaTopology,
+  type ZfsTopology,
 } from '@/types'
 import type { Drive } from '@/types/drive'
 import {
@@ -93,7 +96,20 @@ function createInput(
     powervaultOptions: DEFAULT_POWERVAULT_OPTIONS,
     compressionRatio: 1.0,
     dedupRatio: 1.0,
+    // 'ntfs' yields 2% filesystem overhead (FILESYSTEM_OVERHEAD.ntfs = 0.02),
+    // matching the generic 2% baseline these reference vectors were validated against.
+    fsType: 'ntfs',
   }
+}
+
+// Type guards to narrow vSAN test-vector levels (typed as the wide OSA|ESA union)
+// to the specific subtype required by the Topology discriminated union.
+function isVsanOsaLevel(level: VsanOsaTopology | VsanEsaTopology): level is VsanOsaTopology {
+  return level.startsWith('vsan_osa_')
+}
+
+function isVsanEsaLevel(level: VsanOsaTopology | VsanEsaTopology): level is VsanEsaTopology {
+  return level.startsWith('vsan_esa_')
 }
 
 describe('Volumetry Engine - Standard RAID', () => {
@@ -1059,7 +1075,7 @@ describe('Volumetry Engine - vSAN Topologies', () => {
           model: `Test Drive ${driveSize / 1_000_000_000_000}TB`,
           type: 'SSD_NVMe',
           formFactor: '2.5"',
-          interface: 'NVMe',
+          interface: 'PCIe4',
           capacity_raw: driveSize,
           sector_size: 4096,
           performance: {
@@ -1081,6 +1097,7 @@ describe('Volumetry Engine - vSAN Topologies', () => {
           cost_usd: 300,
         }
 
+        if (!isVsanOsaLevel(level)) throw new Error(`Expected OSA level, got ${level}`)
         const input = createInput(drives, { type: 'vsan_osa', level })
         input.drive = testDrive
         input.serverCount = serverCount
@@ -1116,7 +1133,7 @@ describe('Volumetry Engine - vSAN Topologies', () => {
           model: `Test Drive ${driveSize / 1_000_000_000_000}TB`,
           type: 'SSD_NVMe',
           formFactor: '2.5"',
-          interface: 'NVMe',
+          interface: 'PCIe4',
           capacity_raw: driveSize,
           sector_size: 4096,
           performance: {
@@ -1138,6 +1155,7 @@ describe('Volumetry Engine - vSAN Topologies', () => {
           cost_usd: 300,
         }
 
+        if (!isVsanEsaLevel(level)) throw new Error(`Expected ESA level, got ${level}`)
         const input = createInput(drives, { type: 'vsan_esa', level })
         input.drive = testDrive
         input.serverCount = serverCount
@@ -1237,7 +1255,7 @@ describe('Volumetry Engine - vSAN Topologies', () => {
               model: 'Test',
               type: 'SSD_NVMe',
               formFactor: '2.5"',
-              interface: 'NVMe',
+              interface: 'PCIe4',
               capacity_raw: driveSize,
               sector_size: 4096,
               performance: {
@@ -1288,7 +1306,7 @@ describe('Volumetry Engine - vSAN Topologies', () => {
               model: 'Test',
               type: 'SSD_NVMe',
               formFactor: '2.5"',
-              interface: 'NVMe',
+              interface: 'PCIe4',
               capacity_raw: driveSize,
               sector_size: 4096,
               performance: {
@@ -1399,7 +1417,7 @@ describe('Volumetry Engine - Microsoft S2D', () => {
         model: 'Test Drive 1TB',
         type: 'SSD_NVMe',
         formFactor: '2.5"',
-        interface: 'NVMe',
+        interface: 'PCIe4',
         capacity_raw: driveSize,
         sector_size: 4096,
         performance: {
@@ -1656,7 +1674,7 @@ describe('Volumetry Engine - Nutanix', () => {
         model: 'Test Drive 1TB',
         type: 'SSD_NVMe',
         formFactor: '2.5"',
-        interface: 'NVMe',
+        interface: 'PCIe4',
         capacity_raw: driveSize,
         sector_size: 4096,
         performance: {
@@ -2513,6 +2531,7 @@ describe('Volumetry Engine - Error Handling', () => {
         serverCount: 4,
         compressionRatio: 1.0,
         dedupRatio: 1.0,
+        fsType: 'xfs',
         zfsOptions: DEFAULT_ZFS_OPTIONS,
         vsanOptions: DEFAULT_VSAN_OPTIONS,
         objectscaleOptions: DEFAULT_OBJECTSCALE_OPTIONS,
@@ -2532,6 +2551,8 @@ describe('Volumetry Engine - Error Handling', () => {
           storageTiers: true,
           tieringConfig: {
             enabled: true,
+            cacheMode: 'write-back',
+            workingSetPercent: 20,
             fastTier: {
               driveId: 'ent-nvme-pcie4-960gb-m2-ri', // Enterprise NVMe M.2 Read-Intensive (960GB)
               driveCount: 2, // 2 NVMe per server
@@ -2565,6 +2586,7 @@ describe('Volumetry Engine - Error Handling', () => {
         serverCount: 4,
         compressionRatio: 1.0,
         dedupRatio: 1.0,
+        fsType: 'xfs',
         zfsOptions: DEFAULT_ZFS_OPTIONS,
         vsanOptions: DEFAULT_VSAN_OPTIONS,
         objectscaleOptions: DEFAULT_OBJECTSCALE_OPTIONS,
@@ -2584,6 +2606,8 @@ describe('Volumetry Engine - Error Handling', () => {
           storageTiers: true,
           tieringConfig: {
             enabled: true,
+            cacheMode: 'write-back',
+            workingSetPercent: 20,
             fastTier: {
               driveId: 'invalid-drive-id', // Invalid drive
               driveCount: 2,
@@ -2613,6 +2637,7 @@ describe('Volumetry Engine - Error Handling', () => {
         serverCount: 6,
         compressionRatio: 1.0,
         dedupRatio: 1.0,
+        fsType: 'xfs',
         zfsOptions: DEFAULT_ZFS_OPTIONS,
         vsanOptions: DEFAULT_VSAN_OPTIONS,
         objectscaleOptions: DEFAULT_OBJECTSCALE_OPTIONS,
@@ -2632,6 +2657,8 @@ describe('Volumetry Engine - Error Handling', () => {
           storageTiers: true,
           tieringConfig: {
             enabled: true,
+            cacheMode: 'write-back',
+            workingSetPercent: 20,
             fastTier: {
               driveId: 'ent-ssd-sata-3840gb-mu', // Enterprise SSD SATA Mixed-Use (3.84TB)
               driveCount: 4, // 4 SSD per server
@@ -2665,6 +2692,7 @@ describe('Volumetry Engine - Error Handling', () => {
         serverCount: 4,
         compressionRatio: 1.0,
         dedupRatio: 1.0,
+        fsType: 'xfs',
         zfsOptions: DEFAULT_ZFS_OPTIONS,
         s2dOptions: DEFAULT_S2D_OPTIONS,
         vsanOptions: DEFAULT_VSAN_OPTIONS,
@@ -2677,6 +2705,7 @@ describe('Volumetry Engine - Error Handling', () => {
         synologyOptions: DEFAULT_SYNOLOGY_OPTIONS,
         powervaultOptions: DEFAULT_POWERVAULT_OPTIONS,
         nutanixOptions: {
+          ...DEFAULT_NUTANIX_OPTIONS,
           replicationFactor: 2,
           clusterType: 'hybrid',
           compression: false,
@@ -2686,6 +2715,8 @@ describe('Volumetry Engine - Error Handling', () => {
           systemOverhead: 0.1,
           tiering: {
             enabled: true,
+            cacheMode: 'write-back',
+            workingSetPercent: 20,
             fastTier: {
               driveId: 'ent-ssd-sata-1920gb-mu', // Enterprise SSD SATA Mixed-Use (1.92TB)
               driveCount: 2, // 2 SSD per node
@@ -2718,6 +2749,7 @@ describe('Volumetry Engine - Error Handling', () => {
         serverCount: 5,
         compressionRatio: 1.0,
         dedupRatio: 1.0,
+        fsType: 'xfs',
         zfsOptions: DEFAULT_ZFS_OPTIONS,
         s2dOptions: DEFAULT_S2D_OPTIONS,
         vsanOptions: DEFAULT_VSAN_OPTIONS,
@@ -2730,6 +2762,7 @@ describe('Volumetry Engine - Error Handling', () => {
         synologyOptions: DEFAULT_SYNOLOGY_OPTIONS,
         powervaultOptions: DEFAULT_POWERVAULT_OPTIONS,
         nutanixOptions: {
+          ...DEFAULT_NUTANIX_OPTIONS,
           replicationFactor: 3,
           clusterType: 'all-flash', // No tiering
           compression: false,
@@ -2737,7 +2770,7 @@ describe('Volumetry Engine - Error Handling', () => {
           dedup: false,
           dedupRatio: 1.0,
           systemOverhead: 0.1,
-          tiering: null, // Tiering disabled for all-flash
+          tiering: undefined, // Tiering disabled for all-flash
         },
       }
 
@@ -2758,6 +2791,7 @@ describe('Volumetry Engine - Error Handling', () => {
         serverCount: 6,
         compressionRatio: 1.0,
         dedupRatio: 1.0,
+        fsType: 'xfs',
         zfsOptions: DEFAULT_ZFS_OPTIONS,
         s2dOptions: DEFAULT_S2D_OPTIONS,
         vsanOptions: DEFAULT_VSAN_OPTIONS,
@@ -2770,6 +2804,7 @@ describe('Volumetry Engine - Error Handling', () => {
         synologyOptions: DEFAULT_SYNOLOGY_OPTIONS,
         powervaultOptions: DEFAULT_POWERVAULT_OPTIONS,
         nutanixOptions: {
+          ...DEFAULT_NUTANIX_OPTIONS,
           replicationFactor: 3,
           clusterType: 'hybrid',
           compression: false,
@@ -2779,6 +2814,8 @@ describe('Volumetry Engine - Error Handling', () => {
           systemOverhead: 0.1,
           tiering: {
             enabled: true,
+            cacheMode: 'write-back',
+            workingSetPercent: 20,
             fastTier: {
               driveId: 'ent-ssd-sata-3840gb-mu', // Enterprise SSD SATA Mixed-Use (3.84TB)
               driveCount: 3, // 3 SSD per node
@@ -2812,6 +2849,7 @@ describe('Volumetry Engine - Error Handling', () => {
         serverCount: 4,
         compressionRatio: 1.0,
         dedupRatio: 1.0,
+        fsType: 'xfs',
         zfsOptions: DEFAULT_ZFS_OPTIONS,
         s2dOptions: DEFAULT_S2D_OPTIONS,
         vsanOptions: DEFAULT_VSAN_OPTIONS,
@@ -2824,6 +2862,7 @@ describe('Volumetry Engine - Error Handling', () => {
         nutanixOptions: DEFAULT_NUTANIX_OPTIONS,
         powervaultOptions: DEFAULT_POWERVAULT_OPTIONS,
         cephOptions: {
+          ...DEFAULT_CEPH_OPTIONS,
           poolType: 'erasure',
           replicationFactor: 3,
           ecK: 8,
@@ -2832,6 +2871,8 @@ describe('Volumetry Engine - Error Handling', () => {
           walDbOffload: true, // Enable WAL/DB offload
           tiering: {
             enabled: true,
+            cacheMode: 'write-back',
+            workingSetPercent: 20,
             fastTier: {
               driveId: 'ent-nvme-pcie4-960gb-m2-ri', // NVMe for WAL/DB (960GB)
               driveCount: 1, // 1 NVMe per OSD node for WAL/DB
@@ -2864,6 +2905,7 @@ describe('Volumetry Engine - Error Handling', () => {
         serverCount: 4,
         compressionRatio: 1.0,
         dedupRatio: 1.0,
+        fsType: 'xfs',
         zfsOptions: DEFAULT_ZFS_OPTIONS,
         s2dOptions: DEFAULT_S2D_OPTIONS,
         vsanOptions: DEFAULT_VSAN_OPTIONS,
@@ -2876,13 +2918,14 @@ describe('Volumetry Engine - Error Handling', () => {
         nutanixOptions: DEFAULT_NUTANIX_OPTIONS,
         powervaultOptions: DEFAULT_POWERVAULT_OPTIONS,
         cephOptions: {
+          ...DEFAULT_CEPH_OPTIONS,
           poolType: 'replicated',
           replicationFactor: 3,
           ecK: 4,
           ecM: 2,
           safeCapacityThreshold: 0.85,
           walDbOffload: false, // No WAL/DB offload
-          tiering: null,
+          tiering: undefined,
         },
       }
 
@@ -2905,6 +2948,7 @@ describe('Volumetry Engine - Error Handling', () => {
         serverCount: 3,
         compressionRatio: 1.0,
         dedupRatio: 1.0,
+        fsType: 'xfs',
         zfsOptions: DEFAULT_ZFS_OPTIONS,
         s2dOptions: DEFAULT_S2D_OPTIONS,
         vsanOptions: DEFAULT_VSAN_OPTIONS,
@@ -2917,6 +2961,7 @@ describe('Volumetry Engine - Error Handling', () => {
         nutanixOptions: DEFAULT_NUTANIX_OPTIONS,
         powervaultOptions: DEFAULT_POWERVAULT_OPTIONS,
         cephOptions: {
+          ...DEFAULT_CEPH_OPTIONS,
           poolType: 'erasure',
           replicationFactor: 3,
           ecK: 4,
@@ -2925,6 +2970,8 @@ describe('Volumetry Engine - Error Handling', () => {
           walDbOffload: true,
           tiering: {
             enabled: true,
+            cacheMode: 'write-back',
+            workingSetPercent: 20,
             fastTier: {
               driveId: 'ent-nvme-pcie4-960gb-m2-ri', // Enterprise NVMe M.2 WAL/DB (960GB)
               driveCount: 1,
@@ -2963,6 +3010,7 @@ describe('Volumetry Engine - Error Handling', () => {
         serverCount: 1,
         compressionRatio: 1.0,
         dedupRatio: 1.0,
+        fsType: 'xfs',
         s2dOptions: DEFAULT_S2D_OPTIONS,
         vsanOptions: DEFAULT_VSAN_OPTIONS,
         objectscaleOptions: DEFAULT_OBJECTSCALE_OPTIONS,
@@ -2975,12 +3023,11 @@ describe('Volumetry Engine - Error Handling', () => {
         nutanixOptions: DEFAULT_NUTANIX_OPTIONS,
         powervaultOptions: DEFAULT_POWERVAULT_OPTIONS,
         zfsOptions: {
+          ...DEFAULT_ZFS_OPTIONS,
           ashift: 12, // 4096-byte alignment on 512-byte drives (3 levels above physical)
           recordsize: 128 * 1024,
           compression: false,
-          compressionRatio: 1.0,
           dedup: false,
-          dedupRatio: 1.0,
         },
       }
 
@@ -3015,6 +3062,7 @@ describe('Volumetry Engine - Error Handling', () => {
         serverCount: 1,
         compressionRatio: 1.0,
         dedupRatio: 1.0,
+        fsType: 'xfs',
         s2dOptions: DEFAULT_S2D_OPTIONS,
         vsanOptions: DEFAULT_VSAN_OPTIONS,
         objectscaleOptions: DEFAULT_OBJECTSCALE_OPTIONS,
@@ -3027,12 +3075,11 @@ describe('Volumetry Engine - Error Handling', () => {
         nutanixOptions: DEFAULT_NUTANIX_OPTIONS,
         powervaultOptions: DEFAULT_POWERVAULT_OPTIONS,
         zfsOptions: {
+          ...DEFAULT_ZFS_OPTIONS,
           ashift: 9, // Matches 512-byte physical sector (2^9 = 512)
           recordsize: 128 * 1024,
           compression: false,
-          compressionRatio: 1.0,
           dedup: false,
-          dedupRatio: 1.0,
         },
       }
 
@@ -3064,6 +3111,7 @@ describe('Volumetry Engine - Error Handling', () => {
         serverCount: 1,
         compressionRatio: 1.0,
         dedupRatio: 1.0,
+        fsType: 'xfs',
         s2dOptions: DEFAULT_S2D_OPTIONS,
         vsanOptions: DEFAULT_VSAN_OPTIONS,
         objectscaleOptions: DEFAULT_OBJECTSCALE_OPTIONS,
@@ -3076,12 +3124,11 @@ describe('Volumetry Engine - Error Handling', () => {
         nutanixOptions: DEFAULT_NUTANIX_OPTIONS,
         powervaultOptions: DEFAULT_POWERVAULT_OPTIONS,
         zfsOptions: {
+          ...DEFAULT_ZFS_OPTIONS,
           ashift: 13, // 8192-byte alignment on 512-byte drives (4 levels above physical)
           recordsize: 128 * 1024,
           compression: false,
-          compressionRatio: 1.0,
           dedup: false,
-          dedupRatio: 1.0,
         },
       }
 
@@ -3113,6 +3160,7 @@ describe('Volumetry Engine - Error Handling', () => {
         serverCount: 1,
         compressionRatio: 1.0,
         dedupRatio: 1.0,
+        fsType: 'xfs',
         s2dOptions: DEFAULT_S2D_OPTIONS,
         vsanOptions: DEFAULT_VSAN_OPTIONS,
         objectscaleOptions: DEFAULT_OBJECTSCALE_OPTIONS,
@@ -3125,12 +3173,11 @@ describe('Volumetry Engine - Error Handling', () => {
         nutanixOptions: DEFAULT_NUTANIX_OPTIONS,
         powervaultOptions: DEFAULT_POWERVAULT_OPTIONS,
         zfsOptions: {
+          ...DEFAULT_ZFS_OPTIONS,
           ashift: 12, // Matches 4096-byte physical sector (2^12 = 4096)
           recordsize: 128 * 1024,
           compression: false,
-          compressionRatio: 1.0,
           dedup: false,
-          dedupRatio: 1.0,
         },
       }
 
@@ -3873,7 +3920,7 @@ describe('Volumetry Engine - Error Handling', () => {
         ...testDrive,
         id: 'me5-ssd-384tb',
         model: 'Dell ME5 3.84TB SSD',
-        type: 'SSD',
+        type: 'SSD_SAS',
         formFactor: '2.5"',
         interface: 'SAS',
         capacity_raw: 3_840_000_000_000, // 3.84 TB (base-10)

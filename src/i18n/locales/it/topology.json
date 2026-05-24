@@ -228,7 +228,9 @@
     "enableDedup": "Abilita deduplicazione",
     "dedupRatio": "Rapporto deduplicazione",
     "snapshotReserve": "Riserva snapshot",
-    "snapshotReserveDesc": "Riserva snapshot: {{percent}}%"
+    "snapshotReserveDesc": "Riserva snapshot: {{percent}}%",
+    "model": "Modello",
+    "systemOverhead": "Overhead di sistema"
   },
   "powerscale": {
     "title": "Opzioni PowerScale",

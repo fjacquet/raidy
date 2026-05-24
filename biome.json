@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.4.6/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.4.15/schema.json",
   "vcs": {
     "enabled": true,
     "clientKind": "git",
@@ -10,11 +10,27 @@
   },
   "overrides": [
     {
-      "includes": ["tests/**/*.tsx", "tests/**/*.ts"],
+      "includes": ["tests/**/*.tsx", "tests/**/*.ts", "src/**/*.spec.ts", "src/**/*.spec.tsx"],
       "linter": {
         "rules": {
           "correctness": {
             "noUnusedImports": "warn"
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "tests/**/*.ts",
+        "tests/**/*.tsx",
+        "src/**/*.spec.ts",
+        "src/**/*.spec.tsx",
+        "scripts/**/*.mjs"
+      ],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noConsole": "off"
           }
         }
       }
@@ -37,6 +53,9 @@
       "style": {
         "useConst": "error",
         "noNonNullAssertion": "warn"
+      },
+      "suspicious": {
+        "noConsole": { "level": "error", "options": { "allow": ["warn", "error"] } }
       }
     }
   },

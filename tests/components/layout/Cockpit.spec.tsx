@@ -6,8 +6,6 @@
 
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-// biome-ignore lint/correctness/noUnusedImports: React is needed for JSX
-import React from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import { Cockpit } from '@/components/layout/Cockpit'
 

@@ -2,6 +2,7 @@
  * Utility exports.
  */
 
+export { captureSankeyDiagram } from './captureChart'
 export {
   downloadAnsible,
   downloadTerraform,
@@ -11,6 +12,7 @@ export {
   exportToYaml,
 } from './exportConfig'
 export { exportToPdf } from './exportPdf'
+export { BRAND, exportToPptx } from './exportPptx'
 export { assertNever } from './typeGuards'
 export {
   BINARY,

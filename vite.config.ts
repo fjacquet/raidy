@@ -30,15 +30,22 @@ export default defineConfig({
     chunkSizeWarningLimit: 700,
     rollupOptions: {
       output: {
-        manualChunks: {
+        // Function form: Vite 8 / Rollup tightened the OutputOptions union so the
+        // static-object form of manualChunks no longer type-checks under `tsc -b`
+        // (TS picks the ManualChunksFunction overload and rejects the object
+        // literal). Path-based routing also avoids a brittle exact-name list.
+        manualChunks(id) {
           // React core
-          'vendor-react': ['react', 'react-dom'],
-          // PDF export (lazy-loaded, large but acceptable)
-          // Note: html2canvas removed - it's an optionalDependency of jspdf for the html() method,
-          // but we only use autoTable and text methods, so it's unnecessary overhead
-          'vendor-pdf': ['jspdf', 'jspdf-autotable'],
+          if (id.includes('node_modules/react-dom') || id.includes('node_modules/react/')) {
+            return 'vendor-react'
+          }
+          // PDF export (lazy-loaded, large but acceptable). Matches jspdf and
+          // jspdf-autotable. html2canvas stays separate (optional jspdf dep we
+          // don't use via html()).
+          if (id.includes('node_modules/jspdf')) return 'vendor-pdf'
           // State management
-          'vendor-state': ['zustand'],
+          if (id.includes('node_modules/zustand')) return 'vendor-state'
+          return undefined
         },
       },
     },
