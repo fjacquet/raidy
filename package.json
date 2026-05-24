@@ -3,6 +3,7 @@
   "private": true,
   "version": "1.5.0",
   "type": "module",
+  "description": "Browser-based simulator for modern storage infrastructure (RAID, ZFS, vSAN, S2D, Nutanix, Dell, NetApp, Ceph, Synology). 100% client-side.",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
@@ -52,10 +53,8 @@
     "@vitejs/plugin-react": "^6.0.2",
     "@vitest/coverage-v8": "^4.1.7",
     "@vitest/ui": "^4.1.7",
-    "autoprefixer": "^10.4.23",
     "fast-check": "^4.6.0",
     "jsdom": "^29.1.1",
-    "postcss": "^8.5.6",
     "snyk": "^1.1303.2",
     "tailwindcss": "^4.3.0",
     "typescript": "~5.9.3",
