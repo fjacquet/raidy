@@ -1,0 +1,15 @@
+# OSV-Scanner configuration for raidy.
+#
+# No vulnerability waivers are currently in effect. The CI gate fails on any
+# OSV finding at LOW severity or above (see .github/workflows/static.yml).
+#
+# To waive a finding, add an [[IgnoredVulns]] block below WITH a justification
+# and an `ignoreUntil` expiry so waivers are revisited rather than forgotten:
+#
+# [[IgnoredVulns]]
+# id = "GHSA-xxxx-xxxx-xxxx"
+# ignoreUntil = 2026-12-31
+# reason = """
+# Why this advisory does not apply to raidy (e.g. unreachable code path,
+# fixed range we are already past) — and what to re-check at expiry.
+# """
