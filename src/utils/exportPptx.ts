@@ -186,8 +186,8 @@ function buildExecutiveSummarySlide(prs: pptxgen, config: ExportConfig): void {
   })
 
   // 3-column × 2-row metric grid
-  const cols = [0.4, 4.6, 9.0]
-  const rows = [1.5, 3.6]
+  const cols: [number, number, number] = [0.4, 4.6, 9.0]
+  const rows: [number, number] = [1.5, 3.6]
 
   addMetricBlock(
     slide,
@@ -513,12 +513,12 @@ function buildBomSlide(prs: pptxgen, config: ExportConfig): void {
   const driveRows: Array<{ label: string; value: string }> = [
     { label: 'Model', value: config.drive.model },
     { label: 'Type', value: config.drive.type },
-    { label: 'Interface', value: config.drive.interface },
+    { label: 'Interface', value: config.drive.interface ?? 'N/A' },
     { label: 'Capacity', value: `${bytesToTB(config.drive.capacity_raw).toFixed(1)} TB` },
-    { label: 'Active Power', value: `${config.drive.power_active_watts} W` },
+    { label: 'Active Power', value: `${config.drive.power.load_watts} W` },
   ]
-  if (config.drive.dwpd !== undefined) {
-    driveRows.push({ label: 'DWPD', value: `${config.drive.dwpd}` })
+  if (config.drive.reliability.dwpd > 0) {
+    driveRows.push({ label: 'DWPD', value: `${config.drive.reliability.dwpd}` })
   }
 
   driveRows.forEach((row, i) => {
