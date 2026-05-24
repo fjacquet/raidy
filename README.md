@@ -39,12 +39,14 @@ npm run build
 
 ## Technology Stack
 
-- React 19 + Vite 7
+- React 19 + Vite 8
 - TypeScript (strict mode)
 - Zustand (URL hash state persistence)
 - Tailwind CSS v4 (dark mode)
 - Recharts + D3-sankey (visualizations)
 - Web Workers (Monte Carlo simulations)
+
+See [`docs/`](./docs/) for [architecture](./docs/ARCHITECTURE.md), [development](./docs/DEVELOPMENT.md), [testing](./docs/TESTING.md), [configuration & CI](./docs/CONFIGURATION.md), and [getting started](./docs/GETTING-STARTED.md).
 
 ## Development
 
