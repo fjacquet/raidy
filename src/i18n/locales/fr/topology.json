@@ -290,6 +290,7 @@
     "snappy": "Snappy",
     "lz4": "LZ4",
     "zstd": "ZSTD",
+    "expectedRatio": "Taux attendu : {{ratio}}:1",
     "enableEncryption": "Activer le chiffrement",
     "journalOnSsd": "Journal/WAL sur SSD",
     "walDbOffload": "WAL/DB sur NVMe séparé",

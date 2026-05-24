@@ -18,6 +18,7 @@ import {
   Toggle,
 } from '@/components/common/FormControls'
 import { TieringPanel } from '@/components/inputs/TieringPanel'
+import { CEPH_COMPRESSION_RATIOS } from '@/engines/volumetry/postProcessing/capacityEnhancements'
 import { useConfigStore } from '@/store'
 import { DEFAULT_TIERING_CONFIG } from '@/types'
 
@@ -70,6 +71,11 @@ export function CephOptionsPanel() {
               setCephOptions({ compressionAlgorithm: v as 'snappy' | 'lz4' | 'zstd' })
             }
           />
+          <p className="text-xs text-slate-500">
+            {t('ceph.expectedRatio', {
+              ratio: CEPH_COMPRESSION_RATIOS[cephOptions.compressionAlgorithm].toFixed(1),
+            })}
+          </p>
         </div>
       )}
 
