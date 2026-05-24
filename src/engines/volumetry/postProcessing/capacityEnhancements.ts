@@ -129,8 +129,10 @@ export function applyCompressionDedup(
   // Ceph has no native inline dedup, so only compression applies (no global ratio).
   // cephOptions may be absent on malformed input; treat that as no compression.
   if (topology.type === 'ceph') {
+    // `?? 1.0` guards against an out-of-range algorithm deserialized from the URL
+    // hash (untrusted state), which would otherwise make effectiveCapacity NaN.
     const cephCompRatio = cephOptions?.compression
-      ? CEPH_COMPRESSION_RATIOS[cephOptions.compressionAlgorithm]
+      ? (CEPH_COMPRESSION_RATIOS[cephOptions.compressionAlgorithm] ?? 1.0)
       : 1.0
     return usableCapacity * cephCompRatio
   }

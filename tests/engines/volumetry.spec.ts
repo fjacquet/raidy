@@ -1660,6 +1660,21 @@ describe('Volumetry Engine - Ceph', () => {
       )
     })
 
+    it('falls back to no compression for an out-of-range algorithm (malformed URL state)', () => {
+      const input = createInput(12, { type: 'ceph', level: 'ceph_ec_4_2' })
+      input.cephOptions = {
+        ...DEFAULT_CEPH_OPTIONS,
+        compression: true,
+        // Simulate a stale/tampered value deserialized from the URL hash.
+        compressionAlgorithm: 'bogus' as unknown as 'zstd',
+      }
+
+      const result = calculateVolumetry(input)
+
+      expect(Number.isFinite(result.effectiveCapacity)).toBe(true)
+      expect(result.effectiveCapacity).toBeCloseTo(result.usableCapacity, 6)
+    })
+
     it('ignores the global compression slider for Ceph (algorithm-driven only)', () => {
       const input = createInput(12, { type: 'ceph', level: 'ceph_ec_4_2' })
       input.compressionRatio = 3.0 // global slider must not affect Ceph
