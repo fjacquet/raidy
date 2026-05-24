@@ -1617,6 +1617,63 @@ describe('Volumetry Engine - Ceph', () => {
       expect(Math.abs(result.usableCapacity - expectedUsable)).toBeLessThan(tolerance)
     })
   })
+
+  describe('Ceph Compression', () => {
+    // Algorithm-driven compression ratios (BlueStore inline compression).
+    // ZSTD compresses harder than LZ4, which beats Snappy.
+    const cephCompressionRatios = {
+      snappy: 1.3,
+      lz4: 1.4,
+      zstd: 1.7,
+    } as const
+
+    it('applies no compression when the Ceph compression toggle is off', () => {
+      const input = createInput(12, { type: 'ceph', level: 'ceph_ec_4_2' })
+      input.cephOptions = {
+        ...DEFAULT_CEPH_OPTIONS,
+        compression: false,
+        compressionAlgorithm: 'zstd',
+      }
+
+      const result = calculateVolumetry(input)
+
+      expect(result.effectiveCapacity).toBeCloseTo(result.usableCapacity, 6)
+    })
+
+    it.each([
+      'snappy',
+      'lz4',
+      'zstd',
+    ] as const)('applies the %s algorithm ratio when compression is enabled', (algorithm) => {
+      const input = createInput(12, { type: 'ceph', level: 'ceph_ec_4_2' })
+      input.cephOptions = {
+        ...DEFAULT_CEPH_OPTIONS,
+        compression: true,
+        compressionAlgorithm: algorithm,
+      }
+
+      const result = calculateVolumetry(input)
+
+      expect(result.effectiveCapacity).toBeCloseTo(
+        result.usableCapacity * cephCompressionRatios[algorithm],
+        6,
+      )
+    })
+
+    it('ignores the global compression slider for Ceph (algorithm-driven only)', () => {
+      const input = createInput(12, { type: 'ceph', level: 'ceph_ec_4_2' })
+      input.compressionRatio = 3.0 // global slider must not affect Ceph
+      input.cephOptions = {
+        ...DEFAULT_CEPH_OPTIONS,
+        compression: true,
+        compressionAlgorithm: 'lz4',
+      }
+
+      const result = calculateVolumetry(input)
+
+      expect(result.effectiveCapacity).toBeCloseTo(result.usableCapacity * 1.4, 6)
+    })
+  })
 })
 
 describe('Volumetry Engine - Nutanix', () => {

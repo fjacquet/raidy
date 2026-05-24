@@ -8,6 +8,7 @@
 
 import type { ZfsCapacityDetails } from '@/types/results'
 import type {
+  CephOptions,
   NetAppOptions,
   NutanixOptions,
   ObjectScaleOptions,
@@ -17,6 +18,21 @@ import type {
   Topology,
   ZfsOptions,
 } from '@/types/topology'
+
+/**
+ * Ceph BlueStore inline-compression ratios by algorithm.
+ *
+ * Algorithm-driven defaults: ZSTD compresses harder than LZ4, which beats
+ * Snappy (the trade-off is CPU cost). These are representative ratios for
+ * mixed/general data — actual ratios depend on the data being stored.
+ * `none` means compression disabled, hence 1.0 (no reduction).
+ */
+export const CEPH_COMPRESSION_RATIOS: Record<CephOptions['compressionAlgorithm'], number> = {
+  none: 1.0,
+  snappy: 1.3,
+  lz4: 1.4,
+  zstd: 1.7,
+}
 
 /**
  * Apply compression and deduplication based on topology support.
@@ -29,6 +45,7 @@ import type {
  * - ObjectScale: Compression for S3 object storage
  * - PowerStore: Compression and deduplication
  * - PowerScale: Compression and deduplication
+ * - Ceph: BlueStore inline compression, ratio driven by the chosen algorithm
  *
  * @param topology - Storage topology configuration
  * @param usableCapacity - Usable capacity before compression/dedup
@@ -49,6 +66,7 @@ export function applyCompressionDedup(
     objectscaleOptions: ObjectScaleOptions
     powerstoreOptions: PowerStoreOptions
     powerscaleOptions: PowerScaleOptions
+    cephOptions: CephOptions
   },
 ): number {
   const {
@@ -58,6 +76,7 @@ export function applyCompressionDedup(
     objectscaleOptions,
     powerstoreOptions,
     powerscaleOptions,
+    cephOptions,
   } = options
 
   // Standard RAID has no compression/deduplication - effectiveCapacity = usableCapacity
@@ -104,6 +123,16 @@ export function applyCompressionDedup(
     const pscCompRatio = powerscaleOptions.compression ? powerscaleOptions.compressionRatio : 1.0
     const pscDedupRatio = powerscaleOptions.dedup ? powerscaleOptions.dedupRatio : 1.0
     return usableCapacity * pscCompRatio * pscDedupRatio
+  }
+
+  // Ceph BlueStore inline compression — ratio is driven by the chosen algorithm.
+  // Ceph has no native inline dedup, so only compression applies (no global ratio).
+  // cephOptions may be absent on malformed input; treat that as no compression.
+  if (topology.type === 'ceph') {
+    const cephCompRatio = cephOptions?.compression
+      ? CEPH_COMPRESSION_RATIOS[cephOptions.compressionAlgorithm]
+      : 1.0
+    return usableCapacity * cephCompRatio
   }
 
   // No compression/dedup support for this topology

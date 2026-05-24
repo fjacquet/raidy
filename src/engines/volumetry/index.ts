@@ -230,6 +230,7 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
       objectscaleOptions,
       powerstoreOptions,
       powerscaleOptions,
+      cephOptions,
     },
   )
 
