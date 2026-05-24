@@ -4,6 +4,7 @@
 
 import { useTranslation } from 'react-i18next'
 import { LanguageSwitcher, SegmentedControl, Select } from '@/components/common'
+import { ThemeToggle } from '@/components/common/ThemeToggle'
 import { useConfigStore } from '@/store'
 import type { CarbonRegion } from '@/types'
 
@@ -35,7 +36,7 @@ export function Header({ onToggleGuide, isGuideOpen }: HeaderProps) {
   }))
 
   return (
-    <header className="bg-surface-800 border-b border-surface-700 px-6 py-4">
+    <header className="bg-white border-b border-slate-200 px-6 py-4 dark:bg-surface-800 dark:border-surface-700">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <img
@@ -44,14 +45,14 @@ export function Header({ onToggleGuide, isGuideOpen }: HeaderProps) {
             className="w-8 h-8 rounded-lg"
           />
           <div>
-            <h1 className="text-xl font-bold text-white">{t('app.title')}</h1>
-            <p className="text-xs text-slate-400">{t('app.subtitle')}</p>
+            <h1 className="text-xl font-bold text-slate-900 dark:text-white">{t('app.title')}</h1>
+            <p className="text-xs text-slate-500 dark:text-slate-400">{t('app.subtitle')}</p>
           </div>
         </div>
 
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-400">{t('carbon.label')}:</span>
+            <span className="text-xs text-slate-500 dark:text-slate-400">{t('carbon.label')}:</span>
             <Select
               id="carbon-region"
               value={carbonRegion}
@@ -60,7 +61,7 @@ export function Header({ onToggleGuide, isGuideOpen }: HeaderProps) {
             />
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-400">{t('units.label')}:</span>
+            <span className="text-xs text-slate-500 dark:text-slate-400">{t('units.label')}:</span>
             <SegmentedControl
               value={unitSystem}
               options={[
@@ -71,16 +72,19 @@ export function Header({ onToggleGuide, isGuideOpen }: HeaderProps) {
             />
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-400">{t('language.label')}:</span>
+            <span className="text-xs text-slate-500 dark:text-slate-400">
+              {t('language.label')}:
+            </span>
             <LanguageSwitcher />
           </div>
+          <ThemeToggle />
           <button
             type="button"
             onClick={onToggleGuide}
             className={`hidden lg:flex w-8 h-8 items-center justify-center rounded-lg text-sm font-bold transition-colors ${
               isGuideOpen
                 ? 'bg-primary-600 text-white'
-                : 'bg-surface-700 text-slate-400 hover:text-white hover:bg-surface-600'
+                : 'bg-slate-100 text-slate-500 hover:text-slate-900 hover:bg-slate-200 dark:bg-surface-700 dark:text-slate-400 dark:hover:text-white dark:hover:bg-surface-600'
             }`}
             title={t('nav.guide')}
           >

@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+/* Class-based dark mode: `dark:` utilities activate under <html class="dark">.
+ * The theme is driven by useTheme + the FOUC script in index.html. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* Custom Raidy theme configuration */
 @theme {
   /* Storage-themed color palette */
@@ -31,22 +35,34 @@
   --font-mono: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
 }
 
-/* Base styles - Dark mode by default */
+/* Base styles — light default, dark override via the .dark class. */
 @layer base {
   html {
+    color-scheme: light;
+  }
+
+  html.dark {
     color-scheme: dark;
   }
 
   body {
-    @apply bg-surface-900 text-slate-100 antialiased;
+    @apply bg-slate-50 text-slate-900 antialiased;
     font-family: system-ui, -apple-system, sans-serif;
+  }
+
+  .dark body {
+    @apply bg-surface-900 text-slate-100;
   }
 }
 
 /* Component classes */
 @layer components {
   .panel {
-    @apply bg-surface-800 rounded-lg border border-surface-700 p-4;
+    @apply bg-white rounded-lg border border-slate-200 p-4;
+  }
+
+  .dark .panel {
+    @apply bg-surface-800 border-surface-700;
   }
 
   .input-group {
@@ -54,10 +70,18 @@
   }
 
   .label {
-    @apply block text-sm font-medium text-slate-300;
+    @apply block text-sm font-medium text-slate-700;
+  }
+
+  .dark .label {
+    @apply text-slate-300;
   }
 
   .gauge-track {
+    stroke: #e2e8f0;
+  }
+
+  .dark .gauge-track {
     stroke: var(--color-surface-700);
   }
 
@@ -68,7 +92,11 @@
 
   /* Accordion styles */
   .accordion-trigger {
-    @apply flex w-full items-center justify-between py-3 px-4 text-left font-medium text-slate-200 hover:bg-surface-700 rounded-lg transition-colors;
+    @apply flex w-full items-center justify-between py-3 px-4 text-left font-medium text-slate-700 hover:bg-slate-100 rounded-lg transition-colors;
+  }
+
+  .dark .accordion-trigger {
+    @apply text-slate-200 hover:bg-surface-700;
   }
 
   .accordion-content {

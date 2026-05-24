@@ -39,6 +39,12 @@
     "de": "Deutsch",
     "it": "Italiano"
   },
+  "theme": {
+    "label": "Theme",
+    "auto": "Auto",
+    "light": "Light",
+    "dark": "Dark"
+  },
   "buttons": {
     "export": "Export",
     "reset": "Reset",
