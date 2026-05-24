@@ -4,15 +4,21 @@
  */
 
 import { sankey, sankeyLinkHorizontal } from 'd3-sankey'
-import { useMemo } from 'react'
+import { useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useFormatBytes } from '@/hooks'
 import type { VolumetryResult } from '@/types/results'
 
 interface SankeyDiagramProps {
   volumetry: VolumetryResult
+  /** Fixed width in px. When omitted, the diagram fills its container width. */
   width?: number
   height?: number
 }
+
+/** Floor so the diagram stays legible on narrow desktops (parent allows h-scroll below this). */
+const MIN_WIDTH = 360
+/** Width used on first paint before the container is measured. */
+const FALLBACK_WIDTH = 600
 
 interface SankeyNode {
   name: string
@@ -38,8 +44,25 @@ const COLORS = {
   effective: '#22c55e', // green-500
 }
 
-export function SankeyDiagram({ volumetry, width = 600, height = 300 }: SankeyDiagramProps) {
+export function SankeyDiagram({ volumetry, width, height = 300 }: SankeyDiagramProps) {
   const formatBytes = useFormatBytes()
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [measuredWidth, setMeasuredWidth] = useState(width ?? FALLBACK_WIDTH)
+
+  // When no explicit width is given, track the container width so the diagram fills it.
+  useLayoutEffect(() => {
+    if (width != null) return
+    const el = containerRef.current
+    if (!el) return
+    const update = () => setMeasuredWidth(el.clientWidth)
+    update()
+    const observer = new ResizeObserver(update)
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [width])
+
+  const renderWidth = Math.max(width ?? measuredWidth, MIN_WIDTH)
+
   const { nodes, links, sankeyData } = useMemo(() => {
     const {
       rawCapacity,
@@ -147,7 +170,7 @@ export function SankeyDiagram({ volumetry, width = 600, height = 300 }: SankeyDi
       .nodePadding(15)
       .extent([
         [10, 10],
-        [width - 10, height - 10],
+        [renderWidth - 10, height - 10],
       ])
 
     const data = sankeyGenerator({
@@ -156,16 +179,16 @@ export function SankeyDiagram({ volumetry, width = 600, height = 300 }: SankeyDi
     })
 
     return { nodes: nodeList, links: linkList, sankeyData: data }
-  }, [volumetry, width, height])
+  }, [volumetry, renderWidth, height])
 
   if (!sankeyData.nodes.length) {
     return <div className="text-slate-500 dark:text-slate-400">No data to display</div>
   }
 
   return (
-    <div id="sankey-diagram">
+    <div ref={containerRef} id="sankey-diagram" className="w-full">
       <svg
-        width={width}
+        width={renderWidth}
         height={height}
         className="overflow-visible"
         aria-label="Capacity waterfall diagram"
@@ -221,7 +244,7 @@ export function SankeyDiagram({ volumetry, width = 600, height = 300 }: SankeyDi
                   y={nodeHeight / 2}
                   dy="0.35em"
                   textAnchor={i === 0 ? 'start' : 'end'}
-                  className="text-xs fill-slate-600 dark:fill-slate-300"
+                  className="text-xs fill-slate-600 dark:fill-white"
                 >
                   {nodes[i]?.name}
                 </text>
@@ -231,7 +254,7 @@ export function SankeyDiagram({ volumetry, width = 600, height = 300 }: SankeyDi
                   y={nodeHeight / 2 + 14}
                   dy="0.35em"
                   textAnchor={i === 0 ? 'start' : 'end'}
-                  className="text-xs fill-slate-500 dark:fill-slate-400 font-mono"
+                  className="text-xs fill-slate-500 dark:fill-white font-mono"
                 >
                   {formatBytes(nodes[i]?.value || 0)}
                 </text>

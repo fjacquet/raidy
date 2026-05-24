@@ -301,9 +301,9 @@ export function OutputDashboard() {
           {/* Desktop: Sankey + Metrics | Mobile: List view */}
           {isDesktop ? (
             <div className="space-y-4">
-              {/* Sankey Diagram - Desktop only */}
+              {/* Sankey Diagram - Desktop only; fills the card width (h-scroll below min) */}
               <div className="overflow-x-auto">
-                <SankeyDiagram volumetry={volumetry} width={560} height={280} />
+                <SankeyDiagram volumetry={volumetry} height={280} />
               </div>
 
               {/* Metrics */}
