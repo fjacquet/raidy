@@ -52,9 +52,9 @@ Path aliases are mirrored in `vite.config.ts` and `vitest.config.ts` `resolve.al
 
 ## Git & commits
 
-- Default branch: **`maincd`**.
+- Default branch: **`main`**.
 - Conventional-commit style with phase/scope: `<type>(<scope>): …`, e.g. `feat(17-02): …`, `fix(pptx): …`, `chore(deps): …`.
-- CI runs the full gate set on push/PR to `maincd` — run `npm run typecheck`, `npm run lint`, and `npm run test:run` locally first.
+- CI runs the full gate set on push/PR to `main` — run `npm run typecheck`, `npm run lint`, and `npm run test:run` locally first.
 
 ## Theming (light/dark)
 
