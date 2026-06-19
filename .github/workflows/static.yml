@@ -4,10 +4,10 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: ['maincd']
+    branches: ['maincd', 'main']
     tags: ['v*']
   pull_request:
-    branches: ['maincd']
+    branches: ['maincd', 'main']
   workflow_dispatch:
 
 permissions:
@@ -132,19 +132,19 @@ jobs:
           gh release upload "$tag" sbom.cdx.json --clobber
 
       - name: Setup Pages
-        if: github.ref == 'refs/heads/maincd' && github.event_name != 'pull_request'
+        if: (github.ref == 'refs/heads/maincd' || github.ref == 'refs/heads/main') && github.event_name != 'pull_request'
         uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
         with:
           enablement: true
 
       - name: Upload artifact
-        if: github.ref == 'refs/heads/maincd' && github.event_name != 'pull_request'
+        if: (github.ref == 'refs/heads/maincd' || github.ref == 'refs/heads/main') && github.event_name != 'pull_request'
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: './dist'
 
   deploy:
-    if: github.ref == 'refs/heads/maincd' && github.event_name != 'pull_request'
+    if: (github.ref == 'refs/heads/maincd' || github.ref == 'refs/heads/main') && github.event_name != 'pull_request'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

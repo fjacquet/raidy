@@ -70,7 +70,7 @@ All calculations and data processing happen in the browser:
 
 - GitHub Actions
 - Workflow: `.github/workflows/static.yml`
-- Triggers: Push to `maincd` branch, manual dispatch
+- Triggers: Push to `main` branch, manual dispatch
 - Steps:
   1. Checkout code
   2. Setup Node.js 20

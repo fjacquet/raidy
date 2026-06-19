@@ -1,6 +1,6 @@
 # Configuration: CI, security gates & deployment
 
-The CI/CD pipeline is a single workflow, `.github/workflows/static.yml`, that runs on push and PR to `maincd`, on `v*` tags, and via manual dispatch. It builds on **Node 24** with all third-party actions **pinned to commit SHAs**. A separate `.github/workflows/codeql.yml` runs CodeQL static analysis.
+The CI/CD pipeline is a single workflow, `.github/workflows/static.yml`, that runs on push and PR to `main`, on `v*` tags, and via manual dispatch. It builds on **Node 24** with all third-party actions **pinned to commit SHAs**. A separate `.github/workflows/codeql.yml` runs CodeQL static analysis.
 
 ## Pipeline (build job, in order)
 
@@ -14,7 +14,7 @@ The CI/CD pipeline is a single workflow, `.github/workflows/static.yml`, that ru
 8. **Build** — `npm run build`.
 9. **Bundle-size gate** — `npm run check:bundle-size`.
 10. **CycloneDX SBOM** — generated for prod deps, uploaded as an artifact, and attached to the GitHub Release on `v*` tags.
-11. **Deploy** — Pages artifact upload + deploy, gated to `maincd` non-PR.
+11. **Deploy** — Pages artifact upload + deploy, gated to `main` non-PR.
 
 ## Security gates in detail
 
@@ -36,7 +36,7 @@ When a change legitimately exceeds a budget, bump the threshold in the script on
 
 ## Deployment
 
-GitHub Pages, base path `/raidy/` (set in `vite.config.ts`), served at `https://fjacquet.github.io/raidy/`. Deploy runs only on `maincd` (non-PR) via the Pages artifact mechanism.
+GitHub Pages, base path `/raidy/` (set in `vite.config.ts`), served at `https://fjacquet.github.io/raidy/`. Deploy runs only on `main` (non-PR) via the Pages artifact mechanism.
 
 ## Local equivalents
 

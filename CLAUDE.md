@@ -143,9 +143,9 @@ Four Swiss languages: EN (default), FR, DE, IT. Uses `react-i18next` with 8 name
 
 ## Git & CI
 
-- **Main branch**: `maincd`
+- **Main branch**: `main`
 - **CI** (`.github/workflows/ci.yml`): Runs `npm test`, `npm run typecheck`, `npm run lint` on push/PR
-- **Deployment** (`.github/workflows/static.yml`): Builds and deploys to GitHub Pages on push to `maincd`
+- **Deployment** (`.github/workflows/static.yml`): Builds and deploys to GitHub Pages on push to `main`
 - **Base path**: `/raidy/` (configured in `vite.config.ts` for GitHub Pages)
 
 <!-- rtk-instructions v2 -->
