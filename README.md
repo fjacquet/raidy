@@ -1,5 +1,8 @@
 # Raidy
 
+[![CI](https://github.com/fjacquet/raidy/actions/workflows/ci.yml/badge.svg)](https://github.com/fjacquet/raidy/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/fjacquet/raidy?sort=semver)](https://github.com/fjacquet/raidy/releases/latest)
+
 Browser-based storage infrastructure simulator for enterprise storage platforms.
 
 ## Supported Platforms
