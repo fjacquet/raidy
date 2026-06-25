@@ -129,7 +129,7 @@ export function bytesToBinaryTiB(bytes: number): number {
  */
 export function parseCapacity(str: string): number {
   const match = str.match(/^([\d.]+)\s*(PiB|PB|TiB|TB|GiB|GB|MiB|MB|KiB|KB|B)?$/i)
-  if (!match || !match[1]) return 0
+  if (!match?.[1]) return 0
 
   const value = Number.parseFloat(match[1])
   const unit = (match[2] ?? 'TB').toLowerCase()

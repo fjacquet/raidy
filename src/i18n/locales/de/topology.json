@@ -85,7 +85,7 @@
     "mirrorCopies": "Spiegelkopien",
     "2way": "2-Wege",
     "3way": "3-Wege",
-    "rebuildReserve": "Rebuild-Reserve (1 Laufwerk/Knoten)",
+    "rebuildReserve": "Rebuild-Reserve (1 Laufwerk/Knoten, max. 4)",
     "storageTiers": "Speicherebenen aktiviert"
   },
   "vsanOsa": {

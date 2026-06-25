@@ -1492,6 +1492,68 @@ describe('Volumetry Engine - Microsoft S2D', () => {
 
       expect(Math.abs(reserveDifference - expectedReserve)).toBeLessThan(tolerance)
     })
+
+    it('should cap the drive_failure reserve at 4 drives even with 8 fault domains', () => {
+      // 8 nodes × 10 drives = 80 drives, 2-way mirror — far more capacity than the reserve.
+      const inputWithReserve = createInput(80, { type: 's2d', level: 'mirror' })
+      inputWithReserve.s2dOptions = {
+        ...DEFAULT_S2D_OPTIONS,
+        rebuildReserve: true,
+        reserveStrategy: 'drive_failure',
+        faultDomains: 8,
+      }
+
+      const inputWithoutReserve = createInput(80, { type: 's2d', level: 'mirror' })
+      inputWithoutReserve.s2dOptions = {
+        ...DEFAULT_S2D_OPTIONS,
+        rebuildReserve: false,
+        reserveStrategy: 'drive_failure',
+        faultDomains: 8,
+      }
+
+      const resultWith = calculateVolumetry(inputWithReserve)
+      const resultWithout = calculateVolumetry(inputWithoutReserve)
+
+      const reserveDifference = resultWithout.usableCapacity - resultWith.usableCapacity
+
+      // Reserve is min(faultDomains, 4) = 4 drives, NOT 8 drives.
+      const cappedReserve = 4 * testDrive.capacity_raw
+      const tolerance = cappedReserve * 0.1 // 10% (filesystem overhead on the reserved slice)
+
+      expect(Math.abs(reserveDifference - cappedReserve)).toBeLessThan(tolerance)
+      // Prove the cap held: difference is well below an uncapped 8-drive reserve.
+      expect(reserveDifference).toBeLessThan(5 * testDrive.capacity_raw)
+    })
+
+    it('should reserve 3 drives worth for 3 fault domains (below the cap)', () => {
+      // 3 nodes × 10 drives = 30 drives, 2-way mirror.
+      const inputWithReserve = createInput(30, { type: 's2d', level: 'mirror' })
+      inputWithReserve.s2dOptions = {
+        ...DEFAULT_S2D_OPTIONS,
+        rebuildReserve: true,
+        reserveStrategy: 'drive_failure',
+        faultDomains: 3,
+      }
+
+      const inputWithoutReserve = createInput(30, { type: 's2d', level: 'mirror' })
+      inputWithoutReserve.s2dOptions = {
+        ...DEFAULT_S2D_OPTIONS,
+        rebuildReserve: false,
+        reserveStrategy: 'drive_failure',
+        faultDomains: 3,
+      }
+
+      const resultWith = calculateVolumetry(inputWithReserve)
+      const resultWithout = calculateVolumetry(inputWithoutReserve)
+
+      const reserveDifference = resultWithout.usableCapacity - resultWith.usableCapacity
+
+      // 3 < 4, so the cap does not apply: reserve is 3 drives' worth.
+      const expectedReserve = 3 * testDrive.capacity_raw
+      const tolerance = expectedReserve * 0.1
+
+      expect(Math.abs(reserveDifference - expectedReserve)).toBeLessThan(tolerance)
+    })
   })
 })
 

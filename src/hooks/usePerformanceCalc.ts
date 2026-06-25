@@ -32,6 +32,7 @@ export function usePerformanceCalc(): PerformanceResult {
     cephOptions,
     nutanixOptions,
     vsanOptions,
+    s2dOptions,
     // Workload
     readPercent,
     randomPercent,
@@ -82,6 +83,7 @@ export function usePerformanceCalc(): PerformanceResult {
         cephOptions,
         nutanixOptions,
         vsanOptions,
+        s2dOptions,
       })
     } catch (error) {
       console.error('[Performance Engine Error]', {
@@ -126,5 +128,6 @@ export function usePerformanceCalc(): PerformanceResult {
     cephOptions,
     nutanixOptions,
     vsanOptions,
+    s2dOptions,
   ])
 }

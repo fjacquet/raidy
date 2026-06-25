@@ -102,9 +102,14 @@
     },
     "vsanEsa": {
       "title": "VMware vSAN ESA",
-      "adaptive": "RAID 5 adattivo: vSAN ESA regola automaticamente la larghezza dello stripe in base alla dimensione del cluster. Da 3 a 5 host si utilizza 2+1 (67% di efficienza). Da 6+ host si utilizza 4+1 (80% di efficienza). Se un host si guasta in un cluster a 6 host, vSAN passa automaticamente da 4+1 a 2+1 dopo 24 ore.",
-      "nvme": "Solo NVMe: ESA richiede dischi interamente NVMe. Ogni disco funge sia da cache che da capacità in un'architettura a livello singolo.",
-      "source": "Fonte: VMware VCF Blog (Adaptive RAID-5 Erasure Coding), Broadcom TechDocs"
+      "architecture": "NVMe a livello singolo: ESA utilizza un unico livello interamente NVMe — nessun gruppo di dischi cache/capacità. I dischi si collegano direttamente al PCIe, quindi non è presente alcun controller RAID nel percorso di I/O (Raidy rimuove il livello controller dalla catena dei colli di bottiglia ESA).",
+      "raid1": "RAID-1 (Mirror): FTT=1 memorizza 2 copie con un'efficienza del 50% e richiede almeno 3 host (2n+1 host per FTT=n). Raidy modella il RAID-1 ESA per i cluster a 2 nodi; i cluster con 3 o più nodi dovrebbero preferire l'erasure coding.",
+      "adaptive": "RAID-5 adattivo: vSAN sceglie la larghezza dello stripe in base al numero di host — 2+1 (67% di efficienza) su 3–5 host, 4+1 (80% di efficienza) su 6+ host — e si ridimensiona automaticamente quando gli host vengono aggiunti o rimossi.",
+      "raid6": "RAID-6 (4+2): tollera due guasti con un'efficienza del 67%, minimo 6 host.",
+      "performance": "RAID-5/6 alla velocità del RAID-1: un design log-structured aggrega le scritture in arrivo in stripe completi, così le scritture in erasure coding evitano la penalità di lettura-modifica-scrittura della precedente OSA (che costava circa 4×/6× su RAID-5/6).",
+      "compression": "La compressione è definita per criterio di storage e viene applicata prima che i dati attraversino la rete (fino a ~4:1 su dati comprimibili). La deduplicazione a livello di cluster non fa parte dell'ESA di base — la deduplicazione globale arriva con VMware Cloud Foundation 9.",
+      "reserve": "Capacità riservata: mantenere circa il 25–30% di spazio libero per la riserva operativa più la riserva di ricostruzione host. Auto-Policy Management può impostare un criterio predefinito ottimizzato per il cluster. vSAN ricostruisce da questo spazio libero distribuito — non esistono hot spare dedicati.",
+      "source": "Fonte: VMware/Broadcom TechDocs — vSAN ESA «RAID-5/6 con le prestazioni del RAID-1», erasure coding RAID-5 adattivo, concetti di capacità riservata"
     },
     "ceph": {
       "title": "Ceph",
@@ -114,9 +119,13 @@
     },
     "s2d": {
       "title": "Storage Spaces Direct (S2D)",
-      "reserve": "Riserva di ricostruzione: S2D riserva un equivalente di un disco di capacità per nodo per la ricostruzione automatica. In un cluster a 4 nodi con 8 dischi per nodo, questo significa che 8 dischi (25% del totale) sono destinati alla riserva di ricostruzione.",
-      "map": "MAP (Mirror-Accelerated Parity): combina circa il 20% di livello mirror per i dati caldi con circa l'80% di livello parità per i dati freddi, bilanciando prestazioni ed efficienza della capacità.",
-      "source": "Fonte: documentazione Microsoft Storage Spaces Direct"
+      "resiliency": "Resilienza ed efficienza: two-way mirror (50%, min. 2 nodi), three-way mirror (33%, min. 3 nodi — consigliato in produzione), single parity ((N−1)/N, min. 3 nodi, supportato ma non consigliato per S2D in cluster), dual parity ((N−2)/N: 50% con 4 nodi, fino all'87,5% con 16, min. 4 nodi) e mirror-accelerated parity (combinazione di mirror + parity, min. 4 nodi).",
+      "replication": "Replica e domini di guasto: ogni nodo è un dominio di guasto. Un mirror conserva una copia completa per nodo e tollera guasti simultanei di nodo e disco; il dual parity tollera due guasti. I cluster comprendono da 2 a 16 nodi.",
+      "reserve": "Riserva di ricostruzione: lasciare libero un disco di capacità per server per la riparazione in loco, con un limite di 4 dischi a livello di cluster — non un intero nodo. Questo consente a S2D di ricostruire dopo un guasto disco senza sostituire l'hardware.",
+      "nested": "Cluster a 2 nodi: utilizzare la nested resiliency (nested two-way mirror ≈25% o nested mirror-accelerated parity ≈35–40%) anziché un semplice two-way mirror, in modo che il cluster sopravviva a un guasto disco durante l'indisponibilità di un nodo.",
+      "map": "MAP (Mirror-Accelerated Parity): combina un livello mirror di circa il 20% per i dati caldi con un livello dual-parity di circa l'80% per i dati freddi, bilanciando prestazioni ed efficienza della capacità.",
+      "refs": "ReFS/CSV: i volumi sono ReFS su Cluster Shared Volumes. L'overhead dei metadati è ridotto (~2%) ed è protetto dalla stessa resilienza dei dati.",
+      "source": "Fonte: Microsoft Learn — tolleranza ai guasti di Storage Spaces Direct e nested resiliency"
     },
     "nutanix": {
       "title": "Nutanix",

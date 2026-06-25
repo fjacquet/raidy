@@ -16,6 +16,7 @@ import type {
   NutanixOptions,
   PowerFlexOptions,
   RaidControllerOptions,
+  S2DOptions,
   Topology,
   VsanOptions,
 } from '@/types/topology'
@@ -57,6 +58,7 @@ export interface PerformanceInput {
   cephOptions?: CephOptions
   nutanixOptions?: NutanixOptions
   vsanOptions?: VsanOptions
+  s2dOptions?: S2DOptions
 }
 
 /** Block size in bytes */
@@ -110,10 +112,20 @@ function getStrategy(topologyType: TopologyType): PerformanceStrategy {
  * This is the number of I/O operations required per write.
  * Delegates to topology-specific strategy for calculation.
  */
-function getRaidWritePenalty(topology: Topology, serverCount: number): number {
+function getRaidWritePenalty(
+  topology: Topology,
+  serverCount: number,
+  s2dOptions?: S2DOptions,
+): number {
   const strategy = getStrategy(topology.type)
-  // For standard RAID, pass serverCount as number of RAID groups for RAID 50/60
-  const options = topology.type === 'standard' ? { serverCount } : topology
+  // Each strategy interprets `options` differently: standard RAID needs the RAID-group
+  // count for RAID 50/60, S2D needs its mirrorCopies, others read from the topology.
+  let options: unknown = topology
+  if (topology.type === 'standard') {
+    options = { serverCount }
+  } else if (topology.type === 's2d') {
+    options = s2dOptions
+  }
   return strategy.getWritePenalty(topology.level, options)
 }
 
@@ -138,6 +150,7 @@ export function calculatePerformance(input: PerformanceInput): PerformanceResult
     cephOptions,
     nutanixOptions,
     vsanOptions,
+    s2dOptions,
   } = input
 
   const usableDrives = driveCount - hotSpares
@@ -146,7 +159,7 @@ export function calculatePerformance(input: PerformanceInput): PerformanceResult
   const blockSizeBytes = BLOCK_SIZE_BYTES[blockSize]
 
   // Calculate write penalty for random I/O
-  const randomWritePenalty = getRaidWritePenalty(topology, serverCount)
+  const randomWritePenalty = getRaidWritePenalty(topology, serverCount, s2dOptions)
 
   // Sequential write penalty is reduced (full-stripe writes avoid read-modify-write)
   // For RAID 5/6, sequential penalty ≈ 1 + parity_drives/data_drives

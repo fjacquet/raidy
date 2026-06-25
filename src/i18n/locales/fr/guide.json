@@ -102,9 +102,14 @@
     },
     "vsanEsa": {
       "title": "VMware vSAN ESA",
-      "adaptive": "RAID-5 adaptatif : vSAN ESA ajuste automatiquement la largeur de bande en fonction de la taille du cluster. 3 a 5 hotes utilisent 2+1 (67 % d'efficacite). 6+ hotes utilisent 4+1 (80 % d'efficacite). Si un hote tombe en panne dans un cluster de 6 hotes, vSAN retrogade automatiquement de 4+1 a 2+1 apres 24 heures.",
-      "nvme": "NVMe uniquement : ESA necessite des disques entierement NVMe. Chaque disque sert a la fois de cache et de capacite dans une architecture a un seul niveau.",
-      "source": "Source: VMware VCF Blog (Adaptive RAID-5 Erasure Coding), Broadcom TechDocs"
+      "architecture": "NVMe a un seul niveau : ESA utilise un unique niveau entierement NVMe — pas de groupes de disques cache/capacite. Les disques se connectent directement au PCIe, il n'y a donc aucun controleur RAID sur le chemin d'E/S (Raidy supprime la couche controleur de la chaine de goulots d'etranglement ESA).",
+      "raid1": "RAID-1 (Mirror) : FTT=1 stocke 2 copies pour une efficacite de 50 % et necessite au moins 3 hotes (2n+1 hotes pour FTT=n). Raidy modelise le RAID-1 ESA pour les clusters a 2 noeuds ; les clusters de 3 noeuds ou plus devraient privilegier l'erasure coding.",
+      "adaptive": "RAID-5 adaptatif : vSAN choisit la largeur de bande selon le nombre d'hotes — 2+1 (67 % d'efficacite) sur 3 a 5 hotes, 4+1 (80 % d'efficacite) sur 6 hotes ou plus — et se redimensionne automatiquement a mesure que des hotes sont ajoutes ou retires.",
+      "raid6": "RAID-6 (4+2) : tolere deux pannes avec une efficacite de 67 %, minimum 6 hotes.",
+      "performance": "RAID-5/6 a la vitesse du RAID-1 : une conception log-structuree regroupe les ecritures entrantes en bandes completes, de sorte que les ecritures en erasure coding evitent la penalite de lecture-modification-ecriture de l'ancienne OSA (qui payait environ 4x/6x en RAID-5/6).",
+      "compression": "La compression est definie par strategie de stockage et appliquee avant que les donnees ne traversent le reseau (jusqu'a ~4:1 sur des donnees compressibles). La deduplication a l'echelle du cluster ne fait pas partie de l'ESA de base — la deduplication globale arrive avec VMware Cloud Foundation 9.",
+      "reserve": "Capacite reservee : conservez environ 25 a 30 % d'espace libre pour la reserve d'exploitation et la reserve de reconstruction d'hote. Auto-Policy Management peut definir une strategie par defaut optimisee pour le cluster. vSAN reconstruit a partir de cet espace libre distribue — il n'y a pas de disques de secours dedies.",
+      "source": "Source: VMware/Broadcom TechDocs — vSAN ESA « RAID-5/6 avec les performances du RAID-1 », erasure coding RAID-5 adaptatif, concepts de capacite reservee"
     },
     "ceph": {
       "title": "Ceph",
@@ -114,9 +119,13 @@
     },
     "s2d": {
       "title": "Storage Spaces Direct (S2D)",
-      "reserve": "Reserve de reconstruction : S2D reserve l'equivalent de la capacite d'un disque par noeud pour la reconstruction automatique. Dans un cluster de 4 noeuds avec 8 disques par noeud, cela signifie que 8 disques (25 % du total) sont perdus pour la reserve de reconstruction.",
-      "map": "MAP (Mirror-Accelerated Parity) : combine ~20 % de niveau miroir pour les donnees chaudes avec ~80 % de niveau parite pour les donnees froides, equilibrant performances et efficacite de capacite.",
-      "source": "Source: Microsoft Storage Spaces Direct documentation"
+      "resiliency": "Resilience et efficacite : two-way mirror (50 %, min. 2 noeuds), three-way mirror (33 %, min. 3 noeuds — recommande en production), single parity ((N−1)/N, min. 3 noeuds, pris en charge mais non recommande pour le S2D en cluster), dual parity ((N−2)/N : 50 % a 4 noeuds, jusqu'a 87,5 % a 16, min. 4 noeuds) et mirror-accelerated parity (combinaison mirror + parity, min. 4 noeuds).",
+      "replication": "Replication et domaines de panne : chaque noeud est un domaine de panne. Un mirror conserve une copie complete par noeud et tolere des pannes simultanees de noeud et de disque ; le dual parity tolere deux pannes. Les clusters comptent de 2 a 16 noeuds.",
+      "reserve": "Reserve de reconstruction : laissez un disque de capacite libre par serveur pour la reparation sur place, plafonne a 4 disques a l'echelle du cluster — et non un noeud entier. Cela permet a S2D de se reconstruire apres une panne de disque sans remplacer de materiel.",
+      "nested": "Clusters a 2 noeuds : utilisez la nested resiliency (nested two-way mirror ≈ 25 %, ou nested mirror-accelerated parity ≈ 35 a 40 %) plutot qu'un simple two-way mirror, afin que le cluster survive a une panne de disque pendant l'indisponibilite d'un noeud.",
+      "map": "MAP (Mirror-Accelerated Parity) : combine un niveau mirror d'environ 20 % pour les donnees chaudes avec un niveau dual-parity d'environ 80 % pour les donnees froides, equilibrant performances et efficacite de capacite.",
+      "refs": "ReFS/CSV : les volumes sont en ReFS sur des Cluster Shared Volumes. La surcharge de metadonnees est faible (~2 %) et est protegee par la meme resilience que les donnees.",
+      "source": "Source: Microsoft Learn — tolerance aux pannes et nested resiliency de Storage Spaces Direct"
     },
     "nutanix": {
       "title": "Nutanix",

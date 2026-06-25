@@ -102,9 +102,14 @@
     },
     "vsanEsa": {
       "title": "VMware vSAN ESA",
-      "adaptive": "Adaptive RAID-5: vSAN ESA passt die Stripe-Breite automatisch an die Clustergrösse an. 3–5 Hosts verwenden 2+1 (67% Effizienz). 6+ Hosts verwenden 4+1 (80% Effizienz). Fällt ein Host in einem 6-Host-Cluster aus, stuft vSAN nach 24 Stunden automatisch von 4+1 auf 2+1 herunter.",
-      "nvme": "Nur NVMe: ESA erfordert ausschliesslich NVMe-Laufwerke. Jedes Laufwerk dient in einer Single-Tier-Architektur gleichzeitig als Cache und Kapazität.",
-      "source": "Quelle: VMware VCF Blog (Adaptive RAID-5 Erasure Coding), Broadcom TechDocs"
+      "architecture": "Single-Tier NVMe: ESA verwendet einen einzigen reinen NVMe-Tier — keine Cache-/Kapazitäts-Laufwerksgruppen. Die Laufwerke sind direkt an PCIe angebunden, sodass kein RAID-Controller im I/O-Pfad liegt (Raidy entfernt die Controller-Schicht aus der ESA-Engpass-Kette).",
+      "raid1": "RAID-1 (Mirror): FTT=1 speichert 2 Kopien für 50% Effizienz und benötigt mindestens 3 Hosts (2n+1 Hosts für FTT=n). Raidy modelliert ESA RAID-1 für 2-Knoten-Cluster; Cluster mit 3 oder mehr Knoten sollten Erasure Coding bevorzugen.",
+      "adaptive": "Adaptives RAID-5: vSAN wählt die Stripe-Breite anhand der Host-Anzahl — 2+1 (67% Effizienz) bei 3–5 Hosts, 4+1 (80% Effizienz) bei 6+ Hosts — und passt sie automatisch an, wenn Hosts hinzugefügt oder entfernt werden.",
+      "raid6": "RAID-6 (4+2): toleriert zwei Ausfälle bei 67% Effizienz, mindestens 6 Hosts.",
+      "performance": "RAID-5/6 mit RAID-1-Geschwindigkeit: Ein log-strukturiertes Design fasst eingehende Schreibvorgänge zu vollständigen Stripes zusammen, sodass Erasure-Coding-Schreibvorgänge die Read-Modify-Write-Strafe der älteren OSA vermeiden (die bei RAID-5/6 rund 4×/6× kostete).",
+      "compression": "Komprimierung erfolgt pro Speicherrichtlinie und wird angewendet, bevor die Daten das Netzwerk durchqueren (bis zu ~4:1 bei komprimierbaren Daten). Clusterweite Deduplizierung ist nicht Teil des Basis-ESA — globale Deduplizierung kommt mit VMware Cloud Foundation 9.",
+      "reserve": "Reservierte Kapazität: Halten Sie etwa 25–30% frei für die Betriebsreserve plus Host-Rebuild-Reserve. Auto-Policy Management kann eine clusteroptimierte Standardrichtlinie festlegen. vSAN rekonstruiert aus diesem verteilten freien Speicher — es gibt keine dedizierten Hot Spares.",
+      "source": "Quelle: VMware/Broadcom TechDocs — vSAN ESA „RAID-5/6 mit der Leistung von RAID-1“, adaptives RAID-5 Erasure Coding, Konzepte der reservierten Kapazität"
     },
     "ceph": {
       "title": "Ceph",
@@ -114,9 +119,13 @@
     },
     "s2d": {
       "title": "Storage Spaces Direct (S2D)",
-      "reserve": "Rebuild-Reserve: S2D reserviert ein Laufwerksäquivalent an Kapazität pro Knoten für den automatischen Rebuild. In einem 4-Knoten-Cluster mit 8 Laufwerken pro Knoten gehen 8 Laufwerke (25% der Gesamtkapazität) als Rebuild-Reserve verloren.",
-      "map": "MAP (Mirror-Accelerated Parity): Kombiniert ~20% Spiegel-Tier für heisse Daten mit ~80% Paritäts-Tier für kalte Daten und bietet ein ausgewogenes Verhältnis zwischen Leistung und Kapazitätseffizienz.",
-      "source": "Quelle: Microsoft Storage Spaces Direct-Dokumentation"
+      "resiliency": "Resilienz & Effizienz: two-way mirror (50%, min. 2 Knoten), three-way mirror (33%, min. 3 Knoten — empfohlen für die Produktion), single parity ((N−1)/N, min. 3 Knoten, unterstützt, aber für geclustertes S2D nicht empfohlen), dual parity ((N−2)/N: 50% bei 4 Knoten, ansteigend auf 87,5% bei 16, min. 4 Knoten) und mirror-accelerated parity (Kombination aus mirror + parity, min. 4 Knoten).",
+      "replication": "Replikation & Fehlerdomänen: Jeder Knoten ist eine Fehlerdomäne. Ein mirror hält eine vollständige Kopie pro Knoten und toleriert gleichzeitige Knoten- und Laufwerksausfälle; dual parity toleriert zwei Ausfälle. Cluster umfassen 2–16 Knoten.",
+      "reserve": "Rebuild-Reserve: Lassen Sie ein Kapazitätslaufwerk pro Server für die In-Place-Reparatur frei, begrenzt auf 4 Laufwerke clusterweit — nicht einen ganzen Knoten. So kann S2D nach einem Laufwerksausfall ohne Hardwaretausch rekonstruieren.",
+      "nested": "2-Knoten-Cluster: Verwenden Sie nested resiliency (nested two-way mirror ≈25% oder nested mirror-accelerated parity ≈35–40%) anstelle eines einfachen two-way mirror, damit der Cluster einen Laufwerksausfall während eines Knotenausfalls übersteht.",
+      "map": "MAP (Mirror-Accelerated Parity): Kombiniert einen ~20% mirror-Tier für heisse Daten mit einem ~80% dual-parity-Tier für kalte Daten und schafft so ein ausgewogenes Verhältnis zwischen Leistung und Kapazitätseffizienz.",
+      "refs": "ReFS/CSV: Die Volumes sind ReFS auf Cluster Shared Volumes. Der Metadaten-Overhead ist gering (~2%) und wird durch dieselbe Resilienz wie die Daten geschützt.",
+      "source": "Quelle: Microsoft Learn — Storage Spaces Direct Fehlertoleranz & nested resiliency"
     },
     "nutanix": {
       "title": "Nutanix",

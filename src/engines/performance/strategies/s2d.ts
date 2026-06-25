@@ -1,23 +1,27 @@
+import type { S2DOptions } from '@/types/topology'
 import type { PerformanceStrategy } from './PerformanceStrategy'
 
 /**
  * Microsoft S2D (Storage Spaces Direct) performance strategy.
  *
- * S2D write penalties based on resiliency mode:
+ * S2D write penalties based on resiliency mode (a mirror write fans out to one
+ * backend write per copy, so the penalty scales with mirrorCopies):
  * - simple: 1x (no redundancy)
- * - mirror: 2x (2-way mirror)
+ * - mirror: 2x (2-way) or 3x (3-way) — equals mirrorCopies
  * - parity: 3x (single parity with journal)
  * - dual_parity: 4x (dual parity with journal)
- * - map: 2.5x (Mirror-Accelerated Parity blend)
+ * - map: mirrorCopies + 0.5 (writes mostly land on the mirror tier; small parity surcharge)
  */
 export const s2dPerformanceStrategy: PerformanceStrategy = {
-  getWritePenalty(level: string): number {
+  getWritePenalty(level: string, options?: unknown): number {
+    const mirrorCopies = (options as S2DOptions | undefined)?.mirrorCopies ?? 2
+
     switch (level) {
       case 'simple':
         return 1.0 // No redundancy
 
       case 'mirror':
-        return 2.0 // 2-way mirror writes
+        return mirrorCopies // One backend write per copy (2-way = 2x, 3-way = 3x)
 
       case 'parity':
         return 3.0 // Single parity with journal optimization
@@ -26,7 +30,7 @@ export const s2dPerformanceStrategy: PerformanceStrategy = {
         return 4.0 // Dual parity with journal
 
       case 'map':
-        return 2.5 // Mirror-Accelerated Parity (blend of mirror and parity)
+        return mirrorCopies + 0.5 // Mirror-Accelerated Parity (mostly mirror-tier writes)
 
       default:
         return 1.0

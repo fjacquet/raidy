@@ -160,7 +160,9 @@ describe('Resilience Worker - Survival Rate Ordering', () => {
     // Note: Using 0.95 multiplier (5% tolerance) for stochastic variance
     // See "Statistical Accuracy" describe block for tolerance guidelines
     for (let i = 1; i < survivalRates.length; i++) {
-      expect(survivalRates[i]).toBeGreaterThanOrEqual(survivalRates[i - 1]! * 0.95)
+      const prevRate = survivalRates[i - 1]
+      expect(prevRate).toBeDefined()
+      expect(survivalRates[i]).toBeGreaterThanOrEqual((prevRate ?? 0) * 0.95)
     }
   })
 })
@@ -277,7 +279,7 @@ describe('Resilience Worker - Progress Reporting', () => {
     expect(progressCalls.length).toBeGreaterThan(0)
 
     // Progress should show completed and total
-    const lastProgress = progressCalls[progressCalls.length - 1]![0].payload
+    const lastProgress = progressCalls[progressCalls.length - 1]?.[0].payload
     expect(lastProgress.completed).toBe(1000)
     expect(lastProgress.total).toBe(1000)
   })
@@ -306,7 +308,7 @@ describe('Resilience Worker - Progress Reporting', () => {
     expect(resultCalls.length).toBe(1)
 
     // Result should have all expected fields
-    const result = resultCalls[0]![0].payload
+    const result = resultCalls[0]?.[0].payload
     expect(result).toHaveProperty('survivalRate')
     expect(result).toHaveProperty('survivalPercent')
     expect(result).toHaveProperty('averageRebuildTimeHours')

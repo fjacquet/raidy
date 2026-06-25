@@ -166,7 +166,7 @@
     "mirrorCopies": "Mirror Copies",
     "2way": "2-way",
     "3way": "3-way",
-    "rebuildReserve": "Rebuild Reserve (1 drive/node)",
+    "rebuildReserve": "Rebuild Reserve (1 drive/node, max 4)",
     "storageTiers": "Storage Tiers Enabled"
   },
   "vsanOsa": {

@@ -133,11 +133,14 @@ Calculates storage capacity and efficiency.
 - Ceph: Replicated and Erasure Coded pools
 - Nutanix, Synology, and more
 
+> Microsoft S2D enforces a minimum number of fault domains (nodes) per resiliency type (validated in `src/utils/validators.ts`): three-way mirror and single parity require ≥ 3, dual parity and mirror-accelerated parity (MAP) require ≥ 4. Fault domains are bounded to 2–16, the supported S2D cluster range.
+
 **Calculations:**
 
 - Raw capacity = drive capacity × drive count
 - Parity overhead (varies by topology)
 - Hot spare capacity reservation (vSAN OSA/ESA use distributed slack space, so no dedicated spares are reserved)
+- S2D rebuild reserve: the default `drive_failure` strategy reserves 1 capacity drive per server, capped at 4 drives cluster-wide (`capacity_raw × min(faultDomains, 4)`), per Microsoft's rule; an opt-in `node_failure` strategy reserves a whole node instead
 - Filesystem overhead (per filesystem type)
 - ZFS slop factor (1/32 of pool)
 - Platform-specific losses
@@ -159,7 +162,7 @@ flowchart LR
 **Calculations:**
 
 - Per-drive IOPS and bandwidth
-- RAID write penalty (2x for RAID1, 4x for RAID5, 6x for RAID6)
+- RAID write penalty (2x for RAID1, 4x for RAID5, 6x for RAID6); S2D mirror write penalty scales with the copy count (two-way 2×, three-way 3×, MAP = `mirrorCopies + 0.5`), with `s2dOptions` threaded through `PerformanceInput`/`usePerformanceCalc`
 - Controller limits (IOPS and throughput caps) — skipped for NVMe-direct topologies (vSAN ESA)
 - PCIe bandwidth (lanes × generation speed)
 - Network bandwidth limits — for vSAN, refined by full-duplex, on-the-wire compression, and the east-west traffic fraction (writes × replication/EC + remote reads)

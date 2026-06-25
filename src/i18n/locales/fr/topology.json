@@ -88,7 +88,7 @@
     "mirrorCopies": "Copies miroir",
     "2way": "2 voies",
     "3way": "3 voies",
-    "rebuildReserve": "Réserve reconstruction (1 disque/noeud)",
+    "rebuildReserve": "Réserve reconstruction (1 disque/noeud, max 4)",
     "storageTiers": "Niveaux de stockage activés"
   },
   "vsanOsa": {

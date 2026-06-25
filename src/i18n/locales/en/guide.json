@@ -102,9 +102,14 @@
     },
     "vsanEsa": {
       "title": "VMware vSAN ESA",
-      "adaptive": "Adaptive RAID-5: vSAN ESA automatically adjusts stripe width based on cluster size. 3\u20135 hosts use 2+1 (67% efficiency). 6+ hosts use 4+1 (80% efficiency). If a host fails in a 6-host cluster, vSAN automatically downgrades from 4+1 to 2+1 after 24 hours.",
-      "nvme": "NVMe Only: ESA requires all-NVMe drives. Each drive serves both cache and capacity in a single-tier architecture.",
-      "source": "Source: VMware VCF Blog (Adaptive RAID-5 Erasure Coding), Broadcom TechDocs"
+      "architecture": "Single-tier NVMe: ESA uses one all-NVMe tier \u2014 no cache/capacity disk groups. Drives attach directly to PCIe, so there is no RAID controller in the I/O path (Raidy drops the controller layer from the ESA bottleneck chain).",
+      "raid1": "RAID-1 (Mirror): FTT=1 stores 2 copies for 50% efficiency and needs at least 3 hosts (2n+1 hosts for FTT=n). Raidy models ESA RAID-1 for 2-node clusters; 3+ node clusters should prefer erasure coding.",
+      "adaptive": "Adaptive RAID-5: vSAN picks the stripe width by host count \u2014 2+1 (67% efficiency) on 3\u20135 hosts, 4+1 (80% efficiency) on 6+ hosts \u2014 and resizes automatically as hosts are added or removed.",
+      "raid6": "RAID-6 (4+2): tolerates two failures at 67% efficiency, minimum 6 hosts.",
+      "performance": "RAID-5/6 at RAID-1 speed: a log-structured design coalesces incoming writes into full stripes, so erasure-coded writes avoid the read-modify-write penalty of the older OSA (which paid roughly 4\u00d7/6\u00d7 on RAID-5/6).",
+      "compression": "Compression is per storage policy and applied before data crosses the network (up to ~4:1 on compressible data). Cluster-wide deduplication is not part of base ESA \u2014 global dedup arrives with VMware Cloud Foundation 9.",
+      "reserve": "Reserved capacity: keep roughly 25\u201330% free for operations reserve plus host-rebuild reserve. Auto-Policy Management can set a cluster-optimized default policy. vSAN rebuilds from this distributed slack space \u2014 there are no dedicated hot spares.",
+      "source": "Source: VMware/Broadcom TechDocs \u2014 vSAN ESA 'RAID-5/6 with the performance of RAID-1', adaptive RAID-5 erasure coding, reserved-capacity concepts"
     },
     "ceph": {
       "title": "Ceph",
@@ -114,9 +119,13 @@
     },
     "s2d": {
       "title": "Storage Spaces Direct (S2D)",
-      "reserve": "Rebuild Reserve: S2D reserves one drive equivalent of capacity per node for automatic rebuild. In a 4-node cluster with 8 drives per node, this means 8 drives (25% of total) are lost to rebuild reserve.",
-      "map": "MAP (Mirror-Accelerated Parity): Combines ~20% mirror tier for hot data with ~80% parity tier for cold data, balancing performance and capacity efficiency.",
-      "source": "Source: Microsoft Storage Spaces Direct documentation"
+      "resiliency": "Resiliency & efficiency: two-way mirror (50%, min 2 nodes), three-way mirror (33%, min 3 nodes — recommended for production), single parity ((N−1)/N, min 3 nodes, supported but not recommended for clustered S2D), dual parity ((N−2)/N: 50% at 4 nodes rising to 87.5% at 16, min 4 nodes), and mirror-accelerated parity (mirror + parity blend, min 4 nodes).",
+      "replication": "Replication & fault domains: every node is a fault domain. A mirror keeps one full copy per node and tolerates simultaneous node and drive failures; dual parity tolerates two failures. Clusters span 2–16 nodes.",
+      "reserve": "Rebuild Reserve: leave one capacity drive per server free for in-place repair, capped at 4 drives cluster-wide — not a whole node. This lets S2D rebuild after a drive failure without replacing hardware.",
+      "nested": "2-node clusters: use nested resiliency (nested two-way mirror ≈25%, or nested mirror-accelerated parity ≈35–40%) instead of plain two-way mirror, so the cluster survives a drive failure during a node outage.",
+      "map": "MAP (Mirror-Accelerated Parity): combines a ~20% mirror tier for hot data with a ~80% dual-parity tier for cold data, balancing performance and capacity efficiency.",
+      "refs": "ReFS/CSV: volumes are ReFS on Cluster Shared Volumes. Metadata overhead is small (~2%) and is protected by the same resiliency as the data.",
+      "source": "Source: Microsoft Learn — Storage Spaces Direct fault tolerance & nested resiliency"
     },
     "nutanix": {
       "title": "Nutanix",
