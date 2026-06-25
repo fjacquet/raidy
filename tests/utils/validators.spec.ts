@@ -11,8 +11,11 @@ import type { ControllerType } from '@/types/topology'
 import {
   DEFAULT_NETAPP_OPTIONS,
   DEFAULT_POWERFLEX_OPTIONS,
+  DEFAULT_S2D_OPTIONS,
   DEFAULT_SYNOLOGY_OPTIONS,
   DEFAULT_ZFS_OPTIONS,
+  type S2DOptions,
+  type S2DTopology,
   type Topology,
 } from '@/types/topology'
 import {
@@ -743,8 +746,12 @@ describe('Validators - Helper Functions', () => {
     if (alerts.length > 1) {
       const severityOrder = ['error', 'warning', 'info']
       for (let i = 0; i < alerts.length - 1; i++) {
-        const currentIndex = severityOrder.indexOf(alerts[i]!.severity)
-        const nextIndex = severityOrder.indexOf(alerts[i + 1]!.severity)
+        const current = alerts[i]
+        const next = alerts[i + 1]
+        expect(current).toBeDefined()
+        expect(next).toBeDefined()
+        const currentIndex = severityOrder.indexOf(current?.severity ?? 'info')
+        const nextIndex = severityOrder.indexOf(next?.severity ?? 'info')
         expect(currentIndex).toBeLessThanOrEqual(nextIndex)
       }
     }
@@ -904,5 +911,109 @@ describe('Validators - validateOrThrow', () => {
       level: 'powerflex_medium_2way',
     })
     expect(() => validateOrThrow(input)).toThrow(/HDD drives are no longer supported/i)
+  })
+})
+
+describe('Validators - S2D Resiliency', () => {
+  // Build a valid S2D ValidationInput. An HBA controller is used so the generic
+  // RAID_CONTROLLER_INCOMPATIBLE alert never fires; driveCount stays >= 4 so
+  // S2D_MIN_DRIVES never fires. We then assert only on the specific S2D codes.
+  function createS2DInput(
+    level: S2DTopology,
+    overrides: Partial<S2DOptions>,
+    driveCount = 8,
+  ): ValidationInput {
+    const input = createValidationInput(
+      testHdd,
+      driveCount,
+      { type: 's2d', level },
+      1,
+      'lsi_9500', // HBA (IT mode) — S2D requires an HBA
+    )
+    input.s2dOptions = {
+      ...DEFAULT_S2D_OPTIONS,
+      rebuildReserve: true,
+      reserveStrategy: 'drive_failure',
+      storageTiers: false,
+      ...overrides,
+    }
+    return input
+  }
+
+  const minNodeErrorCodes = [
+    'S2D_3WAY_MIN_NODES',
+    'S2D_PARITY_MIN_NODES',
+    'S2D_DUAL_PARITY_MIN_NODES',
+    'S2D_MAP_MIN_NODES',
+  ]
+
+  it('flags three-way mirror with fewer than 3 nodes (S2D_3WAY_MIN_NODES)', () => {
+    const alerts = validateConfiguration(
+      createS2DInput('mirror', { mirrorCopies: 3, faultDomains: 2 }),
+    )
+    const alert = alerts.find((a) => a.code === 'S2D_3WAY_MIN_NODES')
+    expect(alert).toBeDefined()
+    expect(alert?.severity).toBe('error')
+  })
+
+  it('flags single parity with fewer than 3 nodes (S2D_PARITY_MIN_NODES)', () => {
+    const alerts = validateConfiguration(createS2DInput('parity', { faultDomains: 2 }))
+    const alert = alerts.find((a) => a.code === 'S2D_PARITY_MIN_NODES')
+    expect(alert).toBeDefined()
+    expect(alert?.severity).toBe('error')
+  })
+
+  it('flags dual parity with fewer than 4 nodes (S2D_DUAL_PARITY_MIN_NODES)', () => {
+    const alerts = validateConfiguration(createS2DInput('dual_parity', { faultDomains: 3 }))
+    const alert = alerts.find((a) => a.code === 'S2D_DUAL_PARITY_MIN_NODES')
+    expect(alert).toBeDefined()
+    expect(alert?.severity).toBe('error')
+  })
+
+  it('flags mirror-accelerated parity with fewer than 4 nodes (S2D_MAP_MIN_NODES)', () => {
+    const alerts = validateConfiguration(createS2DInput('map', { faultDomains: 3 }))
+    const alert = alerts.find((a) => a.code === 'S2D_MAP_MIN_NODES')
+    expect(alert).toBeDefined()
+    expect(alert?.severity).toBe('error')
+  })
+
+  it('discourages single parity for clustered S2D (S2D_SINGLE_PARITY_DISCOURAGED)', () => {
+    const alerts = validateConfiguration(createS2DInput('parity', { faultDomains: 4 }))
+    const alert = alerts.find((a) => a.code === 'S2D_SINGLE_PARITY_DISCOURAGED')
+    expect(alert).toBeDefined()
+    expect(alert?.severity).toBe('warning')
+    // 4 nodes satisfy the parity node minimum, so the node-count error must not fire.
+    expect(alerts.find((a) => a.code === 'S2D_PARITY_MIN_NODES')).toBeUndefined()
+  })
+
+  it('recommends nested resiliency for 2-node clusters (S2D_2NODE_NESTED_RECOMMENDED)', () => {
+    const alerts = validateConfiguration(
+      createS2DInput('mirror', { mirrorCopies: 2, faultDomains: 2 }),
+    )
+    const alert = alerts.find((a) => a.code === 'S2D_2NODE_NESTED_RECOMMENDED')
+    expect(alert).toBeDefined()
+    expect(alert?.severity).toBe('warning')
+  })
+
+  it('recommends three-way mirror for production HA on a two-way mirror (S2D_3WAY_RECOMMENDED)', () => {
+    const alerts = validateConfiguration(
+      createS2DInput('mirror', { mirrorCopies: 2, faultDomains: 4 }),
+    )
+    const alert = alerts.find((a) => a.code === 'S2D_3WAY_RECOMMENDED')
+    expect(alert).toBeDefined()
+    expect(alert?.severity).toBe('info')
+  })
+
+  it('produces no resiliency errors for a valid three-way mirror on 4 nodes', () => {
+    const alerts = validateConfiguration(
+      createS2DInput('mirror', { mirrorCopies: 3, faultDomains: 4 }),
+    )
+    for (const code of minNodeErrorCodes) {
+      expect(alerts.find((a) => a.code === code)).toBeUndefined()
+    }
+    // The 3-way recommendation only fires for two-way mirrors.
+    expect(alerts.find((a) => a.code === 'S2D_3WAY_RECOMMENDED')).toBeUndefined()
+    // A valid config has no blocking errors at all.
+    expect(hasBlockingErrors(alerts)).toBe(false)
   })
 })

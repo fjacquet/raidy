@@ -524,7 +524,8 @@ export const DEFAULT_S2D_OPTIONS: S2DOptions = {
   faultDomains: 4,
   mirrorCopies: 2,
   rebuildReserve: true,
-  reserveStrategy: 'node_failure',
+  // Microsoft sizes rebuild reserve as one capacity drive per server (capped at 4).
+  reserveStrategy: 'drive_failure',
   storageTiers: false,
 }
 

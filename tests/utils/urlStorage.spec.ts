@@ -65,7 +65,7 @@ describe('URL Storage - Serialization Roundtrip', () => {
 
     // Extract from mocked replaceState call
     expect(mockHistory.replaceState).toHaveBeenCalled()
-    const newUrl = mockHistory.replaceState.mock.calls[0]![2]
+    const newUrl = mockHistory.replaceState.mock.calls[0]?.[2]
     const hashPart = newUrl.split('#')[1]
     mockLocation.hash = `#${hashPart}`
 
@@ -92,7 +92,7 @@ describe('URL Storage - Serialization Roundtrip', () => {
 
     // Roundtrip
     urlHashStorage.setItem(stateKey, JSON.stringify(raidConfig))
-    const newUrl = mockHistory.replaceState.mock.calls[0]![2]
+    const newUrl = mockHistory.replaceState.mock.calls[0]?.[2]
     mockLocation.hash = `#${newUrl.split('#')[1]}`
     const retrieved = urlHashStorage.getItem(stateKey)
 
@@ -128,7 +128,7 @@ describe('URL Storage - Serialization Roundtrip', () => {
 
     // Roundtrip
     urlHashStorage.setItem(stateKey, JSON.stringify(zfsConfig))
-    const newUrl = mockHistory.replaceState.mock.calls[0]![2]
+    const newUrl = mockHistory.replaceState.mock.calls[0]?.[2]
     mockLocation.hash = `#${newUrl.split('#')[1]}`
     const retrieved = urlHashStorage.getItem(stateKey)
 
@@ -161,7 +161,7 @@ describe('URL Storage - Serialization Roundtrip', () => {
 
     // Roundtrip
     urlHashStorage.setItem(stateKey, JSON.stringify(vsanConfig))
-    const newUrl = mockHistory.replaceState.mock.calls[0]![2]
+    const newUrl = mockHistory.replaceState.mock.calls[0]?.[2]
     mockLocation.hash = `#${newUrl.split('#')[1]}`
     const retrieved = urlHashStorage.getItem(stateKey)
 
@@ -209,7 +209,7 @@ describe('URL Storage - Serialization Roundtrip', () => {
 
     // Roundtrip
     urlHashStorage.setItem(stateKey, JSON.stringify(completeConfig))
-    const newUrl = mockHistory.replaceState.mock.calls[0]![2]
+    const newUrl = mockHistory.replaceState.mock.calls[0]?.[2]
     mockLocation.hash = `#${newUrl.split('#')[1]}`
     const retrieved = urlHashStorage.getItem(stateKey)
 
@@ -234,7 +234,7 @@ describe('URL Storage - Serialization Roundtrip', () => {
 
     // Roundtrip
     urlHashStorage.setItem(stateKey, minimalConfig)
-    const newUrl = mockHistory.replaceState.mock.calls[0]![2]
+    const newUrl = mockHistory.replaceState.mock.calls[0]?.[2]
     mockLocation.hash = `#${newUrl.split('#')[1]}`
     const retrieved = urlHashStorage.getItem(stateKey)
 
@@ -256,7 +256,7 @@ describe('URL Storage - Serialization Roundtrip', () => {
 
     // Roundtrip
     urlHashStorage.setItem(stateKey, specialCharsConfig)
-    const newUrl = mockHistory.replaceState.mock.calls[0]![2]
+    const newUrl = mockHistory.replaceState.mock.calls[0]?.[2]
     mockLocation.hash = `#${newUrl.split('#')[1]}`
     const retrieved = urlHashStorage.getItem(stateKey)
 
@@ -308,7 +308,7 @@ describe('URL Storage - Serialization Roundtrip', () => {
 
     // Roundtrip
     urlHashStorage.setItem(stateKey, largeConfigStr)
-    const newUrl = mockHistory.replaceState.mock.calls[0]![2]
+    const newUrl = mockHistory.replaceState.mock.calls[0]?.[2]
     mockLocation.hash = `#${newUrl.split('#')[1]}`
     const retrieved = urlHashStorage.getItem(stateKey)
 
@@ -328,7 +328,7 @@ describe('URL Storage - Serialization Roundtrip', () => {
     })
 
     urlHashStorage.setItem(stateKey, config)
-    const newUrl = mockHistory.replaceState.mock.calls[0]![2]
+    const newUrl = mockHistory.replaceState.mock.calls[0]?.[2]
 
     // Snapshot the URL format
     expect(newUrl).toMatchSnapshot()
@@ -373,7 +373,7 @@ describe('URL Storage - Serialization Roundtrip', () => {
 
     // Roundtrip
     urlHashStorage.setItem(stateKey, JSON.stringify(maxConfig))
-    const newUrl = mockHistory.replaceState.mock.calls[0]![2]
+    const newUrl = mockHistory.replaceState.mock.calls[0]?.[2]
     mockLocation.hash = `#${newUrl.split('#')[1]}`
     const retrieved = urlHashStorage.getItem(stateKey)
 
@@ -441,7 +441,7 @@ describe('URL Storage - Backward Compatibility', () => {
 
     // First serialization
     urlHashStorage.setItem(stateKey, config)
-    const url1 = mockHistory.replaceState.mock.calls[0]![2]
+    const url1 = mockHistory.replaceState.mock.calls[0]?.[2]
     mockLocation.hash = `#${url1.split('#')[1]}`
 
     // Retrieve and re-serialize
@@ -450,7 +450,7 @@ describe('URL Storage - Backward Compatibility', () => {
     mockHistory.replaceState.mockClear()
     if (retrieved) {
       urlHashStorage.setItem(stateKey, expectSyncString(retrieved))
-      const url2 = mockHistory.replaceState.mock.calls[0]![2]
+      const url2 = mockHistory.replaceState.mock.calls[0]?.[2]
 
       // URLs should be identical (stable serialization)
       expect(url1).toBe(url2)
@@ -501,7 +501,7 @@ describe('URL Storage - removeItem', () => {
 
     // Add item
     urlHashStorage.setItem(stateKey, config)
-    const urlWithItem = mockHistory.replaceState.mock.calls[0]![2]
+    const urlWithItem = mockHistory.replaceState.mock.calls[0]?.[2]
     mockLocation.hash = `#${urlWithItem.split('#')[1]}`
 
     // Remove item
@@ -510,7 +510,7 @@ describe('URL Storage - removeItem', () => {
 
     // Verify removal
     expect(mockHistory.replaceState).toHaveBeenCalled()
-    const urlAfterRemove = mockHistory.replaceState.mock.calls[0]![2]
+    const urlAfterRemove = mockHistory.replaceState.mock.calls[0]?.[2]
     expect(urlAfterRemove).not.toContain(stateKey)
   })
 
@@ -519,7 +519,7 @@ describe('URL Storage - removeItem', () => {
 
     urlHashStorage.removeItem('key1')
 
-    const newUrl = mockHistory.replaceState.mock.calls[0]![2]
+    const newUrl = mockHistory.replaceState.mock.calls[0]?.[2]
     expect(newUrl).toContain('key2=value2')
     expect(newUrl).not.toContain('key1')
   })
@@ -531,7 +531,7 @@ describe('URL Storage - removeItem', () => {
 
     urlHashStorage.removeItem('storage-state')
 
-    const newUrl = mockHistory.replaceState.mock.calls[0]![2]
+    const newUrl = mockHistory.replaceState.mock.calls[0]?.[2]
     expect(newUrl).toBe('/simulator')
     expect(newUrl).not.toContain('#')
   })

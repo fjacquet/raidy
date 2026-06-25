@@ -13,6 +13,7 @@ import {
   getConnectivityConstraint,
 } from '@utils/connectivityConstraints'
 import { describe, expect, it } from 'vitest'
+import { DEFAULT_NUTANIX_OPTIONS, DEFAULT_VSAN_OPTIONS } from '@/types/topology'
 
 describe('connectivityConstraints', () => {
   describe('NVMe-only topologies', () => {
@@ -58,7 +59,7 @@ describe('connectivityConstraints', () => {
     it('returns flash_only for nutanix with all-flash cluster type', () => {
       const input: ConnectivityConstraintInput = {
         topologyType: 'nutanix',
-        nutanixOptions: { clusterType: 'all-flash' } as any,
+        nutanixOptions: { ...DEFAULT_NUTANIX_OPTIONS, clusterType: 'all-flash' },
       }
       const result = getConnectivityConstraint(input)
       expect(result.constraint).toBe('flash_only')
@@ -69,7 +70,7 @@ describe('connectivityConstraints', () => {
     it('returns flash_only for vsan_osa with all-flash disk group mode', () => {
       const input: ConnectivityConstraintInput = {
         topologyType: 'vsan_osa',
-        vsanOptions: { diskGroupMode: 'all-flash' } as any,
+        vsanOptions: { ...DEFAULT_VSAN_OPTIONS, diskGroupMode: 'all-flash' },
       }
       const result = getConnectivityConstraint(input)
       expect(result.constraint).toBe('flash_only')
@@ -101,7 +102,7 @@ describe('connectivityConstraints', () => {
     it('returns none for nutanix with hybrid cluster type', () => {
       const input: ConnectivityConstraintInput = {
         topologyType: 'nutanix',
-        nutanixOptions: { clusterType: 'hybrid' } as any,
+        nutanixOptions: { ...DEFAULT_NUTANIX_OPTIONS, clusterType: 'hybrid' },
       }
       const result = getConnectivityConstraint(input)
       expect(result.constraint).toBe('none')
@@ -111,7 +112,7 @@ describe('connectivityConstraints', () => {
     it('returns none for vsan_osa without all-flash disk group mode', () => {
       const input: ConnectivityConstraintInput = {
         topologyType: 'vsan_osa',
-        vsanOptions: { diskGroupMode: 'hybrid' } as any,
+        vsanOptions: { ...DEFAULT_VSAN_OPTIONS, diskGroupMode: 'hybrid' },
       }
       const result = getConnectivityConstraint(input)
       expect(result.constraint).toBe('none')

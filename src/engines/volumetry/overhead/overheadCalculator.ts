@@ -107,16 +107,22 @@ export function calculateOverheads(input: OverheadInput): OverheadResult {
     synologySystemOverhead = synologyOptions.systemPartitionSize * usableDrives
   }
 
-  // S2D rebuild reserve (per-drive or per-node based on reserveStrategy)
+  // S2D rebuild reserve.
+  // Microsoft sizes drive-failure reserve as one capacity drive per server, capped at 4
+  // drives cluster-wide (see Storage Spaces Direct fault-tolerance guidance). The optional
+  // node_failure strategy is a stricter opt-in that reserves a whole node's capacity.
   let s2dReserve = 0
   if (topology.type === 's2d' && s2dOptions.rebuildReserve) {
     if (s2dOptions.reserveStrategy === 'node_failure') {
-      // Reserve one node's worth of capacity
+      // Reserve one node's worth of capacity (stricter, opt-in)
       s2dReserve = drive.capacity_raw * (usableDrives / s2dOptions.faultDomains)
     } else {
-      // Reserve one drive equivalent per fault domain
-      s2dReserve = drive.capacity_raw * s2dOptions.faultDomains
+      // Reserve one drive per server, capped at 4 drives (Microsoft default)
+      s2dReserve = drive.capacity_raw * Math.min(s2dOptions.faultDomains, 4)
     }
+    // Never reserve more than the available post-parity capacity (tiny clusters
+    // can have fewer usable drives than the reserve target).
+    s2dReserve = Math.min(s2dReserve, capacityAfterParity)
   }
 
   // ZFS-specific overhead (slop space = 1/32)
@@ -190,18 +196,20 @@ export function calculateOverheads(input: OverheadInput): OverheadResult {
     synologyOptions,
     netAppOptions,
   )
-  const capacityForFs =
+  const capacityForFs = Math.max(
+    0,
     capacityAfterParity -
-    slopOverhead -
-    s2dReserve -
-    powerFlexFgOverhead -
-    netAppSnapshotReserve -
-    nutanixSystemOverhead -
-    objectscaleSystemOverhead -
-    objectscaleGeoOverhead -
-    powerstoreSnapshotReserve -
-    powerstoreSystemOverhead -
-    powerscaleSnapshotReserve
+      slopOverhead -
+      s2dReserve -
+      powerFlexFgOverhead -
+      netAppSnapshotReserve -
+      nutanixSystemOverhead -
+      objectscaleSystemOverhead -
+      objectscaleGeoOverhead -
+      powerstoreSnapshotReserve -
+      powerstoreSystemOverhead -
+      powerscaleSnapshotReserve,
+  )
   const filesystemOverhead = capacityForFs * fsOverheadPercent
 
   // Ceph safe capacity factor (nearfull threshold, default 85%)

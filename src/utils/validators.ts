@@ -223,6 +223,94 @@ function validateCacheRatio(s2dOptions: S2DOptions): ValidationAlert | null {
 }
 
 /**
+ * Validate S2D resiliency against the fault-domain (node) count and surface
+ * Microsoft best-practice guidance.
+ *
+ * Minimum nodes per resiliency (Microsoft Learn, Storage Spaces Direct fault tolerance):
+ * - three-way mirror: 3 nodes
+ * - single parity: 3 nodes (supported but not recommended for clustered S2D)
+ * - dual parity: 4 nodes
+ * - mirror-accelerated parity: 4 nodes
+ */
+function validateS2DResiliency(topology: Topology, s2dOptions: S2DOptions): ValidationAlert[] {
+  if (topology.type !== 's2d') return []
+
+  const alerts: ValidationAlert[] = []
+  const { faultDomains, mirrorCopies } = s2dOptions
+  const level = topology.level
+
+  // Node minimums per resiliency type (errors).
+  if (level === 'mirror' && mirrorCopies === 3 && faultDomains < 3) {
+    alerts.push({
+      severity: 'error',
+      code: 'S2D_3WAY_MIN_NODES',
+      message: `S2D: Three-way mirror requires at least 3 fault domains (nodes); ${faultDomains} configured.`,
+      recommendation: 'Add nodes or switch to a two-way mirror.',
+    })
+  }
+  if (level === 'parity' && faultDomains < 3) {
+    alerts.push({
+      severity: 'error',
+      code: 'S2D_PARITY_MIN_NODES',
+      message: `S2D: Single parity requires at least 3 fault domains (nodes); ${faultDomains} configured.`,
+      recommendation: 'Add nodes or switch to a mirror resiliency.',
+    })
+  }
+  if (level === 'dual_parity' && faultDomains < 4) {
+    alerts.push({
+      severity: 'error',
+      code: 'S2D_DUAL_PARITY_MIN_NODES',
+      message: `S2D: Dual parity requires at least 4 fault domains (nodes); ${faultDomains} configured.`,
+      recommendation: 'Add nodes or switch to a mirror resiliency.',
+    })
+  }
+  if (level === 'map' && faultDomains < 4) {
+    alerts.push({
+      severity: 'error',
+      code: 'S2D_MAP_MIN_NODES',
+      message: `S2D: Mirror-accelerated parity requires at least 4 fault domains (nodes); ${faultDomains} configured.`,
+      recommendation: 'Add nodes or switch to a mirror resiliency.',
+    })
+  }
+
+  // Single parity is supported but discouraged for clustered S2D (tolerates only one failure).
+  if (level === 'parity') {
+    alerts.push({
+      severity: 'warning',
+      code: 'S2D_SINGLE_PARITY_DISCOURAGED',
+      message:
+        'S2D: Single parity is supported but not recommended for clustered Storage Spaces Direct — it tolerates only one failure.',
+      recommendation: 'Prefer three-way mirror or dual parity.',
+    })
+  }
+
+  // 2-node clusters should use nested resiliency to survive a drive failure during a node outage.
+  if (faultDomains === 2 && level !== 'simple') {
+    alerts.push({
+      severity: 'warning',
+      code: 'S2D_2NODE_NESTED_RECOMMENDED',
+      message:
+        'S2D: 2-node clusters should use nested resiliency to survive a drive failure during a node outage.',
+      recommendation:
+        'Use nested two-way mirror or nested mirror-accelerated parity for 2-node clusters.',
+    })
+  }
+
+  // Three-way mirror is Microsoft's recommended default for production HA.
+  if (level === 'mirror' && mirrorCopies === 2 && faultDomains >= 3) {
+    alerts.push({
+      severity: 'info',
+      code: 'S2D_3WAY_RECOMMENDED',
+      message:
+        "S2D: Two-way mirror tolerates a single failure. Three-way mirror is Microsoft's recommended default for production high availability.",
+      recommendation: 'Switch Mirror Copies to 3-way for two-failure tolerance.',
+    })
+  }
+
+  return alerts
+}
+
+/**
  * Validate NetApp RAID-TEC for large drives.
  * Per NetApp spec: RAID-TEC recommended for drives > 10TB
  */
@@ -480,6 +568,8 @@ export function validateConfiguration(input: ValidationInput): ValidationAlert[]
 
     const cacheRatioAlert = validateCacheRatio(input.s2dOptions)
     if (cacheRatioAlert) alerts.push(cacheRatioAlert)
+
+    alerts.push(...validateS2DResiliency(input.topology, input.s2dOptions))
   }
 
   // Ceph-specific

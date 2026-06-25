@@ -34,8 +34,13 @@ export function PlatformGuide() {
 
         <PlatformBlock title={t('platforms.vsanEsa.title')}>
           <div className="space-y-1.5 text-sm text-slate-500 dark:text-slate-400">
+            <p>{t('platforms.vsanEsa.architecture')}</p>
+            <p>{t('platforms.vsanEsa.raid1')}</p>
             <p>{t('platforms.vsanEsa.adaptive')}</p>
-            <p>{t('platforms.vsanEsa.nvme')}</p>
+            <p>{t('platforms.vsanEsa.raid6')}</p>
+            <p>{t('platforms.vsanEsa.performance')}</p>
+            <p>{t('platforms.vsanEsa.compression')}</p>
+            <p>{t('platforms.vsanEsa.reserve')}</p>
           </div>
           <p className="text-xs text-slate-400 dark:text-slate-600 italic">
             {t('platforms.vsanEsa.source')}
@@ -54,8 +59,12 @@ export function PlatformGuide() {
 
         <PlatformBlock title={t('platforms.s2d.title')}>
           <div className="space-y-1.5 text-sm text-slate-500 dark:text-slate-400">
+            <p>{t('platforms.s2d.resiliency')}</p>
+            <p>{t('platforms.s2d.replication')}</p>
             <p>{t('platforms.s2d.reserve')}</p>
+            <p>{t('platforms.s2d.nested')}</p>
             <p>{t('platforms.s2d.map')}</p>
+            <p>{t('platforms.s2d.refs')}</p>
           </div>
           <p className="text-xs text-slate-400 dark:text-slate-600 italic">
             {t('platforms.s2d.source')}

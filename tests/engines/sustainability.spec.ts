@@ -142,9 +142,10 @@ describe('calculateSustainability', () => {
   describe('flash endurance', () => {
     it('returns flashEndurance object for SSD with dwpd > 0', () => {
       const result = calculateSustainability(baseInput)
-      expect(result.flashEndurance).toBeDefined()
-      expect(result.flashEndurance!.ratedDwpd).toBe(3)
-      expect(result.flashEndurance!.requiredDwpd).toBeGreaterThan(0)
+      const flashEndurance = result.flashEndurance
+      expect(flashEndurance).toBeDefined()
+      expect(flashEndurance?.ratedDwpd).toBe(3)
+      expect(flashEndurance?.requiredDwpd).toBeGreaterThan(0)
     })
 
     it('returns undefined flashEndurance for HDD drives', () => {
@@ -163,9 +164,11 @@ describe('calculateSustainability', () => {
 
     it('calculates utilizationPercent as (requiredDwpd / ratedDwpd) * 100', () => {
       const result = calculateSustainability(baseInput)
+      const flashEndurance = result.flashEndurance
+      expect(flashEndurance).toBeDefined()
       const expected =
-        (result.flashEndurance!.requiredDwpd / result.flashEndurance!.ratedDwpd) * 100
-      expect(result.flashEndurance!.utilizationPercent).toBeCloseTo(expected, 2)
+        ((flashEndurance?.requiredDwpd ?? 0) / (flashEndurance?.ratedDwpd ?? 1)) * 100
+      expect(flashEndurance?.utilizationPercent).toBeCloseTo(expected, 2)
     })
 
     it('sets surviveProject true when expected life > project years', () => {
@@ -175,9 +178,10 @@ describe('calculateSustainability', () => {
         dailyWriteVolume: 1_000_000_000, // 1 GB/day, very low
       }
       const result = calculateSustainability(lowWriteInput)
-      expect(result.flashEndurance).toBeDefined()
-      expect(result.flashEndurance!.surviveProject).toBe(true)
-      expect(result.flashEndurance!.expectedLifeYears).toBeGreaterThan(5)
+      const flashEndurance = result.flashEndurance
+      expect(flashEndurance).toBeDefined()
+      expect(flashEndurance?.surviveProject).toBe(true)
+      expect(flashEndurance?.expectedLifeYears).toBeGreaterThan(5)
     })
   })
 

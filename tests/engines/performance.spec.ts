@@ -370,7 +370,9 @@ describe('Performance Engine - RAID Write Penalty Validation (TEST-12)', () => {
       const resultRaid5 = calculatePerformance(inputRaid5)
       const resultRaid6 = calculatePerformance(inputRaid6)
 
-      expect(resultRaid6.writePenalty).toBeGreaterThan(resultRaid5.writePenalty!)
+      const raid5Penalty = resultRaid5.writePenalty
+      expect(raid5Penalty).toBeDefined()
+      expect(resultRaid6.writePenalty).toBeGreaterThan(raid5Penalty as number)
       expect(resultRaid6.maxWriteIOPS).toBeLessThan(resultRaid5.maxWriteIOPS)
     })
 
@@ -944,7 +946,9 @@ describe('Performance Engine - Industry-Validated IOPS', () => {
       const resultSequential = calculatePerformance(inputSequential)
 
       // Sequential has reduced penalty (full-stripe writes)
-      expect(resultSequential.writePenalty).toBeLessThan(resultRandom.writePenalty!)
+      const randomPenalty = resultRandom.writePenalty
+      expect(randomPenalty).toBeDefined()
+      expect(resultSequential.writePenalty).toBeLessThan(randomPenalty as number)
     })
 
     it('should have higher write throughput for sequential vs random (if not bottlenecked)', () => {
@@ -1304,7 +1308,9 @@ describe('Performance Engine - Dell PowerFlex Performance', () => {
     const result100GbE = calculatePerformance(input100GbE)
 
     // Faster network should reduce latency
-    expect(result100GbE.estimatedLatencyUs).toBeLessThan(result1GbE.estimatedLatencyUs!)
+    const latency1GbE = result1GbE.estimatedLatencyUs
+    expect(latency1GbE).toBeDefined()
+    expect(result100GbE.estimatedLatencyUs).toBeLessThan(latency1GbE as number)
   })
 
   it('should apply PowerFlex erasure coding CPU factor (-30% IOPS)', () => {
@@ -1615,7 +1621,9 @@ describe('Performance Engine - Dell ObjectScale Performance', () => {
     // 1GbE: 500μs * 1.5 = 750μs
     // 100GbE: 10μs * 1.5 = 15μs
     // Difference: 735μs
-    expect(result1GbE.estimatedLatencyUs).toBeGreaterThan(result100GbE.estimatedLatencyUs!)
+    const latency100GbE_obj = result100GbE.estimatedLatencyUs
+    expect(latency100GbE_obj).toBeDefined()
+    expect(result1GbE.estimatedLatencyUs).toBeGreaterThan(latency100GbE_obj as number)
   })
 
   it('should show ObjectScale eventual consistency performance characteristics', () => {
@@ -1652,9 +1660,9 @@ describe('Performance Engine - Dell ObjectScale Performance', () => {
     const resultPowerFlex = calculatePerformance(inputPowerFlex)
 
     // ObjectScale (2x media, 1.5x network) should have higher latency than PowerFlex (1.5x media)
-    expect(resultObjectScale.estimatedLatencyUs).toBeGreaterThan(
-      resultPowerFlex.estimatedLatencyUs!,
-    )
+    const latencyPowerFlexObj = resultPowerFlex.estimatedLatencyUs
+    expect(latencyPowerFlexObj).toBeDefined()
+    expect(resultObjectScale.estimatedLatencyUs).toBeGreaterThan(latencyPowerFlexObj as number)
   })
 })
 
@@ -1708,7 +1716,9 @@ describe('Performance Engine - Dell PowerStore Performance', () => {
     const resultPowerFlex = calculatePerformance(inputPowerFlex)
 
     // PowerStore (1.2x media, no network) should be faster than PowerFlex (1.5x media + network)
-    expect(resultPowerStore.estimatedLatencyUs).toBeLessThan(resultPowerFlex.estimatedLatencyUs!)
+    const latencyPowerFlexPs = resultPowerFlex.estimatedLatencyUs
+    expect(latencyPowerFlexPs).toBeDefined()
+    expect(resultPowerStore.estimatedLatencyUs).toBeLessThan(latencyPowerFlexPs as number)
   })
 
   it('should handle PowerStore block storage performance characteristics', () => {
@@ -1750,7 +1760,9 @@ describe('Performance Engine - Dell PowerStore Performance', () => {
     // NVMe should have lower latency
     // NVMe: 20μs * 1.2 + 10 = 34μs
     // SSD: 150μs * 1.2 + 10 = 190μs
-    expect(resultNvme.estimatedLatencyUs).toBeLessThan(resultSsd.estimatedLatencyUs!)
+    const latencySsd = resultSsd.estimatedLatencyUs
+    expect(latencySsd).toBeDefined()
+    expect(resultNvme.estimatedLatencyUs).toBeLessThan(latencySsd as number)
   })
 
   it('should not include network latency component (block storage)', () => {
@@ -1861,7 +1873,9 @@ describe('Performance Engine - Dell PowerScale Performance', () => {
     // 1GbE: 500μs
     // 100GbE: 10μs
     // Difference: 490μs
-    expect(result1GbE.estimatedLatencyUs).toBeGreaterThan(result100GbE.estimatedLatencyUs!)
+    const latency100GbEPs = result100GbE.estimatedLatencyUs
+    expect(latency100GbEPs).toBeDefined()
+    expect(result1GbE.estimatedLatencyUs).toBeGreaterThan(latency100GbEPs as number)
   })
 
   it('should validate PowerScale parity write performance (1.5x multiplier)', () => {
@@ -1895,9 +1909,9 @@ describe('Performance Engine - Dell PowerScale Performance', () => {
     // PowerScale (1.5x + network) should have higher latency than PowerStore (1.2x, no network)
     // PowerScale: 150 * 1.5 + 25 + 20 = 270μs
     // PowerStore: 150 * 1.2 + 10 = 190μs
-    expect(resultPowerScale.estimatedLatencyUs).toBeGreaterThan(
-      resultPowerStore.estimatedLatencyUs!,
-    )
+    const latencyPowerStorePs = resultPowerStore.estimatedLatencyUs
+    expect(latencyPowerStorePs).toBeDefined()
+    expect(resultPowerScale.estimatedLatencyUs).toBeGreaterThan(latencyPowerStorePs as number)
   })
 })
 
@@ -2057,15 +2071,21 @@ describe('Performance Engine - Nutanix DSF Performance', () => {
       const result10GbE = calculatePerformance(input10GbE)
 
       // RDMA should be fastest
-      expect(resultRdma.estimatedLatencyUs).toBeLessThan(result25GbE.estimatedLatencyUs!)
-      expect(result25GbE.estimatedLatencyUs).toBeLessThan(result10GbE.estimatedLatencyUs!)
+      const latencyRdma = resultRdma.estimatedLatencyUs
+      const latency25GbE = result25GbE.estimatedLatencyUs
+      const latency10GbE = result10GbE.estimatedLatencyUs
+      expect(latencyRdma).toBeDefined()
+      expect(latency25GbE).toBeDefined()
+      expect(latency10GbE).toBeDefined()
+      expect(latencyRdma).toBeLessThan(latency25GbE as number)
+      expect(latency25GbE).toBeLessThan(latency10GbE as number)
 
       // Network latency differences:
       // RDMA: 100μs
       // 25GbE: 250μs (150μs more)
       // 10GbE: 500μs (250μs more)
-      expect(result25GbE.estimatedLatencyUs! - resultRdma.estimatedLatencyUs!).toBeCloseTo(150, -1)
-      expect(result10GbE.estimatedLatencyUs! - result25GbE.estimatedLatencyUs!).toBeCloseTo(250, -1)
+      expect((latency25GbE as number) - (latencyRdma as number)).toBeCloseTo(150, -1)
+      expect((latency10GbE as number) - (latency25GbE as number)).toBeCloseTo(250, -1)
     })
   })
 
@@ -2095,12 +2115,15 @@ describe('Performance Engine - Nutanix DSF Performance', () => {
       const resultWithCompression = calculatePerformance(inputWithCompression)
 
       // Compression should add 50μs CPU overhead
-      expect(resultWithCompression.estimatedLatencyUs).toBeGreaterThan(
-        resultNoCompression.estimatedLatencyUs!,
+      const latencyNoCompression = resultNoCompression.estimatedLatencyUs
+      const latencyWithCompression = resultWithCompression.estimatedLatencyUs
+      expect(latencyNoCompression).toBeDefined()
+      expect(latencyWithCompression).toBeDefined()
+      expect(latencyWithCompression).toBeGreaterThan(latencyNoCompression as number)
+      expect((latencyWithCompression as number) - (latencyNoCompression as number)).toBeCloseTo(
+        50,
+        -1,
       )
-      expect(
-        resultWithCompression.estimatedLatencyUs! - resultNoCompression.estimatedLatencyUs!,
-      ).toBeCloseTo(50, -1)
     })
 
     it('should add dedup CPU overhead when enabled', () => {
@@ -2128,11 +2151,12 @@ describe('Performance Engine - Nutanix DSF Performance', () => {
       const resultWithDedup = calculatePerformance(inputWithDedup)
 
       // Dedup should add 100μs CPU overhead
-      expect(resultWithDedup.estimatedLatencyUs).toBeGreaterThan(resultNoDedup.estimatedLatencyUs!)
-      expect(resultWithDedup.estimatedLatencyUs! - resultNoDedup.estimatedLatencyUs!).toBeCloseTo(
-        100,
-        -1,
-      )
+      const latencyNoDedup = resultNoDedup.estimatedLatencyUs
+      const latencyWithDedup = resultWithDedup.estimatedLatencyUs
+      expect(latencyNoDedup).toBeDefined()
+      expect(latencyWithDedup).toBeDefined()
+      expect(latencyWithDedup).toBeGreaterThan(latencyNoDedup as number)
+      expect((latencyWithDedup as number) - (latencyNoDedup as number)).toBeCloseTo(100, -1)
     })
 
     it('should accumulate compression + dedup CPU overhead when both enabled', () => {
@@ -2160,8 +2184,12 @@ describe('Performance Engine - Nutanix DSF Performance', () => {
       const resultBoth = calculatePerformance(inputBoth)
 
       // Compression (50μs) + Dedup (100μs) = 150μs additional overhead
-      expect(resultBoth.estimatedLatencyUs).toBeGreaterThan(resultNone.estimatedLatencyUs!)
-      expect(resultBoth.estimatedLatencyUs! - resultNone.estimatedLatencyUs!).toBeCloseTo(150, -1)
+      const latencyNone = resultNone.estimatedLatencyUs
+      const latencyBoth = resultBoth.estimatedLatencyUs
+      expect(latencyNone).toBeDefined()
+      expect(latencyBoth).toBeDefined()
+      expect(latencyBoth).toBeGreaterThan(latencyNone as number)
+      expect((latencyBoth as number) - (latencyNone as number)).toBeCloseTo(150, -1)
     })
 
     it('should validate compression-only overhead (no dedup)', () => {
@@ -2299,7 +2327,9 @@ describe('Performance Engine - Nutanix DSF Performance', () => {
       // Nutanix (2x media + RDMA network) should have higher latency than PowerStore (1.2x media)
       // Nutanix: 20 * 2 + 100 + 20 = 160μs
       // PowerStore: 20 * 1.2 + 10 = 34μs
-      expect(resultNutanix.estimatedLatencyUs).toBeGreaterThan(resultPowerStore.estimatedLatencyUs!)
+      const latencyPowerStoreNtx = resultPowerStore.estimatedLatencyUs
+      expect(latencyPowerStoreNtx).toBeDefined()
+      expect(resultNutanix.estimatedLatencyUs).toBeGreaterThan(latencyPowerStoreNtx as number)
     })
   })
 })
@@ -2339,7 +2369,7 @@ describe('Performance Engine - vSAN ESA bottleneck chain', () => {
 
       // Naive aggregate would be 12500 × 5 = 62500 MB/s; the refined model is higher.
       expect(networkLayer).toBeDefined()
-      expect(networkLayer!.throughputMBs).toBeGreaterThan(62_500)
+      expect(networkLayer?.throughputMBs).toBeGreaterThan(62_500)
     })
 
     it('is not flagged as the bottleneck for a small 100GbE NVMe cluster', () => {
@@ -2350,7 +2380,8 @@ describe('Performance Engine - vSAN ESA bottleneck chain', () => {
       const result = calculatePerformance(input)
       const networkLayer = result.layers.find((l) => l.name.startsWith('Network'))
 
-      expect(networkLayer!.isBottleneck).toBe(false)
+      expect(networkLayer).toBeDefined()
+      expect(networkLayer?.isBottleneck).toBe(false)
     })
 
     it('on-the-wire compression raises the effective network ceiling', () => {
@@ -2366,14 +2397,18 @@ describe('Performance Engine - vSAN ESA bottleneck chain', () => {
         vsanOptions: { ...DEFAULT_VSAN_OPTIONS, compression: false },
       }
 
-      const netWith = calculatePerformance(withCompression).layers.find((l) =>
+      const layerWith = calculatePerformance(withCompression).layers.find((l) =>
         l.name.startsWith('Network'),
-      )!.throughputMBs
-      const netWithout = calculatePerformance(withoutCompression).layers.find((l) =>
+      )
+      const layerWithout = calculatePerformance(withoutCompression).layers.find((l) =>
         l.name.startsWith('Network'),
-      )!.throughputMBs
+      )
+      expect(layerWith).toBeDefined()
+      expect(layerWithout).toBeDefined()
+      const netWith = layerWith?.throughputMBs
+      const netWithout = layerWithout?.throughputMBs
 
-      expect(netWith).toBeGreaterThan(netWithout)
+      expect(netWith).toBeGreaterThan(netWithout as number)
     })
 
     it('leaves non-vSAN topologies on the naive aggregate model', () => {
@@ -2385,7 +2420,8 @@ describe('Performance Engine - vSAN ESA bottleneck chain', () => {
       const networkLayer = result.layers.find((l) => l.name.startsWith('Network'))
 
       // Standard RAID uses the neutral model: 12500 × 5 = 62500 MB/s exactly.
-      expect(networkLayer!.throughputMBs).toBeCloseTo(62_500, 0)
+      expect(networkLayer).toBeDefined()
+      expect(networkLayer?.throughputMBs).toBeCloseTo(62_500, 0)
     })
   })
 })

@@ -141,7 +141,8 @@ const ZfsOptionsSchema = z.object({
  * S2D options schema
  */
 const S2DOptionsSchema = z.object({
-  faultDomains: z.number().int().min(1).max(100).finite(),
+  // S2D clusters span 2–16 nodes (fault domains) per Microsoft Learn.
+  faultDomains: z.number().int().min(2).max(16).finite(),
   mirrorCopies: z.union([z.literal(2), z.literal(3)]),
   rebuildReserve: z.boolean(),
   reserveStrategy: z.enum(['drive_failure', 'node_failure']),
