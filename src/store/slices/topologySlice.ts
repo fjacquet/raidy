@@ -22,6 +22,7 @@ import type {
 } from '@/types'
 import {
   DEFAULT_CEPH_OPTIONS,
+  DEFAULT_CONTROLLER_BY_TOPOLOGY,
   DEFAULT_CONTROLLER_OPTIONS,
   DEFAULT_NETAPP_OPTIONS,
   DEFAULT_NUTANIX_OPTIONS,
@@ -35,6 +36,7 @@ import {
   DEFAULT_VSAN_OPTIONS,
   DEFAULT_ZFS_OPTIONS,
   getControllerOptions,
+  usesDistributedSpares,
 } from '@/types'
 
 export interface TopologySlice extends TopologyState {
@@ -79,20 +81,34 @@ export const createTopologySlice: StateCreator<TopologySlice> = (set) => ({
       // Get valid controllers for the new topology
       const validControllers = getControllerOptions(topology.type)
       const currentController = state.controllerOptions.controller
-      const firstValidController = validControllers[0]
 
-      // If current controller is not valid for new topology, switch to first valid option
-      if (firstValidController && !validControllers.includes(currentController)) {
-        return {
-          topology,
-          controllerOptions: {
-            ...state.controllerOptions,
-            controller: firstValidController,
-          },
+      // Some topologies mandate a specific controller (e.g. vSAN ESA → NVMe HBA). When one
+      // is declared we snap to it; otherwise we keep the user's choice unless it's invalid.
+      const declaredDefault = DEFAULT_CONTROLLER_BY_TOPOLOGY[topology.type]
+      const preferredController =
+        declaredDefault && validControllers.includes(declaredDefault)
+          ? declaredDefault
+          : validControllers[0]
+
+      const updates: Partial<TopologyState> = { topology }
+
+      // vSAN rebuilds from distributed slack space, not dedicated hot-spare drives.
+      if (usesDistributedSpares(topology.type)) {
+        updates.hotSpares = 0
+      }
+
+      const needsControllerSwitch = declaredDefault
+        ? preferredController !== currentController
+        : !validControllers.includes(currentController)
+
+      if (preferredController && needsControllerSwitch) {
+        updates.controllerOptions = {
+          ...state.controllerOptions,
+          controller: preferredController,
         }
       }
 
-      return { topology }
+      return updates
     }),
   setHotSpares: (hotSpares) => set({ hotSpares: Math.max(0, hotSpares) }),
   setZfsOptions: (options) => set((state) => ({ zfsOptions: { ...state.zfsOptions, ...options } })),

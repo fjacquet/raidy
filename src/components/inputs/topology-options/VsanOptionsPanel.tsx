@@ -8,7 +8,7 @@
  */
 
 import { useTranslation } from 'react-i18next'
-import { Toggle } from '@/components/common/FormControls'
+import { Label, Slider, Toggle } from '@/components/common/FormControls'
 import { TieringPanel } from '@/components/inputs/TieringPanel'
 import { useConfigStore } from '@/store'
 import type { Topology } from '@/types'
@@ -24,6 +24,7 @@ export function VsanOptionsPanel({ topology }: VsanOptionsPanelProps) {
 
   const isOsa = topology.type === 'vsan_osa'
   const isEsa = topology.type === 'vsan_esa'
+  const idPrefix = `vsan-${isOsa ? 'osa' : 'esa'}`
 
   return (
     <div className="space-y-4 pt-3 border-t border-slate-200 dark:border-surface-700">
@@ -96,21 +97,55 @@ export function VsanOptionsPanel({ topology }: VsanOptionsPanelProps) {
       )}
 
       <Toggle
-        id={`vsan-${isOsa ? 'osa' : 'esa'}-compression`}
+        id={`${idPrefix}-compression`}
         label={t('common.enableCompression')}
         checked={vsanOptions.compression}
         onChange={(v) => setVsanOptions({ compression: v })}
       />
 
+      {vsanOptions.compression && (
+        <div className="space-y-2">
+          <Label htmlFor={`${idPrefix}-compression-ratio`}>{t('common.compressionRatio')}</Label>
+          <Slider
+            id={`${idPrefix}-compression-ratio`}
+            value={vsanOptions.compressionRatio}
+            min={1}
+            max={3}
+            step={0.1}
+            onChange={(v) => setVsanOptions({ compressionRatio: v })}
+          />
+          <p className="text-xs text-slate-500">
+            Expected ratio: {vsanOptions.compressionRatio.toFixed(1)}:1
+          </p>
+        </div>
+      )}
+
       <Toggle
-        id={`vsan-${isOsa ? 'osa' : 'esa'}-dedup`}
+        id={`${idPrefix}-dedup`}
         label={t('common.enableDedup')}
         checked={vsanOptions.dedup}
         onChange={(v) => setVsanOptions({ dedup: v })}
       />
 
+      {vsanOptions.dedup && (
+        <div className="space-y-2">
+          <Label htmlFor={`${idPrefix}-dedup-ratio`}>{t('common.dedupRatio')}</Label>
+          <Slider
+            id={`${idPrefix}-dedup-ratio`}
+            value={vsanOptions.dedupRatio}
+            min={1}
+            max={3}
+            step={0.1}
+            onChange={(v) => setVsanOptions({ dedupRatio: v })}
+          />
+          <p className="text-xs text-slate-500">
+            Expected ratio: {vsanOptions.dedupRatio.toFixed(1)}:1
+          </p>
+        </div>
+      )}
+
       <Toggle
-        id={`vsan-${isOsa ? 'osa' : 'esa'}-encryption`}
+        id={`${idPrefix}-encryption`}
         label={t('common.enableEncryption')}
         checked={vsanOptions.encryption}
         onChange={(v) => setVsanOptions({ encryption: v })}

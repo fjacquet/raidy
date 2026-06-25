@@ -18,6 +18,7 @@ import { VsanOptionsPanel } from '@/components/inputs/topology-options/VsanOptio
 import { ZfsOptionsPanel } from '@/components/inputs/topology-options/ZfsOptionsPanel'
 import { useConfigStore } from '@/store'
 import type { Topology, TopologyType } from '@/types'
+import { usesDistributedSpares } from '@/types'
 
 export function TopologyPanel() {
   const { t } = useTranslation('topology')
@@ -67,13 +68,17 @@ export function TopologyPanel() {
         </p>
       </div>
 
-      {/* Hot Spares */}
-      <div className="space-y-2">
-        <Label htmlFor="hot-spares" tooltip={th('topology.hotSpares')}>
-          {t('hotSpares.label')}
-        </Label>
-        <Slider id="hot-spares" value={hotSpares} min={0} max={4} onChange={setHotSpares} />
-      </div>
+      {/* Hot Spares — hidden for topologies that rebuild from distributed slack space (vSAN) */}
+      {usesDistributedSpares(topology.type) ? (
+        <p className="text-xs text-slate-500">{t('hotSpares.distributedNote')}</p>
+      ) : (
+        <div className="space-y-2">
+          <Label htmlFor="hot-spares" tooltip={th('topology.hotSpares')}>
+            {t('hotSpares.label')}
+          </Label>
+          <Slider id="hot-spares" value={hotSpares} min={0} max={4} onChange={setHotSpares} />
+        </div>
+      )}
 
       {/* ZFS Options */}
       {topology.type === 'zfs' && <ZfsOptionsPanel />}

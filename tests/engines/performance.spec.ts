@@ -12,6 +12,7 @@ import {
   DEFAULT_CONTROLLER_OPTIONS,
   DEFAULT_NUTANIX_OPTIONS,
   DEFAULT_POWERFLEX_OPTIONS,
+  DEFAULT_VSAN_OPTIONS,
   type StandardRaidLevel,
   type ZfsTopology,
 } from '@/types'
@@ -2299,6 +2300,92 @@ describe('Performance Engine - Nutanix DSF Performance', () => {
       // Nutanix: 20 * 2 + 100 + 20 = 160μs
       // PowerStore: 20 * 1.2 + 10 = 34μs
       expect(resultNutanix.estimatedLatencyUs).toBeGreaterThan(resultPowerStore.estimatedLatencyUs!)
+    })
+  })
+})
+
+describe('Performance Engine - vSAN ESA bottleneck chain', () => {
+  // vSAN ESA is NVMe-only with direct PCIe attach — no SAS/RAID controller layer.
+  describe('NVMe-direct chain (no HBA layer)', () => {
+    it('drops the controller layer for vSAN ESA → Media → PCIe → Network', () => {
+      const input = createInput(12, { type: 'vsan_esa', level: 'vsan_esa_raid5' }, testSsdNvme, 0)
+      const result = calculatePerformance(input)
+
+      expect(result.layers).toHaveLength(3)
+      expect(result.layers.every((l) => !/HBA|Controller/i.test(l.name))).toBe(true)
+      expect(result.layers[0]?.name).toContain('Media')
+      expect(result.layers.some((l) => l.name.startsWith('PCIe'))).toBe(true)
+      expect(result.layers.some((l) => l.name.startsWith('Network'))).toBe(true)
+    })
+
+    it('keeps the controller layer for vSAN OSA (disk groups use HBAs)', () => {
+      const input = createInput(12, { type: 'vsan_osa', level: 'vsan_osa_raid5' }, testSsdNvme, 0)
+      const result = calculatePerformance(input)
+
+      expect(result.layers).toHaveLength(4)
+    })
+  })
+
+  describe('Realistic network model (full-duplex + compression + traffic fraction)', () => {
+    const esaTopology = { type: 'vsan_esa', level: 'vsan_esa_raid5' } as const
+
+    it('raises the network ceiling well above the naive aggregate (100GbE × 5 nodes)', () => {
+      const input: PerformanceInput = {
+        ...createInput(12, esaTopology, testSsdNvme, 0, 5),
+        networkSpeed: '100GbE',
+      }
+      const result = calculatePerformance(input)
+      const networkLayer = result.layers.find((l) => l.name.startsWith('Network'))
+
+      // Naive aggregate would be 12500 × 5 = 62500 MB/s; the refined model is higher.
+      expect(networkLayer).toBeDefined()
+      expect(networkLayer!.throughputMBs).toBeGreaterThan(62_500)
+    })
+
+    it('is not flagged as the bottleneck for a small 100GbE NVMe cluster', () => {
+      const input: PerformanceInput = {
+        ...createInput(12, esaTopology, testSsdNvme, 0, 5),
+        networkSpeed: '100GbE',
+      }
+      const result = calculatePerformance(input)
+      const networkLayer = result.layers.find((l) => l.name.startsWith('Network'))
+
+      expect(networkLayer!.isBottleneck).toBe(false)
+    })
+
+    it('on-the-wire compression raises the effective network ceiling', () => {
+      const base = createInput(12, esaTopology, testSsdNvme, 0, 5)
+      const withCompression: PerformanceInput = {
+        ...base,
+        networkSpeed: '100GbE',
+        vsanOptions: { ...DEFAULT_VSAN_OPTIONS, compression: true, compressionRatio: 2 },
+      }
+      const withoutCompression: PerformanceInput = {
+        ...base,
+        networkSpeed: '100GbE',
+        vsanOptions: { ...DEFAULT_VSAN_OPTIONS, compression: false },
+      }
+
+      const netWith = calculatePerformance(withCompression).layers.find((l) =>
+        l.name.startsWith('Network'),
+      )!.throughputMBs
+      const netWithout = calculatePerformance(withoutCompression).layers.find((l) =>
+        l.name.startsWith('Network'),
+      )!.throughputMBs
+
+      expect(netWith).toBeGreaterThan(netWithout)
+    })
+
+    it('leaves non-vSAN topologies on the naive aggregate model', () => {
+      const input: PerformanceInput = {
+        ...createInput(12, { type: 'standard', level: 'RAID6' }, testSsdNvme, 0, 5),
+        networkSpeed: '100GbE',
+      }
+      const result = calculatePerformance(input)
+      const networkLayer = result.layers.find((l) => l.name.startsWith('Network'))
+
+      // Standard RAID uses the neutral model: 12500 × 5 = 62500 MB/s exactly.
+      expect(networkLayer!.throughputMBs).toBeCloseTo(62_500, 0)
     })
   })
 })

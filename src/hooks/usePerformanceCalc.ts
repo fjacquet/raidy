@@ -8,6 +8,7 @@ import drivesData from '@/data/drives.json'
 import { calculatePerformance } from '@/engines/performance'
 import { useConfigStore } from '@/store'
 import type { Drive } from '@/types'
+import { usesDistributedSpares } from '@/types'
 import type { PerformanceResult } from '@/types/results'
 
 // Type assertion for the imported JSON
@@ -30,6 +31,7 @@ export function usePerformanceCalc(): PerformanceResult {
     powerFlexOptions,
     cephOptions,
     nutanixOptions,
+    vsanOptions,
     // Workload
     readPercent,
     randomPercent,
@@ -56,9 +58,11 @@ export function usePerformanceCalc(): PerformanceResult {
       }
     }
 
-    // Calculate total drives across all servers
+    // Calculate total drives across all servers.
+    // vSAN rebuilds from distributed slack space, not dedicated hot-spare drives,
+    // so force 0 spares even if persisted URL state hydrated a non-zero count.
     const totalDriveCount = driveCount * serverCount
-    const totalHotSpares = hotSpares * serverCount
+    const totalHotSpares = usesDistributedSpares(topology.type) ? 0 : hotSpares * serverCount
 
     try {
       return calculatePerformance({
@@ -77,6 +81,7 @@ export function usePerformanceCalc(): PerformanceResult {
         powerFlexOptions,
         cephOptions,
         nutanixOptions,
+        vsanOptions,
       })
     } catch (error) {
       console.error('[Performance Engine Error]', {
@@ -120,5 +125,6 @@ export function usePerformanceCalc(): PerformanceResult {
     powerFlexOptions,
     cephOptions,
     nutanixOptions,
+    vsanOptions,
   ])
 }

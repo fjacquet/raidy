@@ -16,8 +16,10 @@ import type {
   PowerScaleOptions,
   PowerStoreOptions,
   Topology,
+  VsanOptions,
   ZfsOptions,
 } from '@/types/topology'
+import { isVsanTopology } from '@/types/topology'
 
 /**
  * Ceph BlueStore inline-compression ratios by algorithm.
@@ -46,6 +48,7 @@ export const CEPH_COMPRESSION_RATIOS: Record<CephOptions['compressionAlgorithm']
  * - PowerStore: Compression and deduplication
  * - PowerScale: Compression and deduplication
  * - Ceph: BlueStore inline compression, ratio driven by the chosen algorithm
+ * - vSAN: Compression and deduplication (OSA + ESA), each gated by its toggle
  *
  * @param topology - Storage topology configuration
  * @param usableCapacity - Usable capacity before compression/dedup
@@ -67,6 +70,7 @@ export function applyCompressionDedup(
     powerstoreOptions: PowerStoreOptions
     powerscaleOptions: PowerScaleOptions
     cephOptions: CephOptions
+    vsanOptions: VsanOptions
   },
 ): number {
   const {
@@ -77,6 +81,7 @@ export function applyCompressionDedup(
     powerstoreOptions,
     powerscaleOptions,
     cephOptions,
+    vsanOptions,
   } = options
 
   // Standard RAID has no compression/deduplication - effectiveCapacity = usableCapacity
@@ -135,6 +140,17 @@ export function applyCompressionDedup(
       ? (CEPH_COMPRESSION_RATIOS[cephOptions.compressionAlgorithm] ?? 1.0)
       : 1.0
     return usableCapacity * cephCompRatio
+  }
+
+  // vSAN compression and deduplication (OSA + ESA).
+  // ESA compresses in-line by default; deduplication is a separate opt-in
+  // (global dedup landed in vSAN ESA with VCF 9.x). Each is gated by its toggle.
+  // C_effective = C_usable × (Ratio_comp × Ratio_dedup)
+  if (isVsanTopology(topology.type)) {
+    // Optional chaining guards against vsanOptions being absent on malformed URL state.
+    const vsanCompRatio = vsanOptions?.compression ? vsanOptions.compressionRatio : 1.0
+    const vsanDedupRatio = vsanOptions?.dedup ? vsanOptions.dedupRatio : 1.0
+    return usableCapacity * vsanCompRatio * vsanDedupRatio
   }
 
   // No compression/dedup support for this topology

@@ -137,7 +137,7 @@ Calculates storage capacity and efficiency.
 
 - Raw capacity = drive capacity × drive count
 - Parity overhead (varies by topology)
-- Hot spare capacity reservation
+- Hot spare capacity reservation (vSAN OSA/ESA use distributed slack space, so no dedicated spares are reserved)
 - Filesystem overhead (per filesystem type)
 - ZFS slop factor (1/32 of pool)
 - Platform-specific losses
@@ -154,13 +154,15 @@ flowchart LR
     Media["Media<br/>(drives)"] --> Controller["Controller<br/>/HBA"] --> PCIe["PCIe<br/>Bus"] --> Network
 ```
 
+> vSAN ESA is NVMe-direct (drives attach straight to PCIe), so its chain omits the controller/HBA layer: Media → PCIe → Network.
+
 **Calculations:**
 
 - Per-drive IOPS and bandwidth
 - RAID write penalty (2x for RAID1, 4x for RAID5, 6x for RAID6)
-- Controller limits (IOPS and throughput caps)
+- Controller limits (IOPS and throughput caps) — skipped for NVMe-direct topologies (vSAN ESA)
 - PCIe bandwidth (lanes × generation speed)
-- Network bandwidth limits
+- Network bandwidth limits — for vSAN, refined by full-duplex, on-the-wire compression, and the east-west traffic fraction (writes × replication/EC + remote reads)
 - XFS stripe alignment (sunit/swidth)
 
 ### Module C: Resilience Engine (`/src/workers/resilienceWorker.ts`)

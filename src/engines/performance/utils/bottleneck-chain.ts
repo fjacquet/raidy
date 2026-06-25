@@ -11,6 +11,10 @@
  */
 
 import type { BottleneckLayer } from '@/types/results'
+import type { VsanEsaTopology, VsanOsaTopology } from '@/types/topology'
+
+/** Every vSAN topology level — used to key the egress table exhaustively. */
+type VsanLevel = VsanOsaTopology | VsanEsaTopology
 
 /**
  * Identify performance bottleneck from layer array.
@@ -116,17 +120,76 @@ export function calculatePcieLimits(
 }
 
 /**
+ * Optional refinements for the network bottleneck on distributed (HCI) storage.
+ *
+ * Defaults are neutral (1×) so non-vSAN platforms reproduce the simple aggregate
+ * model exactly — no behavioural change outside callers that opt in.
+ */
+export interface NetworkModel {
+  /** Full-duplex multiplier (2 = count both directions). */
+  duplex: number
+  /** On-the-wire compression ratio (data is compressed before replication). */
+  compressionRatio: number
+  /** Fraction of throughput that actually traverses the fabric (0..1). */
+  trafficFraction: number
+}
+
+const DEFAULT_NETWORK_MODEL: NetworkModel = { duplex: 1, compressionRatio: 1, trafficFraction: 1 }
+
+/**
+ * vSAN network write amplification: how many copies of a logical write leave the
+ * originating node. Mirroring replicates full copies (FTT remote copies cross the
+ * fabric); erasure coding shards data so only ~1× logical write + small parity crosses.
+ */
+const VSAN_EGRESS_FACTOR: Record<VsanLevel, number> = {
+  vsan_osa_raid1: 1.0, // FTT=1 mirror -> 1 remote copy
+  vsan_esa_raid1: 1.0, // FTT=1 mirror (2-node) -> 1 remote copy
+  vsan_osa_raid1_ftt2: 2.0, // FTT=2 mirror -> 2 remote copies
+  vsan_osa_raid5: 1.0, // single-parity EC, sharded
+  vsan_esa_raid5: 1.0, // adaptive single-parity EC, sharded
+  vsan_osa_raid6: 1.0, // dual-parity EC, sharded
+  vsan_esa_raid6: 1.0, // dual-parity EC, sharded
+}
+
+/**
+ * Estimate the fraction of cluster throughput that crosses the vSAN network.
+ *
+ * Writes always egress to remote nodes (× the replication/EC factor); reads are
+ * partly served by remote nodes since data is distributed across the cluster
+ * (≈ (N−1)/N remote for evenly striped objects). A 0.1 floor avoids div-by-zero.
+ *
+ * @param level - vSAN topology level (e.g. 'vsan_esa_raid5')
+ * @param readPercent - Read share of the workload (0..100)
+ * @param serverCount - Number of cluster nodes
+ * @returns Traffic fraction in (0, 1]
+ */
+export function getVsanNetworkTrafficFraction(
+  level: string,
+  readPercent: number,
+  serverCount: number,
+): number {
+  const readRatio = readPercent / 100
+  const writeRatio = 1 - readRatio
+  const egress = VSAN_EGRESS_FACTOR[level as VsanLevel] ?? 1.0
+  const remoteReadFraction = serverCount > 1 ? (serverCount - 1) / serverCount : 0
+  const fraction = writeRatio * egress + readRatio * remoteReadFraction
+  return Math.max(fraction, 0.1)
+}
+
+/**
  * Calculate network bandwidth and IOPS limits.
  *
  * @param networkSpeed - Network speed (1GbE, 10GbE, etc.)
  * @param serverCount - Number of servers (for aggregation)
  * @param blockSizeBytes - Block size in bytes
+ * @param model - Optional distributed-storage refinements (defaults to neutral 1×)
  * @returns Network bandwidth in MB/s and IOPS limit
  */
 export function calculateNetworkLimits(
   networkSpeed: string,
   serverCount: number,
   blockSizeBytes: number,
+  model: NetworkModel = DEFAULT_NETWORK_MODEL,
 ): { bandwidth: number; iops: number } {
   /** Network speed in MB/s */
   const NETWORK_SPEED_MBS: Record<string, number> = {
@@ -139,9 +202,13 @@ export function calculateNetworkLimits(
     '400GbE': 50000,
   }
 
-  // Each server has its own network uplink, so aggregate scales with serverCount
+  // Each server has its own network uplink, so aggregate scales with serverCount.
+  // The model raises the effective ceiling for full-duplex use and on-the-wire
+  // compression, and lowers it by the fraction of traffic that crosses the fabric.
   const networkBandwidthPerServer = NETWORK_SPEED_MBS[networkSpeed] ?? 1250 // Default to 10GbE
-  const networkBandwidth = networkBandwidthPerServer * serverCount
+  const networkBandwidth =
+    (networkBandwidthPerServer * serverCount * model.duplex * model.compressionRatio) /
+    model.trafficFraction
   const networkIOPS = (networkBandwidth * 1024 * 1024) / blockSizeBytes
 
   return { bandwidth: networkBandwidth, iops: networkIOPS }

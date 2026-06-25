@@ -21,7 +21,8 @@
     "label": "Configurazione"
   },
   "hotSpares": {
-    "label": "Dischi di riserva"
+    "label": "Dischi di riserva",
+    "distributedNote": "vSAN ricostruisce dallo spazio libero distribuito — i dischi di riserva dedicati non vengono utilizzati."
   },
   "common": {
     "enableCompression": "Abilita compressione",

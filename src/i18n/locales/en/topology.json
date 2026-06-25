@@ -21,7 +21,8 @@
     "label": "Configuration"
   },
   "hotSpares": {
-    "label": "Hot Spares"
+    "label": "Hot Spares",
+    "distributedNote": "vSAN rebuilds from distributed slack space — dedicated hot spares are not used."
   },
   "common": {
     "enableCompression": "Enable Compression",
