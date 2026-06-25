@@ -21,7 +21,8 @@
     "label": "Configuration"
   },
   "hotSpares": {
-    "label": "Disques de secours"
+    "label": "Disques de secours",
+    "distributedNote": "vSAN reconstruit via l'espace libre distribué — aucun disque de secours dédié n'est utilisé."
   },
   "common": {
     "enableCompression": "Activer la compression",

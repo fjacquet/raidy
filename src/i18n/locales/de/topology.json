@@ -21,7 +21,8 @@
     "label": "Konfiguration"
   },
   "hotSpares": {
-    "label": "Hot Spares"
+    "label": "Hot Spares",
+    "distributedNote": "vSAN rekonstruiert über verteilten freien Speicher — dedizierte Hot Spares werden nicht verwendet."
   },
   "common": {
     "enableCompression": "Komprimierung aktivieren",

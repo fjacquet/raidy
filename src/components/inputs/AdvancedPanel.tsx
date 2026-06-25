@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next'
 import { Label, Select, Slider } from '@/components/common/FormControls'
 import { useConfigStore } from '@/store'
 import type { ControllerType, NetworkSpeed, PCIeGen, PCIeLanes } from '@/types'
-import { CONTROLLER_LIMITS, getControllerOptions, requiresHba } from '@/types'
+import { CONTROLLER_LIMITS, getControllerOptions, isVsanTopology, requiresHba } from '@/types'
 
 const NETWORK_SPEEDS: { value: NetworkSpeed; label: string }[] = [
   { value: '1GbE', label: '1 GbE' },
@@ -85,6 +85,7 @@ export function AdvancedPanel() {
       {/* Data Efficiency Section - Only for topologies that don't have platform-specific controls */}
       {/* Excluded: standard RAID, S2D, PowerVault (no inline compression), and platforms with their own controls in TopologyPanel */}
       {/* Ceph is excluded too: its compression ratio is driven by the algorithm chosen in the Ceph panel */}
+      {/* vSAN (OSA/ESA) is excluded: it has its own compression/dedup ratio sliders in the vSAN panel */}
       {topology.type !== 'standard' &&
         topology.type !== 's2d' &&
         topology.type !== 'powervault' &&
@@ -93,7 +94,8 @@ export function AdvancedPanel() {
         topology.type !== 'objectscale' &&
         topology.type !== 'powerflex' &&
         topology.type !== 'nutanix' &&
-        topology.type !== 'ceph' && (
+        topology.type !== 'ceph' &&
+        !isVsanTopology(topology.type) && (
           <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-surface-700">
             <h4 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
               {t('dataEfficiency.title')}

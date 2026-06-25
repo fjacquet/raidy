@@ -252,6 +252,26 @@ export function requiresHba(topologyType: TopologyType): boolean {
   return HBA_REQUIRED_TOPOLOGIES.includes(topologyType)
 }
 
+/**
+ * Topologies that rebuild from distributed slack space instead of dedicated
+ * hot-spare drives. vSAN (both OSA and ESA) reserves free capacity across the
+ * cluster for rebuilds — it never uses dedicated spare disks.
+ */
+export const DISTRIBUTED_SPARE_TOPOLOGIES: TopologyType[] = ['vsan_osa', 'vsan_esa']
+
+/** Check if topology uses distributed spare capacity (no dedicated hot-spare drives) */
+export function usesDistributedSpares(topologyType: TopologyType): boolean {
+  return DISTRIBUTED_SPARE_TOPOLOGIES.includes(topologyType)
+}
+
+/** VMware vSAN topology family (OSA + ESA) */
+export const VSAN_TOPOLOGIES: TopologyType[] = ['vsan_osa', 'vsan_esa']
+
+/** Check if topology is a vSAN architecture (OSA or ESA) */
+export function isVsanTopology(topologyType: TopologyType): boolean {
+  return VSAN_TOPOLOGIES.includes(topologyType)
+}
+
 /** Standard RAID controller options */
 export interface RaidControllerOptions {
   /** Controller type */
@@ -270,10 +290,14 @@ export interface RaidControllerOptions {
 export interface VsanOptions {
   /** Disk group mode for OSA: hybrid (HDD capacity) or all-flash (SSD capacity) */
   diskGroupMode: 'hybrid' | 'all-flash'
-  /** Enable compression */
+  /** Enable compression (always-on in ESA, opt-in cluster-wide in OSA) */
   compression: boolean
-  /** Enable deduplication */
+  /** Expected compression ratio (1.0 = none, 1.5 = 1.5:1) */
+  compressionRatio: number
+  /** Enable deduplication (OSA all-flash; ESA global dedup since VCF 9.x) */
   dedup: boolean
+  /** Expected deduplication ratio (1.0 = none, 1.2 = 1.2:1) */
+  dedupRatio: number
   /** Enable encryption */
   encryption: boolean
   /** Tiering configuration (disk groups with cache + capacity) - OSA only */
@@ -516,7 +540,9 @@ export const DEFAULT_CONTROLLER_OPTIONS: RaidControllerOptions = {
 export const DEFAULT_VSAN_OPTIONS: VsanOptions = {
   diskGroupMode: 'all-flash',
   compression: true,
+  compressionRatio: 1.5,
   dedup: false,
+  dedupRatio: 1.0,
   encryption: false,
 }
 
@@ -739,6 +765,16 @@ const APPLIANCE_CONTROLLERS: Partial<Record<TopologyType, ControllerType[]>> = {
   powerstore: ['powerstore_t'],
   powerscale: ['powerscale_node'],
   objectscale: ['objectscale_node'],
+}
+
+/**
+ * Preferred default controller for topologies that mandate a specific one.
+ * vSAN ESA is NVMe-only with direct PCIe attach, so it must default to the NVMe
+ * HBA rather than the first (SAS) HBA in the list. Topologies absent here fall
+ * back to "first valid controller" / "only switch when the current is invalid".
+ */
+export const DEFAULT_CONTROLLER_BY_TOPOLOGY: Partial<Record<TopologyType, ControllerType>> = {
+  vsan_esa: 'hba_nvme',
 }
 
 /** Get controller options filtered by topology requirements */

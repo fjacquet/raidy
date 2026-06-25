@@ -231,6 +231,7 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
       powerstoreOptions,
       powerscaleOptions,
       cephOptions,
+      vsanOptions,
     },
   )
 

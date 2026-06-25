@@ -4293,3 +4293,59 @@ describe('Volumetry Engine - ObjectScale Data Fraction (Dell Documentation Refer
     })
   })
 })
+
+describe('Volumetry Engine - vSAN compression/deduplication', () => {
+  // OSA and ESA share the same data-reduction handling, each gated by its toggle.
+  it('applies compression ratio when only compression is enabled (OSA)', () => {
+    const input = createInput(16, { type: 'vsan_osa', level: 'vsan_osa_raid5' })
+    input.vsanOptions = {
+      ...DEFAULT_VSAN_OPTIONS,
+      compression: true,
+      compressionRatio: 2,
+      dedup: false,
+    }
+    const result = calculateVolumetry(input)
+
+    expect(result.effectiveCapacity).toBeCloseTo(result.usableCapacity * 2, 2)
+  })
+
+  it('multiplies compression and dedup ratios when both are enabled (ESA)', () => {
+    const input = createInput(16, { type: 'vsan_esa', level: 'vsan_esa_raid5' })
+    input.vsanOptions = {
+      ...DEFAULT_VSAN_OPTIONS,
+      compression: true,
+      compressionRatio: 2,
+      dedup: true,
+      dedupRatio: 1.5,
+    }
+    const result = calculateVolumetry(input)
+
+    expect(result.effectiveCapacity).toBeCloseTo(result.usableCapacity * 3, 2)
+  })
+
+  it('applies no data reduction when both toggles are off', () => {
+    const input = createInput(16, { type: 'vsan_esa', level: 'vsan_esa_raid5' })
+    input.vsanOptions = {
+      ...DEFAULT_VSAN_OPTIONS,
+      compression: false,
+      dedup: false,
+    }
+    const result = calculateVolumetry(input)
+
+    expect(result.effectiveCapacity).toBeCloseTo(result.usableCapacity, 2)
+  })
+
+  it('ignores the dedup ratio while the dedup toggle is off', () => {
+    const input = createInput(16, { type: 'vsan_esa', level: 'vsan_esa_raid5' })
+    input.vsanOptions = {
+      ...DEFAULT_VSAN_OPTIONS,
+      compression: true,
+      compressionRatio: 1.6,
+      dedup: false,
+      dedupRatio: 5,
+    }
+    const result = calculateVolumetry(input)
+
+    expect(result.effectiveCapacity).toBeCloseTo(result.usableCapacity * 1.6, 2)
+  })
+})

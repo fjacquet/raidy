@@ -8,6 +8,7 @@ import drivesData from '@/data/drives.json'
 import { calculateVolumetry } from '@/engines/volumetry'
 import { useConfigStore } from '@/store'
 import type { Drive } from '@/types'
+import { usesDistributedSpares } from '@/types'
 import type { VolumetryResult } from '@/types/results'
 
 // Type assertion for the imported JSON
@@ -64,9 +65,11 @@ export function useVolumetryCalc(): VolumetryResult {
       }
     }
 
-    // Calculate total drives across all servers
+    // Calculate total drives across all servers.
+    // vSAN rebuilds from distributed slack space, not dedicated hot-spare drives,
+    // so force 0 spares even if persisted URL state hydrated a non-zero count.
     const totalDriveCount = driveCount * serverCount
-    const totalHotSpares = hotSpares * serverCount
+    const totalHotSpares = usesDistributedSpares(topology.type) ? 0 : hotSpares * serverCount
 
     try {
       return calculateVolumetry({

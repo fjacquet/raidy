@@ -17,8 +17,9 @@ import type {
   PowerFlexOptions,
   RaidControllerOptions,
   Topology,
+  VsanOptions,
 } from '@/types/topology'
-import { CONTROLLER_LIMITS, type TopologyType } from '@/types/topology'
+import { CONTROLLER_LIMITS, isVsanTopology, type TopologyType } from '@/types/topology'
 import { assertNever } from '@/utils/typeGuards'
 import { cephPerformanceStrategy } from './strategies/ceph'
 import { dellPerformanceStrategy } from './strategies/dell'
@@ -35,6 +36,7 @@ import {
   calculateNetworkLimits,
   calculatePcieLimits,
   getMinThroughput,
+  getVsanNetworkTrafficFraction,
   identifyBottleneck,
 } from './utils/bottleneck-chain'
 
@@ -54,6 +56,7 @@ export interface PerformanceInput {
   powerFlexOptions?: PowerFlexOptions
   cephOptions?: CephOptions
   nutanixOptions?: NutanixOptions
+  vsanOptions?: VsanOptions
 }
 
 /** Block size in bytes */
@@ -134,6 +137,7 @@ export function calculatePerformance(input: PerformanceInput): PerformanceResult
     powerFlexOptions,
     cephOptions,
     nutanixOptions,
+    vsanOptions,
   } = input
 
   const usableDrives = driveCount - hotSpares
@@ -228,38 +232,65 @@ export function calculatePerformance(input: PerformanceInput): PerformanceResult
   const pcieLimits = calculatePcieLimits(pcieGen, pcieLanes, serverCount, blockSizeBytes)
 
   // --- Network Layer ---
-  const networkLimits = calculateNetworkLimits(networkSpeed, serverCount, blockSizeBytes)
+  // vSAN clusters distribute I/O over an east-west fabric: the network only carries
+  // the traffic that actually crosses nodes (writes × replication/EC + remote reads),
+  // it runs full-duplex, and ESA compresses data before it is replicated. Modelling
+  // those three effects keeps a small NVMe cluster from being flagged network-bound on
+  // raw aggregate media bandwidth. Non-vSAN topologies use the neutral default model.
+  // Non-vSAN topologies omit the model so calculateNetworkLimits applies its neutral default.
+  const networkModel = isVsanTopology(topology.type)
+    ? {
+        duplex: 2, // (a) full-duplex
+        compressionRatio: vsanOptions?.compression ? vsanOptions.compressionRatio : 1, // (b) compress-on-wire
+        trafficFraction: getVsanNetworkTrafficFraction(topology.level, readPercent, serverCount), // (c)
+      }
+    : undefined
+  const networkLimits = calculateNetworkLimits(
+    networkSpeed,
+    serverCount,
+    blockSizeBytes,
+    networkModel,
+  )
+
+  // vSAN ESA is NVMe-only with drives attached directly to PCIe — there is no SAS/RAID
+  // controller in the path, so the controller layer is dropped from the bottleneck chain
+  // (PCIe represents the host interface). OSA keeps its controller (disk groups use HBAs).
+  const isNvmeDirect = topology.type === 'vsan_esa'
 
   // --- Build bottleneck layers ---
+  const mediaLayer: BottleneckLayer = {
+    name: 'Media (Drives)',
+    throughputMBs: effectiveThroughput,
+    iops: blendedIOPS,
+    isBottleneck: false,
+    utilization: 0,
+  }
+  const controllerLayer: BottleneckLayer = {
+    name: controllerName,
+    throughputMBs: controllerThroughput,
+    iops: controllerIOPS,
+    isBottleneck: false,
+    utilization: 0,
+  }
+  const pcieLayer: BottleneckLayer = {
+    name: `PCIe ${pcieGen} ${pcieLanes}`,
+    throughputMBs: pcieLimits.bandwidth,
+    iops: pcieLimits.iops,
+    isBottleneck: false,
+    utilization: 0,
+  }
+  const networkLayer: BottleneckLayer = {
+    name: `Network (${networkSpeed})`,
+    throughputMBs: networkLimits.bandwidth,
+    iops: networkLimits.iops,
+    isBottleneck: false,
+    utilization: 0,
+  }
   const layers: BottleneckLayer[] = [
-    {
-      name: 'Media (Drives)',
-      throughputMBs: effectiveThroughput,
-      iops: blendedIOPS,
-      isBottleneck: false,
-      utilization: 0,
-    },
-    {
-      name: controllerName,
-      throughputMBs: controllerThroughput,
-      iops: controllerIOPS,
-      isBottleneck: false,
-      utilization: 0,
-    },
-    {
-      name: `PCIe ${pcieGen} ${pcieLanes}`,
-      throughputMBs: pcieLimits.bandwidth,
-      iops: pcieLimits.iops,
-      isBottleneck: false,
-      utilization: 0,
-    },
-    {
-      name: `Network (${networkSpeed})`,
-      throughputMBs: networkLimits.bandwidth,
-      iops: networkLimits.iops,
-      isBottleneck: false,
-      utilization: 0,
-    },
+    mediaLayer,
+    ...(isNvmeDirect ? [] : [controllerLayer]),
+    pcieLayer,
+    networkLayer,
   ]
 
   // Identify bottleneck and calculate utilization
@@ -274,9 +305,12 @@ export function calculatePerformance(input: PerformanceInput): PerformanceResult
   const maxWriteThroughputMBs = Math.min(effectiveWriteThroughput, minThroughput)
 
   // Cap IOPS by controller/appliance limit
-  // For integrated appliances (PowerStore, PowerScale, etc.), the controller IS the system limit
-  const cappedReadIOPS = Math.min(adjustedReadIOPS, controllerIOPS)
-  const cappedWriteIOPS = Math.min(adjustedWriteIOPS, controllerIOPS)
+  // For integrated appliances (PowerStore, PowerScale, etc.), the controller IS the system limit.
+  // For NVMe-direct topologies (vSAN ESA) there is no controller layer, so the PCIe/network
+  // limits become the IOPS ceiling instead.
+  const iopsCeiling = isNvmeDirect ? Math.min(pcieLimits.iops, networkLimits.iops) : controllerIOPS
+  const cappedReadIOPS = Math.min(adjustedReadIOPS, iopsCeiling)
+  const cappedWriteIOPS = Math.min(adjustedWriteIOPS, iopsCeiling)
 
   return {
     maxReadThroughputMBs,
