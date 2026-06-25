@@ -69,3 +69,8 @@ temp/
 .mcp.json
 .mcp.local.json
 .mcp_servers.json
+
+# Tool artifacts (Playwright MCP, RTK, generated images)
+.playwright-mcp/
+.rtk/
+generated_imgs/
