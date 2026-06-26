@@ -493,6 +493,111 @@
     },
     "cost_usd": 373
   },
+  "ent-hdd-7k2-sata-20tb-cmr": {
+    "id": "ent-hdd-7k2-sata-20tb-cmr",
+    "model": "Enterprise HDD 7.2K SATA 3.5\" 20TB CMR",
+    "type": "HDD",
+    "tier": "enterprise",
+    "formFactor": "3.5\"",
+    "interface": "SATA",
+    "rpm": 7200,
+    "recording": "CMR",
+    "capacity_raw": 20000000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 168,
+      "iops_write": 168,
+      "bandwidth_read_mb": 285,
+      "bandwidth_write_mb": 285
+    },
+    "reliability": { "ure_rate": 15, "afr": 0.35, "dwpd": 0, "mtbf_hours": 2500000 },
+    "power": { "idle_watts": 5.4, "load_watts": 9.4 },
+    "cost_usd": 299
+  },
+  "ent-hdd-7k2-sas-22tb-cmr": {
+    "id": "ent-hdd-7k2-sas-22tb-cmr",
+    "model": "Enterprise HDD 7.2K SAS 3.5\" 22TB CMR",
+    "type": "HDD",
+    "tier": "enterprise",
+    "formFactor": "3.5\"",
+    "interface": "SAS",
+    "rpm": 7200,
+    "recording": "CMR",
+    "capacity_raw": 22000000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 168,
+      "iops_write": 168,
+      "bandwidth_read_mb": 285,
+      "bandwidth_write_mb": 285
+    },
+    "reliability": { "ure_rate": 15, "afr": 0.35, "dwpd": 0, "mtbf_hours": 2500000 },
+    "power": { "idle_watts": 5.5, "load_watts": 9.8 },
+    "cost_usd": 499
+  },
+  "ent-hdd-7k2-sata-26tb-smr": {
+    "id": "ent-hdd-7k2-sata-26tb-smr",
+    "model": "Enterprise HDD 7.2K SATA 3.5\" 26TB SMR",
+    "type": "HDD",
+    "tier": "enterprise",
+    "formFactor": "3.5\"",
+    "interface": "SATA",
+    "rpm": 7200,
+    "recording": "SMR",
+    "capacity_raw": 26000000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 80,
+      "iops_write": 40,
+      "bandwidth_read_mb": 270,
+      "bandwidth_write_mb": 270
+    },
+    "reliability": { "ure_rate": 15, "afr": 0.35, "dwpd": 0, "mtbf_hours": 2500000 },
+    "power": { "idle_watts": 5.5, "load_watts": 9.4 },
+    "cost_usd": 549
+  },
+  "ent-hdd-7k2-sata-28tb-hamr": {
+    "id": "ent-hdd-7k2-sata-28tb-hamr",
+    "model": "Enterprise HDD 7.2K SATA 3.5\" 28TB HAMR",
+    "type": "HDD",
+    "tier": "enterprise",
+    "formFactor": "3.5\"",
+    "interface": "SATA",
+    "rpm": 7200,
+    "recording": "HAMR",
+    "capacity_raw": 28000000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 175,
+      "iops_write": 175,
+      "bandwidth_read_mb": 288,
+      "bandwidth_write_mb": 288
+    },
+    "reliability": { "ure_rate": 15, "afr": 0.35, "dwpd": 0, "mtbf_hours": 2500000 },
+    "power": { "idle_watts": 6.9, "load_watts": 9.5 },
+    "cost_usd": 560
+  },
+  "ent-hdd-7k2-sata-30tb-hamr": {
+    "id": "ent-hdd-7k2-sata-30tb-hamr",
+    "model": "Enterprise HDD 7.2K SATA 3.5\" 30TB HAMR",
+    "type": "HDD",
+    "tier": "enterprise",
+    "formFactor": "3.5\"",
+    "interface": "SATA",
+    "rpm": 7200,
+    "recording": "HAMR",
+    "capacity_raw": 30000000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 178,
+      "iops_write": 178,
+      "bandwidth_read_mb": 295,
+      "bandwidth_write_mb": 295
+    },
+    "reliability": { "ure_rate": 15, "afr": 0.35, "dwpd": 0, "mtbf_hours": 2500000 },
+    "power": { "idle_watts": 6.9, "load_watts": 9.5 },
+    "cost_usd": 589
+  },
   "ent-ssd-sata-960gb-ri": {
     "id": "ent-ssd-sata-960gb-ri",
     "model": "Enterprise SSD SATA 2.5\" 960GB Read-Intensive",

@@ -37,3 +37,29 @@ describe('drive database invariants', () => {
     }
   })
 })
+
+describe('new HDD entries', () => {
+  it('adds 20/22/26/28/30 TB drives with correct recording', () => {
+    const cases: Array<[string, number, string]> = [
+      ['ent-hdd-7k2-sata-20tb-cmr', 20_000_000_000_000, 'CMR'],
+      ['ent-hdd-7k2-sas-22tb-cmr', 22_000_000_000_000, 'CMR'],
+      ['ent-hdd-7k2-sata-26tb-smr', 26_000_000_000_000, 'SMR'],
+      ['ent-hdd-7k2-sata-28tb-hamr', 28_000_000_000_000, 'HAMR'],
+      ['ent-hdd-7k2-sata-30tb-hamr', 30_000_000_000_000, 'HAMR'],
+    ]
+    for (const [id, cap, rec] of cases) {
+      const d = drives[id]
+      expect(d, id).toBeDefined()
+      expect(d.type).toBe('HDD')
+      expect(d.capacity_raw).toBe(cap)
+      expect(d.recording).toBe(rec)
+      expect(d.rpm).toBe(7200)
+    }
+  })
+
+  it('represents SMR and HAMR by at least two drives each', () => {
+    const rec = (r: string) => Object.values(drives).filter((d) => d.recording === r).length
+    expect(rec('SMR')).toBeGreaterThanOrEqual(2)
+    expect(rec('HAMR')).toBeGreaterThanOrEqual(2)
+  })
+})
