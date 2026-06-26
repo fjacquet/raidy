@@ -217,12 +217,13 @@ export const vsanEsaVectors: VsanTestVector[] = [
     url: 'https://core.vmware.com/blog/vmware-vsan-8-adaptive-raid-5-erasure-coding',
   },
   {
-    name: 'vSAN ESA RAID-5: 5 hosts, 120 drives - Large cluster (4+1)',
+    name: 'vSAN ESA RAID-5: 5 hosts, 120 drives - Below 4+1 threshold (2+1)',
     level: 'vsan_esa_raid5',
     drives: 120,
     driveSize: TB,
     serverCount: 5,
-    expectedEfficiency: 0.8, // 80% efficiency (4+1 scheme)
+    // Adaptive RAID-5 stays 2+1 until 6 hosts (VMware host-count threshold)
+    expectedEfficiency: 0.667, // 67% efficiency (2+1 scheme)
     tolerance: 0.03,
     source: 'VMware vSAN ESA Adaptive RAID',
     url: 'https://core.vmware.com/blog/vmware-vsan-8-adaptive-raid-5-erasure-coding',
@@ -240,7 +241,7 @@ export const vsanEsaVectors: VsanTestVector[] = [
   },
 
   // ============================================================
-  // vSAN ESA RAID-6 - Adaptive: 4+2 (67%) or 6+2 (75%)
+  // vSAN ESA RAID-6 - Fixed 4+2 (67%) regardless of cluster size
   // ============================================================
   {
     name: 'vSAN ESA RAID-6: 6 hosts, 24 drives - Small cluster (4+2)',
@@ -265,23 +266,25 @@ export const vsanEsaVectors: VsanTestVector[] = [
     url: 'https://core.vmware.com/resource/vmware-vsan-express-storage-architecture',
   },
   {
-    name: 'vSAN ESA RAID-6: 8 hosts, 160 drives - Large cluster (6+2)',
+    name: 'vSAN ESA RAID-6: 8 hosts, 160 drives - Still fixed 4+2',
     level: 'vsan_esa_raid6',
     drives: 160,
     driveSize: TB,
     serverCount: 8,
-    expectedEfficiency: 0.75, // 75% efficiency (6+2 scheme)
+    // RAID-6 stays 4+2 regardless of cluster size (only RAID-5 is adaptive)
+    expectedEfficiency: 0.667, // 67% efficiency (4+2 scheme)
     tolerance: 0.03,
     source: 'VMware vSAN ESA Documentation',
     url: 'https://core.vmware.com/resource/vmware-vsan-express-storage-architecture',
   },
   {
-    name: 'vSAN ESA RAID-6: 10 hosts, 240 drives - Large cluster (6+2)',
+    name: 'vSAN ESA RAID-6: 10 hosts, 240 drives - Still fixed 4+2',
     level: 'vsan_esa_raid6',
     drives: 240,
     driveSize: TB,
     serverCount: 10,
-    expectedEfficiency: 0.75, // 75% efficiency (6+2 scheme)
+    // RAID-6 stays 4+2 regardless of cluster size (only RAID-5 is adaptive)
+    expectedEfficiency: 0.667, // 67% efficiency (4+2 scheme)
     tolerance: 0.03,
     source: 'VMware vSAN ESA Documentation',
     url: 'https://core.vmware.com/resource/vmware-vsan-express-storage-architecture',

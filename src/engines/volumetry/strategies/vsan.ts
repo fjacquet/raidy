@@ -56,19 +56,17 @@ export const vsanStrategy: VolumetryStrategy = {
         return 0.5
 
       case 'vsan_esa_raid5': {
-        // Adaptive RAID-5: stripe width scales with cluster size
-        // 4+1 requires min 5 hosts and sufficient drives (120+ with 24 slots/server)
-        // 2+1 for smaller clusters
-        const canUse4Plus1 = serverCount >= 5 && driveCount >= serverCount * 20
+        // Adaptive RAID-5: vSAN picks the stripe width by host count.
+        // 4+1 (80%) for 6+ hosts, 2+1 (67%) for 3-5 hosts. Host-count only —
+        // VMware documents the threshold as >= 6 hosts (a spare fault domain).
+        const canUse4Plus1 = serverCount >= 6
         return canUse4Plus1 ? 4 / 5 : 2 / 3
       }
 
-      case 'vsan_esa_raid6': {
-        // Adaptive RAID-6: stripe width scales with cluster size
-        // 6+2 requires min 8 hosts, 4+2 for smaller clusters
-        const canUse6Plus2 = serverCount >= 8 && driveCount >= serverCount * 20
-        return canUse6Plus2 ? 6 / 8 : 4 / 6
-      }
+      case 'vsan_esa_raid6':
+        // RAID-6 is a fixed 4+2 erasure-coding stripe (67%) regardless of
+        // cluster size; ESA only adapts RAID-5. Minimum 6 hosts.
+        return 4 / 6
 
       default:
         // Default to 2+1 RAID-5 efficiency
