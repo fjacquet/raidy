@@ -1202,7 +1202,9 @@ describe('Volumetry Engine - vSAN Topologies', () => {
     })
 
     it('RAID-5: should use 4+1 scheme (80%) for clusters with ≥6 hosts', () => {
-      const input = createInput(144, { type: 'vsan_esa', level: 'vsan_esa_raid5' })
+      // 96 drives is below the old `serverCount * 20` (=120) cutoff, so this
+      // case only reaches 4+1 under the new host-count-only rule.
+      const input = createInput(96, { type: 'vsan_esa', level: 'vsan_esa_raid5' })
       input.serverCount = 6 // Meets the VMware 4+1 threshold (host-count only)
 
       const result = calculateVolumetry(input)
