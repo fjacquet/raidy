@@ -19,6 +19,18 @@ interface S2dOptionsPanelProps {
   topology: Topology & { type: 's2d' }
 }
 
+/**
+ * Default S2D tiering seed: an SSD cache tier + an HDD capacity tier with drives pre-selected,
+ * so enabling "Storage Tiers" immediately produces a result (the engine needs a drive in each
+ * tier). The user can change drives/counts afterward.
+ */
+const S2D_DEFAULT_TIERING = {
+  ...DEFAULT_TIERING_CONFIG,
+  enabled: true,
+  fastTier: { driveId: 'ent-ssd-sata-960gb-ri', driveCount: 2 },
+  capacityTier: { driveId: 'ent-hdd-7k2-sata-12tb-cmr', driveCount: 4 },
+}
+
 export function S2dOptionsPanel({ topology }: S2dOptionsPanelProps) {
   const { t } = useTranslation('topology')
   const { t: th } = useTranslation('help')
@@ -68,12 +80,21 @@ export function S2dOptionsPanel({ topology }: S2dOptionsPanelProps) {
         id="s2d-tiers"
         label={t('s2d.storageTiers')}
         checked={s2dOptions.storageTiers}
-        onChange={(v) => setS2DOptions({ storageTiers: v })}
+        onChange={(v) =>
+          setS2DOptions(
+            v
+              ? {
+                  storageTiers: true,
+                  tieringConfig: s2dOptions.tieringConfig ?? S2D_DEFAULT_TIERING,
+                }
+              : { storageTiers: false },
+          )
+        }
       />
 
       {s2dOptions.storageTiers && (
         <TieringPanel
-          config={s2dOptions.tieringConfig ?? DEFAULT_TIERING_CONFIG}
+          config={s2dOptions.tieringConfig ?? S2D_DEFAULT_TIERING}
           onChange={(tieringConfig) =>
             setS2DOptions({
               tieringConfig: {

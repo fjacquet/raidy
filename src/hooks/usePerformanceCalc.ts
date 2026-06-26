@@ -6,6 +6,7 @@
 import { useMemo } from 'react'
 import drivesData from '@/data/drives.json'
 import { calculatePerformance } from '@/engines/performance'
+import { resolveTiering } from '@/engines/shared/tiering'
 import { useConfigStore } from '@/store'
 import type { Drive } from '@/types'
 import { usesDistributedSpares } from '@/types'
@@ -65,6 +66,14 @@ export function usePerformanceCalc(): PerformanceResult {
     const totalDriveCount = driveCount * serverCount
     const totalHotSpares = usesDistributedSpares(topology.type) ? 0 : hotSpares * serverCount
 
+    // Resolve tiering for hybrid configurations (S2D, vSAN OSA, Ceph, Nutanix)
+    const tiering = resolveTiering(topology, serverCount, {
+      s2dOptions,
+      vsanOptions,
+      cephOptions,
+      nutanixOptions,
+    })
+
     try {
       return calculatePerformance({
         drive,
@@ -84,6 +93,8 @@ export function usePerformanceCalc(): PerformanceResult {
         nutanixOptions,
         vsanOptions,
         s2dOptions,
+        tiering,
+        workingSetPercent: s2dOptions?.tieringConfig?.workingSetPercent ?? 20,
       })
     } catch (error) {
       console.error('[Performance Engine Error]', {

@@ -32,10 +32,18 @@ import { getZfsOverhead } from '../helpers/calculationHelpers'
 import { getFilesystemOverheadPercent } from './filesystem-overhead'
 import { getObjectScaleGeoOverhead } from './objectscale-geo'
 
+/**
+ * S2D / Azure Local infrastructure-volume reserve (cluster-wide, fixed, decimal bytes).
+ * Microsoft reserves capacity for infrastructure volumes: ARC Resource Bridge + AKS images
+ * (~250 GB), ClusterPerformanceHistory (~20 GB), plus ~7 GB system ≈ 277 GB total. These are
+ * usable volumes stored on the cluster, so the reserve is taken from post-efficiency capacity.
+ */
+const S2D_INFRA_RESERVE_BYTES = 277_000_000_000
+
 export interface OverheadResult {
   // Individual overhead components
   synologySystemOverhead: number
-  s2dReserve: number
+  s2dInfraReserve: number
   slopOverhead: number
   zfsAshiftOverhead: number
   powerFlexFgOverhead: number
@@ -89,7 +97,6 @@ export function calculateOverheads(input: OverheadInput): OverheadResult {
     capacityAfterParity,
     usableCapacity,
     synologyOptions,
-    s2dOptions,
     zfsOptions,
     powerFlexOptions,
     netAppOptions,
@@ -107,22 +114,12 @@ export function calculateOverheads(input: OverheadInput): OverheadResult {
     synologySystemOverhead = synologyOptions.systemPartitionSize * usableDrives
   }
 
-  // S2D rebuild reserve.
-  // Microsoft sizes drive-failure reserve as one capacity drive per server, capped at 4
-  // drives cluster-wide (see Storage Spaces Direct fault-tolerance guidance). The optional
-  // node_failure strategy is a stricter opt-in that reserves a whole node's capacity.
-  let s2dReserve = 0
-  if (topology.type === 's2d' && s2dOptions.rebuildReserve) {
-    if (s2dOptions.reserveStrategy === 'node_failure') {
-      // Reserve one node's worth of capacity (stricter, opt-in)
-      s2dReserve = drive.capacity_raw * (usableDrives / s2dOptions.faultDomains)
-    } else {
-      // Reserve one drive per server, capped at 4 drives (Microsoft default)
-      s2dReserve = drive.capacity_raw * Math.min(s2dOptions.faultDomains, 4)
-    }
-    // Never reserve more than the available post-parity capacity (tiny clusters
-    // can have fewer usable drives than the reserve target).
-    s2dReserve = Math.min(s2dReserve, capacityAfterParity)
+  // S2D / Azure Local infrastructure-volume reserve (fixed, cluster-wide). Taken from
+  // post-efficiency capacity since these are usable volumes stored on the cluster.
+  // The rebuild reserve itself is handled in the main engine (raw, before efficiency).
+  let s2dInfraReserve = 0
+  if (topology.type === 's2d') {
+    s2dInfraReserve = Math.min(S2D_INFRA_RESERVE_BYTES, Math.max(0, capacityAfterParity))
   }
 
   // ZFS-specific overhead (slop space = 1/32)
@@ -200,7 +197,7 @@ export function calculateOverheads(input: OverheadInput): OverheadResult {
     0,
     capacityAfterParity -
       slopOverhead -
-      s2dReserve -
+      s2dInfraReserve -
       powerFlexFgOverhead -
       netAppSnapshotReserve -
       nutanixSystemOverhead -
@@ -221,7 +218,7 @@ export function calculateOverheads(input: OverheadInput): OverheadResult {
 
   const totalOverhead =
     synologySystemOverhead +
-    s2dReserve +
+    s2dInfraReserve +
     slopOverhead +
     zfsAshiftOverhead +
     powerFlexFgOverhead +
@@ -237,7 +234,7 @@ export function calculateOverheads(input: OverheadInput): OverheadResult {
 
   return {
     synologySystemOverhead,
-    s2dReserve,
+    s2dInfraReserve,
     slopOverhead,
     zfsAshiftOverhead,
     powerFlexFgOverhead,

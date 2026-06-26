@@ -9,6 +9,7 @@ import { dellStrategy } from '@engines/volumetry/strategies/dell'
 import * as fc from 'fast-check'
 import { describe, expect, it } from 'vitest'
 import { calculateVolumetry, type VolumetryInput } from '@/engines/volumetry'
+import { getS2DDualParityEfficiency } from '@/engines/volumetry/strategies/s2d'
 import {
   DEFAULT_CEPH_OPTIONS,
   DEFAULT_NETAPP_OPTIONS,
@@ -1344,13 +1345,17 @@ describe('Volumetry Engine - vSAN Topologies', () => {
 
 describe('Volumetry Engine - Microsoft S2D', () => {
   // Inline test vectors for S2D topologies
+  // These vectors validate the pure resiliency efficiency against Microsoft's published
+  // numbers. Drives are deliberately large (20 TB) so the fixed ~277 GB S2D infrastructure
+  // reserve is negligible (<0.1%), isolating the resiliency-efficiency signal. The testDrive
+  // below is SSD_NVMe, so dual parity uses Microsoft's all-flash table.
   const s2dVectors = [
     {
       name: 'S2D Simple: 4 nodes, 16 drives - No redundancy',
       level: 'simple' as const,
       faultDomains: 4,
       drives: 16,
-      driveSize: 1_000_000_000_000,
+      driveSize: 20_000_000_000_000,
       expectedEfficiency: 1.0, // 100% (no redundancy)
       tolerance: 0.03,
     },
@@ -1360,7 +1365,7 @@ describe('Volumetry Engine - Microsoft S2D', () => {
       faultDomains: 4,
       mirrorCopies: 2,
       drives: 16,
-      driveSize: 1_000_000_000_000,
+      driveSize: 20_000_000_000_000,
       expectedEfficiency: 0.5, // 50% (2-way mirror)
       tolerance: 0.03,
     },
@@ -1370,7 +1375,7 @@ describe('Volumetry Engine - Microsoft S2D', () => {
       faultDomains: 4,
       mirrorCopies: 3,
       drives: 16,
-      driveSize: 1_000_000_000_000,
+      driveSize: 20_000_000_000_000,
       expectedEfficiency: 0.333, // 33% (3-way mirror)
       tolerance: 0.03,
     },
@@ -1379,8 +1384,8 @@ describe('Volumetry Engine - Microsoft S2D', () => {
       level: 'parity' as const,
       faultDomains: 4,
       drives: 16,
-      driveSize: 1_000_000_000_000,
-      expectedEfficiency: 0.75, // 75% (3/4 nodes)
+      driveSize: 20_000_000_000_000,
+      expectedEfficiency: 0.75, // 75% (3/4 nodes, single parity)
       tolerance: 0.03,
     },
     {
@@ -1388,8 +1393,8 @@ describe('Volumetry Engine - Microsoft S2D', () => {
       level: 'dual_parity' as const,
       faultDomains: 4,
       drives: 16,
-      driveSize: 1_000_000_000_000,
-      expectedEfficiency: 0.5, // 50% (2/4 nodes)
+      driveSize: 20_000_000_000_000,
+      expectedEfficiency: 0.5, // 50% (RS 2+2, 4 fault domains, all-flash)
       tolerance: 0.03,
     },
     {
@@ -1397,8 +1402,8 @@ describe('Volumetry Engine - Microsoft S2D', () => {
       level: 'map' as const,
       faultDomains: 4,
       drives: 16,
-      driveSize: 1_000_000_000_000,
-      expectedEfficiency: 0.5, // ~50% (20% mirror at 50% + 80% parity at 50% = 0.1 + 0.4 = 0.5)
+      driveSize: 20_000_000_000_000,
+      expectedEfficiency: 0.5, // ~50% (20% mirror at 50% + 80% dual parity at 50% = 0.1 + 0.4)
       tolerance: 0.05,
     },
   ]
@@ -1465,7 +1470,7 @@ describe('Volumetry Engine - Microsoft S2D', () => {
   })
 
   describe('S2D Rebuild Reserve', () => {
-    it('should subtract 1 drive equivalent per fault domain when enabled', () => {
+    it('reserves 1 drive per fault domain (capped at 4), removed before the efficiency multiplier', () => {
       const inputWithReserve = createInput(16, { type: 's2d', level: 'mirror' })
       inputWithReserve.s2dOptions = {
         ...DEFAULT_S2D_OPTIONS,
@@ -1486,10 +1491,13 @@ describe('Volumetry Engine - Microsoft S2D', () => {
       // Usable capacity should be less with rebuild reserve enabled
       expect(resultWith.usableCapacity).toBeLessThan(resultWithout.usableCapacity)
 
-      // Difference should be approximately 4 drives worth (1 per fault domain)
+      // The reserve is removed from RAW capacity BEFORE the resiliency multiplier (Microsoft /
+      // Azure Local), so its impact on usable is reserveDrives × capacity × dataFraction
+      // (2-way mirror = 0.5), not the full raw reserve.
+      const mirrorFraction = 0.5
       const reserveDifference = resultWithout.usableCapacity - resultWith.usableCapacity
-      const expectedReserve = 4 * testDrive.capacity_raw
-      const tolerance = expectedReserve * 0.1 // 10% tolerance
+      const expectedReserve = 4 * testDrive.capacity_raw * mirrorFraction
+      const tolerance = expectedReserve * 0.1 // 10% tolerance (filesystem overhead)
 
       expect(Math.abs(reserveDifference - expectedReserve)).toBeLessThan(tolerance)
     })
@@ -1515,15 +1523,17 @@ describe('Volumetry Engine - Microsoft S2D', () => {
       const resultWith = calculateVolumetry(inputWithReserve)
       const resultWithout = calculateVolumetry(inputWithoutReserve)
 
+      const mirrorFraction = 0.5
       const reserveDifference = resultWithout.usableCapacity - resultWith.usableCapacity
 
-      // Reserve is min(faultDomains, 4) = 4 drives, NOT 8 drives.
-      const cappedReserve = 4 * testDrive.capacity_raw
+      // Reserve is min(faultDomains, 4) = 4 drives (NOT 8), removed before the 50% mirror
+      // multiplier, so its usable impact is 4 × capacity × 0.5.
+      const cappedReserve = 4 * testDrive.capacity_raw * mirrorFraction
       const tolerance = cappedReserve * 0.1 // 10% (filesystem overhead on the reserved slice)
 
       expect(Math.abs(reserveDifference - cappedReserve)).toBeLessThan(tolerance)
-      // Prove the cap held: difference is well below an uncapped 8-drive reserve.
-      expect(reserveDifference).toBeLessThan(5 * testDrive.capacity_raw)
+      // Prove the cap held: an uncapped 8-drive reserve would remove 8 × 0.5 = 4 drives' worth.
+      expect(reserveDifference).toBeLessThan(3 * testDrive.capacity_raw)
     })
 
     it('should reserve 3 drives worth for 3 fault domains (below the cap)', () => {
@@ -1547,10 +1557,11 @@ describe('Volumetry Engine - Microsoft S2D', () => {
       const resultWith = calculateVolumetry(inputWithReserve)
       const resultWithout = calculateVolumetry(inputWithoutReserve)
 
+      const mirrorFraction = 0.5
       const reserveDifference = resultWithout.usableCapacity - resultWith.usableCapacity
 
-      // 3 < 4, so the cap does not apply: reserve is 3 drives' worth.
-      const expectedReserve = 3 * testDrive.capacity_raw
+      // 3 < 4, so the cap doesn't apply: reserve is 3 drives, removed before the 50% multiplier.
+      const expectedReserve = 3 * testDrive.capacity_raw * mirrorFraction
       const tolerance = expectedReserve * 0.1
 
       expect(Math.abs(reserveDifference - expectedReserve)).toBeLessThan(tolerance)
@@ -4407,5 +4418,184 @@ describe('Volumetry Engine - vSAN compression/deduplication', () => {
     const result = calculateVolumetry(input)
 
     expect(result.effectiveCapacity).toBeCloseTo(result.usableCapacity * 1.6, 2)
+  })
+})
+
+// ============================================================
+// S2D dual-parity stepped efficiency
+// ============================================================
+describe('S2D dual-parity stepped efficiency', () => {
+  describe('All-flash (isAllFlash=true) — Microsoft stepped RS/LRC table', () => {
+    it('4 fault domains → RS 2+2 → 50%', () => {
+      expect(getS2DDualParityEfficiency(4, true)).toBeCloseTo(0.5, 10)
+    })
+    it('5 fault domains → RS 2+2 → 50%', () => {
+      expect(getS2DDualParityEfficiency(5, true)).toBeCloseTo(0.5, 10)
+    })
+    it('6 fault domains → RS 2+2 → 50%', () => {
+      expect(getS2DDualParityEfficiency(6, true)).toBeCloseTo(0.5, 10)
+    })
+    it('7 fault domains → RS 4+2 → 66.7%', () => {
+      expect(getS2DDualParityEfficiency(7, true)).toBeCloseTo(2 / 3, 10)
+    })
+    it('8 fault domains → RS 4+2 → 66.7%', () => {
+      expect(getS2DDualParityEfficiency(8, true)).toBeCloseTo(2 / 3, 10)
+    })
+    it('9 fault domains → RS 6+2 → 75%', () => {
+      expect(getS2DDualParityEfficiency(9, true)).toBeCloseTo(0.75, 10)
+    })
+    it('11 fault domains → RS 6+2 → 75%', () => {
+      expect(getS2DDualParityEfficiency(11, true)).toBeCloseTo(0.75, 10)
+    })
+    it('15 fault domains → RS 6+2 → 75%', () => {
+      expect(getS2DDualParityEfficiency(15, true)).toBeCloseTo(0.75, 10)
+    })
+    it('16 fault domains → LRC (12,2,1) → 80%', () => {
+      expect(getS2DDualParityEfficiency(16, true)).toBeCloseTo(0.8, 10)
+    })
+  })
+
+  describe('Hybrid (isAllFlash=false) — Microsoft stepped RS/LRC table', () => {
+    it('4 fault domains → RS 2+2 → 50%', () => {
+      expect(getS2DDualParityEfficiency(4, false)).toBeCloseTo(0.5, 10)
+    })
+    it('6 fault domains → RS 2+2 → 50%', () => {
+      expect(getS2DDualParityEfficiency(6, false)).toBeCloseTo(0.5, 10)
+    })
+    it('7 fault domains → RS 4+2 → 66.7%', () => {
+      expect(getS2DDualParityEfficiency(7, false)).toBeCloseTo(2 / 3, 10)
+    })
+    it('11 fault domains → RS 4+2 → 66.7%', () => {
+      expect(getS2DDualParityEfficiency(11, false)).toBeCloseTo(2 / 3, 10)
+    })
+    it('12 fault domains → LRC (8,2,1) → 72.7%', () => {
+      expect(getS2DDualParityEfficiency(12, false)).toBeCloseTo(8 / 11, 10)
+    })
+    it('15 fault domains → LRC (8,2,1) → 72.7%', () => {
+      expect(getS2DDualParityEfficiency(15, false)).toBeCloseTo(8 / 11, 10)
+    })
+    it('16 fault domains → LRC (8,2,1) → 72.7%', () => {
+      expect(getS2DDualParityEfficiency(16, false)).toBeCloseTo(8 / 11, 10)
+    })
+  })
+
+  describe('Clamping — faultDomains outside [4, 16] are clamped', () => {
+    it('all-flash: faultDomains below 4 (e.g. 2) clamps to 4-node value → 50%', () => {
+      expect(getS2DDualParityEfficiency(2, true)).toBeCloseTo(0.5, 10)
+    })
+    it('all-flash: faultDomains=3 clamps to 4-node value → 50%', () => {
+      expect(getS2DDualParityEfficiency(3, true)).toBeCloseTo(0.5, 10)
+    })
+    it('all-flash: faultDomains above 16 (e.g. 20) clamps to 16-node value → 80%', () => {
+      expect(getS2DDualParityEfficiency(20, true)).toBeCloseTo(0.8, 10)
+    })
+    it('hybrid: faultDomains below 4 clamps to 4-node value → 50%', () => {
+      expect(getS2DDualParityEfficiency(3, false)).toBeCloseTo(0.5, 10)
+    })
+    it('hybrid: faultDomains above 16 clamps to 16-node value → 8/11', () => {
+      expect(getS2DDualParityEfficiency(20, false)).toBeCloseTo(8 / 11, 10)
+    })
+  })
+})
+
+// ============================================================
+// S2D storage tiering activation
+// ============================================================
+describe('S2D storage tiering activation', () => {
+  // Shared tiering options reused across all three cases
+  const tieringConfig = {
+    enabled: false, // deliberately false — must NOT disable tiering anymore
+    fastTier: { driveId: 'ent-ssd-sata-960gb-ri', driveCount: 2 },
+    capacityTier: { driveId: 'ent-hdd-7k2-sata-12tb-cmr', driveCount: 4 },
+    cacheMode: 'write-back' as const,
+    workingSetPercent: 20,
+  }
+
+  // cache: 2 drives/server × 3 servers × 960 GB = 5,760 GB
+  // capacity: 4 drives/server × 3 servers × 12 TB = 144 TB
+  // raw = 5,760 GB + 144 TB = 149,760 GB
+  const CACHE_RAW = 2 * 3 * 960_000_000_000 // 5_760_000_000_000
+  const CAPACITY_RAW = 4 * 3 * 12_000_000_000_000 // 144_000_000_000_000
+  const TOTAL_RAW = CACHE_RAW + CAPACITY_RAW // 149_760_000_000_000
+
+  it('storageTiers=true with enabled:false activates tiering (bug fix)', () => {
+    const input = createInput(0, { type: 's2d', level: 'mirror' })
+    input.serverCount = 3
+    input.s2dOptions = {
+      ...DEFAULT_S2D_OPTIONS,
+      storageTiers: true,
+      faultDomains: 3,
+      tieringConfig,
+    }
+
+    const result = calculateVolumetry(input)
+
+    // Raw must include both tiers
+    expect(result.rawCapacity).toBe(TOTAL_RAW)
+
+    // Usable must be positive (the bug produced 0 or a single-drive result)
+    expect(result.usableCapacity).toBeGreaterThan(0)
+
+    // Usable must be less than capacity-tier raw (after mirror efficiency + overheads)
+    expect(result.usableCapacity).toBeLessThan(CAPACITY_RAW)
+
+    // Breakdown must contain a Cache entry for the cache tier
+    const cacheEntry = result.breakdown.find((e) => e.label.includes('Cache'))
+    expect(cacheEntry).toBeDefined()
+    expect(cacheEntry?.bytes).toBeCloseTo(CACHE_RAW, -9)
+  })
+
+  it('enabled:true yields the same usableCapacity (flag is ignored)', () => {
+    const buildInput = (enabledFlag: boolean) => {
+      const input = createInput(0, { type: 's2d', level: 'mirror' })
+      input.serverCount = 3
+      input.s2dOptions = {
+        ...DEFAULT_S2D_OPTIONS,
+        storageTiers: true,
+        faultDomains: 3,
+        tieringConfig: { ...tieringConfig, enabled: enabledFlag },
+      }
+      return input
+    }
+
+    const resultFalse = calculateVolumetry(buildInput(false))
+    const resultTrue = calculateVolumetry(buildInput(true))
+
+    expect(resultTrue.usableCapacity).toBe(resultFalse.usableCapacity)
+  })
+
+  it('storageTiers=false falls back to single-pool drive path (rawCapacity differs)', () => {
+    const input = createInput(12, { type: 's2d', level: 'mirror' })
+    // storageTiers is false by default in DEFAULT_S2D_OPTIONS
+    const result = calculateVolumetry(input)
+
+    // 12 × 1 TB testDrive = 12 TB — different from the tiered 149.76 TB
+    expect(result.rawCapacity).toBe(12 * 1_000_000_000_000)
+    expect(result.rawCapacity).not.toBe(TOTAL_RAW)
+  })
+})
+
+// ============================================================
+// S2D infrastructure reserve
+// ============================================================
+describe('S2D infrastructure reserve', () => {
+  it('large S2D mirror config has S2D Infrastructure Volumes breakdown entry ≈ 277 GB', () => {
+    const largeDrive = { ...testDrive, capacity_raw: 10_000_000_000_000 }
+    const input = createInput(16, { type: 's2d', level: 'mirror' })
+    input.drive = largeDrive
+
+    const result = calculateVolumetry(input)
+
+    const infraEntry = result.breakdown.find((e) => e.label === 'S2D Infrastructure Volumes')
+    expect(infraEntry).toBeDefined()
+    expect(infraEntry?.bytes).toBeCloseTo(277_000_000_000, -9)
+  })
+
+  it('non-S2D topology (standard RAID5) has no S2D Infrastructure Volumes entry', () => {
+    const input = createInput(4, { type: 'standard', level: 'RAID5' })
+    const result = calculateVolumetry(input)
+
+    const infraEntry = result.breakdown.find((e) => e.label === 'S2D Infrastructure Volumes')
+    expect(infraEntry).toBeUndefined()
   })
 })

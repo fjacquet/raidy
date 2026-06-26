@@ -9,19 +9,10 @@
  * Returns zero-state results instead of throwing errors.
  */
 
+import type { TieredCapacityResult } from '@/engines/shared/tiering'
 import type { Drive } from '@/types/drive'
 import type { VolumetryResult } from '@/types/results'
-import type {
-  CephOptions,
-  NutanixOptions,
-  S2DOptions,
-  Topology,
-  VsanOptions,
-} from '@/types/topology'
-import {
-  calculateTieredCapacity,
-  type TieredCapacityResult,
-} from '../tiering/calculateTieredCapacity'
+import type { Topology } from '@/types/topology'
 
 /**
  * Zero-state result for invalid configurations.
@@ -71,50 +62,6 @@ export function validateTopology(
     const rawCapacity = drive?.capacity_raw ? drive.capacity_raw * driveCount : 0
     return createZeroStateResult('Invalid Configuration', rawCapacity)
   }
-  return null
-}
-
-/**
- * Check if tiering is configured for the topology.
- */
-export function checkTieringConfiguration(
-  topology: Topology,
-  serverCount: number,
-  s2dOptions: S2DOptions,
-  vsanOptions: VsanOptions,
-  cephOptions: CephOptions,
-  nutanixOptions: NutanixOptions,
-): TieredCapacityResult | null {
-  // S2D tiering
-  if (
-    topology.type === 's2d' &&
-    s2dOptions &&
-    s2dOptions.storageTiers &&
-    s2dOptions.tieringConfig
-  ) {
-    return calculateTieredCapacity(s2dOptions.tieringConfig, serverCount)
-  }
-
-  // vSAN OSA tiering (disk groups)
-  if (topology.type === 'vsan_osa' && vsanOptions && vsanOptions.tiering) {
-    return calculateTieredCapacity(vsanOptions.tiering, serverCount)
-  }
-
-  // Ceph WAL/DB tiering
-  if (topology.type === 'ceph' && cephOptions && cephOptions.walDbOffload && cephOptions.tiering) {
-    return calculateTieredCapacity(cephOptions.tiering, serverCount)
-  }
-
-  // Nutanix hybrid tiering (SSD cache + HDD capacity)
-  if (
-    topology.type === 'nutanix' &&
-    nutanixOptions &&
-    nutanixOptions.clusterType === 'hybrid' &&
-    nutanixOptions.tiering
-  ) {
-    return calculateTieredCapacity(nutanixOptions.tiering, serverCount)
-  }
-
   return null
 }
 

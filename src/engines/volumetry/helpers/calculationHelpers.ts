@@ -96,6 +96,7 @@ export function getStrategy(topologyType: TopologyType): VolumetryStrategy {
  * @param cephOptions - Ceph-specific options
  * @param nutanixOptions - Nutanix-specific options
  * @param serverCount - Number of servers/nodes
+ * @param isAllFlash - Whether the resiliency media is all-flash (S2D dual-parity table select)
  * @returns Data fraction (0-1)
  */
 export function getDataFraction(
@@ -105,6 +106,7 @@ export function getDataFraction(
   cephOptions: CephOptions,
   nutanixOptions: NutanixOptions,
   serverCount: number,
+  isAllFlash = true,
 ): number {
   // Runtime type guard: handle invalid topology types from URL params/user input
   // TypeScript can't catch these at compile time when data comes from external sources
@@ -120,7 +122,8 @@ export function getDataFraction(
 
   switch (topology.type) {
     case 's2d':
-      options = s2dOptions
+      // S2D dual parity uses Microsoft's stepped efficiency, which differs all-flash vs hybrid
+      options = { ...s2dOptions, isAllFlash }
       break
     case 'ceph':
       options = cephOptions

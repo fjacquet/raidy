@@ -8,6 +8,7 @@
  * - Write penalty per platform
  */
 
+import type { TieredCapacityResult } from '@/engines/shared/tiering'
 import type { BlockSize, NetworkSpeed, PCIeGen, PCIeLanes } from '@/types/config'
 import type { Drive } from '@/types/drive'
 import type { BottleneckLayer, PerformanceResult } from '@/types/results'
@@ -59,6 +60,8 @@ export interface PerformanceInput {
   nutanixOptions?: NutanixOptions
   vsanOptions?: VsanOptions
   s2dOptions?: S2DOptions
+  tiering?: TieredCapacityResult | null
+  workingSetPercent?: number
 }
 
 /** Block size in bytes */
@@ -151,6 +154,8 @@ export function calculatePerformance(input: PerformanceInput): PerformanceResult
     nutanixOptions,
     vsanOptions,
     s2dOptions,
+    tiering,
+    workingSetPercent,
   } = input
 
   const usableDrives = driveCount - hotSpares
@@ -194,16 +199,54 @@ export function calculatePerformance(input: PerformanceInput): PerformanceResult
   const readRatio = readPercent / 100
   const writeRatio = writePercent / 100
 
+  // Tier-aware read/write capacity model (S2D hybrid write-back cache, first-order approximation).
+  // When not tiered, readCapIOPS === writeCapIOPS === totalDriveIOPS and the harmonic formula
+  // below reduces exactly to totalDriveIOPS / (readRatio + writeRatio * effectiveWritePenalty).
+  const cacheDrive = tiering?.cacheTierDrive
+  const capacityDrive = tiering?.capacityTierDrive
+
+  let readCapIOPS: number
+  let writeCapIOPS: number
+  let readBW: number
+  let writeBW: number
+
+  if (topology.type === 's2d' && tiering && cacheDrive && capacityDrive) {
+    // cacheDrive / capacityDrive are narrowed to Drive by the guard above
+    const c = cacheDrive
+    const p = capacityDrive
+    const cacheCount = tiering.cacheTierDriveCount
+    const capCount = tiering.capacityTierDriveCount
+    const ws = (workingSetPercent ?? 20) / 100
+    // Reads blend by working set: hot data served from cache tier, cold from capacity tier
+    readCapIOPS =
+      ws * (cacheCount * c.performance.iops_read) + (1 - ws) * (capCount * p.performance.iops_read)
+    // Writes are absorbed by the fast cache tier (write-back)
+    writeCapIOPS = cacheCount * c.performance.iops_write
+    readBW =
+      ws * (cacheCount * c.performance.bandwidth_read_mb) +
+      (1 - ws) * (capCount * p.performance.bandwidth_read_mb)
+    writeBW = cacheCount * c.performance.bandwidth_write_mb
+  } else {
+    readCapIOPS = totalDriveIOPS
+    writeCapIOPS = totalDriveIOPS
+    readBW = drive.performance.bandwidth_read_mb * usableDrives
+    writeBW = drive.performance.bandwidth_write_mb * usableDrives
+  }
+
   // Max Read IOPS = what you'd get with 100% reads (no RAID penalty)
-  const maxPureReadIOPS = totalDriveIOPS
+  const maxPureReadIOPS = readCapIOPS
 
   // Max Write IOPS = what you'd get with 100% writes (full RAID penalty)
-  const maxPureWriteIOPS = totalDriveIOPS / effectiveWritePenalty
+  const maxPureWriteIOPS = writeCapIOPS / effectiveWritePenalty
 
-  // Blended IOPS for the actual workload mix
-  // Formula: Frontend IOPS = Backend IOPS / (ReadRatio + WriteRatio × Penalty)
-  const backendIOPSPerFrontendIO = readRatio + writeRatio * effectiveWritePenalty
-  const maxFrontendIOPS = totalDriveIOPS / backendIOPSPerFrontendIO
+  // Blended IOPS for the actual workload mix using asymmetric harmonic formula.
+  // Algebraic proof of reduction: when readCapIOPS === writeCapIOPS === totalDriveIOPS,
+  //   denominator = readRatio/totalDriveIOPS + writeRatio*effectiveWritePenalty/totalDriveIOPS
+  //               = (readRatio + writeRatio*effectiveWritePenalty) / totalDriveIOPS
+  //   maxFrontendIOPS = 1/denominator = totalDriveIOPS / (readRatio + writeRatio*effectiveWritePenalty)
+  // which is identical to the previous backendIOPSPerFrontendIO formula.
+  const denominator = readRatio / readCapIOPS + (writeRatio * effectiveWritePenalty) / writeCapIOPS
+  const maxFrontendIOPS = denominator > 0 ? 1 / denominator : 0
 
   // Apply PowerFlex CPU factor (reduces IOPS for FG mode and EC)
   const blendedIOPS = maxFrontendIOPS * powerFlexCpuFactor
@@ -211,8 +254,8 @@ export function calculatePerformance(input: PerformanceInput): PerformanceResult
   const adjustedWriteIOPS = maxPureWriteIOPS * powerFlexCpuFactor
 
   // Throughput from drives
-  const totalReadThroughput = drive.performance.bandwidth_read_mb * usableDrives
-  const totalWriteThroughput = drive.performance.bandwidth_write_mb * usableDrives
+  const totalReadThroughput = readBW
+  const totalWriteThroughput = writeBW
 
   // Apply write penalty to throughput for write-heavy workloads
   // Sequential throughput is less affected by RAID penalty than random IOPS

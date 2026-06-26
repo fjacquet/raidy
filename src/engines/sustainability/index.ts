@@ -3,6 +3,7 @@
  * Calculates power consumption, CO2 emissions, and total cost of ownership.
  */
 
+import type { TieredCapacityResult } from '@/engines/shared/tiering'
 import type { CarbonRegion } from '@/types/config'
 import type { Drive } from '@/types/drive'
 import type { SustainabilityResult, TCOResult } from '@/types/results'
@@ -18,6 +19,7 @@ export interface SustainabilityInput {
   electricityCostPerKwh: number
   dailyWriteVolume: number
   usableCapacity: number
+  tiering?: TieredCapacityResult | null
 }
 
 /** Carbon intensity by region (gCO2/kWh) */
@@ -43,10 +45,21 @@ function calculatePower(
   serverCount: number,
   serverPowerWatts: number,
   pue: number,
+  tiering?: TieredCapacityResult | null,
 ): { drives: number; servers: number; cooling: number; total: number } {
   // Assume 70% average utilization for power calculation
-  const avgDrivePower = drive.power.idle_watts * 0.3 + drive.power.load_watts * 0.7
-  const drivePower = avgDrivePower * driveCount
+  const avg = (d: Drive) => d.power.idle_watts * 0.3 + d.power.load_watts * 0.7
+
+  let drivePower: number
+  if (tiering?.cacheTierDrive && tiering?.capacityTierDrive) {
+    // Tiered configuration: sum power from both cache and capacity tiers
+    drivePower =
+      avg(tiering.cacheTierDrive) * tiering.cacheTierDriveCount +
+      avg(tiering.capacityTierDrive) * tiering.capacityTierDriveCount
+  } else {
+    // Single-tier (non-tiered) configuration: original behavior
+    drivePower = avg(drive) * driveCount
+  }
 
   // Server power (excluding drives)
   const serverPower = serverPowerWatts * serverCount
@@ -78,7 +91,41 @@ function calculateFlashEndurance(
   dailyWriteVolume: number,
   _usableCapacity: number,
   projectYears: number,
+  tiering?: TieredCapacityResult | null,
 ): SustainabilityResult['flashEndurance'] | undefined {
+  // When tiering is present and the cache tier is an SSD with a DWPD rating,
+  // compute endurance on the cache drive (write-back cache absorbs all writes).
+  if (
+    tiering?.cacheTierDrive?.type.startsWith('SSD') &&
+    tiering.cacheTierDrive.reliability.dwpd > 0
+  ) {
+    const enduranceDrive = tiering.cacheTierDrive
+    const enduranceCount = tiering.cacheTierDriveCount
+
+    // Spread workload evenly across cache drives
+    const perDriveDailyWrites = dailyWriteVolume / enduranceCount
+    const requiredDwpd = perDriveDailyWrites / enduranceDrive.capacity_raw
+    const ratedDwpd = enduranceDrive.reliability.dwpd
+
+    const warrantyYears = 5
+    const tbw = (enduranceDrive.capacity_raw * ratedDwpd * 365 * warrantyYears) / 1024 ** 4
+    const annualWritesTB = (perDriveDailyWrites * 365) / 1024 ** 4
+    const expectedLifeYears = annualWritesTB > 0 ? tbw / annualWritesTB : 100
+
+    const surviveProject = expectedLifeYears >= projectYears
+    const utilizationPercent = (requiredDwpd / ratedDwpd) * 100
+
+    return {
+      requiredDwpd,
+      ratedDwpd,
+      expectedLifeYears,
+      surviveProject,
+      utilizationPercent,
+    }
+  }
+
+  // Non-tiered path — original behavior, byte-for-byte identical.
+
   // Only applicable to SSDs
   if (!drive.type.startsWith('SSD')) {
     return undefined
@@ -130,10 +177,18 @@ export function calculateSustainability(input: SustainabilityInput): Sustainabil
     electricityCostPerKwh,
     dailyWriteVolume,
     usableCapacity,
+    tiering,
   } = input
 
   // Power breakdown
-  const powerBreakdown = calculatePower(drive, driveCount, serverCount, serverPowerWatts, pue)
+  const powerBreakdown = calculatePower(
+    drive,
+    driveCount,
+    serverCount,
+    serverPowerWatts,
+    pue,
+    tiering,
+  )
 
   // Annual energy consumption (kWh)
   const annualEnergyKwh = (powerBreakdown.total * HOURS_PER_YEAR) / 1000
@@ -151,6 +206,7 @@ export function calculateSustainability(input: SustainabilityInput): Sustainabil
     dailyWriteVolume,
     usableCapacity,
     projectYears,
+    tiering,
   )
 
   return {

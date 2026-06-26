@@ -4,6 +4,8 @@
  */
 
 import drivesData from '@/data/drives.json'
+// Shared tiering resolver
+import { isAllFlashMedia, resolveTiering } from '@/engines/shared/tiering'
 import type { Drive } from '@/types/drive'
 import type { VolumetryResult, ZfsCapacityDetails } from '@/types/results'
 import type {
@@ -30,12 +32,7 @@ import { calculateOverheads } from './overhead/overheadCalculator'
 // Post-processing (compression, dedup, ZFS details)
 import { applyCompressionDedup, buildZfsDetails } from './postProcessing/capacityEnhancements'
 // Validation module
-import {
-  checkTieringConfiguration,
-  validateDrive,
-  validateDriveCount,
-  validateTopology,
-} from './validation/inputValidation'
+import { validateDrive, validateDriveCount, validateTopology } from './validation/inputValidation'
 
 // Type assertion for the imported JSON - preserved for potential future drive lookup
 // drivesData imported but variable intentionally unused with underscore prefix
@@ -101,14 +98,12 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
   if (topologyValidation) return topologyValidation
 
   // Check for tiered configuration (must happen before driveCount/drive validation)
-  const tieredCapacity = checkTieringConfiguration(
-    topology,
-    serverCount,
+  const tieredCapacity = resolveTiering(topology, serverCount, {
     s2dOptions,
     vsanOptions,
     cephOptions,
     nutanixOptions,
-  )
+  })
 
   // Validate drive count
   const driveCountValidation = validateDriveCount(driveCount, tieredCapacity)
@@ -118,10 +113,14 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
   const driveValidation = validateDrive(drive, tieredCapacity)
   if (driveValidation) return driveValidation
 
-  // Calculate raw capacity based on tiering or standard configuration
+  // Calculate raw capacity based on tiering or standard configuration.
+  // When tiered, the capacity tier is the resiliency media; the cache tier is excluded from
+  // usable capacity and counted only toward raw (so cluster efficiency reflects it).
   const effectiveDrive = tieredCapacity?.capacityTierDrive ?? drive
   const effectiveDriveCount = tieredCapacity ? tieredCapacity.capacityTierDriveCount : driveCount
   const cacheTierCapacity = tieredCapacity?.cacheTierCapacity ?? 0
+  // All-flash vs hybrid selects S2D's dual-parity efficiency table
+  const isAllFlash = isAllFlashMedia(tieredCapacity, drive)
 
   // Raw capacity (all drives including hot spares and cache tier)
   const rawCapacity = tieredCapacity
@@ -145,6 +144,7 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
     cephOptions,
     nutanixOptions,
     serverCount,
+    isAllFlash,
   )
 
   // Synology system partition overhead must be calculated before parity
@@ -154,13 +154,29 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
   }
 
   const capacityAfterSysPartition = rawUsableCapacity - synologySystemOverhead
-  const capacityAfterParity = capacityAfterSysPartition * dataFraction
-  const parityOverhead = capacityAfterSysPartition - capacityAfterParity
 
-  // Calculate all overhead factors
+  // S2D rebuild reserve is unallocated RAW pool space, so it is removed BEFORE the resiliency
+  // efficiency multiplier (matching Microsoft / Azure Local). Sized in whole capacity-tier
+  // drives: one per server capped at 4 (default), or a whole node's drives (opt-in).
+  let s2dReserve = 0
+  if (topology.type === 's2d' && s2dOptions.rebuildReserve) {
+    const reserveDrives =
+      s2dOptions.reserveStrategy === 'node_failure'
+        ? usableDrives / s2dOptions.faultDomains
+        : Math.min(s2dOptions.faultDomains, 4)
+    s2dReserve = effectiveDrive.capacity_raw * Math.min(reserveDrives, usableDrives)
+  }
+  // Never reserve more than the available raw pool (tiny clusters)
+  s2dReserve = Math.min(s2dReserve, Math.max(0, capacityAfterSysPartition))
+
+  const capacityAfterReserve = capacityAfterSysPartition - s2dReserve
+  const capacityAfterParity = capacityAfterReserve * dataFraction
+  const parityOverhead = capacityAfterReserve - capacityAfterParity
+
+  // Calculate all overhead factors (effectiveDrive = capacity-tier drive when tiered)
   const overheads = calculateOverheads({
     topology,
-    drive,
+    drive: effectiveDrive,
     usableDrives,
     rawUsableCapacity,
     capacityAfterParity,
@@ -180,7 +196,7 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
 
   // Extract overhead values
   const {
-    s2dReserve,
+    s2dInfraReserve,
     slopOverhead,
     zfsAshiftOverhead,
     powerFlexFgOverhead,
@@ -194,11 +210,13 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
     filesystemOverhead,
   } = overheads
 
-  // Usable capacity (before compression/dedup and safe capacity factor)
+  // Usable capacity (before compression/dedup and safe capacity factor).
+  // The S2D rebuild reserve was already removed pre-parity; only the post-efficiency
+  // infrastructure reserve is subtracted here.
   const capacityForFs =
     capacityAfterParity -
     slopOverhead -
-    s2dReserve -
+    s2dInfraReserve -
     powerFlexFgOverhead -
     netAppSnapshotReserve -
     nutanixSystemOverhead -
@@ -252,6 +270,7 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
     cacheTierCapacity,
     slopOverhead,
     s2dReserve,
+    s2dInfraReserve,
     synologySystemOverhead,
     powerFlexFgOverhead,
     netAppSnapshotReserve,

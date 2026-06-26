@@ -5,6 +5,7 @@
 
 import { useMemo } from 'react'
 import drivesData from '@/data/drives.json'
+import { resolveTiering } from '@/engines/shared/tiering'
 import { calculateSustainability } from '@/engines/sustainability'
 import { useConfigStore } from '@/store'
 import type { Drive } from '@/types'
@@ -25,6 +26,12 @@ export function useSustainabilityCalc(usableCapacity: number): SustainabilityRes
     driveCount,
     serverCount,
     serverPowerWatts,
+    // Topology (needed for tiering resolver)
+    topology,
+    s2dOptions,
+    vsanOptions,
+    cephOptions,
+    nutanixOptions,
     // Workload
     dailyWriteVolume,
     // Advanced (sustainability-related only)
@@ -51,6 +58,14 @@ export function useSustainabilityCalc(usableCapacity: number): SustainabilityRes
     // Calculate total drives across all servers
     const totalDriveCount = driveCount * serverCount
 
+    // Resolve tiering configuration (null when not a tiered topology)
+    const tiering = resolveTiering(topology, serverCount, {
+      s2dOptions,
+      vsanOptions,
+      cephOptions,
+      nutanixOptions,
+    })
+
     try {
       return calculateSustainability({
         drive,
@@ -63,6 +78,7 @@ export function useSustainabilityCalc(usableCapacity: number): SustainabilityRes
         electricityCostPerKwh,
         dailyWriteVolume,
         usableCapacity,
+        tiering,
       })
     } catch (error) {
       console.error('[Sustainability Engine Error]', {
@@ -97,5 +113,10 @@ export function useSustainabilityCalc(usableCapacity: number): SustainabilityRes
     electricityCostPerKwh,
     dailyWriteVolume,
     usableCapacity,
+    topology,
+    s2dOptions,
+    vsanOptions,
+    cephOptions,
+    nutanixOptions,
   ])
 }
