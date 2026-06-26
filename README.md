@@ -77,6 +77,7 @@ Comprehensive drive database including:
 - **SATA SSDs**: Samsung 870 EVO, Crucial MX500
 - **Enterprise HDDs**: WD Ultrastar DC HC550/HC580, Seagate Exos X16/X18/X20/X24
 - **NAS HDDs**: WD Red Plus/Pro (2-16TB), Seagate IronWolf/Pro (2-16TB), Toshiba N300 (4-16TB)
+- **High-capacity & EDSFF**: HAMR/SMR/CMR nearline HDDs up to 30TB, EDSFF E1.L/E3.L QLC NVMe rulers up to 122.88TB, 24G-SAS and boot-class SATA SSDs
 
 ## Project Structure
 
