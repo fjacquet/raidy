@@ -1,0 +1,132 @@
+import { describe, expect, it } from 'vitest'
+import drivesData from '@/data/drives.json'
+import type { Drive } from '@/types/drive'
+import { FORM_FACTOR_TO_TYPES } from '@/types/drive'
+
+const drives = drivesData as Record<string, Drive>
+const all = Object.values(drives)
+
+const VALID_TYPES = new Set(['HDD', 'SSD_SATA', 'SSD_SAS', 'SSD_NVMe'])
+const VALID_FF = new Set(['2.5"', '3.5"', 'M.2', 'U.2', 'U.3', 'E1.S', 'E1.L', 'E3.S', 'E3.L'])
+const VALID_IFACE = new Set(['SATA', 'SAS', 'PCIe3', 'PCIe4', 'PCIe5'])
+const VALID_URE = new Set([14, 15, 16, 17])
+
+describe('drive database invariants', () => {
+  it('every drive has a valid type, form factor, interface and sane numbers', () => {
+    for (const d of all) {
+      expect(VALID_TYPES.has(d.type), `${d.id} type`).toBe(true)
+      if (d.formFactor) expect(VALID_FF.has(d.formFactor), `${d.id} ff`).toBe(true)
+      if (d.interface) expect(VALID_IFACE.has(d.interface), `${d.id} iface`).toBe(true)
+      expect(VALID_URE.has(d.reliability.ure_rate), `${d.id} ure`).toBe(true)
+      expect(d.capacity_raw, `${d.id} cap`).toBeGreaterThan(0)
+      expect(d.sector_size === 512 || d.sector_size === 4096, `${d.id} sector`).toBe(true)
+      expect(d.performance.iops_read, `${d.id} iops_read`).toBeGreaterThan(0)
+      expect(d.performance.bandwidth_read_mb, `${d.id} bw`).toBeGreaterThan(0)
+      expect(d.cost_usd, `${d.id} cost`).toBeGreaterThan(0)
+    }
+  })
+
+  it('id matches the map key', () => {
+    for (const [key, d] of Object.entries(drives)) expect(d.id).toBe(key)
+  })
+
+  it('AIC form factor is pruned (not in any filter)', () => {
+    expect(FORM_FACTOR_TO_TYPES.all).not.toContain('AIC')
+    for (const ffs of Object.values(FORM_FACTOR_TO_TYPES)) {
+      expect(ffs).not.toContain('AIC')
+    }
+  })
+})
+
+describe('new HDD entries', () => {
+  it('adds 20/22/26/28/30 TB drives with correct recording', () => {
+    const cases: Array<[string, number, string]> = [
+      ['ent-hdd-7k2-sata-20tb-cmr', 20_000_000_000_000, 'CMR'],
+      ['ent-hdd-7k2-sas-22tb-cmr', 22_000_000_000_000, 'CMR'],
+      ['ent-hdd-7k2-sata-26tb-smr', 26_000_000_000_000, 'SMR'],
+      ['ent-hdd-7k2-sata-28tb-hamr', 28_000_000_000_000, 'HAMR'],
+      ['ent-hdd-7k2-sata-30tb-hamr', 30_000_000_000_000, 'HAMR'],
+    ]
+    for (const [id, cap, rec] of cases) {
+      const d = drives[id]
+      expect(d, id).toBeDefined()
+      if (!d) continue
+      expect(d.type).toBe('HDD')
+      expect(d.capacity_raw).toBe(cap)
+      expect(d.recording).toBe(rec)
+      expect(d.rpm).toBe(7200)
+    }
+  })
+
+  it('represents SMR and HAMR by at least two drives each', () => {
+    const rec = (r: string) => Object.values(drives).filter((d) => d.recording === r).length
+    expect(rec('SMR')).toBeGreaterThanOrEqual(2)
+    expect(rec('HAMR')).toBeGreaterThanOrEqual(2)
+  })
+})
+
+describe('new NVMe entries', () => {
+  it('adds the ruler QLC and PCIe5 TLC drives', () => {
+    const ids = [
+      'dc-nvme-pcie4-30720gb-qlc-e1l-ri',
+      'dc-nvme-pcie4-122880gb-qlc-e1l-ri',
+      'dc-nvme-pcie5-61440gb-qlc-e3l-ri',
+      'dc-nvme-pcie5-3840gb-tlc-e3s-mu',
+      'ent-nvme-pcie5-7680gb-tlc-u3-ri',
+      'ent-nvme-pcie5-1920gb-tlc-m2-ri',
+    ]
+    for (const id of ids) {
+      const d = drives[id]
+      expect(d, id).toBeDefined()
+      if (!d) continue
+      expect(d.type).toBe('SSD_NVMe')
+      expect(d.nandType === 'QLC' || d.nandType === 'TLC').toBe(true)
+    }
+  })
+
+  it('represents E1.L and E3.L form factors', () => {
+    const ff = (f: string) => Object.values(drives).some((d) => d.formFactor === f)
+    expect(ff('E1.L')).toBe(true)
+    expect(ff('E3.L')).toBe(true)
+  })
+})
+
+describe('new SAS/SATA SSD entries', () => {
+  it('adds the mid-range SAS and small SATA SSDs', () => {
+    const cases: Array<[string, string, number]> = [
+      ['ent-ssd-sas-7680gb-mu', 'SSD_SAS', 7_680_000_000_000],
+      ['ent-ssd-sas-15360gb-ri', 'SSD_SAS', 15_360_000_000_000],
+      ['ent-ssd-sata-960gb-mu', 'SSD_SATA', 960_000_000_000],
+      ['ent-ssd-sata-480gb-ri', 'SSD_SATA', 480_000_000_000],
+    ]
+    for (const [id, type, cap] of cases) {
+      const d = drives[id]
+      expect(d, id).toBeDefined()
+      if (!d) continue
+      expect(d.type).toBe(type)
+      expect(d.capacity_raw).toBe(cap)
+      expect(d.nandType).toBe('TLC')
+    }
+  })
+})
+
+describe('SSD nandType coverage', () => {
+  it('every SSD has a nandType', () => {
+    for (const d of Object.values(drives)) {
+      if (d.type.startsWith('SSD')) expect(d.nandType, `${d.id} nandType`).toBeDefined()
+    }
+  })
+
+  it('TLC is well represented and the 30TB+ read-intensive drives are QLC', () => {
+    const tlc = Object.values(drives).filter((d) => d.nandType === 'TLC').length
+    expect(tlc).toBeGreaterThanOrEqual(20)
+    for (const id of [
+      'ent-nvme-pcie4-30720gb-u3-ri',
+      'dc-nvme-pcie5-30720gb-e3s-ri',
+      'ent-ssd-sas-30720gb-ri',
+      'con-ssd-sata-4tb-ri',
+    ]) {
+      expect(drives[id]?.nandType, id).toBe('QLC')
+    }
+  })
+})

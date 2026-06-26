@@ -19,24 +19,14 @@ export const CONNECTIVITY_TO_TYPES: Record<DriveConnectivity, DriveType[]> = {
 }
 
 /** Physical form factors for drives */
-export type FormFactor =
-  | '2.5"'
-  | '3.5"'
-  | 'M.2'
-  | 'U.2'
-  | 'U.3'
-  | 'E1.S'
-  | 'E1.L'
-  | 'E3.S'
-  | 'E3.L'
-  | 'AIC'
+export type FormFactor = '2.5"' | '3.5"' | 'M.2' | 'U.2' | 'U.3' | 'E1.S' | 'E1.L' | 'E3.S' | 'E3.L'
 
 /** Form factor filter options */
 export type FormFactorFilter = 'all' | '2.5"' | '3.5"' | 'u.2' | 'e3.s' | 'edsff' | 'm.2'
 
 /** Mapping from form factor filter to actual form factors */
 export const FORM_FACTOR_TO_TYPES: Record<FormFactorFilter, FormFactor[]> = {
-  all: ['2.5"', '3.5"', 'M.2', 'U.2', 'U.3', 'E1.S', 'E1.L', 'E3.S', 'E3.L', 'AIC'],
+  all: ['2.5"', '3.5"', 'M.2', 'U.2', 'U.3', 'E1.S', 'E1.L', 'E3.S', 'E3.L'],
   '2.5"': ['2.5"'],
   '3.5"': ['3.5"'],
   'u.2': ['U.2', 'U.3'],

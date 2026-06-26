@@ -493,6 +493,111 @@
     },
     "cost_usd": 373
   },
+  "ent-hdd-7k2-sata-20tb-cmr": {
+    "id": "ent-hdd-7k2-sata-20tb-cmr",
+    "model": "Enterprise HDD 7.2K SATA 3.5\" 20TB CMR",
+    "type": "HDD",
+    "tier": "enterprise",
+    "formFactor": "3.5\"",
+    "interface": "SATA",
+    "rpm": 7200,
+    "recording": "CMR",
+    "capacity_raw": 20000000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 168,
+      "iops_write": 168,
+      "bandwidth_read_mb": 285,
+      "bandwidth_write_mb": 285
+    },
+    "reliability": { "ure_rate": 15, "afr": 0.35, "dwpd": 0, "mtbf_hours": 2500000 },
+    "power": { "idle_watts": 5.4, "load_watts": 9.4 },
+    "cost_usd": 299
+  },
+  "ent-hdd-7k2-sas-22tb-cmr": {
+    "id": "ent-hdd-7k2-sas-22tb-cmr",
+    "model": "Enterprise HDD 7.2K SAS 3.5\" 22TB CMR",
+    "type": "HDD",
+    "tier": "enterprise",
+    "formFactor": "3.5\"",
+    "interface": "SAS",
+    "rpm": 7200,
+    "recording": "CMR",
+    "capacity_raw": 22000000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 168,
+      "iops_write": 168,
+      "bandwidth_read_mb": 285,
+      "bandwidth_write_mb": 285
+    },
+    "reliability": { "ure_rate": 15, "afr": 0.35, "dwpd": 0, "mtbf_hours": 2500000 },
+    "power": { "idle_watts": 5.5, "load_watts": 9.8 },
+    "cost_usd": 499
+  },
+  "ent-hdd-7k2-sata-26tb-smr": {
+    "id": "ent-hdd-7k2-sata-26tb-smr",
+    "model": "Enterprise HDD 7.2K SATA 3.5\" 26TB SMR",
+    "type": "HDD",
+    "tier": "enterprise",
+    "formFactor": "3.5\"",
+    "interface": "SATA",
+    "rpm": 7200,
+    "recording": "SMR",
+    "capacity_raw": 26000000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 80,
+      "iops_write": 40,
+      "bandwidth_read_mb": 270,
+      "bandwidth_write_mb": 270
+    },
+    "reliability": { "ure_rate": 15, "afr": 0.35, "dwpd": 0, "mtbf_hours": 2500000 },
+    "power": { "idle_watts": 5.5, "load_watts": 9.4 },
+    "cost_usd": 549
+  },
+  "ent-hdd-7k2-sata-28tb-hamr": {
+    "id": "ent-hdd-7k2-sata-28tb-hamr",
+    "model": "Enterprise HDD 7.2K SATA 3.5\" 28TB HAMR",
+    "type": "HDD",
+    "tier": "enterprise",
+    "formFactor": "3.5\"",
+    "interface": "SATA",
+    "rpm": 7200,
+    "recording": "HAMR",
+    "capacity_raw": 28000000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 175,
+      "iops_write": 175,
+      "bandwidth_read_mb": 288,
+      "bandwidth_write_mb": 288
+    },
+    "reliability": { "ure_rate": 15, "afr": 0.35, "dwpd": 0, "mtbf_hours": 2500000 },
+    "power": { "idle_watts": 6.9, "load_watts": 9.5 },
+    "cost_usd": 560
+  },
+  "ent-hdd-7k2-sata-30tb-hamr": {
+    "id": "ent-hdd-7k2-sata-30tb-hamr",
+    "model": "Enterprise HDD 7.2K SATA 3.5\" 30TB HAMR",
+    "type": "HDD",
+    "tier": "enterprise",
+    "formFactor": "3.5\"",
+    "interface": "SATA",
+    "rpm": 7200,
+    "recording": "HAMR",
+    "capacity_raw": 30000000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 178,
+      "iops_write": 178,
+      "bandwidth_read_mb": 295,
+      "bandwidth_write_mb": 295
+    },
+    "reliability": { "ure_rate": 15, "afr": 0.35, "dwpd": 0, "mtbf_hours": 2500000 },
+    "power": { "idle_watts": 6.9, "load_watts": 9.5 },
+    "cost_usd": 589
+  },
   "ent-ssd-sata-960gb-ri": {
     "id": "ent-ssd-sata-960gb-ri",
     "model": "Enterprise SSD SATA 2.5\" 960GB Read-Intensive",
@@ -500,6 +605,7 @@
     "tier": "enterprise",
     "formFactor": "2.5\"",
     "interface": "SATA",
+    "nandType": "TLC",
     "capacity_raw": 960000000000,
     "sector_size": 512,
     "performance": {
@@ -527,6 +633,7 @@
     "tier": "enterprise",
     "formFactor": "2.5\"",
     "interface": "SATA",
+    "nandType": "TLC",
     "capacity_raw": 1920000000000,
     "sector_size": 512,
     "performance": {
@@ -554,6 +661,7 @@
     "tier": "enterprise",
     "formFactor": "2.5\"",
     "interface": "SATA",
+    "nandType": "TLC",
     "capacity_raw": 3840000000000,
     "sector_size": 512,
     "performance": {
@@ -581,6 +689,7 @@
     "tier": "enterprise",
     "formFactor": "2.5\"",
     "interface": "SATA",
+    "nandType": "TLC",
     "capacity_raw": 7680000000000,
     "sector_size": 512,
     "performance": {
@@ -608,6 +717,7 @@
     "tier": "consumer",
     "formFactor": "2.5\"",
     "interface": "SATA",
+    "nandType": "QLC",
     "capacity_raw": 4000000000000,
     "sector_size": 512,
     "performance": {
@@ -628,6 +738,46 @@
     },
     "cost_usd": 349
   },
+  "ent-ssd-sata-960gb-mu": {
+    "id": "ent-ssd-sata-960gb-mu",
+    "model": "Enterprise SSD SATA 2.5\" 960GB Mixed-Use",
+    "type": "SSD_SATA",
+    "tier": "enterprise",
+    "formFactor": "2.5\"",
+    "interface": "SATA",
+    "nandType": "TLC",
+    "capacity_raw": 960000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 95000,
+      "iops_write": 45000,
+      "bandwidth_read_mb": 540,
+      "bandwidth_write_mb": 420
+    },
+    "reliability": { "ure_rate": 17, "afr": 0.29, "dwpd": 3, "mtbf_hours": 3000000 },
+    "power": { "idle_watts": 2.5, "load_watts": 3.1 },
+    "cost_usd": 160
+  },
+  "ent-ssd-sata-480gb-ri": {
+    "id": "ent-ssd-sata-480gb-ri",
+    "model": "Enterprise SSD SATA 2.5\" 480GB Read-Intensive",
+    "type": "SSD_SATA",
+    "tier": "enterprise",
+    "formFactor": "2.5\"",
+    "interface": "SATA",
+    "nandType": "TLC",
+    "capacity_raw": 480000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 98000,
+      "iops_write": 30000,
+      "bandwidth_read_mb": 550,
+      "bandwidth_write_mb": 520
+    },
+    "reliability": { "ure_rate": 17, "afr": 0.44, "dwpd": 1, "mtbf_hours": 2000000 },
+    "power": { "idle_watts": 1.3, "load_watts": 3.2 },
+    "cost_usd": 90
+  },
   "ent-ssd-sas-1600gb-wi": {
     "id": "ent-ssd-sas-1600gb-wi",
     "model": "Enterprise SSD SAS 2.5\" 1.6TB Write-Intensive",
@@ -635,6 +785,7 @@
     "tier": "enterprise",
     "formFactor": "2.5\"",
     "interface": "SAS",
+    "nandType": "TLC",
     "capacity_raw": 1600000000000,
     "sector_size": 512,
     "performance": {
@@ -662,6 +813,7 @@
     "tier": "enterprise",
     "formFactor": "2.5\"",
     "interface": "SAS",
+    "nandType": "TLC",
     "capacity_raw": 1920000000000,
     "sector_size": 512,
     "performance": {
@@ -689,6 +841,7 @@
     "tier": "enterprise",
     "formFactor": "2.5\"",
     "interface": "SAS",
+    "nandType": "TLC",
     "capacity_raw": 3200000000000,
     "sector_size": 512,
     "performance": {
@@ -716,6 +869,7 @@
     "tier": "enterprise",
     "formFactor": "2.5\"",
     "interface": "SAS",
+    "nandType": "TLC",
     "capacity_raw": 3200000000000,
     "sector_size": 512,
     "performance": {
@@ -743,6 +897,7 @@
     "tier": "enterprise",
     "formFactor": "2.5\"",
     "interface": "SAS",
+    "nandType": "TLC",
     "capacity_raw": 12800000000000,
     "sector_size": 512,
     "performance": {
@@ -770,6 +925,7 @@
     "tier": "enterprise",
     "formFactor": "2.5\"",
     "interface": "SAS",
+    "nandType": "QLC",
     "capacity_raw": 30720000000000,
     "sector_size": 512,
     "performance": {
@@ -790,6 +946,46 @@
     },
     "cost_usd": 3973
   },
+  "ent-ssd-sas-7680gb-mu": {
+    "id": "ent-ssd-sas-7680gb-mu",
+    "model": "Enterprise SSD SAS 2.5\" 7.68TB Mixed-Use",
+    "type": "SSD_SAS",
+    "tier": "enterprise",
+    "formFactor": "2.5\"",
+    "interface": "SAS",
+    "nandType": "TLC",
+    "capacity_raw": 7680000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 720000,
+      "iops_write": 200000,
+      "bandwidth_read_mb": 4200,
+      "bandwidth_write_mb": 3500
+    },
+    "reliability": { "ure_rate": 17, "afr": 0.35, "dwpd": 3, "mtbf_hours": 2500000 },
+    "power": { "idle_watts": 5, "load_watts": 18 },
+    "cost_usd": 3200
+  },
+  "ent-ssd-sas-15360gb-ri": {
+    "id": "ent-ssd-sas-15360gb-ri",
+    "model": "Enterprise SSD SAS 2.5\" 15.36TB Read-Intensive",
+    "type": "SSD_SAS",
+    "tier": "enterprise",
+    "formFactor": "2.5\"",
+    "interface": "SAS",
+    "nandType": "TLC",
+    "capacity_raw": 15360000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 260000,
+      "iops_write": 50000,
+      "bandwidth_read_mb": 2100,
+      "bandwidth_write_mb": 1400
+    },
+    "reliability": { "ure_rate": 17, "afr": 0.35, "dwpd": 1, "mtbf_hours": 2500000 },
+    "power": { "idle_watts": 3, "load_watts": 14 },
+    "cost_usd": 4500
+  },
   "ent-nvme-pcie4-960gb-m2-ri": {
     "id": "ent-nvme-pcie4-960gb-m2-ri",
     "model": "Enterprise NVMe PCIe4 M.2 960GB Read-Intensive",
@@ -797,6 +993,7 @@
     "tier": "enterprise",
     "formFactor": "M.2",
     "interface": "PCIe4",
+    "nandType": "TLC",
     "capacity_raw": 960000000000,
     "sector_size": 512,
     "performance": {
@@ -824,6 +1021,7 @@
     "tier": "enterprise",
     "formFactor": "U.3",
     "interface": "PCIe4",
+    "nandType": "TLC",
     "capacity_raw": 1600000000000,
     "sector_size": 4096,
     "performance": {
@@ -851,6 +1049,7 @@
     "tier": "enterprise",
     "formFactor": "U.2",
     "interface": "PCIe4",
+    "nandType": "TLC",
     "capacity_raw": 1920000000000,
     "sector_size": 512,
     "performance": {
@@ -878,6 +1077,7 @@
     "tier": "enterprise",
     "formFactor": "U.3",
     "interface": "PCIe4",
+    "nandType": "TLC",
     "capacity_raw": 1920000000000,
     "sector_size": 4096,
     "performance": {
@@ -905,6 +1105,7 @@
     "tier": "enterprise",
     "formFactor": "M.2",
     "interface": "PCIe4",
+    "nandType": "TLC",
     "capacity_raw": 3840000000000,
     "sector_size": 512,
     "performance": {
@@ -932,6 +1133,7 @@
     "tier": "enterprise",
     "formFactor": "U.3",
     "interface": "PCIe4",
+    "nandType": "TLC",
     "capacity_raw": 6400000000000,
     "sector_size": 4096,
     "performance": {
@@ -959,6 +1161,7 @@
     "tier": "enterprise",
     "formFactor": "U.2",
     "interface": "PCIe4",
+    "nandType": "TLC",
     "capacity_raw": 6400000000000,
     "sector_size": 512,
     "performance": {
@@ -986,6 +1189,7 @@
     "tier": "enterprise",
     "formFactor": "U.2",
     "interface": "PCIe4",
+    "nandType": "TLC",
     "capacity_raw": 15360000000000,
     "sector_size": 512,
     "performance": {
@@ -1013,6 +1217,7 @@
     "tier": "enterprise",
     "formFactor": "U.3",
     "interface": "PCIe4",
+    "nandType": "QLC",
     "capacity_raw": 30720000000000,
     "sector_size": 4096,
     "performance": {
@@ -1168,6 +1373,7 @@
     "tier": "datacenter",
     "formFactor": "E1.S",
     "interface": "PCIe5",
+    "nandType": "TLC",
     "capacity_raw": 1920000000000,
     "sector_size": 512,
     "performance": {
@@ -1227,6 +1433,7 @@
     "tier": "datacenter",
     "formFactor": "E3.S",
     "interface": "PCIe4",
+    "nandType": "TLC",
     "capacity_raw": 6400000000000,
     "sector_size": 4096,
     "performance": {
@@ -1254,6 +1461,7 @@
     "tier": "datacenter",
     "formFactor": "E1.S",
     "interface": "PCIe5",
+    "nandType": "TLC",
     "capacity_raw": 7680000000000,
     "sector_size": 512,
     "performance": {
@@ -1281,6 +1489,7 @@
     "tier": "datacenter",
     "formFactor": "E3.S",
     "interface": "PCIe5",
+    "nandType": "TLC",
     "capacity_raw": 7680000000000,
     "sector_size": 4096,
     "performance": {
@@ -1308,6 +1517,7 @@
     "tier": "datacenter",
     "formFactor": "E3.S",
     "interface": "PCIe4",
+    "nandType": "TLC",
     "capacity_raw": 7680000000000,
     "sector_size": 512,
     "performance": {
@@ -1335,6 +1545,7 @@
     "tier": "datacenter",
     "formFactor": "U.3",
     "interface": "PCIe5",
+    "nandType": "TLC",
     "capacity_raw": 12800000000000,
     "sector_size": 512,
     "performance": {
@@ -1390,6 +1601,7 @@
     "tier": "datacenter",
     "formFactor": "E3.S",
     "interface": "PCIe5",
+    "nandType": "QLC",
     "capacity_raw": 30720000000000,
     "sector_size": 4096,
     "performance": {
@@ -1605,5 +1817,125 @@
       "load_watts": 27
     },
     "cost_usd": 10999
+  },
+  "dc-nvme-pcie4-30720gb-qlc-e1l-ri": {
+    "id": "dc-nvme-pcie4-30720gb-qlc-e1l-ri",
+    "model": "Datacenter NVMe PCIe4 E1.L 30.72TB QLC Read-Intensive",
+    "type": "SSD_NVMe",
+    "tier": "datacenter",
+    "formFactor": "E1.L",
+    "interface": "PCIe4",
+    "nandType": "QLC",
+    "capacity_raw": 30720000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 600000,
+      "iops_write": 40000,
+      "bandwidth_read_mb": 7000,
+      "bandwidth_write_mb": 3000
+    },
+    "reliability": { "ure_rate": 17, "afr": 0.44, "dwpd": 0.5, "mtbf_hours": 2000000 },
+    "power": { "idle_watts": 5, "load_watts": 20 },
+    "cost_usd": 2500
+  },
+  "dc-nvme-pcie4-122880gb-qlc-e1l-ri": {
+    "id": "dc-nvme-pcie4-122880gb-qlc-e1l-ri",
+    "model": "Datacenter NVMe PCIe4 E1.L 122.88TB QLC Read-Intensive",
+    "type": "SSD_NVMe",
+    "tier": "datacenter",
+    "formFactor": "E1.L",
+    "interface": "PCIe4",
+    "nandType": "QLC",
+    "capacity_raw": 122880000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 1000000,
+      "iops_write": 38000,
+      "bandwidth_read_mb": 7000,
+      "bandwidth_write_mb": 2900
+    },
+    "reliability": { "ure_rate": 17, "afr": 0.44, "dwpd": 0.55, "mtbf_hours": 2000000 },
+    "power": { "idle_watts": 5, "load_watts": 25 },
+    "cost_usd": 8000
+  },
+  "dc-nvme-pcie5-61440gb-qlc-e3l-ri": {
+    "id": "dc-nvme-pcie5-61440gb-qlc-e3l-ri",
+    "model": "Datacenter NVMe PCIe5 E3.L 61.44TB QLC Read-Intensive",
+    "type": "SSD_NVMe",
+    "tier": "datacenter",
+    "formFactor": "E3.L",
+    "interface": "PCIe5",
+    "nandType": "QLC",
+    "capacity_raw": 61440000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 800000,
+      "iops_write": 40000,
+      "bandwidth_read_mb": 12000,
+      "bandwidth_write_mb": 3500
+    },
+    "reliability": { "ure_rate": 17, "afr": 0.35, "dwpd": 0.5, "mtbf_hours": 2500000 },
+    "power": { "idle_watts": 5, "load_watts": 25 },
+    "cost_usd": 4500
+  },
+  "dc-nvme-pcie5-3840gb-tlc-e3s-mu": {
+    "id": "dc-nvme-pcie5-3840gb-tlc-e3s-mu",
+    "model": "Datacenter NVMe PCIe5 E3.S 3.84TB TLC Mixed-Use",
+    "type": "SSD_NVMe",
+    "tier": "datacenter",
+    "formFactor": "E3.S",
+    "interface": "PCIe5",
+    "nandType": "TLC",
+    "capacity_raw": 3840000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 2000000,
+      "iops_write": 350000,
+      "bandwidth_read_mb": 12000,
+      "bandwidth_write_mb": 6000
+    },
+    "reliability": { "ure_rate": 17, "afr": 0.35, "dwpd": 3, "mtbf_hours": 2500000 },
+    "power": { "idle_watts": 4, "load_watts": 14 },
+    "cost_usd": 1000
+  },
+  "ent-nvme-pcie5-7680gb-tlc-u3-ri": {
+    "id": "ent-nvme-pcie5-7680gb-tlc-u3-ri",
+    "model": "Enterprise NVMe PCIe5 U.3 7.68TB TLC Read-Intensive",
+    "type": "SSD_NVMe",
+    "tier": "enterprise",
+    "formFactor": "U.3",
+    "interface": "PCIe5",
+    "nandType": "TLC",
+    "capacity_raw": 7680000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 2000000,
+      "iops_write": 300000,
+      "bandwidth_read_mb": 12000,
+      "bandwidth_write_mb": 6000
+    },
+    "reliability": { "ure_rate": 17, "afr": 0.35, "dwpd": 1, "mtbf_hours": 2500000 },
+    "power": { "idle_watts": 5, "load_watts": 15 },
+    "cost_usd": 1800
+  },
+  "ent-nvme-pcie5-1920gb-tlc-m2-ri": {
+    "id": "ent-nvme-pcie5-1920gb-tlc-m2-ri",
+    "model": "Enterprise NVMe PCIe5 M.2 1.92TB TLC Read-Intensive",
+    "type": "SSD_NVMe",
+    "tier": "enterprise",
+    "formFactor": "M.2",
+    "interface": "PCIe5",
+    "nandType": "TLC",
+    "capacity_raw": 1920000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 800000,
+      "iops_write": 65000,
+      "bandwidth_read_mb": 6500,
+      "bandwidth_write_mb": 3000
+    },
+    "reliability": { "ure_rate": 17, "afr": 0.35, "dwpd": 1, "mtbf_hours": 2500000 },
+    "power": { "idle_watts": 2, "load_watts": 8 },
+    "cost_usd": 450
   }
 }

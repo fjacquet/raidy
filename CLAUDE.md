@@ -119,7 +119,7 @@ Platform-specific input panels live in `src/components/inputs/topology-options/`
 
 ## Key Data Files
 
-- **Drive database**: `src/data/drives.json` (~4K lines) — all drive specs loaded at startup
+- **Drive database**: `src/data/drives.json` (~1.9K lines, 72 drives) — all drive specs loaded at startup
 - **Type definitions**: `src/types/topology.ts` (~730 lines) — the Topology discriminated union is central to the entire app
 - **i18n translations**: `src/i18n/locales/{en,fr,de,it}/` — 8 namespace files per language
 
