@@ -63,3 +63,28 @@ describe('new HDD entries', () => {
     expect(rec('HAMR')).toBeGreaterThanOrEqual(2)
   })
 })
+
+describe('new NVMe entries', () => {
+  it('adds the ruler QLC and PCIe5 TLC drives', () => {
+    const ids = [
+      'dc-nvme-pcie4-30720gb-qlc-e1l-ri',
+      'dc-nvme-pcie4-122880gb-qlc-e1l-ri',
+      'dc-nvme-pcie5-61440gb-qlc-e3l-ri',
+      'dc-nvme-pcie5-3840gb-tlc-e3s-mu',
+      'ent-nvme-pcie5-7680gb-tlc-u3-ri',
+      'ent-nvme-pcie5-1920gb-tlc-m2-ri',
+    ]
+    for (const id of ids) {
+      const d = drives[id]
+      expect(d, id).toBeDefined()
+      expect(d.type).toBe('SSD_NVMe')
+      expect(d.nandType === 'QLC' || d.nandType === 'TLC').toBe(true)
+    }
+  })
+
+  it('represents E1.L and E3.L form factors', () => {
+    const ff = (f: string) => Object.values(drives).some((d) => d.formFactor === f)
+    expect(ff('E1.L')).toBe(true)
+    expect(ff('E3.L')).toBe(true)
+  })
+})

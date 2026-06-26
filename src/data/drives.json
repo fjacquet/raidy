@@ -1710,5 +1710,125 @@
       "load_watts": 27
     },
     "cost_usd": 10999
+  },
+  "dc-nvme-pcie4-30720gb-qlc-e1l-ri": {
+    "id": "dc-nvme-pcie4-30720gb-qlc-e1l-ri",
+    "model": "Datacenter NVMe PCIe4 E1.L 30.72TB QLC Read-Intensive",
+    "type": "SSD_NVMe",
+    "tier": "datacenter",
+    "formFactor": "E1.L",
+    "interface": "PCIe4",
+    "nandType": "QLC",
+    "capacity_raw": 30720000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 600000,
+      "iops_write": 40000,
+      "bandwidth_read_mb": 7000,
+      "bandwidth_write_mb": 3000
+    },
+    "reliability": { "ure_rate": 17, "afr": 0.44, "dwpd": 0.5, "mtbf_hours": 2000000 },
+    "power": { "idle_watts": 5, "load_watts": 20 },
+    "cost_usd": 2500
+  },
+  "dc-nvme-pcie4-122880gb-qlc-e1l-ri": {
+    "id": "dc-nvme-pcie4-122880gb-qlc-e1l-ri",
+    "model": "Datacenter NVMe PCIe4 E1.L 122.88TB QLC Read-Intensive",
+    "type": "SSD_NVMe",
+    "tier": "datacenter",
+    "formFactor": "E1.L",
+    "interface": "PCIe4",
+    "nandType": "QLC",
+    "capacity_raw": 122880000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 1000000,
+      "iops_write": 38000,
+      "bandwidth_read_mb": 7000,
+      "bandwidth_write_mb": 2900
+    },
+    "reliability": { "ure_rate": 17, "afr": 0.44, "dwpd": 0.55, "mtbf_hours": 2000000 },
+    "power": { "idle_watts": 5, "load_watts": 25 },
+    "cost_usd": 8000
+  },
+  "dc-nvme-pcie5-61440gb-qlc-e3l-ri": {
+    "id": "dc-nvme-pcie5-61440gb-qlc-e3l-ri",
+    "model": "Datacenter NVMe PCIe5 E3.L 61.44TB QLC Read-Intensive",
+    "type": "SSD_NVMe",
+    "tier": "datacenter",
+    "formFactor": "E3.L",
+    "interface": "PCIe5",
+    "nandType": "QLC",
+    "capacity_raw": 61440000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 800000,
+      "iops_write": 40000,
+      "bandwidth_read_mb": 12000,
+      "bandwidth_write_mb": 3500
+    },
+    "reliability": { "ure_rate": 17, "afr": 0.35, "dwpd": 0.5, "mtbf_hours": 2500000 },
+    "power": { "idle_watts": 5, "load_watts": 25 },
+    "cost_usd": 4500
+  },
+  "dc-nvme-pcie5-3840gb-tlc-e3s-mu": {
+    "id": "dc-nvme-pcie5-3840gb-tlc-e3s-mu",
+    "model": "Datacenter NVMe PCIe5 E3.S 3.84TB TLC Mixed-Use",
+    "type": "SSD_NVMe",
+    "tier": "datacenter",
+    "formFactor": "E3.S",
+    "interface": "PCIe5",
+    "nandType": "TLC",
+    "capacity_raw": 3840000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 2000000,
+      "iops_write": 350000,
+      "bandwidth_read_mb": 12000,
+      "bandwidth_write_mb": 6000
+    },
+    "reliability": { "ure_rate": 17, "afr": 0.35, "dwpd": 3, "mtbf_hours": 2500000 },
+    "power": { "idle_watts": 4, "load_watts": 14 },
+    "cost_usd": 1000
+  },
+  "ent-nvme-pcie5-7680gb-tlc-u3-ri": {
+    "id": "ent-nvme-pcie5-7680gb-tlc-u3-ri",
+    "model": "Enterprise NVMe PCIe5 U.3 7.68TB TLC Read-Intensive",
+    "type": "SSD_NVMe",
+    "tier": "enterprise",
+    "formFactor": "U.3",
+    "interface": "PCIe5",
+    "nandType": "TLC",
+    "capacity_raw": 7680000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 2000000,
+      "iops_write": 300000,
+      "bandwidth_read_mb": 12000,
+      "bandwidth_write_mb": 6000
+    },
+    "reliability": { "ure_rate": 17, "afr": 0.35, "dwpd": 1, "mtbf_hours": 2500000 },
+    "power": { "idle_watts": 5, "load_watts": 15 },
+    "cost_usd": 1800
+  },
+  "ent-nvme-pcie5-1920gb-tlc-m2-ri": {
+    "id": "ent-nvme-pcie5-1920gb-tlc-m2-ri",
+    "model": "Enterprise NVMe PCIe5 M.2 1.92TB TLC Read-Intensive",
+    "type": "SSD_NVMe",
+    "tier": "enterprise",
+    "formFactor": "M.2",
+    "interface": "PCIe5",
+    "nandType": "TLC",
+    "capacity_raw": 1920000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 800000,
+      "iops_write": 65000,
+      "bandwidth_read_mb": 6500,
+      "bandwidth_write_mb": 3000
+    },
+    "reliability": { "ure_rate": 17, "afr": 0.35, "dwpd": 1, "mtbf_hours": 2500000 },
+    "power": { "idle_watts": 2, "load_watts": 8 },
+    "cost_usd": 450
   }
 }
