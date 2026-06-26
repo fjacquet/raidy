@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import drivesData from '@/data/drives.json'
-import { FORM_FACTOR_TO_TYPES } from '@/types/drive'
 import type { Drive } from '@/types/drive'
+import { FORM_FACTOR_TO_TYPES } from '@/types/drive'
 
 const drives = drivesData as Record<string, Drive>
 const all = Object.values(drives)
@@ -50,6 +50,7 @@ describe('new HDD entries', () => {
     for (const [id, cap, rec] of cases) {
       const d = drives[id]
       expect(d, id).toBeDefined()
+      if (!d) continue
       expect(d.type).toBe('HDD')
       expect(d.capacity_raw).toBe(cap)
       expect(d.recording).toBe(rec)
@@ -77,6 +78,7 @@ describe('new NVMe entries', () => {
     for (const id of ids) {
       const d = drives[id]
       expect(d, id).toBeDefined()
+      if (!d) continue
       expect(d.type).toBe('SSD_NVMe')
       expect(d.nandType === 'QLC' || d.nandType === 'TLC').toBe(true)
     }
@@ -100,6 +102,7 @@ describe('new SAS/SATA SSD entries', () => {
     for (const [id, type, cap] of cases) {
       const d = drives[id]
       expect(d, id).toBeDefined()
+      if (!d) continue
       expect(d.type).toBe(type)
       expect(d.capacity_raw).toBe(cap)
       expect(d.nandType).toBe('TLC')
@@ -123,7 +126,7 @@ describe('SSD nandType coverage', () => {
       'ent-ssd-sas-30720gb-ri',
       'con-ssd-sata-4tb-ri',
     ]) {
-      expect(drives[id].nandType, id).toBe('QLC')
+      expect(drives[id]?.nandType, id).toBe('QLC')
     }
   })
 })
