@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.1] - 2026-06-26
+
+### Fixed
+- **vSAN ESA adaptive RAID-5 threshold now matches VMware.** The 4+1 stripe (80% efficiency) now engages at ≥ 6 hosts (host-count only) as VMware documents — previously it required ≥ 5 hosts *and* ≥ 100 drives. 3–5 host clusters correctly stay 2+1 (67%). Resolves a known limitation noted in 1.9.0.
+- **vSAN ESA RAID-6 is now a fixed 4+2 stripe.** ESA adapts only RAID-5; RAID-6 stays 4+2 (67% efficiency) regardless of cluster size. Removed the incorrect 6+2 (75%) scheme the model applied at ≥ 8 hosts. Resolves a known limitation noted in 1.9.0.
+
 ## [1.9.0] - 2026-06-25
 
 ### Added

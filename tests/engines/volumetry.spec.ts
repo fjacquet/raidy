@@ -1189,22 +1189,23 @@ describe('Volumetry Engine - vSAN Topologies', () => {
       expect(efficiencyDecimal).toBeLessThan(0.7)
     })
 
-    it('RAID-5: should use 2+1 scheme (67%) for clusters with insufficient drives', () => {
-      const input = createInput(50, { type: 'vsan_esa', level: 'vsan_esa_raid5' })
-      input.serverCount = 5 // Meets host threshold
-      // But only 50 drives (need 5 * 20 = 100+ for 4+1)
+    it('RAID-5: should still use 2+1 scheme (67%) at 5 hosts (below the 6-host threshold)', () => {
+      const input = createInput(120, { type: 'vsan_esa', level: 'vsan_esa_raid5' })
+      input.serverCount = 5 // One below the 4+1 threshold
 
       const result = calculateVolumetry(input)
 
-      // Should use 2+1 scheme = 66.67% efficiency
+      // Adaptive RAID-5 switches to 4+1 only at 6+ hosts, so 5 hosts stays 2+1
       const efficiencyDecimal = result.efficiency / 100
       expect(efficiencyDecimal).toBeGreaterThan(0.64)
       expect(efficiencyDecimal).toBeLessThan(0.7)
     })
 
-    it('RAID-5: should use 4+1 scheme (80%) for clusters with ≥5 hosts and 100+ drives', () => {
-      const input = createInput(120, { type: 'vsan_esa', level: 'vsan_esa_raid5' })
-      input.serverCount = 5 // Meets threshold
+    it('RAID-5: should use 4+1 scheme (80%) for clusters with ≥6 hosts', () => {
+      // 96 drives is below the old `serverCount * 20` (=120) cutoff, so this
+      // case only reaches 4+1 under the new host-count-only rule.
+      const input = createInput(96, { type: 'vsan_esa', level: 'vsan_esa_raid5' })
+      input.serverCount = 6 // Meets the VMware 4+1 threshold (host-count only)
 
       const result = calculateVolumetry(input)
 
@@ -1214,9 +1215,9 @@ describe('Volumetry Engine - vSAN Topologies', () => {
       expect(efficiencyDecimal).toBeLessThan(0.83)
     })
 
-    it('RAID-6: should use 4+2 scheme (67%) for clusters with <8 hosts', () => {
+    it('RAID-6: should use a fixed 4+2 scheme (67%) at the 6-host minimum', () => {
       const input = createInput(28, { type: 'vsan_esa', level: 'vsan_esa_raid6' })
-      input.serverCount = 7 // Below threshold
+      input.serverCount = 6
 
       const result = calculateVolumetry(input)
 
@@ -1226,16 +1227,16 @@ describe('Volumetry Engine - vSAN Topologies', () => {
       expect(efficiencyDecimal).toBeLessThan(0.7)
     })
 
-    it('RAID-6: should use 6+2 scheme (75%) for clusters with ≥8 hosts and 160+ drives', () => {
+    it('RAID-6: should stay fixed 4+2 (67%) regardless of cluster size (no 6+2)', () => {
       const input = createInput(160, { type: 'vsan_esa', level: 'vsan_esa_raid6' })
-      input.serverCount = 8 // Meets threshold
+      input.serverCount = 8 // Large cluster — ESA RAID-6 does not widen the stripe
 
       const result = calculateVolumetry(input)
 
-      // Should use 6+2 scheme = 6/8 = 75% efficiency
+      // RAID-6 remains 4+2 = 4/6 = 66.67% (only RAID-5 is adaptive in ESA)
       const efficiencyDecimal = result.efficiency / 100
-      expect(efficiencyDecimal).toBeGreaterThan(0.72)
-      expect(efficiencyDecimal).toBeLessThan(0.78)
+      expect(efficiencyDecimal).toBeGreaterThan(0.64)
+      expect(efficiencyDecimal).toBeLessThan(0.7)
     })
   })
 
@@ -1246,8 +1247,8 @@ describe('Volumetry Engine - vSAN Topologies', () => {
     it('vSAN ESA RAID-5 efficiency should increase with cluster size (adaptive)', () => {
       fc.assert(
         fc.property(
-          fc.integer({ min: 3, max: 4 }), // Small cluster
-          fc.integer({ min: 5, max: 10 }), // Large cluster
+          fc.integer({ min: 3, max: 5 }), // Small cluster (2+1, below the 6-host 4+1 threshold)
+          fc.integer({ min: 6, max: 10 }), // Large cluster (4+1)
           fc.integer({ min: 1_000_000_000_000, max: 5_000_000_000_000 }), // Drive size
           (smallServerCount, largeServerCount, driveSize) => {
             const testDrive: Drive = {
@@ -4119,7 +4120,7 @@ describe('Volumetry Engine - Error Handling', () => {
     })
   })
 
-  describe('Volumetry Engine - vSAN ESA RAID-6 Adaptive Stripe Width', () => {
+  describe('Volumetry Engine - vSAN ESA RAID-6 Fixed 4+2 Stripe Width', () => {
     it('should use 4+2 for small clusters with 4 servers (66.7% efficiency)', () => {
       const input = createInput(80, { type: 'vsan_esa', level: 'vsan_esa_raid6' })
       input.serverCount = 4 // Below 8-server threshold
@@ -4159,43 +4160,40 @@ describe('Volumetry Engine - Error Handling', () => {
       expect(efficiencyDecimal).toBeLessThan(0.7)
     })
 
-    it('should use 6+2 for large clusters (8 servers, 160 drives = 20 drives/server)', () => {
+    it('should stay 4+2 for large clusters (8 servers, 160 drives) — no 6+2 in ESA', () => {
       const input = createInput(160, { type: 'vsan_esa', level: 'vsan_esa_raid6' })
-      input.serverCount = 8 // Meets threshold
+      input.serverCount = 8
 
       const result = calculateVolumetry(input)
 
-      // 8 servers AND 160/8 = 20 drives/server: uses 6+2 configuration
-      // 6+2: 6/(6+2) = 75% efficiency
+      // ESA RAID-6 is a fixed 4+2 stripe regardless of cluster size = 66.7%
       const efficiencyDecimal = result.efficiency / 100
-      expect(efficiencyDecimal).toBeGreaterThan(0.72)
-      expect(efficiencyDecimal).toBeLessThan(0.78)
+      expect(efficiencyDecimal).toBeGreaterThan(0.64)
+      expect(efficiencyDecimal).toBeLessThan(0.7)
     })
 
-    it('should use 6+2 for very large clusters (12 servers, 240 drives = 20 drives/server)', () => {
+    it('should stay 4+2 for very large clusters (12 servers, 240 drives)', () => {
       const input = createInput(240, { type: 'vsan_esa', level: 'vsan_esa_raid6' })
-      input.serverCount = 12 // Well above threshold
+      input.serverCount = 12
 
       const result = calculateVolumetry(input)
 
-      // 12 servers AND 240/12 = 20 drives/server: uses 6+2 configuration
-      // 6+2: 6/(6+2) = 75% efficiency
+      // Still 4+2 = 66.7% (only RAID-5 adapts its stripe width in ESA)
       const efficiencyDecimal = result.efficiency / 100
-      expect(efficiencyDecimal).toBeGreaterThan(0.72)
-      expect(efficiencyDecimal).toBeLessThan(0.78)
+      expect(efficiencyDecimal).toBeGreaterThan(0.64)
+      expect(efficiencyDecimal).toBeLessThan(0.7)
     })
 
-    it('should use 6+2 when both thresholds met (10 servers, 250 drives = 25 drives/server)', () => {
+    it('should stay 4+2 regardless of drives/server (10 servers, 250 drives)', () => {
       const input = createInput(250, { type: 'vsan_esa', level: 'vsan_esa_raid6' })
-      input.serverCount = 10 // Above threshold
+      input.serverCount = 10
 
       const result = calculateVolumetry(input)
 
-      // 10 servers AND 250/10 = 25 drives/server (both thresholds met): uses 6+2
-      // 6+2: 6/(6+2) = 75% efficiency
+      // Drive density no longer influences the stripe width — RAID-6 is fixed 4+2
       const efficiencyDecimal = result.efficiency / 100
-      expect(efficiencyDecimal).toBeGreaterThan(0.72)
-      expect(efficiencyDecimal).toBeLessThan(0.78)
+      expect(efficiencyDecimal).toBeGreaterThan(0.64)
+      expect(efficiencyDecimal).toBeLessThan(0.7)
     })
   })
 
