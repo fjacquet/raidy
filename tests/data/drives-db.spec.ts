@@ -88,3 +88,21 @@ describe('new NVMe entries', () => {
     expect(ff('E3.L')).toBe(true)
   })
 })
+
+describe('new SAS/SATA SSD entries', () => {
+  it('adds the mid-range SAS and small SATA SSDs', () => {
+    const cases: Array<[string, string, number]> = [
+      ['ent-ssd-sas-7680gb-mu', 'SSD_SAS', 7_680_000_000_000],
+      ['ent-ssd-sas-15360gb-ri', 'SSD_SAS', 15_360_000_000_000],
+      ['ent-ssd-sata-960gb-mu', 'SSD_SATA', 960_000_000_000],
+      ['ent-ssd-sata-480gb-ri', 'SSD_SATA', 480_000_000_000],
+    ]
+    for (const [id, type, cap] of cases) {
+      const d = drives[id]
+      expect(d, id).toBeDefined()
+      expect(d.type).toBe(type)
+      expect(d.capacity_raw).toBe(cap)
+      expect(d.nandType).toBe('TLC')
+    }
+  })
+})

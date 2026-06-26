@@ -733,6 +733,46 @@
     },
     "cost_usd": 349
   },
+  "ent-ssd-sata-960gb-mu": {
+    "id": "ent-ssd-sata-960gb-mu",
+    "model": "Enterprise SSD SATA 2.5\" 960GB Mixed-Use",
+    "type": "SSD_SATA",
+    "tier": "enterprise",
+    "formFactor": "2.5\"",
+    "interface": "SATA",
+    "nandType": "TLC",
+    "capacity_raw": 960000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 95000,
+      "iops_write": 45000,
+      "bandwidth_read_mb": 540,
+      "bandwidth_write_mb": 420
+    },
+    "reliability": { "ure_rate": 17, "afr": 0.29, "dwpd": 3, "mtbf_hours": 3000000 },
+    "power": { "idle_watts": 2.5, "load_watts": 3.1 },
+    "cost_usd": 160
+  },
+  "ent-ssd-sata-480gb-ri": {
+    "id": "ent-ssd-sata-480gb-ri",
+    "model": "Enterprise SSD SATA 2.5\" 480GB Read-Intensive",
+    "type": "SSD_SATA",
+    "tier": "enterprise",
+    "formFactor": "2.5\"",
+    "interface": "SATA",
+    "nandType": "TLC",
+    "capacity_raw": 480000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 98000,
+      "iops_write": 30000,
+      "bandwidth_read_mb": 550,
+      "bandwidth_write_mb": 520
+    },
+    "reliability": { "ure_rate": 17, "afr": 0.44, "dwpd": 1, "mtbf_hours": 2000000 },
+    "power": { "idle_watts": 1.3, "load_watts": 3.2 },
+    "cost_usd": 90
+  },
   "ent-ssd-sas-1600gb-wi": {
     "id": "ent-ssd-sas-1600gb-wi",
     "model": "Enterprise SSD SAS 2.5\" 1.6TB Write-Intensive",
@@ -894,6 +934,46 @@
       "load_watts": 13.9
     },
     "cost_usd": 3973
+  },
+  "ent-ssd-sas-7680gb-mu": {
+    "id": "ent-ssd-sas-7680gb-mu",
+    "model": "Enterprise SSD SAS 2.5\" 7.68TB Mixed-Use",
+    "type": "SSD_SAS",
+    "tier": "enterprise",
+    "formFactor": "2.5\"",
+    "interface": "SAS",
+    "nandType": "TLC",
+    "capacity_raw": 7680000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 720000,
+      "iops_write": 200000,
+      "bandwidth_read_mb": 4200,
+      "bandwidth_write_mb": 3500
+    },
+    "reliability": { "ure_rate": 17, "afr": 0.35, "dwpd": 3, "mtbf_hours": 2500000 },
+    "power": { "idle_watts": 5, "load_watts": 18 },
+    "cost_usd": 3200
+  },
+  "ent-ssd-sas-15360gb-ri": {
+    "id": "ent-ssd-sas-15360gb-ri",
+    "model": "Enterprise SSD SAS 2.5\" 15.36TB Read-Intensive",
+    "type": "SSD_SAS",
+    "tier": "enterprise",
+    "formFactor": "2.5\"",
+    "interface": "SAS",
+    "nandType": "TLC",
+    "capacity_raw": 15360000000000,
+    "sector_size": 4096,
+    "performance": {
+      "iops_read": 260000,
+      "iops_write": 50000,
+      "bandwidth_read_mb": 2100,
+      "bandwidth_write_mb": 1400
+    },
+    "reliability": { "ure_rate": 17, "afr": 0.35, "dwpd": 1, "mtbf_hours": 2500000 },
+    "power": { "idle_watts": 3, "load_watts": 14 },
+    "cost_usd": 4500
   },
   "ent-nvme-pcie4-960gb-m2-ri": {
     "id": "ent-nvme-pcie4-960gb-m2-ri",
