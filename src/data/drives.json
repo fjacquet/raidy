@@ -605,6 +605,7 @@
     "tier": "enterprise",
     "formFactor": "2.5\"",
     "interface": "SATA",
+    "nandType": "TLC",
     "capacity_raw": 960000000000,
     "sector_size": 512,
     "performance": {
@@ -632,6 +633,7 @@
     "tier": "enterprise",
     "formFactor": "2.5\"",
     "interface": "SATA",
+    "nandType": "TLC",
     "capacity_raw": 1920000000000,
     "sector_size": 512,
     "performance": {
@@ -659,6 +661,7 @@
     "tier": "enterprise",
     "formFactor": "2.5\"",
     "interface": "SATA",
+    "nandType": "TLC",
     "capacity_raw": 3840000000000,
     "sector_size": 512,
     "performance": {
@@ -686,6 +689,7 @@
     "tier": "enterprise",
     "formFactor": "2.5\"",
     "interface": "SATA",
+    "nandType": "TLC",
     "capacity_raw": 7680000000000,
     "sector_size": 512,
     "performance": {
@@ -713,6 +717,7 @@
     "tier": "consumer",
     "formFactor": "2.5\"",
     "interface": "SATA",
+    "nandType": "QLC",
     "capacity_raw": 4000000000000,
     "sector_size": 512,
     "performance": {
@@ -780,6 +785,7 @@
     "tier": "enterprise",
     "formFactor": "2.5\"",
     "interface": "SAS",
+    "nandType": "TLC",
     "capacity_raw": 1600000000000,
     "sector_size": 512,
     "performance": {
@@ -807,6 +813,7 @@
     "tier": "enterprise",
     "formFactor": "2.5\"",
     "interface": "SAS",
+    "nandType": "TLC",
     "capacity_raw": 1920000000000,
     "sector_size": 512,
     "performance": {
@@ -834,6 +841,7 @@
     "tier": "enterprise",
     "formFactor": "2.5\"",
     "interface": "SAS",
+    "nandType": "TLC",
     "capacity_raw": 3200000000000,
     "sector_size": 512,
     "performance": {
@@ -861,6 +869,7 @@
     "tier": "enterprise",
     "formFactor": "2.5\"",
     "interface": "SAS",
+    "nandType": "TLC",
     "capacity_raw": 3200000000000,
     "sector_size": 512,
     "performance": {
@@ -888,6 +897,7 @@
     "tier": "enterprise",
     "formFactor": "2.5\"",
     "interface": "SAS",
+    "nandType": "TLC",
     "capacity_raw": 12800000000000,
     "sector_size": 512,
     "performance": {
@@ -915,6 +925,7 @@
     "tier": "enterprise",
     "formFactor": "2.5\"",
     "interface": "SAS",
+    "nandType": "QLC",
     "capacity_raw": 30720000000000,
     "sector_size": 512,
     "performance": {
@@ -982,6 +993,7 @@
     "tier": "enterprise",
     "formFactor": "M.2",
     "interface": "PCIe4",
+    "nandType": "TLC",
     "capacity_raw": 960000000000,
     "sector_size": 512,
     "performance": {
@@ -1009,6 +1021,7 @@
     "tier": "enterprise",
     "formFactor": "U.3",
     "interface": "PCIe4",
+    "nandType": "TLC",
     "capacity_raw": 1600000000000,
     "sector_size": 4096,
     "performance": {
@@ -1036,6 +1049,7 @@
     "tier": "enterprise",
     "formFactor": "U.2",
     "interface": "PCIe4",
+    "nandType": "TLC",
     "capacity_raw": 1920000000000,
     "sector_size": 512,
     "performance": {
@@ -1063,6 +1077,7 @@
     "tier": "enterprise",
     "formFactor": "U.3",
     "interface": "PCIe4",
+    "nandType": "TLC",
     "capacity_raw": 1920000000000,
     "sector_size": 4096,
     "performance": {
@@ -1090,6 +1105,7 @@
     "tier": "enterprise",
     "formFactor": "M.2",
     "interface": "PCIe4",
+    "nandType": "TLC",
     "capacity_raw": 3840000000000,
     "sector_size": 512,
     "performance": {
@@ -1117,6 +1133,7 @@
     "tier": "enterprise",
     "formFactor": "U.3",
     "interface": "PCIe4",
+    "nandType": "TLC",
     "capacity_raw": 6400000000000,
     "sector_size": 4096,
     "performance": {
@@ -1144,6 +1161,7 @@
     "tier": "enterprise",
     "formFactor": "U.2",
     "interface": "PCIe4",
+    "nandType": "TLC",
     "capacity_raw": 6400000000000,
     "sector_size": 512,
     "performance": {
@@ -1171,6 +1189,7 @@
     "tier": "enterprise",
     "formFactor": "U.2",
     "interface": "PCIe4",
+    "nandType": "TLC",
     "capacity_raw": 15360000000000,
     "sector_size": 512,
     "performance": {
@@ -1198,6 +1217,7 @@
     "tier": "enterprise",
     "formFactor": "U.3",
     "interface": "PCIe4",
+    "nandType": "QLC",
     "capacity_raw": 30720000000000,
     "sector_size": 4096,
     "performance": {
@@ -1353,6 +1373,7 @@
     "tier": "datacenter",
     "formFactor": "E1.S",
     "interface": "PCIe5",
+    "nandType": "TLC",
     "capacity_raw": 1920000000000,
     "sector_size": 512,
     "performance": {
@@ -1412,6 +1433,7 @@
     "tier": "datacenter",
     "formFactor": "E3.S",
     "interface": "PCIe4",
+    "nandType": "TLC",
     "capacity_raw": 6400000000000,
     "sector_size": 4096,
     "performance": {
@@ -1439,6 +1461,7 @@
     "tier": "datacenter",
     "formFactor": "E1.S",
     "interface": "PCIe5",
+    "nandType": "TLC",
     "capacity_raw": 7680000000000,
     "sector_size": 512,
     "performance": {
@@ -1466,6 +1489,7 @@
     "tier": "datacenter",
     "formFactor": "E3.S",
     "interface": "PCIe5",
+    "nandType": "TLC",
     "capacity_raw": 7680000000000,
     "sector_size": 4096,
     "performance": {
@@ -1493,6 +1517,7 @@
     "tier": "datacenter",
     "formFactor": "E3.S",
     "interface": "PCIe4",
+    "nandType": "TLC",
     "capacity_raw": 7680000000000,
     "sector_size": 512,
     "performance": {
@@ -1520,6 +1545,7 @@
     "tier": "datacenter",
     "formFactor": "U.3",
     "interface": "PCIe5",
+    "nandType": "TLC",
     "capacity_raw": 12800000000000,
     "sector_size": 512,
     "performance": {
@@ -1575,6 +1601,7 @@
     "tier": "datacenter",
     "formFactor": "E3.S",
     "interface": "PCIe5",
+    "nandType": "QLC",
     "capacity_raw": 30720000000000,
     "sector_size": 4096,
     "performance": {

@@ -106,3 +106,24 @@ describe('new SAS/SATA SSD entries', () => {
     }
   })
 })
+
+describe('SSD nandType coverage', () => {
+  it('every SSD has a nandType', () => {
+    for (const d of Object.values(drives)) {
+      if (d.type.startsWith('SSD')) expect(d.nandType, `${d.id} nandType`).toBeDefined()
+    }
+  })
+
+  it('TLC is well represented and the 30TB+ read-intensive drives are QLC', () => {
+    const tlc = Object.values(drives).filter((d) => d.nandType === 'TLC').length
+    expect(tlc).toBeGreaterThanOrEqual(20)
+    for (const id of [
+      'ent-nvme-pcie4-30720gb-u3-ri',
+      'dc-nvme-pcie5-30720gb-e3s-ri',
+      'ent-ssd-sas-30720gb-ri',
+      'con-ssd-sata-4tb-ri',
+    ]) {
+      expect(drives[id].nandType, id).toBe('QLC')
+    }
+  })
+})
