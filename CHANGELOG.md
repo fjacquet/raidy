@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.10.0] - 2026-06-26
+
+Full audit of the S2D / Azure Local model against the
+[AzureLocal-Calculator](https://github.com/schmittnieto/AzureLocal-Calculator) reference and
+Microsoft Learn ([fault tolerance](https://learn.microsoft.com/en-us/windows-server/storage/storage-spaces/fault-tolerance)).
+
+### Fixed
+- **S2D storage tiers are now applied to the calculations.** Enabling "Storage Tiers" (SSD cache + HDD/SSD capacity) was silently ignored — the tiering switch lived on a redundant `enabled` flag the UI never set, so the engine always fell back to the single global drive. Tiering now activates from the platform toggle plus drive selection (the legacy `enabled` flag is no longer consulted), and the S2D panel seeds default cache/capacity drives so a result appears immediately. The capacity tier drives usable capacity and resiliency; the cache tier is excluded from usable and shown as its own band. The same root cause also silently disabled vSAN OSA disk-group tiering, Ceph WAL/DB offload, and Nutanix hybrid tiering — all now activate consistently when their drives are selected.
+- **S2D rebuild reserve is now removed before the resiliency multiplier.** The reserve (1 capacity drive/server, capped at 4) is unallocated *raw* pool space, so it is now subtracted from raw capacity *before* applying the mirror/parity efficiency — matching the AzureLocal reference and Microsoft's model. Previously a raw-sized reserve was subtracted *after* the efficiency multiplier, under-counting usable capacity by ~10–30% for any reserve-enabled mirror config. The 4-drive cap and the opt-in `node_failure` strategy are unchanged.
+- **Tiered S2D overhead now uses the capacity-tier drive** instead of the global drive when sizing the rebuild reserve.
+
+### Changed
+- **S2D dual parity now uses Microsoft's stepped efficiency tables.** The previous smooth `(N−2)/N` over-stated efficiency at scale (87.5% at 16 nodes). Dual parity now follows Microsoft's published Reed-Solomon/LRC steps, which differ for all-flash vs hybrid clusters: all-flash 50% (4–6) → 66.7% (7–8) → 75% (9–15) → 80% (16, LRC 12+2+1); hybrid 50% (4–6) → 66.7% (7–11) → 72.7% (12–16, LRC 8+2+1). Mirror-accelerated parity uses the same stepped efficiency for its parity portion.
+- **Performance and sustainability engines are now tier-aware for S2D.** With tiering on, the performance media layer models write-back cache (writes absorbed by the cache tier; reads a working-set-weighted blend of cache and capacity); power sums both tiers and flash-endurance is computed on the SSD cache that actually absorbs the writes.
+
+### Added
+- **Azure Local infrastructure-volume reserve.** S2D usable capacity now reflects a fixed ~277 GB cluster reserve for infrastructure volumes (Arc Resource Bridge + AKS images, ClusterPerformanceHistory, system), matching the reference calculator.
+
 ## [1.9.1] - 2026-06-26
 
 ### Fixed

@@ -14,6 +14,7 @@ import {
   type SustainabilityInput,
 } from '@engines/sustainability'
 import { describe, expect, it } from 'vitest'
+import type { TieredCapacityResult } from '@/engines/shared/tiering'
 import type { Drive } from '@/types/drive'
 
 // ─── Test Fixtures ──────────────────────────────────────────────────────────
@@ -240,5 +241,104 @@ describe('calculateTCO', () => {
   it('returns annualOpex > 0', () => {
     const tco = calculateTCO(testSsdDrive, 10, 5, sustainability, 8e12, 16e12)
     expect(tco.annualOpex).toBeGreaterThan(0)
+  })
+})
+
+// ─── S2D Tiered Sustainability (Hybrid) ─────────────────────────────────────
+
+describe('S2D tiered sustainability (hybrid)', () => {
+  // Synthetic NVMe cache drive: 6 drives, idle 5 W, load 8 W, dwpd 3
+  const cacheDrive: Drive = {
+    id: 'test-cache-nvme',
+    model: 'Test Cache NVMe 960GB',
+    type: 'SSD_NVMe',
+    formFactor: 'U.2',
+    interface: 'PCIe4',
+    capacity_raw: 960_000_000_000,
+    sector_size: 512,
+    performance: {
+      iops_read: 300_000,
+      iops_write: 150_000,
+      bandwidth_read_mb: 2500,
+      bandwidth_write_mb: 2000,
+    },
+    reliability: { ure_rate: 17, afr: 0.5, dwpd: 3, mtbf_hours: 2_000_000 },
+    power: { idle_watts: 5, load_watts: 8 },
+    cost_usd: 500,
+  }
+
+  // Synthetic HDD capacity drive: 12 drives, idle 7 W, load 12 W, dwpd 0
+  const capacityDrive: Drive = {
+    id: 'test-capacity-hdd',
+    model: 'Test Capacity HDD 12TB',
+    type: 'HDD',
+    formFactor: '3.5"',
+    interface: 'SATA',
+    capacity_raw: 12_000_000_000_000,
+    sector_size: 512,
+    performance: {
+      iops_read: 200,
+      iops_write: 200,
+      bandwidth_read_mb: 250,
+      bandwidth_write_mb: 250,
+    },
+    reliability: { ure_rate: 15, afr: 1.0, dwpd: 0, mtbf_hours: 1_000_000 },
+    power: { idle_watts: 7, load_watts: 12 },
+    cost_usd: 150,
+  }
+
+  // Tiered config: 6 NVMe cache + 12 HDD capacity drives
+  const tiering: TieredCapacityResult = {
+    cacheTierCapacity: cacheDrive.capacity_raw * 6,
+    cacheTierDrive: cacheDrive,
+    cacheTierDriveCount: 6,
+    capacityTierCapacity: capacityDrive.capacity_raw * 12,
+    capacityTierDrive: capacityDrive,
+    capacityTierDriveCount: 12,
+  }
+
+  const tieredInput: SustainabilityInput = {
+    // Primary drive is the capacity (HDD) tier; tiering overrides drive power and endurance.
+    drive: capacityDrive,
+    driveCount: 18,
+    serverCount: 2,
+    serverPowerWatts: 500,
+    pue: 1.4,
+    carbonRegion: 'switzerland',
+    projectYears: 5,
+    electricityCostPerKwh: 0.15,
+    dailyWriteVolume: 200_000_000_000, // 200 GB/day — non-zero to exercise endurance
+    usableCapacity: 80_000_000_000_000,
+    tiering,
+  }
+
+  it('drive power sums both tiers at 70% average load', () => {
+    const result = calculateSustainability(tieredInput)
+    // avg(cache) = 5*0.3 + 8*0.7 = 1.5 + 5.6 = 7.1 W
+    // avg(capacity) = 7*0.3 + 12*0.7 = 2.1 + 8.4 = 10.5 W
+    // total = 7.1*6 + 10.5*12 = 42.6 + 126 = 168.6 W
+    const avgCache = cacheDrive.power.idle_watts * 0.3 + cacheDrive.power.load_watts * 0.7
+    const avgCapacity = capacityDrive.power.idle_watts * 0.3 + capacityDrive.power.load_watts * 0.7
+    const expected = avgCache * 6 + avgCapacity * 12
+    expect(result.powerBreakdown.drives).toBeCloseTo(expected, 1)
+  })
+
+  it('flash endurance is computed on the SSD cache drive (ratedDwpd = 3)', () => {
+    const result = calculateSustainability(tieredInput)
+    // Cache tier is SSD_NVMe with dwpd=3 → endurance is calculated on it
+    expect(result.flashEndurance).toBeDefined()
+    expect(result.flashEndurance?.ratedDwpd).toBe(3)
+    expect(result.flashEndurance?.requiredDwpd).toBeGreaterThan(0)
+  })
+
+  it('non-tiered HDD input still returns undefined flashEndurance (unchanged path)', () => {
+    // Without tiering, drive = HDD (dwpd=0) → no endurance object
+    const nonTieredInput: SustainabilityInput = {
+      ...tieredInput,
+      drive: capacityDrive,
+      tiering: null,
+    }
+    const result = calculateSustainability(nonTieredInput)
+    expect(result.flashEndurance).toBeUndefined()
   })
 })

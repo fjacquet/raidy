@@ -60,6 +60,7 @@ export function PlatformGuide() {
         <PlatformBlock title={t('platforms.s2d.title')}>
           <div className="space-y-1.5 text-sm text-slate-500 dark:text-slate-400">
             <p>{t('platforms.s2d.resiliency')}</p>
+            <p>{t('platforms.s2d.tiering')}</p>
             <p>{t('platforms.s2d.replication')}</p>
             <p>{t('platforms.s2d.reserve')}</p>
             <p>{t('platforms.s2d.nested')}</p>

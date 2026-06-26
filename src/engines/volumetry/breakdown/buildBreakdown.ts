@@ -27,6 +27,7 @@ export interface BreakdownInput {
   cacheTierCapacity: number
   slopOverhead: number
   s2dReserve: number
+  s2dInfraReserve: number
   synologySystemOverhead: number
   powerFlexFgOverhead: number
   netAppSnapshotReserve: number
@@ -74,6 +75,7 @@ export function buildBreakdown(input: BreakdownInput): BreakdownEntry[] {
     cacheTierCapacity,
     slopOverhead,
     s2dReserve,
+    s2dInfraReserve,
     synologySystemOverhead,
     powerFlexFgOverhead,
     netAppSnapshotReserve,
@@ -145,6 +147,15 @@ export function buildBreakdown(input: BreakdownInput): BreakdownEntry[] {
       label: reserveLabel,
       bytes: s2dReserve,
       percent: (s2dReserve / rawCapacity) * 100,
+      color: 'var(--color-overhead)',
+    })
+  }
+
+  if (s2dInfraReserve > 0) {
+    breakdown.push({
+      label: 'S2D Infrastructure Volumes',
+      bytes: s2dInfraReserve,
+      percent: (s2dInfraReserve / rawCapacity) * 100,
       color: 'var(--color-overhead)',
     })
   }
