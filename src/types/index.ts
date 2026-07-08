@@ -52,6 +52,7 @@ export type {
   ControllerType,
   HbaType,
   LonghornOptions,
+  LonghornTopology,
   NetAppOptions,
   NutanixOptions,
   NutanixTopology,
