@@ -7,6 +7,7 @@
     "vsan_esa": "vSAN ESA",
     "vsan_osa": "vSAN OSA",
     "ceph": "Ceph",
+    "longhorn": "Longhorn",
     "nutanix": "Nutanix",
     "netapp": "NetApp ONTAP",
     "synology": "Synology",
@@ -281,6 +282,22 @@
     "walDbRatioDesc": "Rapporto HDD verso dischi NVMe per WAL/DB",
     "safeCapacity": "Soglia capacità sicura",
     "safeCapacityDesc": "Soglia nearfull Ceph: {{percent}}%"
+  },
+  "longhorn": {
+    "title": "Opzioni Longhorn",
+    "diskMode": "Modello di distribuzione disco",
+    "dedicated": "Disco dedicato",
+    "root": "Disco root",
+    "dedicatedHint": "Consigliato in produzione. Soglia di spazio libero più bassa (10%).",
+    "rootHint": "Conservativo: 25% di spazio libero, 100% di over-provisioning.",
+    "minimalAvailable": "Spazio minimo disponibile",
+    "minimalAvailableValue": "{{pct}}% riservato (protezione spazio libero)",
+    "snapshotHeadroom": "Margine snapshot",
+    "snapshotHeadroomValue": "+{{pct}}% riservato per le catene di snapshot",
+    "growthHeadroom": "Margine di crescita (indicativo)",
+    "growthHeadroomValue": "+{{pct}}% di crescita (non sottratto dall'utilizzabile)",
+    "overProvisioning": "Over-provisioning (indicativo)",
+    "overProvisioningValue": "limite di thin-provisioning {{pct}}%"
   },
   "powerflex": {
     "title": "Opzioni PowerFlex",
