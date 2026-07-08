@@ -469,7 +469,7 @@
     "dedicatedHint": "Recommended for production. Lower free-space floor (10%).",
     "rootHint": "Conservative: 25% free-space floor, 100% over-provisioning.",
     "minimalAvailable": "Storage Minimal Available",
-    "minimalAvailableValue": "{{pct}}% reserved (free-space guardrail, F = {{pct}}% off)",
+    "minimalAvailableValue": "{{pct}}% kept free (Longhorn free-space guardrail)",
     "snapshotHeadroom": "Snapshot Headroom",
     "snapshotHeadroomValue": "+{{pct}}% reserved for snapshot chains",
     "growthHeadroom": "Growth Headroom (advisory)",

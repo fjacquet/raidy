@@ -252,13 +252,19 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
   let longhornFreeSpaceReserve = 0
   let longhornSnapshotReserve = 0
   if (topology.type === 'longhorn' && longhornOptions) {
-    const freeSpaceFactor = 1 - longhornOptions.minimalAvailablePercent / 100
+    // Clamp defensively: longhornOptions rides ConfigStateSchema.passthrough() (unvalidated),
+    // so a crafted URL could otherwise smuggle in an out-of-range % or a zero headroom.
+    const freeSpaceFactor = Math.max(
+      0,
+      Math.min(1, 1 - longhornOptions.minimalAvailablePercent / 100),
+    )
     const beforeFreeSpace = usableCapacity
     usableCapacity = usableCapacity * freeSpaceFactor
     longhornFreeSpaceReserve = beforeFreeSpace - usableCapacity
 
+    const snapshotDivisor = Math.max(1, longhornOptions.snapshotHeadroom)
     const beforeSnapshot = usableCapacity
-    usableCapacity = usableCapacity / longhornOptions.snapshotHeadroom
+    usableCapacity = usableCapacity / snapshotDivisor
     longhornSnapshotReserve = beforeSnapshot - usableCapacity
   }
 

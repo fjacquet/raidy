@@ -118,6 +118,13 @@ describe('Volumetry Engine - Longhorn (capacity guardrails)', () => {
     expect(r2 / r3).toBeCloseTo(1.5, 5)
   })
 
+  it('longhorn_r2 usable capacity matches the hand-computed guardrail formula', () => {
+    // 18 TB raw × 1/2 (R2 parity) × 0.99 (xfs) × 0.75 (F, minAvail 25%) × 1/1.2 (S) = 5.56875 TB
+    const input = createLonghornInput(18, { type: 'longhorn', level: 'longhorn_r2' }, 3, opts)
+    const result = calculateVolumetry(input)
+    expect(result.usableCapacity / 1e12).toBeCloseTo(5.56875, 4)
+  })
+
   it('applies no compression/dedup (effective === usable)', () => {
     const input = createLonghornInput(18, { type: 'longhorn', level: 'longhorn_r3' }, 3, opts, 2.0)
     const result = calculateVolumetry(input)
@@ -129,5 +136,35 @@ describe('Volumetry Engine - Longhorn (capacity guardrails)', () => {
     const result = calculateVolumetry(input)
     expect(result.usableCapacity).toBe(0)
     expect(result.rawCapacity).toBe(18_000_000_000_000)
+  })
+})
+
+describe('Volumetry Engine - Longhorn (guardrail input clamping)', () => {
+  // longhornOptions rides ConfigStateSchema.passthrough() (unvalidated), so a crafted URL
+  // could smuggle in out-of-range values. The engine must clamp rather than propagate
+  // Infinity/NaN or negative capacity.
+
+  it('clamps minimalAvailablePercent > 100 to a non-negative usable capacity', () => {
+    const extreme: LonghornOptions = {
+      ...DEFAULT_LONGHORN_OPTIONS,
+      minimalAvailablePercent: 150,
+      snapshotHeadroom: 1,
+    }
+    const input = createLonghornInput(18, { type: 'longhorn', level: 'longhorn_r3' }, 3, extreme)
+    const result = calculateVolumetry(input)
+    expect(Number.isFinite(result.usableCapacity)).toBe(true)
+    expect(result.usableCapacity).toBeGreaterThanOrEqual(0)
+  })
+
+  it('clamps snapshotHeadroom of 0 to avoid division by zero (finite usable capacity)', () => {
+    const extreme: LonghornOptions = {
+      ...DEFAULT_LONGHORN_OPTIONS,
+      minimalAvailablePercent: 0,
+      snapshotHeadroom: 0,
+    }
+    const input = createLonghornInput(18, { type: 'longhorn', level: 'longhorn_r3' }, 3, extreme)
+    const result = calculateVolumetry(input)
+    expect(Number.isFinite(result.usableCapacity)).toBe(true)
+    expect(result.usableCapacity).toBeGreaterThan(0)
   })
 })

@@ -86,6 +86,7 @@ export function AdvancedPanel() {
       {/* Excluded: standard RAID, S2D, PowerVault (no inline compression), and platforms with their own controls in TopologyPanel */}
       {/* Ceph is excluded too: its compression ratio is driven by the algorithm chosen in the Ceph panel */}
       {/* vSAN (OSA/ESA) is excluded: it has its own compression/dedup ratio sliders in the vSAN panel */}
+      {/* Longhorn is excluded too: it has no inline data reduction (engine ignores compression/dedup) */}
       {topology.type !== 'standard' &&
         topology.type !== 's2d' &&
         topology.type !== 'powervault' &&
@@ -95,6 +96,7 @@ export function AdvancedPanel() {
         topology.type !== 'powerflex' &&
         topology.type !== 'nutanix' &&
         topology.type !== 'ceph' &&
+        topology.type !== 'longhorn' &&
         !isVsanTopology(topology.type) && (
           <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-surface-700">
             <h4 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
