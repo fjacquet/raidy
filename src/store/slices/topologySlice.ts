@@ -5,6 +5,7 @@
 import type { StateCreator } from 'zustand'
 import type {
   CephOptions,
+  LonghornOptions,
   NetAppOptions,
   NutanixOptions,
   ObjectScaleOptions,
@@ -24,6 +25,7 @@ import {
   DEFAULT_CEPH_OPTIONS,
   DEFAULT_CONTROLLER_BY_TOPOLOGY,
   DEFAULT_CONTROLLER_OPTIONS,
+  DEFAULT_LONGHORN_OPTIONS,
   DEFAULT_NETAPP_OPTIONS,
   DEFAULT_NUTANIX_OPTIONS,
   DEFAULT_OBJECTSCALE_OPTIONS,
@@ -49,6 +51,7 @@ export interface TopologySlice extends TopologyState {
   setPowerStoreOptions: (options: Partial<PowerStoreOptions>) => void
   setPowerScaleOptions: (options: Partial<PowerScaleOptions>) => void
   setCephOptions: (options: Partial<CephOptions>) => void
+  setLonghornOptions: (options: Partial<LonghornOptions>) => void
   setPowerFlexOptions: (options: Partial<PowerFlexOptions>) => void
   setNetAppOptions: (options: Partial<NetAppOptions>) => void
   setSynologyOptions: (options: Partial<SynologyOptions>) => void
@@ -68,6 +71,7 @@ export const createTopologySlice: StateCreator<TopologySlice> = (set) => ({
   powerstoreOptions: { ...DEFAULT_POWERSTORE_OPTIONS },
   powerscaleOptions: { ...DEFAULT_POWERSCALE_OPTIONS },
   cephOptions: { ...DEFAULT_CEPH_OPTIONS },
+  longhornOptions: { ...DEFAULT_LONGHORN_OPTIONS },
   powerFlexOptions: { ...DEFAULT_POWERFLEX_OPTIONS },
   netAppOptions: { ...DEFAULT_NETAPP_OPTIONS },
   synologyOptions: { ...DEFAULT_SYNOLOGY_OPTIONS },
@@ -123,6 +127,8 @@ export const createTopologySlice: StateCreator<TopologySlice> = (set) => ({
     set((state) => ({ powerscaleOptions: { ...state.powerscaleOptions, ...options } })),
   setCephOptions: (options) =>
     set((state) => ({ cephOptions: { ...state.cephOptions, ...options } })),
+  setLonghornOptions: (options) =>
+    set((state) => ({ longhornOptions: { ...state.longhornOptions, ...options } })),
   setPowerFlexOptions: (options) =>
     set((state) => ({ powerFlexOptions: { ...state.powerFlexOptions, ...options } })),
   setNetAppOptions: (options) =>

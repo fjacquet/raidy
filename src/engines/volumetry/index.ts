@@ -10,6 +10,7 @@ import type { Drive } from '@/types/drive'
 import type { VolumetryResult, ZfsCapacityDetails } from '@/types/results'
 import type {
   CephOptions,
+  LonghornOptions,
   NetAppOptions,
   NutanixOptions,
   ObjectScaleOptions,
@@ -51,6 +52,7 @@ export interface VolumetryInput {
   powerstoreOptions: PowerStoreOptions
   powerscaleOptions: PowerScaleOptions
   cephOptions: CephOptions
+  longhornOptions: LonghornOptions
   powerFlexOptions: PowerFlexOptions
   netAppOptions: NetAppOptions
   synologyOptions: SynologyOptions
@@ -84,6 +86,7 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
     powerstoreOptions,
     powerscaleOptions,
     cephOptions,
+    longhornOptions,
     powerFlexOptions,
     netAppOptions,
     synologyOptions,
@@ -92,6 +95,10 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
     dedupRatio,
     fsType,
   } = input
+
+  // longhornOptions is not yet consumed — guardrail math (free-space/snapshot
+  // headroom) lands in Task 2. Destructured now to keep the input type complete.
+  void longhornOptions
 
   // Validate topology
   const topologyValidation = validateTopology(topology, drive, driveCount)

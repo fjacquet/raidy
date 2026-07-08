@@ -6,6 +6,7 @@
 import type { DriveConnectivity, FormFactorFilter } from './drive'
 import type {
   CephOptions,
+  LonghornOptions,
   NetAppOptions,
   NutanixOptions,
   ObjectScaleOptions,
@@ -79,6 +80,8 @@ export interface TopologyState {
   powerscaleOptions: PowerScaleOptions
   /** Ceph-specific options */
   cephOptions: CephOptions
+  /** Longhorn-specific options */
+  longhornOptions: LonghornOptions
   /** PowerFlex-specific options */
   powerFlexOptions: PowerFlexOptions
   /** NetApp-specific options */

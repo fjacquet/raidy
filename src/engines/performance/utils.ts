@@ -171,6 +171,11 @@ export function calculateEstimatedLatency(
       // Double media latency for Ceph (primary + replica writes)
       return mediaLatency * 2 + networkLatency + cpuOverhead
 
+    case 'longhorn':
+      // Longhorn synchronous replication: replica writes cross the network,
+      // like Ceph replicated pools (2× media + network + replication CPU).
+      return mediaLatency * 2 + networkLatency + CPU_OVERHEAD_US.replication
+
     case 'powerflex':
       // PowerFlex with compression adds CPU overhead
       return mediaLatency * 1.5 + networkLatency + cpuOverhead

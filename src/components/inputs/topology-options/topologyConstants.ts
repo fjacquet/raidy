@@ -272,6 +272,18 @@ export const TOPOLOGY_LEVELS: Record<
       description: 'Erasure Coding 6:2 with RF3 base, ~75% efficiency',
     },
   ],
+  longhorn: [
+    {
+      value: 'longhorn_r2',
+      label: 'Replicated 2x',
+      description: '2 replicas, 50% efficiency',
+    },
+    {
+      value: 'longhorn_r3',
+      label: 'Replicated 3x',
+      description: '3 replicas, 33% efficiency',
+    },
+  ],
   powervault: [
     { value: 'powervault_raid1', label: 'RAID 1', description: '2-way mirror, 50% efficiency' },
     {

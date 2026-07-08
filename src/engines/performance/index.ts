@@ -25,6 +25,7 @@ import { CONTROLLER_LIMITS, isVsanTopology, type TopologyType } from '@/types/to
 import { assertNever } from '@/utils/typeGuards'
 import { cephPerformanceStrategy } from './strategies/ceph'
 import { dellPerformanceStrategy } from './strategies/dell'
+import { longhornPerformanceStrategy } from './strategies/longhorn'
 import { nutanixPerformanceStrategy } from './strategies/nutanix'
 import type { PerformanceStrategy } from './strategies/PerformanceStrategy'
 import { powerFlexPerformanceStrategy } from './strategies/powerflex'
@@ -93,6 +94,8 @@ function getStrategy(topologyType: TopologyType): PerformanceStrategy {
       return vsanPerformanceStrategy
     case 'ceph':
       return cephPerformanceStrategy
+    case 'longhorn':
+      return longhornPerformanceStrategy
     case 'nutanix':
       return nutanixPerformanceStrategy
     case 'powerflex':
