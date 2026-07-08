@@ -643,8 +643,14 @@ Expose Longhorn in the topology selector, add its levels, render an options pane
 - Modify: `src/components/inputs/topology-options/topologyConstants.ts` (`TOPOLOGY_TYPES`, `TOPOLOGY_LEVELS.longhorn`)
 - Create: `src/components/inputs/topology-options/LonghornOptionsPanel.tsx`
 - Modify: `src/components/inputs/TopologyPanel.tsx` (import + render)
+- Modify: `src/utils/schemas.ts` (add `longhorn` variant to `TopologySchema`)
 - Modify: `src/i18n/locales/{en,fr,de,it}/topology.json` (type label + `longhorn` options block)
 - Test: `tests/components/longhornConstants.spec.ts` (create)
+
+> **Note from Task 1 review:** Task 1's compile-necessity already added a `longhorn` key to
+> `TOPOLOGY_LEVELS` in `topologyConstants.ts` (currently with placeholder-ish labels and NOT
+> listed in `TOPOLOGY_TYPES`). In Step 3 below, **reconcile** that existing entry to the exact
+> labels/descriptions specified — do not add a duplicate key — and add the `TOPOLOGY_TYPES` entry.
 
 **Interfaces:**
 - Consumes: `useConfigStore().longhornOptions`, `setLonghornOptions` (Task 1); `DEFAULT_LONGHORN_OPTIONS`.
@@ -694,6 +700,23 @@ In `src/components/inputs/topology-options/topologyConstants.ts`:
     },
   ],
 ```
+
+- [ ] **Step 3b: Add Longhorn to the URL-state schema**
+
+Once Longhorn is selectable, its topology is serialized into the URL hash. `TopologySchema`
+(`src/utils/schemas.ts`) is a `z.discriminatedUnion('type', …)`; a `{ type: 'longhorn' }` topology
+that isn't a variant makes `validateUrlState` return `null` and **silently drops the entire config**
+on reload/share. Add the variant among the others (after the `ceph` variant, ~line 71):
+
+```ts
+  z.object({
+    type: z.literal('longhorn'),
+    level: z.enum(['longhorn_r2', 'longhorn_r3']),
+  }),
+```
+
+No `LonghornOptionsSchema` is needed — `ConfigStateSchema` uses `.passthrough()`, so `longhornOptions`
+survives the round-trip exactly like `cephOptions` (which likewise has no options schema).
 
 - [ ] **Step 4: Create the options panel**
 
