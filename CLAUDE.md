@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Raidy** is a browser-based simulator for modern storage infrastructure (RAID, ZFS, vSAN, S2D, Nutanix, Dell, NetApp, Ceph, Synology). Single Page Application with no backend — all calculation logic runs client-side. State is persisted in the URL hash via LZ-String compression, enabling "Copy URL to Share".
+**Raidy** is a browser-based simulator for modern storage infrastructure (RAID, ZFS, vSAN, S2D, Nutanix, Dell, NetApp, Ceph, Synology, Longhorn). Single Page Application with no backend — all calculation logic runs client-side. State is persisted in the URL hash via LZ-String compression, enabling "Copy URL to Share".
 
 ## Build & Development Commands
 
