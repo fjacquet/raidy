@@ -5,12 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.12.0] - 2026-07-08
 
 ### Added
-- **Longhorn topology** (#51): SUSE Longhorn distributed block storage with replica-aware
-  capacity (R2/R3), free-space and snapshot guardrails, and advisory growth /
-  over-provisioning readouts. Modeled on Ceph replicated pools.
+- **Longhorn topology** (#51): SUSE Longhorn distributed block storage as a forward topology
+  modeled on Ceph replicated pools. Replica-aware capacity (R2/R3), free-space guardrail
+  (`F = 1 − "Storage Minimal Available %"`) and snapshot reserve, with advisory growth and
+  over-provisioning readouts (never subtracted from usable). Includes an options panel
+  (disk mode, minimal-available %, snapshot/growth headroom, over-provisioning), a **Longhorn
+  Capacity Sizing** output card (physical usable, recommended committed data, per-node
+  allocation, guardrails), `serverCount ≥ R` placement validation, URL-state persistence,
+  and i18n (en/fr/de/it).
 
 ## [1.11.0] - 2026-06-26
 
