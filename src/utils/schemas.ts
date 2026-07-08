@@ -70,6 +70,10 @@ const TopologySchema = z.discriminatedUnion('type', [
     ]),
   }),
   z.object({
+    type: z.literal('longhorn'),
+    level: z.enum(['longhorn_r2', 'longhorn_r3']),
+  }),
+  z.object({
     type: z.literal('powerflex'),
     level: z.enum([
       'powerflex_medium_2way',

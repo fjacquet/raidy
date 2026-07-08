@@ -7,6 +7,7 @@
 
 import { cephPerformanceStrategy } from '@engines/performance/strategies/ceph'
 import { dellPerformanceStrategy } from '@engines/performance/strategies/dell'
+import { longhornPerformanceStrategy } from '@engines/performance/strategies/longhorn'
 import { nutanixPerformanceStrategy } from '@engines/performance/strategies/nutanix'
 import { powerFlexPerformanceStrategy } from '@engines/performance/strategies/powerflex'
 import { proprietaryPerformanceStrategy } from '@engines/performance/strategies/proprietary'
@@ -488,6 +489,47 @@ describe('Nutanix Performance Strategy', () => {
         READ_PERCENT,
       )
       expect(result).toBeCloseTo(expectedIOPS(1.33), 0)
+    })
+  })
+})
+
+// ─── Longhorn Performance Strategy ──────────────────────────────────────────
+
+describe('Longhorn Performance Strategy', () => {
+  describe('getWritePenalty', () => {
+    describe.each([
+      ['longhorn_r2', 2.0],
+      ['longhorn_r3', 3.0],
+    ] as [string, number][])('level %s', (level, expected) => {
+      it(`returns ${expected}`, () => {
+        expect(longhornPerformanceStrategy.getWritePenalty(level)).toBe(expected)
+      })
+    })
+
+    it('returns 3.0 for unknown level (default)', () => {
+      expect(longhornPerformanceStrategy.getWritePenalty('unknown')).toBe(3.0)
+    })
+  })
+
+  describe('calculateIOPS', () => {
+    it('calculates standard IOPS for 3-way replication', () => {
+      const result = longhornPerformanceStrategy.calculateIOPS(
+        'longhorn_r3',
+        DRIVES,
+        IOPS_PER_DRIVE,
+        READ_PERCENT,
+      )
+      expect(result).toBeCloseTo(expectedIOPS(3.0), 0)
+    })
+
+    it('calculates higher IOPS for 2-way replication (lower write penalty)', () => {
+      const result = longhornPerformanceStrategy.calculateIOPS(
+        'longhorn_r2',
+        DRIVES,
+        IOPS_PER_DRIVE,
+        READ_PERCENT,
+      )
+      expect(result).toBeCloseTo(expectedIOPS(2.0), 0)
     })
   })
 })

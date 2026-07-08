@@ -66,6 +66,26 @@ export function validateTopology(
 }
 
 /**
+ * Validate Longhorn replica placement: a cluster needs at least R storage nodes
+ * to place R replicas. Returns a zero-state result (with raw capacity preserved)
+ * when serverCount < replica count, else null.
+ */
+export function validateReplicaPlacement(
+  topology: Topology | null | undefined,
+  drive: Drive | null | undefined,
+  driveCount: number,
+  serverCount: number,
+): VolumetryResult | null {
+  if (topology?.type !== 'longhorn') return null
+  const replicas = topology.level === 'longhorn_r3' ? 3 : 2
+  if (serverCount < replicas) {
+    const rawCapacity = drive?.capacity_raw ? drive.capacity_raw * driveCount : 0
+    return createZeroStateResult(`Need ≥ ${replicas} nodes for ${replicas} replicas`, rawCapacity)
+  }
+  return null
+}
+
+/**
  * Validate drive count.
  *
  * @returns Null if valid, error result if invalid

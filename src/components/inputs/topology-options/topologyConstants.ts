@@ -9,6 +9,7 @@ import type { TopologyType } from '@/types'
 export const TOPOLOGY_TYPES = [
   { value: 'standard', label: 'RAID' },
   { value: 'ceph', label: 'Ceph' },
+  { value: 'longhorn', label: 'Longhorn' },
   { value: 'nutanix', label: 'Nutanix' },
   { value: 's2d', label: 'S2D' },
   { value: 'vsan_esa', label: 'vSAN ESA' },
@@ -270,6 +271,18 @@ export const TOPOLOGY_LEVELS: Record<
       value: 'nutanix_ec_rf3',
       label: 'EC-X (RF3)',
       description: 'Erasure Coding 6:2 with RF3 base, ~75% efficiency',
+    },
+  ],
+  longhorn: [
+    {
+      value: 'longhorn_r2',
+      label: 'Replica 2',
+      description: '2 replicas, 50% efficiency (efficiency-oriented)',
+    },
+    {
+      value: 'longhorn_r3',
+      label: 'Replica 3',
+      description: '3 replicas, 33% efficiency (default, needs ≥3 nodes)',
     },
   ],
   powervault: [

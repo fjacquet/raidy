@@ -91,6 +91,11 @@ export type CephTopology =
   | 'ceph_ec_8_3' // Erasure coded k=8, m=3 (8 data + 3 parity)
   | 'ceph_ec_8_4' // Erasure coded k=8, m=4 (8 data + 4 parity)
 
+/** SUSE Longhorn topologies (Kubernetes distributed block storage, replicated) */
+export type LonghornTopology =
+  | 'longhorn_r2' // 2 replicas, 50% efficiency
+  | 'longhorn_r3' // 3 replicas, 33% efficiency
+
 /** Dell PowerFlex topologies (SSD/NVMe only - HDD no longer supported) */
 export type PowerFlexTopology =
   | 'powerflex_medium_2way' // Medium granularity, 2-way mirror (1MB chunk)
@@ -131,6 +136,7 @@ export type TopologyType =
   | 'objectscale'
   | 'nutanix'
   | 'powervault' // Dell PowerVault ME5 (mid-range block storage)
+  | 'longhorn'
 
 /** Union of all topology configurations */
 export type Topology =
@@ -147,6 +153,7 @@ export type Topology =
   | { type: 'objectscale'; level: ObjectScaleTopology }
   | { type: 'nutanix'; level: NutanixTopology }
   | { type: 'powervault'; level: PowerVaultTopology }
+  | { type: 'longhorn'; level: LonghornTopology }
 
 /** ZFS-specific configuration options */
 export interface ZfsOptions {
@@ -244,6 +251,7 @@ export const HBA_REQUIRED_TOPOLOGIES: TopologyType[] = [
   'ceph',
   'powerflex',
   'nutanix',
+  'longhorn',
   // Note: powerscale and objectscale are appliances with built-in controllers, not HBA-based
 ]
 
@@ -424,6 +432,20 @@ export interface CephOptions {
   safeCapacityThreshold: number
   /** Cache tiering configuration (CRUSH rules) */
   tiering?: TieringConfig
+}
+
+/** SUSE Longhorn configuration options */
+export interface LonghornOptions {
+  /** Disk deployment model — presets the fields below */
+  diskMode: 'dedicated' | 'root'
+  /** Longhorn "Storage Minimal Available %" (0–100) → free-space factor F = 1 − pct/100 */
+  minimalAvailablePercent: number
+  /** Snapshot headroom S ≥ 1.0 — reserves physical snapshot-chain space */
+  snapshotHeadroom: number
+  /** Growth headroom G ≥ 1.0 — advisory only, never subtracted from usable */
+  growthHeadroom: number
+  /** Storage Over-Provisioning % — advisory display only (thin-provisioning scheduling) */
+  overProvisioningPercent: number
 }
 
 /** PowerFlex configuration options */
@@ -611,6 +633,15 @@ export const DEFAULT_CEPH_OPTIONS: CephOptions = {
   walDbOffload: false,
   walDbRatio: 4, // 1 NVMe for 4 HDDs
   safeCapacityThreshold: 0.85, // Ceph nearfull at 85%
+}
+
+/** Default Longhorn options (dedicated-disk production preference) */
+export const DEFAULT_LONGHORN_OPTIONS: LonghornOptions = {
+  diskMode: 'dedicated',
+  minimalAvailablePercent: 10,
+  snapshotHeadroom: 1.2,
+  growthHeadroom: 1.2,
+  overProvisioningPercent: 200,
 }
 
 /** Default tiering configuration */

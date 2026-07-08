@@ -131,6 +131,7 @@ Calculates storage capacity and efficiency.
 - Dell: PowerFlex, PowerStore, PowerScale, ObjectScale, PowerVault
 - NetApp ONTAP: RAID-DP, RAID-TEC, ADP
 - Ceph: Replicated and Erasure Coded pools
+- Longhorn: SUSE/Kubernetes distributed block storage, replicated pools (R2/R3)
 - Nutanix, Synology, and more
 
 > Microsoft S2D enforces a minimum number of fault domains (nodes) per resiliency type (validated in `src/utils/validators.ts`): three-way mirror and single parity require ≥ 3, dual parity and mirror-accelerated parity (MAP) require ≥ 4. Fault domains are bounded to 2–16, the supported S2D cluster range.
@@ -138,6 +139,8 @@ Calculates storage capacity and efficiency.
 > **Dual-parity efficiency** follows Microsoft's stepped Reed-Solomon/LRC tables (`getS2DDualParityEfficiency` in `strategies/s2d.ts`), which differ for all-flash vs hybrid clusters — all-flash: 50% (4–6) → 66.7% (7–8) → 75% (9–15) → 80% (16); hybrid: 50% (4–6) → 66.7% (7–11) → 72.7% (12–16). The orchestrator picks the table from the resiliency media (capacity tier when tiered, else the pool drive). MAP uses the same stepped efficiency for its parity portion.
 >
 > **Storage tiering** (S2D, vSAN OSA, Ceph WAL/DB, Nutanix hybrid) is resolved once by the shared `resolveTiering` (`src/engines/shared/tiering.ts`) and reused by all three engines. Tiering activates from the platform toggle plus drive selection; the capacity tier drives usable capacity and resiliency, while the cache tier is excluded from usable and counted only toward raw.
+>
+> **Longhorn** (`strategies/longhorn.ts`) is modeled on Ceph replicated pools: usable capacity is redundancy-limited to `1/R` (R = 2 or 3 replicas), reduced by host filesystem overhead, then narrowed by a free-space guardrail (`F = 1 − "Storage Minimal Available %"`) and a snapshot reserve (divided by the snapshot headroom). It has no native compression/dedup. Growth headroom and over-provisioning are advisory readouts only — they inform the recommended committed-data ceiling but are never subtracted from usable capacity.
 
 **Calculations:**
 

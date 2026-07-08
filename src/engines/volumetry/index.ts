@@ -7,9 +7,10 @@ import drivesData from '@/data/drives.json'
 // Shared tiering resolver
 import { isAllFlashMedia, resolveTiering } from '@/engines/shared/tiering'
 import type { Drive } from '@/types/drive'
-import type { VolumetryResult, ZfsCapacityDetails } from '@/types/results'
+import type { LonghornCapacityDetails, VolumetryResult, ZfsCapacityDetails } from '@/types/results'
 import type {
   CephOptions,
+  LonghornOptions,
   NetAppOptions,
   NutanixOptions,
   ObjectScaleOptions,
@@ -32,7 +33,12 @@ import { calculateOverheads } from './overhead/overheadCalculator'
 // Post-processing (compression, dedup, ZFS details)
 import { applyCompressionDedup, buildZfsDetails } from './postProcessing/capacityEnhancements'
 // Validation module
-import { validateDrive, validateDriveCount, validateTopology } from './validation/inputValidation'
+import {
+  validateDrive,
+  validateDriveCount,
+  validateReplicaPlacement,
+  validateTopology,
+} from './validation/inputValidation'
 
 // Type assertion for the imported JSON - preserved for potential future drive lookup
 // drivesData imported but variable intentionally unused with underscore prefix
@@ -51,6 +57,7 @@ export interface VolumetryInput {
   powerstoreOptions: PowerStoreOptions
   powerscaleOptions: PowerScaleOptions
   cephOptions: CephOptions
+  longhornOptions: LonghornOptions
   powerFlexOptions: PowerFlexOptions
   netAppOptions: NetAppOptions
   synologyOptions: SynologyOptions
@@ -84,6 +91,7 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
     powerstoreOptions,
     powerscaleOptions,
     cephOptions,
+    longhornOptions,
     powerFlexOptions,
     netAppOptions,
     synologyOptions,
@@ -96,6 +104,10 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
   // Validate topology
   const topologyValidation = validateTopology(topology, drive, driveCount)
   if (topologyValidation) return topologyValidation
+
+  // Longhorn requires serverCount >= replica count for replica placement
+  const replicaValidation = validateReplicaPlacement(topology, drive, driveCount, serverCount)
+  if (replicaValidation) return replicaValidation
 
   // Check for tiered configuration (must happen before driveCount/drive validation)
   const tieredCapacity = resolveTiering(topology, serverCount, {
@@ -235,6 +247,27 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
     usableCapacity = usableCapacity * cephOptions.safeCapacityThreshold
   }
 
+  // Longhorn guardrails: free-space reserve (F = 1 − minimalAvailable%) then snapshot reserve (÷S).
+  // Growth and over-provisioning are advisory only (see longhornDetails), never subtracted here.
+  let longhornFreeSpaceReserve = 0
+  let longhornSnapshotReserve = 0
+  if (topology.type === 'longhorn' && longhornOptions) {
+    // Clamp defensively: longhornOptions rides ConfigStateSchema.passthrough() (unvalidated),
+    // so a crafted URL could otherwise smuggle in an out-of-range % or a zero headroom.
+    const freeSpaceFactor = Math.max(
+      0,
+      Math.min(1, 1 - longhornOptions.minimalAvailablePercent / 100),
+    )
+    const beforeFreeSpace = usableCapacity
+    usableCapacity = usableCapacity * freeSpaceFactor
+    longhornFreeSpaceReserve = beforeFreeSpace - usableCapacity
+
+    const snapshotDivisor = Math.max(1, longhornOptions.snapshotHeadroom)
+    const beforeSnapshot = usableCapacity
+    usableCapacity = usableCapacity / snapshotDivisor
+    longhornSnapshotReserve = beforeSnapshot - usableCapacity
+  }
+
   // Apply compression and deduplication
   const effectiveCapacity = applyCompressionDedup(
     topology,
@@ -285,6 +318,8 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
     topology,
     s2dOptions,
     objectscaleOptions,
+    longhornFreeSpaceReserve,
+    longhornSnapshotReserve,
   })
 
   // Build ZFS-specific details if ZFS topology
@@ -304,6 +339,20 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
     )
   }
 
+  // Build Longhorn-specific advisory details if Longhorn topology
+  let longhornDetails: LonghornCapacityDetails | undefined
+  if (topology.type === 'longhorn' && longhornOptions) {
+    longhornDetails = {
+      physicalUsable: usableCapacity,
+      recommendedCommittedData: usableCapacity / longhornOptions.growthHeadroom,
+      perNodeUsable: serverCount > 0 ? usableCapacity / serverCount : usableCapacity,
+      replicaCount: topology.level === 'longhorn_r3' ? 3 : 2,
+      minimalAvailablePercent: longhornOptions.minimalAvailablePercent,
+      overProvisioningPercent: longhornOptions.overProvisioningPercent,
+      diskMode: longhornOptions.diskMode,
+    }
+  }
+
   return {
     rawCapacity,
     parityOverhead,
@@ -315,5 +364,6 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
     efficiency,
     breakdown,
     zfsDetails,
+    longhornDetails,
   }
 }

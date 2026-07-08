@@ -63,6 +63,10 @@ function getParityDrives(raidLevel: string): number {
   if (level === 'netapp_raid_dp') return 2
   if (level === 'netapp_raid_tec') return 3
 
+  // Longhorn (replicated block storage): tolerates R-1 replica failures
+  if (level === 'longhorn_r2') return 1
+  if (level === 'longhorn_r3') return 2
+
   return 1 // Default to single parity
 }
 

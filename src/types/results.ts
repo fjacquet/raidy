@@ -29,6 +29,8 @@ export interface VolumetryResult {
   }[]
   /** ZFS-specific detailed capacity breakdown (only present when topology is ZFS) */
   zfsDetails?: ZfsCapacityDetails
+  /** Longhorn-specific detailed capacity breakdown (only present when topology is Longhorn) */
+  longhornDetails?: LonghornCapacityDetails
 }
 
 /** ZFS-specific capacity breakdown for detailed display */
@@ -61,6 +63,24 @@ export interface ZfsCapacityDetails {
   ashift: number
   /** Record size in bytes */
   recordSize: number
+}
+
+/** Longhorn-specific capacity breakdown and advisory sizing readouts */
+export interface LonghornCapacityDetails {
+  /** Physical usable app-data ceiling incl. snapshots, in bytes */
+  physicalUsable: number
+  /** Recommended committed data today (physicalUsable ÷ growthHeadroom), in bytes */
+  recommendedCommittedData: number
+  /** Per-node usable allocation (physicalUsable ÷ serverCount), in bytes */
+  perNodeUsable: number
+  /** Replica count (2 or 3) */
+  replicaCount: number
+  /** Storage Minimal Available % guardrail */
+  minimalAvailablePercent: number
+  /** Storage Over-Provisioning % (advisory display) */
+  overProvisioningPercent: number
+  /** Disk deployment model */
+  diskMode: 'dedicated' | 'root'
 }
 
 /** Performance bottleneck analysis (Module B) */

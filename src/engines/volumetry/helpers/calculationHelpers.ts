@@ -18,6 +18,7 @@ import type {
 import { assertNever } from '@/utils/typeGuards'
 import { cephStrategy } from '../strategies/ceph'
 import { dellStrategy } from '../strategies/dell'
+import { longhornStrategy } from '../strategies/longhorn'
 import { nutanixStrategy } from '../strategies/nutanix'
 import { proprietaryStrategy } from '../strategies/proprietary'
 import { raidStrategy } from '../strategies/raid'
@@ -38,6 +39,7 @@ const VALID_TOPOLOGY_TYPES: readonly TopologyType[] = [
   'vsan_osa',
   'vsan_esa',
   'ceph',
+  'longhorn',
   'powerflex',
   'powerstore',
   'powerscale',
@@ -65,6 +67,8 @@ export function getStrategy(topologyType: TopologyType): VolumetryStrategy {
       return s2dStrategy
     case 'ceph':
       return cephStrategy
+    case 'longhorn':
+      return longhornStrategy
     case 'nutanix':
       return nutanixStrategy
     case 'vsan_esa':

@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next'
 import { Label, Select, Slider } from '@/components/common/FormControls'
 import { CephOptionsPanel } from '@/components/inputs/topology-options/CephOptionsPanel'
 import { DellOptionsPanel } from '@/components/inputs/topology-options/DellOptionsPanel'
+import { LonghornOptionsPanel } from '@/components/inputs/topology-options/LonghornOptionsPanel'
 import { NetAppOptionsPanel } from '@/components/inputs/topology-options/NetAppOptionsPanel'
 import { NutanixOptionsPanel } from '@/components/inputs/topology-options/NutanixOptionsPanel'
 import { S2dOptionsPanel } from '@/components/inputs/topology-options/S2dOptionsPanel'
@@ -110,6 +111,9 @@ export function TopologyPanel() {
 
       {/* Ceph Options */}
       {topology.type === 'ceph' && <CephOptionsPanel />}
+
+      {/* Longhorn Options */}
+      {topology.type === 'longhorn' && <LonghornOptionsPanel />}
 
       {/* NetApp Options (proprietary type with netapp_ prefix) */}
       {topology.type === 'proprietary' && topology.level.startsWith('netapp_') && (
