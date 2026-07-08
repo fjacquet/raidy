@@ -8,6 +8,7 @@
     "afterCompression": "After compression",
     "efficiency": "Efficiency",
     "zfsBreakdown": "ZFS Capacity Breakdown",
+    "longhornBreakdown": "Longhorn Capacity Sizing",
     "dualUnitHint": "Dual-unit display: TiB (binary) / TB (decimal)",
     "segments": {
       "usable": "Usable",

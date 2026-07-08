@@ -11,6 +11,7 @@ import {
   CapacityBreakdownList,
   DonutChart,
   DonutLegend,
+  LonghornCapacityDetails,
   SankeyDiagram,
   Speedometer,
   ZfsCapacityDetails,
@@ -372,6 +373,21 @@ export function OutputDashboard() {
               </span>
             </div>
             <ZfsCapacityDetails details={volumetry.zfsDetails} />
+          </div>
+        )}
+
+        {/* Longhorn Capacity Sizing Card - Only shown for Longhorn topology */}
+        {topology.type === 'longhorn' && volumetry.longhornDetails && (
+          <div className="panel xl:col-span-2">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+                {t('capacity.longhornBreakdown')}
+              </h3>
+              <span className="text-xs text-slate-500 dark:text-slate-500">
+                {t('capacity.dualUnitHint')}
+              </span>
+            </div>
+            <LonghornCapacityDetails details={volumetry.longhornDetails} />
           </div>
         )}
 
