@@ -42,6 +42,8 @@ export interface BreakdownInput {
   topology: Topology
   s2dOptions: S2DOptions
   objectscaleOptions: ObjectScaleOptions
+  longhornFreeSpaceReserve: number
+  longhornSnapshotReserve: number
 }
 
 /**
@@ -90,6 +92,8 @@ export function buildBreakdown(input: BreakdownInput): BreakdownEntry[] {
     topology,
     s2dOptions,
     objectscaleOptions,
+    longhornFreeSpaceReserve,
+    longhornSnapshotReserve,
   } = input
 
   const breakdown: BreakdownEntry[] = [
@@ -246,6 +250,24 @@ export function buildBreakdown(input: BreakdownInput): BreakdownEntry[] {
       label: 'Ceph Safe Capacity (85%)',
       bytes: cephSafeCapacityReduction,
       percent: (cephSafeCapacityReduction / rawCapacity) * 100,
+      color: 'var(--color-overhead)',
+    })
+  }
+
+  if (longhornFreeSpaceReserve > 0) {
+    breakdown.push({
+      label: 'Longhorn Free-Space Reserve',
+      bytes: longhornFreeSpaceReserve,
+      percent: (longhornFreeSpaceReserve / rawCapacity) * 100,
+      color: 'var(--color-overhead)',
+    })
+  }
+
+  if (longhornSnapshotReserve > 0) {
+    breakdown.push({
+      label: 'Longhorn Snapshot Reserve',
+      bytes: longhornSnapshotReserve,
+      percent: (longhornSnapshotReserve / rawCapacity) * 100,
       color: 'var(--color-overhead)',
     })
   }

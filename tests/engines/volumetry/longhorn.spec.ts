@@ -79,3 +79,55 @@ describe('Volumetry Engine - Longhorn (recognition)', () => {
     expect(result.usableCapacity / 1e12).toBeCloseTo(5.94, 4)
   })
 })
+
+describe('Volumetry Engine - Longhorn (capacity guardrails)', () => {
+  // 18 TB raw, R3, F=0.75 (minAvail 25), S=1.2, G=1.2, xfs 1%
+  //   afterParity = 6.0 ; afterFs = 5.94 ; ×0.75 = 4.455 ; ÷1.2 = 3.7125 usable
+  //   committed = 3.7125 / 1.2 = 3.09375 ; perNode = 3.7125 / 3 = 1.2375
+  const opts = {
+    diskMode: 'root' as const,
+    minimalAvailablePercent: 25,
+    snapshotHeadroom: 1.2,
+    growthHeadroom: 1.2,
+    overProvisioningPercent: 100,
+  }
+
+  it('applies free-space + snapshot reserves to physical usable', () => {
+    const input = createLonghornInput(18, { type: 'longhorn', level: 'longhorn_r3' }, 3, opts)
+    const result = calculateVolumetry(input)
+    expect(result.usableCapacity / 1e12).toBeCloseTo(3.7125, 4)
+    expect(result.longhornDetails?.physicalUsable ?? 0).toBeCloseTo(3.7125e12, -8)
+  })
+
+  it('reports recommended committed data (÷ growth) and per-node allocation', () => {
+    const input = createLonghornInput(18, { type: 'longhorn', level: 'longhorn_r3' }, 3, opts)
+    const d = calculateVolumetry(input).longhornDetails
+    expect((d?.recommendedCommittedData ?? 0) / 1e12).toBeCloseTo(3.09375, 4)
+    expect((d?.perNodeUsable ?? 0) / 1e12).toBeCloseTo(1.2375, 4)
+    expect(d?.replicaCount).toBe(3)
+    expect(d?.overProvisioningPercent).toBe(100)
+  })
+
+  it('R2 usable is exactly 1.5× R3 usable (same inputs)', () => {
+    const r2 = calculateVolumetry(
+      createLonghornInput(18, { type: 'longhorn', level: 'longhorn_r2' }, 3, opts),
+    ).usableCapacity
+    const r3 = calculateVolumetry(
+      createLonghornInput(18, { type: 'longhorn', level: 'longhorn_r3' }, 3, opts),
+    ).usableCapacity
+    expect(r2 / r3).toBeCloseTo(1.5, 5)
+  })
+
+  it('applies no compression/dedup (effective === usable)', () => {
+    const input = createLonghornInput(18, { type: 'longhorn', level: 'longhorn_r3' }, 3, opts, 2.0)
+    const result = calculateVolumetry(input)
+    expect(result.effectiveCapacity).toBe(result.usableCapacity)
+  })
+
+  it('returns zero-state when serverCount < replica count', () => {
+    const input = createLonghornInput(18, { type: 'longhorn', level: 'longhorn_r3' }, 2, opts)
+    const result = calculateVolumetry(input)
+    expect(result.usableCapacity).toBe(0)
+    expect(result.rawCapacity).toBe(18_000_000_000_000)
+  })
+})
