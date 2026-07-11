@@ -125,6 +125,7 @@
   },
   "export": {
     "title": "Export Configuration",
+    "error": "Export failed — please try again",
     "pdf": "PDF Report",
     "pdfDesc": "Full report",
     "pptx": "PowerPoint",

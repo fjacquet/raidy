@@ -2,6 +2,7 @@
  * Right panel containing calculation results and visualizations.
  */
 
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { InfoTooltip } from '@/components/common'
 import {
@@ -184,24 +185,32 @@ export function OutputDashboard() {
   })
 
   // Export handlers
+  const [exportError, setExportError] = useState(false)
+
   const handleExportPdf = () => {
     if (!selectedDrive) return
-    exportToPdf({
-      drive: selectedDrive,
-      driveCount,
-      topology,
-      zfsOptions: topology.type === 'zfs' ? zfsOptions : undefined,
-      results: {
-        ...results,
-        resilience: resilienceResult,
-      },
-      projectName: 'Storage Configuration',
-      unitSystem,
-    })
+    setExportError(false)
+    try {
+      exportToPdf({
+        drive: selectedDrive,
+        driveCount,
+        topology,
+        zfsOptions: topology.type === 'zfs' ? zfsOptions : undefined,
+        results: {
+          ...results,
+          resilience: resilienceResult,
+        },
+        projectName: 'Storage Configuration',
+        unitSystem,
+      })
+    } catch {
+      setExportError(true)
+    }
   }
 
   const handleExportPptx = () => {
     if (!selectedDrive) return
+    setExportError(false)
     exportToPptx({
       drive: selectedDrive,
       driveCount,
@@ -213,7 +222,7 @@ export function OutputDashboard() {
       },
       projectName: 'Storage Configuration',
       unitSystem,
-    })
+    }).catch(() => setExportError(true))
   }
 
   const handleExportAnsible = () => {
@@ -814,11 +823,16 @@ export function OutputDashboard() {
 
         {/* Export Card */}
         <div className="panel xl:col-span-3 lg:col-span-2">
-          <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-1">
             {t('export.title')}
           </h3>
+          {exportError && (
+            <p className="text-sm text-red-500 dark:text-red-400 mb-3" role="alert">
+              {t('export.error')}
+            </p>
+          )}
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className={`grid grid-cols-2 md:grid-cols-4 gap-4 ${exportError ? '' : 'mt-4'}`}>
             <button
               type="button"
               onClick={handleExportPdf}
