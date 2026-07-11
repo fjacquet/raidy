@@ -169,7 +169,14 @@ Calculates storage capacity and efficiency.
 > `shouldShowControl('serverCount', topology.type)` is true (with an additional carve-out for
 > standard RAID50/60, where the same input doubles as the RAID-group count). Controls are
 > hidden, not disabled, when a platform's engine ignores them — the store values are left
-> untouched so a stored URL config round-trips unchanged.
+> untouched so a stored URL config round-trips unchanged. For `serverCount` specifically, hiding
+> the control is not enough on its own: switching topology never resets the stored value, so a
+> stale multi-node `serverCount` would otherwise keep silently scaling results after switching to
+> a single-node platform. `effectiveServerCount(serverCount, topology)` (also in
+> `src/engines/capabilities.ts`) closes that gap by clamping to `1` at the calculation-hook
+> boundary (`useVolumetryCalc`, `usePerformanceCalc`, `useSustainabilityCalc`,
+> `useCalculations`) whenever the control is hidden — the store's `serverCount` itself is left
+> untouched, so it round-trips unchanged if the user switches back.
 
 ### Module B: Performance Engine (`/src/engines/performance/`)
 

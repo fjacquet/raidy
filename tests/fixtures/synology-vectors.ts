@@ -60,8 +60,6 @@
 import type { ProprietaryRaid, Topology } from '@/types/topology'
 import type { PlatformVector } from './vector-harness'
 
-export type { PlatformVector } from './vector-harness'
-
 const TB = 1_000_000_000_000
 
 function synology(level: Extract<ProprietaryRaid, `synology_${string}`>): Topology {

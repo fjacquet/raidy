@@ -20,6 +20,12 @@ import type { UnitSystem } from './units'
 export interface ExportConfig {
   drive: Drive
   driveCount: number
+  /**
+   * Effective server/node count (post `effectiveServerCount` clamp — see
+   * src/engines/capabilities.ts) — omit or pass 1 for single-node platforms
+   * so the exported subtitle doesn't show a stale multi-node count.
+   */
+  serverCount?: number
   topology: Topology
   zfsOptions?: ZfsOptions
   results: CalculationResults

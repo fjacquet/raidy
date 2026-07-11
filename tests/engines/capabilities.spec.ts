@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { getCapabilities, PLATFORM_CAPABILITIES, shouldShowControl } from '@/engines/capabilities'
+import {
+  effectiveServerCount,
+  getCapabilities,
+  PLATFORM_CAPABILITIES,
+  shouldShowControl,
+} from '@/engines/capabilities'
 import { calculateVolumetry } from '@/engines/volumetry'
 import type { Topology, TopologyType } from '@/types/topology'
 import { createVolumetryInput } from '../fixtures/vector-harness'
@@ -117,5 +122,24 @@ describe('shouldShowControl', () => {
     expect(shouldShowControl('compression', 'zfs')).toBe(true)
     expect(shouldShowControl('compression', 'standard')).toBe(false)
     expect(shouldShowControl('serverCount', 'standard')).toBe(false)
+  })
+})
+
+describe('effectiveServerCount (finding #14 — stale serverCount clamp)', () => {
+  it('clamps to 1 for single-node platforms whose serverCount slider is hidden', () => {
+    expect(effectiveServerCount(8, { type: 'zfs', level: 'raidz2' })).toBe(1)
+    expect(effectiveServerCount(8, { type: 'proprietary', level: 'synology_shr' })).toBe(1)
+    expect(effectiveServerCount(8, { type: 'powervault', level: 'powervault_raid6' })).toBe(1)
+    expect(effectiveServerCount(8, { type: 'standard', level: 'RAID5' })).toBe(1)
+  })
+
+  it('preserves serverCount for multi-node platforms', () => {
+    expect(effectiveServerCount(8, { type: 'ceph', level: 'ceph_replicated_3' })).toBe(8)
+    expect(effectiveServerCount(4, { type: 's2d', level: 'mirror' })).toBe(4)
+  })
+
+  it('preserves serverCount for standard RAID50/60, where it doubles as RAID-group count', () => {
+    expect(effectiveServerCount(4, { type: 'standard', level: 'RAID50' })).toBe(4)
+    expect(effectiveServerCount(4, { type: 'standard', level: 'RAID60' })).toBe(4)
   })
 })

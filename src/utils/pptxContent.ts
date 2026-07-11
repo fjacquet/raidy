@@ -52,14 +52,12 @@ export function buildPptxContent(
   const levelLabel = 'level' in config.topology ? ` ${config.topology.level}` : ''
   const title = `${topologyLabel}${levelLabel}`
 
-  const serverCount =
-    'serverCount' in config.topology
-      ? String((config.topology as { serverCount: number }).serverCount)
-      : null
   const subtitle = [
     config.drive.model,
     `${config.driveCount} ${label('drives')}`,
-    serverCount ? `${serverCount} ${label('servers')}` : null,
+    config.serverCount && config.serverCount > 1
+      ? `${config.serverCount} ${label('servers')}`
+      : null,
     dateLabel,
   ]
     .filter(Boolean)

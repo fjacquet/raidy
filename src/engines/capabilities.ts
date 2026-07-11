@@ -4,7 +4,7 @@
  * The probe suite (tests/engines/capabilities.spec.ts) asserts every flag
  * against actual engine behavior, so this map cannot silently drift.
  */
-import type { TopologyType } from '@/types/topology'
+import type { Topology, TopologyType } from '@/types/topology'
 
 export interface PlatformCapabilities {
   supportsCompression: boolean
@@ -156,4 +156,30 @@ export function shouldShowControl(
     case 'serverCount':
       return caps.hasServerCount
   }
+}
+
+/**
+ * True for standard RAID50/60, where serverCount doubles as the RAID-group
+ * count and does affect capacity (see raidStrategy.calculateDataFraction).
+ * Mirrors HardwarePanel.tsx's `isRaidGroupMode` exactly — keep in sync.
+ */
+function isRaidGroupMode(topology: Topology): boolean {
+  return (
+    topology.type === 'standard' && (topology.level === 'RAID50' || topology.level === 'RAID60')
+  )
+}
+
+/**
+ * Clamps serverCount to 1 for platforms whose servers/nodes slider is hidden
+ * (see HardwarePanel.tsx's `showServerCount`), so a stale serverCount left
+ * over from switching away from a multi-node platform can't silently scale
+ * volumetry/performance/sustainability results for a single-node platform.
+ * Non-destructive: the store's serverCount value itself is untouched, so it
+ * round-trips unchanged if the user switches back (finding #14).
+ */
+export function effectiveServerCount(serverCount: number, topology: Topology): number {
+  if (shouldShowControl('serverCount', topology.type) || isRaidGroupMode(topology)) {
+    return serverCount
+  }
+  return 1
 }

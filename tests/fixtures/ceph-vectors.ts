@@ -56,8 +56,6 @@
 import type { CephTopology, Topology } from '@/types/topology'
 import type { PlatformVector } from './vector-harness'
 
-export type { PlatformVector } from './vector-harness'
-
 const TB = 1_000_000_000_000
 
 function ceph(level: CephTopology): Topology {

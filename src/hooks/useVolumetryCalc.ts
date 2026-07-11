@@ -5,6 +5,7 @@
 
 import { useMemo } from 'react'
 import drivesData from '@/data/drives.json'
+import { effectiveServerCount } from '@/engines/capabilities'
 import { calculateVolumetry } from '@/engines/volumetry'
 import { useConfigStore } from '@/store'
 import type { Drive } from '@/types'
@@ -66,18 +67,23 @@ export function useVolumetryCalc(): VolumetryResult {
       }
     }
 
+    // Clamp a stale serverCount to 1 for platforms whose servers/nodes slider
+    // is hidden, so switching topology can't silently scale results by a
+    // leftover serverCount from a previously selected multi-node platform.
+    const effServerCount = effectiveServerCount(serverCount, topology)
+
     // Calculate total drives across all servers.
     // vSAN rebuilds from distributed slack space, not dedicated hot-spare drives,
     // so force 0 spares even if persisted URL state hydrated a non-zero count.
-    const totalDriveCount = driveCount * serverCount
-    const totalHotSpares = usesDistributedSpares(topology.type) ? 0 : hotSpares * serverCount
+    const totalDriveCount = driveCount * effServerCount
+    const totalHotSpares = usesDistributedSpares(topology.type) ? 0 : hotSpares * effServerCount
 
     try {
       return calculateVolumetry({
         drive,
         driveCount: totalDriveCount,
         hotSpares: totalHotSpares,
-        serverCount,
+        serverCount: effServerCount,
         topology,
         zfsOptions,
         s2dOptions,

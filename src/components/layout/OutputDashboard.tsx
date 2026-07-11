@@ -18,6 +18,7 @@ import {
   ZfsCapacityDetails,
 } from '@/components/outputs'
 import drivesData from '@/data/drives.json'
+import { effectiveServerCount } from '@/engines/capabilities'
 import {
   formatNumber,
   useCalculations,
@@ -214,6 +215,7 @@ export function OutputDashboard() {
     exportToPptx({
       drive: selectedDrive,
       driveCount,
+      serverCount: effectiveServerCount(serverCount, topology),
       topology,
       zfsOptions: topology.type === 'zfs' ? zfsOptions : undefined,
       results: {

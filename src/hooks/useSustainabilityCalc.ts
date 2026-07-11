@@ -5,6 +5,7 @@
 
 import { useMemo } from 'react'
 import drivesData from '@/data/drives.json'
+import { effectiveServerCount } from '@/engines/capabilities'
 import { resolveTiering } from '@/engines/shared/tiering'
 import { calculateSustainability } from '@/engines/sustainability'
 import { useConfigStore } from '@/store'
@@ -55,11 +56,16 @@ export function useSustainabilityCalc(usableCapacity: number): SustainabilityRes
       }
     }
 
+    // Clamp a stale serverCount to 1 for platforms whose servers/nodes slider
+    // is hidden, so switching topology can't silently scale results by a
+    // leftover serverCount from a previously selected multi-node platform.
+    const effServerCount = effectiveServerCount(serverCount, topology)
+
     // Calculate total drives across all servers
-    const totalDriveCount = driveCount * serverCount
+    const totalDriveCount = driveCount * effServerCount
 
     // Resolve tiering configuration (null when not a tiered topology)
-    const tiering = resolveTiering(topology, serverCount, {
+    const tiering = resolveTiering(topology, effServerCount, {
       s2dOptions,
       vsanOptions,
       cephOptions,
@@ -70,7 +76,7 @@ export function useSustainabilityCalc(usableCapacity: number): SustainabilityRes
       return calculateSustainability({
         drive,
         driveCount: totalDriveCount,
-        serverCount,
+        serverCount: effServerCount,
         serverPowerWatts,
         pue,
         carbonRegion,

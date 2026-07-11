@@ -84,6 +84,18 @@ describe('buildPptxContent', () => {
     expect(parity?.value).toMatch(/[TG]B/)
     expect(parity?.value).not.toContain('iB')
   })
+  it('includes a "servers" segment in the subtitle when serverCount > 1 (finding #14/M-1)', () => {
+    const content = buildPptxContent({ ...config, serverCount: 4 }, t)
+    expect(content.subtitle).toContain('4 servers')
+  })
+  it('omits the "servers" segment when serverCount is undefined', () => {
+    const content = buildPptxContent(config, t)
+    expect(content.subtitle).not.toMatch(/\d+ servers/)
+  })
+  it('omits the "servers" segment when serverCount is 1 (single-node platform)', () => {
+    const content = buildPptxContent({ ...config, serverCount: 1 }, t)
+    expect(content.subtitle).not.toMatch(/\d+ servers/)
+  })
   it('formats K-suffix IOPS with one decimal, matching the on-screen gauges (finding #12)', () => {
     const content = buildPptxContent(config, t)
     // maxReadIOPS: 1200 must render as '1.2K' (Speedometer/AnimatedCounter convention),

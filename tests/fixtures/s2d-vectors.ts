@@ -24,8 +24,6 @@ import { DEFAULT_S2D_OPTIONS } from '@/types'
 import type { S2DTopology, Topology } from '@/types/topology'
 import type { PlatformVector } from './vector-harness'
 
-export type { PlatformVector } from './vector-harness'
-
 const TB = 1_000_000_000_000
 
 function s2d(level: S2DTopology): Topology {

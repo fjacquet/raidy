@@ -49,8 +49,6 @@
 import type { NutanixTopology, Topology } from '@/types/topology'
 import type { PlatformVector } from './vector-harness'
 
-export type { PlatformVector } from './vector-harness'
-
 const TB = 1_000_000_000_000
 
 function nutanix(level: NutanixTopology): Topology {
