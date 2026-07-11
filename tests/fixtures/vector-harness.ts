@@ -24,6 +24,26 @@ import type { Drive } from '@/types/drive'
 
 export const TB = 1_000_000_000_000
 
+/**
+ * External-reference test vector shared by all platform vector fixtures (phase 18, Tasks 3–8).
+ * expectedUsable is compared against VolumetryResult.usableCapacity (after parity + reserves +
+ * fs overhead, before compression/dedup).
+ */
+export interface PlatformVector {
+  name: string
+  topology: Topology
+  drives: number
+  serverCount: number
+  driveSize: number
+  /** Expected VolumetryResult.usableCapacity in bytes (external reference minus engine overheads). */
+  expectedUsable: number
+  tolerance: number // 0.01 = 1%
+  source: string
+  url: string
+  /** Overrides merged into VolumetryInput (e.g. s2dOptions) beyond drives/topology/serverCount. */
+  overrides?: Record<string, unknown>
+}
+
 export const testDrive1TB: Drive = {
   id: 'test-1tb',
   model: 'Test Drive 1TB',

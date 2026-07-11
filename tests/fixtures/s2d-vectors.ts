@@ -22,26 +22,14 @@
  */
 import { DEFAULT_S2D_OPTIONS } from '@/types'
 import type { S2DTopology, Topology } from '@/types/topology'
+import type { PlatformVector } from './vector-harness'
+
+export type { PlatformVector } from './vector-harness'
 
 const TB = 1_000_000_000_000
 
 function s2d(level: S2DTopology): Topology {
   return { type: 's2d', level }
-}
-
-export interface PlatformVector {
-  name: string
-  topology: Topology
-  drives: number
-  serverCount: number
-  driveSize: number
-  /** Expected VolumetryResult.usableCapacity in bytes (external reference minus engine overheads). */
-  expectedUsable: number
-  tolerance: number // 0.01 = 1%
-  source: string
-  url: string
-  /** Overrides merged into VolumetryInput (e.g. s2dOptions) beyond drives/topology/serverCount. */
-  overrides?: Record<string, unknown>
 }
 
 export const s2dVectors: PlatformVector[] = [
@@ -62,10 +50,15 @@ export const s2dVectors: PlatformVector[] = [
     overrides: { s2dOptions: { ...DEFAULT_S2D_OPTIONS, mirrorCopies: 3 } },
   },
   {
-    // Microsoft: single parity efficiency = (N-1)/N fault domains; at 4 fault domains = 75%.
+    // HONESTY NOTE — engine-formula analog, NOT an independent external validation.
+    // Microsoft documents single parity only qualitatively (fault-tolerance page: "keeps only
+    // one bitwise parity symbol … most closely resembles RAID-5") and publishes NO numeric
+    // single-parity efficiency fraction anywhere on Learn (verified 2026-07-11). The (N-1)/N
+    // value (75% at 4 fault domains) is the standard RAID-5 analogy — the same formula the
+    // engine implements — so this vector pins the engine model rather than validating it.
     // Reserve pipeline: 16 raw drives - 4-drive rebuild reserve = 12 TB pool; × 0.75 = 9 TB
     // after parity; - 277 GB infra reserve; × 0.98 for ReFS.
-    name: 'S2D single parity, 16 drives, 4 servers (4 fault domains)',
+    name: 'S2D single parity, 16 drives, 4 servers (4 fault domains) [engine-formula analog]',
     topology: s2d('parity'),
     drives: 16,
     serverCount: 4,
@@ -73,8 +66,8 @@ export const s2dVectors: PlatformVector[] = [
     expectedUsable: 8_548_540_000_000,
     tolerance: 0.01,
     source:
-      'Microsoft Learn — Plan volumes on Azure Local and Windows Server clusters (single-parity efficiency = (N-1)/N fault domains)',
-    url: 'https://learn.microsoft.com/en-us/windows-server/storage/storage-spaces/plan-volumes',
+      'Engine-formula analog — Microsoft documents single parity qualitatively (fault-tolerance page) but publishes no efficiency fraction; (N-1)/N is the standard RAID-5 analogy, not an independent external validation',
+    url: 'https://learn.microsoft.com/en-us/windows-server/storage/storage-spaces/fault-tolerance',
     overrides: { s2dOptions: { ...DEFAULT_S2D_OPTIONS, faultDomains: 4 } },
   },
   {
