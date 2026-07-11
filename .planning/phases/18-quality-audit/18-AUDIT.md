@@ -704,3 +704,83 @@ updating).
 **Ledger:** finding #12 added (value-misleading, minor, fixed). No other deviations
 found across all 5 matrix cells — every numeric value, media count, background color,
 and language string matched the dashboard/theme/language/unit-system exactly.
+
+## Capability Map (Task 15)
+
+Created `src/engines/capabilities.ts` — declarative per-platform capability map
+(`PLATFORM_CAPABILITIES: Record<TopologyType, PlatformCapabilities>`, plus
+`getCapabilities()` and `shouldShowControl()`) consumed by Task 16 to hide no-op
+input controls. Honesty enforced by a probe suite
+(`tests/engines/capabilities.spec.ts`, 46 tests) that drives `calculateVolumetry`
+directly rather than asserting hand-picked expectations — the map cannot silently
+drift from engine behavior.
+
+**Pre-step correction:** the brief's `REPRESENTATIVE` list used a placeholder level
+`powerstore_drr`, which does not exist in `PowerStoreTopology`. Replaced with the real
+union member `powerstore_raid5`. All other level literals (`powerscale_n2_1`,
+`objectscale_ec_12_4`, etc.) were verified against `src/types/topology.ts` and left
+unchanged.
+
+**Bootstrap procedure:** every flag started `true`; the probe suite was run once; every
+flag it refuted was flipped to `false`. `hasServerCount` was set structurally (per the
+brief) rather than probed, with a plain unit assertion (multi-node types = `true`,
+single-node = `false`).
+
+### Final flag matrix (14 platforms × 4 flags)
+
+| Platform | supportsCompression | supportsDedup | supportsHotSpares | hasServerCount |
+|---|---|---|---|---|
+| standard | false | false | true | false |
+| zfs | **true** | **true** | true | false |
+| s2d | false | false | true | true |
+| proprietary | false | false | true | false |
+| vsan_osa | false | false | true | true |
+| vsan_esa | false | false | true | true |
+| ceph | false | false | true | true |
+| powerflex | false | false | true | true |
+| powerstore | false | false | true | true |
+| powerscale | false | false | true | true |
+| objectscale | false | false | true | true |
+| nutanix | false | false | true | true |
+| powervault | false | false | true | false |
+| longhorn | false | false | true | true |
+
+`supportsHotSpares` is `true` for all 14 platforms — hot spares reduce `usableCapacity`
+everywhere the probe checked.
+
+### Probe surprise — candidate UI finding for Task 16
+
+The brief's illustrative example (`standard: { supportsCompression: true, ... }`) turned
+out to be **wrong** once probed: **zfs is the only platform whose engine strategy
+responds to the global `compressionRatio`/`dedupRatio` inputs.** Root cause, read from
+`applyCompressionDedup()` in
+`src/engines/volumetry/postProcessing/capacityEnhancements.ts`:
+
+- `standard` (RAID): no compression/dedup step exists at all — `effectiveCapacity ===
+  usableCapacity` unconditionally.
+- `s2d`, `proprietary` (Synology levels), `powervault`: no branch in
+  `applyCompressionDedup` — falls through to the no-op `return usableCapacity`.
+- `vsan_osa`/`vsan_esa`, `ceph`, `powerflex`, `powerstore`, `powerscale`, `objectscale`,
+  `nutanix`: each genuinely supports compression/dedup, but **exclusively through its own
+  platform-specific options object** (`powerFlexOptions.compression` /
+  `.compressionRatio`, `nutanixOptions.compression`/`.dedup`, `cephOptions.compression`,
+  `vsanOptions.compression`/`.dedup`, etc.) — not the shared global ratio fields the
+  probe (and, presumably, any generic slider) drives.
+- Only `zfs`'s strategy does
+  `usableCapacity * compressionRatio * dedupRatio` directly off the global inputs.
+
+**Implication for Task 16:** if `InputSidebar`'s Advanced panel exposes one shared
+compression/dedup slider tied to the global store fields for every platform, that
+slider is a no-op for 13 of 14 platforms (all but ZFS) — it should be hidden per
+`shouldShowControl('compression'|'dedup', type)` for those platforms, and those
+platforms' *own* options panels (already present per-platform) are the only place
+compression/dedup are actually live. This is flagged here as a candidate UI finding,
+continuing the ledger numbering — **not added as ledger finding #13** because Task 15's
+scope is the capability map itself; Task 16 owns deciding whether/how to act on it in
+the UI.
+
+**Test evidence:**
+- `rtk npm test -- tests/engines/capabilities.spec.ts --run` → 46/46 PASS
+- `rtk npm test -- --run` → 1063/1063 PASS (35 test files, ~52s)
+- `rtk npm run typecheck` → clean
+- `rtk npm run lint:fix` → clean (2 files reformatted by Biome, no logic changes)
