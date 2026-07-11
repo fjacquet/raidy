@@ -84,4 +84,15 @@ describe('buildPptxContent', () => {
     expect(parity?.value).toMatch(/[TG]B/)
     expect(parity?.value).not.toContain('iB')
   })
+  it('formats K-suffix IOPS with one decimal, matching the on-screen gauges (finding #12)', () => {
+    const content = buildPptxContent(config, t)
+    // maxReadIOPS: 1200 must render as '1.2K' (Speedometer/AnimatedCounter convention),
+    // not '1K' — pins the .toFixed(1) fix so a regression to .toFixed(0) fails here.
+    const read = content.performanceLines[0]?.find((s) => s.label === 'Max Read')
+    expect(read?.value).toContain('1.2K')
+    // maxWriteIOPS: 800 is below 1000 — sub-K branch renders the plain integer.
+    const write = content.performanceLines[1]?.find((s) => s.label === 'Max Write')
+    expect(write?.value).toContain('800')
+    expect(write?.value).not.toContain('K')
+  })
 })
