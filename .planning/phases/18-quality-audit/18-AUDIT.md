@@ -20,6 +20,7 @@ Newly audited here: S2D, Nutanix, NetApp, Ceph, Synology, Longhorn + PPTX export
 | 3 | Nutanix | value-misleading | minor | `src/types/topology.ts` comments `nutanix_ec_rf3` as "6:2 striping", but 6:2 = 6/(6+2) = 75% — a different strip size. The strategy (`src/engines/volumetry/strategies/nutanix.ts`) implements 4:2 = 4/(4+2) = 66.7%, matching the Nutanix Bible's default RF3-like strip. Implemented value is correct; the topology.ts comment label is wrong. Comment-only — no numeric output affected. | Nutanix Bible — Book of AOS Data Efficiency (default RF3-like strip 4/2, "1.5x overhead vs RF3's 3x"): https://www.nutanixbible.com/4h-book-of-aos-data-efficiency.html | open (comment fix deferred; logged in Task 4) |
 | 4 | NetApp | untested | — | No external-reference vector coverage before phase 18. Added 3 vectors (RAID-DP 8 drives, RAID-DP 24 drives, RAID-TEC 24 drives). The parity-drive fraction ((N-2)/N RAID-DP, (N-3)/N RAID-TEC) and the 5% default snapshot reserve are genuinely NetApp-published and match the engine exactly. All 3 pass at 0.00% deviation — no engine change needed for the tested paths. | docs.netapp.com sizing-raid-groups-concept, default-raid-policies-aggregates-concept, manage-snapshot-copy-reserve-concept (URLs in Reference Cases → NetApp) | untested → now covered |
 | 5 | NetApp | value-misleading | moderate | `DEFAULT_NETAPP_OPTIONS.waflOverhead = 0.015` (1.5%, UI slider capped 1-3%) is named after, but does not represent, ONTAP's real WAFL aggregate reserve, which is a fixed, non-user-configurable **10%** of aggregate size (5% only for >=30 TB aggregates on AFF/FAS500f since 9.12.1, all FAS since 9.14.1). The engine's "waflOverhead" is actually playing the same role as the small ~1-2% generic filesystem-metadata layer used for other topologies (xfs/ext4/zfs/vsan/ceph/nutanix fs-overhead in `filesystem-overhead.ts`), not the much larger real ONTAP reserve. Not fixed: the field is used consistently as a small fs-metadata analog throughout the engine and UI (slider range 1-3%), so retargeting it to 10% would be a product/UX design change, not a bug fix, and is out of scope for this task. Flagged for follow-up decision. | kb.netapp.com/on-prem/ontap/Ontap_OS/OS-KBs/ONTAP_Space_Usage; kb.netapp.com/.../Why_is_my_aggregate_showing_10_percent_less_total_space_than_expected | open (design decision deferred) |
+| 6 | Ceph | untested | — | No external-reference vector coverage before phase 18. Added 4 vectors (replicated size=2, replicated size=3, EC 4+2, EC 8+3). Replicated data fraction (raw/size) and EC data fraction (k/(k+m)) match `src/engines/volumetry/strategies/ceph.ts` exactly; `DEFAULT_CEPH_OPTIONS.safeCapacityThreshold = 0.85` matches Ceph's documented `mon_osd_nearfull_ratio` default exactly. All 4 pass at 0.00% deviation — no engine change needed. The 2% BlueStore fs-overhead layer (`filesystem-overhead.ts:83-85`) is an engine-formula analog — no docs.ceph.com page publishes a flat BlueStore metadata-overhead constant; see honesty note. | docs.ceph.com/en/reef/rados/operations/pools, docs.ceph.com/en/reef/rados/operations/erasure-code, docs.ceph.com/en/reef/rados/configuration/mon-config-ref (URLs in Reference Cases → Ceph) | untested → now covered |
 
 Tags: value-wrong (>1% off reference) · value-misleading (right number, wrong label/unit) · untested (no vector coverage)
 
@@ -168,6 +169,66 @@ product/UX decision affecting the UI's documented 1-3% range and is deferred.
 Externally validated vectors: 3/3 for the *parity fraction* and *snapshot reserve* layers (the
 two dominant terms); 0/3 for the WAFL-overhead layer specifically — coverage should not be
 overstated as fully external end-to-end.
+
+### Ceph (Task 6 — 2026-07-11)
+
+Fixture: `tests/fixtures/ceph-vectors.ts` · Spec: `tests/engines/volumetry/vectors/ceph.spec.ts`
+
+The engine's pipeline for Ceph (`src/engines/volumetry/index.ts:228-247`):
+`usableCapacity = rawUsableCapacity × dataFraction × (1 − filesystemOverhead) × safeCapacityThreshold`,
+where `dataFraction` is `1/size` (replicated) or `k/(k+m)` (EC,
+`src/engines/volumetry/strategies/ceph.ts`), `filesystemOverhead` is a flat 2% BlueStore
+metadata constant (`src/engines/volumetry/overhead/filesystem-overhead.ts:83-85`), and
+`safeCapacityThreshold` defaults to 0.85 (`DEFAULT_CEPH_OPTIONS`). Drive: `testDrive1TB` (1 TB).
+
+APPLES-TO-APPLES: docs.ceph.com and community calculators typically express raw→usable
+*before* any nearfull headroom — `mon_osd_nearfull_ratio` is documented as a `HEALTH_WARN`
+threshold, not a capacity-planning discount. `expectedUsable` below is stated **post-nearfull**
+(i.e. includes the × 0.85 multiplier) to match `VolumetryResult.usableCapacity` directly; each
+vector's inline comment shows the pre-nearfull ("raw external") intermediate value so the two
+conventions are never conflated.
+
+Two of the pipeline's three layers are genuinely Ceph-published:
+
+- **Replicated data fraction** — `size` (replica count, default 3) is documented as the pool
+  parameter controlling usable = raw/size.
+  [docs.ceph.com/rados/operations/pools](https://docs.ceph.com/en/reef/rados/operations/pools/).
+  Matches `ceph.ts`: `1 / replicationFactor` (hardcoded 1/2, 1/3 for `ceph_replicated_2/3`).
+- **EC data fraction** — "overhead factor (space amplification) = (k+m)/k", with a worked 4,2
+  example (1.5× overhead ⇒ 4/6 efficiency).
+  [docs.ceph.com/rados/operations/erasure-code](https://docs.ceph.com/en/reef/rados/operations/erasure-code).
+  Matches `ceph.ts`: `ecK / (ecK + ecM)` (hardcoded 4/6, 8/11 for `ceph_ec_4_2`, `ceph_ec_8_3`).
+- **Nearfull ratio** — `mon_osd_nearfull_ratio` default = 0.85, documented in the Ceph Monitor
+  Config Reference.
+  [docs.ceph.com/rados/configuration/mon-config-ref](https://docs.ceph.com/en/reef/rados/configuration/mon-config-ref/).
+  Matches `DEFAULT_CEPH_OPTIONS.safeCapacityThreshold = 0.85` exactly.
+
+Pipeline: raw usable × data fraction (validated) → × 0.98 (2% BlueStore fs-overhead layer,
+engine-formula analog — see honesty note) → × 0.85 (nearfull ratio, validated).
+
+| Config | Data fraction | Source | Expected usable (bytes) | Engine (bytes) | Deviation |
+|--------|----------------|--------|--------------------------|-----------------|-----------|
+| Replicated size=2, 6 drives / 3 nodes | 50% (1/2) | [Pools](https://docs.ceph.com/en/reef/rados/operations/pools/) | 2 499 000 000 000 | 2 499 000 000 000 | 0.00% |
+| Replicated size=3 (default), 12 drives / 4 nodes | 33.3% (1/3) | [Pools](https://docs.ceph.com/en/reef/rados/operations/pools/) | 3 332 000 000 000 | 3 332 000 000 000 | 0.00% |
+| Erasure coded 4+2, 12 drives / 6 nodes | 66.7% (4/6) | [Erasure code](https://docs.ceph.com/en/reef/rados/operations/erasure-code) | 6 664 000 000 000 | 6 664 000 000 000 | 0.00% |
+| Erasure coded 8+3, 22 drives / 11 nodes | 72.7% (8/11) | [Erasure code](https://docs.ceph.com/en/reef/rados/operations/erasure-code) | 13 328 000 000 000 | 13 328 000 000 000 | 0.00% |
+
+Result: 4/4 PASS (tolerance 1%). Regression: `tests/engines/volumetry.spec.ts` 318/318 PASS.
+No change to `src/engines/volumetry/**` — the replicated/EC data-fraction formulas and the
+default nearfull ratio match Ceph's published values exactly.
+
+**Honesty note (BlueStore fs-overhead layer):** the 2% filesystem-overhead constant applied for
+`topology.type === 'ceph'` (`filesystem-overhead.ts:83-85`, code comment "~1-2% for metadata,
+OSD journals") is an [engine-formula analog], not an independently published Ceph number — no
+docs.ceph.com page states a flat BlueStore metadata-overhead percentage; real overhead varies
+with object/OSD count, `bluestore_min_alloc_size`, and RocksDB/WAL sizing. It plays the same
+generic small-fs-overhead role documented for xfs/ext4/zfs/vsan/nutanix elsewhere in the same
+file (identical pattern to NetApp's `waflOverhead`, finding #5 above). It is included in
+`expectedUsable` because it is part of what the engine actually returns in
+`VolumetryResult.usableCapacity`, but is not itself externally validated.
+Externally validated vectors: 4/4 for the *data-fraction* and *nearfull-ratio* layers (the two
+dominant, genuinely Ceph-published terms); 0/4 for the BlueStore fs-overhead layer specifically —
+coverage should not be overstated as fully external end-to-end.
 
 ## Spot-Checks (Task 9)
 
