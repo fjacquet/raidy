@@ -27,10 +27,15 @@ export interface PptxContent {
   resilienceLine: PptxStat[] | null
 }
 
-/** Format IOPS with K/M suffix for compact display. */
+/**
+ * Format IOPS with K/M suffix for compact display.
+ * Matches the on-screen gauge convention (Speedometer.tsx / AnimatedCounter.tsx),
+ * which uses one decimal place for the K suffix — using .toFixed(0) here would
+ * silently drop precision the dashboard shows (e.g. "1.3K" -> "1K").
+ */
 function formatIops(iops: number): string {
   if (iops >= 1_000_000) return `${(iops / 1_000_000).toFixed(1)}M`
-  if (iops >= 1_000) return `${(iops / 1_000).toFixed(0)}K`
+  if (iops >= 1_000) return `${(iops / 1_000).toFixed(1)}K`
   return iops.toFixed(0)
 }
 

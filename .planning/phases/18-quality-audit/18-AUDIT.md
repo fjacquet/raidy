@@ -26,6 +26,7 @@ Newly audited here: S2D, Nutanix, NetApp, Ceph, Synology, Longhorn + PPTX export
 | 9 | Synology | value-wrong | minor | The engine's Synology-with-ext4 path uses the generic `FILESYSTEM_OVERHEAD.ext4 = 0.05` (5%) constant (`src/engines/volumetry/overhead/filesystem-overhead.ts:112-116`, `src/types/topology.ts:718`), but Synology publishes 2% for ext4 volumes on the RAID Calculator page. Not exercised by the Task 7 vectors (btrfs is the Synology default) — follow-up. | Synology RAID Calculator: https://www.synology.com/en-global/support/RAID_calculator | open |
 | 10 | Longhorn | untested → value-wrong | moderate | No external-reference vector coverage before phase 18. Added 4 vectors (R2 @ 3 nodes, R2 @ 6 nodes, R3 @ 3 nodes, R3 @ 6 nodes). The replica-count full-copy model (R2 = 1/2, R3 = 1/3) matches `src/engines/volumetry/strategies/longhorn.ts:12-22` exactly and is genuinely Longhorn-published. Separately: `DEFAULT_LONGHORN_OPTIONS.minimalAvailablePercent = 10` (`src/types/topology.ts:641`) diverges from the Longhorn settings reference / space-consumption KB, which document the `storageMinimalAvailablePercentage` DEFAULT as **25%** — a real, quantified 2.5× divergence in the shipped default. `overProvisioningPercent = 200` (engine default) DOES match the Longhorn-documented default of 200% — no divergence there. Vectors use `minimalAvailablePercent: 25` as an explicit override (not the engine default) so the tested free-space factor is traceable to the published value; all 4 pass at 0.00% deviation against that override. User-adjustable in the UI; default divergence deferred as product decision (precedent: findings #5, #8). | longhorn.io/docs/latest/nodes-and-volumes/volumes/, longhorn.io/kb/space-consumption-guideline/, documentation.suse.com/cloudnative/storage/1.11/en/longhorn-system/settings.html (URLs in Reference Cases → Longhorn) | untested → now covered; default value-wrong open |
 | 11 | Sustainability | value-wrong | minor | `CARBON_INTENSITY.switzerland = 30` (gCO2/kWh, `src/engines/sustainability/index.ts:27-34`) sits at the low end of, but below, the two most-cited authoritative point estimates: Swiss Federal Office of Energy (SFOE, via EnergyScope) publishes ~33 gCO2/kWh for Swiss *production*, and the AIB European Residual Mixes dataset publishes 34.84 gCO2/kWh for the Swiss *residual grid mix* — the engine's 30 is ~9% below SFOE and ~14% below AIB. The engine value does fall inside the broader literature band (~20–40 gCO2/kWh spanning IEA/OWID/Electricity Maps, which differ by methodology: production vs. consumption vs. residual-mix, CO2-only vs. CO2-eq), so this is a real but bounded divergence, not an order-of-magnitude error. Not fixed: given legitimate ±15% spread across credible published methodologies and no single canonical "Swiss carbon factor," retargeting to any one source is a product decision, not an unambiguous bug fix (precedent: findings #5, #8, #10). | Swiss Federal Office of Energy via EnergyScope: https://www.energyscope.ch/en/questions/does-switzerland-emit-comparatively-little-cosub2/ ; AIB European Residual Mixes (Climatiq): https://www.climatiq.io/data/emission-factor/ed6ef6e0-c51f-4237-9639-bce6a31a2e80 | open (deferred as product decision) |
+| 12 | PPTX export | value-misleading | minor | `formatIops()` in `src/utils/pptxContent.ts` rounded the K-suffix IOPS display to zero decimals (`.toFixed(0)`), silently dropping precision the on-screen gauges show — `Speedometer.tsx:55` and `AnimatedCounter.tsx:25` both use `.toFixed(1)}K` for the identical case, e.g. dashboard showed `1.3K IOPS` while the pre-fix PPTX slide showed `1K IOPS` for the same `perf.maxReadIOPS` value. Found via live E2E export verification (dark/EN and light/FR cells, RAID5/10-drive/1.2TB baseline). Same underlying number, misleading display precision vs. the app's own convention. | Task 14 E2E verification (this file, PPTX E2E Evidence section) | fixed — `formatIops()` K-suffix changed to `.toFixed(1)`, re-verified in exported slide, full suite 1016/1016 PASS |
 
 Tags: value-wrong (>1% off reference) · value-misleading (right number, wrong label/unit) · untested (no vector coverage)
 
@@ -565,3 +566,141 @@ re-run for this task; the prior Task 9 full-suite baseline (`tests/engines/volum
 worker file was modified.
 
 ## PPTX E2E Evidence (Task 14)
+
+End-to-end verification of the Tasks 11-13 PPTX rebuild (`src/utils/pptxContent.ts`,
+`src/utils/exportPptx.ts`) in a real browser via Playwright MCP against
+`http://localhost:5173/raidy/` (`rtk npm run dev`). Trusted baseline config: **RAID 5, 10
+drives, 1 server, drive "Enterprise HDD 10K SAS 2.5" 1.2TB CMR (1.1 TiB)"** (a 1TB-class
+drive present in `src/data/drives.json`; the phase-02 fixture drive `testDrive1TB` is a
+synthetic test-only fixture not in the shipped drive database, so the closest real
+1TB-class drive was used and is recorded here for traceability). For each cell: the
+dashboard was read (accessibility snapshot) before export, the `.pptx` was downloaded via
+`browser_run_code_unsafe` intercepting the Playwright `download` event (Playwright's
+click-triggered download response did not otherwise surface a usable local path),
+unzipped (`unzip -o file.pptx -d dir`), and every `<a:t>` text run plus `ppt/media/`
+image count and slide background color were diffed against the on-screen values.
+
+### Cell (a): dark theme, EN
+
+Dashboard (screenshot/snapshot before export): Raw 10.9 TiB, Usable 8.6 TiB, Effective
+8.6 TiB, Efficiency 79.2%, Parity 1.1 TiB, Hot Spares 1.1 TiB, FS Overhead 89.4 GiB,
+Read 961 MB/s / 1.3K IOPS, Write 914 MB/s / 388 IOPS, Bottleneck Media (Drives) 961 MB/s,
+Total Power 645W, Annual Energy 5,649 kWh, Annual CO2 169 kg, resilience (after "Run
+Simulation"): Survival 99.65%, 2 nines, Rebuild 2.1h, URE Risk 0.350%, Dual Failure
+0.000%, Risk high.
+
+Exported slide (`grep -o '<a:t>[^<]*</a:t>' slide1.xml`): `10.9 TiB`, `8.6 TiB` (Usable),
+`8.6 TiB` (Effective), `79.2%`, `1.1 TiB` (Parity), `1.1 TiB` (Spares), `89.4 GiB` (FS),
+`1K IOPS` / `961 MB/s` (Max Read — see finding #12 below), `388 IOPS` / `914 MB/s` (Max
+Write), `645 W` / `61 W` / `400 W` / `184 W` (power breakdown), `5649 kWh/yr`,
+`169 kg/yr`, bottleneck chain `961/10000/15752/3125 MB/s`, resilience `99.65% / 2 nines /
+2.1 h / HIGH`. `ls ppt/media/` → 5 PNGs (`image-1-1.png` .. `image-1-5.png`, 1 Sankey + 4
+gauges, satisfies >=5). `grep -o 'srgbClr val="[0-9A-F]*"'` → includes `1A1B2E` (dark
+`BRAND.bg`), plus `272A3D/3D6FCC/4CAF82/94A3B8/D4A843/E05C3A/FFFFFF` (panel/accent/
+semantic/text colors) — no `FFFFFF`-as-background leak.
+
+**Verdict: PASS except one deviation** — see finding #12 (fixed, re-verified below).
+
+### Cell (b): light theme + `?lang=fr`
+
+Reconfigured to the same RAID5/10-drive/1.2TB config after language navigation reset
+state (URL navigation without the `#raidy=` hash drops the store to defaults — same
+session, re-applied config each time). Dashboard (FR labels): Brut 10.9 TiB, Utile 8.6
+TiB, Effectif 8.6 TiB, Efficacité 79.2%, Parité 1.1 TiB, Réserve (hot spares) 1.1 TiB, FS
+89.4 GiB, Lecture 961 MB/s / 1.3K IOPS, Écriture 914 MB/s / 388 IOPS.
+
+Exported slide: `Brut 10.9 TiB`, `Utile 8.6 TiB`, `Effectif 8.6 TiB`, `Efficacité 79.2%`,
+`Parité 1.1 TiB`, `Réserve 1.1 TiB`, `FS 89.4 GiB`, `Lecture max 1K IOPS / 961 MB/s`
+(finding #12), `Écriture max 388 IOPS / 914 MB/s`, section headers `VOLUMÉTRIE`,
+`DURABILITÉ`, `GOULOTS D'ÉTRANGLEMENT` all correctly French. Media: 5 PNGs. Colors:
+`0F172A` (light-theme ink text, `BRAND_LIGHT.textWhite`), `E2E8F0` (light border),
+`475569` (light muted text), `FFFFFF` present (light `bg`), no `1A1B2E` dark background
+leak.
+
+**Verdict: PASS except finding #12 (shared root cause, fixed once for both cells).**
+
+### Cell (c): degraded modes
+
+**(c1) No resilience simulation** — tested in the same run as cell (b): the light+FR
+export above was generated from a config where "Run Simulation" was never clicked.
+`grep` on the resulting slide XML confirms no `RÉSILIENCE`/`Survie` section text and no
+`content.resilienceLine` stats appear — `buildPptxContent`'s `resilience ? [...] : null`
+branch (pptxContent.ts:158-169) correctly omits the whole row. No crash, no empty/broken
+section header rendered. **PASS.**
+
+**(c2) Chart/gauge DOM unavailable** — the OutputDashboard has no UI control to
+collapse/hide the Capacity Overview or Performance panels (only the *input* sidebar
+accordions collapse; verified by `grep -n "collapse\|Collapsible" OutputDashboard.tsx` —
+no matches), so this could not be exercised via normal UI interaction as the brief's
+step 5(a) anticipated. Instead the underlying condition `captureById()` handles
+(`src/utils/captureChart.ts:13-16`, returns `null` when `document.getElementById(id)` is
+absent) was exercised directly: via `browser_run_code_unsafe`, the `sankey-diagram` and
+four `gauge-*` DOM nodes were removed before clicking export. Result: no crash, export
+completed and downloaded normally. Exported slide shows `Graphique de capacité
+indisponible` (the i18n'd Sankey fallback text, `output:pptx.labels.chartUnavailable`) in
+place of the Sankey image, the four gauge slots are silently absent (per
+`addChartOrFallback`'s empty-string fallback for gauges — `buildSummarySlide`'s
+`charts.gauges.forEach` call passes `''` as the fallback, by design: gauges are small
+enough that dropping them silently reads better than 4 stacked "unavailable" labels).
+`ls ppt/media/` → empty (0 images, correctly zero — not a false "≥5" pass). All text
+stats (volumetry/performance/sustainability/bottleneck lines) still rendered correctly
+since those come from `config.results`, not the DOM. **PASS** — confirms the
+`addChartOrFallback` contract works exactly as designed for both the Sankey (visible
+fallback text) and gauges (silent omission) cases.
+
+### Cell (d): unit system decimal (TB, not TiB)
+
+Reconfigured RAID5/10-drive/1.2TB, switched Units toggle to "TB" (decimal), theme
+light/EN. Dashboard: Raw **12.0 TB**, Usable **9.5 TB**, Effective **9.5 TB**, FS
+Overhead **96.0 GB**, Parity/Spares **1.2 TB** each (all decimal, no `Ti`/`Gi` prefix
+anywhere).
+
+Exported slide: `Raw 12.0 TB`, `Usable 9.5 TB`, `Effective 9.5 TB`, `Efficiency 79.2%`,
+`Parity 1.2 TB`, `Spares 1.2 TB`, `FS 96.0 GB` — every byte-valued stat correctly routed
+through `formatBytes(value, 'decimal')` (`pptxContent.ts:42`, `config.unitSystem`
+threaded from `exportPptx.ts`'s `ExportConfig.unitSystem`). No `TiB`/`GiB` anywhere in
+the slide text. **PASS.**
+
+### Finding #12 — PPTX IOPS K-suffix precision loss (value-misleading, minor)
+
+`src/utils/pptxContent.ts`'s `formatIops()` used `(iops / 1000).toFixed(0)` for the K
+suffix, silently rounding to zero decimal places (e.g. an underlying 1,300 IOPS reads as
+`1K` in the exported slide). The on-screen gauges (`Speedometer.tsx:55`,
+`AnimatedCounter.tsx:25`) both format the same K-suffix case with `.toFixed(1)` (e.g.
+`1.3K`), so the exported PPTX silently dropped up to ~50 IOPS/1000 of precision
+(~5-9% relative error at the low end of each K-bucket, observed directly: dashboard
+showed `1.3K IOPS` while the pre-fix export showed `1K IOPS` for the same underlying
+value in both the dark/EN and light/FR cells above) versus the app's own established
+formatting convention for the exact same number. Not a wrong *value* (same underlying
+`perf.maxReadIOPS`/`perf.maxWriteIOPS`), but a misleading *display* — tagged
+value-misleading per the ledger's tag convention.
+
+**Fix:** `src/utils/pptxContent.ts` — changed `formatIops()`'s K-suffix branch from
+`.toFixed(0)` to `.toFixed(1)`, matching `Speedometer.tsx`/`AnimatedCounter.tsx` exactly.
+M-suffix branch was already `.toFixed(1)` and needed no change.
+
+**Re-verification:** re-ran the dark/EN matrix cell end-to-end after the fix (fresh dev
+server, same RAID5/10-drive/1.2TB config, resilience simulation re-run). Exported slide
+now shows `Max Read 1.3K IOPS` — exact match to the dashboard's `1.3K` gauge readout. All
+other stats in the re-verification export (Raw/Usable/Effective/Efficiency/Parity/
+Spares/FS/Write/power/bottleneck/resilience) remained unchanged and correct. 5 media
+images, `1A1B2E` dark background — no regression introduced by the fix.
+
+**Full test suite:** `rtk npm test -- --run` → **1016/1016 PASS** (34 test files, ~53s;
+no existing test hardcoded the old `.toFixed(0)` IOPS string, so no other spec needed
+updating).
+
+### Summary
+
+| Cell | Config | Result |
+|------|--------|--------|
+| (a) dark + EN | RAID5, 10x1.2TB, 1 server | PASS (after fix #12) |
+| (b) light + FR | same, `?lang=fr` | PASS (after fix #12) |
+| (c1) no resilience | same, sim not run | PASS — resilience row correctly omitted, no crash |
+| (c2) chart DOM unavailable | same, Sankey+gauge DOM nodes removed (no UI collapse control exists) | PASS — fallback text/silent omission per design, 0 media images, no crash |
+| (d) decimal units | same, Units=TB | PASS — TB/GB throughout, no TiB/GiB |
+
+**Fixes applied:** 1 (`src/utils/pptxContent.ts` `formatIops` precision, finding #12).
+**Ledger:** finding #12 added (value-misleading, minor, fixed). No other deviations
+found across all 5 matrix cells — every numeric value, media count, background color,
+and language string matched the dashboard/theme/language/unit-system exactly.
