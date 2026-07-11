@@ -177,7 +177,7 @@ export function OutputDashboard() {
   } = useResilience({
     drive: selectedDrive,
     driveCount,
-    serverCount,
+    serverCount: effectiveServerCount(serverCount, topology),
     topology,
     rebuildSpeedMBs: 150,
     simulationCount: isMobile ? 1000 : 10000, // 1K on mobile, 10K on desktop

@@ -34,6 +34,26 @@ describe('useCalculations', () => {
     expect(result.current).toHaveProperty('lastUpdated')
   })
 
+  it('clamps a stale serverCount for single-node platforms (audit finding #14)', () => {
+    // ZFS hides the servers/nodes slider — a stale serverCount left over from a
+    // multi-node platform must not scale results.
+    useConfigStore.setState({
+      driveId: 'ent-hdd-7k2-sata-18tb-cmr',
+      driveCount: 8,
+      serverCount: 1,
+      topology: { type: 'zfs', level: 'raidz2' },
+    } as unknown as Parameters<typeof useConfigStore.setState>[0])
+    const baseline = renderHook(() => useCalculations()).result.current.volumetry.rawCapacity
+
+    useConfigStore.setState({ serverCount: 8 } as unknown as Parameters<
+      typeof useConfigStore.setState
+    >[0])
+    const stale = renderHook(() => useCalculations()).result.current.volumetry.rawCapacity
+
+    expect(baseline).toBeGreaterThan(0)
+    expect(stale).toBe(baseline)
+  })
+
   it('should handle invalid drive ID gracefully', () => {
     // Setup invalid drive ID
     useConfigStore.setState({
