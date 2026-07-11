@@ -14,6 +14,7 @@ import type { CalculationResults } from '@/types/results'
 import type { Topology, ZfsOptions } from '@/types/topology'
 
 import { capturePerfGauges, captureSankeyDiagram } from './captureChart'
+import { buildPptxContent, type PptxStat } from './pptxContent'
 import type { UnitSystem } from './units'
 
 export interface ExportConfig {
@@ -58,16 +59,22 @@ const BRAND_LIGHT: Brand = {
 /** Active palette for the slide being built; set by exportToPptx per theme. */
 let brand: Brand = BRAND
 
-/** Convert bytes to decimal terabytes (1 TB = 1e12 bytes). */
-function bytesToTB(bytes: number): number {
-  return bytes / 1e12
-}
-
-/** Format IOPS with K/M suffix for compact display. */
-function formatIops(iops: number): string {
-  if (iops >= 1_000_000) return `${(iops / 1_000_000).toFixed(1)}M`
-  if (iops >= 1_000) return `${(iops / 1_000).toFixed(0)}K`
-  return iops.toFixed(0)
+/** Map a PptxStat semantic role to the active brand color. */
+function roleColor(role: PptxStat['role']): string {
+  switch (role) {
+    case 'accent':
+      return brand.accent
+    case 'capacity':
+      return brand.capacity
+    case 'overhead':
+      return brand.overhead
+    case 'parity':
+      return brand.parity
+    case 'muted':
+      return brand.textMuted
+    default:
+      return brand.textWhite
+  }
 }
 
 /** Add the thin accent bar at the top of the slide. */
@@ -129,10 +136,9 @@ function addChartOrFallback(
 }
 
 /** A dense "label value · label value" stat line built from text runs. */
-type StatRun = { label: string; value: string; color: string }
 function addStatLine(
   slide: pptxgen.Slide,
-  stats: StatRun[],
+  stats: PptxStat[],
   x: number,
   y: number,
   w: number,
@@ -149,7 +155,7 @@ function addStatLine(
     })
     runs.push({
       text: stat.value,
-      options: { color: stat.color, bold: true, fontFace: FONT, fontSize },
+      options: { color: roleColor(stat.role), bold: true, fontFace: FONT, fontSize },
     })
   })
   slide.addText(runs, { x, y, w, h: 0.34, valign: 'middle', fontFace: FONT })
@@ -160,17 +166,17 @@ function buildSummarySlide(
   prs: pptxgen,
   config: ExportConfig,
   charts: { sankey: string | null; gauges: (string | null)[] },
+  dateLabel: string,
 ): void {
   const slide = prs.addSlide()
   slide.background = { fill: brand.bg }
   addAccentBar(slide, prs)
 
-  const { volumetry: vol, performance: perf, resilience, sustainability: sus } = config.results
+  const content = buildPptxContent(config, i18n.t, dateLabel)
+  const { resilience } = config.results
 
   // ── Header ────────────────────────────────────────────────────────────
-  const topologyLabel = config.topology.type.toUpperCase()
-  const levelLabel = 'level' in config.topology ? ` ${config.topology.level}` : ''
-  slide.addText(`${topologyLabel}${levelLabel}`, {
+  slide.addText(content.title, {
     x: 0.4,
     y: 0.12,
     w: 12.6,
@@ -181,22 +187,7 @@ function buildSummarySlide(
     fontFace: FONT,
   })
 
-  const date = new Date().toLocaleDateString(i18n.language, {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  })
-  const serverCount =
-    'serverCount' in config.topology
-      ? String((config.topology as { serverCount: number }).serverCount)
-      : null
-  const subParts = [
-    config.drive.model,
-    `${config.driveCount} drives`,
-    serverCount ? `${serverCount} servers` : null,
-    date,
-  ].filter(Boolean)
-  slide.addText(subParts.join('  ·  '), {
+  slide.addText(content.subtitle, {
     x: 0.4,
     y: 0.66,
     w: 12.6,
@@ -218,7 +209,7 @@ function buildSummarySlide(
     slide,
     charts.sankey,
     { x: 0.25, y: chartTop, w: 7.6, h: chartH },
-    'Capacity chart unavailable',
+    i18n.t('output:pptx.labels.chartUnavailable'),
   )
 
   addSectionLabel(slide, i18n.t('output:pptx.performance'), brand.accent, 8.0, 1.0)
@@ -240,137 +231,26 @@ function buildSummarySlide(
   // ── Crystal-clear number lines beneath each chart ─────────────────────
   const nl0 = chartBottom + 0.14
   const nl1 = nl0 + 0.36
-  addStatLine(
-    slide,
-    [
-      {
-        label: 'Raw',
-        value: `${bytesToTB(vol.rawCapacity).toFixed(1)} TB`,
-        color: brand.textWhite,
-      },
-      {
-        label: 'Usable',
-        value: `${bytesToTB(vol.usableCapacity).toFixed(1)} TB`,
-        color: brand.capacity,
-      },
-      {
-        label: 'Effective',
-        value: `${bytesToTB(vol.effectiveCapacity).toFixed(1)} TB`,
-        color: brand.accent,
-      },
-      { label: 'Efficiency', value: `${vol.efficiency.toFixed(1)}%`, color: brand.overhead },
-    ],
-    0.4,
-    nl0,
-    7.6,
-  )
-  addStatLine(
-    slide,
-    [
-      {
-        label: 'Parity',
-        value: `${bytesToTB(vol.parityOverhead).toFixed(1)} TB`,
-        color: brand.parity,
-      },
-      {
-        label: 'Spares',
-        value: `${bytesToTB(vol.hotSpareOverhead).toFixed(1)} TB`,
-        color: brand.overhead,
-      },
-      {
-        label: 'FS',
-        value: `${bytesToTB(vol.filesystemOverhead).toFixed(1)} TB`,
-        color: brand.textMuted,
-      },
-    ],
-    0.4,
-    nl1,
-    7.6,
-    10,
-  )
-  addStatLine(
-    slide,
-    [
-      { label: 'Max Read', value: `${formatIops(perf.maxReadIOPS)} IOPS`, color: brand.accent },
-      { label: '/', value: `${perf.maxReadThroughputMBs.toFixed(0)} MB/s`, color: brand.textWhite },
-    ],
-    8.0,
-    nl0,
-    5.0,
-  )
-  addStatLine(
-    slide,
-    [
-      { label: 'Max Write', value: `${formatIops(perf.maxWriteIOPS)} IOPS`, color: brand.accent },
-      {
-        label: '/',
-        value: `${perf.maxWriteThroughputMBs.toFixed(0)} MB/s`,
-        color: brand.textWhite,
-      },
-    ],
-    8.0,
-    nl1,
-    5.0,
-  )
+  addStatLine(slide, content.volumetryLines[0] ?? [], 0.4, nl0, 7.6)
+  addStatLine(slide, content.volumetryLines[1] ?? [], 0.4, nl1, 7.6, 10)
+  addStatLine(slide, content.performanceLines[0] ?? [], 8.0, nl0, 5.0)
+  addStatLine(slide, content.performanceLines[1] ?? [], 8.0, nl1, 5.0)
 
   // ── Extras spread to fill the page ────────────────────────────────────
   let y = nl1 + 0.5
 
   addSectionLabel(slide, i18n.t('output:pptx.sustainability'), brand.overhead, 0.4, y)
-  const energyStats: StatRun[] = [
-    { label: 'Total', value: `${sus.powerBreakdown.total.toFixed(0)} W`, color: brand.accent },
-    { label: 'Drives', value: `${sus.powerBreakdown.drives.toFixed(0)} W`, color: brand.textMuted },
-    {
-      label: 'Servers',
-      value: `${sus.powerBreakdown.servers.toFixed(0)} W`,
-      color: brand.textMuted,
-    },
-    {
-      label: 'Cooling',
-      value: `${sus.powerBreakdown.cooling.toFixed(0)} W`,
-      color: brand.textMuted,
-    },
-    { label: 'Energy', value: `${sus.annualEnergyKwh.toFixed(0)} kWh/yr`, color: brand.textWhite },
-    { label: 'CO₂', value: `${sus.annualCO2Kg.toFixed(0)} kg/yr`, color: brand.textWhite },
-  ]
-  if (sus.flashEndurance) {
-    energyStats.push({
-      label: 'Endurance',
-      value: `${sus.flashEndurance.expectedLifeYears.toFixed(1)} yr`,
-      color: brand.capacity,
-    })
-  }
-  addStatLine(slide, energyStats, 0.4, y + 0.33, 12.6)
+  addStatLine(slide, content.energyLine, 0.4, y + 0.33, 12.6)
   y += 0.85
 
   addSectionLabel(slide, i18n.t('output:pptx.bottleneck'), brand.parity, 0.4, y)
-  const layerStats: StatRun[] = perf.layers.slice(0, 6).map((layer) => ({
-    label: layer.name.replace(/\s*\(.*\)\s*$/, ''),
-    value: `${layer.throughputMBs.toFixed(0)} MB/s`,
-    color: layer.isBottleneck ? brand.parity : brand.textWhite,
-  }))
-  addStatLine(slide, layerStats, 0.4, y + 0.33, 12.6)
+  addStatLine(slide, content.bottleneckLine, 0.4, y + 0.33, 12.6)
   y += 0.85
 
   // Resilience — only when the simulation has actually been run.
-  if (resilience) {
+  if (content.resilienceLine) {
     addSectionLabel(slide, i18n.t('output:pptx.resilience'), brand.capacity, 0.4, y)
-    addStatLine(
-      slide,
-      [
-        { label: 'Survival', value: resilience.survivalPercent, color: brand.capacity },
-        { label: 'Durability', value: `${resilience.nines} nines`, color: brand.capacity },
-        {
-          label: 'Rebuild',
-          value: `${resilience.avgRebuildTimeHours.toFixed(1)} h`,
-          color: brand.textMuted,
-        },
-        { label: 'Risk', value: resilience.riskLevel.toUpperCase(), color: brand.overhead },
-      ],
-      0.4,
-      y + 0.33,
-      12.6,
-    )
+    addStatLine(slide, content.resilienceLine, 0.4, y + 0.33, 12.6)
   }
 }
 
@@ -391,7 +271,12 @@ export async function exportToPptx(config: ExportConfig): Promise<void> {
   prs.subject = 'Storage Configuration'
   prs.title = config.projectName ?? 'Storage Report'
 
-  buildSummarySlide(prs, config, { sankey, gauges })
+  const dateLabel = new Date().toLocaleDateString(i18n.language, {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  })
+  buildSummarySlide(prs, config, { sankey, gauges }, dateLabel)
 
   const safeLabel = (config.topology.type ?? 'storage').replace(/[^a-z0-9]/gi, '-')
   await prs.writeFile({ fileName: `raidy-${safeLabel}.pptx` })

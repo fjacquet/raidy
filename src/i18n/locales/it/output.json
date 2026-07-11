@@ -146,6 +146,31 @@
     "sustainability": "Sostenibilità",
     "backup": "Backup",
     "bottleneck": "Colli di bottiglia",
-    "bom": "Distinta Materiali"
+    "bom": "Distinta Materiali",
+    "labels": {
+      "drives": "dischi",
+      "servers": "server",
+      "raw": "Grezzo",
+      "usable": "Utilizzabile",
+      "effective": "Effettivo",
+      "efficiency": "Efficienza",
+      "parity": "Parità",
+      "spares": "Riserva",
+      "fs": "FS",
+      "maxRead": "Lettura max",
+      "maxWrite": "Scrittura max",
+      "total": "Totale",
+      "powerDrives": "Dischi",
+      "powerServers": "Server",
+      "cooling": "Raffreddamento",
+      "energy": "Energia",
+      "co2": "CO₂",
+      "endurance": "Durata",
+      "survival": "Sopravvivenza",
+      "durability": "Durabilità",
+      "rebuild": "Ricostruzione",
+      "risk": "Rischio",
+      "chartUnavailable": "Grafico capacità non disponibile"
+    }
   }
 }

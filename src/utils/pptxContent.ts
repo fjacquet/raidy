@@ -1,0 +1,180 @@
+/**
+ * Pure content builder for the PPTX export.
+ *
+ * Produces every label/value pair rendered on the executive summary slide,
+ * fully i18n'd (the translation function is injected — no i18n singleton
+ * usage) and unit-system-aware (bytes are formatted via `formatBytes` using
+ * `config.unitSystem`, defaulting to 'binary'). Contains no rendering logic
+ * and no `new Date()` — the caller supplies an optional pre-formatted date
+ * label to keep this module a pure function of its inputs.
+ */
+import type { ExportConfig } from './exportPptx'
+import { formatBytes } from './units'
+
+export interface PptxStat {
+  label: string
+  value: string
+  role: 'plain' | 'accent' | 'capacity' | 'overhead' | 'parity' | 'muted'
+}
+
+export interface PptxContent {
+  title: string
+  subtitle: string
+  volumetryLines: PptxStat[][] // 2 rows under the Sankey
+  performanceLines: PptxStat[][] // 2 rows under the gauges
+  energyLine: PptxStat[]
+  bottleneckLine: PptxStat[]
+  resilienceLine: PptxStat[] | null
+}
+
+/** Format IOPS with K/M suffix for compact display. */
+function formatIops(iops: number): string {
+  if (iops >= 1_000_000) return `${(iops / 1_000_000).toFixed(1)}M`
+  if (iops >= 1_000) return `${(iops / 1_000).toFixed(0)}K`
+  return iops.toFixed(0)
+}
+
+export function buildPptxContent(
+  config: ExportConfig,
+  t: (key: string) => string,
+  dateLabel?: string,
+): PptxContent {
+  const unitSystem = config.unitSystem ?? 'binary'
+  const { volumetry: vol, performance: perf, resilience, sustainability: sus } = config.results
+  const label = (key: string) => t(`output:pptx.labels.${key}`)
+
+  const topologyLabel = config.topology.type.toUpperCase()
+  const levelLabel = 'level' in config.topology ? ` ${config.topology.level}` : ''
+  const title = `${topologyLabel}${levelLabel}`
+
+  const serverCount =
+    'serverCount' in config.topology
+      ? String((config.topology as { serverCount: number }).serverCount)
+      : null
+  const subtitle = [
+    config.drive.model,
+    `${config.driveCount} ${label('drives')}`,
+    serverCount ? `${serverCount} ${label('servers')}` : null,
+    dateLabel,
+  ]
+    .filter(Boolean)
+    .join('  ·  ')
+
+  const volumetryLines: PptxStat[][] = [
+    [
+      { label: label('raw'), value: formatBytes(vol.rawCapacity, unitSystem), role: 'plain' },
+      {
+        label: label('usable'),
+        value: formatBytes(vol.usableCapacity, unitSystem),
+        role: 'capacity',
+      },
+      {
+        label: label('effective'),
+        value: formatBytes(vol.effectiveCapacity, unitSystem),
+        role: 'accent',
+      },
+      {
+        label: label('efficiency'),
+        value: `${vol.efficiency.toFixed(1)}%`,
+        role: 'overhead',
+      },
+    ],
+    [
+      {
+        label: label('parity'),
+        value: formatBytes(vol.parityOverhead, unitSystem),
+        role: 'parity',
+      },
+      {
+        label: label('spares'),
+        value: formatBytes(vol.hotSpareOverhead, unitSystem),
+        role: 'overhead',
+      },
+      {
+        label: label('fs'),
+        value: formatBytes(vol.filesystemOverhead, unitSystem),
+        role: 'muted',
+      },
+    ],
+  ]
+
+  const performanceLines: PptxStat[][] = [
+    [
+      {
+        label: label('maxRead'),
+        value: `${formatIops(perf.maxReadIOPS)} IOPS`,
+        role: 'accent',
+      },
+      { label: '/', value: `${perf.maxReadThroughputMBs.toFixed(0)} MB/s`, role: 'plain' },
+    ],
+    [
+      {
+        label: label('maxWrite'),
+        value: `${formatIops(perf.maxWriteIOPS)} IOPS`,
+        role: 'accent',
+      },
+      { label: '/', value: `${perf.maxWriteThroughputMBs.toFixed(0)} MB/s`, role: 'plain' },
+    ],
+  ]
+
+  const energyLine: PptxStat[] = [
+    { label: label('total'), value: `${sus.powerBreakdown.total.toFixed(0)} W`, role: 'accent' },
+    {
+      label: label('powerDrives'),
+      value: `${sus.powerBreakdown.drives.toFixed(0)} W`,
+      role: 'muted',
+    },
+    {
+      label: label('powerServers'),
+      value: `${sus.powerBreakdown.servers.toFixed(0)} W`,
+      role: 'muted',
+    },
+    {
+      label: label('cooling'),
+      value: `${sus.powerBreakdown.cooling.toFixed(0)} W`,
+      role: 'muted',
+    },
+    {
+      label: label('energy'),
+      value: `${sus.annualEnergyKwh.toFixed(0)} kWh/yr`,
+      role: 'plain',
+    },
+    { label: label('co2'), value: `${sus.annualCO2Kg.toFixed(0)} kg/yr`, role: 'plain' },
+  ]
+  if (sus.flashEndurance) {
+    energyLine.push({
+      label: label('endurance'),
+      value: `${sus.flashEndurance.expectedLifeYears.toFixed(1)} yr`,
+      role: 'capacity',
+    })
+  }
+
+  const bottleneckLine: PptxStat[] = perf.layers.slice(0, 6).map((layer) => ({
+    label: layer.name.replace(/\s*\(.*\)\s*$/, ''),
+    value: `${layer.throughputMBs.toFixed(0)} MB/s`,
+    role: layer.isBottleneck ? 'parity' : 'plain',
+  }))
+
+  const resilienceLine: PptxStat[] | null = resilience
+    ? [
+        { label: label('survival'), value: resilience.survivalPercent, role: 'capacity' },
+        { label: label('durability'), value: `${resilience.nines} nines`, role: 'capacity' },
+        {
+          label: label('rebuild'),
+          value: `${resilience.avgRebuildTimeHours.toFixed(1)} h`,
+          role: 'muted',
+        },
+        { label: label('risk'), value: resilience.riskLevel.toUpperCase(), role: 'overhead' },
+      ]
+    : null
+
+  return {
+    title,
+    subtitle,
+    volumetryLines,
+    performanceLines,
+    energyLine,
+    bottleneckLine,
+    resilienceLine,
+  }
+}

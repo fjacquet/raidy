@@ -146,6 +146,31 @@
     "sustainability": "Durabilité",
     "backup": "Sauvegarde",
     "bottleneck": "Goulots d'étranglement",
-    "bom": "Nomenclature"
+    "bom": "Nomenclature",
+    "labels": {
+      "drives": "disques",
+      "servers": "serveurs",
+      "raw": "Brut",
+      "usable": "Utile",
+      "effective": "Effectif",
+      "efficiency": "Efficacité",
+      "parity": "Parité",
+      "spares": "Réserve",
+      "fs": "FS",
+      "maxRead": "Lecture max",
+      "maxWrite": "Écriture max",
+      "total": "Total",
+      "powerDrives": "Disques",
+      "powerServers": "Serveurs",
+      "cooling": "Refroidissement",
+      "energy": "Énergie",
+      "co2": "CO₂",
+      "endurance": "Endurance",
+      "survival": "Survie",
+      "durability": "Durabilité",
+      "rebuild": "Reconstruction",
+      "risk": "Risque",
+      "chartUnavailable": "Graphique de capacité indisponible"
+    }
   }
 }

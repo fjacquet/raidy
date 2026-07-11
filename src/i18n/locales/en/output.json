@@ -146,6 +146,31 @@
     "sustainability": "Sustainability",
     "backup": "Backup",
     "bottleneck": "Bottlenecks",
-    "bom": "Bill of Materials"
+    "bom": "Bill of Materials",
+    "labels": {
+      "drives": "drives",
+      "servers": "servers",
+      "raw": "Raw",
+      "usable": "Usable",
+      "effective": "Effective",
+      "efficiency": "Efficiency",
+      "parity": "Parity",
+      "spares": "Spares",
+      "fs": "FS",
+      "maxRead": "Max Read",
+      "maxWrite": "Max Write",
+      "total": "Total",
+      "powerDrives": "Drives",
+      "powerServers": "Servers",
+      "cooling": "Cooling",
+      "energy": "Energy",
+      "co2": "CO₂",
+      "endurance": "Endurance",
+      "survival": "Survival",
+      "durability": "Durability",
+      "rebuild": "Rebuild",
+      "risk": "Risk",
+      "chartUnavailable": "Capacity chart unavailable"
+    }
   }
 }
