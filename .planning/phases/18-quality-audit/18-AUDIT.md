@@ -16,6 +16,7 @@ Newly audited here: S2D, Nutanix, NetApp, Ceph, Synology, Longhorn + PPTX export
 | # | Platform/Area | Tag | Severity | Description | Reference (source + URL) | Status |
 |---|---------------|-----|----------|-------------|--------------------------|--------|
 | 1 | S2D | untested | — | No external-reference vector coverage before phase 18. Added 4 vectors (3-way mirror, single parity [engine-formula analog — no MS-published fraction exists], dual parity @7 FDs hybrid, mirror-accelerated parity @7 FDs). All pass at 0.00% deviation — no engine change needed. | Microsoft Learn plan-volumes / fault-tolerance / mirror-accelerated-parity (URLs in Reference Cases → S2D) | untested → now covered |
+| 2 | Nutanix | untested | — | No external-reference vector coverage before phase 18. Added 4 vectors (RF2, RF3, EC-X RF2-like 4:1, EC-X RF3-like 4:2), all four resiliency fractions match the Nutanix Bible's Book of AOS Data Efficiency table exactly. All pass at 0.00% deviation — no engine change needed. The 10% systemOverhead + 1.5% fs overhead layer is an engine-formula analog (Nutanix does not publish a single fixed capacity-overhead %; see honesty note). | Nutanix Bible — Book of AOS Data Efficiency (URL in Reference Cases → Nutanix) | untested → now covered |
 
 Tags: value-wrong (>1% off reference) · value-misleading (right number, wrong label/unit) · untested (no vector coverage)
 
@@ -64,6 +65,46 @@ via Perplexity, 2026-07-11). The (N−1)/N value is the standard RAID-5 analogy 
 formula the engine implements — so this vector is an *engine-formula analog* (regression pin),
 not an independent external validation. Externally validated vectors: 3/4 (3-way mirror,
 dual parity, MAP); coverage should not be overstated as 4/4 external.
+
+### Nutanix (Task 4 — 2026-07-11)
+
+Fixture: `tests/fixtures/nutanix-vectors.ts` · Spec: `tests/engines/volumetry/vectors/nutanix.spec.ts`
+
+The Nutanix Bible's Book of AOS Data Efficiency
+(https://www.nutanixbible.com/4h-book-of-aos-data-efficiency.html) explicitly tables the RF2 /
+RF3 / EC-X strip-size data fractions — this is the genuinely externally-validated part of each
+vector. It does NOT publish a single fixed "system overhead %" for CVM/AOS metadata as applied
+uniformly to usable capacity (see honesty note below); that layer is engine policy
+(`DEFAULT_NUTANIX_OPTIONS.systemOverhead = 0.10`) applied consistently on top of the validated
+fraction, plus the engine's 1.5% Nutanix fs overhead
+(`src/engines/volumetry/overhead/filesystem-overhead.ts`). Drive: `testDrive1TB`.
+
+Pipeline: raw usable × resiliency data fraction (validated) → × 0.90 (systemOverhead, engine
+policy) → × 0.985 (1.5% Nutanix fs overhead, engine policy).
+
+| Config | Nutanix Bible data fraction | Source | Expected usable (bytes) | Engine (bytes) | Deviation |
+|--------|------------------------------|--------|-------------------------|-----------------|-----------|
+| RF2, 12×1 TB, 3 servers | 50% (1/2) | [Book of AOS Data Efficiency](https://www.nutanixbible.com/4h-book-of-aos-data-efficiency.html) | 5 319 000 000 000 | 5 319 000 000 000 | 0.00% |
+| RF3, 15×1 TB, 5 servers | 33.3% (1/3) | [Book of AOS Data Efficiency](https://www.nutanixbible.com/4h-book-of-aos-data-efficiency.html) | 4 432 500 000 000 | 4 432 500 000 000 | 0.00% |
+| EC-X RF2 (4:1 strip), 24×1 TB, 6 servers | 80% (4/5, "1.25x vs RF2's 2x", 6+ nodes) | [Book of AOS Data Efficiency](https://www.nutanixbible.com/4h-book-of-aos-data-efficiency.html) | 17 020 800 000 000 | 17 020 800 000 000 | 0.00% |
+| EC-X RF3 (4:2 strip), 32×1 TB, 8 servers | 66.7% (4/6, "1.5x vs RF3's 3x", 8+ nodes) | [Book of AOS Data Efficiency](https://www.nutanixbible.com/4h-book-of-aos-data-efficiency.html) | 18 912 000 000 000 | 18 912 000 000 000 | 0.00% |
+
+Result: 4/4 PASS (tolerance 1%). Regression: `tests/engines/volumetry.spec.ts` 318/318 PASS.
+No change to `src/engines/volumetry/**` — the engine's `nutanixStrategy.calculateDataFraction`
+(RF2=0.5, RF3=1/3, EC-RF2=4/5, EC-RF3=4/6) matches the Nutanix Bible's table exactly.
+
+**Honesty note (system/fs overhead layer):** Nutanix does not publish a single fixed
+"system overhead %" applied to usable capacity. Public sources describe CVM/AOS reservations
+as a mix of fixed per-node GiB reservations (Nutanix Home ~60 GiB, Cassandra/AES metadata
+~15 GiB/SSD up to 4 SSDs, dynamic OpLog — per the Nutanix Bible's Book of Basics: Drive
+Breakdown, https://www.nutanixbible.com/2i-book-of-basics-drive-breakdown.html) and a separate
+~10-15% CVM *compute* (CPU/RAM) reservation that does not apply to storage capacity at all
+(verified via Perplexity, 2026-07-11). `DEFAULT_NUTANIX_OPTIONS.systemOverhead = 0.10` and the
+1.5% Nutanix fs overhead constant are therefore engine-formula analogs (regression pins), not
+independently-sourced numbers — actual per-cluster reservation is proprietary/Sizer-driven.
+Externally validated vectors: 4/4 for the *resiliency data fraction* (the number that
+dominates usable capacity); 0/4 for the systemOverhead/fs-overhead layer specifically —
+coverage should not be overstated as fully external end-to-end.
 
 ## Spot-Checks (Task 9)
 
