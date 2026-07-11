@@ -154,6 +154,23 @@ Calculates storage capacity and efficiency.
 - Platform-specific losses
 - Compression/dedup multipliers
 
+> **Platform capability map** (`src/engines/capabilities.ts`) is the single source of truth for
+> which inputs actually move the volumetry output for a given topology type. It exposes
+> `getCapabilities(type)` and `shouldShowControl(control, type)` for the four
+> global/cross-cutting controls whose usefulness varies by platform: `compression`, `dedup`,
+> `hotSpares`, `serverCount`. The map is probe-enforced — `tests/engines/capabilities.spec.ts`
+> drives `calculateVolumetry` with each flag toggled and asserts the flag matches actual engine
+> behavior (e.g. the global `compressionRatio`/`dedupRatio` inputs only move
+> `effectiveCapacity` for ZFS; every other platform either has no data-reduction step or reduces
+> through its own platform-specific options panel instead), so the map cannot silently drift
+> from the engines it describes. The UI consumes it directly: `AdvancedPanel.tsx` hides the
+> global compression/dedup sliders unless `shouldShowControl('compression'|'dedup', topology.type)`
+> is true, and `HardwarePanel.tsx` hides the servers/nodes slider unless
+> `shouldShowControl('serverCount', topology.type)` is true (with an additional carve-out for
+> standard RAID50/60, where the same input doubles as the RAID-group count). Controls are
+> hidden, not disabled, when a platform's engine ignores them — the store values are left
+> untouched so a stored URL config round-trips unchanged.
+
 ### Module B: Performance Engine (`/src/engines/performance/`)
 
 Calculates IOPS, throughput, and identifies bottlenecks.
