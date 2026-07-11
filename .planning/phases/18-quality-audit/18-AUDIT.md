@@ -20,6 +20,12 @@ Tags: value-wrong (>1% off reference) · value-misleading (right number, wrong l
 
 ## Reference Cases
 
+### Covered platforms (regression)
+
+| Suite | Date | Pass | Fail | Status |
+|-------|------|------|------|--------|
+| tests/engines/volumetry.spec.ts | 2026-07-11 | 318 | 0 | PASS |
+
 One subsection per platform, added by Tasks 3–8. Each case records: config,
 external source, expected value, engine value, deviation %.
 
