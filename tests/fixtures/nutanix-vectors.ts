@@ -6,17 +6,21 @@
  * i.e. compared against VolumetryResult.usableCapacity.
  *
  * RESILIENCY FRACTION (genuinely externally validated): the Nutanix Bible — Book of AOS Data
- * Efficiency (https://www.nutanixbible.com/4h-book-of-aos-data-efficiency.html) explicitly
- * tables the RF2/RF3/EC-X strip-size data fractions used below:
- *   - RF2 (2 copies): 1/2 = 50% data of raw (raw ÷ 2).
- *   - RF3 (3 copies): 1/3 = 33.3% data of raw (raw ÷ 3).
+ * Efficiency (https://www.nutanixbible.com/4h-book-of-aos-data-efficiency.html) states
+ * RF2/RF3 as 2X/3X overhead multipliers in its EC-X comparison prose (the fractions derive
+ * as 1/multiplier), and gives EC-X strip sizes with their overhead multipliers:
+ *   - RF2 (2 copies): 2X overhead → 1/2 = 50% data of raw (raw ÷ 2).
+ *   - RF3 (3 copies): 3X overhead → 1/3 = 33.3% data of raw (raw ÷ 3).
  *   - EC-X default RF2-like strip = 4/1 (4 data : 1 parity): data fraction = 4/(4+1) = 80%,
  *     described as "1.25x overhead vs RF2's 2x" for clusters of 6+ nodes.
  *   - EC-X default RF3-like strip = 4/2 (4 data : 2 parity): data fraction = 4/(4+2) = 66.7%,
- *     described as "1.5x overhead vs RF3's 3x". (Some secondary sources label the RF3-like
- *     strip "6:2"; the Nutanix Bible's own worked table uses 4/2 for the ≥8-node default,
- *     which resolves to the same 66.7% data fraction that Raidy's engine implements as 4/6 —
- *     the two labels describe the same fraction, not a discrepancy.)
+ *     described as "1.5x overhead vs RF3's 3x", the Bible's ≥8-node worked-example default.
+ * KNOWN INCONSISTENCY: src/types/topology.ts comments `nutanix_ec_rf3` as "6:2 striping",
+ * but a 6:2 strip is a DIFFERENT strip size: 6/(6+2) = 75%, not 66.7%. The strategy
+ * (src/engines/volumetry/strategies/nutanix.ts) actually implements 4:2 → 4/6 = 66.7%,
+ * matching the Nutanix Bible default. The 6:2 label in topology.ts is a pre-existing
+ * mislabel, logged as a value-misleading finding in 18-AUDIT.md; these vectors validate the
+ * implemented 4:2 fraction.
  * These four fractions match src/engines/volumetry/strategies/nutanix.ts exactly (0.5, 1/3,
  * 4/5, 4/6) and are the genuinely externally-validated part of each vector below.
  *

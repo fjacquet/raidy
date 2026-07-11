@@ -16,7 +16,8 @@ Newly audited here: S2D, Nutanix, NetApp, Ceph, Synology, Longhorn + PPTX export
 | # | Platform/Area | Tag | Severity | Description | Reference (source + URL) | Status |
 |---|---------------|-----|----------|-------------|--------------------------|--------|
 | 1 | S2D | untested | — | No external-reference vector coverage before phase 18. Added 4 vectors (3-way mirror, single parity [engine-formula analog — no MS-published fraction exists], dual parity @7 FDs hybrid, mirror-accelerated parity @7 FDs). All pass at 0.00% deviation — no engine change needed. | Microsoft Learn plan-volumes / fault-tolerance / mirror-accelerated-parity (URLs in Reference Cases → S2D) | untested → now covered |
-| 2 | Nutanix | untested | — | No external-reference vector coverage before phase 18. Added 4 vectors (RF2, RF3, EC-X RF2-like 4:1, EC-X RF3-like 4:2), all four resiliency fractions match the Nutanix Bible's Book of AOS Data Efficiency table exactly. All pass at 0.00% deviation — no engine change needed. The 10% systemOverhead + 1.5% fs overhead layer is an engine-formula analog (Nutanix does not publish a single fixed capacity-overhead %; see honesty note). | Nutanix Bible — Book of AOS Data Efficiency (URL in Reference Cases → Nutanix) | untested → now covered |
+| 2 | Nutanix | untested | — | No external-reference vector coverage before phase 18. Added 4 vectors (RF2, RF3, EC-X RF2-like 4:1, EC-X RF3-like 4:2); all four resiliency fractions match the Nutanix Bible's Book of AOS Data Efficiency (2X/3X overhead prose + EC-X strip-size multipliers) exactly. All pass at 0.00% deviation — no engine change needed. The 10% systemOverhead + 1.5% fs overhead layer is an engine-formula analog (Nutanix does not publish a single fixed capacity-overhead %; see honesty note). | Nutanix Bible — Book of AOS Data Efficiency (URL in Reference Cases → Nutanix) | untested → now covered |
+| 3 | Nutanix | value-misleading | minor | `src/types/topology.ts` comments `nutanix_ec_rf3` as "6:2 striping", but 6:2 = 6/(6+2) = 75% — a different strip size. The strategy (`src/engines/volumetry/strategies/nutanix.ts`) implements 4:2 = 4/(4+2) = 66.7%, matching the Nutanix Bible's default RF3-like strip. Implemented value is correct; the topology.ts comment label is wrong. Comment-only — no numeric output affected. | Nutanix Bible — Book of AOS Data Efficiency (default RF3-like strip 4/2, "1.5x overhead vs RF3's 3x"): https://www.nutanixbible.com/4h-book-of-aos-data-efficiency.html | open (comment fix deferred; logged in Task 4) |
 
 Tags: value-wrong (>1% off reference) · value-misleading (right number, wrong label/unit) · untested (no vector coverage)
 
@@ -71,9 +72,12 @@ dual parity, MAP); coverage should not be overstated as 4/4 external.
 Fixture: `tests/fixtures/nutanix-vectors.ts` · Spec: `tests/engines/volumetry/vectors/nutanix.spec.ts`
 
 The Nutanix Bible's Book of AOS Data Efficiency
-(https://www.nutanixbible.com/4h-book-of-aos-data-efficiency.html) explicitly tables the RF2 /
-RF3 / EC-X strip-size data fractions — this is the genuinely externally-validated part of each
-vector. It does NOT publish a single fixed "system overhead %" for CVM/AOS metadata as applied
+(https://www.nutanixbible.com/4h-book-of-aos-data-efficiency.html) states RF2/RF3 as 2X/3X
+overhead multipliers in its EC-X comparison prose (fractions derive as 1/multiplier) and gives
+EC-X strip sizes with their overhead multipliers — this is the genuinely externally-validated
+part of each vector. Known inconsistency: `src/types/topology.ts` labels `nutanix_ec_rf3` as
+"6:2 striping" (= 75%), but the strategy implements the Bible's 4:2 default (= 66.7%) — see
+ledger finding #3 (value-misleading, minor; comment-only). It does NOT publish a single fixed "system overhead %" for CVM/AOS metadata as applied
 uniformly to usable capacity (see honesty note below); that layer is engine policy
 (`DEFAULT_NUTANIX_OPTIONS.systemOverhead = 0.10`) applied consistently on top of the validated
 fraction, plus the engine's 1.5% Nutanix fs overhead
@@ -91,7 +95,8 @@ policy) → × 0.985 (1.5% Nutanix fs overhead, engine policy).
 
 Result: 4/4 PASS (tolerance 1%). Regression: `tests/engines/volumetry.spec.ts` 318/318 PASS.
 No change to `src/engines/volumetry/**` — the engine's `nutanixStrategy.calculateDataFraction`
-(RF2=0.5, RF3=1/3, EC-RF2=4/5, EC-RF3=4/6) matches the Nutanix Bible's table exactly.
+(RF2=0.5, RF3=1/3, EC-RF2=4/5, EC-RF3=4/6) matches the Nutanix Bible's published overhead
+multipliers exactly.
 
 **Honesty note (system/fs overhead layer):** Nutanix does not publish a single fixed
 "system overhead %" applied to usable capacity. Public sources describe CVM/AOS reservations
