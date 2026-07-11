@@ -24,6 +24,7 @@ Newly audited here: S2D, Nutanix, NetApp, Ceph, Synology, Longhorn + PPTX export
 | 7 | Synology | untested | — | No external-reference vector coverage before phase 18. Added 3 vectors (SHR 4 drives, SHR-2 6 drives, RAID F1 6 drives; all uniform-size drives — mixed-size SHR is out of scope, see below). SHR ((N-1)/N, 1-drive fault tolerance per SHR KB), SHR-2 ((N-2)/N, 2-drive fault tolerance per SHR KB), and RAID F1 ((N-1)/N, RAID-5-class capacity with rotating parity for SSD wear-leveling only) match `src/engines/volumetry/strategies/proprietary.ts:16-32` exactly; the general (N-k)/N ratios are corroborated by the RAID calculator's behavior + industry consensus (the KB documents fault tolerance and minimum drive counts, not the general formula). The 4% Btrfs fs-overhead layer is genuinely Synology-published (RAID calculator page: Btrfs volumes reserve 4% for metadata) and matches `FILESYSTEM_OVERHEAD.btrfs = 0.04` exactly. All 3 pass at 0.00% deviation — no engine change needed. The vectors use the engine's 25 GB/disk system-partition default as a stated assumption (diverges from the published ~10 GB/drive — see finding #8). Mixed-size SHR is out of scope (tiered internal RAID groups, not a simple (N-k)/N ratio). | kb.synology.com/DSM/tutorial/What_is_Synology_Hybrid_RAID_SHR, synology.com/en-global/support/RAID_calculator (URLs in Reference Cases → Synology) | untested → now covered |
 | 8 | Synology | value-wrong | major | Synology system partition default 25 GB/drive vs vendor-published ~10 GB/drive: the Synology RAID Calculator page explicitly states "Each drive in the RAID must reserve approximately 10 GB of system space", but `DEFAULT_SYNOLOGY_OPTIONS.systemPartitionSize` (`src/types/topology.ts:696`) defaults to 25 GiB/drive — a real, quantified ~2.5× divergence in the default. User-adjustable in the UI; default divergence deferred as product decision (precedent: finding #5). | Synology RAID Calculator: https://www.synology.com/en-global/support/RAID_calculator | open |
 | 9 | Synology | value-wrong | minor | The engine's Synology-with-ext4 path uses the generic `FILESYSTEM_OVERHEAD.ext4 = 0.05` (5%) constant (`src/engines/volumetry/overhead/filesystem-overhead.ts:112-116`, `src/types/topology.ts:718`), but Synology publishes 2% for ext4 volumes on the RAID Calculator page. Not exercised by the Task 7 vectors (btrfs is the Synology default) — follow-up. | Synology RAID Calculator: https://www.synology.com/en-global/support/RAID_calculator | open |
+| 10 | Longhorn | untested → value-wrong | moderate | No external-reference vector coverage before phase 18. Added 4 vectors (R2 @ 3 nodes, R2 @ 6 nodes, R3 @ 3 nodes, R3 @ 6 nodes). The replica-count full-copy model (R2 = 1/2, R3 = 1/3) matches `src/engines/volumetry/strategies/longhorn.ts:12-22` exactly and is genuinely Longhorn-published. Separately: `DEFAULT_LONGHORN_OPTIONS.minimalAvailablePercent = 10` (`src/types/topology.ts:641`) diverges from the Longhorn settings reference / space-consumption KB, which document the `storageMinimalAvailablePercentage` DEFAULT as **25%** — a real, quantified 2.5× divergence in the shipped default. `overProvisioningPercent = 200` (engine default) DOES match the Longhorn-documented default of 200% — no divergence there. Vectors use `minimalAvailablePercent: 25` as an explicit override (not the engine default) so the tested free-space factor is traceable to the published value; all 4 pass at 0.00% deviation against that override. User-adjustable in the UI; default divergence deferred as product decision (precedent: findings #5, #8). | longhorn.io/docs/latest/nodes-and-volumes/volumes/, longhorn.io/kb/space-consumption-guideline/, documentation.suse.com/cloudnative/storage/1.11/en/longhorn-system/settings.html (URLs in Reference Cases → Longhorn) | untested → now covered; default value-wrong open |
 
 Tags: value-wrong (>1% off reference) · value-misleading (right number, wrong label/unit) · untested (no vector coverage)
 
@@ -303,6 +304,87 @@ Externally validated vectors: 3/3 for the *Btrfs fs-overhead* layer (Synology-pu
 the *parity-efficiency* layer (calculator-corroborated); 0/3 for the system-partition layer
 (known divergence, stated assumption) — coverage should not be overstated as fully external
 end-to-end.
+
+### Longhorn (Task 8 — 2026-07-11)
+
+Fixture: `tests/fixtures/longhorn-vectors.ts` · Spec: `tests/engines/volumetry/vectors/longhorn.spec.ts`
+
+The engine's pipeline for Longhorn (`src/engines/volumetry/index.ts:240-269`,
+`src/engines/volumetry/strategies/longhorn.ts:12-22`):
+`usableCapacity = ((rawCapacity × dataFraction) × (1 − xfsOverhead)) × freeSpaceFactor / snapshotHeadroom`,
+where `dataFraction` is `1/2` (R2) or `1/3` (R3) (full-copy replication, one replica per node),
+`freeSpaceFactor = 1 − minimalAvailablePercent/100` (clamped [0,1]), and `snapshotHeadroom` is
+clamped to >= 1. `overProvisioningPercent` and `growthHeadroom` are advisory-only, surfaced in
+`longhornDetails`, never subtracted from `usableCapacity` (index.ts:251). Drive: `testDrive1TB`
+(1 TB), 18 drives, xfs (1% fs overhead, engine-formula analog — not Longhorn-specific).
+
+Note: `tests/engines/volumetry/longhorn.spec.ts` (from PR #51) already covers this pipeline at
+the unit level (recognition + guardrail-clamping tests with hand-picked coefficients). This task
+adds *external-reference* vectors traceable to longhorn.io sources; it does not duplicate that
+suite.
+
+Of the pipeline's layers exercised by these vectors, the replica-count model and the
+free-space-reserve percentage used are genuinely Longhorn-published; the snapshot-headroom
+divisor is not a longhorn.io-published formula and is held neutral (1) in every vector:
+
+- **Replica-count full-copy model (genuinely Longhorn-published)** — Longhorn creates one full
+  replica per node; N replicas consume N× the logical volume size, so usable capacity scales as
+  1/N. Matches `longhorn.ts:12-22` exactly (R2 → 1/2, R3 → 1/3, Longhorn's own default replica
+  count is 3). [longhorn.io/docs/latest/nodes-and-volumes/volumes/](https://longhorn.io/docs/latest/nodes-and-volumes/volumes/).
+- **`storageMinimalAvailablePercentage` free-space reserve (genuinely Longhorn-published,
+  engine default diverges — finding #10)** — the Longhorn settings reference and
+  space-consumption KB document the DEFAULT as **25%**, but
+  `DEFAULT_LONGHORN_OPTIONS.minimalAvailablePercent` (`src/types/topology.ts:641`) ships as
+  **10%** — a real, quantified 2.5× divergence. The vectors below use `minimalAvailablePercent:
+  25` as an **explicit override** (not the engine default) so the tested free-space factor
+  (0.75) is traceable to the documented value; the divergence itself is logged as finding #10,
+  not glossed over. `overProvisioningPercent: 200` (engine default) DOES match the
+  Longhorn-documented default of 200% exactly — no divergence there, but it is advisory-only and
+  not exercised by the capacity-pipeline assertion.
+  [longhorn.io/kb/space-consumption-guideline/](https://longhorn.io/kb/space-consumption-guideline/),
+  [documentation.suse.com/cloudnative/storage/1.11/en/longhorn-system/settings.html](https://documentation.suse.com/cloudnative/storage/1.11/en/longhorn-system/settings.html).
+- **xfs 1% filesystem overhead (engine-formula analog)** — generic fs-metadata constant applied
+  uniformly across topologies, not a Longhorn-specific published number.
+- **Snapshot headroom (held neutral, not externally validated)** — Longhorn's space-consumption
+  guide gives qualitative guidance about reserving space for snapshot growth but does not
+  publish a fixed capacity divisor. Every vector sets `snapshotHeadroom: 1` (no-op) rather than
+  mixing the engine's own guardrail heuristic (default 1.2) into an external-reference number.
+
+Pipeline: raw × data fraction (Longhorn-published) → × 0.99 (xfs 1%, engine-formula analog) →
+× 0.75 (25% minimal-available reserve, Longhorn-published default — overridden explicitly since
+the engine default of 10% diverges, finding #10) → ÷ 1 (snapshot headroom held neutral).
+
+| Config | Nodes | Data fraction | Free-space factor | Expected usable (bytes) | Engine (bytes) | Deviation |
+|--------|-------|----------------|--------------------|--------------------------|-----------------|-----------|
+| Longhorn R2, 18 drives | 3 | 50% (1/2) | 0.75 (25%, published) | 6 682 500 000 000 | 6 682 500 000 000 | 0.00% |
+| Longhorn R2, 18 drives | 6 | 50% (1/2) | 0.75 (25%, published) | 6 682 500 000 000 | 6 682 500 000 000 | 0.00% |
+| Longhorn R3, 18 drives | 3 | 33.3% (1/3) | 0.75 (25%, published) | 4 455 000 000 000 | 4 455 000 000 000 | 0.00% |
+| Longhorn R3, 18 drives | 6 | 33.3% (1/3) | 0.75 (25%, published) | 4 455 000 000 000 | 4 455 000 000 000 | 0.00% |
+
+Result: 4/4 PASS (tolerance 1%). Regression: `tests/engines/volumetry.spec.ts` 318/318 PASS.
+No change to `src/engines/volumetry/**` — the replica-count data-fraction formulas match the
+Longhorn-published full-copy model exactly. `usableCapacity` is invariant to node count (3 vs.
+6) once `serverCount >= replicaCount` (Longhorn's placement constraint enforced by the engine),
+which is expected: the published capacity formula depends on replica count and free-space
+reserve, not node count.
+
+**Honesty note:** The replica-count model is genuinely Longhorn-published and matches the
+engine exactly — no divergence. The free-space-reserve percentage IS genuinely
+Longhorn-published (25% default), but the engine's *shipped default* (10%) diverges from it by
+2.5× — a real, quantified defect in the default, not a labeling issue (finding #10,
+value-wrong/moderate, open, deferred as product decision per precedent findings #5 and #8). The
+vectors validate the published 25% value via explicit override, not the engine's own default.
+The xfs fs-overhead layer is an engine-formula analog (not Longhorn-specific). The
+snapshot-headroom layer is real engine behavior (it does subtract from `usableCapacity` per
+index.ts:265-268) but is NOT externally validated here — no longhorn.io page publishes a fixed
+divisor for it, so it is held at a neutral no-op (1) in every vector rather than asserted
+against an unsourced number.
+Externally validated vectors: 4/4 for the *replica-count* layer (Longhorn-published) and the
+*free-space-reserve percentage* (Longhorn-published, used as override); 0/4 for the
+snapshot-headroom layer (not Longhorn-published, held neutral) — coverage should not be
+overstated as fully external end-to-end. Additionally, the engine's *default* value for the
+free-space-reserve setting (10%) is flagged as diverging from the published default (25%,
+finding #10) even though the *formula* using that setting is validated.
 
 ## Spot-Checks (Task 9)
 
