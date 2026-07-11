@@ -18,6 +18,8 @@ Newly audited here: S2D, Nutanix, NetApp, Ceph, Synology, Longhorn + PPTX export
 | 1 | S2D | untested | — | No external-reference vector coverage before phase 18. Added 4 vectors (3-way mirror, single parity [engine-formula analog — no MS-published fraction exists], dual parity @7 FDs hybrid, mirror-accelerated parity @7 FDs). All pass at 0.00% deviation — no engine change needed. | Microsoft Learn plan-volumes / fault-tolerance / mirror-accelerated-parity (URLs in Reference Cases → S2D) | untested → now covered |
 | 2 | Nutanix | untested | — | No external-reference vector coverage before phase 18. Added 4 vectors (RF2, RF3, EC-X RF2-like 4:1, EC-X RF3-like 4:2); all four resiliency fractions match the Nutanix Bible's Book of AOS Data Efficiency (2X/3X overhead prose + EC-X strip-size multipliers) exactly. All pass at 0.00% deviation — no engine change needed. The 10% systemOverhead + 1.5% fs overhead layer is an engine-formula analog (Nutanix does not publish a single fixed capacity-overhead %; see honesty note). | Nutanix Bible — Book of AOS Data Efficiency (URL in Reference Cases → Nutanix) | untested → now covered |
 | 3 | Nutanix | value-misleading | minor | `src/types/topology.ts` comments `nutanix_ec_rf3` as "6:2 striping", but 6:2 = 6/(6+2) = 75% — a different strip size. The strategy (`src/engines/volumetry/strategies/nutanix.ts`) implements 4:2 = 4/(4+2) = 66.7%, matching the Nutanix Bible's default RF3-like strip. Implemented value is correct; the topology.ts comment label is wrong. Comment-only — no numeric output affected. | Nutanix Bible — Book of AOS Data Efficiency (default RF3-like strip 4/2, "1.5x overhead vs RF3's 3x"): https://www.nutanixbible.com/4h-book-of-aos-data-efficiency.html | open (comment fix deferred; logged in Task 4) |
+| 4 | NetApp | untested | — | No external-reference vector coverage before phase 18. Added 3 vectors (RAID-DP 8 drives, RAID-DP 24 drives, RAID-TEC 24 drives). The parity-drive fraction ((N-2)/N RAID-DP, (N-3)/N RAID-TEC) and the 5% default snapshot reserve are genuinely NetApp-published and match the engine exactly. All 3 pass at 0.00% deviation — no engine change needed for the tested paths. | docs.netapp.com sizing-raid-groups-concept, default-raid-policies-aggregates-concept, manage-snapshot-copy-reserve-concept (URLs in Reference Cases → NetApp) | untested → now covered |
+| 5 | NetApp | value-misleading | moderate | `DEFAULT_NETAPP_OPTIONS.waflOverhead = 0.015` (1.5%, UI slider capped 1-3%) is named after, but does not represent, ONTAP's real WAFL aggregate reserve, which is a fixed, non-user-configurable **10%** of aggregate size (5% only for >=30 TB aggregates on AFF/FAS500f since 9.12.1, all FAS since 9.14.1). The engine's "waflOverhead" is actually playing the same role as the small ~1-2% generic filesystem-metadata layer used for other topologies (xfs/ext4/zfs/vsan/ceph/nutanix fs-overhead in `filesystem-overhead.ts`), not the much larger real ONTAP reserve. Not fixed: the field is used consistently as a small fs-metadata analog throughout the engine and UI (slider range 1-3%), so retargeting it to 10% would be a product/UX design change, not a bug fix, and is out of scope for this task. Flagged for follow-up decision. | kb.netapp.com/on-prem/ontap/Ontap_OS/OS-KBs/ONTAP_Space_Usage; kb.netapp.com/.../Why_is_my_aggregate_showing_10_percent_less_total_space_than_expected | open (design decision deferred) |
 
 Tags: value-wrong (>1% off reference) · value-misleading (right number, wrong label/unit) · untested (no vector coverage)
 
@@ -110,6 +112,62 @@ independently-sourced numbers — actual per-cluster reservation is proprietary/
 Externally validated vectors: 4/4 for the *resiliency data fraction* (the number that
 dominates usable capacity); 0/4 for the systemOverhead/fs-overhead layer specifically —
 coverage should not be overstated as fully external end-to-end.
+
+### NetApp (Task 5 — 2026-07-11)
+
+Fixture: `tests/fixtures/netapp-vectors.ts` · Spec: `tests/engines/volumetry/vectors/netapp.spec.ts`
+
+The engine's documented formula (`src/engines/volumetry/index.ts:75`):
+`C_eff = (C_raw − RAID_overhead) × (1 − snap%) × DRR × (1 − WAFL%)`.
+DRR (`netAppOptions.dataReductionRatio`) is applied after `usableCapacity` (in
+`applyCompressionDedup`), so with the harness's neutral default (1.0) it does not affect
+`expectedUsable`. Drive: `testDrive1TB`. `DEFAULT_NETAPP_OPTIONS`: `snapshotReserve = 0.05`,
+`waflOverhead = 0.015`, `dataReductionRatio = 1.0`.
+
+Two of the formula's three layers are genuinely NetApp-published:
+
+- **Parity fraction** — ONTAP docs state a fixed parity-drive count per RAID group,
+  independent of group size: RAID-DP = 2 parity drives/group
+  ([sizing-raid-groups-concept](https://docs.netapp.com/us-en/ontap/disks-aggregates/sizing-raid-groups-concept.html),
+  corroborated by [Flackbox](https://www.flackbox.com/raid-groups-and-aggregates-on-netapp-ontap):
+  16-disk group → 14 TB usable / 2 TB parity); RAID-TEC = 3 parity drives/group
+  ([default-raid-policies-aggregates-concept](https://docs.netapp.com/us-en/ontap/disks-aggregates/default-raid-policies-aggregates-concept.html)).
+  Matches `src/engines/volumetry/strategies/proprietary.ts` exactly: `(usableDrives-2)/usableDrives`
+  (RAID-DP), `(usableDrives-3)/usableDrives` (RAID-TEC).
+- **Snapshot reserve** — ONTAP's default volume Snapshot copy reserve is 5%
+  ([manage-snapshot-copy-reserve-concept](https://docs.netapp.com/us-en/ontap/data-protection/manage-snapshot-copy-reserve-concept.html)),
+  matching `DEFAULT_NETAPP_OPTIONS.snapshotReserve = 0.05` exactly.
+
+Pipeline: raw usable × parity fraction (validated) → × 0.95 (5% snapshot reserve, validated) →
+× 0.985 (1.5% WAFL-overhead layer, engine-formula analog — see honesty note).
+
+| Config | Parity fraction | Source | Expected usable (bytes) | Engine (bytes) | Deviation |
+|--------|------------------|--------|--------------------------|-----------------|-----------|
+| RAID-DP, 8 drives, 1 server | 75% ((8−2)/8) | [Sizing RAID groups](https://docs.netapp.com/us-en/ontap/disks-aggregates/sizing-raid-groups-concept.html) | 5 614 500 000 000 | 5 614 500 000 000 | 0.00% |
+| RAID-DP, 24 drives, 1 server | 91.67% ((24−2)/24) | [Sizing RAID groups](https://docs.netapp.com/us-en/ontap/disks-aggregates/sizing-raid-groups-concept.html) | 20 586 500 000 000 | 20 586 500 000 000 | 0.00% |
+| RAID-TEC, 24 drives, 1 server | 87.5% ((24−3)/24) | [Default RAID policies](https://docs.netapp.com/us-en/ontap/disks-aggregates/default-raid-policies-aggregates-concept.html) | 19 650 750 000 000 | 19 650 750 000 000 | 0.00% |
+
+Result: 3/3 PASS (tolerance 1%). Regression: `tests/engines/volumetry.spec.ts` 318/318 PASS.
+No change to `src/engines/volumetry/**` — the engine's parity-fraction formula and default
+snapshot reserve match NetApp's published values exactly.
+
+**Honesty note (WAFL-overhead layer):** ONTAP's real WAFL reserve is a fixed,
+non-user-configurable **10%** of aggregate size for aggregates <30 TB (5% for >=30 TB
+aggregates on AFF/FAS500f since ONTAP 9.12.1, all FAS since 9.14.1) —
+[kb.netapp.com/ONTAP_Space_Usage](https://kb.netapp.com/on-prem/ontap/Ontap_OS/OS-KBs/ONTAP_Space_Usage),
+[kb.netapp.com — 10% less space than expected](https://kb.netapp.com/on-prem/ontap/Ontap_OS/OS-KBs/Why_is_my_aggregate_showing_10_percent_less_total_space_than_expected).
+`DEFAULT_NETAPP_OPTIONS.waflOverhead = 0.015` (1.5%) does not represent this real reserve; the
+UI (`NetAppOptionsPanel.tsx`) caps the slider at 1-3%, confirming the engine deliberately models
+`waflOverhead` as a small, generic filesystem-metadata layer — the same role played by the
+xfs/ext4/zfs/vsan/ceph/nutanix fs-overhead constants for other topologies
+(`src/engines/volumetry/overhead/filesystem-overhead.ts`) — not ONTAP's real, much larger,
+non-configurable aggregate reserve. This is a naming collision with real ONTAP terminology
+(finding #5, value-misleading, moderate), not a numeric defect in how the field is used
+internally, so it was not changed as part of this task; retargeting it to 10% would be a
+product/UX decision affecting the UI's documented 1-3% range and is deferred.
+Externally validated vectors: 3/3 for the *parity fraction* and *snapshot reserve* layers (the
+two dominant terms); 0/3 for the WAFL-overhead layer specifically — coverage should not be
+overstated as fully external end-to-end.
 
 ## Spot-Checks (Task 9)
 
