@@ -18,44 +18,44 @@
  * mixed-size SHR builds internal RAID tiers of different widths and is out of scope for this
  * fixture (also noted in the 18-AUDIT.md ledger).
  *
- * HONESTY NOTE (binding): of the pipeline's three layers, ONE is genuinely Synology-published and
- * matches the engine's implementation exactly:
- *   - SHR (SHR-1) with uniform drives is explicitly documented by Synology as capacity- and
- *     fault-tolerance-equivalent to RAID 5 (1-drive fault tolerance, usable ~ (N-1) x smallest
- *     drive, which reduces to (N-1)/N for uniform drives): "One-Drive Fault Tolerance...SHR-1 is
- *     similar to RAID 5" (kb.synology.com/DSM/tutorial/What_is_Synology_Hybrid_RAID_SHR;
- *     community.synology.com/enu/forum/1/post/132151). SHR-2 is documented as the RAID-6-like,
- *     2-drive-fault-tolerant variant, usable ~ (N-2) x smallest drive -> (N-2)/N for uniform
- *     drives (same KB + community.synology.com/enu/forum/1/post/132151). RAID F1 is documented as
- *     an all-flash RAID 5-class scheme (rotating parity for SSD wear-leveling, NOT extra
- *     redundancy) — capacity-equivalent to RAID 5, i.e. (N-1)/N for uniform drives, 1-drive fault
- *     tolerance (Synology RAID F1 product documentation). These three data-fraction formulas
- *     match src/engines/volumetry/strategies/proprietary.ts:16-32 exactly (synology_shr:
- *     (usableDrives-1)/usableDrives; synology_shr2: (usableDrives-2)/usableDrives; synology_raid_f1:
- *     (usableDrives-1)/usableDrives).
- *     Sources: https://kb.synology.com/en-ph/DSM/tutorial/What_is_Synology_Hybrid_RAID_SHR ,
- *     https://community.synology.com/enu/forum/1/post/132151 ,
+ * HONESTY NOTE (binding): of the pipeline's three layers, ONE is genuinely Synology-published,
+ * one is calculator-corroborated, and one DIVERGES from the vendor-published value:
+ *   - Btrfs filesystem overhead (`FILESYSTEM_OVERHEAD.btrfs = 0.04`, src/types/topology.ts:717)
+ *     is GENUINELY SYNOLOGY-PUBLISHED: the Synology RAID Calculator page itself states Btrfs
+ *     volumes reserve 4% for metadata (ext4 volumes: 2%). The engine's 4% Btrfs constant
+ *     matches exactly. (Side finding: the engine's Synology-with-ext4 path uses the generic 5%
+ *     ext4 constant, not Synology's published 2% — not exercised by these vectors, which use
+ *     the btrfs default; logged as a ledger finding.)
+ *     https://www.synology.com/en-global/support/RAID_calculator
+ *   - SHR/SHR-2/RAID F1 parity efficiency is CALCULATOR-CORROBORATED, not a formula Synology
+ *     documents in prose: the SHR KB
+ *     (https://kb.synology.com/en-ph/DSM/tutorial/What_is_Synology_Hybrid_RAID_SHR) documents
+ *     SHR's 1-drive / SHR-2's 2-drive fault tolerance and minimum drive counts, but does NOT
+ *     state the general (N-1)/N / (N-2)/N usable-capacity formula (and the community forum
+ *     post citing it is user-generated). The general formula for uniform drives is corroborated
+ *     by the RAID Calculator's behavior (SHR tracks RAID 5, SHR-2 tracks RAID 6, RAID F1 tracks
+ *     RAID 5 capacity — F1's rotating parity redistributes SSD wear, it does not add
+ *     redundancy) plus industry consensus for single-/dual-parity schemes. It matches
+ *     src/engines/volumetry/strategies/proprietary.ts:16-32 exactly (synology_shr:
+ *     (usableDrives-1)/usableDrives; synology_shr2: (usableDrives-2)/usableDrives;
+ *     synology_raid_f1: (usableDrives-1)/usableDrives).
+ *
+ * The THIRD layer diverges from the published number:
+ *   - DSM system partition reservation: the Synology RAID Calculator page explicitly states
+ *     "Each drive in the RAID must reserve approximately 10 GB of system space." The engine
+ *     default `DEFAULT_SYNOLOGY_OPTIONS.systemPartitionSize = 25 * 1024 * 1024 * 1024`
+ *     bytes/disk (src/types/topology.ts:696) is ~2.5x the vendor-published ~10 GB figure.
+ *     The value is user-adjustable in the UI; the default divergence is logged as a
+ *     value-wrong ledger finding (product decision deferred, precedent: NetApp finding #5).
+ *     expectedUsable below is computed WITH the engine's 25 GB default as a STATED ASSUMPTION
+ *     so the vectors validate the parity + fs-overhead pipeline; the system-partition layer
+ *     itself is NOT externally validated (it is known to diverge from the published value).
  *     https://www.synology.com/en-global/support/RAID_calculator
  *
- * The other TWO layers are [engine-formula analog], NOT independently published numbers:
- *   - DSM system partition reservation (`DEFAULT_SYNOLOGY_OPTIONS.systemPartitionSize = 25 * 1024
- *     * 1024 * 1024` bytes/disk, src/types/topology.ts:696). Perplexity research against
- *     Synology's own KB/RAID-calculator material found no official statement of a fixed ~25 GB
- *     (or 20-30 GB range) per-disk figure — Synology's own SHR explainer only says DSM "takes a
- *     little bit off the top" for system/metadata overhead without quantifying it. The 25 GB
- *     value is this codebase's engineering estimate (matches widely-observed DSM behavior across
- *     community reports, but is not a cited Synology constant).
- *   - Btrfs filesystem overhead (`FILESYSTEM_OVERHEAD.btrfs = 0.04`, src/types/topology.ts:717,
- *     code comment "4% for Btrfs metadata + CoW"). No Synology KB page states a flat 4% Btrfs
- *     overhead constant; this plays the same generic small-fs-overhead role documented for
- *     xfs/ext4/zfs/vsan/nutanix/ceph elsewhere in filesystem-overhead.ts (see NetApp Task 5 /
- *     Ceph Task 6 honesty notes for the identical pattern).
- *
- * Genuinely-external vector count: 3/3 vectors validate the genuinely-published SHR/SHR-2/RAID F1
- * parity-efficiency formula against Synology's documented fault-tolerance/capacity semantics; all
- * 3 also carry the two engine-formula-analog layers (25 GB/disk system partition, 4% Btrfs
- * overhead) needed to match the engine's actual usableCapacity output. Coverage should not be
- * read as validating the system-partition-size or Btrfs-overhead constants themselves.
+ * Genuinely-external vector count: 3/3 vectors validate the Synology-published 4% Btrfs
+ * overhead and the calculator-corroborated parity-efficiency ratios; 0/3 validate the
+ * system-partition layer (engine default 25 GB/disk vs published ~10 GB/disk — stated
+ * assumption only). Coverage should not be read as end-to-end external validation.
  */
 import type { ProprietaryRaid, Topology } from '@/types/topology'
 import type { PlatformVector } from './vector-harness'
@@ -70,11 +70,13 @@ function synology(level: Extract<ProprietaryRaid, `synology_${string}`>): Topolo
 
 export const synologyVectors: PlatformVector[] = [
   {
-    // SHR (SHR-1), 4 uniform 1TB drives: dataFraction = (4-1)/4 = 0.75 (RAID-5-equivalent,
-    // 1-drive fault tolerance, Synology-documented). Pipeline: 4 TB raw usable
-    // - (25GB x 4 = ~100.0 GB DSM system partition, engine-formula analog) = ~3.893 TB;
-    // x 0.75 = ~2.919 TB after parity; x 0.96 (Btrfs 4% overhead, engine-formula analog)
-    // = ~2.803 TB.
+    // SHR (SHR-1), 4 uniform 1TB drives: dataFraction = (4-1)/4 = 0.75 (RAID-5-class capacity,
+    // 1-drive fault tolerance per SHR KB; general (N-1)/N ratio corroborated by the RAID
+    // calculator + industry consensus). Pipeline: 4 TB raw usable
+    // - (25GB x 4 = ~100.0 GB DSM system partition — engine default, DIVERGES from the
+    // calculator's published ~10 GB/drive; stated assumption) = ~3.893 TB;
+    // x 0.75 = ~2.919 TB after parity; x 0.96 (Btrfs 4% overhead, Synology-published on the
+    // RAID calculator page) = ~2.803 TB.
     name: 'Synology SHR (SHR-1), 4 drives',
     topology: synology('synology_shr'),
     drives: 4,
@@ -83,14 +85,16 @@ export const synologyVectors: PlatformVector[] = [
     expectedUsable: 2_802_690_588_672,
     tolerance: 0.01,
     source:
-      'Synology SHR KB (SHR-1 = RAID-5-equivalent for uniform drives, 1-drive fault tolerance) [genuinely external] + Synology RAID calculator; 25GB/disk system partition and 4% Btrfs overhead layers are [engine-formula analog] (see file header honesty note)',
+      'Synology SHR KB (1-drive fault tolerance) + RAID calculator (SHR tracks RAID 5 for uniform drives; Btrfs 4% metadata reserve [genuinely external]); (N-1)/N ratio calculator-corroborated; 25GB/disk system partition is engine default, diverges from published ~10GB/drive (see file header honesty note)',
     url: 'https://kb.synology.com/en-ph/DSM/tutorial/What_is_Synology_Hybrid_RAID_SHR',
   },
   {
-    // SHR-2, 6 uniform 1TB drives: dataFraction = (6-2)/6 = 0.6667 (RAID-6-equivalent,
-    // 2-drive fault tolerance, Synology-documented). Pipeline: 6 TB raw usable
-    // - (25GB x 6 = ~161.06 GB DSM system partition) = ~5.839 TB; x (4/6) = ~3.893 TB after
-    // parity; x 0.96 (Btrfs 4% overhead) = ~3.737 TB.
+    // SHR-2, 6 uniform 1TB drives: dataFraction = (6-2)/6 = 0.6667 (RAID-6-class capacity,
+    // 2-drive fault tolerance per SHR KB; general (N-2)/N ratio corroborated by the RAID
+    // calculator + industry consensus). Pipeline: 6 TB raw usable
+    // - (25GB x 6 = ~161.06 GB DSM system partition — engine default, diverges from published
+    // ~10 GB/drive; stated assumption) = ~5.839 TB; x (4/6) = ~3.893 TB after parity;
+    // x 0.96 (Btrfs 4% overhead, Synology-published) = ~3.737 TB.
     name: 'Synology SHR-2, 6 drives',
     topology: synology('synology_shr2'),
     drives: 6,
@@ -99,15 +103,17 @@ export const synologyVectors: PlatformVector[] = [
     expectedUsable: 3_736_920_784_896,
     tolerance: 0.01,
     source:
-      'Synology SHR KB / community forum (SHR-2 = RAID-6-equivalent for uniform drives, 2-drive fault tolerance) [genuinely external] + Synology RAID calculator; 25GB/disk system partition and 4% Btrfs overhead layers are [engine-formula analog] (see file header honesty note)',
+      'Synology SHR KB (2-drive fault tolerance) + RAID calculator (SHR-2 tracks RAID 6 for uniform drives; Btrfs 4% metadata reserve [genuinely external]); (N-2)/N ratio calculator-corroborated; 25GB/disk system partition is engine default, diverges from published ~10GB/drive (see file header honesty note)',
     url: 'https://kb.synology.com/en-ph/DSM/tutorial/What_is_Synology_Hybrid_RAID_SHR',
   },
   {
     // RAID F1, 6 uniform 1TB drives: dataFraction = (6-1)/6 = 0.8333 (RAID-5-class,
     // all-flash, rotating parity for SSD wear-leveling only — NOT extra redundancy;
-    // capacity-equivalent to RAID 5, 1-drive fault tolerance, Synology-documented).
-    // Pipeline: 6 TB raw usable - (25GB x 6 = ~161.06 GB DSM system partition) = ~5.839 TB;
-    // x (5/6) = ~4.866 TB after parity; x 0.96 (Btrfs 4% overhead) = ~4.671 TB.
+    // RAID-5-equivalent capacity and 1-drive fault tolerance corroborated by the RAID
+    // calculator + industry consensus). Pipeline: 6 TB raw usable
+    // - (25GB x 6 = ~161.06 GB DSM system partition — engine default, diverges from published
+    // ~10 GB/drive; stated assumption) = ~5.839 TB; x (5/6) = ~4.866 TB after parity;
+    // x 0.96 (Btrfs 4% overhead, Synology-published) = ~4.671 TB.
     name: 'Synology RAID F1, 6 drives',
     topology: synology('synology_raid_f1'),
     drives: 6,
@@ -116,7 +122,7 @@ export const synologyVectors: PlatformVector[] = [
     expectedUsable: 4_671_150_981_120,
     tolerance: 0.01,
     source:
-      'Synology RAID F1 product documentation (RAID-5-class capacity, rotating parity for all-flash wear-leveling, 1-drive fault tolerance) [genuinely external] + Synology RAID calculator; 25GB/disk system partition and 4% Btrfs overhead layers are [engine-formula analog] (see file header honesty note)',
+      'Synology RAID calculator (RAID F1 tracks RAID 5 capacity for uniform SSDs; Btrfs 4% metadata reserve [genuinely external]); (N-1)/N ratio calculator-corroborated (rotating parity affects wear, not capacity); 25GB/disk system partition is engine default, diverges from published ~10GB/drive (see file header honesty note)',
     url: 'https://www.synology.com/en-global/support/RAID_calculator',
   },
 ]
