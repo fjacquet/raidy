@@ -21,6 +21,7 @@ Newly audited here: S2D, Nutanix, NetApp, Ceph, Synology, Longhorn + PPTX export
 | 4 | NetApp | untested | — | No external-reference vector coverage before phase 18. Added 3 vectors (RAID-DP 8 drives, RAID-DP 24 drives, RAID-TEC 24 drives). The parity-drive fraction ((N-2)/N RAID-DP, (N-3)/N RAID-TEC) and the 5% default snapshot reserve are genuinely NetApp-published and match the engine exactly. All 3 pass at 0.00% deviation — no engine change needed for the tested paths. | docs.netapp.com sizing-raid-groups-concept, default-raid-policies-aggregates-concept, manage-snapshot-copy-reserve-concept (URLs in Reference Cases → NetApp) | untested → now covered |
 | 5 | NetApp | value-misleading | moderate | `DEFAULT_NETAPP_OPTIONS.waflOverhead = 0.015` (1.5%, UI slider capped 1-3%) is named after, but does not represent, ONTAP's real WAFL aggregate reserve, which is a fixed, non-user-configurable **10%** of aggregate size (5% only for >=30 TB aggregates on AFF/FAS500f since 9.12.1, all FAS since 9.14.1). The engine's "waflOverhead" is actually playing the same role as the small ~1-2% generic filesystem-metadata layer used for other topologies (xfs/ext4/zfs/vsan/ceph/nutanix fs-overhead in `filesystem-overhead.ts`), not the much larger real ONTAP reserve. Not fixed: the field is used consistently as a small fs-metadata analog throughout the engine and UI (slider range 1-3%), so retargeting it to 10% would be a product/UX design change, not a bug fix, and is out of scope for this task. Flagged for follow-up decision. | kb.netapp.com/on-prem/ontap/Ontap_OS/OS-KBs/ONTAP_Space_Usage; kb.netapp.com/.../Why_is_my_aggregate_showing_10_percent_less_total_space_than_expected | open (design decision deferred) |
 | 6 | Ceph | untested | — | No external-reference vector coverage before phase 18. Added 4 vectors (replicated size=2, replicated size=3, EC 4+2, EC 8+3). Replicated data fraction (raw/size) and EC data fraction (k/(k+m)) match `src/engines/volumetry/strategies/ceph.ts` exactly; `DEFAULT_CEPH_OPTIONS.safeCapacityThreshold = 0.85` matches Ceph's documented `mon_osd_nearfull_ratio` default exactly. All 4 pass at 0.00% deviation — no engine change needed. The 2% BlueStore fs-overhead layer (`filesystem-overhead.ts:83-85`) is an engine-formula analog — no docs.ceph.com page publishes a flat BlueStore metadata-overhead constant; see honesty note. | docs.ceph.com/en/reef/rados/operations/pools, docs.ceph.com/en/reef/rados/operations/erasure-code, docs.ceph.com/en/reef/rados/configuration/mon-config-ref (URLs in Reference Cases → Ceph) | untested → now covered |
+| 7 | Synology | untested | — | No external-reference vector coverage before phase 18. Added 3 vectors (SHR 4 drives, SHR-2 6 drives, RAID F1 6 drives; all uniform-size drives — mixed-size SHR is out of scope, see below). SHR ((N-1)/N, RAID-5-equivalent, 1-drive fault tolerance), SHR-2 ((N-2)/N, RAID-6-equivalent, 2-drive fault tolerance), and RAID F1 ((N-1)/N, RAID-5-class capacity with rotating parity for SSD wear-leveling only) all match Synology's documented fault-tolerance/capacity semantics and `src/engines/volumetry/strategies/proprietary.ts:16-32` exactly. All 3 pass at 0.00% deviation — no engine change needed. The 25 GB/disk `DEFAULT_SYNOLOGY_OPTIONS.systemPartitionSize` and the 4% Btrfs fs-overhead layer are both engine-formula analogs — Synology's own KB says DSM "takes a little bit off the top" without quantifying it; no fixed 25 GB or 4% constant is published. Mixed-size SHR is out of scope (tiered internal RAID groups, not a simple (N-k)/N ratio). | kb.synology.com/DSM/tutorial/What_is_Synology_Hybrid_RAID_SHR, community.synology.com/enu/forum/1/post/132151, synology.com/en-global/support/RAID_calculator (URLs in Reference Cases → Synology) | untested → now covered |
 
 Tags: value-wrong (>1% off reference) · value-misleading (right number, wrong label/unit) · untested (no vector coverage)
 
@@ -229,6 +230,67 @@ file (identical pattern to NetApp's `waflOverhead`, finding #5 above). It is inc
 Externally validated vectors: 4/4 for the *data-fraction* and *nearfull-ratio* layers (the two
 dominant, genuinely Ceph-published terms); 0/4 for the BlueStore fs-overhead layer specifically —
 coverage should not be overstated as fully external end-to-end.
+
+### Synology (Task 7 — 2026-07-11)
+
+Fixture: `tests/fixtures/synology-vectors.ts` · Spec: `tests/engines/volumetry/vectors/synology.spec.ts`
+
+The engine's pipeline for Synology (`src/engines/volumetry/index.ts:163-210`,
+`src/engines/volumetry/overhead/overheadCalculator.ts:210`):
+`usableCapacity = ((rawUsableCapacity − systemPartitionSize × usableDrives) × dataFraction) × (1 − btrfsOverhead)`,
+where `dataFraction` is `(N-1)/N` (SHR, RAID F1) or `(N-2)/N` (SHR-2)
+(`src/engines/volumetry/strategies/proprietary.ts:16-32`), `systemPartitionSize` defaults to
+25 GB/disk (`DEFAULT_SYNOLOGY_OPTIONS`), and `btrfsOverhead` is a flat 4% constant
+(`FILESYSTEM_OVERHEAD.btrfs`, `src/types/topology.ts:717`). Drive: `testDrive1TB` (1 TB).
+
+UNIFORM DRIVES ONLY: all vectors use identical-size drives, where SHR/SHR-2 reduce to the simple
+(N-1)/N and (N-2)/N ratios below. Mixed-size SHR builds internal RAID tiers of different widths
+and does not reduce to a single ratio — out of scope for this fixture.
+
+One of the pipeline's three layers is genuinely Synology-published:
+
+- **SHR/SHR-2/RAID F1 parity efficiency** — Synology's own SHR tutorial and community
+  documentation state SHR (SHR-1) is capacity- and fault-tolerance-equivalent to RAID 5 for
+  uniform drives (1-drive fault tolerance, usable ≈ (N-1) × smallest drive), and SHR-2 is the
+  RAID-6-equivalent, 2-drive-fault-tolerant variant (usable ≈ (N-2) × smallest drive). RAID F1 is
+  documented as an all-flash, RAID-5-class scheme — rotating parity distributes SSD wear but does
+  **not** add redundancy, so it remains capacity-equivalent to RAID 5, i.e. (N-1)/N for uniform
+  drives, 1-drive fault tolerance.
+  [kb.synology.com/DSM/tutorial/What_is_Synology_Hybrid_RAID_SHR](https://kb.synology.com/en-ph/DSM/tutorial/What_is_Synology_Hybrid_RAID_SHR),
+  [community.synology.com/enu/forum/1/post/132151](https://community.synology.com/enu/forum/1/post/132151),
+  [synology.com/support/RAID_calculator](https://www.synology.com/en-global/support/RAID_calculator).
+  Matches `proprietary.ts` exactly: `synology_shr` → `(usableDrives-1)/usableDrives`,
+  `synology_shr2` → `(usableDrives-2)/usableDrives`, `synology_raid_f1` →
+  `(usableDrives-1)/usableDrives`.
+
+Pipeline: raw usable − 25 GB/disk system partition (engine-formula analog — see honesty note) →
+× data fraction (validated) → × 0.96 (4% Btrfs fs-overhead layer, engine-formula analog).
+
+| Config | Data fraction | Source | Expected usable (bytes) | Engine (bytes) | Deviation |
+|--------|----------------|--------|--------------------------|-----------------|-----------|
+| SHR (SHR-1), 4 drives | 75% ((N-1)/N) | [SHR KB](https://kb.synology.com/en-ph/DSM/tutorial/What_is_Synology_Hybrid_RAID_SHR) | 2 802 690 588 672 | 2 802 690 588 672 | 0.00% |
+| SHR-2, 6 drives | 66.7% ((N-2)/N) | [SHR KB](https://kb.synology.com/en-ph/DSM/tutorial/What_is_Synology_Hybrid_RAID_SHR) | 3 736 920 784 896 | 3 736 920 784 896 | 0.00% |
+| RAID F1, 6 drives | 83.3% ((N-1)/N) | [RAID calculator](https://www.synology.com/en-global/support/RAID_calculator) | 4 671 150 981 120 | 4 671 150 981 120 | 0.00% |
+
+Result: 3/3 PASS (tolerance 1%). Regression: `tests/engines/volumetry.spec.ts` 318/318 PASS.
+No change to `src/engines/volumetry/**` — the SHR/SHR-2/RAID F1 data-fraction formulas match
+Synology's published fault-tolerance/capacity semantics exactly.
+
+**Honesty note (system partition + Btrfs fs-overhead layers):** `DEFAULT_SYNOLOGY_OPTIONS.systemPartitionSize`
+(25 GB/disk, `src/types/topology.ts:696`) and `FILESYSTEM_OVERHEAD.btrfs` (4%,
+`src/types/topology.ts:717`, code comment "4% for Btrfs metadata + CoW") are both
+[engine-formula analog], not independently published Synology numbers. Perplexity research
+against Synology's own KB/RAID-calculator material found no official statement of a fixed ~25 GB
+(or 20-30 GB range) per-disk system-partition figure, or of a flat 4% Btrfs overhead constant —
+Synology's SHR explainer only says DSM "takes a little bit off the top" for system/metadata
+overhead without quantifying it. These two layers play the same generic reserve/fs-overhead role
+documented for NetApp's `waflOverhead` (finding #5) and Ceph's BlueStore fs-overhead (finding #6)
+elsewhere in this ledger. They are included in `expectedUsable` because they are part of what the
+engine actually returns in `VolumetryResult.usableCapacity`, but are not themselves externally
+validated.
+Externally validated vectors: 3/3 for the *parity-efficiency* layer (the dominant, genuinely
+Synology-published term); 0/3 for the system-partition-size and Btrfs-overhead layers
+specifically — coverage should not be overstated as fully external end-to-end.
 
 ## Spot-Checks (Task 9)
 
