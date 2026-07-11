@@ -73,4 +73,15 @@ describe('buildPptxContent', () => {
     ]
     for (const s of allStats) expect(s.label).not.toMatch(/^output:pptx/)
   })
+  it('honors unitSystem in second volumetry row (parity/spares/fs) — binary units', () => {
+    const content = buildPptxContent(config, t)
+    const parity = content.volumetryLines[1]?.find((s) => s.label === 'Parity')
+    expect(parity?.value).toMatch(/[TG]iB/)
+  })
+  it('honors unitSystem in second volumetry row (parity/spares/fs) — decimal units', () => {
+    const content = buildPptxContent({ ...config, unitSystem: 'decimal' }, t)
+    const parity = content.volumetryLines[1]?.find((s) => s.label === 'Parity')
+    expect(parity?.value).toMatch(/[TG]B/)
+    expect(parity?.value).not.toContain('iB')
+  })
 })
