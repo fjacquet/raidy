@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **External-reference validation vectors for six platforms.** S2D (Microsoft Learn), Nutanix,
+  NetApp (efficiency calculator), Ceph (docs.ceph.com), Synology (RAID calculator), and Longhorn
+  (longhorn.io docs) each gained a `tests/fixtures/*-vectors.ts` file exercised through a shared
+  `vector-harness.ts`, plus a cross-engine resilience/performance/sustainability spot-check.
+- **Platform capability map** (`src/engines/capabilities.ts`) drives input hiding: controls with
+  no effect for the selected platform (e.g. compression/dedup sliders, servers/nodes for
+  single-node topologies) are now hidden instead of shown-but-inert, backed by behavior-probe
+  tests.
+
+### Changed
+- **PPTX export rebuilt around a pure content builder** (`src/utils/pptxContent.ts`). Slide
+  content (Sankey + 2×2 gauges + stat lines) is now assembled as plain data — independent of
+  `pptxgenjs` and the DOM — then rendered by `exportPptx.ts`. The export is now fully localized
+  (en/fr/de/it) and unit-system aware (binary/decimal) for every byte statistic, the color
+  palette is passed as a parameter instead of being read from a module-level global (purity),
+  and export failures now surface in the UI instead of failing silently.
+
+### Fixed
+- **PPTX IOPS values no longer double-apply K-suffix formatting** (audit finding #12).
+
+See `.planning/phases/18-quality-audit/18-AUDIT.md` for the full findings ledger (13 findings:
+fixed, logged, and deferred product decisions).
+
 ## [1.12.0] - 2026-07-08
 
 ### Added

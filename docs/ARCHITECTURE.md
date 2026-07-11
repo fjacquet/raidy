@@ -395,9 +395,17 @@ formatBytes(bytes, 'decimal') // "1.6 TB"
 ### Export Functions (`/src/utils/export*.ts`)
 
 - `exportToPdf()` - Generate PDF report
+- `exportToPptx()` (`exportPptx.ts`) - Generate the PowerPoint one-pager (Sankey + 2×2 gauges +
+  stat lines), theme-aware (light/dark) and locale-aware
 - `downloadYaml()` - Export YAML config
 - `downloadAnsible()` - Ansible playbook
 - `downloadTerraform()` - Terraform config
+
+`src/utils/pptxContent.ts` is a pure content builder — `buildPptxContent()` takes calculation
+results, locale, and unit system and returns a plain-data slide description with no side effects
+or `pptxgenjs` calls. `exportPptx.ts` consumes that data to render slides and capture chart PNGs;
+keeping the two separate means the slide content itself is unit-testable without a DOM or the
+PPTX library.
 
 ---
 

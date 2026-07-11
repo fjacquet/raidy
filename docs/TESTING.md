@@ -18,7 +18,14 @@ The test suite is type-checked, not just executed: `npm run typecheck` runs `tsc
 
 ## Fixtures & validation vectors
 
-`tests/fixtures/` holds reference vectors (`raid-vectors.ts`, `zfs-vectors.ts`, `vsan-vectors.ts`, `performance-vectors.ts`). Engine results are validated against external references — **results must be within 1% of WintelGuy and the NetApp Storage Efficiency Calculator** (and Dell Sizer for the ME5 vectors).
+`tests/fixtures/` holds reference vectors: `raid-vectors.ts`, `zfs-vectors.ts`, `vsan-vectors.ts`,
+`performance-vectors.ts`, `dell-vectors.ts`, and — added by the phase-18 quality audit —
+`s2d-vectors.ts`, `nutanix-vectors.ts`, `netapp-vectors.ts`, `ceph-vectors.ts`,
+`synology-vectors.ts`, and `longhorn-vectors.ts`, exercised via the shared `vector-harness.ts`.
+Engine results are validated against external references — **results must be within 1% of
+WintelGuy and the NetApp Storage Efficiency Calculator** (Dell Sizer for the ME5/ADAPT vectors;
+each phase-18 vector records its own source URL inline and in
+`.planning/phases/18-quality-audit/18-AUDIT.md`).
 
 ## Property-based testing
 
