@@ -53,6 +53,8 @@ export const PLATFORM_CAPABILITIES: Record<TopologyType, PlatformCapabilities> =
     supportsCompression: false,
     supportsDedup: false,
     supportsHotSpares: true,
+    // UI exception: HardwarePanel still shows the slider for RAID50/60 (isRaidGroupMode),
+    // where serverCount doubles as the RAID-group count and does affect capacity.
     hasServerCount: false,
   },
   zfs: {
