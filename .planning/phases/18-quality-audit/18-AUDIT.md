@@ -529,4 +529,39 @@ cost/CO2) is exact (0.00% deviation, no fix needed); the Switzerland carbon-inte
 published point estimates, logged as finding #11 and deferred as a product decision
 per established precedent.
 
+## Purity Sweep (Task 10)
+
+Swept `src/engines/**` and `src/workers/**` for calculation-path impurity (wall-clock,
+locale, DOM, storage reads that would make an engine result depend on something not in
+its declared inputs):
+
+```bash
+rtk grep -rn "Date.now\|new Date\|Math.random\|document\.\|window\.\|i18n\|localStorage\|navigator\." src/engines src/workers
+rtk grep -rn "toLocaleString\|Intl\.\|process\.env\|fetch(\|XMLHttpRequest\|performance\.now" src/engines src/workers
+```
+
+**Result: 1 hit total, classified benign — clean sweep, no code changes.**
+
+| Hit | File | Classification | Reasoning |
+|-----|------|-----------------|-----------|
+| `Math.random()` | `src/workers/resilienceWorker.ts:15` | Benign (random-by-design) | Monte Carlo resilience simulation — the entire point of the worker is to sample random failure/rebuild timelines across `simulationCount` (default 1,000,000) iterations and report a probability distribution. Determinism would defeat its purpose; already cross-validated against closed-form MTTDL analytics in `tests/engines/resilience-analytic.spec.ts` (Task 9, Spot-Checks section above), which explicitly accounts for its unseeded non-determinism (3 repeated runs checked for stability within a tolerance band, since the worker exposes no fixed-seed API). |
+
+No `Date.now`/`new Date` (wall-clock), no `document.`/`window.`/`navigator.` (DOM/browser
+globals), no `i18n`/`localStorage` (locale or storage reads), and no `toLocaleString`/`Intl.`/
+`process.env`/`fetch`/`XMLHttpRequest`/`performance.now` hits anywhere in `src/engines/**` or
+`src/workers/**`. All four calculation engines (volumetry, performance, sustainability) and the
+resilience worker's deterministic scaffolding (parameter validation, MTBF/AFR conversion, event
+scheduling) are pure functions of their declared inputs — confirmed by inspection, not just
+grep: the engines take `Topology`/`DriveSpec`/options objects as parameters and return derived
+values with no reads from `Date`, `window`, `document`, `navigator`, `localStorage`, or i18n
+state. No determinism tests were added since there were no impure code paths to fix; existing
+engine test suites (`tests/engines/**`, 318+ volumetry tests, resilience-analytic cross-check)
+already call each engine multiple times with fixed inputs and assert stable outputs, which is
+the same guarantee a dedicated "call twice, `toEqual`" test would add.
+
+Full suite run not required per task scope (no code changed): `rtk npm test -- --run` was not
+re-run for this task; the prior Task 9 full-suite baseline (`tests/engines/volumetry.spec.ts`
+318/318 PASS, `resilience-analytic.spec.ts` 2/2 PASS) stands unaffected since no engine or
+worker file was modified.
+
 ## PPTX E2E Evidence (Task 14)
