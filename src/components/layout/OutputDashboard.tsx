@@ -6,6 +6,7 @@ import { useState } from 'react'
 import {
   CapacityAct,
   CostAct,
+  HeadlineBand,
   PerformanceAct,
   ResilienceAct,
   TakeawayAct,
@@ -200,20 +201,26 @@ export function OutputDashboard() {
   }
 
   return (
-    <main className="flex-1 overflow-y-auto p-6">
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-        <CapacityAct
-          volumetry={volumetry}
-          backup={backup}
-          topology={topology}
-          operationalLimit={operationalLimit}
-          performanceThreshold={performanceThreshold}
-        />
+    <main className="flex-1 overflow-y-auto p-6 space-y-6">
+      <HeadlineBand
+        volumetry={volumetry}
+        performance={performance}
+        resilience={resilienceResult}
+        sustainability={sustainability}
+        topology={topology}
+        onRunSurvival={runSimulation}
+      />
 
+      <CapacityAct
+        volumetry={volumetry}
+        backup={backup}
+        topology={topology}
+        operationalLimit={operationalLimit}
+        performanceThreshold={performanceThreshold}
+      />
+
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <PerformanceAct performance={performance} />
-
-        <CostAct sustainability={sustainability} />
-
         <ResilienceAct
           result={resilienceResult}
           progress={resilienceProgress}
@@ -221,20 +228,22 @@ export function OutputDashboard() {
           runSimulation={runSimulation}
           isMobile={isMobile}
         />
-
-        <TakeawayAct
-          topology={topology}
-          zfsOptions={topology.type === 'zfs' ? zfsOptions : undefined}
-          performance={performance}
-          selectedDrive={selectedDrive}
-          exportError={exportError}
-          onExportPdf={handleExportPdf}
-          onExportPptx={handleExportPptx}
-          onExportYaml={handleExportYaml}
-          onExportAnsible={handleExportAnsible}
-          onExportTerraform={handleExportTerraform}
-        />
       </div>
+
+      <CostAct sustainability={sustainability} />
+
+      <TakeawayAct
+        topology={topology}
+        zfsOptions={topology.type === 'zfs' ? zfsOptions : undefined}
+        performance={performance}
+        selectedDrive={selectedDrive}
+        exportError={exportError}
+        onExportPdf={handleExportPdf}
+        onExportPptx={handleExportPptx}
+        onExportYaml={handleExportYaml}
+        onExportAnsible={handleExportAnsible}
+        onExportTerraform={handleExportTerraform}
+      />
     </main>
   )
 }
