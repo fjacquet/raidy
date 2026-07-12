@@ -4,6 +4,7 @@
 
 import { useTranslation } from 'react-i18next'
 import { InfoTooltip } from '@/components/common'
+import { formatNumber } from '@/hooks'
 import type { ResilienceResult, SimulationProgress } from '@/types/results'
 
 export interface ResilienceActProps {
@@ -123,10 +124,7 @@ export function ResilienceAct({
               </p>
               <ul className="space-y-1 text-xs text-slate-600 dark:text-slate-300">
                 {result.recommendations.map((rec) => (
-                  <li
-                    key={`rec-${rec.slice(0, 30).replace(/\s+/g, '-')}`}
-                    className="flex items-start gap-2"
-                  >
+                  <li key={rec} className="flex items-start gap-2">
                     <span className="text-primary-400">•</span>
                     <span>{rec}</span>
                   </li>
@@ -139,7 +137,7 @@ export function ResilienceAct({
         <div className="text-center py-8 text-slate-500 dark:text-slate-500">
           <p>{t('resilience.clickToRun')}</p>
           <p className="text-xs mt-1">
-            {isMobile ? '1,000' : '10,000'} {t('resilience.iterations')}
+            {formatNumber(isMobile ? 1000 : 10000)} {t('resilience.iterations')}
           </p>
           <p className="text-xs text-slate-400 dark:text-slate-600">
             {t('resilience.includesCorrelated')}

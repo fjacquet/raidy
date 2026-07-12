@@ -107,12 +107,14 @@ flowchart TB
         Sust["Sustainability Engine<br/>Power, CO2, TCO"]
     end
 
+    Resil["Resilience Worker<br/>Monte Carlo (resilienceWorker.ts)<br/>on-demand via useResilience hook"]
+
     Results["CalculationResults<br/>{volumetry, performance, sustainability}"]
 
     subgraph Dashboard["OUTPUT DASHBOARD (guided narrative)"]
         Headline["Headline KPI Band"]
         Cap["CapacityAct"]
-        Perf["PerformanceAct"]
+        PerfAct["PerformanceAct"]
         Res["ResilienceAct"]
         Cost["CostAct"]
         Take["TakeawayAct"]
@@ -125,6 +127,8 @@ flowchart TB
     Perf --> Results
     Sust --> Results
     Results --> Dashboard
+    Store -->|"Run Simulation"| Resil
+    Resil -->|"resilienceResult"| Res
 ```
 
 ---
