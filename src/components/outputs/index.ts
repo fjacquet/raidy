@@ -5,6 +5,7 @@ export {
   AnimatedPercent,
 } from './AnimatedCounter'
 export { CapacityAct } from './acts/CapacityAct'
+export { CostAct } from './acts/CostAct'
 export { PerformanceAct } from './acts/PerformanceAct'
 export { ResilienceAct } from './acts/ResilienceAct'
 export { BackupCard } from './BackupCard'
