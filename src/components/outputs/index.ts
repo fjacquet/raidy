@@ -4,10 +4,18 @@ export {
   AnimatedCurrency,
   AnimatedPercent,
 } from './AnimatedCounter'
+export { CapacityAct } from './acts/CapacityAct'
+export { CostAct } from './acts/CostAct'
+export { PerformanceAct } from './acts/PerformanceAct'
+export { ResilienceAct } from './acts/ResilienceAct'
+export { TakeawayAct } from './acts/TakeawayAct'
 export { BackupCard } from './BackupCard'
 export { CapacityBreakdownList } from './CapacityBreakdownList'
 export { DonutChart, DonutLegend } from './DonutChart'
+export { HeadlineBand } from './HeadlineBand'
 export { LonghornCapacityDetails } from './LonghornCapacityDetails'
+export { MetricCard } from './MetricCard'
+export { ProgressBar } from './ProgressBar'
 export { SankeyDiagram } from './SankeyDiagram'
 export { Speedometer } from './Speedometer'
 export { ZfsCapacityDetails } from './ZfsCapacityDetails'

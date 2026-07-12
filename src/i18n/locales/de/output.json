@@ -1,4 +1,22 @@
 {
+  "headline": {
+    "title": "Auf einen Blick",
+    "usable": "Nutzbar",
+    "effective": "Effektiv",
+    "efficiency": "Effizienz",
+    "peakIops": "Spitzen-IOPS",
+    "survival": "Jährliches Überleben",
+    "annualEnergy": "Jahresenergie",
+    "runSurvival": "Überlebenssimulation starten"
+  },
+  "acts": {
+    "capacity": "Kapazität",
+    "performance": "Leistung",
+    "resilience": "Resilienz",
+    "cost": "Kosten & Nachhaltigkeit",
+    "takeaway": "Das Wichtigste",
+    "forEngineers": "Bereitstellungsbefehle (für Ihre Ingenieure)"
+  },
   "capacity": {
     "title": "Kapazitätsübersicht",
     "raw": "Bruttokapazität",

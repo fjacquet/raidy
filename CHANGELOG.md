@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.14.0] - 2026-07-12
+
+### Changed
+- **Presales-first guided-narrative dashboard.** `OutputDashboard.tsx` was recomposed from an
+  undifferentiated equal-weight card grid into a persistent headline KPI band
+  (`src/components/outputs/HeadlineBand.tsx`) followed by five narrative "acts"
+  (`src/components/outputs/acts/`): `CapacityAct` (Sankey/donut + breakdown + ZFS/Longhorn
+  detail + Backup sub-panel), `PerformanceAct` (gauges + bottleneck chain), `ResilienceAct`
+  (Monte Carlo survival), `CostAct` (power/energy/CO2/flash endurance), and `TakeawayAct`
+  (export buttons as the closing CTA, with provisioning commands moved into a collapsible
+  `<details>`). Performance and Resilience sit side by side on wide screens. This is a UI
+  re-composition only — no calculation engine or exporter changed.
+- **Capability-driven output relevance** (`src/engines/outputRelevance.ts`): pure
+  `shouldShowKpi`/`shouldShowSection` predicates decide which headline tiles and sections render
+  for the selected platform, reusing the v1.13.0 capability map's probe-verified flags (e.g. the
+  Effective-capacity tile is hidden for RAID and shown for ZFS with compression; Longhorn shows
+  no dedup framing). Not-applicable is omitted; applicable-but-zero is still shown.
+- `OutputDashboard.tsx` shrank from 986 to ~249 lines as a thin orchestrator; shared
+  presentational helpers `MetricCard`/`ProgressBar` were extracted to `src/components/outputs/`.
+- Added `headline.*` and `acts.*` i18n keys to the `output` namespace across en/fr/de/it.
+
 ## [1.13.0] - 2026-07-12
 
 ### Added

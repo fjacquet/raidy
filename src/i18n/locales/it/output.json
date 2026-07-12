@@ -1,4 +1,22 @@
 {
+  "headline": {
+    "title": "In breve",
+    "usable": "Utilizzabile",
+    "effective": "Effettivo",
+    "efficiency": "Efficienza",
+    "peakIops": "IOPS di picco",
+    "survival": "Sopravvivenza annuale",
+    "annualEnergy": "Energia annuale",
+    "runSurvival": "Avvia simulazione sopravvivenza"
+  },
+  "acts": {
+    "capacity": "Capacità",
+    "performance": "Prestazioni",
+    "resilience": "Resilienza",
+    "cost": "Costo & Sostenibilità",
+    "takeaway": "Da ricordare",
+    "forEngineers": "Comandi di provisioning (per i tuoi ingegneri)"
+  },
   "capacity": {
     "title": "Panoramica capacità",
     "raw": "Capacità grezza",

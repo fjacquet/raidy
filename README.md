@@ -20,6 +20,11 @@ Browser-based storage infrastructure simulator for enterprise storage platforms.
 
 ## Features
 
+- **Presales guided-narrative dashboard**: A persistent headline KPI band followed by five
+  narrative "acts" — Capacity, Performance, Resilience, Cost, Take-away — instead of an
+  undifferentiated card grid. Headline tiles and sections adapt to the selected platform (e.g.
+  no effective-capacity tile for RAID, no dedup framing for Longhorn) so only what's meaningful
+  is shown.
 - **Volumetry Engine**: Calculate usable/effective capacity with platform-specific overheads
 - **Performance Engine**: Identify bottlenecks across media, controller, bus, and network layers
 - **Resilience Engine**: Monte Carlo simulations for data loss probability
@@ -87,7 +92,7 @@ src/
 ├── components/
 │   ├── common/      # Shared UI components
 │   ├── inputs/      # Configuration panels
-│   ├── outputs/     # Visualization components
+│   ├── outputs/     # Visualization components (headline band + narrative acts/)
 │   └── layout/      # App layout (Cockpit, Sidebar)
 ├── data/            # Static drive database (drives.json)
 ├── engines/         # Calculation modules

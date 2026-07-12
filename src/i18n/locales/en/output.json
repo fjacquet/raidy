@@ -1,4 +1,22 @@
 {
+  "headline": {
+    "title": "At a glance",
+    "usable": "Usable",
+    "effective": "Effective",
+    "efficiency": "Efficiency",
+    "peakIops": "Peak IOPS",
+    "survival": "Annual survival",
+    "annualEnergy": "Annual energy",
+    "runSurvival": "Run survival"
+  },
+  "acts": {
+    "capacity": "Capacity",
+    "performance": "Performance",
+    "resilience": "Resilience",
+    "cost": "Cost & Sustainability",
+    "takeaway": "Take it away",
+    "forEngineers": "Provisioning commands (for your engineers)"
+  },
   "capacity": {
     "title": "Capacity Overview",
     "raw": "Raw Capacity",

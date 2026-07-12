@@ -1,4 +1,22 @@
 {
+  "headline": {
+    "title": "En un coup d'œil",
+    "usable": "Utilisable",
+    "effective": "Effectif",
+    "efficiency": "Efficacité",
+    "peakIops": "IOPS de pointe",
+    "survival": "Survie annuelle",
+    "annualEnergy": "Énergie annuelle",
+    "runSurvival": "Lancer la simulation de survie"
+  },
+  "acts": {
+    "capacity": "Capacité",
+    "performance": "Performance",
+    "resilience": "Résilience",
+    "cost": "Coût & Durabilité",
+    "takeaway": "À retenir",
+    "forEngineers": "Commandes de provisionnement (pour vos ingénieurs)"
+  },
   "capacity": {
     "title": "Aperçu de la capacité",
     "raw": "Capacité brute",
