@@ -5,6 +5,7 @@ export {
   AnimatedPercent,
 } from './AnimatedCounter'
 export { CapacityAct } from './acts/CapacityAct'
+export { PerformanceAct } from './acts/PerformanceAct'
 export { BackupCard } from './BackupCard'
 export { CapacityBreakdownList } from './CapacityBreakdownList'
 export { DonutChart, DonutLegend } from './DonutChart'
