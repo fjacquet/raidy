@@ -26,9 +26,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and export failures now surface in the UI instead of failing silently.
 
 ### Fixed
-- **PPTX IOPS values no longer double-apply K-suffix formatting** (audit finding #12).
+- **PPTX IOPS K-suffix formatting now matches the on-screen gauges' precision** (audit finding
+  #12): the exported PPTX rounded K-suffix IOPS to zero decimals (e.g. `1K`) while the dashboard's
+  `Speedometer`/`AnimatedCounter` show one decimal (`1.3K`) for the same value — `formatIops()`
+  now uses `.toFixed(1)` so exported precision matches the dashboard.
 
-See `.planning/phases/18-quality-audit/18-AUDIT.md` for the full findings ledger (13 findings:
+See `.planning/phases/18-quality-audit/18-AUDIT.md` for the full findings ledger (14 findings:
 fixed, logged, and deferred product decisions).
 
 ## [1.12.0] - 2026-07-08

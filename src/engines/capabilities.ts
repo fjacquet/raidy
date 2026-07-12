@@ -161,9 +161,10 @@ export function shouldShowControl(
 /**
  * True for standard RAID50/60, where serverCount doubles as the RAID-group
  * count and does affect capacity (see raidStrategy.calculateDataFraction).
- * Mirrors HardwarePanel.tsx's `isRaidGroupMode` exactly — keep in sync.
+ * Single source of truth — HardwarePanel.tsx imports this rather than
+ * re-implementing it.
  */
-function isRaidGroupMode(topology: Topology): boolean {
+export function isRaidGroupMode(topology: Topology): boolean {
   return (
     topology.type === 'standard' && (topology.level === 'RAID50' || topology.level === 'RAID60')
   )

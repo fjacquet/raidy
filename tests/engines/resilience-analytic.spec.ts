@@ -37,32 +37,71 @@
  * testDrive1TB's real AFR (1%) and MTBF (1,000,000h) since its signal is observable
  * at a practical iteration count without stress-testing.
  *
- * Determinism note: `resilienceWorker.ts` uses `Math.random()` with no seed override
- * (see `random()` in the worker) — there is no fixed-seed API exposed. To keep this
- * suite deterministic-in-practice, the chosen (rebuildSpeedMBs, ureRate, simulationCount)
- * combinations were empirically verified (3 repeated runs each, scratch harness, not
- * committed) to keep the MC/analytic ratio comfortably inside (0.1, 10) — RAID-5
- * ratios ~[0.77, 2.05], RAID-6 ratios ~[2.6, 3.4] — well clear of both bounds, and
- * simulationCount is set high enough (1,000,000) that the expected event count is
- * large enough (RAID-5: ~1-2 events/1e6 borderline low but stable across repeats;
- * RAID-6: ~10 events/1e6) to avoid single-event noise dominating the result.
+ * Determinism note: `resilienceWorker.ts`'s `random()` helper calls `Math.random()`
+ * directly with no seed override exposed. Rather than rely on unseeded randomness
+ * (which risks a zero-loss-event run producing mcP=0 and an artificial `ratio` of 0,
+ * or general run-to-run flakiness near the (0.1, 10) bounds), this suite stubs
+ * `Math.random` with a seeded mulberry32 PRNG in `beforeEach`, restored in
+ * `afterEach`. This makes every run of the suite bit-for-bit identical — the
+ * (0.1, 10) bounds below are exercised against a fixed sequence, not a fresh
+ * random draw each time. Verified by running the suite 3 times in a row with
+ * identical ratios each time.
+ *
+ * Implementation note: the stub assigns `Math.random` directly rather than via
+ * `vi.spyOn(...).mockImplementation(...)`. Each simulation run calls `random()`
+ * tens of millions of times (1,000,000 simulations × up to 365 days × 8 drives ×
+ * several calls per failure check); a `vi.fn()`-based spy records every call's
+ * args/return value in `.mock.calls`, which OOMs the test process at that call
+ * volume. A plain reassignment stubs the same deterministic sequence without the
+ * per-call bookkeeping.
  */
 
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { SimulationInput, SimulationOutput, WorkerOutputMessage } from '@/types/worker'
+
+/**
+ * mulberry32 — small, fast, deterministic PRNG used to stub Math.random() so the
+ * Monte Carlo worker produces identical results across runs (see file header).
+ */
+function mulberry32(seed: number): () => number {
+  let a = seed
+  return () => {
+    a |= 0
+    a = (a + 0x6d2b79f5) | 0
+    let t = Math.imul(a ^ (a >>> 15), 1 | a)
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+}
 
 const mockPostMessage = vi.fn()
 vi.stubGlobal('self', { postMessage: mockPostMessage, onmessage: null })
+
+const SEED = 0x5eed_1234
+const originalRandom = Math.random
+
+beforeEach(() => {
+  Math.random = mulberry32(SEED)
+})
+
+afterEach(() => {
+  Math.random = originalRandom
+})
 
 async function importWorker() {
   vi.resetModules()
   await import('@/workers/resilienceWorker')
 }
 
-function runSimulation(payload: Record<string, unknown>): { survivalRate: number } {
+function runSimulation(payload: SimulationInput): SimulationOutput {
   const handler = (self as { onmessage: ((e: MessageEvent) => void) | null }).onmessage
   handler?.({ data: { type: 'START', payload } } as MessageEvent)
-  const resultCall = mockPostMessage.mock.calls.find((c) => c[0].type === 'RESULT')
-  return resultCall?.[0].payload
+  const resultCall = mockPostMessage.mock.calls.find(
+    (c): c is [Extract<WorkerOutputMessage, { type: 'RESULT' }>] => c[0].type === 'RESULT',
+  )
+  expect(resultCall).toBeDefined()
+  if (!resultCall) throw new Error('worker did not post a RESULT message')
+  return resultCall[0].payload
 }
 
 /** RAID-5: MTTDL ≈ MTBF² / (N × (N−1) × MTTR) */

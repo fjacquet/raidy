@@ -63,6 +63,26 @@ describe('buildPptxContent', () => {
   it('omits the resilience line when the simulation has not run', () => {
     expect(buildPptxContent(config, t).resilienceLine).toBeNull()
   })
+  it('populates the resilience line when the simulation has run', () => {
+    const resilience: NonNullable<ExportConfig['results']['resilience']> = {
+      survivalRate: 0.99999,
+      survivalPercent: '99.999%',
+      nines: 5,
+      avgRebuildTimeHours: 4.2,
+      ureProbability: 0,
+      dualFailureProbability: 0,
+      riskLevel: 'low',
+      recommendations: [],
+    }
+    const content = buildPptxContent({ ...config, results: { ...config.results, resilience } }, t)
+    expect(content.resilienceLine).not.toBeNull()
+    const stats = content.resilienceLine ?? []
+    for (const s of stats) expect(s.label).not.toMatch(/^output:pptx/)
+    const survival = stats.find((s) => s.label === 'Survival')
+    expect(survival?.value).toBe('99.999%')
+    const risk = stats.find((s) => s.label === 'Risk')
+    expect(risk?.value).toBe('LOW')
+  })
   it('resolves every label through t() — no hardcoded English fallbacks', () => {
     const content = buildPptxContent(config, t)
     const allStats = [

@@ -175,8 +175,8 @@ Calculates storage capacity and efficiency.
 > a single-node platform. `effectiveServerCount(serverCount, topology)` (also in
 > `src/engines/capabilities.ts`) closes that gap by clamping to `1` at the calculation-hook
 > boundary (`useVolumetryCalc`, `usePerformanceCalc`, `useSustainabilityCalc`,
-> `useCalculations`) whenever the control is hidden — the store's `serverCount` itself is left
-> untouched, so it round-trips unchanged if the user switches back.
+> `useCalculations`, `useResilience`) whenever the control is hidden — the store's `serverCount`
+> itself is left untouched, so it round-trips unchanged if the user switches back.
 
 ### Module B: Performance Engine (`/src/engines/performance/`)
 

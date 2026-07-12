@@ -1,5 +1,7 @@
 # Quality Audit, PPTX Verification & UI Relevance Implementation Plan
 
+> **Status: EXECUTED 2026-07-11/12 — all 17 tasks complete (PR #53). Historical record; checkboxes not maintained. Implementation details may deviate where reviews corrected the plan (e.g. exportToPdf is synchronous — try/catch, not .catch).**
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Validate every displayed/exported value against external references (vector-first), fix the PPTX one-pager's known defects with end-to-end proof, hide UI controls that are no-ops for the selected platform via a declarative capability map, and bring specs/docs back in sync.
@@ -28,9 +30,11 @@
 ### Task 1: Audit findings document scaffold
 
 **Files:**
+
 - Create: `.planning/phases/18-quality-audit/18-AUDIT.md`
 
 **Interfaces:**
+
 - Produces: the findings ledger every later task appends to. Finding tags: `value-wrong`, `value-misleading`, `untested`. Severity: `critical` / `major` / `minor`.
 
 - [ ] **Step 1: Create the scaffold**
@@ -78,10 +82,12 @@ rtk git commit -m "docs(audit): scaffold phase-18 quality audit findings ledger"
 ### Task 2: Shared vector harness + covered-platform regression
 
 **Files:**
+
 - Create: `tests/fixtures/vector-harness.ts`
 - Modify: `.planning/phases/18-quality-audit/18-AUDIT.md` (regression result)
 
 **Interfaces:**
+
 - Produces: `testDrive1TB: Drive` and `createVolumetryInput(driveCount: number, topology: Topology, overrides?: Partial<VolumetryInput>): VolumetryInput` — used by every vector spec in Tasks 3–8.
 
 - [ ] **Step 1: Create the harness** (extracted from the pattern in `tests/engines/volumetry.spec.ts`; do NOT modify that file)
@@ -180,18 +186,21 @@ rtk git commit -m "test(audit): shared vector harness + covered-platform regress
 ### Task 3: S2D external-reference vectors
 
 **Files:**
+
 - Create: `tests/fixtures/s2d-vectors.ts`
 - Create: `tests/engines/volumetry/vectors/s2d.spec.ts`
 - Modify: `.planning/phases/18-quality-audit/18-AUDIT.md`
 - Modify (only if >1 % deviation): `src/engines/volumetry/strategies/s2d.ts`
 
 **Interfaces:**
+
 - Consumes: `createVolumetryInput`, `testDrive1TB`, `TB` from `tests/fixtures/vector-harness.ts` (Task 2).
 - Produces: `s2dVectors: PlatformVector[]` — the `PlatformVector` shape defined here is reused verbatim by Tasks 4–8.
 
 - [ ] **Step 1: Research (external validation — do NOT skip)**
 
 Query Perplexity (`mcp__perplexity__search` / `reason`) for, at minimum:
+
 1. "Microsoft Storage Spaces Direct capacity efficiency two-way mirror three-way mirror dual parity site:learn.microsoft.com"
 2. "S2D dual parity efficiency table number of servers Azure Local capacity calculator"
 3. "S2D mirror-accelerated parity capacity efficiency"
@@ -294,12 +303,14 @@ rtk git commit -m "test(s2d): external-reference capacity vectors (Microsoft Lea
 ### Task 4: Nutanix external-reference vectors
 
 **Files:**
+
 - Create: `tests/fixtures/nutanix-vectors.ts`
 - Create: `tests/engines/volumetry/vectors/nutanix.spec.ts`
 - Modify: `.planning/phases/18-quality-audit/18-AUDIT.md`
 - Modify (only if >1 % deviation): `src/engines/volumetry/strategies/nutanix.ts` (or equivalent helper)
 
 **Interfaces:**
+
 - Consumes: `createVolumetryInput` (Task 2); `PlatformVector` interface — import it from `../fixtures/s2d-vectors` (Task 3) instead of redeclaring.
 
 - [ ] **Step 1: Research** — Perplexity queries: "Nutanix capacity calculator RF2 RF3 usable capacity formula", "Nutanix EC-X erasure coding 4:1 6:2 efficiency portal.nutanix.com", "Nutanix CVM overhead reserved capacity per node". Prefer the Nutanix Bible / Nutanix support portal as sources. Nutanix sizing has proprietary elements — where the public docs give ranges instead of formulas, record the range and tag any residual uncertainty `value-misleading` candidate ("present as estimate"), per spec §9.
@@ -334,11 +345,13 @@ export const nutanixVectors: PlatformVector[] = [
 ### Task 5: NetApp external-reference vectors
 
 **Files:**
+
 - Create: `tests/fixtures/netapp-vectors.ts`
 - Create: `tests/engines/volumetry/vectors/netapp.spec.ts`
 - Modify: `.planning/phases/18-quality-audit/18-AUDIT.md`; conditionally the NetApp strategy/overhead files under `src/engines/volumetry/`
 
 **Interfaces:**
+
 - Consumes: `createVolumetryInput` (Task 2), `PlatformVector` (Task 3).
 
 - [ ] **Step 1: Research** — validate the engine's documented formula `C_eff = (C_raw − RAID_overhead) × (1 − snap%) × DRR × (1 − WAFL%)` (comment in `src/engines/volumetry/index.ts:75`) against the NetApp Storage Efficiency Calculator and NetApp docs: "NetApp RAID-DP usable capacity formula WAFL reserve 10%", "NetApp RAID-TEC parity drives usable capacity", "NetApp aggregate snapshot reserve default". NetApp topologies are `type: 'proprietary'`, levels `netapp_raid_dp` and `netapp_raid_tec`. Record cases for both, with `DEFAULT_NETAPP_OPTIONS` defaults noted (check actual defaults with `rtk grep "DEFAULT_NETAPP_OPTIONS" src -A 10`).
@@ -370,11 +383,13 @@ export const netappVectors: PlatformVector[] = [
 ### Task 6: Ceph external-reference vectors
 
 **Files:**
+
 - Create: `tests/fixtures/ceph-vectors.ts`
 - Create: `tests/engines/volumetry/vectors/ceph.spec.ts`
 - Modify: `.planning/phases/18-quality-audit/18-AUDIT.md`; conditionally the Ceph strategy files
 
 **Interfaces:**
+
 - Consumes: `createVolumetryInput` (Task 2), `PlatformVector` (Task 3).
 
 - [ ] **Step 1: Research** — queries: "Ceph usable capacity replicated size 3 erasure coded k m formula docs.ceph.com", "Ceph nearfull ratio 0.85 mon_osd_nearfull_ratio default", "Ceph erasure coding overhead k/(k+m)". Engine already applies `safeCapacityThreshold` (default 0.85, `src/engines/volumetry/index.ts:244-248`) — the reference case must state whether the external source includes nearfull or not, so the comparison is apples-to-apples. Cover: `ceph_replicated_2`, `ceph_replicated_3`, `ceph_ec_4_2`, `ceph_ec_8_3`.
@@ -403,14 +418,16 @@ export const cephVectors: PlatformVector[] = [
 ### Task 7: Synology external-reference vectors
 
 **Files:**
+
 - Create: `tests/fixtures/synology-vectors.ts`
 - Create: `tests/engines/volumetry/vectors/synology.spec.ts`
 - Modify: `.planning/phases/18-quality-audit/18-AUDIT.md`; conditionally the Synology strategy files
 
 **Interfaces:**
+
 - Consumes: `createVolumetryInput` (Task 2), `PlatformVector` (Task 3).
 
-- [ ] **Step 1: Research** — use the **Synology RAID Calculator** (https://www.synology.com/en-global/support/RAID_calculator) as primary reference: "Synology SHR usable capacity mixed drives calculator", "Synology SHR-2 fault tolerance capacity", "Synology RAID F1 usable capacity SSD". Note: engine subtracts a system partition (`systemPartitionSize × usableDrives`, `src/engines/volumetry/index.ts:163-166`) — verify the calculator's assumption (DSM reserves ~20-30 GB/disk) and record which value `DEFAULT_SYNOLOGY_OPTIONS` uses. Cover `synology_shr`, `synology_shr2`, `synology_raid_f1` (uniform drives — mixed-size SHR is out of scope, note that in the ledger).
+- [ ] **Step 1: Research** — use the **Synology RAID Calculator** (<https://www.synology.com/en-global/support/RAID_calculator>) as primary reference: "Synology SHR usable capacity mixed drives calculator", "Synology SHR-2 fault tolerance capacity", "Synology RAID F1 usable capacity SSD". Note: engine subtracts a system partition (`systemPartitionSize × usableDrives`, `src/engines/volumetry/index.ts:163-166`) — verify the calculator's assumption (DSM reserves ~20-30 GB/disk) and record which value `DEFAULT_SYNOLOGY_OPTIONS` uses. Cover `synology_shr`, `synology_shr2`, `synology_raid_f1` (uniform drives — mixed-size SHR is out of scope, note that in the ledger).
 
 - [ ] **Step 2: Fixture**
 
@@ -439,11 +456,13 @@ export const synologyVectors: PlatformVector[] = [
 ### Task 8: Longhorn external-reference vectors
 
 **Files:**
+
 - Create: `tests/fixtures/longhorn-vectors.ts`
 - Create: `tests/engines/volumetry/vectors/longhorn.spec.ts`
 - Modify: `.planning/phases/18-quality-audit/18-AUDIT.md`; conditionally the Longhorn strategy files
 
 **Interfaces:**
+
 - Consumes: `createVolumetryInput` (Task 2), `PlatformVector` (Task 3).
 
 - [ ] **Step 1: Research** — queries: "Longhorn storage reserved percentage default 25 minimal available longhorn.io docs", "Longhorn replica count usable capacity calculation", "Longhorn over-provisioning percentage snapshot space". The engine applies replica division, then free-space reserve (`1 − minimalAvailablePercent/100`), then snapshot headroom divisor (`src/engines/volumetry/index.ts:252-269`). Note `tests/engines/volumetry/longhorn.spec.ts` already exists (unit-level, from #51) — this task adds *external-reference* vectors, it does not duplicate those unit tests. Cover `longhorn_r2` and `longhorn_r3` at ≥ 2 node counts (serverCount must be ≥ replicas — engine validates placement).
@@ -472,11 +491,13 @@ export const longhornVectors: PlatformVector[] = [
 ### Task 9: Cross-engine spot-checks (performance, resilience, sustainability)
 
 **Files:**
+
 - Modify: `.planning/phases/18-quality-audit/18-AUDIT.md` (Spot-Checks section)
 - Create: `tests/engines/resilience-analytic.spec.ts`
 - Conditionally modify: engine files where a spot-check fails
 
 **Interfaces:**
+
 - Consumes: `testDrive1TB` (Task 2); the resilience worker's exported simulation entry — find it with `rtk grep "export" src/workers/resilienceWorker.ts` and check how `tests/workers/resilience.spec.ts` invokes it; reuse that invocation pattern.
 
 - [ ] **Step 1: Performance spot-check (manual, recorded).** Pick one all-flash config (any NVMe drive from `src/data/drives.json`, RAID-5, 8 drives) and one hybrid. Compute expected bottleneck chain by hand from the drive's `bandwidth_read_mb`/`iops_read` and the layer specs in `src/engines/performance/`, compare with `calculatePerformance` output via a scratch Vitest run or node REPL. Validate PCIe/network layer ceilings against vendor numbers via Perplexity ("PCIe 4.0 x4 NVMe throughput", "25GbE usable throughput"). Record both cases + deviation in the audit doc. >1 % → finding + fix with a regression test in `tests/engines/performance.spec.ts`.
@@ -502,6 +523,7 @@ Assert agreement within an order of magnitude (Monte Carlo vs closed-form differ
 ### Task 10: Engine purity audit
 
 **Files:**
+
 - Modify: `.planning/phases/18-quality-audit/18-AUDIT.md`
 - Conditionally modify: any impure engine file found
 
@@ -524,12 +546,14 @@ Expected: `Math.random` legitimately appears in the Monte Carlo worker (`src/wor
 ### Task 11: PPTX — extract pure content builder + i18n all labels
 
 **Files:**
+
 - Create: `src/utils/pptxContent.ts`
 - Create: `tests/utils/pptxContent.spec.ts`
 - Modify: `src/utils/exportPptx.ts`
 - Modify: `src/i18n/locales/en/output.json`, `src/i18n/locales/fr/output.json`, `src/i18n/locales/de/output.json`, `src/i18n/locales/it/output.json`
 
 **Interfaces:**
+
 - Consumes: `ExportConfig` from `exportPptx.ts`; `formatBytes`, `UnitSystem` from `@utils/units`; `i18n.t` passed in as parameter (purity).
 - Produces: `buildPptxContent(config: ExportConfig, t: (key: string) => string, dateLabel?: string): PptxContent` where
 
@@ -671,9 +695,11 @@ rtk git commit -m "feat(pptx): pure content builder, full i18n (en/fr/de/it), un
 ### Task 12: PPTX — honor unitSystem end to end
 
 **Files:**
+
 - Modify: `src/utils/pptxContent.ts`, `tests/utils/pptxContent.spec.ts` (only if Task 11 left gaps)
 
 **Interfaces:**
+
 - Consumes: Task 11's `buildPptxContent`. `OutputDashboard.tsx:215` already passes `unitSystem` — no dashboard change needed.
 
 - [ ] **Step 1: Verify coverage.** Task 11's tests already assert TiB/TB switching for the volumetry line. Extend the spec with one more assertion: parity/spares/fs stats also switch units (same test pattern, `content.volumetryLines[1]`). Run → if it already passes, this task collapses to the assertion commit; if it fails, fix `buildPptxContent` so **every** byte-valued stat uses `formatBytes(bytes, unitSystem)`.
@@ -685,11 +711,13 @@ rtk git commit -m "feat(pptx): pure content builder, full i18n (en/fr/de/it), un
 ### Task 13: PPTX — remove module-level mutable palette + export error toast
 
 **Files:**
+
 - Modify: `src/utils/exportPptx.ts`
 - Modify: `src/components/layout/OutputDashboard.tsx` (lines ~203-217, the `handleExportPptx` handler)
 - Test: `tests/utils/pptxContent.spec.ts` stays green; palette change is type-checked refactor
 
 **Interfaces:**
+
 - Consumes: `PptxContent.role` from Task 11.
 - Produces: `buildSummarySlide(prs, config, charts, content, palette)` — `palette: Brand` parameter replaces the module-level `let brand`.
 
@@ -715,10 +743,12 @@ Apply the same `.catch` to `handleExportPdf` (same defect class, same fix — si
 ### Task 14: PPTX end-to-end verification (both themes)
 
 **Files:**
+
 - Modify: `.planning/phases/18-quality-audit/18-AUDIT.md` (PPTX E2E Evidence section)
 - Conditionally modify: `src/utils/exportPptx.ts` / `pptxContent.ts` for any defect found
 
 **Interfaces:**
+
 - Consumes: everything from Tasks 11-13 (this task gates them).
 
 - [ ] **Step 1: Start the app** — `rtk npm run dev` (background). Note the port (default 5173, base path `/raidy/`).
@@ -748,10 +778,12 @@ Assert, recording each in the audit doc: (a) every numeric value in the slide XM
 ### Task 15: Platform capability map + honesty probe tests
 
 **Files:**
+
 - Create: `src/engines/capabilities.ts`
 - Create: `tests/engines/capabilities.spec.ts`
 
 **Interfaces:**
+
 - Consumes: `calculateVolumetry`, `createVolumetryInput` (Task 2).
 - Produces: `PlatformCapabilities`, `PLATFORM_CAPABILITIES: Record<TopologyType, PlatformCapabilities>`, `getCapabilities(type: TopologyType): PlatformCapabilities` — consumed by Task 16's UI wiring.
 
@@ -873,11 +905,13 @@ export function getCapabilities(type: TopologyType): PlatformCapabilities {
 ### Task 16: Hide no-op controls in the UI
 
 **Files:**
+
 - Modify: `src/components/inputs/AdvancedPanel.tsx` (compression/dedup sliders)
 - Modify: `src/components/inputs/HardwarePanel.tsx` (hot spares, server count)
 - Test: `tests/components/inputRelevance.spec.tsx` (create)
 
 **Interfaces:**
+
 - Consumes: `getCapabilities` (Task 15); the topology slice's current topology from the Zustand store (same selector the panels already use).
 
 - [ ] **Step 1: Write the failing component test**
@@ -917,6 +951,7 @@ describe('input relevance', () => {
 ### Task 17: Docs & spec sync
 
 **Files:**
+
 - Create: `.planning/phases/17-pptx-content/17-SUPERSEDED.md`
 - Modify: `docs/ARCHITECTURE.md`, `README.md`, `CHANGELOG.md`
 - Modify: `.planning/phases/18-quality-audit/18-AUDIT.md` (status: complete)

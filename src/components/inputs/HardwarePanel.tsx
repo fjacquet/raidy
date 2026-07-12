@@ -12,7 +12,7 @@ import {
   Slider,
 } from '@/components/common/FormControls'
 import drivesData from '@/data/drives.json'
-import { shouldShowControl } from '@/engines/capabilities'
+import { isRaidGroupMode, shouldShowControl } from '@/engines/capabilities'
 import { useConnectivityConstraints, useFormatBytes } from '@/hooks'
 import { useConfigStore } from '@/store'
 import type { Drive, DriveConnectivity, FormFactorFilter } from '@/types'
@@ -81,12 +81,12 @@ export function HardwarePanel() {
   } = useConfigStore()
 
   // RAID 50/60 use serverCount as number of RAID groups
-  const isRaidGroupMode = topology.level === 'RAID50' || topology.level === 'RAID60'
+  const isRaidGroups = isRaidGroupMode(topology)
 
   // serverCount is structural: meaningful for multi-node platforms, plus the
   // standard-RAID RAID50/60 special case where it doubles as the RAID-group count
   // (see raidStrategy.calculateDataFraction). See src/engines/capabilities.ts.
-  const showServerCount = shouldShowControl('serverCount', topology.type) || isRaidGroupMode
+  const showServerCount = shouldShowControl('serverCount', topology.type) || isRaidGroups
 
   // Get connectivity constraints based on topology and cluster options
   const { constraint, validOptions, reasonKey } = useConnectivityConstraints()
@@ -232,11 +232,9 @@ export function HardwarePanel() {
           <Label
             htmlFor="server-count"
             hint={t('drive.countHint', { total: driveCount * serverCount })}
-            tooltip={th(
-              isRaidGroupMode ? 'hardware.serverCountRaidGroups' : 'hardware.serverCount',
-            )}
+            tooltip={th(isRaidGroups ? 'hardware.serverCountRaidGroups' : 'hardware.serverCount')}
           >
-            {t(isRaidGroupMode ? 'server.labelRaidGroups' : 'server.label')}
+            {t(isRaidGroups ? 'server.labelRaidGroups' : 'server.label')}
           </Label>
           <Slider
             id="server-count"

@@ -41,7 +41,7 @@ export interface PlatformVector {
   source: string
   url: string
   /** Overrides merged into VolumetryInput (e.g. s2dOptions) beyond drives/topology/serverCount. */
-  overrides?: Record<string, unknown>
+  overrides?: Partial<VolumetryInput>
 }
 
 export const testDrive1TB: Drive = {

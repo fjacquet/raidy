@@ -22,10 +22,13 @@ The test suite is type-checked, not just executed: `npm run typecheck` runs `tsc
 `performance-vectors.ts`, `dell-vectors.ts`, and — added by the phase-18 quality audit —
 `s2d-vectors.ts`, `nutanix-vectors.ts`, `netapp-vectors.ts`, `ceph-vectors.ts`,
 `synology-vectors.ts`, and `longhorn-vectors.ts`, exercised via the shared `vector-harness.ts`.
-Engine results are validated against external references — **results must be within 1% of
-WintelGuy and the NetApp Storage Efficiency Calculator** (Dell Sizer for the ME5/ADAPT vectors;
-each phase-18 vector records its own source URL inline and in
-`.planning/phases/18-quality-audit/18-AUDIT.md`).
+Engine results are validated against external references — **each vector's result must be within
+1% of its recorded source**: WintelGuy and the NetApp Storage Efficiency Calculator for the
+original RAID/ZFS/vSAN vectors, Dell Sizer for the ME5/ADAPT vectors, and — added by the phase-18
+quality audit — Microsoft Learn (S2D), the Nutanix Bible (Nutanix), docs.netapp.com (NetApp),
+docs.ceph.com (Ceph), the Synology RAID Calculator (Synology), and longhorn.io (Longhorn). Each
+phase-18 vector records its own source URL inline and in
+`.planning/phases/18-quality-audit/18-AUDIT.md`.
 
 ## Property-based testing
 
