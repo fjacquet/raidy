@@ -4,6 +4,7 @@
  */
 
 import drivesData from '@/data/drives.json'
+import { effectiveServerCount } from '@/engines/capabilities'
 import { useConfigStore } from '@/store'
 import type { Drive } from '@/types'
 import type { CalculationResults } from '@/types/results'
@@ -68,14 +69,19 @@ export function useCalculations(): CalculationResults {
     }
   }
 
+  // Clamp a stale serverCount to 1 for platforms whose servers/nodes slider
+  // is hidden, so switching topology can't silently scale results by a
+  // leftover serverCount from a previously selected multi-node platform.
+  const effServerCount = effectiveServerCount(serverCount, topology)
+
   // Total drives across all servers
-  const totalDriveCount = driveCount * serverCount
+  const totalDriveCount = driveCount * effServerCount
 
   // Validate configuration before returning results
   const validationAlerts = validateConfiguration({
     drive,
     driveCount: totalDriveCount,
-    serverCount,
+    serverCount: effServerCount,
     topology,
     controller: controllerOptions.controller,
     ramPerNodeGb: 16, // Default RAM (could be made configurable in store)

@@ -154,6 +154,30 @@ Calculates storage capacity and efficiency.
 - Platform-specific losses
 - Compression/dedup multipliers
 
+> **Platform capability map** (`src/engines/capabilities.ts`) is the single source of truth for
+> which inputs actually move the volumetry output for a given topology type. It exposes
+> `getCapabilities(type)` and `shouldShowControl(control, type)` for the four
+> global/cross-cutting controls whose usefulness varies by platform: `compression`, `dedup`,
+> `hotSpares`, `serverCount`. The map is probe-enforced — `tests/engines/capabilities.spec.ts`
+> drives `calculateVolumetry` with each flag toggled and asserts the flag matches actual engine
+> behavior (e.g. the global `compressionRatio`/`dedupRatio` inputs only move
+> `effectiveCapacity` for ZFS; every other platform either has no data-reduction step or reduces
+> through its own platform-specific options panel instead), so the map cannot silently drift
+> from the engines it describes. The UI consumes it directly: `AdvancedPanel.tsx` hides the
+> global compression/dedup sliders unless `shouldShowControl('compression'|'dedup', topology.type)`
+> is true, and `HardwarePanel.tsx` hides the servers/nodes slider unless
+> `shouldShowControl('serverCount', topology.type)` is true (with an additional carve-out for
+> standard RAID50/60, where the same input doubles as the RAID-group count). Controls are
+> hidden, not disabled, when a platform's engine ignores them — the store values are left
+> untouched so a stored URL config round-trips unchanged. For `serverCount` specifically, hiding
+> the control is not enough on its own: switching topology never resets the stored value, so a
+> stale multi-node `serverCount` would otherwise keep silently scaling results after switching to
+> a single-node platform. `effectiveServerCount(serverCount, topology)` (also in
+> `src/engines/capabilities.ts`) closes that gap by clamping to `1` at the calculation-hook
+> boundary (`useVolumetryCalc`, `usePerformanceCalc`, `useSustainabilityCalc`,
+> `useCalculations`, `useResilience`) whenever the control is hidden — the store's `serverCount`
+> itself is left untouched, so it round-trips unchanged if the user switches back.
+
 ### Module B: Performance Engine (`/src/engines/performance/`)
 
 Calculates IOPS, throughput, and identifies bottlenecks.
@@ -378,9 +402,17 @@ formatBytes(bytes, 'decimal') // "1.6 TB"
 ### Export Functions (`/src/utils/export*.ts`)
 
 - `exportToPdf()` - Generate PDF report
+- `exportToPptx()` (`exportPptx.ts`) - Generate the PowerPoint one-pager (Sankey + 2×2 gauges +
+  stat lines), theme-aware (light/dark) and locale-aware
 - `downloadYaml()` - Export YAML config
 - `downloadAnsible()` - Ansible playbook
 - `downloadTerraform()` - Terraform config
+
+`src/utils/pptxContent.ts` is a pure content builder — `buildPptxContent()` takes calculation
+results, locale, and unit system and returns a plain-data slide description with no side effects
+or `pptxgenjs` calls. `exportPptx.ts` consumes that data to render slides and capture chart PNGs;
+keeping the two separate means the slide content itself is unit-testable without a DOM or the
+PPTX library.
 
 ---
 

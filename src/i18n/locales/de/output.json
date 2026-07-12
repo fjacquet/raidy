@@ -125,6 +125,7 @@
   },
   "export": {
     "title": "Konfiguration exportieren",
+    "error": "Export fehlgeschlagen — bitte erneut versuchen",
     "pdf": "PDF-Bericht",
     "pdfDesc": "Vollständiger Bericht",
     "pptx": "PowerPoint",
@@ -146,6 +147,31 @@
     "sustainability": "Nachhaltigkeit",
     "backup": "Backup",
     "bottleneck": "Engpässe",
-    "bom": "Stückliste"
+    "bom": "Stückliste",
+    "labels": {
+      "drives": "Laufwerke",
+      "servers": "Server",
+      "raw": "Brutto",
+      "usable": "Nutzbar",
+      "effective": "Effektiv",
+      "efficiency": "Effizienz",
+      "parity": "Parität",
+      "spares": "Reserve",
+      "fs": "FS",
+      "maxRead": "Max. Lesen",
+      "maxWrite": "Max. Schreiben",
+      "total": "Gesamt",
+      "powerDrives": "Laufwerke",
+      "powerServers": "Server",
+      "cooling": "Kühlung",
+      "energy": "Energie",
+      "co2": "CO₂",
+      "endurance": "Lebensdauer",
+      "survival": "Überleben",
+      "durability": "Haltbarkeit",
+      "rebuild": "Wiederaufbau",
+      "risk": "Risiko",
+      "chartUnavailable": "Kapazitätsdiagramm nicht verfügbar"
+    }
   }
 }

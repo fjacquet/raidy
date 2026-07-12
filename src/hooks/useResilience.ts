@@ -3,6 +3,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { effectiveServerCount } from '@/engines/capabilities'
 import type { Drive } from '@/types/drive'
 import type { ResilienceResult, SimulationProgress } from '@/types/results'
 import type { Topology } from '@/types/topology'
@@ -220,8 +221,12 @@ export function useResilience(options: UseResilienceOptions): UseResilienceResul
     }
 
     // Start simulation
-    // driveCount from store is per-server; worker needs total drives (matching other engines)
-    const totalDriveCount = driveCount * serverCount
+    // driveCount from store is per-server; worker needs total drives (matching other engines).
+    // Clamp a stale serverCount to 1 for platforms whose servers/nodes slider is hidden
+    // (defense in depth — the OutputDashboard call site passes a pre-clamped value; see
+    // effectiveServerCount in src/engines/capabilities.ts, audit finding #14).
+    const effServerCount = effectiveServerCount(serverCount, topology)
+    const totalDriveCount = driveCount * effServerCount
     const input: SimulationInput = {
       driveCount: totalDriveCount,
       raidLevel: getRaidLevel(topology),
@@ -230,7 +235,7 @@ export function useResilience(options: UseResilienceOptions): UseResilienceResul
       ureRate: drive.reliability.ure_rate,
       afrPercent: drive.reliability.afr,
       simulationCount,
-      serverCount,
+      serverCount: effServerCount,
       mirrorCopies,
     }
 
