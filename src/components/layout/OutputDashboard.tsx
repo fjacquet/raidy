@@ -13,6 +13,8 @@ import {
   DonutChart,
   DonutLegend,
   LonghornCapacityDetails,
+  MetricCard,
+  ProgressBar,
   SankeyDiagram,
   Speedometer,
   ZfsCapacityDetails,
@@ -34,67 +36,6 @@ import { exportToPptx } from '@/utils/exportPptx'
 
 // Type assertion for the imported JSON
 const drives = drivesData as Record<string, Drive>
-
-/**
- * Metric card component with animated values.
- */
-function MetricCard({
-  label,
-  children,
-  subvalue,
-  color = 'text-slate-900 dark:text-white',
-}: {
-  label: string
-  children: React.ReactNode
-  subvalue?: string
-  color?: string
-}) {
-  return (
-    <div className="text-center">
-      <div className={`text-2xl font-bold ${color}`}>{children}</div>
-      <p className="text-xs text-slate-500 dark:text-slate-400">{label}</p>
-      {subvalue && <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">{subvalue}</p>}
-    </div>
-  )
-}
-
-/**
- * Progress bar with label.
- */
-function ProgressBar({
-  label,
-  value,
-  max,
-  color = 'bg-primary-500',
-  showValue = true,
-}: {
-  label: string
-  value: number
-  max: number
-  color?: string
-  showValue?: boolean
-}) {
-  const percent = Math.min((value / max) * 100, 100)
-
-  return (
-    <div className="space-y-1">
-      <div className="flex justify-between text-sm">
-        <span className="text-slate-500 dark:text-slate-400">{label}</span>
-        {showValue && (
-          <span className="font-mono text-slate-600 dark:text-slate-300">
-            {formatNumber(Math.round(value))}
-          </span>
-        )}
-      </div>
-      <div className="h-2 bg-slate-100 dark:bg-surface-700 rounded-full overflow-hidden">
-        <div
-          className={`h-full rounded-full transition-all duration-500 ${color}`}
-          style={{ width: `${percent}%` }}
-        />
-      </div>
-    </div>
-  )
-}
 
 export function OutputDashboard() {
   const { t } = useTranslation('output')
