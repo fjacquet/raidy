@@ -5,7 +5,13 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { InfoTooltip } from '@/components/common'
-import { CapacityAct, MetricCard, PerformanceAct, ProgressBar } from '@/components/outputs'
+import {
+  CapacityAct,
+  MetricCard,
+  PerformanceAct,
+  ProgressBar,
+  ResilienceAct,
+} from '@/components/outputs'
 import drivesData from '@/data/drives.json'
 import { effectiveServerCount } from '@/engines/capabilities'
 import { formatNumber, useCalculations, useIsMobile, useResilience } from '@/hooks'
@@ -289,133 +295,13 @@ export function OutputDashboard() {
           )}
         </div>
 
-        {/* Resilience Simulation Card */}
-        <div className="panel">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-1.5">
-              {t('resilience.title')} <InfoTooltip content={th('output.survivalRate')} />
-            </h3>
-            <button
-              type="button"
-              onClick={runSimulation}
-              disabled={resilienceRunning}
-              className="px-3 py-1 text-xs font-medium rounded bg-primary-600 hover:bg-primary-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {resilienceRunning ? t('resilience.simulating') : t('resilience.runSimulation')}
-            </button>
-          </div>
-
-          {resilienceRunning && (
-            <div className="mb-4">
-              <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400 mb-1">
-                <span>{t('resilience.monteCarloSimulation')}</span>
-                <span>{resilienceProgress.percent.toFixed(0)}%</span>
-              </div>
-              <div className="h-2 bg-slate-100 dark:bg-surface-700 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-primary-500 rounded-full transition-all duration-200"
-                  style={{ width: `${resilienceProgress.percent}%` }}
-                />
-              </div>
-            </div>
-          )}
-
-          {resilienceResult ? (
-            <div className="space-y-4">
-              {/* Survival Rate */}
-              <div className="text-center py-4 bg-slate-50 dark:bg-surface-900 rounded-lg">
-                <p
-                  className={`text-4xl font-bold font-mono ${
-                    resilienceResult.riskLevel === 'low'
-                      ? 'text-green-400'
-                      : resilienceResult.riskLevel === 'medium'
-                        ? 'text-yellow-400'
-                        : resilienceResult.riskLevel === 'high'
-                          ? 'text-orange-400'
-                          : 'text-red-400'
-                  }`}
-                >
-                  {resilienceResult.survivalPercent}
-                </p>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                  {t('resilience.annualSurvivalRate', { nines: resilienceResult.nines })}
-                </p>
-              </div>
-
-              {/* Risk Metrics */}
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                <div>
-                  <p className="text-slate-500 dark:text-slate-400">
-                    {t('resilience.rebuildTime')}
-                  </p>
-                  <p className="text-slate-900 dark:text-white font-mono">
-                    {resilienceResult.avgRebuildTimeHours.toFixed(1)}h
-                  </p>
-                </div>
-                <div>
-                  <p className="text-slate-500 dark:text-slate-400">{t('resilience.ureRisk')}</p>
-                  <p className="text-slate-900 dark:text-white font-mono">
-                    {(resilienceResult.ureProbability * 100).toFixed(3)}%
-                  </p>
-                </div>
-                <div>
-                  <p className="text-slate-500 dark:text-slate-400">
-                    {t('resilience.dualFailure')}
-                  </p>
-                  <p className="text-slate-900 dark:text-white font-mono">
-                    {(resilienceResult.dualFailureProbability * 100).toFixed(3)}%
-                  </p>
-                </div>
-                <div>
-                  <p className="text-slate-500 dark:text-slate-400">{t('resilience.riskLevel')}</p>
-                  <p
-                    className={`font-medium capitalize ${
-                      resilienceResult.riskLevel === 'low'
-                        ? 'text-green-400'
-                        : resilienceResult.riskLevel === 'medium'
-                          ? 'text-yellow-400'
-                          : resilienceResult.riskLevel === 'high'
-                            ? 'text-orange-400'
-                            : 'text-red-400'
-                    }`}
-                  >
-                    {resilienceResult.riskLevel}
-                  </p>
-                </div>
-              </div>
-
-              {/* Recommendations */}
-              {resilienceResult.recommendations.length > 0 && (
-                <div className="pt-3 border-t border-slate-200 dark:border-surface-700">
-                  <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase mb-2">
-                    {t('resilience.recommendations')}
-                  </p>
-                  <ul className="space-y-1 text-xs text-slate-600 dark:text-slate-300">
-                    {resilienceResult.recommendations.map((rec) => (
-                      <li
-                        key={`rec-${rec.slice(0, 30).replace(/\s+/g, '-')}`}
-                        className="flex items-start gap-2"
-                      >
-                        <span className="text-primary-400">•</span>
-                        <span>{rec}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="text-center py-8 text-slate-500 dark:text-slate-500">
-              <p>{t('resilience.clickToRun')}</p>
-              <p className="text-xs mt-1">
-                {isMobile ? '1,000' : '10,000'} {t('resilience.iterations')}
-              </p>
-              <p className="text-xs text-slate-400 dark:text-slate-600">
-                {t('resilience.includesCorrelated')}
-              </p>
-            </div>
-          )}
-        </div>
+        <ResilienceAct
+          result={resilienceResult}
+          progress={resilienceProgress}
+          isRunning={resilienceRunning}
+          runSimulation={runSimulation}
+          isMobile={isMobile}
+        />
 
         {/* Commands Card */}
         <div className="panel xl:col-span-3 lg:col-span-2">

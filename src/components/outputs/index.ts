@@ -6,6 +6,7 @@ export {
 } from './AnimatedCounter'
 export { CapacityAct } from './acts/CapacityAct'
 export { PerformanceAct } from './acts/PerformanceAct'
+export { ResilienceAct } from './acts/ResilienceAct'
 export { BackupCard } from './BackupCard'
 export { CapacityBreakdownList } from './CapacityBreakdownList'
 export { DonutChart, DonutLegend } from './DonutChart'
