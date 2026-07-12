@@ -18,7 +18,7 @@ export function PerformanceAct({ performance }: PerformanceActProps) {
   const isMobile = useIsMobile()
 
   return (
-    <>
+    <div className="space-y-6">
       {/* Performance Gauges Card */}
       <div className="panel">
         <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4 flex items-center gap-1.5">
@@ -114,6 +114,6 @@ export function PerformanceAct({ performance }: PerformanceActProps) {
           ))}
         </div>
       </div>
-    </>
+    </div>
   )
 }

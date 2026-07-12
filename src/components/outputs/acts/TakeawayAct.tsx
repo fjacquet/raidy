@@ -37,7 +37,7 @@ export function TakeawayAct({
   return (
     <>
       {/* Export Card */}
-      <div className="panel xl:col-span-3 lg:col-span-2">
+      <div className="panel">
         <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-1">
           {t('export.title')}
         </h3>
@@ -195,11 +195,10 @@ export function TakeawayAct({
       </div>
 
       {/* Commands Card */}
-      <div className="panel xl:col-span-3 lg:col-span-2">
+      <div className="panel">
         <details>
-          {/* TODO(task-8): summary label -> acts.forEngineers */}
           <summary className="text-lg font-semibold text-slate-900 dark:text-white mb-4 cursor-pointer">
-            {t('commands.title')}
+            {t('acts.forEngineers')}
           </summary>
 
           <div className="bg-slate-50 dark:bg-surface-900 rounded-lg p-4 font-mono text-sm overflow-x-auto">

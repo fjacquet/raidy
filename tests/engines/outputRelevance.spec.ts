@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { type RelevanceContext, shouldShowKpi, shouldShowSection } from '@/engines/outputRelevance'
+import {
+  type RelevanceContext,
+  type SectionContext,
+  shouldShowKpi,
+  shouldShowSection,
+} from '@/engines/outputRelevance'
 import type { SustainabilityResult, VolumetryResult } from '@/types/results'
 
 const vol = (over: Partial<VolumetryResult> = {}): VolumetryResult => ({
@@ -56,29 +61,36 @@ describe('shouldShowKpi', () => {
 
 describe('shouldShowSection', () => {
   it('hides zfsDetails unless zfsDetails present', () => {
-    expect(shouldShowSection('zfsDetails', ctx())).toBe(false)
-    const c = ctx({
+    const noZfs: SectionContext = {
+      topology: { type: 'standard', level: 'RAID5' },
+      volumetry: vol(),
+    }
+    expect(shouldShowSection('zfsDetails', noZfs)).toBe(false)
+    const c: SectionContext = {
       topology: { type: 'zfs', level: 'raidz2' },
       volumetry: vol({ zfsDetails: {} as never }),
-    })
+    }
     expect(shouldShowSection('zfsDetails', c)).toBe(true)
   })
   it('hides longhornDetails unless longhornDetails present', () => {
-    const c = ctx({
+    const c: SectionContext = {
       topology: { type: 'longhorn', level: 'longhorn_r3' },
       volumetry: vol({ longhornDetails: {} as never }),
-    })
+    }
     expect(shouldShowSection('longhornDetails', c)).toBe(true)
-    expect(shouldShowSection('longhornDetails', ctx())).toBe(false)
+    const noLonghorn: SectionContext = {
+      topology: { type: 'standard', level: 'RAID5' },
+      volumetry: vol(),
+    }
+    expect(shouldShowSection('longhornDetails', noLonghorn)).toBe(false)
   })
   it('shows backup only when hasBackup', () => {
-    expect(shouldShowSection('backup', ctx({ hasBackup: true }))).toBe(true)
-    expect(shouldShowSection('backup', ctx({ hasBackup: false }))).toBe(false)
+    expect(shouldShowSection('backup', { hasBackup: true })).toBe(true)
+    expect(shouldShowSection('backup', { hasBackup: false })).toBe(false)
   })
   it('always shows the four core acts', () => {
-    const c = ctx()
     for (const s of ['capacity', 'performance', 'resilience', 'cost', 'takeaway'] as const) {
-      expect(shouldShowSection(s, c)).toBe(true)
+      expect(shouldShowSection(s, {})).toBe(true)
     }
   })
 })

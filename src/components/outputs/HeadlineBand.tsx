@@ -90,13 +90,17 @@ export function HeadlineBand({
             </button>
           )}
         </div>
-        <div className="text-center">
-          <div className="text-2xl font-bold text-slate-900 dark:text-white font-mono">
-            {formatNumber(Math.round(sustainability.annualEnergyKwh))}
-            <span className="text-sm text-slate-500 dark:text-slate-400 ml-1">kWh</span>
+        {shouldShowKpi('annualEnergy', ctx) && (
+          <div className="text-center">
+            <div className="text-2xl font-bold text-slate-900 dark:text-white font-mono">
+              {formatNumber(Math.round(sustainability.annualEnergyKwh))}
+              <span className="text-sm text-slate-500 dark:text-slate-400 ml-1">kWh</span>
+            </div>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              {t('headline.annualEnergy')}
+            </p>
           </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400">{t('headline.annualEnergy')}</p>
-        </div>
+        )}
       </div>
     </div>
   )

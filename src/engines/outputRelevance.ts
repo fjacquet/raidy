@@ -30,6 +30,14 @@ export interface RelevanceContext {
   hasBackup: boolean
 }
 
+/** Narrow context for section relevance — acts pass only the fields they hold. */
+export interface SectionContext {
+  topology?: Topology
+  volumetry?: VolumetryResult
+  sustainability?: SustainabilityResult
+  hasBackup?: boolean
+}
+
 /** True when compression/dedup meaningfully changes capacity for this platform. */
 function effectiveDiffers(ctx: RelevanceContext): boolean {
   const caps = getCapabilities(ctx.topology.type)
@@ -51,7 +59,7 @@ export function shouldShowKpi(kpi: KpiId, ctx: RelevanceContext): boolean {
   }
 }
 
-export function shouldShowSection(section: SectionId, ctx: RelevanceContext): boolean {
+export function shouldShowSection(section: SectionId, ctx: SectionContext): boolean {
   switch (section) {
     case 'capacity':
     case 'performance':
@@ -60,12 +68,12 @@ export function shouldShowSection(section: SectionId, ctx: RelevanceContext): bo
     case 'takeaway':
       return true
     case 'zfsDetails':
-      return ctx.topology.type === 'zfs' && ctx.volumetry.zfsDetails != null
+      return ctx.topology?.type === 'zfs' && ctx.volumetry?.zfsDetails != null
     case 'longhornDetails':
-      return ctx.topology.type === 'longhorn' && ctx.volumetry.longhornDetails != null
+      return ctx.topology?.type === 'longhorn' && ctx.volumetry?.longhornDetails != null
     case 'backup':
-      return ctx.hasBackup
+      return ctx.hasBackup === true
     case 'flashEndurance':
-      return ctx.sustainability.flashEndurance != null
+      return ctx.sustainability?.flashEndurance != null
   }
 }

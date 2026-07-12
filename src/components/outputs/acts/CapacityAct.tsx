@@ -16,6 +16,7 @@ import {
   SankeyDiagram,
   ZfsCapacityDetails,
 } from '@/components/outputs'
+import { shouldShowSection } from '@/engines/outputRelevance'
 import { useFormatBytes, useIsDesktop, useIsMobile } from '@/hooks'
 import type { BackupResult, VolumetryResult } from '@/types/results'
 import type { Topology } from '@/types/topology'
@@ -61,7 +62,7 @@ export function CapacityAct({
   return (
     <>
       {/* Capacity Overview Card */}
-      <div className="panel xl:col-span-2">
+      <div className="panel">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-1.5">
             {t('capacity.title')} <InfoTooltip content={th('output.sankeyDiagram')} />
@@ -135,8 +136,8 @@ export function CapacityAct({
       </div>
 
       {/* ZFS Capacity Details Card - Only shown for ZFS topology */}
-      {topology.type === 'zfs' && volumetry.zfsDetails && (
-        <div className="panel xl:col-span-2">
+      {shouldShowSection('zfsDetails', { topology, volumetry }) && volumetry.zfsDetails && (
+        <div className="panel">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
               {t('capacity.zfsBreakdown')}
@@ -150,22 +151,23 @@ export function CapacityAct({
       )}
 
       {/* Longhorn Capacity Sizing Card - Only shown for Longhorn topology */}
-      {topology.type === 'longhorn' && volumetry.longhornDetails && (
-        <div className="panel xl:col-span-2">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
-              {t('capacity.longhornBreakdown')}
-            </h3>
-            <span className="text-xs text-slate-500 dark:text-slate-500">
-              {t('capacity.dualUnitHint')}
-            </span>
+      {shouldShowSection('longhornDetails', { topology, volumetry }) &&
+        volumetry.longhornDetails && (
+          <div className="panel">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+                {t('capacity.longhornBreakdown')}
+              </h3>
+              <span className="text-xs text-slate-500 dark:text-slate-500">
+                {t('capacity.dualUnitHint')}
+              </span>
+            </div>
+            <LonghornCapacityDetails details={volumetry.longhornDetails} />
           </div>
-          <LonghornCapacityDetails details={volumetry.longhornDetails} />
-        </div>
-      )}
+        )}
 
       {/* Backup Requirements Card */}
-      {backup && (
+      {shouldShowSection('backup', { hasBackup: backup != null }) && backup && (
         <div className="panel">
           <BackupCard backup={backup} />
         </div>

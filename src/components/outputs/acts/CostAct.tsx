@@ -5,6 +5,7 @@
 import { useTranslation } from 'react-i18next'
 import { InfoTooltip } from '@/components/common'
 import { MetricCard, ProgressBar } from '@/components/outputs'
+import { shouldShowSection } from '@/engines/outputRelevance'
 import { formatNumber } from '@/hooks'
 import type { SustainabilityResult } from '@/types/results'
 
@@ -65,7 +66,7 @@ export function CostAct({ sustainability }: CostActProps) {
         </span>
       </div>
 
-      {sustainability.flashEndurance && (
+      {shouldShowSection('flashEndurance', { sustainability }) && sustainability.flashEndurance && (
         <div className="mt-4 pt-4 border-t border-slate-200 dark:border-surface-700">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium text-slate-600 dark:text-slate-300">
