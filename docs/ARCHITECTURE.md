@@ -4,7 +4,7 @@
 
 ## Overview
 
-Raidy is a browser-based Single Page Application (SPA) / Progressive Web App (PWA) for simulating modern storage infrastructure. It features a "Cockpit" split-screen UI with configuration on the left and real-time results on the right. All calculations run client-side with no backend dependency.
+Raidy is a browser-based Single Page Application (SPA) / Progressive Web App (PWA) for simulating modern storage infrastructure. It features a "Cockpit" split-screen UI with configuration on the left and a presales-first guided-narrative results dashboard on the right — a persistent headline KPI band followed by five narrative "acts" (Capacity, Performance, Resilience, Cost, Take-away). All calculations run client-side with no backend dependency.
 
 ## Technology Stack
 
@@ -31,7 +31,7 @@ Raidy is a browser-based Single Page Application (SPA) / Progressive Web App (PW
 │   │   ├── Cockpit.tsx     # Split-screen container
 │   │   ├── Header.tsx      # Navigation bar
 │   │   ├── InputSidebar.tsx # Left panel (config)
-│   │   └── OutputDashboard.tsx # Right panel (results)
+│   │   └── OutputDashboard.tsx # Right panel — thin orchestrator (~249 lines)
 │   ├── inputs/             # Configuration panels
 │   │   ├── TopologyPanel.tsx
 │   │   ├── HardwarePanel.tsx
@@ -39,6 +39,15 @@ Raidy is a browser-based Single Page Application (SPA) / Progressive Web App (PW
 │   │   ├── AdvancedPanel.tsx
 │   │   └── TieringPanel.tsx
 │   ├── outputs/            # Result visualizations
+│   │   ├── HeadlineBand.tsx # Persistent headline KPI band
+│   │   ├── acts/           # Narrative "acts" composed by OutputDashboard
+│   │   │   ├── CapacityAct.tsx    # Sankey/donut + breakdown + ZFS/Longhorn detail + Backup
+│   │   │   ├── PerformanceAct.tsx # Gauges + bottleneck chain
+│   │   │   ├── ResilienceAct.tsx  # Monte Carlo survival
+│   │   │   ├── CostAct.tsx        # Power/energy/CO2/flash endurance
+│   │   │   └── TakeawayAct.tsx    # Export buttons (CTA) + provisioning commands (<details>)
+│   │   ├── MetricCard.tsx  # Shared presentational helper
+│   │   ├── ProgressBar.tsx # Shared presentational helper
 │   │   ├── SankeyDiagram.tsx
 │   │   ├── Speedometer.tsx
 │   │   ├── DonutChart.tsx
@@ -48,7 +57,9 @@ Raidy is a browser-based Single Page Application (SPA) / Progressive Web App (PW
 │   ├── volumetry/          # Capacity calculations
 │   ├── performance/        # IOPS/throughput analysis
 │   ├── sustainability/     # Power/CO2/TCO
-│   └── resilience/         # Monte Carlo (Web Worker)
+│   ├── resilience/         # Monte Carlo (Web Worker)
+│   ├── capabilities.ts     # Per-platform input-relevance map
+│   └── outputRelevance.ts  # Per-platform output-relevance predicates (shouldShowKpi/shouldShowSection)
 ├── hooks/                  # React hooks
 │   ├── useCalculations.ts  # Main calculation orchestrator
 │   └── useResilience.ts    # Monte Carlo simulation
@@ -98,11 +109,13 @@ flowchart TB
 
     Results["CalculationResults<br/>{volumetry, performance, sustainability}"]
 
-    subgraph Dashboard["OUTPUT DASHBOARD"]
-        Cards["Capacity Cards"]
-        Sankey["Sankey Diagram"]
-        Speedo["Speedometer Gauge"]
-        Breakdown["Breakdown List"]
+    subgraph Dashboard["OUTPUT DASHBOARD (guided narrative)"]
+        Headline["Headline KPI Band"]
+        Cap["CapacityAct"]
+        Perf["PerformanceAct"]
+        Res["ResilienceAct"]
+        Cost["CostAct"]
+        Take["TakeawayAct"]
     end
 
     Input --> Store
@@ -307,11 +320,13 @@ flowchart TB
                     WorkP["WorkloadPanel"]
                     AdvP["AdvancedPanel"]
                 end
-                subgraph Right["OutputDashboard.tsx"]
-                    Cap["Capacity Cards"]
-                    San["SankeyDiagram"]
-                    Speed["Speedometer"]
-                    Donut["DonutChart"]
+                subgraph Right["OutputDashboard.tsx (orchestrator)"]
+                    HB["HeadlineBand.tsx"]
+                    CapAct["CapacityAct<br/>(Sankey, Donut, Breakdown)"]
+                    PerfAct["PerformanceAct<br/>(Speedometer, bottleneck)"]
+                    ResAct["ResilienceAct<br/>(Monte Carlo survival)"]
+                    CostAct["CostAct<br/>(power/CO2/flash)"]
+                    TakeAct["TakeawayAct<br/>(exports, commands)"]
                 end
             end
         end
@@ -330,7 +345,7 @@ flowchart TB
 | `Cockpit.tsx` | Main split-screen container |
 | `Header.tsx` | Navigation bar with unit toggle and CO2 selector |
 | `InputSidebar.tsx` | Left panel with accordion sections |
-| `OutputDashboard.tsx` | Right panel with results and visualizations |
+| `OutputDashboard.tsx` | Right panel — thin orchestrator composing the headline band and five acts |
 
 ### Input Components
 
@@ -346,11 +361,27 @@ All input components read from and write to the Zustand store:
 
 ### Output Components
 
-| Component | Data Source |
-|-----------|-------------|
-| `SankeyDiagram.tsx` | volumetry.breakdown |
-| `Speedometer.tsx` | performance.layers |
-| `DonutChart.tsx` | volumetry.efficiency |
+`OutputDashboard.tsx` composes one persistent band plus five narrative "acts", in this order:
+headline band → `CapacityAct` → `PerformanceAct`/`ResilienceAct` (side by side on wide screens,
+`xl:grid-cols-2`) → `CostAct` → `TakeawayAct`. Which headline tiles and sections actually render
+is decided by `src/engines/outputRelevance.ts` (`shouldShowKpi`/`shouldShowSection`), a pure
+predicate module driven by the same probe-verified capability flags as `capabilities.ts` (e.g.
+the Effective-capacity tile is hidden for RAID and shown for ZFS+compression) plus result
+presence (e.g. the Survival tile only appears once a Monte Carlo run has produced a result).
+Not-applicable is omitted; applicable-but-zero is still shown.
+
+| Component | Purpose / Data Source |
+|-----------|------------------------|
+| `HeadlineBand.tsx` | Persistent KPI band (usable/effective capacity, efficiency, peak IOPS, survival, annual energy) |
+| `acts/CapacityAct.tsx` | Sankey + donut + breakdown list + ZFS/Longhorn detail panels + Backup sub-panel |
+| `acts/PerformanceAct.tsx` | Speedometer gauges + bottleneck chain |
+| `acts/ResilienceAct.tsx` | Monte Carlo survival probability, run/progress controls |
+| `acts/CostAct.tsx` | Power, annual energy, CO2, flash endurance |
+| `acts/TakeawayAct.tsx` | Export buttons (PDF/PPTX/YAML/Ansible/Terraform) as closing CTA, plus provisioning commands in a collapsible `<details>` |
+| `SankeyDiagram.tsx` | volumetry.breakdown (used inside `CapacityAct`) |
+| `Speedometer.tsx` | performance.layers (used inside `PerformanceAct`) |
+| `DonutChart.tsx` | volumetry.efficiency (used inside `CapacityAct`) |
+| `MetricCard.tsx` / `ProgressBar.tsx` | Shared presentational helpers used across acts |
 | `AnimatedCounter.tsx` | Any numeric value |
 
 ---
@@ -441,8 +472,11 @@ PPTX library.
 1. Create engine in `/src/engines/<module>/index.ts`
 2. Define input/output types in `/src/types/results.ts`
 3. Call from `useCalculations()` hook
-4. Add output component in `/src/components/outputs/`
-5. Render in `OutputDashboard.tsx`
+4. Add output component in `/src/components/outputs/` (or a new act under `outputs/acts/` if it
+   warrants its own narrative section)
+5. Render inside the relevant act (or compose a new act in `OutputDashboard.tsx`); gate
+   visibility with `shouldShowKpi`/`shouldShowSection` in `src/engines/outputRelevance.ts` if the
+   output isn't universally applicable
 
 ---
 
