@@ -1,7 +1,8 @@
 # OSV-Scanner configuration for raidy.
 #
-# No vulnerability waivers are currently in effect. The CI gate fails on any
-# OSV finding at LOW severity or above (see .github/workflows/static.yml).
+# No per-advisory waivers are currently in effect. The CI gate fails on any
+# OSV finding at LOW severity or above, except for the standing
+# development-only-dependency exemption at the bottom of this file.
 #
 # To waive a finding, add an [[IgnoredVulns]] block below WITH a justification
 # and an `ignoreUntil` expiry so waivers are revisited rather than forgotten:
