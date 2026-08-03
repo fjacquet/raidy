@@ -33,6 +33,37 @@
  * All vectors use `testDrive1TB` (1 TB decimal drives, no hot spares), so:
  *   raw = drives x 1 TB
  *   expectedUsable = raw x dataFraction x 0.98
+ *
+ * HONESTY NOTE (binding): of the pipeline's layers exercised here, only the Buddy
+ * Mirroring 2x cost is a directly quoted BeeGFS-published number; the rest are
+ * generic RAID math applied to BeeGFS's "storage target = local RAID volume"
+ * model, or an engine-formula analog, not BeeGFS-specific published constants:
+ *   - Buddy Mirroring costs exactly 2x is genuinely BeeGFS-published (direct
+ *     quote above, doc.beegfs.io/latest/system_design/system_requirements.html).
+ *     Matches `src/engines/volumetry/strategies/beegfs.ts` (`storageBuddyMirror
+ *     ? 0.5 : 1`) exactly.
+ *   - RAID6/RAIDz2 dual-parity fraction `(width-2)/width` and RAID10 mirror
+ *     fraction `0.5` are standard, vendor-neutral RAID capacity math, not a
+ *     number doc.beegfs.io publishes itself — BeeGFS's own contribution here is
+ *     only the *architectural* claim that a storage target is a local RAID
+ *     volume with no protection of its own (system_requirements.html) and that
+ *     10-12 drives is the recommended RAID6 target width (storage_tuning.html,
+ *     exercised by vectors 1, 2 and 6 below). The dual-parity/mirror formulas
+ *     themselves are the same generic RAID identities used elsewhere in this
+ *     engine (see `src/engines/volumetry/strategies/raid.ts`), not something
+ *     ThinkParQ documents as a BeeGFS-specific capacity formula.
+ *   - The 2% BeeGFS filesystem overhead (`beeGfsOptions.fsOverheadPercent`
+ *     default) is an engine-formula analog — a generic ext4/xfs metadata
+ *     estimate applied uniformly the way ZFS gets ~1% and Ceph gets ~2%
+ *     elsewhere in this engine (`src/engines/volumetry/overhead/
+ *     filesystem-overhead.ts`) — not a number doc.beegfs.io publishes for
+ *     storage-target filesystem overhead. No divergence claimed for this layer
+ *     since it is not presented as vendor-sourced.
+ *
+ * Genuinely-external claim count: 2/2 BeeGFS-specific published facts (Buddy
+ * Mirroring's exact 2x cost, and RAID6's 10-12 drive recommended target width)
+ * are exercised by these vectors; the capacity arithmetic itself is generic RAID
+ * math, not a BeeGFS-published formula.
  */
 import type { BeeGfsTopology, Topology } from '@/types/topology'
 import { DEFAULT_BEEGFS_OPTIONS } from '@/types/topology'

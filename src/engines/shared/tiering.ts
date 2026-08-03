@@ -9,9 +9,9 @@
  * excluded from usable and counted only toward raw (so cluster efficiency reflects it).
  *
  * Used by S2D (Storage Spaces tiering), vSAN OSA (disk groups), Ceph (WAL/DB offload),
- * Nutanix (hybrid cluster), and BeeGFS (metadata targets). All three calculation engines (volumetry, performance,
- * sustainability) resolve tiering through this single module so the cache/capacity split
- * is computed once and identically.
+ * Nutanix (hybrid cluster), and BeeGFS (metadata targets). All three calculation engines
+ * (volumetry, performance, sustainability) resolve tiering through this single module so the
+ * cache/capacity split is computed once and identically.
  */
 
 import drivesData from '@/data/drives.json'

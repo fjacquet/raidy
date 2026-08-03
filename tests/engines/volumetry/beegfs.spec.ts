@@ -9,6 +9,9 @@ function beegfs(overrides: Partial<BeeGfsOptions> = {}): BeeGfsOptions {
 }
 
 const raid6: Topology = { type: 'beegfs', level: 'beegfs_raid6' }
+const raid10: Topology = { type: 'beegfs', level: 'beegfs_raid10' }
+const raidz2: Topology = { type: 'beegfs', level: 'beegfs_raidz2' }
+const single: Topology = { type: 'beegfs', level: 'beegfs_single' }
 
 // Real drive IDs from src/data/drives.json (see S2D/Ceph tiering tests for the same pattern):
 // MDT (fast tier) = enterprise NVMe M.2, 960 GB; storage targets (capacity tier) = enterprise
@@ -178,5 +181,29 @@ describe('BeeGFS volumetry — validation guards', () => {
     )
     expect(result.usableCapacity).toBe(0)
     expect(result.breakdown[0]?.label).toBe('Need >= 12 drives for one storage target')
+  })
+
+  // drivesPerTarget below the level's physical RAID minimum must be rejected, not silently
+  // clamped: a "beegfs_raid6" target with fewer than 4 drives is not a valid dual-parity RAID6,
+  // so the dataFraction the engine would otherwise compute (via the internal clamp in
+  // getLocalRaidFraction, kept as defence-in-depth) would not correspond to the configuration
+  // the user actually entered.
+  it.each([
+    { level: 'beegfs_raid6' as const, topology: raid6, min: 4 },
+    { level: 'beegfs_raidz2' as const, topology: raidz2, min: 4 },
+    { level: 'beegfs_raid10' as const, topology: raid10, min: 2 },
+    { level: 'beegfs_single' as const, topology: single, min: 1 },
+  ])('returns zero-state for $level with drivesPerTarget one below its minimum ($min)', ({
+    level,
+    topology,
+    min,
+  }) => {
+    const result = calculateVolumetry(
+      createVolumetryInput(24, topology, {
+        beeGfsOptions: beegfs({ drivesPerTarget: min - 1, storageBuddyMirror: false }),
+      }),
+    )
+    expect(result.usableCapacity).toBe(0)
+    expect(result.breakdown[0]?.label).toBe(`${level} needs >= ${min} drives per target`)
   })
 })
