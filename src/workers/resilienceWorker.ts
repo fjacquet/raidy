@@ -169,9 +169,27 @@ function runSingleSimulation(input: SimulationInput): {
   const driveCapacityMB = driveCapacityBytes / (1024 * 1024)
   const rebuildTimeHours = driveCapacityMB / rebuildSpeedMBs / 3600
 
-  // Mirror topology: N-way mirror groups (e.g., 2-way pairs, 3-way triplets)
-  const numMirrorGroups = isMirror ? Math.floor(driveCount / effectiveMirrorCopies) : 0
-  const mirrorParityPerGroup = effectiveMirrorCopies - 1 // Can lose N-1 copies per group
+  // Mirror topology: N-way mirror groups (e.g., 2-way pairs, 3-way triplets).
+  //
+  // beegfs_raid10 buddy mirroring: pairs two local RAID10 mirror-pairs (drive
+  // pairs are location-agnostic, see isMirrorTopology above) into one merged
+  // 4-drive buddy unit, tolerating 3 of its 4 drives — i.e. failure only when
+  // BOTH constituent 2-drive pairs are completely lost (2+2). This mirrors the
+  // group topology's buddy-pair handling below and is exact, not merely a
+  // conservative bound: within a 4-drive buddy unit built from two independent
+  // 2-drive sub-pairs, the only way to reach 4 failures is exactly 2 in each
+  // sub-pair (a 2-drive pair cannot contribute more than 2), so "total > 3"
+  // fires precisely when both sub-pairs are fully dead — the real buddy-loss
+  // condition — and never earlier. This is scoped to beegfs_raid10 specifically
+  // via raidLevel, so it cannot change numbers for any other mirror caller
+  // (S2D mirror/MAP, PowerFlex mirror, 2-/3-way replicated platforms, plain
+  // RAID1/RAID10/RAID1E) — those keep using mirrorCopies as a literal replica
+  // count, unaffected by this branch.
+  const isBeegfsRaid10 = raidLevel.toLowerCase() === 'beegfs_raid10'
+  const isBuddyMirroredRaid10 = isBeegfsRaid10 && mirrorCopies >= 2
+  const effectiveMirrorGroupWidth = isBuddyMirroredRaid10 ? 4 : effectiveMirrorCopies
+  const numMirrorGroups = isMirror ? Math.floor(driveCount / effectiveMirrorGroupWidth) : 0
+  const mirrorParityPerGroup = effectiveMirrorGroupWidth - 1 // Can lose N-1 copies per group
 
   // Group topology: RAID 50/60 (and BeeGFS RAID6/RAIDZ2 storage targets) stripe
   // across independent RAID groups.
@@ -252,7 +270,7 @@ function runSingleSimulation(input: SimulationInput): {
           // Mirror topology: N-way mirror groups (2-way, 3-way, etc.)
           // Assign failure to a mirror group weighted by surviving drives in each group
           const survivingPerGroup = mirrorGroupFailures.map(
-            (_f, g) => effectiveMirrorCopies - (mirrorGroupFailures[g] ?? 0),
+            (_f, g) => effectiveMirrorGroupWidth - (mirrorGroupFailures[g] ?? 0),
           )
           const totalSurviving = survivingPerGroup.reduce((a, b) => a + b, 0)
 

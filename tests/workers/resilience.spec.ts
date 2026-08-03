@@ -1630,6 +1630,47 @@ describe('Resilience Worker - BeeGFS', () => {
     expect(withMirror.survivalRate).toBeGreaterThan(withoutMirror.survivalRate)
   })
 
+  it('beegfs_raid10 with buddy mirroring has strictly better survival than without', async () => {
+    // Without buddy mirroring: beegfs_raid10 is a plain location-agnostic
+    // drive-pair mirror (2-drive groups, tolerate 1 failure per pair) —
+    // mirrorCopies is 0/absent.
+    // With buddy mirroring: mirrorCopies = 2 merges pairs of local mirror-pairs
+    // into a 4-drive buddy unit (tolerate 3 of 4) — see effectiveMirrorGroupWidth
+    // in the worker. This is the mirror-topology analogue of the beegfs_raid6
+    // group-buddy test above; regression guard for the bug where buddy mirroring
+    // used to be a complete no-op on beegfs_raid10 (effectiveMirrorCopies always
+    // evaluated to 2 regardless of mirrorCopies).
+    const sharedPayload = {
+      driveCount: 40, // 20 local mirror-pairs / 10 buddy units
+      driveCapacityBytes: 8_000_000_000_000,
+      rebuildSpeedMBs: 150,
+      ureRate: 13 as const,
+      afrPercent: 6.0,
+      simulationCount: 3000,
+      raidLevel: 'beegfs_raid10',
+    }
+
+    await importWorker()
+    let handler = (self as { onmessage: ((e: MessageEvent) => void) | null }).onmessage
+    handler?.({
+      data: { type: 'START', payload: sharedPayload }, // no mirrorCopies: buddy mirroring off
+    } as MessageEvent)
+    const withoutBuddy = mockPostMessage.mock.calls.find((c) => c[0].type === 'RESULT')?.[0].payload
+
+    mockPostMessage.mockClear()
+    vi.resetModules()
+    await import('@/workers/resilienceWorker')
+    handler = (self as { onmessage: ((e: MessageEvent) => void) | null }).onmessage
+    handler?.({
+      data: { type: 'START', payload: { ...sharedPayload, mirrorCopies: 2 } }, // buddy mirroring on
+    } as MessageEvent)
+    const withBuddy = mockPostMessage.mock.calls.find((c) => c[0].type === 'RESULT')?.[0].payload
+
+    expect(withoutBuddy).toBeDefined()
+    expect(withBuddy).toBeDefined()
+    expect(withBuddy.survivalRate).toBeGreaterThan(withoutBuddy.survivalRate)
+  })
+
   it('beegfs_single with buddy mirroring survives single-drive losses (parity 0 + mirrorCopies 2)', async () => {
     // Without any mirror layer, beegfs_single (parity 0) takes the "no redundancy"
     // path: any single drive failure anywhere in the cluster is fatal.
