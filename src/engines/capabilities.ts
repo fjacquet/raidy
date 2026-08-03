@@ -135,6 +135,12 @@ export const PLATFORM_CAPABILITIES: Record<TopologyType, PlatformCapabilities> =
     supportsHotSpares: true,
     hasServerCount: true,
   },
+  beegfs: {
+    supportsCompression: false,
+    supportsDedup: false,
+    supportsHotSpares: true,
+    hasServerCount: true,
+  },
 } as const
 
 export function getCapabilities(type: TopologyType): PlatformCapabilities {

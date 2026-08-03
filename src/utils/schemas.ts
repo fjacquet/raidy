@@ -74,6 +74,10 @@ const TopologySchema = z.discriminatedUnion('type', [
     level: z.enum(['longhorn_r2', 'longhorn_r3']),
   }),
   z.object({
+    type: z.literal('beegfs'),
+    level: z.enum(['beegfs_raid6', 'beegfs_raid10', 'beegfs_raidz2', 'beegfs_single']),
+  }),
+  z.object({
     type: z.literal('powerflex'),
     level: z.enum([
       'powerflex_medium_2way',

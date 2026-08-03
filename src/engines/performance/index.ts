@@ -13,6 +13,7 @@ import type { BlockSize, NetworkSpeed, PCIeGen, PCIeLanes } from '@/types/config
 import type { Drive } from '@/types/drive'
 import type { BottleneckLayer, PerformanceResult } from '@/types/results'
 import type {
+  BeeGfsOptions,
   CephOptions,
   NutanixOptions,
   PowerFlexOptions,
@@ -23,6 +24,7 @@ import type {
 } from '@/types/topology'
 import { CONTROLLER_LIMITS, isVsanTopology, type TopologyType } from '@/types/topology'
 import { assertNever } from '@/utils/typeGuards'
+import { beeGfsPerformanceStrategy } from './strategies/beegfs'
 import { cephPerformanceStrategy } from './strategies/ceph'
 import { dellPerformanceStrategy } from './strategies/dell'
 import { longhornPerformanceStrategy } from './strategies/longhorn'
@@ -61,6 +63,7 @@ export interface PerformanceInput {
   nutanixOptions?: NutanixOptions
   vsanOptions?: VsanOptions
   s2dOptions?: S2DOptions
+  beeGfsOptions?: BeeGfsOptions
   tiering?: TieredCapacityResult | null
   workingSetPercent?: number
 }
@@ -96,6 +99,8 @@ function getStrategy(topologyType: TopologyType): PerformanceStrategy {
       return cephPerformanceStrategy
     case 'longhorn':
       return longhornPerformanceStrategy
+    case 'beegfs':
+      return beeGfsPerformanceStrategy
     case 'nutanix':
       return nutanixPerformanceStrategy
     case 'powerflex':
@@ -122,15 +127,19 @@ function getRaidWritePenalty(
   topology: Topology,
   serverCount: number,
   s2dOptions?: S2DOptions,
+  beeGfsOptions?: BeeGfsOptions,
 ): number {
   const strategy = getStrategy(topology.type)
   // Each strategy interprets `options` differently: standard RAID needs the RAID-group
-  // count for RAID 50/60, S2D needs its mirrorCopies, others read from the topology.
+  // count for RAID 50/60, S2D needs its mirrorCopies, BeeGFS needs storageBuddyMirror,
+  // others read from the topology.
   let options: unknown = topology
   if (topology.type === 'standard') {
     options = { serverCount }
   } else if (topology.type === 's2d') {
     options = s2dOptions
+  } else if (topology.type === 'beegfs') {
+    options = beeGfsOptions
   }
   return strategy.getWritePenalty(topology.level, options)
 }
@@ -157,6 +166,7 @@ export function calculatePerformance(input: PerformanceInput): PerformanceResult
     nutanixOptions,
     vsanOptions,
     s2dOptions,
+    beeGfsOptions,
     tiering,
     workingSetPercent,
   } = input
@@ -167,7 +177,7 @@ export function calculatePerformance(input: PerformanceInput): PerformanceResult
   const blockSizeBytes = BLOCK_SIZE_BYTES[blockSize]
 
   // Calculate write penalty for random I/O
-  const randomWritePenalty = getRaidWritePenalty(topology, serverCount, s2dOptions)
+  const randomWritePenalty = getRaidWritePenalty(topology, serverCount, s2dOptions, beeGfsOptions)
 
   // Sequential write penalty is reduced (full-stripe writes avoid read-modify-write)
   // For RAID 5/6, sequential penalty ≈ 1 + parity_drives/data_drives

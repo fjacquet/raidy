@@ -47,6 +47,8 @@ export type {
 } from './results'
 // Topology types
 export type {
+  BeeGfsOptions,
+  BeeGfsTopology,
   CephOptions,
   CephTopology,
   ControllerType,
@@ -86,6 +88,7 @@ export type {
 } from './topology'
 export {
   CONTROLLER_LIMITS,
+  DEFAULT_BEEGFS_OPTIONS,
   DEFAULT_CEPH_OPTIONS,
   DEFAULT_CONTROLLER_BY_TOPOLOGY,
   DEFAULT_CONTROLLER_OPTIONS,

@@ -8,6 +8,7 @@
  */
 
 import type {
+  BeeGfsOptions,
   CephOptions,
   NutanixOptions,
   S2DOptions,
@@ -16,6 +17,7 @@ import type {
   ZfsOptions,
 } from '@/types/topology'
 import { assertNever } from '@/utils/typeGuards'
+import { beeGfsStrategy } from '../strategies/beegfs'
 import { cephStrategy } from '../strategies/ceph'
 import { dellStrategy } from '../strategies/dell'
 import { longhornStrategy } from '../strategies/longhorn'
@@ -46,6 +48,7 @@ const VALID_TOPOLOGY_TYPES: readonly TopologyType[] = [
   'objectscale',
   'nutanix',
   'powervault',
+  'beegfs',
 ] as const
 
 /**
@@ -69,6 +72,8 @@ export function getStrategy(topologyType: TopologyType): VolumetryStrategy {
       return cephStrategy
     case 'longhorn':
       return longhornStrategy
+    case 'beegfs':
+      return beeGfsStrategy
     case 'nutanix':
       return nutanixStrategy
     case 'vsan_esa':
@@ -99,6 +104,7 @@ export function getStrategy(topologyType: TopologyType): VolumetryStrategy {
  * @param s2dOptions - S2D-specific options
  * @param cephOptions - Ceph-specific options
  * @param nutanixOptions - Nutanix-specific options
+ * @param beeGfsOptions - BeeGFS-specific options
  * @param serverCount - Number of servers/nodes
  * @param isAllFlash - Whether the resiliency media is all-flash (S2D dual-parity table select)
  * @returns Data fraction (0-1)
@@ -109,6 +115,7 @@ export function getDataFraction(
   s2dOptions: S2DOptions,
   cephOptions: CephOptions,
   nutanixOptions: NutanixOptions,
+  beeGfsOptions: BeeGfsOptions,
   serverCount: number,
   isAllFlash = true,
 ): number {
@@ -134,6 +141,9 @@ export function getDataFraction(
       break
     case 'nutanix':
       options = nutanixOptions
+      break
+    case 'beegfs':
+      options = beeGfsOptions
       break
     case 'vsan_esa':
     case 'vsan_osa':

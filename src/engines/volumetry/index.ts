@@ -7,8 +7,14 @@ import drivesData from '@/data/drives.json'
 // Shared tiering resolver
 import { isAllFlashMedia, resolveTiering } from '@/engines/shared/tiering'
 import type { Drive } from '@/types/drive'
-import type { LonghornCapacityDetails, VolumetryResult, ZfsCapacityDetails } from '@/types/results'
 import type {
+  BeeGfsCapacityDetails,
+  LonghornCapacityDetails,
+  VolumetryResult,
+  ZfsCapacityDetails,
+} from '@/types/results'
+import type {
+  BeeGfsOptions,
   CephOptions,
   LonghornOptions,
   NetAppOptions,
@@ -34,6 +40,7 @@ import { calculateOverheads } from './overhead/overheadCalculator'
 import { applyCompressionDedup, buildZfsDetails } from './postProcessing/capacityEnhancements'
 // Validation module
 import {
+  validateBeeGfsRequirements,
   validateDrive,
   validateDriveCount,
   validateReplicaPlacement,
@@ -58,6 +65,7 @@ export interface VolumetryInput {
   powerscaleOptions: PowerScaleOptions
   cephOptions: CephOptions
   longhornOptions: LonghornOptions
+  beeGfsOptions: BeeGfsOptions
   powerFlexOptions: PowerFlexOptions
   netAppOptions: NetAppOptions
   synologyOptions: SynologyOptions
@@ -92,6 +100,7 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
     powerscaleOptions,
     cephOptions,
     longhornOptions,
+    beeGfsOptions,
     powerFlexOptions,
     netAppOptions,
     synologyOptions,
@@ -115,7 +124,22 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
     vsanOptions,
     cephOptions,
     nutanixOptions,
+    beeGfsOptions,
   })
+
+  // BeeGFS: Buddy Mirroring needs >= 2 nodes, and drive count must form >= 1 storage target.
+  // Runs after tiering resolves, since driveCount is conventionally 0 when MDT tiering is
+  // configured (see validateDriveCount below).
+  const beeGfsValidation = validateBeeGfsRequirements(
+    topology,
+    drive,
+    driveCount,
+    serverCount,
+    hotSpares,
+    beeGfsOptions,
+    tieredCapacity,
+  )
+  if (beeGfsValidation) return beeGfsValidation
 
   // Validate drive count
   const driveCountValidation = validateDriveCount(driveCount, tieredCapacity)
@@ -155,6 +179,7 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
     s2dOptions,
     cephOptions,
     nutanixOptions,
+    beeGfsOptions,
     serverCount,
     isAllFlash,
   )
@@ -203,6 +228,7 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
     powerstoreOptions,
     powerscaleOptions,
     cephOptions,
+    beeGfsOptions,
     fsType,
   })
 
@@ -353,6 +379,40 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
     }
   }
 
+  // Build BeeGFS-specific metadata-target (MDT) advisory if BeeGFS topology.
+  // Metadata rule of thumb (ThinkParQ): 0.3-0.5% of usable data capacity, 500 GB (decimal)
+  // of ext4 metadata ~ 150M files.
+  let beeGfsDetails: BeeGfsCapacityDetails | undefined
+  if (topology.type === 'beegfs' && beeGfsOptions) {
+    const GB_500 = 500 * 1_000_000_000
+    const FILES_PER_500GB = 150_000_000
+
+    const mdtRawCapacity = cacheTierCapacity
+    const mdtUsableCapacity = mdtRawCapacity * 0.5 * (beeGfsOptions.metadataBuddyMirror ? 0.5 : 1)
+    const mdtRecommendedMin = usableCapacity * 0.003
+    const mdtRecommendedTypical = usableCapacity * 0.005
+    const estimatedFileCount = (mdtUsableCapacity / GB_500) * FILES_PER_500GB
+    const status: BeeGfsCapacityDetails['status'] =
+      mdtRawCapacity === 0 ? 'none' : mdtUsableCapacity < mdtRecommendedMin ? 'under' : 'ok'
+
+    const drivesPerTarget = beeGfsOptions.drivesPerTarget
+    const storageTargetCount = drivesPerTarget > 0 ? Math.floor(usableDrives / drivesPerTarget) : 0
+    const strandedDrives = usableDrives - storageTargetCount * drivesPerTarget
+
+    beeGfsDetails = {
+      mdtRawCapacity,
+      mdtUsableCapacity,
+      mdtRecommendedMin,
+      mdtRecommendedTypical,
+      estimatedFileCount,
+      status,
+      storageTargetCount,
+      strandedDrives,
+      storageBuddyMirror: beeGfsOptions.storageBuddyMirror,
+      metadataBuddyMirror: beeGfsOptions.metadataBuddyMirror,
+    }
+  }
+
   return {
     rawCapacity,
     parityOverhead,
@@ -365,5 +425,6 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
     breakdown,
     zfsDetails,
     longhornDetails,
+    beeGfsDetails,
   }
 }

@@ -8,6 +8,7 @@ import type { TopologyType } from '@/types'
 
 export const TOPOLOGY_TYPES = [
   { value: 'standard', label: 'RAID' },
+  { value: 'beegfs', label: 'BeeGFS' },
   { value: 'ceph', label: 'Ceph' },
   { value: 'longhorn', label: 'Longhorn' },
   { value: 'nutanix', label: 'Nutanix' },
@@ -283,6 +284,28 @@ export const TOPOLOGY_LEVELS: Record<
       value: 'longhorn_r3',
       label: 'Replica 3',
       description: '3 replicas, 33% efficiency (default, needs ≥3 nodes)',
+    },
+  ],
+  beegfs: [
+    {
+      value: 'beegfs_raid6',
+      label: 'RAID 6',
+      description: 'Storage target = local RAID6 (default), 10-12 drives recommended',
+    },
+    {
+      value: 'beegfs_raid10',
+      label: 'RAID 10',
+      description: 'Storage target = local RAID10, mirrored stripes',
+    },
+    {
+      value: 'beegfs_raidz2',
+      label: 'RAID-Z2',
+      description: 'Storage target = ZFS RAIDz2, double parity',
+    },
+    {
+      value: 'beegfs_single',
+      label: 'Single Disk',
+      description: 'One drive = one storage target, no local RAID',
     },
   ],
   powervault: [

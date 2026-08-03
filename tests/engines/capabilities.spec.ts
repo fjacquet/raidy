@@ -27,6 +27,7 @@ const REPRESENTATIVE: { topology: Topology; drives: number; servers: number }[] 
   { topology: { type: 'nutanix', level: 'nutanix_rf2' }, drives: 12, servers: 4 },
   { topology: { type: 'powervault', level: 'powervault_raid6' }, drives: 12, servers: 1 },
   { topology: { type: 'longhorn', level: 'longhorn_r3' }, drives: 12, servers: 4 },
+  { topology: { type: 'beegfs', level: 'beegfs_raid6' }, drives: 12, servers: 1 },
 ]
 
 const MULTI_NODE_TYPES: TopologyType[] = [
@@ -40,6 +41,7 @@ const MULTI_NODE_TYPES: TopologyType[] = [
   'objectscale',
   'nutanix',
   'longhorn',
+  'beegfs',
 ]
 
 describe('capability map matches engine behavior', () => {

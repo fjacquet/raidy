@@ -96,6 +96,18 @@ export type LonghornTopology =
   | 'longhorn_r2' // 2 replicas, 50% efficiency
   | 'longhorn_r3' // 3 replicas, 33% efficiency
 
+/**
+ * BeeGFS topologies — the level describes the *local* RAID of each storage
+ * target, not a BeeGFS-level protection scheme. BeeGFS federates targets; it
+ * does not protect data itself. Cluster protection comes from Buddy Mirroring,
+ * which is an independent option (see BeeGfsOptions).
+ */
+export type BeeGfsTopology =
+  | 'beegfs_raid6' // storage target = local RAID6 (default, 10-12 drives recommended)
+  | 'beegfs_raid10' // storage target = local RAID10
+  | 'beegfs_raidz2' // storage target = ZFS RAIDz2
+  | 'beegfs_single' // one drive = one target, no local RAID
+
 /** Dell PowerFlex topologies (SSD/NVMe only - HDD no longer supported) */
 export type PowerFlexTopology =
   | 'powerflex_medium_2way' // Medium granularity, 2-way mirror (1MB chunk)
@@ -137,6 +149,7 @@ export type TopologyType =
   | 'nutanix'
   | 'powervault' // Dell PowerVault ME5 (mid-range block storage)
   | 'longhorn'
+  | 'beegfs' // BeeGFS parallel filesystem (HPC/AI)
 
 /** Union of all topology configurations */
 export type Topology =
@@ -154,6 +167,7 @@ export type Topology =
   | { type: 'nutanix'; level: NutanixTopology }
   | { type: 'powervault'; level: PowerVaultTopology }
   | { type: 'longhorn'; level: LonghornTopology }
+  | { type: 'beegfs'; level: BeeGfsTopology }
 
 /** ZFS-specific configuration options */
 export interface ZfsOptions {
@@ -252,6 +266,7 @@ export const HBA_REQUIRED_TOPOLOGIES: TopologyType[] = [
   'powerflex',
   'nutanix',
   'longhorn',
+  'beegfs',
   // Note: powerscale and objectscale are appliances with built-in controllers, not HBA-based
 ]
 
@@ -448,6 +463,39 @@ export interface LonghornOptions {
   overProvisioningPercent: number
 }
 
+/**
+ * BeeGFS configuration options.
+ *
+ * BeeGFS has no data protection of its own: each storage target is a local RAID
+ * volume (the topology level) and cluster protection is Buddy Mirroring —
+ * synchronous replication between *pairs* of targets, costing exactly 2x
+ * capacity. Data and metadata buddy mirroring are configured independently.
+ *
+ * Metadata targets (MDT) are modelled with the shared TieringConfig primitive:
+ * fastTier = MDT, capacityTier = storage targets. MDT drives count toward raw
+ * capacity but never toward usable capacity.
+ *
+ * @see https://doc.beegfs.io/latest/system_design/system_requirements.html
+ */
+export interface BeeGfsOptions {
+  /** Drives per storage target (the local RAID group width). BeeGFS recommends 10-12 for RAID6. */
+  drivesPerTarget: number
+  /** Buddy mirroring for storage targets — halves usable capacity */
+  storageBuddyMirror: boolean
+  /** Buddy mirroring for metadata targets — doubles the MDT capacity requirement */
+  metadataBuddyMirror: boolean
+  /** Chunk size in KB (BeeGFS default 512K) — sequential performance only */
+  chunkSizeKb: 512 | 1024 | 2048
+  /** Per-file stripe width in targets (BeeGFS `numtargets`, default 4) — performance only */
+  numTargets: number
+  /** Cluster interconnect */
+  network: 'ib-hdr' | 'ib-ndr' | '100gbe' | '25gbe'
+  /** Overhead of the ext4/xfs filesystem under each target, in percent */
+  fsOverheadPercent: number
+  /** Metadata target configuration (fastTier = MDT, capacityTier = storage targets) */
+  tiering?: TieringConfig
+}
+
 /** PowerFlex configuration options */
 export interface PowerFlexOptions {
   /** Granularity level */
@@ -642,6 +690,24 @@ export const DEFAULT_LONGHORN_OPTIONS: LonghornOptions = {
   snapshotHeadroom: 1.2,
   growthHeadroom: 1.2,
   overProvisioningPercent: 200,
+}
+
+/**
+ * Default BeeGFS options.
+ *
+ * 12 drives per RAID6 target sits in the 10-12 range BeeGFS recommends as the
+ * capacity/resilience/performance balance. Metadata buddy mirroring defaults on
+ * (losing the namespace loses the filesystem); storage buddy mirroring defaults
+ * off since most HPC deployments rely on the local RAID and restore from tape.
+ */
+export const DEFAULT_BEEGFS_OPTIONS: BeeGfsOptions = {
+  drivesPerTarget: 12,
+  storageBuddyMirror: false,
+  metadataBuddyMirror: true,
+  chunkSizeKb: 512,
+  numTargets: 4,
+  network: '100gbe',
+  fsOverheadPercent: 2,
 }
 
 /** Default tiering configuration */
