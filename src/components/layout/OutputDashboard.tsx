@@ -35,6 +35,7 @@ export function OutputDashboard() {
     performanceThreshold,
     s2dOptions,
     powerFlexOptions,
+    beeGfsOptions,
   } = useConfigStore()
   const results = useCalculations()
   const selectedDrive = drives[driveId] || null
@@ -58,6 +59,10 @@ export function OutputDashboard() {
     // PowerFlex mirror: use explicit mirrorCopies setting
     if (topology.type === 'powerflex' && powerFlexOptions.protectionMode === 'mirror') {
       return powerFlexOptions.mirrorCopies
+    }
+    // BeeGFS buddy mirroring: always pairs (BeeGFS has no 3-way buddy mirror mode)
+    if (topology.type === 'beegfs' && beeGfsOptions.storageBuddyMirror) {
+      return 2
     }
     // 3-way mirrors (by level name)
     if (
@@ -105,6 +110,7 @@ export function OutputDashboard() {
     simulationCount: isMobile ? 1000 : 10000, // 1K on mobile, 10K on desktop
     autoRun: false,
     mirrorCopies,
+    beeGfsOptions: topology.type === 'beegfs' ? beeGfsOptions : undefined,
   })
 
   // Export handlers

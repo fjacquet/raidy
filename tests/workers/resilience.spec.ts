@@ -1572,3 +1572,145 @@ describe('Resilience Worker - Statistical Accuracy', () => {
     expect(se2).toBeLessThan(0.05)
   })
 })
+
+describe('Resilience Worker - BeeGFS', () => {
+  beforeEach(() => {
+    mockPostMessage.mockClear()
+  })
+
+  it('getParityDrives returns 2 / 2 / 1 / 0 for the four BeeGFS levels', async () => {
+    const { getParityDrives } = await import('@/workers/resilienceWorker')
+
+    expect(getParityDrives('beegfs_raid6')).toBe(2)
+    expect(getParityDrives('beegfs_raidz2')).toBe(2)
+    expect(getParityDrives('beegfs_raid10')).toBe(1)
+    expect(getParityDrives('beegfs_single')).toBe(0)
+  })
+
+  it('beegfs_raid6 with buddy mirroring has strictly better survival than without', async () => {
+    // Without buddy mirroring: caller passes serverCount = storage-target count
+    // (group topology, local RAID6 tolerance per 12-drive target).
+    // With buddy mirroring: caller passes mirrorCopies = 2 (pairs of targets),
+    // which takes priority over the group classification (see isMirror in the worker).
+    const sharedPayload = {
+      driveCount: 24,
+      driveCapacityBytes: 16_000_000_000_000, // 16TB — group rebuild reads ~11 drives worth of bits
+      rebuildSpeedMBs: 150,
+      ureRate: 12 as const, // poor consumer URE: punishes the group path's large rebuild-read volume
+      afrPercent: 5.0, // elevated AFR so groups accumulate failures within a year
+      simulationCount: 3000,
+      raidLevel: 'beegfs_raid6',
+    }
+
+    await importWorker()
+    let handler = (self as { onmessage: ((e: MessageEvent) => void) | null }).onmessage
+    handler?.({
+      data: {
+        type: 'START',
+        payload: { ...sharedPayload, serverCount: 2 }, // 2 targets of 12 drives, no buddy mirror
+      },
+    } as MessageEvent)
+    const withoutMirror = mockPostMessage.mock.calls.find((c) => c[0].type === 'RESULT')?.[0]
+      .payload
+
+    mockPostMessage.mockClear()
+    vi.resetModules()
+    await import('@/workers/resilienceWorker')
+    handler = (self as { onmessage: ((e: MessageEvent) => void) | null }).onmessage
+    handler?.({
+      data: {
+        type: 'START',
+        payload: { ...sharedPayload, serverCount: 2, mirrorCopies: 2 }, // buddy mirroring on
+      },
+    } as MessageEvent)
+    const withMirror = mockPostMessage.mock.calls.find((c) => c[0].type === 'RESULT')?.[0].payload
+
+    expect(withoutMirror).toBeDefined()
+    expect(withMirror).toBeDefined()
+    expect(withMirror.survivalRate).toBeGreaterThan(withoutMirror.survivalRate)
+  })
+
+  it('beegfs_single with buddy mirroring survives single-drive losses (parity 0 + mirrorCopies 2)', async () => {
+    // Without any mirror layer, beegfs_single (parity 0) takes the "no redundancy"
+    // path: any single drive failure anywhere in the cluster is fatal.
+    // With buddy mirroring (mirrorCopies 2), the same level must instead use the
+    // mirror-pair model, tolerating one failure per pair.
+    const sharedPayload = {
+      driveCount: 20, // 10 buddy-mirror pairs
+      driveCapacityBytes: 1_000_000_000_000,
+      rebuildSpeedMBs: 200,
+      ureRate: 16 as const,
+      afrPercent: 12.0, // elevated so the unmirrored 20-drive pool almost certainly loses a drive
+      simulationCount: 3000,
+      raidLevel: 'beegfs_single',
+    }
+
+    await importWorker()
+    let handler = (self as { onmessage: ((e: MessageEvent) => void) | null }).onmessage
+    handler?.({
+      data: { type: 'START', payload: sharedPayload },
+    } as MessageEvent)
+    const withoutMirror = mockPostMessage.mock.calls.find((c) => c[0].type === 'RESULT')?.[0]
+      .payload
+
+    mockPostMessage.mockClear()
+    vi.resetModules()
+    await import('@/workers/resilienceWorker')
+    handler = (self as { onmessage: ((e: MessageEvent) => void) | null }).onmessage
+    handler?.({
+      data: { type: 'START', payload: { ...sharedPayload, mirrorCopies: 2 } },
+    } as MessageEvent)
+    const withMirror = mockPostMessage.mock.calls.find((c) => c[0].type === 'RESULT')?.[0].payload
+
+    expect(withoutMirror).toBeDefined()
+    expect(withMirror).toBeDefined()
+    // Unmirrored beegfs_single: any of the 20 drives failing over a year is fatal —
+    // survival should be very low.
+    expect(withoutMirror.survivalRate).toBeLessThan(0.15)
+    // Buddy-mirrored beegfs_single tolerates one failure per pair — much better.
+    expect(withMirror.survivalRate).toBeGreaterThan(withoutMirror.survivalRate)
+    expect(withMirror.survivalRate).toBeGreaterThan(0.5)
+  })
+
+  it('group sizing: 24 drives with drivesPerTarget 12 yields 2 groups of 12, not 24 groups of 1', async () => {
+    // The caller (useResilience) computes serverCount = floor(totalDriveCount / drivesPerTarget).
+    // For 24 drives / drivesPerTarget 12, that is 2 (two 12-drive RAID6 targets) — not 24
+    // (which would degenerate to single-drive groups where the RAID6 tolerance of 2 can
+    // never be exceeded, since a group of size 1 cannot lose 2 drives).
+    const sharedPayload = {
+      driveCount: 24,
+      driveCapacityBytes: 4_000_000_000_000,
+      rebuildSpeedMBs: 150,
+      ureRate: 15 as const,
+      afrPercent: 25.0, // very high AFR to accumulate 3+ failures within a 12-drive group
+      simulationCount: 2000,
+      raidLevel: 'beegfs_raid6',
+    }
+
+    await importWorker()
+    let handler = (self as { onmessage: ((e: MessageEvent) => void) | null }).onmessage
+    handler?.({
+      data: { type: 'START', payload: { ...sharedPayload, serverCount: 2 } }, // correct: 2 groups of 12
+    } as MessageEvent)
+    const correctGrouping = mockPostMessage.mock.calls.find((c) => c[0].type === 'RESULT')?.[0]
+      .payload
+
+    mockPostMessage.mockClear()
+    vi.resetModules()
+    await import('@/workers/resilienceWorker')
+    handler = (self as { onmessage: ((e: MessageEvent) => void) | null }).onmessage
+    handler?.({
+      data: { type: 'START', payload: { ...sharedPayload, serverCount: 24 } }, // wrong: 24 groups of 1
+    } as MessageEvent)
+    const degenerateGrouping = mockPostMessage.mock.calls.find((c) => c[0].type === 'RESULT')?.[0]
+      .payload
+
+    expect(correctGrouping).toBeDefined()
+    expect(degenerateGrouping).toBeDefined()
+    // A group of size 1 can never accumulate 2 failures (RAID6 tolerance), so the
+    // degenerate 24-groups-of-1 configuration is unrealistically indestructible —
+    // strictly higher survival than the correctly-sized 2-groups-of-12 configuration.
+    expect(degenerateGrouping.survivalRate).toBeGreaterThan(correctGrouping.survivalRate)
+    expect(degenerateGrouping.survivalRate).toBeGreaterThan(0.99)
+  })
+})

@@ -22,7 +22,18 @@ function random(): number {
  */
 function isMirrorTopology(raidLevel: string): boolean {
   const level = raidLevel.toLowerCase()
-  return level === 'raid10' || level === 'raid1' || level === 'mirror' || level === 'raid1e'
+  return (
+    level === 'raid10' ||
+    level === 'raid1' ||
+    level === 'mirror' ||
+    level === 'raid1e' ||
+    // BeeGFS RAID10 target: local mirroring is drive-pair-based like standard
+    // RAID10, so the global drive-pair mirror model applies regardless of the
+    // storage-target boundary (pair math is location-agnostic). Buddy mirroring
+    // (a separate, cluster-wide mirror layer) is expressed via `mirrorCopies`,
+    // not via level name.
+    level === 'beegfs_raid10'
+  )
 }
 
 /**
@@ -32,14 +43,29 @@ function isMirrorTopology(raidLevel: string): boolean {
  */
 function isGroupTopology(raidLevel: string): boolean {
   const level = raidLevel.toLowerCase()
-  return level === 'raid50' || level === 'raid60'
+  return (
+    level === 'raid50' ||
+    level === 'raid60' ||
+    // BeeGFS storage targets are independent local-RAID fault groups (RAID6 /
+    // RAIDZ2) — the storage-target count is passed in as `serverCount`
+    // (see the caller), so this reuses the RAID 50/60 group model.
+    level === 'beegfs_raid6' ||
+    level === 'beegfs_raidz2'
+  )
 }
 
 /**
  * Calculate number of parity drives (fault tolerance) for a RAID level.
  */
-function getParityDrives(raidLevel: string): number {
+export function getParityDrives(raidLevel: string): number {
   const level = raidLevel.toLowerCase()
+
+  // BeeGFS levels (storage-target-local redundancy; buddy mirroring is a
+  // separate layer expressed via mirrorCopies, not here)
+  if (level === 'beegfs_raid6') return 2
+  if (level === 'beegfs_raidz2') return 2
+  if (level === 'beegfs_raid10') return 1
+  if (level === 'beegfs_single') return 0
 
   // RAID levels
   if (level === 'raid0' || level === 'stripe') return 0
@@ -110,8 +136,25 @@ function runSingleSimulation(input: SimulationInput): {
   // Stress factor: rebuild increases failure rate of remaining drives by 30%
   const rebuildStressFactor = 1.3
 
-  // No redundancy = any failure is data loss
-  if (parityDrives === 0) {
+  // Topology classification. Computed before the zero-redundancy early return
+  // below: a caller can pass mirrorCopies (e.g. BeeGFS buddy mirroring) even for
+  // a level whose local redundancy is zero (beegfs_single), and that mirror
+  // layer must still apply.
+  //
+  // A level's own group-vs-mirror shape (RAID 50/60, BeeGFS RAID6/RAIDZ2 storage
+  // targets) always wins over a generic mirrorCopies input — mirrorCopies then
+  // layers an *additional* mirror on top of the group (buddy mirroring pairs
+  // storage targets, it does not replace their local RAID6/RAIDZ2 redundancy —
+  // see the buddy-pair handling in the group-topology branch below). Only when
+  // the level has no native group shape does mirrorCopies switch on the
+  // drive-pair mirror model directly (e.g. plain 'mirror'/'raid1', or
+  // beegfs_single which has no local redundancy of its own).
+  const isGroup = isGroupTopology(raidLevel)
+  const isMirror = !isGroup && (mirrorCopies >= 2 || isMirrorTopology(raidLevel))
+  const effectiveMirrorCopies = mirrorCopies >= 2 ? mirrorCopies : 2
+
+  // No redundancy and no mirror layer = any failure is data loss
+  if (parityDrives === 0 && !isMirror) {
     for (let day = 0; day < 365; day++) {
       for (let drive = 0; drive < driveCount; drive++) {
         if (random() < baseDailyFailureRate) {
@@ -126,19 +169,29 @@ function runSingleSimulation(input: SimulationInput): {
   const driveCapacityMB = driveCapacityBytes / (1024 * 1024)
   const rebuildTimeHours = driveCapacityMB / rebuildSpeedMBs / 3600
 
-  // Topology classification (prefer mirrorCopies from input over level-based detection)
-  const isMirror = mirrorCopies >= 2 || isMirrorTopology(raidLevel)
-  const effectiveMirrorCopies = mirrorCopies >= 2 ? mirrorCopies : 2
-  const isGroup = !isMirror && isGroupTopology(raidLevel)
-
   // Mirror topology: N-way mirror groups (e.g., 2-way pairs, 3-way triplets)
   const numMirrorGroups = isMirror ? Math.floor(driveCount / effectiveMirrorCopies) : 0
   const mirrorParityPerGroup = effectiveMirrorCopies - 1 // Can lose N-1 copies per group
 
-  // Group topology: RAID 50/60 stripe across independent RAID groups
-  const numGroups = isGroup ? serverCount : 0
+  // Group topology: RAID 50/60 (and BeeGFS RAID6/RAIDZ2 storage targets) stripe
+  // across independent RAID groups.
+  //
+  // Buddy mirroring (mirrorCopies >= 2) on a group topology pairs whole groups
+  // (BeeGFS mirrors storage targets, not individual drives): adjacent groups are
+  // merged into one buddy-pair unit, doubling its drive count and — because the
+  // pair only loses data once BOTH targets' local redundancy is independently
+  // exhausted, not merely once combined failures cross the single-target
+  // threshold — its effective tolerance is set generously above 2x the single
+  // group's tolerance (2*parityDrives + 1) as a coarse, conservative stand-in
+  // for that two-target-must-both-fail condition.
+  const isBuddyMirroredGroup = isGroup && mirrorCopies >= 2
+  const numGroups = isGroup
+    ? isBuddyMirroredGroup
+      ? Math.max(1, Math.floor(serverCount / 2))
+      : serverCount
+    : 0
   const drivesPerGroup = isGroup && numGroups > 0 ? Math.floor(driveCount / numGroups) : 0
-  const parityPerGroup = parityDrives // 1 for RAID 50, 2 for RAID 60
+  const parityPerGroup = isBuddyMirroredGroup ? parityDrives * 2 + 1 : parityDrives // 1 for RAID 50, 2 for RAID 60
 
   // URE probability during rebuild
   const ureRatePerBit = 10 ** -ureRate

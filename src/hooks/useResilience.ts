@@ -6,7 +6,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { effectiveServerCount } from '@/engines/capabilities'
 import type { Drive } from '@/types/drive'
 import type { ResilienceResult, SimulationProgress } from '@/types/results'
-import type { Topology } from '@/types/topology'
+import type { BeeGfsOptions, Topology } from '@/types/topology'
 import type { SimulationInput, SimulationOutput, WorkerOutputMessage } from '@/types/worker'
 
 interface UseResilienceOptions {
@@ -19,6 +19,11 @@ interface UseResilienceOptions {
   autoRun?: boolean
   /** Mirror copies per group (2 or 3). 0 = not a mirror topology. */
   mirrorCopies?: number
+  /**
+   * BeeGFS-only. When set (topology.type === 'beegfs'), the worker's fault
+   * group is the storage target rather than the node — see `drivesPerTarget`.
+   */
+  beeGfsOptions?: BeeGfsOptions
 }
 
 interface UseResilienceResult {
@@ -118,6 +123,7 @@ export function useResilience(options: UseResilienceOptions): UseResilienceResul
     simulationCount = 100000, // 100K iterations for better precision on rare events
     autoRun = false,
     mirrorCopies = 0,
+    beeGfsOptions,
   } = options
 
   const [result, setResult] = useState<ResilienceResult | null>(null)
@@ -227,6 +233,15 @@ export function useResilience(options: UseResilienceOptions): UseResilienceResul
     // effectiveServerCount in src/engines/capabilities.ts, audit finding #14).
     const effServerCount = effectiveServerCount(serverCount, topology)
     const totalDriveCount = driveCount * effServerCount
+
+    // BeeGFS: the worker's fault group is the storage target, not the node —
+    // reuse totalDriveCount (already the cluster-wide drive count) rather than
+    // recomputing it. Clamp to at least 1 group.
+    const groupCount =
+      topology.type === 'beegfs' && beeGfsOptions
+        ? Math.max(1, Math.floor(totalDriveCount / beeGfsOptions.drivesPerTarget))
+        : effServerCount
+
     const input: SimulationInput = {
       driveCount: totalDriveCount,
       raidLevel: getRaidLevel(topology),
@@ -235,12 +250,21 @@ export function useResilience(options: UseResilienceOptions): UseResilienceResul
       ureRate: drive.reliability.ure_rate,
       afrPercent: drive.reliability.afr,
       simulationCount,
-      serverCount: effServerCount,
+      serverCount: groupCount,
       mirrorCopies,
     }
 
     worker.postMessage({ type: 'START', payload: input })
-  }, [drive, driveCount, serverCount, topology, rebuildSpeedMBs, simulationCount, mirrorCopies])
+  }, [
+    drive,
+    driveCount,
+    serverCount,
+    topology,
+    rebuildSpeedMBs,
+    simulationCount,
+    mirrorCopies,
+    beeGfsOptions,
+  ])
 
   // Abort simulation
   const abort = useCallback(() => {
