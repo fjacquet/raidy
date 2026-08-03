@@ -22,7 +22,7 @@ import type {
   Topology,
   VsanOptions,
 } from '@/types/topology'
-import { CONTROLLER_LIMITS, isVsanTopology, type TopologyType } from '@/types/topology'
+import { CONTROLLER_LIMITS, type TopologyType } from '@/types/topology'
 import { assertNever } from '@/utils/typeGuards'
 import { beeGfsPerformanceStrategy } from './strategies/beegfs'
 import { cephPerformanceStrategy } from './strategies/ceph'
@@ -41,8 +41,8 @@ import {
   calculateNetworkLimits,
   calculatePcieLimits,
   getMinThroughput,
-  getVsanNetworkTrafficFraction,
   identifyBottleneck,
+  resolveNetworkModel,
 } from './utils/bottleneck-chain'
 
 export interface PerformanceInput {
@@ -301,19 +301,17 @@ export function calculatePerformance(input: PerformanceInput): PerformanceResult
   const pcieLimits = calculatePcieLimits(pcieGen, pcieLanes, serverCount, blockSizeBytes)
 
   // --- Network Layer ---
-  // vSAN clusters distribute I/O over an east-west fabric: the network only carries
-  // the traffic that actually crosses nodes (writes × replication/EC + remote reads),
-  // it runs full-duplex, and ESA compresses data before it is replicated. Modelling
-  // those three effects keeps a small NVMe cluster from being flagged network-bound on
-  // raw aggregate media bandwidth. Non-vSAN topologies use the neutral default model.
-  // Non-vSAN topologies omit the model so calculateNetworkLimits applies its neutral default.
-  const networkModel = isVsanTopology(topology.type)
-    ? {
-        duplex: 2, // (a) full-duplex
-        compressionRatio: vsanOptions?.compression ? vsanOptions.compressionRatio : 1, // (b) compress-on-wire
-        trafficFraction: getVsanNetworkTrafficFraction(topology.level, readPercent, serverCount), // (c)
-      }
-    : undefined
+  // Distributed platforms don't send every I/O straight to the wire at face value — vSAN
+  // clusters distribute I/O over an east-west fabric (only replicated/EC writes + remote
+  // reads cross nodes, full-duplex, ESA compresses on the wire), BeeGFS amplifies writes
+  // under Buddy Mirroring, etc. `NETWORK_MODEL_BY_TOPOLOGY` is the per-platform lookup for
+  // these refinements; platforms without an entry get the neutral default (1× everything).
+  const networkModel = resolveNetworkModel(topology.type, {
+    level: topology.level,
+    readPercent,
+    serverCount,
+    vsanOptions,
+  })
   const networkLimits = calculateNetworkLimits(
     networkSpeed,
     serverCount,

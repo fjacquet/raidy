@@ -11,7 +11,7 @@
  */
 
 import type { BottleneckLayer } from '@/types/results'
-import type { VsanEsaTopology, VsanOsaTopology } from '@/types/topology'
+import type { TopologyType, VsanEsaTopology, VsanOptions, VsanOsaTopology } from '@/types/topology'
 
 /** Every vSAN topology level — used to key the egress table exhaustively. */
 type VsanLevel = VsanOsaTopology | VsanEsaTopology
@@ -174,6 +174,53 @@ export function getVsanNetworkTrafficFraction(
   const remoteReadFraction = serverCount > 1 ? (serverCount - 1) / serverCount : 0
   const fraction = writeRatio * egress + readRatio * remoteReadFraction
   return Math.max(fraction, 0.1)
+}
+
+/**
+ * Inputs a per-platform network model resolver may need. Not every resolver reads
+ * every field (e.g. only vSAN reads `vsanOptions`).
+ */
+export interface NetworkModelContext {
+  /** Topology level (e.g. 'vsan_esa_raid5') */
+  level: string
+  /** Read share of the workload (0..100) */
+  readPercent: number
+  /** Number of cluster nodes */
+  serverCount: number
+  vsanOptions?: VsanOptions
+}
+
+/** Resolves the network model refinement for one topology type from workload/cluster context. */
+export type NetworkModelResolver = (ctx: NetworkModelContext) => NetworkModel
+
+/**
+ * vSAN network model: full-duplex fabric, optional on-the-wire compression (ESA), and
+ * only the traffic that actually crosses nodes (writes × replication/EC + remote reads).
+ */
+function vsanNetworkModel(ctx: NetworkModelContext): NetworkModel {
+  return {
+    duplex: 2, // full-duplex
+    compressionRatio: ctx.vsanOptions?.compression ? ctx.vsanOptions.compressionRatio : 1, // compress-on-wire
+    trafficFraction: getVsanNetworkTrafficFraction(ctx.level, ctx.readPercent, ctx.serverCount),
+  }
+}
+
+/**
+ * Per-platform network model lookup. Adding a platform's network behaviour is a table
+ * entry here, not another branch in the performance engine orchestrator. Topologies with
+ * no entry fall back to `calculateNetworkLimits`'s neutral default (1× everything).
+ */
+export const NETWORK_MODEL_BY_TOPOLOGY: Partial<Record<TopologyType, NetworkModelResolver>> = {
+  vsan_osa: vsanNetworkModel,
+  vsan_esa: vsanNetworkModel,
+}
+
+/** Resolve the network model for a topology type, or `undefined` for the neutral default. */
+export function resolveNetworkModel(
+  topologyType: TopologyType,
+  ctx: NetworkModelContext,
+): NetworkModel | undefined {
+  return NETWORK_MODEL_BY_TOPOLOGY[topologyType]?.(ctx)
 }
 
 /**
