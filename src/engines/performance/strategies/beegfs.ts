@@ -2,13 +2,14 @@ import type { BeeGfsOptions } from '@/types/topology'
 import type { PerformanceStrategy } from './PerformanceStrategy'
 
 /**
- * BeeGFS performance strategy (minimal stub — full network/bottleneck modelling
- * is out of scope for this task, see Task 4).
+ * BeeGFS performance strategy.
  *
  * Each storage target is a local RAID volume, so the write penalty is the local
  * RAID's penalty (RAID6/RAIDz2 dual parity = 6x, RAID10 mirror = 2x, single
  * disk = 1x), multiplied by 2 when Buddy Mirroring replicates every chunk to a
- * second target.
+ * second target. Reads scale linearly with drive count (striping across
+ * `numTargets`); the resulting wire amplification for Buddy Mirroring writes is
+ * modelled separately in `NETWORK_MODEL_BY_TOPOLOGY` (bottleneck-chain.ts).
  */
 export const beeGfsPerformanceStrategy: PerformanceStrategy = {
   getWritePenalty(level: string, options?: unknown): number {

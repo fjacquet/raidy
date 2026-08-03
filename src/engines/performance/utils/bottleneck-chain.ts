@@ -11,7 +11,13 @@
  */
 
 import type { BottleneckLayer } from '@/types/results'
-import type { TopologyType, VsanEsaTopology, VsanOptions, VsanOsaTopology } from '@/types/topology'
+import type {
+  BeeGfsOptions,
+  TopologyType,
+  VsanEsaTopology,
+  VsanOptions,
+  VsanOsaTopology,
+} from '@/types/topology'
 
 /** Every vSAN topology level — used to key the egress table exhaustively. */
 type VsanLevel = VsanOsaTopology | VsanEsaTopology
@@ -181,13 +187,14 @@ export function getVsanNetworkTrafficFraction(
  * every field (e.g. only vSAN reads `vsanOptions`).
  */
 export interface NetworkModelContext {
-  /** Topology level (e.g. 'vsan_esa_raid5') */
+  /** Topology level (e.g. 'vsan_esa_raid5', 'beegfs_raid6') */
   level: string
   /** Read share of the workload (0..100) */
   readPercent: number
   /** Number of cluster nodes */
   serverCount: number
   vsanOptions?: VsanOptions
+  beeGfsOptions?: BeeGfsOptions
 }
 
 /** Resolves the network model refinement for one topology type from workload/cluster context. */
@@ -206,6 +213,22 @@ function vsanNetworkModel(ctx: NetworkModelContext): NetworkModel {
 }
 
 /**
+ * BeeGFS network model: every write goes client → primary storage target, plus a second
+ * copy to the buddy target when Storage Buddy Mirroring is on. Reads are single-copy (1×).
+ * Without buddy mirroring this always resolves to exactly the neutral default: writeRatio
+ * × 1 + readRatio × 1 = 1.0 regardless of the read/write mix. A 0.1 floor mirrors the vSAN
+ * model's divide-by-zero guard; it is unreachable here (the no-buddy floor is already 1.0)
+ * but kept for consistency with the rest of the table.
+ */
+function beeGfsNetworkModel(ctx: NetworkModelContext): NetworkModel {
+  const readRatio = ctx.readPercent / 100
+  const writeRatio = 1 - readRatio
+  const writeAmplification = ctx.beeGfsOptions?.storageBuddyMirror ? 2 : 1
+  const trafficFraction = Math.max(0.1, writeRatio * writeAmplification + readRatio * 1)
+  return { ...DEFAULT_NETWORK_MODEL, trafficFraction }
+}
+
+/**
  * Per-platform network model lookup. Adding a platform's network behaviour is a table
  * entry here, not another branch in the performance engine orchestrator. Topologies with
  * no entry fall back to `calculateNetworkLimits`'s neutral default (1× everything).
@@ -213,6 +236,7 @@ function vsanNetworkModel(ctx: NetworkModelContext): NetworkModel {
 export const NETWORK_MODEL_BY_TOPOLOGY: Partial<Record<TopologyType, NetworkModelResolver>> = {
   vsan_osa: vsanNetworkModel,
   vsan_esa: vsanNetworkModel,
+  beegfs: beeGfsNetworkModel,
 }
 
 /** Resolve the network model for a topology type, or `undefined` for the neutral default. */

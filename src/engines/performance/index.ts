@@ -311,6 +311,7 @@ export function calculatePerformance(input: PerformanceInput): PerformanceResult
     readPercent,
     serverCount,
     vsanOptions,
+    beeGfsOptions,
   })
   const networkLimits = calculateNetworkLimits(
     networkSpeed,

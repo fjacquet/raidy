@@ -488,7 +488,17 @@ export interface BeeGfsOptions {
   chunkSizeKb: 512 | 1024 | 2048
   /** Per-file stripe width in targets (BeeGFS `numtargets`, default 4) — performance only */
   numTargets: number
-  /** Cluster interconnect */
+  /**
+   * Cluster interconnect, for display purposes only. The bottleneck chain's network
+   * layer is already driven by the store-level `networkSpeed` (AdvancedSlice), which is
+   * the single source of truth for per-server bandwidth across every platform. This
+   * field uses a BeeGFS-flavoured vocabulary (IB fabrics) that does not map 1:1 onto
+   * `NetworkSpeed`'s Ethernet-speed enum, so it is intentionally not wired into the
+   * bandwidth calculation — introducing a conversion table would create a second source
+   * of truth for the same number. It exists so the BeeGFS options panel can show the
+   * interconnect the user actually has (relevant to `BEEGFS_MIN_DRIVES_PER_TARGET`-style
+   * sizing guidance and future latency-only refinements), without affecting throughput.
+   */
   network: 'ib-hdr' | 'ib-ndr' | '100gbe' | '25gbe'
   /** Overhead of the ext4/xfs filesystem under each target, in percent */
   fsOverheadPercent: number
