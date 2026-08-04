@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- **Resilience: hot spares are no longer simulated as data-bearing drives** (#80). The Monte Carlo
+  population now excludes hot spares on the same rule volumetry and performance use
+  (`usesDistributedSpares(topology.type) ? 0 : hotSpares * serverCount`, clamped at zero), on both
+  the naive and the tiered path. Survival rates rise for every platform configured with spares;
+  vSAN is unchanged, since it rebuilds from distributed slack rather than dedicated spare drives.
+  The default configuration ships one hot spare, so the out-of-the-box number moves.
 - **`HBA_REQUIRED_TOPOLOGIES` membership is now pinned by a hand-copied test snapshot.**
   `tests/types/controllerRequirement.spec.ts` previously guarded the level-aware controller rule
   only against `legacyControllerOptions`, which re-derives from `HBA_REQUIRED_TOPOLOGIES` itself
