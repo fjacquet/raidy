@@ -14,21 +14,6 @@ which touched enough shared code to expose pre-existing gaps.
 
 ## Correctness — real defects, non-blocking
 
-### [B3](https://github.com/fjacquet/raidy/issues/61). Fraction-vs-percent unit confusion in snapshot-reserve fields
-
-`overheadCalculator.ts` multiplies capacity by `netAppOptions.snapshotReserve` as a **fraction**.
-The default is `0.05`. Two related fields are named `…Percent`
-(`powerscaleOptions.snapshotReservePercent`, `powerstoreOptions.snapshotReservePercent`) and
-should be audited for the same confusion.
-
-Two instances of this bug have already been fixed: `getDefaultState()` carried `5` (a 500%
-reserve on Reset), and the NetApp panel slider wrote a raw 0–20 integer straight into the
-fraction field.
-
-*To close:* audit every reserve/ratio/percent field for the unit its consumer expects. Where a
-field is a fraction, bound it `0..1` in `src/utils/schemas.ts`; where it is a percent, name it
-so and divide at the consumer. Add a test per field pinning the unit.
-
 ### [B4](https://github.com/fjacquet/raidy/issues/62). Free-text fields in the URL schema should be enums
 
 In `src/utils/schemas.ts`: `blockSize`, `networkSpeed`, `pcieGen`, `pcieLanes`, `carbonRegion`,
