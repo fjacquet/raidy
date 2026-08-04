@@ -91,6 +91,38 @@ describe('BeeGFS volumetry — drivesPerTarget sensitivity', () => {
   })
 })
 
+describe('BeeGFS volumetry — fsOverheadPercent', () => {
+  it('a higher ext4/xfs filesystem overhead reduces usable capacity', () => {
+    const lowOverhead = calculateVolumetry(
+      createVolumetryInput(24, raid6, {
+        serverCount: 2,
+        beeGfsOptions: beegfs({
+          drivesPerTarget: 12,
+          storageBuddyMirror: false,
+          fsOverheadPercent: 1,
+        }),
+      }),
+    )
+    const highOverhead = calculateVolumetry(
+      createVolumetryInput(24, raid6, {
+        serverCount: 2,
+        beeGfsOptions: beegfs({
+          drivesPerTarget: 12,
+          storageBuddyMirror: false,
+          fsOverheadPercent: 5,
+        }),
+      }),
+    )
+    // 24 TB x 10/12 x (1 - 0.01) = 19.8 TB vs 24 TB x 10/12 x (1 - 0.05) = 19 TB — the panel's
+    // fsOverheadPercent control is the only thing that moves this number for BeeGFS, so a
+    // regression that silently ignores it (e.g. always falling back to the 2% default) shows up
+    // as these two no longer differing.
+    expect(lowOverhead.usableCapacity / TB).toBeCloseTo(19.8, 4)
+    expect(highOverhead.usableCapacity / TB).toBeCloseTo(19, 4)
+    expect(highOverhead.usableCapacity).toBeLessThan(lowOverhead.usableCapacity)
+  })
+})
+
 describe('BeeGFS volumetry — storageBuddyMirror', () => {
   it('halves usable capacity exactly', () => {
     const noBuddy = calculateVolumetry(

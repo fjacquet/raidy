@@ -596,7 +596,14 @@ export interface BeeGfsOptions {
    * sizing guidance and future latency-only refinements), without affecting throughput.
    */
   network: 'ib-hdr' | 'ib-ndr' | '100gbe' | '25gbe'
-  /** Overhead of the ext4/xfs filesystem under each target, in percent */
+  /**
+   * Overhead of the ext4/xfs filesystem under each storage target, in percent
+   * (e.g. `2` = 2%). User-configurable in the BeeGFS options panel (range 0.5-5%,
+   * matched exactly by the Zod schema in src/utils/schemas.ts) because it varies
+   * with the target filesystem's inode ratio and formatting options in real
+   * deployments, and it feeds `getFilesystemOverheadPercent` /
+   * `overheadCalculator.ts`, so it changes usable capacity.
+   */
   fsOverheadPercent: number
   /**
    * Explicit opt-in for configuring metadata targets (MDT) separately from the Hardware
