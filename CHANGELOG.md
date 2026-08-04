@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Dell PERC H975i (PERC13) controller option** (`perc_h975i`). Broadcom SAS5132W, PCIe Gen5
+  x16, RAID 0/1/5/6/10/50/60, supercapacitor-backed cache, up to 16 NVMe drives per controller.
+  Rated at 12,900,000 IOPS / 56,000 MB/s per controller (Signal65 PERC13 lab testing, corroborated by StorageReview, RAID 5,
+  16 NVMe, one controller). (#84)
+
+### Changed
+- **`CONTROLLER_LIMITS` PERC entries recalibrated onto a documented, consistent basis** (#84).
+  Throughput was already close to the real per-controller vendor figure; IOPS were 3.4–4.7x
+  *below* any measured per-controller number, from an undocumented basis, so the controller layer
+  of the bottleneck chain was not comparable across controllers. All four PERC entries now use
+  one controller / 100% 4K random read (IOPS) / 100% 64K sequential read (throughput) / FIO /
+  non-degraded volume, sourced from Tolly Report #223103 (Jan 2023):
+  - `perc_h755`: IOPS 750,000 → **3,500,000** (+367%), throughput 12,000 → **14,100** MB/s (+18%)
+  - `perc_h965i`: IOPS 1,200,000 → **5,148,110** (+329%), throughput 22,000 → **27,800** MB/s (+26%)
+  - `perc_h755n`: IOPS 1,000,000 → **3,402,370** (+240%), throughput 14,000 → **14,108** MB/s (+1%)
+  - `perc_h965in`: IOPS 1,800,000 → **6,918,729** (+284%), throughput 28,000 → **28,205** MB/s (+1%)
+
+  **This moves the performance results of every configuration using a PERC controller** — IOPS
+  results for PERC-backed configurations rise substantially, and for several configurations the
+  bottleneck layer itself now shifts from the controller to the drives/media or PCIe/network
+  layer, since the controller is no longer artificially the tightest ceiling in the chain. Every
+  non-PERC entry (`hba_sas`, `hba_nvme`, `lsi_9500`, `lsi_9400`, `dell_hba355i`, `dell_hba355e`,
+  `software`, `hardware`, `gpu`, `powervault_me5_*`, `powerstore_t`, `powerscale_node`,
+  `objectscale_node`) keeps its previous value and now carries an explicit `ESTIMATED` marker in
+  its comment — no published per-controller figure at this basis could be found for any of them.
+  See `docs/superpowers/specs/2026-08-04-controller-limits-basis.md` for the full basis, sources,
+  and rationale.
+
 ### Fixed
 - **Resilience: hot spares are no longer simulated as data-bearing drives** (#80). The Monte Carlo
   population now excludes hot spares on the same rule volumetry and performance use

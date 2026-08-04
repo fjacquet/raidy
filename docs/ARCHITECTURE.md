@@ -237,6 +237,25 @@ flowchart LR
 > PERC/LSI targets are common), so the generic "keep the user's choice unless it became invalid"
 > fallback applies.
 >
+> **`CONTROLLER_LIMITS` basis (#84).** Every entry describes ONE controller at 100% 4K random
+> read for `iops` and 100% 64K sequential read for `throughputMBs`, measured with FIO on an
+> optimal (non-degraded) volume. This is the basis and it does not change when a new controller
+> is added — mixing a rebuild-time, degraded-mode, or multi-controller-aggregate figure into
+> either field re-introduces the exact defect #84 fixed (PERC IOPS were 3.4–4.7x below any
+> measured per-controller number, from an undocumented basis, while throughput was already close
+> to the real figure — so the controller layer of the bottleneck chain was not comparable across
+> controllers). The four PERC entries are sourced from two vendor-commissioned, independently
+> verified lab reports at this exact basis: Tolly Report #223103 (Jan 2023, PERC 10/11/12 vs each
+> other, FIO on RHEL 8.6) and Signal65 PERC13 lab testing (2026), corroborated by StorageReview. Every non-PERC entry
+> (generic HBAs, LSI/Broadcom cards, Dell HBA355i/e, PowerVault ME5, PowerStore, PowerScale,
+> ObjectScale, and the generic `software`/`hardware`/`gpu` placeholders) is marked `ESTIMATED` in
+> its own comment in `CONTROLLER_LIMITS` — no published per-controller figure at this basis could
+> be found for any of them at the time of the #84 audit. **Adding a new controller:** find the
+> vendor's or an independent lab's per-controller FIO figure at this exact basis and cite it in
+> the entry's comment; if none exists, carry the estimate forward and say so — never derive a
+> number from another controller's ratio and present it as a specification. See
+> `docs/superpowers/specs/2026-08-04-controller-limits-basis.md` for the full sourcing detail.
+>
 > **Controller cache policy is not modelled.** `RaidControllerOptions.writePolicy`, `readPolicy`
 > and `cacheSize` reach the config export but no engine. A battery/flash-backed write-back cache
 > is a finite buffer: under a sustained write stream the host rate converges on the rate at which

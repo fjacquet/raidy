@@ -249,6 +249,7 @@ export const RAID_CONTROLLER_TYPES = [
   'perc_h965i', // Dell PERC H965i (PCIe Gen5)
   'perc_h755n', // Dell PERC H755N (NVMe)
   'perc_h965in', // Dell PERC H965iN (NVMe Gen5)
+  'perc_h975i', // Dell PERC H975i (PERC13, PCIe Gen5 NVMe)
   'powervault_me5_single', // Dell PowerVault ME5 (Single Controller)
   'powervault_me5_dual', // Dell PowerVault ME5 (Dual Active Controllers)
   'powerstore_t', // Dell PowerStore T Model (integrated appliance)
@@ -920,65 +921,135 @@ export const FILESYSTEM_OVERHEAD = {
   ntfs: 0.02, // 2% for NTFS (MFT reservation)
 } as const
 
-/** Controller/HBA performance limits (IOPS, throughput in MB/s) */
+/**
+ * Controller/HBA performance limits (IOPS, throughput in MB/s).
+ *
+ * **Basis for every entry in this table (#84):** one controller, 100% 4K random read for
+ * `iops`, 100% 64K sequential read for `throughputMBs`, FIO, on an optimal (non-degraded)
+ * volume. Per-entry values must be at this basis or explicitly marked otherwise — do not mix
+ * a rebuild-time, degraded-mode, or multi-controller-aggregate figure into a field described
+ * as this basis without saying so in the entry's comment.
+ *
+ * **PERC entries** (`perc_h755`, `perc_h755n`, `perc_h965i`, `perc_h965in`, `perc_h975i`) are
+ * sourced from one of two vendor-commissioned, independently verified lab reports, both at the
+ * basis above:
+ *   - **Tolly Report #223103** (January 2023), "Dell PowerEdge RAID Controller 12 (PERC 12)
+ *     16th Generation Server Performance vs PERC 11 & PERC 10" — commissioned by Dell, testing
+ *     by Broadcom, verified by Tolly, FIO on RHEL 8.6. SAS results: 16x 24G SAS SSD, one
+ *     controller (Table 2, tests 1 and 2). NVMe results: 8 NVMe SSDs, one controller (Table 4,
+ *     tests 14 and 15).
+ *   - **Signal65 PERC13 lab testing** (2026), corroborated by StorageReview's PERC13 review, "Meet PERC13: The Gen5 NVMe HW RAID
+ *     Breakthrough" — lab-validated on PowerEdge 17G, RAID 5, 16 NVMe drives, one controller.
+ *
+ * Each PERC entry's comment cites its source table/test so the next person adding a PERC
+ * generation knows what figure to look for and cannot silently pick a different basis.
+ *
+ * **Every non-PERC entry is `ESTIMATED`**: no published per-controller figure at this exact
+ * basis (single controller, 4K random read IOPS / 64K sequential read throughput, FIO) could
+ * be found for it at the time of #84's audit. Vendors either don't publish IOPS/throughput
+ * specs for bare HBAs (pass-through devices, rated by port/device count instead) or publish
+ * only aggregate multi-node/multi-controller marketing figures, not a comparable
+ * single-controller number. These are carried-over legacy estimates on an unknown basis —
+ * they are NOT derived from the PERC ratios above, and must not be "harmonised" to match them.
+ * If a genuine per-controller figure at this basis is found for one of these, replace the
+ * value, cite the source, and remove the `ESTIMATED` marker.
+ */
 export const CONTROLLER_LIMITS: Record<
   ControllerType,
   { iops: number; throughputMBs: number; name: string; isHba: boolean }
 > = {
   // HBA options (direct passthrough - high performance, no RAID overhead)
+  // ESTIMATED — no published single-HBA IOPS/throughput datasheet figure found at the stated
+  // basis; Broadcom/vendor HBA datasheets publish port/device counts, not FIO IOPS numbers.
   hba_sas: { iops: 2000000, throughputMBs: 24000, name: 'Generic SAS HBA (IT Mode)', isHba: true },
+  // ESTIMATED — generic NVMe direct-attach figure, no single-vendor datasheet basis.
   hba_nvme: { iops: 10000000, throughputMBs: 64000, name: 'NVMe Direct Attach', isHba: true },
+  // ESTIMATED — Broadcom does not publish a per-controller FIO IOPS/throughput figure for the
+  // 9500-8i/9500-16i; datasheet lists port/device counts only.
   lsi_9500: { iops: 4000000, throughputMBs: 28000, name: 'Broadcom 9500 (24G SAS)', isHba: true },
+  // ESTIMATED — same basis gap as lsi_9500; no published per-controller figure for the 9400-8i.
   lsi_9400: { iops: 2000000, throughputMBs: 19200, name: 'Broadcom 9400 (12G SAS)', isHba: true },
+  // ESTIMATED — Dell's HBA355 User's Guide documents ports/topology, not FIO IOPS/throughput.
   dell_hba355i: {
     iops: 2000000,
     throughputMBs: 19200,
     name: 'Dell HBA355i (12G SAS)',
     isHba: true,
   },
+  // ESTIMATED — same basis gap as dell_hba355i.
   dell_hba355e: { iops: 2000000, throughputMBs: 19200, name: 'Dell HBA355e External', isHba: true },
   // RAID controller options
+  // ESTIMATED — mdraid/Windows Storage Spaces figures vary enormously with host CPU; no single
+  // "software RAID controller" spec exists to source against this basis.
   software: { iops: 1000000, throughputMBs: 10000, name: 'Software RAID', isHba: false },
+  // ESTIMATED — deliberately conservative generic placeholder, not tied to a specific product.
   hardware: { iops: 500000, throughputMBs: 6000, name: 'Hardware RAID (Generic)', isHba: false },
+  // ESTIMATED — no published per-controller GPU-RAID figure at this basis was found.
   gpu: { iops: 2000000, throughputMBs: 20000, name: 'GPU-Accelerated RAID', isHba: false },
-  perc_h755: { iops: 750000, throughputMBs: 12000, name: 'Dell PERC H755', isHba: false },
-  perc_h965i: { iops: 1200000, throughputMBs: 22000, name: 'Dell PERC H965i', isHba: false },
-  perc_h755n: { iops: 1000000, throughputMBs: 14000, name: 'Dell PERC H755N (NVMe)', isHba: false },
+  // Tolly #223103 Table 2, tests 2 (IOPS) and 1 (throughput), PERC 11 column, 16x 24G SAS SSD.
+  perc_h755: { iops: 3500000, throughputMBs: 14100, name: 'Dell PERC H755', isHba: false },
+  // Tolly #223103 Table 2, tests 2 (IOPS) and 1 (throughput), PERC 12 column, 16x 24G SAS SSD.
+  perc_h965i: { iops: 5148110, throughputMBs: 27800, name: 'Dell PERC H965i', isHba: false },
+  // Tolly #223103 Table 4, tests 15 (IOPS) and 14 (throughput), PERC 11 column, 8x NVMe SSD.
+  perc_h755n: {
+    iops: 3402370,
+    throughputMBs: 14108,
+    name: 'Dell PERC H755N (NVMe)',
+    isHba: false,
+  },
+  // Tolly #223103 Table 4, tests 15 (IOPS) and 14 (throughput), PERC 12 column, 8x NVMe SSD.
   perc_h965in: {
-    iops: 1800000,
-    throughputMBs: 28000,
+    iops: 6918729,
+    throughputMBs: 28205,
     name: 'Dell PERC H965iN (NVMe)',
     isHba: false,
   },
+  // Signal65 PERC13 lab testing, corroborated by storagereview.com/review/dell-perc13. RAID 5, 16 NVMe, one controller.
+  // Dell PERC H975i: Broadcom SAS5132W, PCIe Gen5 x16, RAID 0/1/5/6/10/50/60,
+  // supercapacitor-backed cache, up to 16 NVMe drives per controller.
+  perc_h975i: {
+    iops: 12900000,
+    throughputMBs: 56000,
+    name: 'Dell PERC H975i (PERC13)',
+    isHba: false,
+  },
+  // ESTIMATED — ME5 spec sheet publishes 12 GB/s read / 10 GB/s write and ~12K IOPS in
+  // community-reported RAID5 tests, but no controller-count-normalized FIO figure at this
+  // basis was found; those aggregate numbers were not adopted to avoid mixing bases.
   powervault_me5_single: {
     iops: 420000,
     throughputMBs: 7000,
     name: 'Dell PowerVault ME5 (Single Controller)',
     isHba: false,
   },
+  // ESTIMATED — same basis gap as powervault_me5_single; carried at 2x the single-controller
+  // placeholder for the dual-active configuration.
   powervault_me5_dual: {
     iops: 840000,
     throughputMBs: 14000,
     name: 'Dell PowerVault ME5 (Dual Active)',
     isHba: false,
   },
-  // Dell PowerStore T-Series (dedicated storage appliance)
-  // Based on Dell specs: 5200T=7.5M IOPS, 9200T=12.5M IOPS
-  // Using mid-range 3200T/5200T representative values
+  // ESTIMATED — Dell publishes appliance-level marketing figures (e.g. 5200T = 7.5M IOPS,
+  // 9200T = 12.5M IOPS) that are not per-controller/per-node and not at this FIO basis; no
+  // per-node breakdown was found. Value is a placeholder, not derived from those figures.
   powerstore_t: {
     iops: 5000000,
     throughputMBs: 25000,
     name: 'Dell PowerStore T Model',
     isHba: false,
   },
-  // Dell PowerScale (Isilon node controllers)
+  // ESTIMATED — Dell PowerScale spec sheets publish capacity/power per node but no per-node
+  // FIO IOPS/throughput figure at this basis was found (only cluster-level marketing numbers
+  // for some models, e.g. F810).
   powerscale_node: {
     iops: 800000,
     throughputMBs: 15000,
     name: 'Dell PowerScale Node Controller',
     isHba: false,
   },
-  // Dell ObjectScale (ECS-based node controllers)
+  // ESTIMATED — no published per-node ObjectScale/ECS FIO IOPS/throughput figure at this basis
+  // was found.
   objectscale_node: {
     iops: 500000,
     throughputMBs: 10000,
