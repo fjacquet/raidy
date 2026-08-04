@@ -11,50 +11,10 @@ import { useTranslation } from 'react-i18next'
 import type { Language } from '@/i18n/config'
 import { formatNumber } from '@/i18n/formatters'
 import type { BeeGfsCapacityDetails as BeeGfsCapacityDetailsType } from '@/types/results'
-import { formatBytesBoth } from '@/utils/units'
+import { CapacityRow } from './CapacityRow'
 
 interface BeeGfsCapacityDetailsProps {
   details: BeeGfsCapacityDetailsType
-}
-
-/**
- * Single capacity row with dual-unit (binary/decimal) display.
- */
-function CapacityRow({
-  label,
-  bytes,
-  description,
-  highlight = false,
-  color = 'text-slate-600 dark:text-slate-300',
-}: {
-  label: string
-  bytes: number
-  description?: string
-  highlight?: boolean
-  color?: string
-}) {
-  const formatted = formatBytesBoth(bytes)
-
-  return (
-    <div
-      className={`flex flex-col sm:flex-row sm:items-center sm:justify-between py-2 ${highlight ? 'bg-white dark:bg-surface-800 -mx-3 px-3 rounded' : ''}`}
-    >
-      <div className="flex-1 min-w-0">
-        <span className={`font-medium ${highlight ? 'text-slate-900 dark:text-white' : color}`}>
-          {label}
-        </span>
-        {description && (
-          <p className="text-xs text-slate-500 dark:text-slate-500 mt-0.5">{description}</p>
-        )}
-      </div>
-      <div className="font-mono text-sm mt-1 sm:mt-0 sm:text-right flex-shrink-0">
-        <span className={highlight ? 'text-green-400' : 'text-slate-800 dark:text-slate-200'}>
-          {formatted.binary}
-        </span>
-        <span className="text-slate-500 dark:text-slate-500 ml-2">({formatted.decimal})</span>
-      </div>
-    </div>
-  )
 }
 
 const STATUS_COLOR: Record<BeeGfsCapacityDetailsType['status'], string> = {

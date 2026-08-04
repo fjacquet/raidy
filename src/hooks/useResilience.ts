@@ -109,6 +109,51 @@ export function resolveBeeGfsSimulationScope(
   return { driveCount: usableDrives, groupCount: 1 }
 }
 
+/** Inputs a per-platform scope resolver may draw on. */
+interface SimulationScopeContext {
+  /** Hardware panel's per-server drive count */
+  driveCount: number
+  /** Already clamped by `effectiveServerCount` */
+  serverCount: number
+  /** Store's per-server hot spares */
+  hotSpares: number
+  topology: Topology
+  beeGfsOptions?: BeeGfsOptions
+}
+
+/** How a platform overrides the naive `driveCount * serverCount` population, if at all. */
+interface PlatformSimulationScope extends SimulationScope {
+  /** Media whose capacity/AFR the simulation uses; null keeps the Hardware panel's drive. */
+  mediaDrive: Drive | null
+}
+
+type SimulationScopeResolver = (ctx: SimulationScopeContext) => PlatformSimulationScope | null
+
+/**
+ * Per-platform simulation-scope overrides, keyed by topology type.
+ *
+ * A table rather than a branch at the call site, mirroring `NETWORK_MODEL_BY_TOPOLOGY` in
+ * `src/engines/performance/utils/bottleneck-chain.ts`, which solved the structurally identical
+ * problem for the network model. Platforms absent from this table fall back to the naive
+ * `driveCount * serverCount` population with `serverCount` fault groups.
+ *
+ * Only BeeGFS has an entry today. The same tiering-blindness this fixes also affects S2D, vSAN,
+ * Ceph and Nutanix, but fixing those moves their published numbers and needs its own review
+ * (issue #59) — when it lands it should be a new entry here, not another branch below.
+ */
+const SIMULATION_SCOPE_BY_TOPOLOGY: Partial<Record<Topology['type'], SimulationScopeResolver>> = {
+  beegfs: ({ driveCount, serverCount, hotSpares, topology, beeGfsOptions }) => {
+    if (!beeGfsOptions) return null
+    const scope = resolveBeeGfsSimulationScope(driveCount, serverCount, hotSpares, beeGfsOptions)
+    // When MDT tiering is active the storage targets are built from the capacity-tier drive, not
+    // the Hardware panel's. Simulating NVMe metadata media with the capacity tier's HDD
+    // capacity/AFR (or vice versa) is the same class of error as a stale drive count, so the
+    // media characteristics resolve alongside the population rather than in a second pass.
+    const tiering = resolveTiering(topology, serverCount, { beeGfsOptions })
+    return { ...scope, mediaDrive: tiering?.capacityTierDrive ?? null }
+  },
+}
+
 /**
  * Get the RAID level string from topology.
  */
@@ -308,26 +353,21 @@ export function useResilience(options: UseResilienceOptions): UseResilienceResul
     // effectiveServerCount in src/engines/capabilities.ts, audit finding #14).
     const effServerCount = effectiveServerCount(serverCount, topology)
 
-    // BeeGFS: the fault group is the storage target, and both the drive population and the
-    // group count come from the same resolved values volumetry uses — see
-    // resolveBeeGfsSimulationScope above for the derivation and the superset proof.
-    const beeGfs =
-      topology.type === 'beegfs' && beeGfsOptions
-        ? resolveBeeGfsSimulationScope(driveCount, effServerCount, hotSpares, beeGfsOptions)
-        : null
+    // Platforms whose simulated population is not simply `driveCount * serverCount` resolve it
+    // through the table above — for BeeGFS the fault group is the storage target, and both the
+    // population and the media come from the same resolved values volumetry uses. See
+    // resolveBeeGfsSimulationScope for the derivation and the superset proof.
+    const scope = SIMULATION_SCOPE_BY_TOPOLOGY[topology.type]?.({
+      driveCount,
+      serverCount: effServerCount,
+      hotSpares,
+      topology,
+      beeGfsOptions,
+    })
 
-    // When BeeGFS MDT tiering is active the storage targets are built from the capacity-tier
-    // drive, not the Hardware panel's drive. Simulating NVMe metadata media with the capacity
-    // tier's HDD capacity/AFR (or vice versa) is the same class of error as the drive-count
-    // mismatch above, so the media characteristics follow the same resolution.
-    const beeGfsTiering =
-      topology.type === 'beegfs' && beeGfsOptions
-        ? resolveTiering(topology, effServerCount, { beeGfsOptions })
-        : null
-    const mediaDrive = beeGfsTiering?.capacityTierDrive ?? drive
-
-    const totalDriveCount = beeGfs ? beeGfs.driveCount : driveCount * effServerCount
-    const groupCount = beeGfs ? beeGfs.groupCount : effServerCount
+    const mediaDrive = scope?.mediaDrive ?? drive
+    const totalDriveCount = scope ? scope.driveCount : driveCount * effServerCount
+    const groupCount = scope ? scope.groupCount : effServerCount
 
     const input: SimulationInput = {
       driveCount: totalDriveCount,

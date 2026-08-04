@@ -51,9 +51,16 @@ function omitDefaults<T extends Record<string, unknown>>(
 ): Partial<T> {
   const result: Partial<T> = {}
   for (const key of Object.keys(state) as (keyof T)[]) {
-    if (JSON.stringify(state[key]) !== JSON.stringify(defaults[key])) {
-      result[key] = state[key]
+    const value = state[key]
+    const fallback = defaults[key]
+    // Most persisted keys are primitives; settle those without stringifying. Only the
+    // platform-options objects reach the structural comparison. This runs on every
+    // persisted state change, i.e. on every keystroke in an input.
+    if (value === fallback) continue
+    if (value !== null && typeof value === 'object') {
+      if (JSON.stringify(value) === JSON.stringify(fallback)) continue
     }
+    result[key] = value
   }
   return result
 }
@@ -124,6 +131,15 @@ const getDefaultState = () => ({
   dailyChangeRate: 5,
 })
 
+/**
+ * Frozen snapshot of the defaults, used only as the comparison baseline in `partialize`.
+ *
+ * `partialize` runs on every persisted state change, so rebuilding the default state — fifteen
+ * `DEFAULT_*_OPTIONS` spreads — on each call was pure waste. `resetToDefaults` still calls
+ * `getDefaultState()` so it installs fresh objects rather than sharing these references.
+ */
+const DEFAULT_STATE_BASELINE = getDefaultState()
+
 export const useConfigStore = create<ConfigStore>()(
   persist(
     (...args) => ({
@@ -182,7 +198,7 @@ export const useConfigStore = create<ConfigStore>()(
             dailyChangeRate: state.dailyChangeRate,
             unitSystem: state.unitSystem,
           },
-          getDefaultState(),
+          DEFAULT_STATE_BASELINE,
         ),
     },
   ),
