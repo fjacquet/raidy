@@ -454,6 +454,7 @@ Not-applicable is omitted; applicable-but-zero is still shown.
 |-----------|------------------------|
 | `HeadlineBand.tsx` | Persistent KPI band (usable/effective capacity, efficiency, peak IOPS, survival, annual energy) |
 | `acts/CapacityAct.tsx` | Sankey + donut + breakdown list + ZFS/Longhorn/BeeGFS detail panels + Backup sub-panel |
+| `CapacityRow.tsx` | Shared label/description/dual-unit row used by the ZFS, Longhorn and BeeGFS detail panels |
 | `acts/PerformanceAct.tsx` | Speedometer gauges + bottleneck chain |
 | `acts/ResilienceAct.tsx` | Monte Carlo survival probability, run/progress controls |
 | `acts/CostAct.tsx` | Power, annual energy, CO2, flash endurance |
@@ -486,13 +487,21 @@ Manages Monte Carlo simulation:
 
 The simulated population must describe the same cluster the capacity card does. For most
 platforms that is `driveCount × effectiveServerCount` in `effectiveServerCount` fault groups.
-**BeeGFS** instead goes through the exported pure helper `resolveBeeGfsSimulationScope`, which
-reuses `resolveBeeGfsUsableDrives` + `calculateStorageTargets` — the same functions volumetry
-and the options panel use — so hot spares, MDT tiering and stranded drives are applied
-identically on both sides, and the fault group is a whole storage target at its real width.
+Platforms that need something else register a resolver in `SIMULATION_SCOPE_BY_TOPOLOGY`
+(`src/hooks/useResilience.ts`), a `Partial<Record<TopologyType, SimulationScopeResolver>>` lookup
+mirroring `NETWORK_MODEL_BY_TOPOLOGY` above; a topology with no entry gets the default population
+described in the previous sentence. **BeeGFS** is the only entry today. Its resolver calls the
+exported pure helper `resolveBeeGfsSimulationScope`, which reuses `resolveBeeGfsUsableDrives` +
+`calculateStorageTargets` — the same functions volumetry and the options panel use — so hot
+spares, MDT tiering and stranded drives are applied identically on both sides, and the fault
+group is a whole storage target at its real width.
 Under MDT tiering the drive characteristics handed to the worker (capacity, URE rate, AFR) also
 follow the capacity tier rather than the Hardware panel's drive. MDT drives themselves are not
 simulated — a separate protection domain, the same scope choice made for Ceph's WAL/DB tier.
+
+The same tiering-blindness this fixes still affects S2D, vSAN, Ceph and Nutanix; correcting it
+moves their published numbers, so it is deferred (issue #59). When it lands it should be a new
+entry in the table, not another branch.
 
 The resilience model carries a deliberate invariant: **its simulated failure set must be a
 superset of the physically real one**, so the tool may understate resilience but never overstate
