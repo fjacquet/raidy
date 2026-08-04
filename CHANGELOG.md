@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.15.1] - 2026-08-04
+
 ### Fixed
 - **Tiered configurations are sized from the capacity tier in every engine.** Resilience simulated
   the Hardware panel's drive count and media for tiered S2D, vSAN OSA, Ceph and Nutanix, and the
@@ -18,6 +20,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   tiered BeeGFS** — they were wrong before. Untiered configurations are unaffected. Fast-tier
   failure cascades and cache-tier performance contributions remain deliberately unmodelled.
   (#59, #60)
+
+### Changed
+- `useTieringOptions()` assembles the complete platform option bag once for the calculation
+  hooks. Each hook previously hand-listed a subset when calling `resolveTiering`, which is the
+  mistake that produced all three bugs above.
 
 ## [1.15.0] - 2026-08-04
 
