@@ -21,6 +21,7 @@ import {
   DEFAULT_VSAN_OPTIONS,
   DEFAULT_ZFS_OPTIONS,
 } from '@/types'
+import { PERSISTED_KEYS, type PersistedKey } from './persistedKeys'
 import {
   type AdvancedSlice,
   createAdvancedSlice,
@@ -153,53 +154,15 @@ export const useConfigStore = create<ConfigStore>()(
       name: 'raidy',
       storage: createJSONStorage(() => urlHashStorage),
       version: 1,
-      partialize: (state) =>
-        omitDefaults(
-          {
-            // Only persist configuration values, not actions
-            driveId: state.driveId,
-            driveCount: state.driveCount,
-            serverCount: state.serverCount,
-            serverPowerWatts: state.serverPowerWatts,
-            topology: state.topology,
-            hotSpares: state.hotSpares,
-            zfsOptions: state.zfsOptions,
-            s2dOptions: state.s2dOptions,
-            vsanOptions: state.vsanOptions,
-            cephOptions: state.cephOptions,
-            longhornOptions: state.longhornOptions,
-            beeGfsOptions: state.beeGfsOptions,
-            powerFlexOptions: state.powerFlexOptions,
-            controllerOptions: state.controllerOptions,
-            netAppOptions: state.netAppOptions,
-            synologyOptions: state.synologyOptions,
-            nutanixOptions: state.nutanixOptions,
-            objectscaleOptions: state.objectscaleOptions,
-            powerstoreOptions: state.powerstoreOptions,
-            powerscaleOptions: state.powerscaleOptions,
-            powervaultOptions: state.powervaultOptions,
-            readPercent: state.readPercent,
-            blockSize: state.blockSize,
-            randomPercent: state.randomPercent,
-            datasetSize: state.datasetSize,
-            dailyWriteVolume: state.dailyWriteVolume,
-            compressionRatio: state.compressionRatio,
-            dedupRatio: state.dedupRatio,
-            networkSpeed: state.networkSpeed,
-            pcieGen: state.pcieGen,
-            pcieLanes: state.pcieLanes,
-            pue: state.pue,
-            carbonRegion: state.carbonRegion,
-            projectYears: state.projectYears,
-            electricityCostPerKwh: state.electricityCostPerKwh,
-            fsType: state.fsType,
-            supportsReflink: state.supportsReflink,
-            backupRetention: state.backupRetention,
-            dailyChangeRate: state.dailyChangeRate,
-            unitSystem: state.unitSystem,
-          },
-          DEFAULT_STATE_BASELINE,
-        ),
+      partialize: (state) => {
+        const persisted = {} as Pick<ConfigStore, PersistedKey>
+        for (const key of PERSISTED_KEYS) {
+          // Indexed assignment across a union of key types needs the cast; the Pick above is
+          // what actually constrains the result.
+          ;(persisted as Record<string, unknown>)[key] = state[key]
+        }
+        return omitDefaults(persisted, DEFAULT_STATE_BASELINE)
+      },
     },
   ),
 )

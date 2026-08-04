@@ -431,6 +431,7 @@ export const ConfigStateSchema = z
     backupRetention: z.number().int().positive().finite().optional(),
     dailyChangeRate: z.number().min(0).max(100).finite().optional(),
     unitSystem: z.enum(['binary', 'decimal']).optional(),
+    performanceThreshold: z.number().min(0.5).max(1).finite().optional(),
   })
   .passthrough() // Allow extra fields for forward compatibility
 
