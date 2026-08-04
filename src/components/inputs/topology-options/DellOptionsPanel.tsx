@@ -207,21 +207,6 @@ export function DellOptionsPanel({ topology }: DellOptionsPanelProps) {
           </p>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="objectscale-network">{t('objectscale.networkEfficiency')}</Label>
-          <Slider
-            id="objectscale-network"
-            value={objectscaleOptions.networkEfficiencyFactor * 100}
-            min={50}
-            max={80}
-            onChange={(v) => setObjectScaleOptions({ networkEfficiencyFactor: v / 100 })}
-          />
-          <p className="text-xs text-slate-500">
-            East-West traffic factor: {Math.round(objectscaleOptions.networkEfficiencyFactor * 100)}
-            %
-          </p>
-        </div>
-
         <Toggle
           id="objectscale-compression"
           label={t('common.enableCompression')}

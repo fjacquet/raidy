@@ -9,7 +9,7 @@
  *   1. capacityAfterSysPartition = (drive.capacity_raw x usableDrives) - (systemPartitionSize x usableDrives)
  *   2. capacityAfterParity       = capacityAfterSysPartition x dataFraction   [SHR: (N-1)/N,
  *      SHR-2: (N-2)/N, RAID F1: (N-1)/N — `src/engines/volumetry/strategies/proprietary.ts:16-32`]
- *   3. usableCapacity            = capacityAfterParity x (1 - btrfsOverhead)  [Btrfs 4%,
+ *   3. usableCapacity            = capacityAfterParity x (1 - fsOverheadFraction)  [Btrfs 4%,
  *      `FILESYSTEM_OVERHEAD.btrfs` in src/types/topology.ts:717, applied via
  *      src/engines/volumetry/overhead/filesystem-overhead.ts:112-116]
  *

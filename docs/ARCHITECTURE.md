@@ -220,25 +220,30 @@ Calculates storage capacity and efficiency.
 > | `powerstoreOptions.systemOverheadPercent` | divided by 100 (percent) | `0..100` | panel writes raw percent |
 > | `powerscaleOptions.snapshotReservePercent` | divided by 100 (percent) | `0..100` | panel writes raw percent |
 > | `objectscaleOptions.systemOverheadPercent` | divided by 100 (percent) | `0..100` | panel writes raw percent |
-> | `objectscaleOptions.fillRatePercent` | not consumed by any engine (informational) | `0..100` | panel writes raw percent |
-> | `objectscaleOptions.networkEfficiencyFactor` | not consumed by any engine (informational) | `0..1` | panel divides by 100 on write, multiplies by 100 on display |
 > | `netAppOptions.waflOverhead` | multiplies directly (fraction) | `0..1` | panel divides by 100 on write, multiplies by 100 on display |
 > | `netAppOptions.dataReductionRatio` | multiplies directly (true ratio, not a proportion) | `1..20` | panel writes raw ratio |
 > | `nutanixOptions.systemOverhead` | multiplies directly (fraction) | `0..1` | panel divides by 100 on write, multiplies by 100 on display |
 > | `powerFlexOptions.fgOverhead` | multiplies directly (fraction) | `0..1` | panel divides by 100 on write, multiplies by 100 on display |
 > | `cephOptions.safeCapacityThreshold` | multiplies directly (fraction, default 0.85) | `0..1` | panel divides by 100 on write, multiplies by 100 on display |
-> | `cephOptions.walDbRatio` | not consumed by any engine (informational HDD:NVMe count) | `1..32` int | panel writes raw integer |
 > | `longhornOptions.minimalAvailablePercent` | divided by 100 (percent) | `0..100` | panel writes raw percent |
 > | `longhornOptions.overProvisioningPercent` | not multiplied against capacity (advisory display only) | `0..1000` | panel writes raw percent |
 > | `beeGfsOptions.fsOverheadPercent` | divided by 100 (percent) | `0.5..5` | panel writes raw percent |
 > | `TieringConfig.workingSetPercent` | divided by 100 (percent) | `0..100` | panel writes raw percent |
-> | `synologyOptions.btrfsOverhead` | **dead field** — `filesystem-overhead.ts` uses the hardcoded `FILESYSTEM_OVERHEAD.btrfs` constant instead of this option; no UI panel writes it | `0..1` | not written by any panel |
 > | `*.compressionRatio` / `*.dedupRatio` (vSAN, PowerFlex, Nutanix, PowerStore, PowerScale, ObjectScale, global) | multiply directly (true ratios, e.g. 1.5 = 1.5:1, not proportions of 1) | `1..10` | panels write the raw ratio value; no /100 or ×100 anywhere in this family |
 >
-> Every live (engine-consumed) field's three facts agree, so no code changed. `btrfsOverhead` is
-> a pre-existing dead field (unrelated bug class — nothing reads it) and `fillRatePercent` /
-> `networkEfficiencyFactor` / `walDbRatio` are informational fields no engine consumes; none of
-> the three exhibits the fraction/percent mismatch this audit was checking for.
+> Every live (engine-consumed) field's three facts agree, so no code changed. This table
+> originally also listed four fields with no engine consumer at all — `synologyOptions.btrfsOverhead`,
+> `objectscaleOptions.fillRatePercent`, `objectscaleOptions.networkEfficiencyFactor`, and
+> `cephOptions.walDbRatio` — a different bug class from the fraction/percent mismatch this audit
+> was checking for. They were removed from the schema entirely in issue #104 rather than wired up:
+> `btrfsOverhead` and `fillRatePercent` were unreachable in both directions (no panel ever wrote
+> them, no engine ever read them); `networkEfficiencyFactor` had a control but no defensible,
+> citable sizing rule connecting "East-West traffic factor" to a network-bandwidth derate (unlike
+> vSAN's/BeeGFS's `NETWORK_MODEL_BY_TOPOLOGY` entries, which cite real replication mechanics);
+> `walDbRatio` had no defensible connection point either — Ceph's WAL/DB tier device count and
+> size are already set explicitly by the user via the tiering picker (`resolveTiering` /
+> `TieringConfig`), so deriving them from a ratio would mean silently overriding that explicit
+> choice rather than modeling anything real.
 
 ### Module B: Performance Engine (`/src/engines/performance/`)
 

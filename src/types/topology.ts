@@ -406,8 +406,6 @@ export interface VsanOptions {
 export interface SynologyOptions {
   /** File system type */
   filesystem: 'btrfs' | 'ext4'
-  /** Btrfs metadata overhead (default 4% = 0.04) */
-  btrfsOverhead: number
   /** System partition size per disk in bytes (20-30GB) */
   systemPartitionSize: number
   /** NAS model series (J series has CPU limitations) */
@@ -424,12 +422,8 @@ export interface ObjectScaleOptions {
   objectSizeKB: number
   /** System overhead percentage (10-20% for formatting, metadata, rebalance, rebuild) */
   systemOverheadPercent: number
-  /** Network efficiency factor (0.5-0.6 for East-West traffic: EC, XOR, rebalance, geo) */
-  networkEfficiencyFactor: number
   /** Number of sites in Replication Group (1-8, impacts geo-overhead) */
   sites: number
-  /** Maximum fill rate percentage (80-85% recommended, >90% may block writes) */
-  fillRatePercent: number
   /** Enable compression */
   compression: boolean
   /** Compression ratio (1.0 = none, 2.0 = 2:1) */
@@ -521,8 +515,6 @@ export interface CephOptions {
   journalOnSsd: boolean
   /** WAL/DB offload to separate NVMe (for HDD OSDs) */
   walDbOffload: boolean
-  /** WAL/DB ratio: how many HDDs per NVMe for WAL/DB (e.g., 4 = 1 NVMe for 4 HDDs) */
-  walDbRatio: number
   /** Safe capacity threshold (Ceph nearfull, default 0.85 = 85%) */
   safeCapacityThreshold: number
   /** Cache tiering configuration (CRUSH rules) */
@@ -751,9 +743,7 @@ export const DEFAULT_VSAN_OPTIONS: VsanOptions = {
 export const DEFAULT_OBJECTSCALE_OPTIONS: ObjectScaleOptions = {
   objectSizeKB: 1024, // 1MB average object size
   systemOverheadPercent: 15, // 10-20% for formatting, metadata, rebalance, rebuild
-  networkEfficiencyFactor: 0.55, // 0.5-0.6 for East-West traffic (EC, XOR, rebalance, geo)
   sites: 1, // Single site (1-8 supported for geo-replication)
-  fillRatePercent: 80, // 80-85% recommended, >90% may block writes
   compression: false,
   compressionRatio: 1.0,
 }
@@ -809,7 +799,6 @@ export const DEFAULT_CEPH_OPTIONS: CephOptions = {
   encryption: false,
   journalOnSsd: true,
   walDbOffload: false,
-  walDbRatio: 4, // 1 NVMe for 4 HDDs
   safeCapacityThreshold: 0.85, // Ceph nearfull at 85%
 }
 
@@ -889,7 +878,6 @@ export const DEFAULT_POWERVAULT_OPTIONS: PowerVaultOptions = {
 /** Default Synology options */
 export const DEFAULT_SYNOLOGY_OPTIONS: SynologyOptions = {
   filesystem: 'btrfs',
-  btrfsOverhead: 0.04, // 4% for metadata
   systemPartitionSize: 25 * 1024 * 1024 * 1024, // 25GB per disk
   modelSeries: 'plus',
   ssdCache: false,
