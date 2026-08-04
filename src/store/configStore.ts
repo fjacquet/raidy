@@ -16,6 +16,31 @@ import {
 } from './slices'
 import { urlHashStorage } from './urlStorage'
 
+/**
+ * Drop top-level keys whose value is structurally identical to the default,
+ * before compressing for the URL hash. Shared links are dominated by the ~15
+ * platform-specific `*Options` objects; most links only touch one platform, so
+ * the other 14 default-valued objects would otherwise be serialized verbatim
+ * on every share. Omitting them is safe: a key missing entirely from the
+ * persisted payload already falls back to the store's own default value via
+ * Zustand's persist `merge` (`{ ...currentState, ...persistedState }`), so
+ * this is purely a size optimization — it cannot change what a round-trip
+ * produces. See docs/ARCHITECTURE.md and task-9-report.md for the measured
+ * URL-length impact.
+ */
+function omitDefaults<T extends Record<string, unknown>>(
+  state: T,
+  defaults: { [K in keyof T]?: unknown },
+): Partial<T> {
+  const result: Partial<T> = {}
+  for (const key of Object.keys(state) as (keyof T)[]) {
+    if (JSON.stringify(state[key]) !== JSON.stringify(defaults[key])) {
+      result[key] = state[key]
+    }
+  }
+  return result
+}
+
 // Combined store type
 export type ConfigStore = HardwareSlice &
   TopologySlice &
@@ -52,6 +77,56 @@ const getDefaultState = () => ({
     rebuildReserve: true,
     reserveStrategy: 'node_failure' as const,
     storageTiers: false,
+  },
+  vsanOptions: {
+    diskGroupMode: 'all-flash' as const,
+    compression: true,
+    compressionRatio: 1.5,
+    dedup: false,
+    dedupRatio: 1.0,
+    encryption: false,
+  },
+  cephOptions: {
+    backend: 'bluestore' as const,
+    poolType: 'replicated' as const,
+    replicationFactor: 3 as const,
+    ecK: 4,
+    ecM: 2,
+    compression: false,
+    compressionAlgorithm: 'none' as const,
+    encryption: false,
+    journalOnSsd: true,
+    walDbOffload: false,
+    walDbRatio: 4,
+    safeCapacityThreshold: 0.85,
+  },
+  longhornOptions: {
+    diskMode: 'dedicated' as const,
+    minimalAvailablePercent: 10,
+    snapshotHeadroom: 1.2,
+    growthHeadroom: 1.2,
+    overProvisioningPercent: 200,
+  },
+  beeGfsOptions: {
+    drivesPerTarget: 12,
+    storageBuddyMirror: false,
+    metadataBuddyMirror: true,
+    chunkSizeKb: 512 as const,
+    numTargets: 4,
+    network: '100gbe' as const,
+    fsOverheadPercent: 2,
+    metadataTargets: false,
+  },
+  powerFlexOptions: {
+    granularity: 'medium' as const,
+    protectionMode: 'mirror' as const,
+    mirrorCopies: 2 as const,
+    ecScheme: '8_2' as const,
+    compression: true,
+    compressionRatio: 2.0,
+    storagePools: 1,
+    faultSets: 1,
+    fgOverhead: 0.12,
   },
   controllerOptions: {
     controller: 'software' as const,
@@ -164,44 +239,53 @@ export const useConfigStore = create<ConfigStore>()(
       name: 'raidy',
       storage: createJSONStorage(() => urlHashStorage),
       version: 1,
-      partialize: (state) => ({
-        // Only persist configuration values, not actions
-        driveId: state.driveId,
-        driveCount: state.driveCount,
-        serverCount: state.serverCount,
-        serverPowerWatts: state.serverPowerWatts,
-        topology: state.topology,
-        hotSpares: state.hotSpares,
-        zfsOptions: state.zfsOptions,
-        s2dOptions: state.s2dOptions,
-        controllerOptions: state.controllerOptions,
-        netAppOptions: state.netAppOptions,
-        synologyOptions: state.synologyOptions,
-        nutanixOptions: state.nutanixOptions,
-        objectscaleOptions: state.objectscaleOptions,
-        powerstoreOptions: state.powerstoreOptions,
-        powerscaleOptions: state.powerscaleOptions,
-        powervaultOptions: state.powervaultOptions,
-        readPercent: state.readPercent,
-        blockSize: state.blockSize,
-        randomPercent: state.randomPercent,
-        datasetSize: state.datasetSize,
-        dailyWriteVolume: state.dailyWriteVolume,
-        compressionRatio: state.compressionRatio,
-        dedupRatio: state.dedupRatio,
-        networkSpeed: state.networkSpeed,
-        pcieGen: state.pcieGen,
-        pcieLanes: state.pcieLanes,
-        pue: state.pue,
-        carbonRegion: state.carbonRegion,
-        projectYears: state.projectYears,
-        electricityCostPerKwh: state.electricityCostPerKwh,
-        fsType: state.fsType,
-        supportsReflink: state.supportsReflink,
-        backupRetention: state.backupRetention,
-        dailyChangeRate: state.dailyChangeRate,
-        unitSystem: state.unitSystem,
-      }),
+      partialize: (state) =>
+        omitDefaults(
+          {
+            // Only persist configuration values, not actions
+            driveId: state.driveId,
+            driveCount: state.driveCount,
+            serverCount: state.serverCount,
+            serverPowerWatts: state.serverPowerWatts,
+            topology: state.topology,
+            hotSpares: state.hotSpares,
+            zfsOptions: state.zfsOptions,
+            s2dOptions: state.s2dOptions,
+            vsanOptions: state.vsanOptions,
+            cephOptions: state.cephOptions,
+            longhornOptions: state.longhornOptions,
+            beeGfsOptions: state.beeGfsOptions,
+            powerFlexOptions: state.powerFlexOptions,
+            controllerOptions: state.controllerOptions,
+            netAppOptions: state.netAppOptions,
+            synologyOptions: state.synologyOptions,
+            nutanixOptions: state.nutanixOptions,
+            objectscaleOptions: state.objectscaleOptions,
+            powerstoreOptions: state.powerstoreOptions,
+            powerscaleOptions: state.powerscaleOptions,
+            powervaultOptions: state.powervaultOptions,
+            readPercent: state.readPercent,
+            blockSize: state.blockSize,
+            randomPercent: state.randomPercent,
+            datasetSize: state.datasetSize,
+            dailyWriteVolume: state.dailyWriteVolume,
+            compressionRatio: state.compressionRatio,
+            dedupRatio: state.dedupRatio,
+            networkSpeed: state.networkSpeed,
+            pcieGen: state.pcieGen,
+            pcieLanes: state.pcieLanes,
+            pue: state.pue,
+            carbonRegion: state.carbonRegion,
+            projectYears: state.projectYears,
+            electricityCostPerKwh: state.electricityCostPerKwh,
+            fsType: state.fsType,
+            supportsReflink: state.supportsReflink,
+            backupRetention: state.backupRetention,
+            dailyChangeRate: state.dailyChangeRate,
+            unitSystem: state.unitSystem,
+          },
+          getDefaultState(),
+        ),
     },
   ),
 )
