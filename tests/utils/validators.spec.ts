@@ -7,8 +7,10 @@
 
 import { describe, expect, it } from 'vitest'
 import type { Drive } from '@/types/drive'
+import type { BeeGfsCapacityDetails } from '@/types/results'
 import type { ControllerType } from '@/types/topology'
 import {
+  DEFAULT_BEEGFS_OPTIONS,
   DEFAULT_NETAPP_OPTIONS,
   DEFAULT_POWERFLEX_OPTIONS,
   DEFAULT_S2D_OPTIONS,
@@ -1015,5 +1017,92 @@ describe('Validators - S2D Resiliency', () => {
     expect(alerts.find((a) => a.code === 'S2D_3WAY_RECOMMENDED')).toBeUndefined()
     // A valid config has no blocking errors at all.
     expect(hasBlockingErrors(alerts)).toBe(false)
+  })
+})
+
+describe('Validators - BeeGFS', () => {
+  function beeGfsDetails(over: Partial<BeeGfsCapacityDetails> = {}): BeeGfsCapacityDetails {
+    return {
+      mdtRawCapacity: 0,
+      mdtUsableCapacity: 0,
+      mdtRecommendedMin: 3_000_000_000_000,
+      mdtRecommendedTypical: 5_000_000_000_000,
+      estimatedFileCount: 0,
+      status: 'none',
+      storageTargetCount: 1,
+      strandedDrives: 0,
+      storageBuddyMirror: false,
+      metadataBuddyMirror: true,
+      ...over,
+    }
+  }
+
+  it('flags storage buddy mirroring on a single node (BEEGFS_BUDDY_MIRROR_MIN_NODES)', () => {
+    const input = createValidationInput(testHdd, 12, { type: 'beegfs', level: 'beegfs_raid6' }, 1)
+    input.beeGfsOptions = { ...DEFAULT_BEEGFS_OPTIONS, storageBuddyMirror: true }
+    const alerts = validateConfiguration(input)
+    const alert = alerts.find((a) => a.code === 'BEEGFS_BUDDY_MIRROR_MIN_NODES')
+    expect(alert).toBeDefined()
+    expect(alert?.severity).toBe('error')
+  })
+
+  it('does not flag buddy mirroring across 2+ nodes', () => {
+    const input = createValidationInput(testHdd, 12, { type: 'beegfs', level: 'beegfs_raid6' }, 2)
+    input.beeGfsOptions = { ...DEFAULT_BEEGFS_OPTIONS, storageBuddyMirror: true }
+    const alerts = validateConfiguration(input)
+    expect(alerts.find((a) => a.code === 'BEEGFS_BUDDY_MIRROR_MIN_NODES')).toBeUndefined()
+  })
+
+  it('warns about stranded drives when total drives is not a multiple of drivesPerTarget', () => {
+    const input = createValidationInput(testHdd, 14, { type: 'beegfs', level: 'beegfs_raid6' }, 1)
+    input.beeGfsOptions = { ...DEFAULT_BEEGFS_OPTIONS, drivesPerTarget: 12 }
+    const alerts = validateConfiguration(input)
+    const alert = alerts.find((a) => a.code === 'BEEGFS_STRANDED_DRIVES')
+    expect(alert).toBeDefined()
+    expect(alert?.severity).toBe('warning')
+  })
+
+  it('does not warn about stranded drives on a whole multiple of drivesPerTarget', () => {
+    const input = createValidationInput(testHdd, 24, { type: 'beegfs', level: 'beegfs_raid6' }, 1)
+    input.beeGfsOptions = { ...DEFAULT_BEEGFS_OPTIONS, drivesPerTarget: 12 }
+    const alerts = validateConfiguration(input)
+    expect(alerts.find((a) => a.code === 'BEEGFS_STRANDED_DRIVES')).toBeUndefined()
+  })
+
+  it('surfaces an info alert when no metadata target is configured (BEEGFS_NO_MDT)', () => {
+    const input = createValidationInput(testHdd, 12, { type: 'beegfs', level: 'beegfs_raid6' }, 1)
+    input.beeGfsOptions = { ...DEFAULT_BEEGFS_OPTIONS }
+    input.beeGfsDetails = beeGfsDetails({ status: 'none' })
+    const alerts = validateConfiguration(input)
+    const alert = alerts.find((a) => a.code === 'BEEGFS_NO_MDT')
+    expect(alert).toBeDefined()
+    expect(alert?.severity).toBe('info')
+  })
+
+  it('warns when the MDT is below the ThinkParQ minimum (BEEGFS_MDT_UNDER_MIN)', () => {
+    const input = createValidationInput(testHdd, 12, { type: 'beegfs', level: 'beegfs_raid6' }, 1)
+    input.beeGfsOptions = { ...DEFAULT_BEEGFS_OPTIONS }
+    input.beeGfsDetails = beeGfsDetails({
+      status: 'under',
+      mdtRawCapacity: 1_000_000_000_000,
+      mdtUsableCapacity: 500_000_000_000,
+    })
+    const alerts = validateConfiguration(input)
+    const alert = alerts.find((a) => a.code === 'BEEGFS_MDT_UNDER_MIN')
+    expect(alert).toBeDefined()
+    expect(alert?.severity).toBe('warning')
+  })
+
+  it('does not flag MDT sizing when status is ok', () => {
+    const input = createValidationInput(testHdd, 12, { type: 'beegfs', level: 'beegfs_raid6' }, 1)
+    input.beeGfsOptions = { ...DEFAULT_BEEGFS_OPTIONS }
+    input.beeGfsDetails = beeGfsDetails({
+      status: 'ok',
+      mdtRawCapacity: 10_000_000_000_000,
+      mdtUsableCapacity: 5_000_000_000_000,
+    })
+    const alerts = validateConfiguration(input)
+    expect(alerts.find((a) => a.code === 'BEEGFS_NO_MDT')).toBeUndefined()
+    expect(alerts.find((a) => a.code === 'BEEGFS_MDT_UNDER_MIN')).toBeUndefined()
   })
 })

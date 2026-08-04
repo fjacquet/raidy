@@ -8,6 +8,7 @@ import {
   AnimatedBytes,
   AnimatedPercent,
   BackupCard,
+  BeeGfsCapacityDetails,
   CapacityBreakdownList,
   DonutChart,
   DonutLegend,
@@ -165,6 +166,21 @@ export function CapacityAct({
             <LonghornCapacityDetails details={volumetry.longhornDetails} />
           </div>
         )}
+
+      {/* BeeGFS Metadata-Target Sizing Card - Only shown for BeeGFS topology */}
+      {shouldShowSection('beegfsDetails', { topology, volumetry }) && volumetry.beeGfsDetails && (
+        <div className="panel">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+              {t('capacity.beegfsBreakdown')}
+            </h3>
+            <span className="text-xs text-slate-500 dark:text-slate-500">
+              {t('capacity.dualUnitHint')}
+            </span>
+          </div>
+          <BeeGfsCapacityDetails details={volumetry.beeGfsDetails} />
+        </div>
+      )}
 
       {/* Backup Requirements Card */}
       {shouldShowSection('backup', { hasBackup: backup != null }) && backup && (

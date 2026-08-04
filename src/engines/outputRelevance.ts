@@ -19,6 +19,7 @@ export type SectionId =
   | 'takeaway'
   | 'zfsDetails'
   | 'longhornDetails'
+  | 'beegfsDetails'
   | 'backup'
   | 'flashEndurance'
 
@@ -71,6 +72,8 @@ export function shouldShowSection(section: SectionId, ctx: SectionContext): bool
       return ctx.topology?.type === 'zfs' && ctx.volumetry?.zfsDetails != null
     case 'longhornDetails':
       return ctx.topology?.type === 'longhorn' && ctx.volumetry?.longhornDetails != null
+    case 'beegfsDetails':
+      return ctx.topology?.type === 'beegfs' && ctx.volumetry?.beeGfsDetails != null
     case 'backup':
       return ctx.hasBackup === true
     case 'flashEndurance':

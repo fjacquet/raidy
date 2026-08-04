@@ -3,8 +3,11 @@
  * Implements spec requirements for hardware/software validation.
  */
 
+import i18n from '@/i18n'
 import type { Drive } from '@/types/drive'
+import type { BeeGfsCapacityDetails } from '@/types/results'
 import type {
+  BeeGfsOptions,
   CephOptions,
   ControllerType,
   NetAppOptions,
@@ -16,6 +19,12 @@ import type {
   ZfsOptions,
 } from '@/types/topology'
 import { CONTROLLER_LIMITS, requiresHba } from '@/types/topology'
+import { formatBytes } from '@/utils/units'
+
+/** i18n lookup for the `validation` namespace, used outside React components. */
+function tv(key: string, options?: Record<string, unknown>): string {
+  return i18n.t(`validation:${key}`, options) as string
+}
 
 /** Alert severity levels */
 export type AlertSeverity = 'error' | 'warning' | 'info'
@@ -43,6 +52,9 @@ export interface ValidationInput {
   netAppOptions?: NetAppOptions
   synologyOptions?: SynologyOptions
   vsanOptions?: VsanOptions
+  beeGfsOptions?: BeeGfsOptions
+  /** Engine-computed MDT advisory (volumetry.beeGfsDetails) — read-only for the validator. */
+  beeGfsDetails?: BeeGfsCapacityDetails
 }
 
 /**
@@ -531,6 +543,76 @@ function validateVsan(
 }
 
 /**
+ * Validate BeeGFS-specific configuration.
+ *
+ * These are the *advisory* layer on top of the engine's zero-state handling
+ * (see src/engines/volumetry/validation/inputValidation.ts): buddy mirroring
+ * with fewer than 2 nodes, fewer drives than one storage target, and
+ * drivesPerTarget below the level's RAID minimum already produce a zero
+ * result from the engine. This validator explains *why*, plus advisory
+ * checks the engine has no reason to zero-state (stranded drives, metadata
+ * target sizing).
+ */
+function validateBeeGfs(
+  driveCount: number,
+  serverCount: number,
+  topology: Topology,
+  beeGfsOptions?: BeeGfsOptions,
+  beeGfsDetails?: BeeGfsCapacityDetails,
+): ValidationAlert[] {
+  if (topology.type !== 'beegfs' || !beeGfsOptions) return []
+
+  const alerts: ValidationAlert[] = []
+
+  // Buddy groups mirror between pairs of targets on different nodes — a
+  // single-node cluster cannot form a fault-tolerant pair. Mirrors the
+  // engine's zero-state for this case.
+  if (beeGfsOptions.storageBuddyMirror && serverCount < 2) {
+    alerts.push({
+      severity: 'error',
+      code: 'BEEGFS_BUDDY_MIRROR_MIN_NODES',
+      message: tv('beegfs.buddyMirrorMinNodes', { serverCount }),
+      recommendation: tv('beegfs.buddyMirrorMinNodesRecommendation'),
+    })
+  }
+
+  // Drives that don't fill a whole storage target are wasted — capacity is
+  // computed on whole targets only.
+  const drivesPerTarget = beeGfsOptions.drivesPerTarget
+  if (drivesPerTarget > 0 && driveCount >= drivesPerTarget) {
+    const stranded = driveCount % drivesPerTarget
+    if (stranded > 0) {
+      alerts.push({
+        severity: 'warning',
+        code: 'BEEGFS_STRANDED_DRIVES',
+        message: tv('beegfs.strandedDrives', { stranded, drivesPerTarget }),
+      })
+    }
+  }
+
+  if (beeGfsDetails?.status === 'none') {
+    alerts.push({
+      severity: 'info',
+      code: 'BEEGFS_NO_MDT',
+      message: tv('beegfs.noMdt'),
+    })
+  } else if (beeGfsDetails?.status === 'under') {
+    alerts.push({
+      severity: 'warning',
+      code: 'BEEGFS_MDT_UNDER_MIN',
+      message: tv('beegfs.mdtUnderMin', {
+        recommendedMin: formatBytes(beeGfsDetails.mdtRecommendedMin, 'decimal'),
+      }),
+      recommendation: tv('beegfs.mdtUnderMinRecommendation', {
+        recommendedTypical: formatBytes(beeGfsDetails.mdtRecommendedTypical, 'decimal'),
+      }),
+    })
+  }
+
+  return alerts
+}
+
+/**
  * Run all validators and return alerts.
  *
  * To prevent calculations on invalid configs, use hasBlockingErrors(alerts)
@@ -615,6 +697,18 @@ export function validateConfiguration(input: ValidationInput): ValidationAlert[]
       input.vsanOptions,
     )
     alerts.push(...vsanAlerts)
+  }
+
+  // BeeGFS-specific (buddy mirroring fault domains, stranded drives, MDT sizing)
+  if (input.topology.type === 'beegfs') {
+    const beeGfsAlerts = validateBeeGfs(
+      input.driveCount,
+      input.serverCount ?? 1,
+      input.topology,
+      input.beeGfsOptions,
+      input.beeGfsDetails,
+    )
+    alerts.push(...beeGfsAlerts)
   }
 
   // Sort by severity: error > warning > info

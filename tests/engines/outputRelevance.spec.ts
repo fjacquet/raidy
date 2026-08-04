@@ -84,6 +84,18 @@ describe('shouldShowSection', () => {
     }
     expect(shouldShowSection('longhornDetails', noLonghorn)).toBe(false)
   })
+  it('hides beegfsDetails unless beeGfsDetails present', () => {
+    const c: SectionContext = {
+      topology: { type: 'beegfs', level: 'beegfs_raid6' },
+      volumetry: vol({ beeGfsDetails: {} as never }),
+    }
+    expect(shouldShowSection('beegfsDetails', c)).toBe(true)
+    const noBeeGfs: SectionContext = {
+      topology: { type: 'standard', level: 'RAID5' },
+      volumetry: vol(),
+    }
+    expect(shouldShowSection('beegfsDetails', noBeeGfs)).toBe(false)
+  })
   it('shows backup only when hasBackup', () => {
     expect(shouldShowSection('backup', { hasBackup: true })).toBe(true)
     expect(shouldShowSection('backup', { hasBackup: false })).toBe(false)
