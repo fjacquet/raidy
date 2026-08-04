@@ -14,6 +14,7 @@ import {
 import drivesData from '@/data/drives.json'
 import { effectiveServerCount } from '@/engines/capabilities'
 import { useCalculations, useIsMobile, useResilience } from '@/hooks'
+import { useTieringOptions } from '@/hooks/useTieringOptions'
 import { useConfigStore } from '@/store'
 import type { Drive } from '@/types'
 import { downloadAnsible, downloadTerraform, downloadYaml, exportToPdf } from '@/utils'
@@ -34,12 +35,10 @@ export function OutputDashboard() {
     unitSystem,
     performanceThreshold,
     s2dOptions,
-    vsanOptions,
-    cephOptions,
-    nutanixOptions,
     powerFlexOptions,
     beeGfsOptions,
   } = useConfigStore()
+  const tieringOptions = useTieringOptions()
   const results = useCalculations()
   const selectedDrive = drives[driveId] || null
 
@@ -114,11 +113,7 @@ export function OutputDashboard() {
     simulationCount: isMobile ? 1000 : 10000, // 1K on mobile, 10K on desktop
     autoRun: false,
     mirrorCopies,
-    beeGfsOptions: topology.type === 'beegfs' ? beeGfsOptions : undefined,
-    s2dOptions,
-    vsanOptions,
-    cephOptions,
-    nutanixOptions,
+    tieringOptions,
   })
 
   // Export handlers

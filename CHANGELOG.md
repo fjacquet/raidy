@@ -40,6 +40,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   read the selected controller's real limits. (#74)
 
 ### Changed
+- **`useResilience` now takes the shared tiering option bag instead of four hand-listed props.**
+  `s2dOptions`/`vsanOptions`/`cephOptions`/`nutanixOptions` were destructured and re-listed at the
+  call site (`OutputDashboard.tsx`), in `UseResilienceOptions`, and again inside
+  `tieredPlatformScope`'s call to `resolveTiering` — the exact hand-listing pattern that dropped a
+  platform's options and caused issues #59 and #60. Replaced all three sites with a single
+  `tieringOptions?: TieringResolverOptions` prop sourced from `useTieringOptions()`, the same
+  assembler `useVolumetryCalc`, `usePerformanceCalc` and `useSustainabilityCalc` already consume,
+  so a forgotten platform is no longer possible in resilience specifically: the value is threaded
+  through unchanged rather than destructured and re-listed. `beeGfsOptions` did not need to stay a
+  separate prop — `TieringResolverOptions` already carries it (including `drivesPerTarget`), so
+  the BeeGFS resolver now reads `tieringOptions?.beeGfsOptions`. Pure refactor: no calculated
+  number changes. (#92)
 - Validator alerts (`src/utils/validators.ts`) and the Longhorn capacity-details card
   (`src/components/outputs/LonghornCapacityDetails.tsx`) now route their messages through
   `i18n.t()` instead of hardcoded English, with `fr`/`de`/`it` translations added to
