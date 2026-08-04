@@ -44,6 +44,7 @@ import {
   identifyBottleneck,
   resolveNetworkModel,
 } from './utils/bottleneck-chain'
+import { resolveFastTierModel } from './utils/fast-tier-models'
 
 export interface PerformanceInput {
   drive: Drive
@@ -249,15 +250,8 @@ export function calculatePerformance(input: PerformanceInput): PerformanceResult
     writeBW = cacheCount * c.performance.bandwidth_write_mb
   } else if (tiering && capacityDrive) {
     // Every other tiered platform (vSAN OSA disk groups, Ceph WAL/DB offload, Nutanix hybrid,
-    // BeeGFS metadata targets): the bulk pool is the capacity tier, so the media layer is sized
-    // from that drive and that count — the same substitution volumetry makes.
-    //
-    // The fast tier contributes nothing here. S2D's blend above encodes S2D's write-back cache
-    // semantics (writes fully absorbed by the cache, reads split by working set); vSAN's cache
-    // tier, Ceph's WAL/DB (which accelerates the commit path and serves no data at all) and
-    // Nutanix's hybrid tier each behave differently. Modelling them needs per-platform research
-    // — a generic blend would be a guess presented as a number. Declining to model the fast tier
-    // understates these platforms, which is the safe direction.
+    // BeeGFS metadata targets): the bulk pool is the capacity tier, so the media layer is at
+    // minimum sized from that drive and that count — the same substitution volumetry makes.
     const p = capacityDrive
     // Mirrors `spareAdjustedDrives` in src/engines/volumetry/index.ts.
     //
@@ -269,11 +263,43 @@ export function calculatePerformance(input: PerformanceInput): PerformanceResult
     // controller and PCIe budget, and can still serve rebuild traffic, so pricing it is correct
     // for a bottleneck model even though excluding it is correct for a capacity model. See #91.
     const capUsableDrives = Math.max(0, tiering.capacityTierDriveCount - hotSpares)
-    const capDriveIOPS = limitingIOPS(p)
-    readCapIOPS = capDriveIOPS * capUsableDrives
-    writeCapIOPS = readCapIOPS
-    readBW = p.performance.bandwidth_read_mb * capUsableDrives
-    writeBW = p.performance.bandwidth_write_mb * capUsableDrives
+
+    // Fast-tier contribution, where one is modelled (see src/engines/performance/utils/fast-tier-models.ts).
+    // vSAN OSA and Nutanix hybrid clusters get a per-platform model there; everything else
+    // (including no cache drive selected) falls through to the capacity-only baseline below.
+    const fastTierModel = resolveFastTierModel(topology.type)
+    if (fastTierModel && cacheDrive) {
+      const result = fastTierModel({
+        cacheDrive,
+        cacheCount: tiering.cacheTierDriveCount,
+        capacityDrive: p,
+        capCount: tiering.capacityTierDriveCount,
+        capUsableDrives,
+        workingSetPercent,
+        randomPercent,
+        vsanOptions,
+      })
+      readCapIOPS = result.readCapIOPS
+      writeCapIOPS = result.writeCapIOPS
+      readBW = result.readBW
+      writeBW = result.writeBW
+    } else {
+      // Ceph WAL/DB offload: BlueStore's WAL/DB device holds only the internal write-ahead log
+      // and RocksDB metadata — it is never in the data read path, and its write-path effect is
+      // removing contention with bulk data sharing a spindle, not adding a parallel pool of
+      // write IOPS. There is no vendor-published number to turn "removes contention" into an
+      // IOPS or bandwidth delta, so it stays unmodelled.
+      //
+      // BeeGFS metadata targets: an MDT stores only inodes, directory entries, and striping
+      // maps — never file content — so it is structurally incapable of serving bulk data I/O.
+      // Blending it into the media-layer IOPS number would be a category error, not an
+      // approximation, regardless of future research.
+      const capDriveIOPS = limitingIOPS(p)
+      readCapIOPS = capDriveIOPS * capUsableDrives
+      writeCapIOPS = readCapIOPS
+      readBW = p.performance.bandwidth_read_mb * capUsableDrives
+      writeBW = p.performance.bandwidth_write_mb * capUsableDrives
+    }
   } else {
     readCapIOPS = totalDriveIOPS
     writeCapIOPS = totalDriveIOPS

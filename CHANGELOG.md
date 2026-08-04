@@ -14,6 +14,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   16 NVMe, one controller). (#84)
 
 ### Changed
+- **vSAN OSA and Nutanix hybrid tiered configurations now get a fast-tier performance model —
+  their published IOPS/throughput numbers rise** (#89). Previously only S2D modelled a cache-tier
+  contribution; vSAN OSA, Ceph, Nutanix and BeeGFS all fell through to a capacity-tier-only media
+  layer, understating any tiered configuration where the fast tier genuinely serves reads or
+  absorbs writes. Per-platform research
+  (`docs/superpowers/specs/2026-08-04-fast-tier-performance-research.md`) resolved that gap for
+  two of the four:
+  - **vSAN OSA** reuses S2D's write-back blend, gated on `vsanOptions.diskGroupMode`: writes are
+    now fully absorbed by the cache tier in both hybrid and all-flash disk groups (VMware
+    documents 100% write-buffer allocation in both modes); reads blend by `workingSetPercent`
+    **only in hybrid mode** — all-flash disk groups have no read cache (0% allocation, per VMware),
+    so all-flash reads are unchanged.
+  - **Nutanix hybrid clusters** get a new write-only model split by `randomPercent`: the OpLog
+    absorbs random writes, while sequential writes bypass it for the extent pool, per Nutanix's
+    documented >1.5MB-outstanding routing rule. Nutanix reads remain unmodelled — ILM tier
+    promotion has no vendor-published hit-rate to anchor a working-set-style split.
+  - **Ceph (WAL/DB offload) and BeeGFS (metadata targets) are unchanged** and stay deliberately
+    unmodelled: Ceph's WAL/DB never serves data reads and its write-path benefit is contention
+    removal, not added IOPS capacity; a BeeGFS metadata target is structurally incapable of
+    serving bulk data I/O.
+
+  Adding a platform's fast-tier model is now a table entry in `FAST_TIER_MODEL_BY_TOPOLOGY`
+  (`src/engines/performance/utils/fast-tier-models.ts`), not a branch in the orchestrator.
 - **`CONTROLLER_LIMITS` PERC entries recalibrated onto a documented, consistent basis** (#84).
   Throughput was already close to the real per-controller vendor figure; IOPS were 3.4–4.7x
   *below* any measured per-controller number, from an undocumented basis, so the controller layer
