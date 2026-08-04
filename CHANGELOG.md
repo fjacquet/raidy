@@ -22,6 +22,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   validation vectors and property-based tests (`fast-check`) in
   `tests/fixtures/resilience-vectors.ts` and `tests/workers/resilience-group-modelling.spec.ts`.
   (#70)
+- **Resilience worker: group-path `bitsRead` overstated URE exposure for `beegfs_raid10`.** The
+  group-topology rebuild-read formula, `(drivesPerGroup - 1) x capacity`, assumed a rebuild reads
+  every other drive in the group. Correct for parity groups (RAID50/60, `beegfs_raid6`/
+  `beegfs_raidz2`), but a `beegfs_raid10` mirror-pair rebuild reads only the ONE surviving partner
+  in that pair. Mirrored group layouts now use a fixed 1-drive rebuild-read volume, matching the
+  drive-pair mirror model's formula exactly. Safe-direction bug (overstated URE risk), so survival
+  only rises. Measured (20,000 iterations, unmerged `beegfs_raid10`, 40 drives / 4 targets of 10):
+  survival 9.3% -> 32.5%. New validation vector in `tests/fixtures/resilience-vectors.ts`. (#67)
 
 ## [1.15.1] - 2026-08-04
 

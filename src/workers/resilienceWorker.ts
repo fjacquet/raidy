@@ -254,28 +254,51 @@ function runSingleSimulation(input: SimulationInput): {
   // instead of being silently dropped by Math.floor. Every drive is now inside
   // exactly one simulated group.
   const groupWidths: number[] = isGroup ? distributeAcrossGroups(driveCount, numGroups) : []
-  // Representative group width for the rebuild-read-volume formula below — still
-  // a single scalar bitsRead for the whole group topology at this stage (the
-  // per-group-width URE fix is #67, tracked separately).
-  const drivesPerGroup = isGroup && numGroups > 0 ? Math.floor(driveCount / numGroups) : 0
   const parityPerGroup = isBuddyMirroredGroup ? parityDrives * 2 + 1 : parityDrives // 1 for RAID 50, 2 for RAID 60
+
+  // A RAID10-mirror storage target rebuilds by reading only the surviving
+  // mirror partner — one drive's worth — never the rest of the target, unlike
+  // a parity group rebuild (RAID50/60, beegfs_raid6/raidz2) which reads every
+  // other group drive. The group-path formula below previously used
+  // `(drivesPerGroup - 1) x capacity` unconditionally, overstating
+  // beegfs_raid10's rebuild-read volume and therefore its URE exposure
+  // (safe-direction bug: it could only overstate risk, never understate it).
+  const isMirroredGroupLayout = isGroup && raidLevel.toLowerCase() === 'beegfs_raid10'
 
   // URE probability during rebuild
   const ureRatePerBit = 10 ** -ureRate
 
   // Bits read during rebuild depends on topology:
   // Mirror: reads only 1 good copy (any surviving mirror partner)
-  // Group: reads all drives in the group minus the failed one
+  // Group: reads all drives in the group minus the failed one — except mirrored
+  //   group layouts (beegfs_raid10, #67), which rebuild from a single
+  //   surviving mirror partner regardless of the group's total width, same as
+  //   the plain mirror case.
   // Parity: reads ALL surviving drives (N-1 drives)
   let bitsRead: number
   if (isMirror) {
     bitsRead = driveCapacityBytes * 8 // 1 drive
-  } else if (isGroup && drivesPerGroup > 1) {
-    bitsRead = driveCapacityBytes * 8 * (drivesPerGroup - 1)
+  } else if (isGroup) {
+    bitsRead = 0 // computed per-group below — groups can have different widths now (#70)
   } else {
     bitsRead = driveCapacityBytes * 8 * (driveCount - 1)
   }
   const ureProbability = 1 - (1 - ureRatePerBit) ** bitsRead
+
+  // Per-group rebuild-read volume and URE probability (#67, #70): each group can
+  // now have a different width, and mirrored group layouts always read just one
+  // drive's worth regardless of width (a RAID10 rebuild reads only the surviving
+  // mirror partner, not `drivesPerGroup - 1` drives).
+  const groupUreProbability: number[] = isGroup
+    ? groupWidths.map((width) => {
+        const groupBitsRead = isMirroredGroupLayout
+          ? driveCapacityBytes * 8 // mirrored group: rebuild reads 1 surviving partner
+          : width > 1
+            ? driveCapacityBytes * 8 * (width - 1)
+            : 0
+        return 1 - (1 - ureRatePerBit) ** groupBitsRead
+      })
+    : []
 
   // Simulate one year of operation
   let failedDrives = 0
@@ -376,6 +399,7 @@ function runSingleSimulation(input: SimulationInput): {
           }
 
           groupFailures[hitGroup] = (groupFailures[hitGroup] ?? 0) + 1
+          const groupUre = groupUreProbability[hitGroup] ?? 0
 
           // Data loss if any group exceeds its parity tolerance
           if ((groupFailures[hitGroup] ?? 0) > parityPerGroup) {
@@ -389,12 +413,12 @@ function runSingleSimulation(input: SimulationInput): {
             rebuildDaysRemaining = Math.ceil(rebuildTimeHours / 24)
 
             // URE fatal only when the hit group is at its parity limit
-            if ((groupFailures[hitGroup] ?? 0) >= parityPerGroup && random() < ureProbability) {
+            if ((groupFailures[hitGroup] ?? 0) >= parityPerGroup && random() < groupUre) {
               hadURE = true
               return { survived: false, rebuildTimeHours, hadURE, hadDualFailure }
             }
           } else {
-            if ((groupFailures[hitGroup] ?? 0) >= parityPerGroup && random() < ureProbability) {
+            if ((groupFailures[hitGroup] ?? 0) >= parityPerGroup && random() < groupUre) {
               hadURE = true
               return { survived: false, rebuildTimeHours, hadURE, hadDualFailure }
             }

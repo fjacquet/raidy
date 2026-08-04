@@ -1,5 +1,5 @@
 /**
- * Group-modelling regression tests for issue #70.
+ * Group-modelling regression tests for issues #70 and #67.
  *
  * See `tests/fixtures/resilience-vectors.ts` for the full narrative and
  * measured before/after numbers (also recorded in CHANGELOG.md).
@@ -80,7 +80,7 @@ async function runWorker(payload: Record<string, unknown>) {
   }
 }
 
-describe('resilience group-modelling vectors (#70)', () => {
+describe('resilience group-modelling vectors (#70, #67)', () => {
   beforeEach(() => {
     mockPostMessage.mockClear()
   })

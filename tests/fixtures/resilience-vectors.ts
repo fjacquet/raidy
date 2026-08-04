@@ -1,6 +1,7 @@
 /**
- * Resilience worker group-modelling vectors — issue #70 (`drivesPerGroup`
- * floor-division leaves drives unmodelled).
+ * Resilience worker group-modelling vectors — issues #70 (`drivesPerGroup`
+ * floor-division leaves drives unmodelled) and #67 (group-path `bitsRead`
+ * overstates URE exposure for `beegfs_raid10`).
  *
  * Unlike the capacity vectors elsewhere in this directory, `resilienceWorker.ts`
  * runs a stochastic Monte Carlo simulation (`Math.random()`, no seed), so these
@@ -29,6 +30,23 @@
  *     the previously-unmodelled drives are now exposed to failure).
  *   - RAID60, 14 drives / 4 groups (3, 3, 4, 4 after the fix — previously
  *     3, 3, 3, 3 with 2 drives unmodelled): survival 99.980% -> 99.965%.
+ *
+ * ### #67 — group-path `bitsRead` overstates URE exposure for `beegfs_raid10`
+ *
+ * The group-path rebuild-read formula, `(drivesPerGroup - 1) x capacity`,
+ * assumed every group drive but the failed one is read during rebuild. That is
+ * correct for parity groups (RAID50/60, beegfs_raid6/raidz2), but a `beegfs_
+ * raid10` mirror-pair rebuild reads only the ONE surviving partner in that
+ * pair, not the whole target. Fixed by giving mirrored group layouts a fixed
+ * 1-drive `groupBitsRead`, matching the `isMirror` branch's formula exactly.
+ * Safe-direction bug (overstated risk), so survival only rises.
+ *
+ * Measured (20,000 iterations, unmerged `beegfs_raid10`, 40 drives / 4 targets
+ * of 10, tolerance still a flat counter at this point — #66 not yet applied):
+ * survival 9.3% -> 32.5%. URE, not the flat 2-failure tolerance, dominates the
+ * death rate at this AFR/URE combination, which is why fixing the read volume
+ * alone recovers most of the total improvement later attributed to #66+#67
+ * combined.
  */
 
 export interface ResilienceVector {
@@ -84,5 +102,24 @@ export const resilienceGroupVectors: ResilienceVector[] = [
     // Measured post-fix: ~99.97%. RAID60's dual parity absorbs the extra exposure
     // from the 2 previously-unmodelled drives almost entirely — band stays high.
     expectSurvivalAbove: 0.995,
+  },
+  {
+    name: 'beegfs_raid10 unmerged, 40 drives / 4 targets of 10: corrected rebuild-read volume',
+    issue: '#67',
+    payload: {
+      driveCount: 40,
+      serverCount: 4,
+      driveCapacityBytes: 8_000_000_000_000,
+      rebuildSpeedMBs: 150,
+      ureRate: 14,
+      afrPercent: 6.0,
+      simulationCount: 20000,
+      raidLevel: 'beegfs_raid10',
+    },
+    // Measured post-fix (tolerance still a flat counter, #66 not yet applied):
+    // ~32.5% (pre-fix: ~9.3%). Wide band — this vector's tolerance widens
+    // further once #66 lands per-pair state on top of this fix.
+    expectSurvivalAbove: 0.2,
+    expectSurvivalBelow: 0.45,
   },
 ]

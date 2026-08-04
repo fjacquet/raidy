@@ -98,11 +98,6 @@ the simulation kills it at any 2 failures. A real 12-drive RAID10 target survive
 failures if each lands in a distinct mirror pair. Closing this needs per-pair state inside a
 group rather than a flat counter.
 
-### [B9](https://github.com/fjacquet/raidy/issues/67). Group-path `bitsRead` overstates URE exposure for `beegfs_raid10`
-
-Rebuild is modelled as reading `(drivesPerGroup - 1) × capacity`, but a RAID10 rebuild reads only
-the surviving mirror partner.
-
 ### [B10](https://github.com/fjacquet/raidy/issues/68). Odd `serverCount` creates a visible survival discontinuity under buddy mirroring
 
 Buddy credit is withheld when the storage-target count is odd, because an unpaired target has no

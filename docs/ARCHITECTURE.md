@@ -291,7 +291,10 @@ Monte Carlo simulation for data loss probability.
 **Group topology (RAID 50/60, every BeeGFS group level):** drives are partitioned into
 `numGroups` independent fault groups via `distributeAcrossGroups()`, which spreads the
 `driveCount % numGroups` remainder one-per-group across the first groups rather than dropping it
-— every drive is modelled, at the cost of groups being heterogeneous in width. See
+— every drive is modelled, at the cost of groups being heterogeneous in width. A group's
+rebuild-read volume (and therefore its URE exposure) is computed per group from its own width,
+except mirrored group layouts (`beegfs_raid10`): a RAID10 target rebuilds by reading only the
+surviving mirror partner (one drive), never the whole target. See
 `tests/fixtures/resilience-vectors.ts` for measured before/after survival figures.
 
 ### Module D: Sustainability Engine (`/src/engines/sustainability/`)
