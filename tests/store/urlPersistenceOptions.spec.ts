@@ -190,6 +190,28 @@ describe('Config store URL persistence — platform options backward compatibili
     console.info(`[Task 9] realistic single-platform link length: ${hash.length} chars`)
     expect(hash.length).toBeLessThan(2000)
   })
+
+  it('omits every default-valued *Options object from a genuinely fresh store — not just after resetToDefaults()', () => {
+    // Regression guard: getDefaultState() previously restated the platform
+    // options as hand-typed literals instead of importing the canonical
+    // DEFAULT_*_OPTIONS constants, and drifted on 5 fields (s2dOptions.
+    // reserveStrategy, netAppOptions.snapshotReserve/dataReductionRatio/dedup,
+    // synologyOptions.cacheMode). Because omitDefaults() compares live state
+    // against getDefaultState(), that drift meant s2dOptions, netAppOptions
+    // and synologyOptions were NEVER considered default-equal — even on a
+    // completely untouched store — and were serialized into every link
+    // regardless of topology. This does not call resetToDefaults() first;
+    // beforeEach already leaves the store at its true initial state.
+    useConfigStore.getState().setDriveCount(24)
+
+    const hash = window.location.hash
+    console.info(`[Task 9] fresh store, driveCount-only change: ${hash.length} chars`)
+    // A single changed primitive field compresses to well under 100 chars;
+    // if any of the ~15 *Options objects were wrongly considered non-default
+    // this would balloon past several hundred chars (523 was measured with
+    // the pre-fix drift on s2dOptions/netAppOptions/synologyOptions alone).
+    expect(hash.length).toBeLessThan(200)
+  })
 })
 
 describe('Config store URL persistence — hostile links are rejected at the production boundary', () => {
