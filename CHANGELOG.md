@@ -7,11 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.16.0] - 2026-08-04
+
+> **Read this first if you sized hardware on 1.15.x.** Four published figures move in this
+> release, in different directions and for different reasons.
+>
+> | What | Direction | Why |
+> |---|---|---|
+> | Tiered S2D read IOPS | **down ~45x** | Bug fix (#111) — the old figure was unachievable |
+> | PERC controller IOPS ceiling | **up 3.4–4.7x** | Bug fix (#84) — the old column used an undocumented basis |
+> | vSAN OSA / Nutanix tiered performance | **up** | New models (#89) where none existed |
+> | RAID 50/60 survival | **down slightly** | Bug fix (#70) — drives that were never simulated now are |
+>
+> Nothing here changes usable-capacity figures.
+>
+> **Known limitation shipping in this release:** write-back absorption still has no drain-rate
+> ceiling (#112), so sustained write throughput is overstated for tiered S2D and vSAN OSA once a
+> real cache tier saturates. The reported write figure is a burst figure. Tracked, not fixed here.
+
 ### Added
 - **Dell PERC H975i (PERC13) controller option** (`perc_h975i`). Broadcom SAS5132W, PCIe Gen5
   x16, RAID 0/1/5/6/10/50/60, supercapacitor-backed cache, up to 16 NVMe drives per controller.
   Rated at 12,900,000 IOPS / 56,000 MB/s per controller (Signal65 PERC13 lab testing, corroborated by StorageReview, RAID 5,
   16 NVMe, one controller). (#84)
+- **BeeGFS filesystem overhead control.** `BeeGfsOptionsPanel` now exposes a slider for
+  `beeGfsOptions.fsOverheadPercent` (the per-target ext4/xfs overhead, 0.5-5%, default 2%),
+  matching the `min(0.5).max(5)` Zod range in `src/utils/schemas.ts` exactly. The field already
+  fed `getFilesystemOverheadPercent` and usable capacity but had no UI control, so no user could
+  move it off its default. Unlike `chunkSizeKb` / `numTargets` / `network`, which stay
+  informational-only, this control changes a real number. (#78)
+- **XFS stripe alignment now follows the capacity tier on tiered configurations.** The performance
+  engine's `sunit`/`swidth` recommendation was still computed from the raw Hardware-panel drive
+  count even after the media layer itself was sized from the capacity tier, so tiered S2D, vSAN
+  OSA, Ceph, Nutanix and BeeGFS configurations could show a stripe width wider than the pool that
+  actually holds data. Alignment now uses the same spare-adjusted capacity-tier population as the
+  media layer, so the two can no longer diverge. Untiered configurations are unaffected. (#90)
 
 ### Changed
 - **vSAN OSA and Nutanix hybrid tiered configurations now get a fast-tier performance model —
@@ -37,23 +67,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
   Adding a platform's fast-tier model is now a table entry in `FAST_TIER_MODEL_BY_TOPOLOGY`
   (`src/engines/performance/utils/fast-tier-models.ts`), not a branch in the orchestrator.
-- **Fixed: tiered S2D (and now vSAN OSA hybrid) read IOPS/throughput were computed with an
-  unachievable formula — the corrected numbers drop sharply** (#111). This is the opposite
-  movement from the vSAN OSA/Nutanix increase above, and for a different reason: it's a bug fix,
-  not a new model. The read blend split `workingSetPercent` of traffic to the cache tier and the
-  rest to the capacity tier, then took a **weighted average of the two tiers' raw IOPS/bandwidth
-  capacities** as the achievable total. That is not a throughput — both tiers must clear their own
-  share of the *same* total concurrently (`shareA·T ≤ capA` and `(1−shareA)·T ≤ capB`), so the
-  true achievable total is bounded by whichever tier saturates first
-  (`T = min(capA / shareA, capB / (1 − shareA))`), not their weighted sum. The old formula let a
-  fast cache tier's raw capacity leak into the total in proportion to how *little* traffic it
-  actually served — the faster the cache, the more inflated the number (e.g. `ws=0.5`, cache
-  1,000,000 IOPS, capacity 1,000 IOPS: old formula gave 500,500; the correct bound gives ~2,000).
-  Both S2D's read blend and vSAN OSA hybrid's (which reused it, per #89 above) are corrected via a
-  single shared `boundedTierThroughput` helper so they cannot drift apart again. Write-back
-  absorption itself (`writeCapIOPS = cacheCount × cacheWriteIOPS`, unconditional and uncapped by
-  any destage/drain rate) is unaffected by this fix and remains a known, separately-tracked
-  simplification.
 - **`CONTROLLER_LIMITS` PERC entries recalibrated onto a documented, consistent basis** (#84).
   Throughput was already close to the real per-controller vendor figure; IOPS were 3.4–4.7x
   *below* any measured per-controller number, from an undocumented basis, so the controller layer
@@ -75,65 +88,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   its comment — no published per-controller figure at this basis could be found for any of them.
   See `docs/superpowers/specs/2026-08-04-controller-limits-basis.md` for the full basis, sources,
   and rationale.
-
-### Fixed
-- **Resilience: hot spares are no longer simulated as data-bearing drives** (#80). The Monte Carlo
-  population now excludes hot spares on the same rule volumetry and performance use
-  (`usesDistributedSpares(topology.type) ? 0 : hotSpares * serverCount`, clamped at zero), on both
-  the naive and the tiered path. Survival rates rise for every platform configured with spares;
-  vSAN is unchanged, since it rebuilds from distributed slack rather than dedicated spare drives.
-  The default configuration ships one hot spare, so the out-of-the-box number moves.
-- **38 missing i18n keys across `fr`/`de`/`it` topology translations** rendered as raw i18n keys
-  on screen instead of translated text: `powervault.info.*` and `powerflex.info.*` were missing
-  from all three locales, `zfs.ashift512`/`ashift4k`/`ashift8k` were missing from `de`/`it`, and
-  `nutanix.info.*` was missing from `de`/`it`. Added a key-parity test
-  (`tests/i18n/parity.spec.ts`) that recursively diffs every locale's namespace files against the
-  `en` reference in both directions (missing keys and orphan keys), so future gaps like this fail
-  CI instead of shipping. (#72)
-- **`HBA_REQUIRED_TOPOLOGIES` membership is now pinned by a hand-copied test snapshot.**
-  `tests/types/controllerRequirement.spec.ts` previously guarded the level-aware controller rule
-  only against `legacyControllerOptions`, which re-derives from `HBA_REQUIRED_TOPOLOGIES` itself
-  — so it caught drift in the filter logic but not in the table's contents. Deleting `'longhorn'`
-  from the table left all 1242 tests passing, silently flipping Longhorn from HBA-only to
-  RAID-only. Added a literal, hand-copied expected-membership list directly in the test file
-  (deliberately not imported or derived) that now fails on that exact mutation. (#75)
-- **`AdvancedPanel` now has a label state for a controller requirement of `'either'`.**
-  `getControllerRequirement` returns `'hba'`, `'raid'` or `'either'`, but the panel only rendered
-  two states — so on `beegfs_single` the user saw the RAID-only heading, label ("Controller
-  Model") and hint while the dropdown actually offered HBAs and appliance controllers too. Added
-  a third `'either'` state (heading, label, hint) plus its locale strings in all four languages.
-  Reworded `controller.hbaHint`, which enumerated platforms ("ZFS, vSAN, and S2D require..."), to
-  state the underlying rule instead ("platforms that manage redundancy in software need direct
-  disk access via an HBA"), since it was already stale for `beegfs_raidz2` and an enumeration
-  goes stale every time a platform is added. No calculated number is affected — the engine always
-  read the selected controller's real limits. (#74)
-
-### Removed
-- **Four option fields with no consumer at all** (#104), found during the #61 fraction-vs-percent
-  audit. Two were fully dead in both directions — `synologyOptions.btrfsOverhead` (the engine uses
-  the hardcoded `FILESYSTEM_OVERHEAD.btrfs` constant instead) and `objectscaleOptions.fillRatePercent`
-  (no panel ever wrote it, no engine ever read it). Two had a visible UI control but no engine
-  consumer, which is worse than a missing control because the tool implied the input mattered:
-  `objectscaleOptions.networkEfficiencyFactor` ("East-West traffic factor") had no citable, real
-  sizing rule connecting it to a network-bandwidth derate; `cephOptions.walDbRatio` had no
-  defensible connection point either, since the WAL/DB tier's device count and size are already
-  set explicitly via the Ceph tiering picker, and deriving them from a ratio would silently
-  override that explicit choice rather than model anything real. Removed the fields, their Zod
-  bounds, their `DEFAULT_*_OPTIONS` entries, their UI controls (`networkEfficiencyFactor`,
-  `walDbRatio`), and their locale strings in all four languages. Existing shared links carrying
-  any of these fields are unaffected: none of the nested platform-option Zod schemas reject
-  unknown keys (only the top-level `ConfigStateSchema` differentiates known vs. unknown keys —
-  the nested schemas simply strip fields they no longer declare), so a link generated by a
-  previous version parses normally with the removed value silently dropped. Added
-  `tests/utils/optionFieldsConsumed.spec.ts` to pin the absence of these four fields. A fully
-  general guard (walk every platform's `DEFAULT_*_OPTIONS` and require an engine reader) was
-  investigated and found roughly a dozen more pre-existing fields with the same unconsumed
-  pattern on platforms this issue does not touch — telling genuine bugs apart from deliberately
-  informational fields (the precedent set for BeeGFS's `chunkSizeKb`/`numTargets` in #78) needs
-  the same per-field investigation this issue gave its four fields, a dozen times over, so that
-  broader sweep is left as a follow-up rather than rushed into an unverified allowlist here.
-
-### Changed
 - **`useResilience` now takes the shared tiering option bag instead of four hand-listed props.**
   `s2dOptions`/`vsanOptions`/`cephOptions`/`nutanixOptions` were destructured and re-listed at the
   call site (`OutputDashboard.tsx`), in `UseResilienceOptions`, and again inside
@@ -176,21 +130,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `i18n.t()` instead of hardcoded English, with `fr`/`de`/`it` translations added to
   `src/i18n/locales/*/validation.json` in lockstep. All interpolated values (counts, percentages,
   capacities) use i18next interpolation rather than string concatenation. (#71)
-### Added
-- **BeeGFS filesystem overhead control.** `BeeGfsOptionsPanel` now exposes a slider for
-  `beeGfsOptions.fsOverheadPercent` (the per-target ext4/xfs overhead, 0.5-5%, default 2%),
-  matching the `min(0.5).max(5)` Zod range in `src/utils/schemas.ts` exactly. The field already
-  fed `getFilesystemOverheadPercent` and usable capacity but had no UI control, so no user could
-  move it off its default. Unlike `chunkSizeKb` / `numTargets` / `network`, which stay
-  informational-only, this control changes a real number. (#78)
-- **XFS stripe alignment now follows the capacity tier on tiered configurations.** The performance
-  engine's `sunit`/`swidth` recommendation was still computed from the raw Hardware-panel drive
-  count even after the media layer itself was sized from the capacity tier, so tiered S2D, vSAN
-  OSA, Ceph, Nutanix and BeeGFS configurations could show a stripe width wider than the pool that
-  actually holds data. Alignment now uses the same spare-adjusted capacity-tier population as the
-  media layer, so the two can no longer diverge. Untiered configurations are unaffected. (#90)
-
-### Changed
 - **Documented, rather than changed, the tiered-BeeGFS drive-count divergence between volumetry
   and performance.** Volumetry rounds the capacity tier down to whole storage targets, dropping
   the "stranded" remainder that completes no target and holds no data. Performance intentionally
@@ -211,12 +150,58 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   support flat, non-enveloped payloads for backward compatibility; they have never hydrated,
   because zustand reads `deserializedStorageValue.state`. The branch and its comment are gone, and
   unknown top-level keys are now stripped rather than merged into the live store. (#64, #65)
-
-### Changed
 - **"Reset to defaults" now resets the performance threshold and the two drive-picker filters.**
   They lived only in their slices' initial state, and `resetToDefaults()` merges, so the button
   silently skipped them. Defaults are now taken from the slices themselves rather than restated.
+
 ### Fixed
+- **Tiered S2D (and now vSAN OSA hybrid) read IOPS/throughput were computed with an
+  unachievable formula — the corrected numbers drop sharply** (#111). This is the opposite
+  movement from the vSAN OSA/Nutanix increase above, and for a different reason: it's a bug fix,
+  not a new model. The read blend split `workingSetPercent` of traffic to the cache tier and the
+  rest to the capacity tier, then took a **weighted average of the two tiers' raw IOPS/bandwidth
+  capacities** as the achievable total. That is not a throughput — both tiers must clear their own
+  share of the *same* total concurrently (`shareA·T ≤ capA` and `(1−shareA)·T ≤ capB`), so the
+  true achievable total is bounded by whichever tier saturates first
+  (`T = min(capA / shareA, capB / (1 − shareA))`), not their weighted sum. The old formula let a
+  fast cache tier's raw capacity leak into the total in proportion to how *little* traffic it
+  actually served — the faster the cache, the more inflated the number (e.g. `ws=0.5`, cache
+  1,000,000 IOPS, capacity 1,000 IOPS: old formula gave 500,500; the correct bound gives ~2,000).
+  Both S2D's read blend and vSAN OSA hybrid's (which reused it, per #89 above) are corrected via a
+  single shared `boundedTierThroughput` helper so they cannot drift apart again. Write-back
+  absorption itself (`writeCapIOPS = cacheCount × cacheWriteIOPS`, unconditional and uncapped by
+  any destage/drain rate) is unaffected by this fix and remains a known, separately-tracked
+  simplification.
+- **Resilience: hot spares are no longer simulated as data-bearing drives** (#80). The Monte Carlo
+  population now excludes hot spares on the same rule volumetry and performance use
+  (`usesDistributedSpares(topology.type) ? 0 : hotSpares * serverCount`, clamped at zero), on both
+  the naive and the tiered path. Survival rates rise for every platform configured with spares;
+  vSAN is unchanged, since it rebuilds from distributed slack rather than dedicated spare drives.
+  The default configuration ships one hot spare, so the out-of-the-box number moves.
+- **38 missing i18n keys across `fr`/`de`/`it` topology translations** rendered as raw i18n keys
+  on screen instead of translated text: `powervault.info.*` and `powerflex.info.*` were missing
+  from all three locales, `zfs.ashift512`/`ashift4k`/`ashift8k` were missing from `de`/`it`, and
+  `nutanix.info.*` was missing from `de`/`it`. Added a key-parity test
+  (`tests/i18n/parity.spec.ts`) that recursively diffs every locale's namespace files against the
+  `en` reference in both directions (missing keys and orphan keys), so future gaps like this fail
+  CI instead of shipping. (#72)
+- **`HBA_REQUIRED_TOPOLOGIES` membership is now pinned by a hand-copied test snapshot.**
+  `tests/types/controllerRequirement.spec.ts` previously guarded the level-aware controller rule
+  only against `legacyControllerOptions`, which re-derives from `HBA_REQUIRED_TOPOLOGIES` itself
+  — so it caught drift in the filter logic but not in the table's contents. Deleting `'longhorn'`
+  from the table left all 1242 tests passing, silently flipping Longhorn from HBA-only to
+  RAID-only. Added a literal, hand-copied expected-membership list directly in the test file
+  (deliberately not imported or derived) that now fails on that exact mutation. (#75)
+- **`AdvancedPanel` now has a label state for a controller requirement of `'either'`.**
+  `getControllerRequirement` returns `'hba'`, `'raid'` or `'either'`, but the panel only rendered
+  two states — so on `beegfs_single` the user saw the RAID-only heading, label ("Controller
+  Model") and hint while the dropdown actually offered HBAs and appliance controllers too. Added
+  a third `'either'` state (heading, label, hint) plus its locale strings in all four languages.
+  Reworded `controller.hbaHint`, which enumerated platforms ("ZFS, vSAN, and S2D require..."), to
+  state the underlying rule instead ("platforms that manage redundancy in software need direct
+  disk access via an HBA"), since it was already stale for `beegfs_raidz2` and an enumeration
+  goes stale every time a platform is added. No calculated number is affected — the engine always
+  read the selected controller's real limits. (#74)
 - **Resilience worker: `drivesPerGroup` floor-division left drives unmodelled in every group
   topology.** `Math.floor(driveCount / numGroups)` in `src/workers/resilienceWorker.ts` silently
   dropped up to `numGroups - 1` drives from every simulated group whenever
@@ -257,6 +242,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   100K-iteration Monte Carlo loop and into a single per-run computation, since none of it depends
   on the random failure draws — a straight perf mitigation for the extra per-pair arrays #66
   introduces, not a behavior change.
+
+### Removed
+- **Four option fields with no consumer at all** (#104), found during the #61 fraction-vs-percent
+  audit. Two were fully dead in both directions — `synologyOptions.btrfsOverhead` (the engine uses
+  the hardcoded `FILESYSTEM_OVERHEAD.btrfs` constant instead) and `objectscaleOptions.fillRatePercent`
+  (no panel ever wrote it, no engine ever read it). Two had a visible UI control but no engine
+  consumer, which is worse than a missing control because the tool implied the input mattered:
+  `objectscaleOptions.networkEfficiencyFactor` ("East-West traffic factor") had no citable, real
+  sizing rule connecting it to a network-bandwidth derate; `cephOptions.walDbRatio` had no
+  defensible connection point either, since the WAL/DB tier's device count and size are already
+  set explicitly via the Ceph tiering picker, and deriving them from a ratio would silently
+  override that explicit choice rather than model anything real. Removed the fields, their Zod
+  bounds, their `DEFAULT_*_OPTIONS` entries, their UI controls (`networkEfficiencyFactor`,
+  `walDbRatio`), and their locale strings in all four languages. Existing shared links carrying
+  any of these fields are unaffected: none of the nested platform-option Zod schemas reject
+  unknown keys (only the top-level `ConfigStateSchema` differentiates known vs. unknown keys —
+  the nested schemas simply strip fields they no longer declare), so a link generated by a
+  previous version parses normally with the removed value silently dropped. Added
+  `tests/utils/optionFieldsConsumed.spec.ts` to pin the absence of these four fields. A fully
+  general guard (walk every platform's `DEFAULT_*_OPTIONS` and require an engine reader) was
+  investigated and found roughly a dozen more pre-existing fields with the same unconsumed
+  pattern on platforms this issue does not touch — telling genuine bugs apart from deliberately
+  informational fields (the precedent set for BeeGFS's `chunkSizeKb`/`numTargets` in #78) needs
+  the same per-field investigation this issue gave its four fields, a dozen times over, so that
+  broader sweep is left as a follow-up rather than rushed into an unverified allowlist here.
 
 ## [1.15.1] - 2026-08-04
 
