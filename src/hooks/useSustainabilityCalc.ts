@@ -8,6 +8,7 @@ import drivesData from '@/data/drives.json'
 import { effectiveServerCount } from '@/engines/capabilities'
 import { resolveTiering } from '@/engines/shared/tiering'
 import { calculateSustainability } from '@/engines/sustainability'
+import { useTieringOptions } from '@/hooks/useTieringOptions'
 import { useConfigStore } from '@/store'
 import type { Drive } from '@/types'
 import type { SustainabilityResult } from '@/types/results'
@@ -29,10 +30,6 @@ export function useSustainabilityCalc(usableCapacity: number): SustainabilityRes
     serverPowerWatts,
     // Topology (needed for tiering resolver)
     topology,
-    s2dOptions,
-    vsanOptions,
-    cephOptions,
-    nutanixOptions,
     // Workload
     dailyWriteVolume,
     // Advanced (sustainability-related only)
@@ -41,6 +38,8 @@ export function useSustainabilityCalc(usableCapacity: number): SustainabilityRes
     projectYears,
     electricityCostPerKwh,
   } = useConfigStore()
+
+  const tieringOptions = useTieringOptions()
 
   // Get selected drive
   const drive = drives[driveId]
@@ -65,12 +64,7 @@ export function useSustainabilityCalc(usableCapacity: number): SustainabilityRes
     const totalDriveCount = driveCount * effServerCount
 
     // Resolve tiering configuration (null when not a tiered topology)
-    const tiering = resolveTiering(topology, effServerCount, {
-      s2dOptions,
-      vsanOptions,
-      cephOptions,
-      nutanixOptions,
-    })
+    const tiering = resolveTiering(topology, effServerCount, tieringOptions)
 
     try {
       return calculateSustainability({
@@ -120,9 +114,6 @@ export function useSustainabilityCalc(usableCapacity: number): SustainabilityRes
     dailyWriteVolume,
     usableCapacity,
     topology,
-    s2dOptions,
-    vsanOptions,
-    cephOptions,
-    nutanixOptions,
+    tieringOptions,
   ])
 }

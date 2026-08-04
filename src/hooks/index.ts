@@ -20,4 +20,5 @@ export {
 export { usePerformanceCalc } from './usePerformanceCalc'
 export { useResilience } from './useResilience'
 export { useSustainabilityCalc } from './useSustainabilityCalc'
+export { useTieringOptions } from './useTieringOptions'
 export { useVolumetryCalc } from './useVolumetryCalc'

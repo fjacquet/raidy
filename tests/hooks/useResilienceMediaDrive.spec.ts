@@ -12,13 +12,14 @@
  */
 
 import { act, renderHook } from '@testing-library/react'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import drivesData from '@/data/drives.json'
 import { useResilience } from '@/hooks/useResilience'
 import { DEFAULT_BEEGFS_OPTIONS } from '@/types'
 import type { Drive } from '@/types/drive'
 import type { BeeGfsOptions } from '@/types/topology'
 import type { SimulationInput } from '@/types/worker'
+import { installMockWorker } from '../fixtures/mock-worker'
 
 const drives = drivesData as Record<string, Drive>
 const getDriveById = (id: string): Drive | undefined => drives[id]
@@ -28,16 +29,8 @@ const FAST_DRIVE_ID = 'ent-nvme-pcie4-960gb-m2-ri'
 /** Capacity tier: 7.2k SATA HDD — 18 TB, AFR 0.44, URE 10^-15. Differs on all three. */
 const CAPACITY_DRIVE_ID = 'ent-hdd-7k2-sata-18tb-cmr'
 
-const posted: SimulationInput[] = []
-
-class MockWorker {
-  onmessage: ((event: MessageEvent) => void) | null = null
-  onerror: ((event: ErrorEvent) => void) | null = null
-  postMessage(message: { type: string; payload: SimulationInput }) {
-    if (message.type === 'START') posted.push(message.payload)
-  }
-  terminate() {}
-}
+let posted: SimulationInput[] = []
+let uninstall: () => void
 
 function tieredOptions(): BeeGfsOptions {
   return {
@@ -80,12 +73,11 @@ function runWith(options: BeeGfsOptions | undefined): SimulationInput {
 
 describe('useResilience — BeeGFS media drive follows the capacity tier', () => {
   beforeEach(() => {
-    posted.length = 0
-    vi.stubGlobal('Worker', MockWorker)
+    ;({ posted, uninstall } = installMockWorker())
   })
 
   afterEach(() => {
-    vi.unstubAllGlobals()
+    uninstall()
   })
 
   it('hands the worker the capacity tier capacity, URE rate and AFR under MDT tiering', () => {
