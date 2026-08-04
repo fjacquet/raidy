@@ -11,7 +11,14 @@ import {
 } from '@/engines/volumetry/strategies/beegfs'
 import type { Drive } from '@/types/drive'
 import type { ResilienceResult, SimulationProgress } from '@/types/results'
-import type { BeeGfsOptions, Topology } from '@/types/topology'
+import type {
+  BeeGfsOptions,
+  CephOptions,
+  NutanixOptions,
+  S2DOptions,
+  Topology,
+  VsanOptions,
+} from '@/types/topology'
 import type { SimulationInput, SimulationOutput, WorkerOutputMessage } from '@/types/worker'
 
 interface UseResilienceOptions {
@@ -35,6 +42,14 @@ interface UseResilienceOptions {
    * group is the storage target rather than the node — see `drivesPerTarget`.
    */
   beeGfsOptions?: BeeGfsOptions
+  /**
+   * Per-platform tiering option bags. When the platform's own tiering toggle is on, the
+   * simulated population and media come from the capacity tier — see `tieredPlatformScope`.
+   */
+  s2dOptions?: S2DOptions
+  vsanOptions?: VsanOptions
+  cephOptions?: CephOptions
+  nutanixOptions?: NutanixOptions
 }
 
 interface UseResilienceResult {
@@ -119,6 +134,10 @@ interface SimulationScopeContext {
   hotSpares: number
   topology: Topology
   beeGfsOptions?: BeeGfsOptions
+  s2dOptions?: S2DOptions
+  vsanOptions?: VsanOptions
+  cephOptions?: CephOptions
+  nutanixOptions?: NutanixOptions
 }
 
 /** How a platform overrides the naive `driveCount * serverCount` population, if at all. */
@@ -137,10 +156,54 @@ type SimulationScopeResolver = (ctx: SimulationScopeContext) => PlatformSimulati
  * problem for the network model. Platforms absent from this table fall back to the naive
  * `driveCount * serverCount` population with `serverCount` fault groups.
  *
- * Only BeeGFS has an entry today. The same tiering-blindness this fixes also affects S2D, vSAN,
- * Ceph and Nutanix, but fixing those moves their published numbers and needs its own review
- * (issue #59) — when it lands it should be a new entry here, not another branch below.
+ * BeeGFS resolves its own storage-target population itself; the four tiered platforms share
+ * `tieredPlatformScope`, which reads the capacity tier through `resolveTiering`.
  */
+
+/**
+ * Population and media for the platforms that tier through `resolveTiering`: S2D storage tiers,
+ * vSAN OSA disk groups, Ceph WAL/DB offload, Nutanix hybrid clusters.
+ *
+ * One resolver for all four rather than one each: `resolveTiering` already dispatches internally
+ * by `topology.type`, and once it has resolved, turning a `TieredCapacityResult` into a scope is
+ * identical everywhere. BeeGFS keeps its own resolver because it needs the storage-target concept
+ * only it has.
+ *
+ * Returns null when the platform's tiering toggle is off, which leaves the naive
+ * `driveCount * serverCount` path untouched for every currently-correct configuration.
+ *
+ * Not modelled: the fast tier as a shared failure domain. A vSAN OSA cache device failure takes
+ * down its entire disk group, and a Ceph WAL/DB NVMe failure can take out every OSD it serves.
+ * This resolver corrects WHICH drives are simulated, not WHY the fast tier failing could cascade
+ * — that needs per-platform failure-domain work. The same limitation Ceph's WAL/DB tier already
+ * had before this change.
+ *
+ * Hot spares are not subtracted here — no platform's resilience population subtracts them today
+ * (issue #80). Counting a spare as data-bearing overstates risk, so this stays on the safe side
+ * of the superset invariant documented on `resolveBeeGfsSimulationScope`.
+ */
+function tieredPlatformScope({
+  topology,
+  serverCount,
+  s2dOptions,
+  vsanOptions,
+  cephOptions,
+  nutanixOptions,
+}: SimulationScopeContext): PlatformSimulationScope | null {
+  const tiering = resolveTiering(topology, serverCount, {
+    s2dOptions,
+    vsanOptions,
+    cephOptions,
+    nutanixOptions,
+  })
+  if (!tiering) return null
+  return {
+    driveCount: tiering.capacityTierDriveCount,
+    groupCount: serverCount,
+    mediaDrive: tiering.capacityTierDrive,
+  }
+}
+
 const SIMULATION_SCOPE_BY_TOPOLOGY: Partial<Record<Topology['type'], SimulationScopeResolver>> = {
   beegfs: ({ driveCount, serverCount, hotSpares, topology, beeGfsOptions }) => {
     if (!beeGfsOptions) return null
@@ -152,6 +215,10 @@ const SIMULATION_SCOPE_BY_TOPOLOGY: Partial<Record<Topology['type'], SimulationS
     const tiering = resolveTiering(topology, serverCount, { beeGfsOptions })
     return { ...scope, mediaDrive: tiering?.capacityTierDrive ?? null }
   },
+  s2d: tieredPlatformScope,
+  vsan_osa: tieredPlatformScope,
+  ceph: tieredPlatformScope,
+  nutanix: tieredPlatformScope,
 }
 
 /**
@@ -244,6 +311,10 @@ export function useResilience(options: UseResilienceOptions): UseResilienceResul
     autoRun = false,
     mirrorCopies = 0,
     beeGfsOptions,
+    s2dOptions,
+    vsanOptions,
+    cephOptions,
+    nutanixOptions,
   } = options
 
   const [result, setResult] = useState<ResilienceResult | null>(null)
@@ -363,6 +434,10 @@ export function useResilience(options: UseResilienceOptions): UseResilienceResul
       hotSpares,
       topology,
       beeGfsOptions,
+      s2dOptions,
+      vsanOptions,
+      cephOptions,
+      nutanixOptions,
     })
 
     const mediaDrive = scope?.mediaDrive ?? drive
@@ -392,6 +467,10 @@ export function useResilience(options: UseResilienceOptions): UseResilienceResul
     simulationCount,
     mirrorCopies,
     beeGfsOptions,
+    s2dOptions,
+    vsanOptions,
+    cephOptions,
+    nutanixOptions,
   ])
 
   // Abort simulation

@@ -34,6 +34,9 @@ export function OutputDashboard() {
     unitSystem,
     performanceThreshold,
     s2dOptions,
+    vsanOptions,
+    cephOptions,
+    nutanixOptions,
     powerFlexOptions,
     beeGfsOptions,
   } = useConfigStore()
@@ -112,6 +115,10 @@ export function OutputDashboard() {
     autoRun: false,
     mirrorCopies,
     beeGfsOptions: topology.type === 'beegfs' ? beeGfsOptions : undefined,
+    s2dOptions,
+    vsanOptions,
+    cephOptions,
+    nutanixOptions,
   })
 
   // Export handlers

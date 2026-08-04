@@ -490,8 +490,8 @@ platforms that is `driveCount × effectiveServerCount` in `effectiveServerCount`
 Platforms that need something else register a resolver in `SIMULATION_SCOPE_BY_TOPOLOGY`
 (`src/hooks/useResilience.ts`), a `Partial<Record<TopologyType, SimulationScopeResolver>>` lookup
 mirroring `NETWORK_MODEL_BY_TOPOLOGY` above; a topology with no entry gets the default population
-described in the previous sentence. **BeeGFS** is the only entry today. Its resolver calls the
-exported pure helper `resolveBeeGfsSimulationScope`, which reuses `resolveBeeGfsUsableDrives` +
+described in the previous sentence. Its resolver calls the exported pure helper
+`resolveBeeGfsSimulationScope`, which reuses `resolveBeeGfsUsableDrives` +
 `calculateStorageTargets` — the same functions volumetry and the options panel use — so hot
 spares, MDT tiering and stranded drives are applied identically on both sides, and the fault
 group is a whole storage target at its real width.
@@ -499,9 +499,14 @@ Under MDT tiering the drive characteristics handed to the worker (capacity, URE 
 follow the capacity tier rather than the Hardware panel's drive. MDT drives themselves are not
 simulated — a separate protection domain, the same scope choice made for Ceph's WAL/DB tier.
 
-The same tiering-blindness this fixes still affects S2D, vSAN, Ceph and Nutanix; correcting it
-moves their published numbers, so it is deferred (issue #59). When it lands it should be a new
-entry in the table, not another branch.
+`SIMULATION_SCOPE_BY_TOPOLOGY` holds five entries. BeeGFS resolves its own storage-target
+population; S2D, vSAN OSA, Ceph and Nutanix share `tieredPlatformScope`, which reads the capacity
+tier through `resolveTiering` so resilience simulates the same drives volumetry counts. Platforms
+absent from the table use the naive `driveCount × serverCount` population.
+
+**Not modelled:** the fast tier as a shared failure domain. A vSAN OSA cache device failure takes
+down its whole disk group; a Ceph WAL/DB NVMe failure can take out every OSD it serves. The table
+corrects which drives are simulated, not why the fast tier failing could cascade.
 
 The resilience model carries a deliberate invariant: **its simulated failure set must be a
 superset of the physically real one**, so the tool may understate resilience but never overstate
