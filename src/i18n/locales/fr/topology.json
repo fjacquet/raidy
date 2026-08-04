@@ -191,6 +191,13 @@
       "label": "ADAPT (Recommandé)",
       "description": "RAID distribué, ~87% efficacité, 12-128 disques"
     },
+    "info": {
+      "raid1": "RAID 1: miroir 2 voies avec 50% d'efficacité de stockage. Simple, reconstructions rapides. Idéal pour les volumes de boot et les petits déploiements.",
+      "raid5": "RAID 5: parité distribuée simple avec efficacité (n-1)/n. Pénalité d'écriture 4x. Non recommandé pour les charges de travail à forte écriture.",
+      "raid6": "RAID 6: double parité distribuée avec efficacité (n-2)/n. Pénalité d'écriture 6x. Meilleure protection des données pour les disques grande capacité.",
+      "raid10": "RAID 10: agrégats en miroir avec 50% d'efficacité. Meilleures performances IOPS aléatoires. Idéal pour les bases de données.",
+      "adapt": "ADAPT: RAID distribué avec ~87% d'efficacité. Capacité de secours répartie sur tous les disques. Reconstructions les plus rapides (8-10x plus rapide). Nécessite 12-128 disques."
+    },
     "model": "Modèle",
     "modelDesc": {
       "ME5212": "ME5212: 2U, 12 disques (3.5\" uniquement)",
@@ -360,6 +367,11 @@
     "ec_12_4": {
       "label": "EC 12+4",
       "description": "Erasure coding 12+4, 75% efficacité, -30% IOPS"
+    },
+    "info": {
+      "medium": "Medium Granularity (1MB): mode standard avec un overhead de métadonnées plus faible. Prend en charge le mirroring 2 et 3 voies.",
+      "fine": "Fine Granularity (8KB): meilleur pour les petites I/O aléatoires. Ne prend en charge que le mirroring 2 voies. 12-15% d'overhead de métadonnées.",
+      "ec": "Erasure Coding: meilleure efficacité de capacité mais ~30% d'IOPS en moins à cause de l'overhead CPU. Nécessite PowerFlex 4.5+."
     },
     "enableCompression": "Activer la compression",
     "compressionRatio": "Ratio de compression",
