@@ -11,12 +11,21 @@ export type {
   ConfigState,
   ConfigStore,
   FilesystemState,
+  FsType,
   HardwareState,
   NetworkSpeed,
   PCIeGen,
   PCIeLanes,
   TopologyState,
   WorkloadState,
+} from './config'
+export {
+  BLOCK_SIZES,
+  CARBON_REGIONS,
+  FS_TYPES,
+  NETWORK_SPEEDS,
+  PCIE_GENS,
+  PCIE_LANES,
 } from './config'
 // Drive types
 export type {

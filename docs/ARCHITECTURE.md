@@ -350,6 +350,22 @@ Monte Carlo simulation for data loss probability.
 - Correlated batch failures
 - Stress-induced failures during rebuild
 
+**Group topology (RAID 50/60, every BeeGFS group level):** drives are partitioned into
+`numGroups` independent fault groups via `distributeAcrossGroups()`, which spreads the
+`driveCount % numGroups` remainder one-per-group across the first groups rather than dropping it
+— every drive is modelled, at the cost of groups being heterogeneous in width. A group's
+rebuild-read volume (and therefore its URE exposure) is computed per group from its own width,
+except mirrored group layouts (`beegfs_raid10`): a RAID10 target rebuilds by reading only the
+surviving mirror partner (one drive), never the whole target. Unmerged `beegfs_raid10` groups
+also get dedicated per-pair state via `buildGroupPairState()` instead of the flat failure counter
+every other group layout uses — a width-W target is `floor(W / 2)` independent mirror pairs (plus
+one unpaired, unprotected drive if W is odd), and the target is lost only when one specific pair
+loses both members, not at a fixed group-wide failure count. Buddy-merged `beegfs_raid10` groups
+(two targets combined into one doubled-tolerance unit) are unaffected and keep the flat counter.
+The per-simulation topology/group/pair setup (`computeTopologyModel`) is computed once per Monte
+Carlo run rather than once per iteration, since none of it depends on the random failure draws.
+See `tests/fixtures/resilience-vectors.ts` for measured before/after survival figures.
+
 ### Module D: Sustainability Engine (`/src/engines/sustainability/`)
 
 Power consumption, carbon footprint, and TCO.
@@ -417,9 +433,17 @@ ConfigStore = HardwareSlice & TopologySlice & WorkloadSlice & AdvancedSlice
 > top-level keys are stripped by `ConfigStateSchema` (Zod's default; the schema is no longer
 > `.passthrough()` at the root) rather than merged into the live store, since a key nobody reads
 > would otherwise just keep getting re-persisted into the URL. The schema's closed unions
-> (`BLOCK_SIZES`, `NETWORK_SPEEDS`, `CARBON_REGIONS`, etc.) derive from the same `as const` arrays
-> in `src/types/` that the store uses, so a new enum value can't validate on one side and
-> reject on the other. See `docs/SECURITY.md` for why this distinction matters.
+> (`BLOCK_SIZES`, `NETWORK_SPEEDS`, `CARBON_REGIONS`, `FS_TYPES`, etc.) derive from the same
+> `as const` arrays in `src/types/` that the store and UI both use, so a new enum value can't
+> validate on one side and reject on the other. The input panels (`WorkloadPanel`, `AdvancedPanel`,
+> `Header`) import these same arrays to build their `<select>` options too, rather than
+> hand-declaring a second copy — so a value added to a canonical array fails the panel's build (an
+> exhaustiveness check on its label map, or an untranslated i18n key for `Header`'s
+> `t()`-driven labels) instead of silently validating in the schema while never appearing in the
+> UI. `CARBON_REGIONS` and `FS_TYPES` are ordered to match their `<select>`'s display order rather
+> than alphabetically, since that order is the only place these arrays' order is ever observed —
+> `z.enum(...)` and the `Record<Type, …>` lookups elsewhere in the codebase don't care about
+> element order. See `docs/SECURITY.md` for why the validation-boundary distinction matters.
 
 ### Key State Values
 

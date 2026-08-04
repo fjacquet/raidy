@@ -106,6 +106,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   separate prop — `TieringResolverOptions` already carries it (including `drivesPerTarget`), so
   the BeeGFS resolver now reads `tieringOptions?.beeGfsOptions`. Pure refactor: no calculated
   number changes. (#92)
+- **UI panels now import the canonical `as const` option arrays instead of re-declaring them.**
+  `WorkloadPanel` (`BLOCK_SIZES`), `AdvancedPanel` (`NETWORK_SPEEDS`, `PCIE_GENS`, `PCIE_LANES`,
+  `FS_TYPES`) and `Header` (`CARBON_REGIONS`) previously hand-wrote a second copy of the values
+  already defined in `src/types/config.ts`; they now import the canonical arrays and derive their
+  `<select>` options from them (an exhaustive `Record<CanonicalType, string>` label map for the
+  panels with static English labels; the existing `t('carbon.regions.…')` lookup for `Header`), so
+  adding a value to a canonical array fails to compile (or renders an untranslated key, for
+  `Header`) until a label is supplied. `AdvancedPanel`'s `fsType` `onChange` cast was narrowed from
+  a hand-inlined union to `as FsType`. `src/types/index.ts` now re-exports the value arrays
+  (`BLOCK_SIZES`, `NETWORK_SPEEDS`, `PCIE_GENS`, `PCIE_LANES`, `CARBON_REGIONS`, `FS_TYPES`) and
+  the `FsType` type alongside the existing type-only exports.
+
+  Two of the duplicates found during the sweep had a different **element order** than their
+  canonical counterpart: `AdvancedPanel`'s local `FS_TYPES` (`zfs` first) vs. the canonical array
+  (`xfs` first), and `Header`'s local `CARBON_REGION_VALUES` (`norway`/`france` and
+  `china`/`world_average` swapped) vs. canonical `CARBON_REGIONS`. Order is unobserved everywhere
+  else the canonical arrays are consumed (`z.enum(...)` in `src/utils/schemas.ts`, and
+  `Record<Type, …>` lookups in the performance/sustainability engines are all order-independent),
+  so **the canonical arrays were reordered to match the UI**, rather than reordering the UI to
+  match the canonical arrays — the UI order is the only place order is ever user-visible, and
+  reordering it would have been the actual behavior change. `CARBON_REGIONS` is now
+  `switzerland, norway, france, germany, usa_average, world_average, china` and `FS_TYPES` is now
+  `zfs, xfs, ext4, btrfs, refs, ntfs`; both arrays carry a comment noting the order is
+  display-order and must not be "tidied". Rendered `<select>` option order is unchanged in both
+  panels. (#87)
 - Validator alerts (`src/utils/validators.ts`) and the Longhorn capacity-details card
   (`src/components/outputs/LonghornCapacityDetails.tsx`) now route their messages through
   `i18n.t()` instead of hardcoded English, with `fr`/`de`/`it` translations added to
@@ -151,6 +176,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **"Reset to defaults" now resets the performance threshold and the two drive-picker filters.**
   They lived only in their slices' initial state, and `resetToDefaults()` merges, so the button
   silently skipped them. Defaults are now taken from the slices themselves rather than restated.
+### Fixed
+- **Resilience worker: `drivesPerGroup` floor-division left drives unmodelled in every group
+  topology.** `Math.floor(driveCount / numGroups)` in `src/workers/resilienceWorker.ts` silently
+  dropped up to `numGroups - 1` drives from every simulated group whenever
+  `driveCount % numGroups != 0` — those drives could never fail, and any failure beyond total
+  group capacity landed on group 0 by array-index fallback. `distributeAcrossGroups()` now spreads
+  the remainder one-per-group across the first `driveCount % numGroups` groups instead, so groups
+  are heterogeneous in width but every drive is modelled. Pre-existing and shared by RAID 50/60
+  and every BeeGFS group level (`beegfs_raid6`, `beegfs_raidz2`, `beegfs_raid10`).
+  **Moves RAID 50/60 numbers, not only BeeGFS** — measured (20,000 iterations): RAID50, 11 drives
+  / 3 groups, survival 66.06% -> 60.07% (lower, correctly — the previously-unmodelled drives are
+  now exposed to failure); RAID60, 14 drives / 4 groups, survival 99.980% -> 99.965%. New
+  validation vectors and property-based tests (`fast-check`) in
+  `tests/fixtures/resilience-vectors.ts` and `tests/workers/resilience-group-modelling.spec.ts`.
+  (#70)
+- **Resilience worker: group-path `bitsRead` overstated URE exposure for `beegfs_raid10`.** The
+  group-topology rebuild-read formula, `(drivesPerGroup - 1) x capacity`, assumed a rebuild reads
+  every other drive in the group. Correct for parity groups (RAID50/60, `beegfs_raid6`/
+  `beegfs_raidz2`), but a `beegfs_raid10` mirror-pair rebuild reads only the ONE surviving partner
+  in that pair. Mirrored group layouts now use a fixed 1-drive rebuild-read volume, matching the
+  drive-pair mirror model's formula exactly. Safe-direction bug (overstated URE risk), so survival
+  only rises. Measured (20,000 iterations, unmerged `beegfs_raid10`, 40 drives / 4 targets of 10):
+  survival 9.3% -> 32.5%. New validation vector in `tests/fixtures/resilience-vectors.ts`. (#67)
+- **Resilience worker: `beegfs_raid10` unmerged tolerance was pessimistic for wide targets.** The
+  flat `parityPerGroup` failure counter killed an unmerged `beegfs_raid10` target at ANY 2
+  failures, when a real RAID10 target of width W tolerates up to W/2 failures provided each lands
+  in a distinct mirror pair. `buildGroupPairState()` now gives these groups per-pair state (flat,
+  pre-sized arrays — not an array-of-arrays, to avoid allocation-heavy setup across the worker's
+  100K Monte Carlo iterations): a group dies only when one specific pair loses both members.
+  Safe-direction bug (understated resilience), so survival rises. At the same AFR/URE combination
+  used for the #67 vector above, #66 alone barely moves the number (32.3% -> 31.6%, within Monte
+  Carlo noise) because URE already dominates death there; isolated with a near-zero URE rate
+  instead (20,000 iterations, unmerged, 40 drives / 4 targets of 10, moderate AFR): survival
+  97.1% -> 99.50%. New validation vectors and a `fast-check` property suite for
+  `buildGroupPairState` in `tests/fixtures/resilience-vectors.ts` and
+  `tests/workers/resilience-group-modelling.spec.ts`. (#66)
+
+  Also hoists the per-simulation topology/group/pair setup (`computeTopologyModel`) out of the
+  100K-iteration Monte Carlo loop and into a single per-run computation, since none of it depends
+  on the random failure draws — a straight perf mitigation for the extra per-pair arrays #66
+  introduces, not a behavior change.
 
 ## [1.15.1] - 2026-08-04
 

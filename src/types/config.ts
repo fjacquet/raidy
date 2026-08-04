@@ -47,20 +47,31 @@ export type PCIeGen = (typeof PCIE_GENS)[number]
 export const PCIE_LANES = ['x4', 'x8', 'x16'] as const
 export type PCIeLanes = (typeof PCIE_LANES)[number]
 
-/** Carbon intensity regions */
+/**
+ * Carbon intensity regions. Order is the UI display order (Header's carbon-region select) —
+ * not alphabetical, not grouped by intensity. Do not "tidy" this into alphabetical order; that
+ * would silently reorder a live dropdown. z.enum() and Record<CarbonRegion, …> lookups that
+ * consume this array are order-independent, so the display order here is the only place order
+ * is observed at all.
+ */
 export const CARBON_REGIONS = [
   'switzerland',
-  'france',
   'norway',
+  'france',
   'germany',
   'usa_average',
-  'china',
   'world_average',
+  'china',
 ] as const
 export type CarbonRegion = (typeof CARBON_REGIONS)[number]
 
-/** File system types available for backup calculations */
-export const FS_TYPES = ['xfs', 'ext4', 'zfs', 'refs', 'ntfs', 'btrfs'] as const
+/**
+ * File system types available for backup calculations. Order is the UI display order
+ * (AdvancedPanel's filesystem select) — not alphabetical. Do not "tidy" this into alphabetical
+ * order; that would silently reorder a live dropdown. z.enum() consumes this array in an
+ * order-independent way, so the display order here is the only place order is observed at all.
+ */
+export const FS_TYPES = ['zfs', 'xfs', 'ext4', 'btrfs', 'refs', 'ntfs'] as const
 export type FsType = (typeof FS_TYPES)[number]
 
 /** Hardware configuration state */

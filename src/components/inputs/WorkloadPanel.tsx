@@ -6,17 +6,20 @@ import { useTranslation } from 'react-i18next'
 import { Label, Select, Slider } from '@/components/common/FormControls'
 import { useFormatBytes } from '@/hooks/useCalculations'
 import { useConfigStore } from '@/store'
-import type { BlockSize } from '@/types'
+import { BLOCK_SIZES, type BlockSize } from '@/types'
 
-const BLOCK_SIZES: { value: BlockSize; label: string }[] = [
-  { value: '4K', label: '4K' },
-  { value: '8K', label: '8K' },
-  { value: '16K', label: '16K' },
-  { value: '64K', label: '64K' },
-  { value: '128K', label: '128K' },
-  { value: '256K', label: '256K' },
-  { value: '1M', label: '1M' },
-]
+/** Exhaustive over BlockSize — adding a value to BLOCK_SIZES fails to compile until a label is added here. */
+const BLOCK_SIZE_LABELS: Record<BlockSize, string> = {
+  '4K': '4K',
+  '8K': '8K',
+  '16K': '16K',
+  '64K': '64K',
+  '128K': '128K',
+  '256K': '256K',
+  '1M': '1M',
+}
+
+const BLOCK_SIZE_OPTIONS = BLOCK_SIZES.map((value) => ({ value, label: BLOCK_SIZE_LABELS[value] }))
 
 // Convert slider position to bytes (logarithmic scale)
 function sliderToBytes(position: number): number {
@@ -128,7 +131,7 @@ export function WorkloadPanel() {
         <Select
           id="block-size"
           value={blockSize}
-          options={BLOCK_SIZES}
+          options={BLOCK_SIZE_OPTIONS}
           onChange={(v) => setBlockSize(v as BlockSize)}
         />
         <p className="text-xs text-slate-500">
