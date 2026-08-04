@@ -5,15 +5,27 @@
  * with derived target count / stranded drives), storage & metadata Buddy
  * Mirroring, per-file striping (chunk size + numTargets, performance only),
  * cluster interconnect (display only — see BeeGfsOptions.network in
- * src/types/topology.ts), and metadata target (MDT) sizing via TieringPanel.
+ * src/types/topology.ts), and an explicit `metadataTargets` opt-in gating
+ * metadata target (MDT) sizing via TieringPanel — mirrors Ceph's
+ * `walDbOffload` toggle so filling in the MDT drive pickers can never
+ * silently switch the storage-target drive selection away from the
+ * Hardware panel (see resolveTiering in src/engines/shared/tiering.ts).
  */
 
+import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Label, SegmentedControl, Select, Slider, Toggle } from '@/components/common/FormControls'
 import { TieringPanel } from '@/components/inputs/TieringPanel'
+import drivesData from '@/data/drives.json'
 import { useConfigStore } from '@/store'
+import type { Drive } from '@/types'
 import { DEFAULT_TIERING_CONFIG } from '@/types'
 
+const drives = drivesData as Record<string, Drive>
+
+// InfiniBand fabric names and Ethernet speed labels are technical proper nouns, the same
+// convention as Ceph's BlueStore/FileStore and Synology's Btrfs/EXT4 labels elsewhere in this
+// panel family — left untranslated deliberately, not an oversight.
 const BEEGFS_NETWORK_OPTIONS = [
   { value: 'ib-hdr', label: 'InfiniBand HDR' },
   { value: 'ib-ndr', label: 'InfiniBand NDR' },
@@ -23,12 +35,35 @@ const BEEGFS_NETWORK_OPTIONS = [
 
 export function BeeGfsOptionsPanel() {
   const { t } = useTranslation('topology')
-  const { beeGfsOptions, driveCount, serverCount, setBeeGfsOptions } = useConfigStore()
+  const { beeGfsOptions, driveCount, serverCount, hotSpares, setBeeGfsOptions } = useConfigStore()
 
-  const totalDrives = driveCount * serverCount
-  const storageTargetCount =
-    beeGfsOptions.drivesPerTarget > 0 ? Math.floor(totalDrives / beeGfsOptions.drivesPerTarget) : 0
-  const strandedDrives = totalDrives - storageTargetCount * beeGfsOptions.drivesPerTarget
+  // Mirror the engine's storage-target derivation exactly (calculateVolumetry in
+  // src/engines/volumetry/index.ts) so this panel's numbers cannot diverge from the
+  // beeGfsDetails output card: when metadataTargets is on and both tier drives are
+  // selected, the capacity-tier drive count is the storage-target source (resolveTiering);
+  // otherwise it's the Hardware panel's driveCount * serverCount.
+  const tiering = beeGfsOptions.tiering
+  const tieringActive = Boolean(
+    beeGfsOptions.metadataTargets &&
+      tiering?.fastTier.driveId &&
+      drives[tiering.fastTier.driveId] &&
+      tiering?.capacityTier.driveId &&
+      drives[tiering.capacityTier.driveId],
+  )
+
+  const { storageTargetCount, strandedDrives } = useMemo(() => {
+    const effectiveDriveCount =
+      tieringActive && tiering
+        ? tiering.capacityTier.driveCount * serverCount
+        : driveCount * serverCount
+    const usableDrives = Math.max(0, effectiveDriveCount - hotSpares)
+    const targets =
+      beeGfsOptions.drivesPerTarget > 0
+        ? Math.floor(usableDrives / beeGfsOptions.drivesPerTarget)
+        : 0
+    const stranded = usableDrives - targets * beeGfsOptions.drivesPerTarget
+    return { storageTargetCount: targets, strandedDrives: stranded }
+  }, [tieringActive, tiering, driveCount, serverCount, hotSpares, beeGfsOptions.drivesPerTarget])
 
   return (
     <div className="space-y-4 pt-3 border-t border-slate-200 dark:border-surface-700">
@@ -108,28 +143,38 @@ export function BeeGfsOptionsPanel() {
         <p className="text-xs text-slate-500">{t('beegfs.networkHint')}</p>
       </div>
 
-      <div className="space-y-2 pt-2">
-        <h5 className="text-sm font-medium text-slate-700 dark:text-slate-200">
-          {t('beegfs.metadataTargets')}
-        </h5>
-        <p className="text-xs text-slate-500">{t('beegfs.metadataTargetsHint')}</p>
-        <TieringPanel
-          config={beeGfsOptions.tiering ?? DEFAULT_TIERING_CONFIG}
-          onChange={(tiering) =>
-            setBeeGfsOptions({
-              tiering: {
-                ...DEFAULT_TIERING_CONFIG,
-                ...beeGfsOptions.tiering,
-                ...tiering,
-              },
-            })
-          }
-          serverCount={serverCount}
-          platform="beegfs"
-          showCacheMode={false}
-          showWorkingSet={false}
-        />
-      </div>
+      <Toggle
+        id="beegfs-metadata-targets"
+        label={t('beegfs.metadataTargetsToggle')}
+        checked={beeGfsOptions.metadataTargets}
+        onChange={(v) => setBeeGfsOptions({ metadataTargets: v })}
+      />
+      <p className="text-xs text-slate-500 -mt-2">{t('beegfs.metadataTargetsToggleHint')}</p>
+
+      {beeGfsOptions.metadataTargets && (
+        <div className="space-y-2 pt-2">
+          <h5 className="text-sm font-medium text-slate-700 dark:text-slate-200">
+            {t('beegfs.metadataTargets')}
+          </h5>
+          <p className="text-xs text-slate-500">{t('beegfs.metadataTargetsHint')}</p>
+          <TieringPanel
+            config={beeGfsOptions.tiering ?? DEFAULT_TIERING_CONFIG}
+            onChange={(next) =>
+              setBeeGfsOptions({
+                tiering: {
+                  ...DEFAULT_TIERING_CONFIG,
+                  ...beeGfsOptions.tiering,
+                  ...next,
+                },
+              })
+            }
+            serverCount={serverCount}
+            platform="beegfs"
+            showCacheMode={false}
+            showWorkingSet={false}
+          />
+        </div>
+      )}
     </div>
   )
 }

@@ -502,6 +502,16 @@ export interface BeeGfsOptions {
   network: 'ib-hdr' | 'ib-ndr' | '100gbe' | '25gbe'
   /** Overhead of the ext4/xfs filesystem under each target, in percent */
   fsOverheadPercent: number
+  /**
+   * Explicit opt-in for configuring metadata targets (MDT) separately from the Hardware
+   * panel's drive/count, mirroring Ceph's `walDbOffload` toggle. Default `false`: with no
+   * MDT configured, BeeGFS co-locates metadata on the storage nodes and `beeGfsDetails.status`
+   * is `'none'`. Enabling this switches the storage-target drive selection from the Hardware
+   * sidebar to the `tiering.capacityTier` picker (see `resolveTiering` in
+   * src/engines/shared/tiering.ts) — the panel must make that switch explicit, not implicit,
+   * since the two drive counts can otherwise silently diverge.
+   */
+  metadataTargets: boolean
   /** Metadata target configuration (fastTier = MDT, capacityTier = storage targets) */
   tiering?: TieringConfig
 }
@@ -718,6 +728,7 @@ export const DEFAULT_BEEGFS_OPTIONS: BeeGfsOptions = {
   numTargets: 4,
   network: '100gbe',
   fsOverheadPercent: 2,
+  metadataTargets: false,
 }
 
 /** Default tiering configuration */

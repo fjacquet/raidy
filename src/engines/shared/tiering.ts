@@ -129,7 +129,10 @@ export function resolveTiering(
 
   // BeeGFS metadata targets (fast tier = MDT, capacity tier = storage targets).
   // MDT drives count toward raw capacity but never toward usable data capacity.
-  if (topology.type === 'beegfs' && beeGfsOptions?.tiering) {
+  // Gated on the explicit `metadataTargets` opt-in (mirrors Ceph's `walDbOffload` above) so
+  // filling in the tiering drive pickers can never silently switch the storage-target drive
+  // selection away from the Hardware panel without the user asking for it.
+  if (topology.type === 'beegfs' && beeGfsOptions?.metadataTargets && beeGfsOptions.tiering) {
     return calculateTieredCapacity(beeGfsOptions.tiering, serverCount)
   }
 

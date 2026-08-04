@@ -63,6 +63,7 @@ describe('BeeGFS volumetry — MDT via tiering', () => {
       drivesPerTarget: 12,
       storageBuddyMirror: false,
       metadataBuddyMirror,
+      metadataTargets: true,
       tiering: {
         enabled: true,
         cacheMode: 'write-back',
@@ -130,6 +131,7 @@ describe('BeeGFS volumetry — MDT via tiering', () => {
           drivesPerTarget: 12,
           storageBuddyMirror: false,
           metadataBuddyMirror: false,
+          metadataTargets: true,
           tiering: {
             enabled: true,
             cacheMode: 'write-back',
@@ -146,6 +148,81 @@ describe('BeeGFS volumetry — MDT via tiering', () => {
       createVolumetryInput(0, raid6, { beeGfsOptions: tieredOptions(false) }),
     )
     expect(ok.beeGfsDetails?.status).toBe('ok')
+  })
+})
+
+describe('BeeGFS volumetry — metadataTargets gate', () => {
+  it('does not activate tiering when metadataTargets is false, even with both drive pickers filled', () => {
+    const untiered = calculateVolumetry(
+      createVolumetryInput(12, raid6, {
+        drive: { ...testDrive1TB, capacity_raw: ST_DRIVE_BYTES },
+        beeGfsOptions: beegfs({ drivesPerTarget: 12, storageBuddyMirror: false }),
+      }),
+    )
+    const gateOff = calculateVolumetry(
+      createVolumetryInput(12, raid6, {
+        drive: { ...testDrive1TB, capacity_raw: ST_DRIVE_BYTES },
+        beeGfsOptions: beegfs({
+          drivesPerTarget: 12,
+          storageBuddyMirror: false,
+          metadataTargets: false, // both tier drives filled below, but the gate is off
+          tiering: {
+            enabled: true,
+            cacheMode: 'write-back',
+            workingSetPercent: 20,
+            fastTier: { driveId: MDT_DRIVE_ID, driveCount: 2 },
+            capacityTier: { driveId: ST_DRIVE_ID, driveCount: 12 },
+          },
+        }),
+      }),
+    )
+
+    // Tiering never resolves, so rawCapacity/usableCapacity come from the Hardware panel's
+    // drive/count exactly as in the untiered case, not from the tiering capacity tier.
+    expect(gateOff.rawCapacity).toBeCloseTo(untiered.rawCapacity, -2)
+    expect(gateOff.usableCapacity).toBeCloseTo(untiered.usableCapacity, -2)
+  })
+
+  it('MDT advisory status is "none" when metadataTargets is off', () => {
+    const gateOff = calculateVolumetry(
+      createVolumetryInput(12, raid6, {
+        beeGfsOptions: beegfs({
+          drivesPerTarget: 12,
+          storageBuddyMirror: false,
+          metadataTargets: false,
+          tiering: {
+            enabled: true,
+            cacheMode: 'write-back',
+            workingSetPercent: 20,
+            fastTier: { driveId: MDT_DRIVE_ID, driveCount: 2 },
+            capacityTier: { driveId: ST_DRIVE_ID, driveCount: 12 },
+          },
+        }),
+      }),
+    )
+    expect(gateOff.beeGfsDetails?.status).toBe('none')
+    expect(gateOff.beeGfsDetails?.mdtRawCapacity).toBe(0)
+  })
+
+  it('activates tiering once metadataTargets is turned on with the same config', () => {
+    const gateOn = calculateVolumetry(
+      createVolumetryInput(0, raid6, {
+        beeGfsOptions: beegfs({
+          drivesPerTarget: 12,
+          storageBuddyMirror: false,
+          metadataTargets: true,
+          tiering: {
+            enabled: true,
+            cacheMode: 'write-back',
+            workingSetPercent: 20,
+            fastTier: { driveId: MDT_DRIVE_ID, driveCount: 2 },
+            capacityTier: { driveId: ST_DRIVE_ID, driveCount: 12 },
+          },
+        }),
+      }),
+    )
+    expect(gateOn.beeGfsDetails?.status).not.toBe('none')
+    expect(gateOn.beeGfsDetails?.mdtRawCapacity).toBeGreaterThan(0)
   })
 })
 
