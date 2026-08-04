@@ -59,7 +59,7 @@ function runWith(options: BeeGfsOptions | undefined): SimulationInput {
       hotSpares: 0,
       topology: { type: 'beegfs', level: 'beegfs_raid6' },
       simulationCount: 1000,
-      beeGfsOptions: options,
+      tieringOptions: options ? { beeGfsOptions: options } : undefined,
     }),
   )
   act(() => {

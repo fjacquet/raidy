@@ -31,7 +31,7 @@ afterEach(() => {
 function runWith(
   topology: Topology,
   hotSpares: number,
-  extra: Record<string, unknown> = {},
+  tieringOptions: Record<string, unknown> = {},
   driveCount = 12,
   serverCount = 2,
 ): SimulationInput {
@@ -44,7 +44,7 @@ function runWith(
       topology,
       simulationCount: 10,
       autoRun: false,
-      ...extra,
+      tieringOptions,
     }),
   )
   act(() => {

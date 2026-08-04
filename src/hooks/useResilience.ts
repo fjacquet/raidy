@@ -4,7 +4,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { effectiveServerCount } from '@/engines/capabilities'
-import { resolveTiering } from '@/engines/shared/tiering'
+import { resolveTiering, type TieringResolverOptions } from '@/engines/shared/tiering'
 import {
   calculateStorageTargets,
   resolveBeeGfsUsableDrives,
@@ -12,14 +12,7 @@ import {
 import { usesDistributedSpares } from '@/types'
 import type { Drive } from '@/types/drive'
 import type { ResilienceResult, SimulationProgress } from '@/types/results'
-import type {
-  BeeGfsOptions,
-  CephOptions,
-  NutanixOptions,
-  S2DOptions,
-  Topology,
-  VsanOptions,
-} from '@/types/topology'
+import type { BeeGfsOptions, Topology } from '@/types/topology'
 import type { SimulationInput, SimulationOutput, WorkerOutputMessage } from '@/types/worker'
 
 interface UseResilienceOptions {
@@ -41,18 +34,13 @@ interface UseResilienceOptions {
   /** Mirror copies per group (2 or 3). 0 = not a mirror topology. */
   mirrorCopies?: number
   /**
-   * BeeGFS-only. When set (topology.type === 'beegfs'), the worker's fault
-   * group is the storage target rather than the node — see `drivesPerTarget`.
+   * The complete per-platform tiering option bag, sourced from `useTieringOptions()` at the call
+   * site — the same bag `useVolumetryCalc`, `usePerformanceCalc` and `useSustainabilityCalc`
+   * already consume, so no platform can be hand-listed here and dropped (issues #59, #60).
+   * `tieringOptions.beeGfsOptions` doubles as this hook's BeeGFS-only input (`drivesPerTarget`
+   * for the storage-target fault group) — see `SIMULATION_SCOPE_BY_TOPOLOGY`.
    */
-  beeGfsOptions?: BeeGfsOptions
-  /**
-   * Per-platform tiering option bags. When the platform's own tiering toggle is on, the
-   * simulated population and media come from the capacity tier — see `tieredPlatformScope`.
-   */
-  s2dOptions?: S2DOptions
-  vsanOptions?: VsanOptions
-  cephOptions?: CephOptions
-  nutanixOptions?: NutanixOptions
+  tieringOptions?: TieringResolverOptions
 }
 
 interface UseResilienceResult {
@@ -136,11 +124,8 @@ interface SimulationScopeContext {
   /** Store's per-server hot spares */
   hotSpares: number
   topology: Topology
-  beeGfsOptions?: BeeGfsOptions
-  s2dOptions?: S2DOptions
-  vsanOptions?: VsanOptions
-  cephOptions?: CephOptions
-  nutanixOptions?: NutanixOptions
+  /** Complete per-platform tiering option bag — see `UseResilienceOptions.tieringOptions`. */
+  tieringOptions?: TieringResolverOptions
 }
 
 /** How a platform overrides the naive `driveCount * serverCount` population, if at all. */
@@ -178,17 +163,9 @@ function tieredPlatformScope({
   topology,
   serverCount,
   hotSpares,
-  s2dOptions,
-  vsanOptions,
-  cephOptions,
-  nutanixOptions,
+  tieringOptions,
 }: SimulationScopeContext): PlatformSimulationScope | null {
-  const tiering = resolveTiering(topology, serverCount, {
-    s2dOptions,
-    vsanOptions,
-    cephOptions,
-    nutanixOptions,
-  })
+  const tiering = resolveTiering(topology, serverCount, tieringOptions ?? {})
   if (!tiering) return null
   const totalHotSpares = usesDistributedSpares(topology.type) ? 0 : hotSpares * serverCount
   return {
@@ -210,7 +187,8 @@ function tieredPlatformScope({
  * `tieredPlatformScope`, which reads the capacity tier through `resolveTiering`.
  */
 const SIMULATION_SCOPE_BY_TOPOLOGY: Partial<Record<Topology['type'], SimulationScopeResolver>> = {
-  beegfs: ({ driveCount, serverCount, hotSpares, topology, beeGfsOptions }) => {
+  beegfs: ({ driveCount, serverCount, hotSpares, topology, tieringOptions }) => {
+    const beeGfsOptions = tieringOptions?.beeGfsOptions
     if (!beeGfsOptions) return null
     const scope = resolveBeeGfsSimulationScope(driveCount, serverCount, hotSpares, beeGfsOptions)
     // When MDT tiering is active the storage targets are built from the capacity-tier drive, not
@@ -315,11 +293,7 @@ export function useResilience(options: UseResilienceOptions): UseResilienceResul
     simulationCount = 100000, // 100K iterations for better precision on rare events
     autoRun = false,
     mirrorCopies = 0,
-    beeGfsOptions,
-    s2dOptions,
-    vsanOptions,
-    cephOptions,
-    nutanixOptions,
+    tieringOptions,
   } = options
 
   const [result, setResult] = useState<ResilienceResult | null>(null)
@@ -446,11 +420,7 @@ export function useResilience(options: UseResilienceOptions): UseResilienceResul
       serverCount: effServerCount,
       hotSpares,
       topology,
-      beeGfsOptions,
-      s2dOptions,
-      vsanOptions,
-      cephOptions,
-      nutanixOptions,
+      tieringOptions,
     })
 
     const mediaDrive = scope?.mediaDrive ?? drive
@@ -481,11 +451,7 @@ export function useResilience(options: UseResilienceOptions): UseResilienceResul
     rebuildSpeedMBs,
     simulationCount,
     mirrorCopies,
-    beeGfsOptions,
-    s2dOptions,
-    vsanOptions,
-    cephOptions,
-    nutanixOptions,
+    tieringOptions,
   ])
 
   // Abort simulation
