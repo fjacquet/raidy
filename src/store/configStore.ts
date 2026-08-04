@@ -110,12 +110,9 @@ export const useConfigStore = create<ConfigStore>()(
       storage: createJSONStorage(() => urlHashStorage),
       version: 1,
       partialize: (state) => {
-        const persisted = {} as Pick<ConfigStore, PersistedKey>
-        for (const key of PERSISTED_KEYS) {
-          // Indexed assignment across a union of key types needs the cast; the Pick above is
-          // what actually constrains the result.
-          ;(persisted as Record<string, unknown>)[key] = state[key]
-        }
+        const persisted = Object.fromEntries(
+          PERSISTED_KEYS.map((key) => [key, state[key]]),
+        ) as Pick<ConfigStore, PersistedKey>
         return omitDefaults(persisted, DEFAULT_STATE_BASELINE)
       },
     },

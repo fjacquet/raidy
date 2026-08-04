@@ -1,6 +1,7 @@
 /**
- * Four hand-written lists described the same field set and drifted:
- * `performanceThreshold` was missing from both `partialize` and `ConfigStateSchema`, so it reset
+ * `PERSISTED_KEYS` is derived from `ConfigStateSchema` (see `src/store/persistedKeys.ts`), so a
+ * field missing from the schema is now caught there directly. `performanceThreshold` was once
+ * missing from both `partialize` and `ConfigStateSchema` by hand-maintenance drift, so it reset
  * on every shared link while every other setting survived (#63).
  *
  * These assertions force a decision. A newly added setting fails this test until someone puts it
@@ -10,7 +11,7 @@
 import { describe, expect, it } from 'vitest'
 import { useConfigStore } from '@/store'
 import { EPHEMERAL_KEYS, PERSISTED_KEYS } from '@/store/persistedKeys'
-import { ConfigStateSchema } from '@/utils/schemas'
+import { urlHashStorage } from '@/store/urlStorage'
 
 /** Settings, not actions — an action is a function, a setting never is. */
 function configKeysOfLiveStore(): string[] {
@@ -32,16 +33,10 @@ describe('persisted-key parity', () => {
     expect(overlap).toEqual([])
   })
 
-  it('matches the URL schema field for field', () => {
-    expect([...PERSISTED_KEYS].sort()).toEqual(Object.keys(ConfigStateSchema.shape).sort())
-  })
-
   it('persists performanceThreshold', () => {
     expect(PERSISTED_KEYS).toContain('performanceThreshold')
   })
 })
-
-import { urlHashStorage } from '@/store/urlStorage'
 
 describe('performanceThreshold round trip', () => {
   const stateKey = 'raidy'

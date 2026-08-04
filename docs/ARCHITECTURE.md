@@ -337,7 +337,12 @@ ConfigStore = HardwareSlice & TopologySlice & WorkloadSlice & AdvancedSlice
 - `getDefaultState()` (used by `resetToDefaults()` and as the baseline
   `omitDefaults()` diffs against) invokes each slice creator with inert
   `set`/`get` stubs rather than restating the slices' initial state, so the
-  two cannot drift apart
+  two cannot drift apart. This only works if every slice's `StateCreator`
+  builds its initial state eagerly and touches `set`/`get` only inside the
+  action closures it returns (the `sliceDefaults` constraint, documented on
+  that helper in `src/store/configStore.ts`) — since `getDefaultState()` runs
+  at module load and the stub throws, a slice that violates this fails on
+  first import rather than producing a silently wrong default
 
 > **Validation boundary.** Zustand's `persist` middleware wraps the partialized state in a
 > `{ state, version }` envelope before `urlHashStorage` ever sees it. `urlHashStorage.getItem`

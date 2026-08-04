@@ -6,6 +6,7 @@
 import drivesData from '@/data/drives.json'
 // Shared tiering resolver
 import { isAllFlashMedia, resolveTiering } from '@/engines/shared/tiering'
+import type { FsType } from '@/types/config'
 import type { Drive } from '@/types/drive'
 import type {
   BeeGfsCapacityDetails,
@@ -75,7 +76,7 @@ export interface VolumetryInput {
   powervaultOptions: PowerVaultOptions
   compressionRatio: number
   dedupRatio: number
-  fsType: 'xfs' | 'ext4' | 'zfs' | 'refs' | 'ntfs' | 'btrfs'
+  fsType: FsType
 }
 
 /**

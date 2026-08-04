@@ -142,9 +142,8 @@ describe('Volumetry Engine - Longhorn (capacity guardrails)', () => {
 })
 
 describe('Volumetry Engine - Longhorn (guardrail input clamping)', () => {
-  // LonghornOptionsSchema validates these fields, but the engine clamps defensively anyway
-  // so any out-of-range value reaching it — from any caller, not just a crafted URL — clamps
-  // rather than propagating Infinity/NaN or negative capacity.
+  // See the defensive-clamp rationale in src/engines/volumetry/index.ts, above the
+  // Longhorn guardrails block.
 
   it('clamps minimalAvailablePercent > 100 to a non-negative usable capacity', () => {
     const extreme: LonghornOptions = {

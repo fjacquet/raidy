@@ -280,9 +280,8 @@ export function calculateNetworkLimits(
   // Each server has its own network uplink, so aggregate scales with serverCount.
   // The model raises the effective ceiling for full-duplex use and on-the-wire
   // compression, and lowers it by the fraction of traffic that crosses the fabric.
-  // NETWORK_SPEED_MBS is Record<NetworkSpeed, …>, so this lookup is exhaustive —
-  // TypeScript would fail the build if a table entry were missing for a value in
-  // NETWORK_SPEEDS, no runtime fallback needed.
+  // NETWORK_SPEED_MBS is Record<NetworkSpeed, …>: exhaustive lookup, same reasoning
+  // as the PCIe table above (see calculatePCIeLimits).
   const networkBandwidthPerServer = NETWORK_SPEED_MBS[networkSpeed]
   const networkBandwidth =
     (networkBandwidthPerServer * serverCount * model.duplex * model.compressionRatio) /

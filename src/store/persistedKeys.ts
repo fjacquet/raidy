@@ -1,60 +1,18 @@
+import type { z } from 'zod'
+import { ConfigStateSchema } from '@/utils/schemas'
+
 /**
  * Which configuration fields belong in a shared link, and which deliberately do not.
  *
- * These two lists must partition the store's configuration state — `tests/store/persistedKeys.spec.ts`
- * asserts it. That parity check exists because the same field set used to be written out by hand
- * in four places (`partialize`, `getDefaultState`, `ConfigStateSchema`, and the slices), which is
- * how `performanceThreshold` came to be absent from a shared link while every other setting
- * survived (#63).
+ * `PERSISTED_KEYS` is derived from `ConfigStateSchema`, the richer artifact — it already carries
+ * per-field validation, so the field set follows from it rather than being hand-maintained a
+ * second time. `tests/store/persistedKeys.spec.ts` still asserts that `PERSISTED_KEYS ∪
+ * EPHEMERAL_KEYS` partitions the store's configuration state, so a field missing from the schema
+ * is caught by that test rather than silently vanishing from a shared link, as `performanceThreshold`
+ * once did (#63).
  */
-export const PERSISTED_KEYS = [
-  // Hardware
-  'driveId',
-  'driveCount',
-  'serverCount',
-  'serverPowerWatts',
-  // Topology
-  'topology',
-  'hotSpares',
-  'zfsOptions',
-  's2dOptions',
-  'vsanOptions',
-  'cephOptions',
-  'longhornOptions',
-  'beeGfsOptions',
-  'powerFlexOptions',
-  'controllerOptions',
-  'netAppOptions',
-  'synologyOptions',
-  'nutanixOptions',
-  'objectscaleOptions',
-  'powerstoreOptions',
-  'powerscaleOptions',
-  'powervaultOptions',
-  // Workload
-  'readPercent',
-  'blockSize',
-  'randomPercent',
-  'datasetSize',
-  'dailyWriteVolume',
-  // Advanced
-  'compressionRatio',
-  'dedupRatio',
-  'networkSpeed',
-  'pcieGen',
-  'pcieLanes',
-  'pue',
-  'carbonRegion',
-  'projectYears',
-  'electricityCostPerKwh',
-  'unitSystem',
-  'performanceThreshold',
-  // Filesystem
-  'fsType',
-  'supportsReflink',
-  'backupRetention',
-  'dailyChangeRate',
-] as const
+export type PersistedKey = keyof z.infer<typeof ConfigStateSchema>
+export const PERSISTED_KEYS = Object.keys(ConfigStateSchema.shape) as PersistedKey[]
 
 /**
  * Configuration state deliberately kept out of shared links.
@@ -63,5 +21,3 @@ export const PERSISTED_KEYS = [
  * browsing the drive database, not the configuration the link is meant to reproduce.
  */
 export const EPHEMERAL_KEYS = ['driveConnectivity', 'driveFormFactor'] as const
-
-export type PersistedKey = (typeof PERSISTED_KEYS)[number]
