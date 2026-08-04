@@ -142,6 +142,23 @@ Pre-existing and shared with RAID 50/60.
 
 ---
 
+### [B18](https://github.com/fjacquet/raidy/issues/78). `BeeGfsOptions.fsOverheadPercent` feeds a real calculation but has no UI control
+
+`fsOverheadPercent` (default `2`) is consumed by `getFilesystemOverheadPercent`
+(`src/engines/volumetry/overhead/filesystem-overhead.ts`) and reaches usable capacity through
+`overheadCalculator.ts` — but `BeeGfsOptionsPanel.tsx` renders no control for it, so no user can
+move it off its default.
+
+This is the inverse of `chunkSizeKb` / `numTargets` / `network`, which are user-settable and
+explicitly documented as informational. `fsOverheadPercent` changes a real number and is
+unreachable. It costs a store field, a `DEFAULT_BEEGFS_OPTIONS` entry, a Zod range check, a
+URL-persistence slot and several test fixtures, for a value that is always `2`.
+
+*To close:* decide which it is — a planned slider left out of the panel (add the control plus
+its four locale strings), or over-engineering (replace with a `0.02` constant the way the Ceph
+case is written, and drop the field). Leaving it as an unreachable configuration surface is not
+a resolution.
+
 ## Test and tooling debt
 
 ### [B13](https://github.com/fjacquet/raidy/issues/71). i18n: hardcoded English outside the BeeGFS surface
