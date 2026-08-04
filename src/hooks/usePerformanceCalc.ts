@@ -79,6 +79,7 @@ export function usePerformanceCalc(): PerformanceResult {
       vsanOptions,
       cephOptions,
       nutanixOptions,
+      beeGfsOptions,
     })
 
     try {

@@ -14,35 +14,6 @@ which touched enough shared code to expose pre-existing gaps.
 
 ## Correctness — real defects, non-blocking
 
-### [B1](https://github.com/fjacquet/raidy/issues/59). `useResilience` is tiering-blind for every platform except BeeGFS
-
-`src/hooks/useResilience.ts` derives the simulated drive count from the Hardware panel's
-`driveCount × serverCount`, ignoring the resolved tiering split. For a tiered configuration the
-worker therefore simulates the wrong number of drives, with the wrong capacity and AFR — it uses
-the Hardware panel's drive rather than the capacity tier's.
-
-Fixed for BeeGFS only. Affected platforms: **S2D** (`storageTiers`), **vSAN OSA** (disk groups),
-**Ceph** (`walDbOffload`), **Nutanix** (hybrid clusters).
-
-*Why deferred:* fixing it moves four platforms' resilience output, under a branch-wide guarantee
-that no existing platform's numbers move. It needs its own review with its own validation
-vectors.
-
-*To close:* extend the BeeGFS pattern in `resolveBeeGfsSimulationScope` to a platform-agnostic
-resolver built on `resolveTiering` (`src/engines/shared/tiering.ts`). Establish before/after
-numbers for each of the four platforms and justify each movement.
-
-### [B2](https://github.com/fjacquet/raidy/issues/60). `usePerformanceCalc` omits `beeGfsOptions` from `resolveTiering`
-
-`src/hooks/usePerformanceCalc.ts` passes the other platforms' options into `resolveTiering` but
-not `beeGfsOptions`, so a BeeGFS configuration with metadata targets enabled is costed for
-performance against the Hardware panel's drives rather than the capacity tier's.
-
-*Why deferred:* found late, in an area a concurrent task was editing.
-
-*To close:* add `beeGfsOptions` to the resolver options bag, matching `useVolumetryCalc.ts`. Add
-a test asserting a tiered BeeGFS config's performance uses the capacity-tier drive.
-
 ### [B3](https://github.com/fjacquet/raidy/issues/61). Fraction-vs-percent unit confusion in snapshot-reserve fields
 
 `overheadCalculator.ts` multiplies capacity by `netAppOptions.snapshotReserve` as a **fraction**.
