@@ -373,7 +373,6 @@ describe('Config store URL persistence — hostile links are rejected at the pro
         encryption: false,
         journalOnSsd: true,
         walDbOffload: false,
-        walDbRatio: 4,
         safeCapacityThreshold: 5, // schema bounds this to [0, 1]
       },
     })

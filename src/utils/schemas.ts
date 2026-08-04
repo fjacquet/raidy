@@ -213,7 +213,6 @@ const CephOptionsSchema = z.object({
   encryption: z.boolean(),
   journalOnSsd: z.boolean(),
   walDbOffload: z.boolean(),
-  walDbRatio: z.number().int().min(1).max(32).finite(),
   safeCapacityThreshold: z.number().min(0).max(1).finite(),
   tiering: TieringConfigSchema.optional(),
 })
@@ -300,7 +299,6 @@ const NetAppOptionsSchema = z.object({
  */
 const SynologyOptionsSchema = z.object({
   filesystem: z.enum(['btrfs', 'ext4']),
-  btrfsOverhead: z.number().min(0).max(1).finite(),
   systemPartitionSize: z.number().int().positive().finite(),
   modelSeries: z.enum(['j', 'value', 'plus', 'xs']),
   ssdCache: z.boolean(),
@@ -330,9 +328,7 @@ const NutanixOptionsSchema = z.object({
 const ObjectScaleOptionsSchema = z.object({
   objectSizeKB: z.number().int().positive().finite(),
   systemOverheadPercent: z.number().min(0).max(100).finite(),
-  networkEfficiencyFactor: z.number().min(0).max(1).finite(),
   sites: z.number().int().min(1).max(8).finite(),
-  fillRatePercent: z.number().min(0).max(100).finite(),
   compression: z.boolean(),
   compressionRatio: z.number().min(1).max(10).finite(),
 })
