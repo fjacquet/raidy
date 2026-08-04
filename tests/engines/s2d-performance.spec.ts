@@ -155,4 +155,34 @@ describe('S2D tiered performance (hybrid cache)', () => {
     expect(result.maxReadIOPS).toBeGreaterThan(allCapacityRead)
     expect(result.maxReadIOPS).toBeLessThan(allCacheRead)
   })
+
+  it('pinned vector: bounded read IOPS/bandwidth, not the weighted-sum-of-capacities bug (#111)', () => {
+    // Isolate the read side (readPercent 100, randomPercent 0 — fully sequential reads) so the
+    // media layer's reported iops/throughput reduce to readCapIOPS/readBW exactly, with no RAID
+    // write penalty or random/sequential throughput blend in the way. This is what a relational
+    // (toBeGreaterThan/toBeLessThan) assertion CANNOT catch: both the old buggy weighted-sum
+    // formula and the correct bounded formula satisfy "between all-capacity and all-cache", so
+    // #111 shipped with 1,391 passing tests despite overstating this exact vector by ~120x.
+    const tieredInput: PerformanceInput = {
+      ...baseS2DInput,
+      driveCount: 18,
+      tiering,
+      workingSetPercent: 20,
+      readPercent: 100,
+      randomPercent: 0,
+    }
+    const result = calculatePerformance(tieredInput)
+    const mediaLayer = result.layers.find((l) => l.name === 'Media (Drives)')
+    if (!mediaLayer) throw new Error('no media layer in result')
+
+    // Bounded (correct): min(cacheCount·iops_read / ws, capCount·iops_read / (1-ws))
+    //                   = min(6×300,000 / 0.2, 12×200 / 0.8) = min(9,000,000, 3,000) = 3,000
+    // Weighted sum (the #111 bug, for comparison — NOT what this asserts):
+    //   0.2×(6×300,000) + 0.8×(12×200) = 360,000 + 1,920 = 361,920 (~120x too high)
+    expect(mediaLayer.iops).toBeCloseTo(3_000, 6)
+
+    // Bounded (correct): min(6×2,500 / 0.2, 12×250 / 0.8) = min(75,000, 3,750) = 3,750
+    // Weighted sum (the #111 bug): 0.2×(6×2,500) + 0.8×(12×250) = 3,000 + 2,400 = 5,400
+    expect(mediaLayer.throughputMBs).toBeCloseTo(3_750, 6)
+  })
 })

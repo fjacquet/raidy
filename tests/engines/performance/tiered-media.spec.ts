@@ -1,13 +1,15 @@
 /**
  * For a tiered vSAN OSA / Ceph / Nutanix / BeeGFS configuration, the media layer must be sized
- * from the CAPACITY tier's drive and count — not the Hardware panel's drive.
+ * from at least the CAPACITY tier's drive and count — not the Hardware panel's drive.
  *
  * `calculatePerformance` consumed `tiering` only inside its S2D branch; everything else fell
  * through to an `else` that read the raw `drive` and `usableDrives`, so a hybrid cluster was
- * costed as if its bulk pool were made of cache-tier NVMe.
+ * costed as if its bulk pool were made of cache-tier NVMe. That gap is closed for all four
+ * platforms here.
  *
- * The fast tier's own contribution is deliberately not modelled for these platforms; see the
- * branch comment in `src/engines/performance/index.ts` for why.
+ * The fast tier's own contribution is modelled for vSAN OSA and Nutanix (see
+ * `src/engines/performance/utils/fast-tier-models.ts`); Ceph and BeeGFS remain deliberately
+ * unmodelled — see the branch comment in `src/engines/performance/index.ts` for why.
  */
 
 import { describe, expect, it } from 'vitest'
@@ -19,6 +21,7 @@ import {
   DEFAULT_CONTROLLER_OPTIONS,
   DEFAULT_NUTANIX_OPTIONS,
   DEFAULT_POWERFLEX_OPTIONS,
+  DEFAULT_VSAN_OPTIONS,
 } from '@/types'
 import type { Topology } from '@/types/topology'
 import { capacityDrive, fastDrive } from '../../fixtures/tiering-fixtures'
@@ -55,6 +58,7 @@ function inputFor(topology: Topology, overrides: Partial<PerformanceInput> = {})
     powerFlexOptions: DEFAULT_POWERFLEX_OPTIONS,
     cephOptions: DEFAULT_CEPH_OPTIONS,
     nutanixOptions: DEFAULT_NUTANIX_OPTIONS,
+    vsanOptions: DEFAULT_VSAN_OPTIONS, // all-flash by default
     beeGfsOptions: DEFAULT_BEEGFS_OPTIONS,
     ...overrides,
   }
@@ -73,6 +77,14 @@ const TIERED_PLATFORMS: Array<{ name: string; topology: Topology }> = [
   { name: 'BeeGFS', topology: { type: 'beegfs', level: 'beegfs_raid6' } },
 ]
 
+/**
+ * Ceph (WAL/DB offload) and BeeGFS (metadata targets) have no fast-tier model — see
+ * `src/engines/performance/index.ts` for why. Only these two must still reduce exactly to the
+ * capacity-tier-only reference; vSAN OSA and Nutanix now diverge from it (see
+ * `fast-tier-models.spec.ts`-equivalent vectors below), which is the point of #89.
+ */
+const NO_MODEL_PLATFORMS = TIERED_PLATFORMS.filter((p) => p.name === 'Ceph' || p.name === 'BeeGFS')
+
 describe('calculatePerformance tiered media layer', () => {
   it('premise: the fast and capacity drives differ in IOPS and bandwidth', () => {
     expect(fastDrive.performance.iops_read).not.toBe(capacityDrive.performance.iops_read)
@@ -81,14 +93,15 @@ describe('calculatePerformance tiered media layer', () => {
     )
   })
 
-  for (const { name, topology } of TIERED_PLATFORMS) {
+  for (const { name, topology } of NO_MODEL_PLATFORMS) {
     describe(name, () => {
-      it('sizes the media layer from the capacity tier, spares subtracted', () => {
+      it('sizes the media layer from the capacity tier, spares subtracted (no fast-tier model)', () => {
         const tiered = mediaLayer(inputFor(topology, { tiering }))
 
         // Reference: the same cluster described WITHOUT tiering — the capacity-tier drive as the
         // Hardware panel drive, at the capacity tier's count. Equality proves the substitution
-        // touched the drive AND the population, and nothing else.
+        // touched the drive AND the population, and nothing else — the fast tier contributes
+        // nothing for these two platforms.
         const reference = mediaLayer(
           inputFor(topology, {
             drive: capacityDrive,
@@ -99,7 +112,11 @@ describe('calculatePerformance tiered media layer', () => {
 
         expect(tiered).toEqual(reference)
       })
+    })
+  }
 
+  for (const { name, topology } of TIERED_PLATFORMS) {
+    describe(name, () => {
       it('does not use the Hardware panel drive', () => {
         const tiered = mediaLayer(inputFor(topology, { tiering }))
         const untiered = mediaLayer(inputFor(topology))
@@ -168,5 +185,100 @@ describe('calculatePerformance tiered media layer', () => {
     )
 
     expect(tieredS2d).not.toEqual(capacityOnly)
+  })
+
+  describe('vSAN OSA fast-tier model (#89)', () => {
+    const vsan: Topology = { type: 'vsan_osa', level: 'vsan_osa_raid1' }
+    const capacityOnlyReference = (overrides: Partial<PerformanceInput>) =>
+      mediaLayer(
+        inputFor(vsan, {
+          drive: capacityDrive,
+          driveCount: CAPACITY_TIER_COUNT,
+          hotSpares: HOT_SPARES,
+          ...overrides,
+        }),
+      )
+
+    it('writes are absorbed by the cache tier in BOTH hybrid and all-flash modes', () => {
+      // Isolate the write side: readPercent 0 makes mediaLayer.iops reduce to
+      // writeCapIOPS / effectiveWritePenalty exactly (see calculatePerformance's harmonic blend).
+      const writeOnly = { readPercent: 0 }
+      const allFlash = mediaLayer(
+        inputFor(vsan, {
+          tiering,
+          vsanOptions: { ...DEFAULT_VSAN_OPTIONS, diskGroupMode: 'all-flash' },
+          ...writeOnly,
+        }),
+      )
+      const hybrid = mediaLayer(
+        inputFor(vsan, {
+          tiering,
+          vsanOptions: { ...DEFAULT_VSAN_OPTIONS, diskGroupMode: 'hybrid' },
+          ...writeOnly,
+        }),
+      )
+      const reference = capacityOnlyReference(writeOnly)
+
+      expect(allFlash.iops).toBeGreaterThan(reference.iops)
+      expect(hybrid.iops).toBeGreaterThan(reference.iops)
+      // Write treatment does not depend on disk-group mode.
+      expect(allFlash).toEqual(hybrid)
+    })
+
+    it('all-flash disk groups get no read-side benefit — reads must not move', () => {
+      const readOnly = { readPercent: 100 }
+      const allFlash = mediaLayer(
+        inputFor(vsan, {
+          tiering,
+          vsanOptions: { ...DEFAULT_VSAN_OPTIONS, diskGroupMode: 'all-flash' },
+          ...readOnly,
+        }),
+      )
+
+      expect(allFlash).toEqual(capacityOnlyReference(readOnly))
+    })
+
+    it('hybrid disk groups blend reads by workingSetPercent — reads DO move', () => {
+      const readOnly = { readPercent: 100, workingSetPercent: 20 }
+      const hybrid = mediaLayer(
+        inputFor(vsan, {
+          tiering,
+          vsanOptions: { ...DEFAULT_VSAN_OPTIONS, diskGroupMode: 'hybrid' },
+          ...readOnly,
+        }),
+      )
+
+      expect(hybrid.iops).toBeGreaterThan(capacityOnlyReference(readOnly).iops)
+    })
+  })
+
+  describe('Nutanix hybrid fast-tier model (#89)', () => {
+    const nutanix: Topology = { type: 'nutanix', level: 'nutanix_rf2' }
+
+    it('writes split by randomPercent: a high random share is absorbed by the OpLog far more than a low one', () => {
+      // Isolate the write side: readPercent 0 (see the vSAN test above for why this isolates).
+      const writeOnly = { readPercent: 0 }
+      const highRandom = mediaLayer(
+        inputFor(nutanix, { tiering, randomPercent: 100, ...writeOnly }),
+      )
+      const lowRandom = mediaLayer(inputFor(nutanix, { tiering, randomPercent: 5, ...writeOnly }))
+
+      expect(highRandom.iops).toBeGreaterThan(lowRandom.iops)
+    })
+
+    it('reads are not modelled — a pure-read workload matches the capacity-only reference, whatever randomPercent is', () => {
+      const readOnly = { readPercent: 100 }
+      const tiered = mediaLayer(inputFor(nutanix, { tiering, randomPercent: 100, ...readOnly }))
+      const reference = mediaLayer(
+        inputFor(nutanix, {
+          drive: capacityDrive,
+          driveCount: CAPACITY_TIER_COUNT,
+          hotSpares: HOT_SPARES,
+          ...readOnly,
+        }),
+      )
+
+      expect(tiered).toEqual(reference)
+    })
   })
 })

@@ -310,11 +310,54 @@ flowchart LR
 - Per-drive IOPS and bandwidth. For tiered S2D the media layer is tier-aware (first-order write-back model): writes are absorbed by the cache tier, reads are a working-set-weighted blend of cache and capacity tiers
 
   For a tiered configuration the Media layer is sized from the **capacity tier** — its drive specs
-  and its drive count, hot spares subtracted — matching volumetry. S2D is the only platform that
-  also models a cache-tier contribution (a write-back blend weighted by `workingSetPercent`). vSAN
-  OSA, Ceph, Nutanix and BeeGFS deliberately model no fast-tier contribution: their cache semantics
-  differ from each other and from S2D's, so a shared blend would be a guess. This understates them,
-  which is the safe direction.
+  and its drive count, hot spares subtracted — matching volumetry. On top of that baseline, some
+  platforms also model a fast-tier contribution, looked up from
+  `FAST_TIER_MODEL_BY_TOPOLOGY` (`src/engines/performance/utils/fast-tier-models.ts`), a
+  `Partial<Record<TopologyType, FastTierModelResolver>>` table following the same pattern as
+  `NETWORK_MODEL_BY_TOPOLOGY` below — adding a platform's fast-tier model is a table entry, not a
+  new branch in the orchestrator:
+
+  - **S2D** (its own branch in `performance/index.ts`, not the table): writes fully absorbed by
+    the cache tier; reads a working-set blend of cache and capacity tiers.
+  - **vSAN OSA** reuses the S2D blend, gated on `vsanOptions.diskGroupMode`: writes are fully
+    absorbed by the cache tier in **both** hybrid and all-flash disk groups (VMware documents
+    100% write-buffer allocation in both modes). Reads blend by `workingSetPercent`, but **only in
+    hybrid mode** — an all-flash disk group dedicates 100% of its cache device to the write buffer
+    and 0% to read cache, so an all-flash configuration's reads stay on the capacity-tier-only
+    path unchanged.
+  - **Nutanix hybrid clusters** get a write-only model, split by `randomPercent` (not the S2D
+    blend — the OpLog's real split key is I/O size, not working set): the random-write share is
+    absorbed by the OpLog (cache tier); the sequential-write share routes straight to the extent
+    pool (capacity tier), mirroring Nutanix's documented >1.5MB-outstanding sequential-bypass
+    rule. Reads are **not modelled** — ILM tier promotion is touch-count-triggered with no
+    vendor-published hit-rate to anchor a `workingSetPercent`-style split.
+  - **Ceph (WAL/DB offload)** and **BeeGFS (metadata targets)** have no table entry and model no
+    fast-tier contribution at all, deliberately and permanently: Ceph's WAL/DB device is never in
+    the data read path and its write-path effect is removing spindle contention with bulk data,
+    not adding a parallel pool of write IOPS — there is no vendor-published number to turn
+    "removes contention" into an IOPS delta. A BeeGFS metadata target stores only inodes,
+    directory entries, and striping maps, never file content, so it is structurally incapable of
+    serving bulk data I/O — folding it into the media-layer IOPS number would be a category
+    error, not an approximation.
+
+  Every model here is driven by an existing workload/topology input (`workingSetPercent`,
+  `randomPercent`, `vsanOptions.diskGroupMode`) — none invents a number the app does not collect.
+  See `docs/superpowers/specs/2026-08-04-fast-tier-performance-research.md` for the per-platform
+  research and sourcing behind these choices (issue #89).
+
+  > **Two-tier blends are bounded, not weighted sums** (issue #111). When a fixed fraction of
+  > traffic must be served by each of two tiers concurrently (S2D/vSAN's read blend by
+  > `workingSetPercent`, Nutanix's write blend by `randomPercent`), the achievable total is capped
+  > by whichever tier saturates first — `T = min(capA / shareA, capB / (1 - shareA))` — not a
+  > weighted average of the two tiers' capacities. A weighted sum lets the fast tier's raw
+  > capacity leak into the total in proportion to how *little* traffic it serves, so the answer
+  > gets more absurd the faster the cache is (e.g. `ws=0.5`, cache 1,000,000 IOPS, capacity 1,000
+  > IOPS: weighted-sum formula gives 500,500; the correct bound gives ~2,000). All three blends
+  > share one helper, `boundedTierThroughput` in `fast-tier-models.ts`, so they cannot drift back
+  > into the wrong shape. The write-back absorption itself (`writeCapIOPS = cacheCount ×
+  > cacheWriteIOPS` for S2D/vSAN, unconditional on any split) is a different, still-open question —
+  > it models unbounded write-back with no destage/drain-rate ceiling, tracked separately from
+  > this fix.
 - RAID write penalty (2x for RAID1, 4x for RAID5, 6x for RAID6); S2D mirror write penalty scales with the copy count (two-way 2×, three-way 3×, MAP = `mirrorCopies + 0.5`), with `s2dOptions` threaded through `PerformanceInput`/`usePerformanceCalc`
 - Controller limits (IOPS and throughput caps) — skipped for NVMe-direct topologies (vSAN ESA)
 - PCIe bandwidth (lanes × generation speed)
