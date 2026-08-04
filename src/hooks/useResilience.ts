@@ -9,6 +9,7 @@ import {
   calculateStorageTargets,
   resolveBeeGfsUsableDrives,
 } from '@/engines/volumetry/strategies/beegfs'
+import { usesDistributedSpares } from '@/types'
 import type { Drive } from '@/types/drive'
 import type { ResilienceResult, SimulationProgress } from '@/types/results'
 import type {
@@ -423,6 +424,14 @@ export function useResilience(options: UseResilienceOptions): UseResilienceResul
     // effectiveServerCount in src/engines/capabilities.ts, audit finding #14).
     const effServerCount = effectiveServerCount(serverCount, topology)
 
+    // A hot spare holds no data, so its failure is not a data-loss event. Volumetry
+    // (useVolumetryCalc.ts:80) and performance (usePerformanceCalc.ts:77) already remove spares
+    // from their populations on this exact rule; resilience did not, which inflated the failure
+    // population and understated survival for every configuration with a spare (#80).
+    // vSAN rebuilds from distributed slack space rather than dedicated spare drives, so
+    // usesDistributedSpares zeroes the subtraction there.
+    const totalHotSpares = usesDistributedSpares(topology.type) ? 0 : hotSpares * effServerCount
+
     // Platforms whose simulated population is not simply `driveCount * serverCount` resolve it
     // through the table above — for BeeGFS the fault group is the storage target, and both the
     // population and the media come from the same resolved values volumetry uses. See
@@ -440,7 +449,9 @@ export function useResilience(options: UseResilienceOptions): UseResilienceResul
     })
 
     const mediaDrive = scope?.mediaDrive ?? drive
-    const totalDriveCount = scope ? scope.driveCount : driveCount * effServerCount
+    const totalDriveCount = scope
+      ? scope.driveCount
+      : Math.max(0, driveCount * effServerCount - totalHotSpares)
     const groupCount = scope ? scope.groupCount : effServerCount
 
     const input: SimulationInput = {
