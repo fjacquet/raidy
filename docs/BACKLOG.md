@@ -130,30 +130,6 @@ vectors showing survival-rate movement for a spared vs. spare-free configuration
 
 ## Test and tooling debt
 
-<<<<<<< HEAD
-### [B14](https://github.com/fjacquet/raidy/issues/72). Roughly 34 pre-existing missing i18n keys
-
-`powervault.info.*` and `powerflex.info.*` missing from `fr`/`de`/`it`; `zfs.ashift*` and
-`nutanix.info.*` missing from `de`/`it`. They render as raw keys.
-
-*To close:* add the missing keys, then add an i18n-parity test — the repo has none, which is why
-these went unnoticed.
-=======
-### [B13](https://github.com/fjacquet/raidy/issues/71). i18n: hardcoded English outside the BeeGFS surface
-
-`src/components/outputs/.../LonghornCapacityDetails.tsx` and roughly fifteen validators in
-`src/utils/validators.ts` emit hardcoded English. `src/i18n/locales/*/validation.json` exists but
-was unused before the BeeGFS alerts.
-
-Note two conventions discovered during the BeeGFS i18n work, neither documented anywhere:
-`fr`/`de`/`it` `validation.json` are written **without accents or umlauts**, and
-`topologyConstants.ts` hardcodes English for topology type and level labels on **every** platform
-— those never pass through `t()`.
-
-*To close:* route the remaining validators through the `i18n.t()` pattern already used by the
-BeeGFS alerts, and decide deliberately whether the unaccented convention should stay.
->>>>>>> origin/main
-
 ### [B15](https://github.com/fjacquet/raidy/issues/73). `npm run test:coverage` fails when run concurrently with another vitest process
 
 Vitest cleans `reportsDirectory` on start, so a parallel invocation kills the coverage run with
