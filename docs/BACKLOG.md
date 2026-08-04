@@ -130,13 +130,6 @@ vectors showing survival-rate movement for a spared vs. spare-free configuration
 
 ## Test and tooling debt
 
-### [B15](https://github.com/fjacquet/raidy/issues/73). `npm run test:coverage` fails when run concurrently with another vitest process
-
-Vitest cleans `reportsDirectory` on start, so a parallel invocation kills the coverage run with
-`Something removed the coverage directory "coverage/.tmp"`. Relevant to CI job layout.
-
----
-
 ### [B18](https://github.com/fjacquet/raidy/issues/78). `BeeGfsOptions.fsOverheadPercent` feeds a real calculation but has no UI control
 
 `fsOverheadPercent` (default `2`) is consumed by `getFilesystemOverheadPercent`
