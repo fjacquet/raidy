@@ -260,6 +260,14 @@ export function calculatePerformance(input: PerformanceInput): PerformanceResult
     // understates these platforms, which is the safe direction.
     const p = capacityDrive
     // Mirrors `spareAdjustedDrives` in src/engines/volumetry/index.ts.
+    //
+    // Deliberate divergence from volumetry for BeeGFS: volumetry additionally rounds this count
+    // down to whole storage targets, dropping up to `drivesPerTarget - 1` "stranded" drives that
+    // belong to no target and hold no data (see the comment at that site in
+    // src/engines/volumetry/index.ts). Performance does NOT apply that rounding here — a drive
+    // stranded from a storage target still physically exists on the bus, still draws from the
+    // controller and PCIe budget, and can still serve rebuild traffic, so pricing it is correct
+    // for a bottleneck model even though excluding it is correct for a capacity model. See #91.
     const capUsableDrives = Math.max(0, tiering.capacityTierDriveCount - hotSpares)
     const capDriveIOPS = limitingIOPS(p)
     readCapIOPS = capDriveIOPS * capUsableDrives
