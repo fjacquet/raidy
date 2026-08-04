@@ -96,12 +96,13 @@ describe('getControllerOptions — BeeGFS lists per level', () => {
   })
 
   it('models a beegfs_raid6 node well below the HBA ceiling', () => {
-    // The defect this fixes: a PERC H755 is 750k IOPS / 12 GB/s, the cheapest HBA in the list
-    // is 2M IOPS / 19.2 GB/s, so HBA-only classification modelled ~2.7x the real IOPS ceiling.
+    // The defect this fixes: a PERC H755 is 3.5M IOPS / 14.1 GB/s (Tolly #223103 basis, #84),
+    // the cheapest HBA in the list is 2M IOPS / 19.2 GB/s — the HBA ceiling is still not a
+    // stand-in for the RAID controller's real ceiling, so this stays a RAID-only path.
     const raidCeilings = getControllerOptions('beegfs', 'beegfs_raid6').map(
       (c) => CONTROLLER_LIMITS[c],
     )
-    expect(CONTROLLER_LIMITS.perc_h755.iops).toBe(750_000)
+    expect(CONTROLLER_LIMITS.perc_h755.iops).toBe(3_500_000)
     expect(CONTROLLER_LIMITS.hba_nvme.iops).toBe(10_000_000)
     expect(raidCeilings.every((spec) => !spec.isHba)).toBe(true)
   })

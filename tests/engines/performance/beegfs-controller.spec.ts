@@ -6,7 +6,8 @@
  * controller on `setTopology`, `getControllerOptions` decides what it may snap to, and the
  * performance engine reads `CONTROLLER_LIMITS[controllerOptions.controller]` for the Controller
  * layer. Classifying BeeGFS as pure SDS made the store snap to an HBA, so a RAID6 node was
- * modelled at up to 10M IOPS / 64 GB/s instead of a PERC H755's 750k IOPS / 12 GB/s.
+ * modelled at up to 10M IOPS / 64 GB/s instead of a PERC H755's 3.5M IOPS / 14.1 GB/s
+ * (Tolly #223103 basis, #84).
  */
 
 import { beforeEach, describe, expect, it } from 'vitest'
@@ -78,8 +79,8 @@ describe('BeeGFS Controller layer ceiling', () => {
 
   it('models a PERC H755 BeeGFS RAID6 target at exactly its published ceiling', () => {
     const layer = controllerLayer(inputFor({ type: 'beegfs', level: 'beegfs_raid6' }, 'perc_h755'))
-    expect(layer.iops).toBe(750_000)
-    expect(layer.throughputMBs).toBe(12_000)
+    expect(layer.iops).toBe(3_500_000)
+    expect(layer.throughputMBs).toBe(14_100)
   })
 
   it('still models beegfs_raidz2 at the HBA ceiling — ZFS needs IT mode', () => {
