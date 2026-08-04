@@ -71,7 +71,9 @@ export type ConfigStore = HardwareSlice &
  * new references rather than sharing the module-level defaults.
  */
 const sliceDefaults = <T extends object>(creator: StateCreator<T>): Partial<T> => {
-  const noop = (() => undefined) as never
+  const noop = (() => {
+    throw new Error('sliceDefaults: a StateCreator called set/get during construction')
+  }) as never
   const raw = creator(noop, noop, noop) as Record<string, unknown>
   return Object.fromEntries(
     Object.entries(raw).filter(([, value]) => typeof value !== 'function'),
@@ -88,8 +90,8 @@ const getDefaultState = () => ({
 /**
  * Frozen snapshot of the defaults, used only as the comparison baseline in `partialize`.
  *
- * `partialize` runs on every persisted state change, so rebuilding the default state — fifteen
- * `DEFAULT_*_OPTIONS` spreads — on each call was pure waste. `resetToDefaults` still calls
+ * `partialize` runs on every persisted state change, so rebuilding the default state — four
+ * slice-creator invocations — on each call was pure waste. `resetToDefaults` still calls
  * `getDefaultState()` so it installs fresh objects rather than sharing these references.
  */
 const DEFAULT_STATE_BASELINE = getDefaultState()

@@ -142,9 +142,9 @@ describe('Volumetry Engine - Longhorn (capacity guardrails)', () => {
 })
 
 describe('Volumetry Engine - Longhorn (guardrail input clamping)', () => {
-  // longhornOptions rides ConfigStateSchema.passthrough() (unvalidated), so a crafted URL
-  // could smuggle in out-of-range values. The engine must clamp rather than propagate
-  // Infinity/NaN or negative capacity.
+  // LonghornOptionsSchema validates these fields, but the engine clamps defensively anyway
+  // so any out-of-range value reaching it — from any caller, not just a crafted URL — clamps
+  // rather than propagating Infinity/NaN or negative capacity.
 
   it('clamps minimalAvailablePercent > 100 to a non-negative usable capacity', () => {
     const extreme: LonghornOptions = {

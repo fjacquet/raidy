@@ -343,12 +343,14 @@ describe('Config store URL persistence — hostile links are rejected at the pro
 
     await expect(useConfigStore.persist.rehydrate()).resolves.not.toThrow()
 
-    // ConfigStateSchema is .passthrough() at the top level (by design, for
-    // forward compatibility with fields added by a newer build) so an
-    // unknown top-level field does not reject the whole link. It is not
-    // consumed by any engine/hook (none of them read arbitrary store keys),
-    // so it cannot inject anything into a calculation — the properties that
-    // matter are that nothing crashes and the legitimate field still applies.
+    // ConfigStateSchema strips unknown keys at the root (Zod's default, no
+    // .passthrough()): nested platform schemas are already strict, and an
+    // unknown top-level key is read by nobody yet would be re-persisted on
+    // the next link, growing the URL indefinitely. So the injected field
+    // must not survive hydration, while the legitimate field still applies.
+    expect(
+      (useConfigStore.getState() as unknown as Record<string, unknown>).maliciousInjectedField,
+    ).toBeUndefined()
     expect(useConfigStore.getState().driveCount).toBe(24)
   })
 

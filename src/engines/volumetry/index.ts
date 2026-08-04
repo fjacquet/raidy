@@ -308,8 +308,9 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
   let longhornFreeSpaceReserve = 0
   let longhornSnapshotReserve = 0
   if (topology.type === 'longhorn' && longhornOptions) {
-    // Clamp defensively: longhornOptions rides ConfigStateSchema.passthrough() (unvalidated),
-    // so a crafted URL could otherwise smuggle in an out-of-range % or a zero headroom.
+    // Clamp defensively even though LonghornOptionsSchema validates these fields: the clamp
+    // guards against an out-of-range % or a zero headroom reaching the engine by any path,
+    // not just a crafted URL.
     const freeSpaceFactor = Math.max(
       0,
       Math.min(1, 1 - longhornOptions.minimalAvailablePercent / 100),

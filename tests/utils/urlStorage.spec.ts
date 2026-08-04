@@ -361,6 +361,28 @@ describe('URL Storage - Serialization Roundtrip', () => {
       expect(parsed.netAppOptions.raidType).toBe('raid_tec')
     }
   })
+
+  it('preserves special characters in driveId through an enveloped round trip', () => {
+    // driveId is z.string().min(1) — a free-text drive-database key, not a closed union
+    // (see the design spec's Decision 1) — so it can carry characters an LZ-String +
+    // URI-encoded hash must survive byte-identical: @ | / ( ).
+    const stateKey = 'storage-state'
+    const config = {
+      driveId: 'custom-drive @ DC-01 (2024) | rack-42/node-3',
+      driveCount: 8,
+    }
+
+    urlHashStorage.setItem(stateKey, envelope(config))
+    const newUrl = mockHistory.replaceState.mock.calls[0]?.[2]
+    mockLocation.hash = `#${newUrl.split('#')[1]}`
+    const retrieved = urlHashStorage.getItem(stateKey)
+
+    expect(retrieved).not.toBeNull()
+    if (retrieved) {
+      const parsed = JSON.parse(expectSyncString(retrieved)).state
+      expect(parsed.driveId).toBe(config.driveId)
+    }
+  })
 })
 
 describe('URL Storage - Platform Options Persistence (Task 9)', () => {
