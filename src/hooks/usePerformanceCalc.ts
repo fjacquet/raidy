@@ -76,7 +76,9 @@ export function usePerformanceCalc(): PerformanceResult {
     const totalDriveCount = driveCount * effServerCount
     const totalHotSpares = usesDistributedSpares(topology.type) ? 0 : hotSpares * effServerCount
 
-    // Resolve tiering for hybrid configurations (S2D, vSAN OSA, Ceph, Nutanix)
+    // Resolve tiering for the five platforms that support it: S2D storage tiers, vSAN OSA disk
+    // groups, Ceph WAL/DB offload, Nutanix hybrid clusters, BeeGFS metadata targets.
+    // `useTieringOptions` supplies the complete option bag so no platform can be left out.
     const tiering = resolveTiering(topology, effServerCount, tieringOptions)
 
     try {
