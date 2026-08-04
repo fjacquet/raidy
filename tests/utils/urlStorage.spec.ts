@@ -9,6 +9,17 @@
 import { compressToEncodedURIComponent } from 'lz-string'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { copyShareableUrl, getShareableUrl, urlHashStorage } from '@/store/urlStorage'
+import {
+  DEFAULT_BEEGFS_OPTIONS,
+  DEFAULT_CEPH_OPTIONS,
+  DEFAULT_LONGHORN_OPTIONS,
+  DEFAULT_NETAPP_OPTIONS,
+  DEFAULT_NUTANIX_OPTIONS,
+  DEFAULT_POWERFLEX_OPTIONS,
+  DEFAULT_S2D_OPTIONS,
+  DEFAULT_VSAN_OPTIONS,
+  DEFAULT_ZFS_OPTIONS,
+} from '@/types'
 
 /**
  * Narrows the sync-or-async union returned by the Zustand StateStorage API.
@@ -245,60 +256,43 @@ describe('URL Storage - Serialization Roundtrip', () => {
     }
   })
 
-  it('should handle special characters in configuration values', () => {
-    const stateKey = 'storage-state'
-    const specialCharsConfig = {
-      customLabel: 'Production Storage @ DC-01 (2024)',
-      notes: 'Server: rack-42/node-3 | Contact: admin@example.com',
-      tags: ['high-priority', 'tier-1', 'finance/accounting'],
-    }
-
-    // Roundtrip
-    urlHashStorage.setItem(stateKey, envelope(specialCharsConfig))
-    const newUrl = mockHistory.replaceState.mock.calls[0]?.[2]
-    mockLocation.hash = `#${newUrl.split('#')[1]}`
-    const retrieved = urlHashStorage.getItem(stateKey)
-
-    // Verify special chars preserved
-    expect(retrieved).toBe(envelope(specialCharsConfig))
-    expect(retrieved).not.toBeNull()
-    if (retrieved) {
-      const parsed = JSON.parse(expectSyncString(retrieved)).state
-      expect(parsed.customLabel).toBe('Production Storage @ DC-01 (2024)')
-      expect(parsed.notes).toContain('admin@example.com')
-    }
-  })
-
   it('should compress URL for complex configuration', () => {
     const stateKey = 'storage-state'
-    // Create a large config with repetitive data that compresses well
+    // A configuration this large only happens through repeated string keys and structurally
+    // similar nested objects, not through free-text fields (the schema has none) — the
+    // platform-options objects are what make a real configuration big. This test calls
+    // urlHashStorage directly, bypassing the store's `partialize`, which is what strips
+    // default-equal values from a real shared link; every option below is therefore adjusted
+    // away from its `DEFAULT_*_OPTIONS` value on at least one field, so the fixture stays large
+    // even if a future test migrates it through `partialize` instead.
     const largeConfig = {
       driveCount: 24,
       topology: { type: 'ceph', level: 'ceph_ec_4_2' },
+      zfsOptions: { ...DEFAULT_ZFS_OPTIONS, ashift: 9, recordsize: 4096 },
+      s2dOptions: { ...DEFAULT_S2D_OPTIONS, faultDomains: 8, storageTiers: true },
+      vsanOptions: { ...DEFAULT_VSAN_OPTIONS, dedup: true, dedupRatio: 1.3 },
       // cephOptions shape must match CephOptions (src/types/topology.ts) now that
       // Task 9 added a real Zod schema for it.
       cephOptions: {
-        backend: 'bluestore',
+        ...DEFAULT_CEPH_OPTIONS,
         poolType: 'erasure',
         replicationFactor: 3,
-        ecK: 4,
-        ecM: 2,
         compression: true,
         compressionAlgorithm: 'zstd',
-        encryption: false,
-        journalOnSsd: true,
-        walDbOffload: false,
-        walDbRatio: 4,
-        safeCapacityThreshold: 0.85,
       },
+      longhornOptions: { ...DEFAULT_LONGHORN_OPTIONS, diskMode: 'root', growthHeadroom: 1.8 },
+      beeGfsOptions: { ...DEFAULT_BEEGFS_OPTIONS, drivesPerTarget: 10, numTargets: 8 },
+      nutanixOptions: { ...DEFAULT_NUTANIX_OPTIONS, erasureCoding: true, ecStripe: '6_2' },
+      powerFlexOptions: { ...DEFAULT_POWERFLEX_OPTIONS, granularity: 'fine', storagePools: 3 },
+      netAppOptions: { ...DEFAULT_NETAPP_OPTIONS, raidType: 'raid_tec', dataReductionRatio: 3.5 },
     }
     const largeConfigStr = JSON.stringify(largeConfig)
 
     // Get compressed version
     const compressed = compressToEncodedURIComponent(largeConfigStr)
 
-    // With repetitive data, compression should work
-    // LZ compression is effective on repetitive patterns
+    // A real configuration this size is dominated by repeated key names and structurally
+    // similar option objects, which LZ-String's dictionary compression exploits well.
     expect(compressed.length).toBeLessThan(largeConfigStr.length)
 
     // Roundtrip
