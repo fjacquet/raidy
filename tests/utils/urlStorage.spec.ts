@@ -195,9 +195,9 @@ describe('URL Storage - Serialization Roundtrip', () => {
       workloadProfile: 'database',
       randomReadPercent: 70,
       randomWritePercent: 20,
-      blockSize: '8192',
+      blockSize: '64K',
       // Advanced settings
-      networkSpeed: '25000',
+      networkSpeed: '25GbE',
       controllerType: 'hba_12g',
       raidChunkSize: 256,
       compressionRatio: 1.5,
@@ -226,8 +226,8 @@ describe('URL Storage - Serialization Roundtrip', () => {
       expect(parsed.driveCount).toBe(12)
       expect(parsed.hotSpares).toBe(2)
       expect(parsed.workloadProfile).toBe('database')
-      expect(parsed.blockSize).toBe('8192')
-      expect(parsed.networkSpeed).toBe('25000')
+      expect(parsed.blockSize).toBe('64K')
+      expect(parsed.networkSpeed).toBe('25GbE')
       expect(parsed.compressionRatio).toBe(1.5)
       expect(parsed.s2dOptions.faultDomains).toBe(4)
     }
@@ -358,7 +358,7 @@ describe('URL Storage - Serialization Roundtrip', () => {
       hotSpares: 4,
       topology: { type: 'proprietary', level: 'netapp_raid_tec' },
       workloadProfile: 'mixed',
-      networkSpeed: '100000',
+      networkSpeed: '100GbE',
       controllerType: 'smartpqi_gen5',
       raidChunkSize: 1024,
       compressionRatio: 2.5,

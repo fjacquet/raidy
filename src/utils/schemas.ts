@@ -4,6 +4,15 @@
  */
 
 import { z } from 'zod'
+import {
+  BLOCK_SIZES,
+  CARBON_REGIONS,
+  FS_TYPES,
+  NETWORK_SPEEDS,
+  PCIE_GENS,
+  PCIE_LANES,
+} from '@/types/config'
+import { CONTROLLER_TYPES } from '@/types/topology'
 
 /**
  * Standard RAID level enum
@@ -254,7 +263,7 @@ const PowerFlexOptionsSchema = z.object({
  * Controller options schema
  */
 const ControllerOptionsSchema = z.object({
-  controller: z.string(),
+  controller: z.enum(CONTROLLER_TYPES),
   stripeSize: z.union([
     z.literal(64),
     z.literal(128),
@@ -402,7 +411,7 @@ export const ConfigStateSchema = z
 
     // Workload
     readPercent: z.number().min(0).max(100).finite().optional(),
-    blockSize: z.string().optional(),
+    blockSize: z.enum(BLOCK_SIZES).optional(),
     randomPercent: z.number().min(0).max(100).finite().optional(),
     datasetSize: z.number().positive().finite().optional(),
     dailyWriteVolume: z.number().nonnegative().finite().optional(),
@@ -410,14 +419,14 @@ export const ConfigStateSchema = z
     // Advanced
     compressionRatio: z.number().min(1).max(10).finite().optional(),
     dedupRatio: z.number().min(1).max(10).finite().optional(),
-    networkSpeed: z.string().optional(),
-    pcieGen: z.string().optional(),
-    pcieLanes: z.string().optional(),
+    networkSpeed: z.enum(NETWORK_SPEEDS).optional(),
+    pcieGen: z.enum(PCIE_GENS).optional(),
+    pcieLanes: z.enum(PCIE_LANES).optional(),
     pue: z.number().min(1).max(3).finite().optional(),
-    carbonRegion: z.string().optional(),
+    carbonRegion: z.enum(CARBON_REGIONS).optional(),
     projectYears: z.number().int().min(1).max(20).finite().optional(),
     electricityCostPerKwh: z.number().positive().finite().optional(),
-    fsType: z.string().optional(),
+    fsType: z.enum(FS_TYPES).optional(),
     supportsReflink: z.boolean().optional(),
     backupRetention: z.number().int().positive().finite().optional(),
     dailyChangeRate: z.number().min(0).max(100).finite().optional(),

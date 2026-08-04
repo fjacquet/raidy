@@ -29,16 +29,6 @@ fraction field.
 field is a fraction, bound it `0..1` in `src/utils/schemas.ts`; where it is a percent, name it
 so and divide at the consumer. Add a test per field pinning the unit.
 
-### [B4](https://github.com/fjacquet/raidy/issues/62). Free-text fields in the URL schema should be enums
-
-In `src/utils/schemas.ts`: `blockSize`, `networkSpeed`, `pcieGen`, `pcieLanes`, `carbonRegion`,
-`fsType` and `controllerOptions.controller` are typed `z.string()`. Arbitrary strings from a
-crafted link reach the store. They feed lookup tables that fall back on a miss, so the impact is
-a silently-defaulted calculation rather than a crash.
-
-*To close:* replace each with `z.enum([...])` derived from the same source the lookup table uses,
-so they cannot drift apart.
-
 ### [B5](https://github.com/fjacquet/raidy/issues/63). `AdvancedState.performanceThreshold` is not persisted
 
 Absent from `partialize` in `src/store/configStore.ts`, so it resets on a shared link while every

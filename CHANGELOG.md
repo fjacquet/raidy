@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Forged values in a shared link are rejected instead of silently defaulted.** `blockSize`,
+  `networkSpeed`, `pcieGen`, `pcieLanes`, `carbonRegion`, `fsType` and the RAID controller were
+  free-text in the URL schema, so an arbitrary string reached a lookup table, missed, and fell
+  back to a default — a wrong calculation presented as a valid one. Each is now an enum derived
+  from the same `as const` array its TypeScript type derives from, so the schema and the lookup
+  tables are held together by the compiler. (#62)
+
 ## [1.15.1] - 2026-08-04
 
 ### Fixed
