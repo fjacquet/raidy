@@ -17,6 +17,11 @@ npm test -- tests/engines/volumetry.spec.ts   # single file
 > terminal, an editor test runner — makes the coverage run fail with
 > `Something removed the coverage directory "coverage/.tmp"`. It is a collision, not a real
 > coverage failure: stop the other run and re-run. No extra flags are needed otherwise.
+>
+> CI is unaffected: the shared workflow (`fjacquet/ci/.github/workflows/web-ci.yml`) runs
+> `test:run` and never invokes `test:coverage`, so the two cannot collide there. Keep it that
+> way — a coverage job added alongside the existing test job would have to run in a separate
+> job or a separate `reportsDirectory`.
 
 
 ## Type-checking the tests
@@ -50,6 +55,10 @@ phase-18 vector records its own source URL inline and in
 - `src/utils/**/*.ts`
 
 Component tests mock `react-i18next`'s `useTranslation`, so they assert structure/behavior, not real translation output. JSX in tests uses the automatic runtime (Vite 8 default) — no `import React` needed.
+
+## i18n key parity
+
+`tests/i18n/parity.spec.ts` guards the four locales (`en`, `fr`, `de`, `it`) under `src/i18n/locales/` against drift from the `en` reference. It discovers the locale and namespace lists from disk (no hand-listed file pairs) and, for every namespace, recursively flattens nested keys to dotted paths, then asserts both directions per locale: no `en` key is missing from the translation, and no translation key is an orphan absent from `en`. Failures name the exact locale, namespace, and missing/orphan key path. This is what catches raw i18n keys rendering on screen (missing translation) and dead/typo'd keys (orphan translation) before they ship.
 
 ## Before pushing
 

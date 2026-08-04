@@ -260,6 +260,14 @@ export function calculatePerformance(input: PerformanceInput): PerformanceResult
     // understates these platforms, which is the safe direction.
     const p = capacityDrive
     // Mirrors `spareAdjustedDrives` in src/engines/volumetry/index.ts.
+    //
+    // Deliberate divergence from volumetry for BeeGFS: volumetry additionally rounds this count
+    // down to whole storage targets, dropping up to `drivesPerTarget - 1` "stranded" drives that
+    // belong to no target and hold no data (see the comment at that site in
+    // src/engines/volumetry/index.ts). Performance does NOT apply that rounding here — a drive
+    // stranded from a storage target still physically exists on the bus, still draws from the
+    // controller and PCIe budget, and can still serve rebuild traffic, so pricing it is correct
+    // for a bottleneck model even though excluding it is correct for a capacity model. See #91.
     const capUsableDrives = Math.max(0, tiering.capacityTierDriveCount - hotSpares)
     const capDriveIOPS = limitingIOPS(p)
     readCapIOPS = capDriveIOPS * capUsableDrives
@@ -393,11 +401,20 @@ export function calculatePerformance(input: PerformanceInput): PerformanceResult
   const minThroughput = getMinThroughput(layers)
 
   // XFS alignment
-  // Known inconsistency: `usableDrives` here is the raw Hardware-panel population even when the
-  // media layer above was sized from the capacity tier. Stripe alignment is a display value, not
-  // part of the bottleneck chain, and which tier a stripe aligns to is a separate judgement call.
-  // Tracked in the design spec's out-of-scope list.
-  const xfsAlignment = calculateXfsAlignment(controllerOptions.stripeSize, usableDrives, topology)
+  // A filesystem on a tiered pool is laid out on the data-bearing capacity tier — the fast tier
+  // is cache or journal, not stripe members — so the alignment count follows the capacity tier's
+  // population rather than the raw Hardware-panel count. Apply the same spare adjustment the
+  // media layer applies above (`capUsableDrives` / S2D's `capCount`), so the alignment count and
+  // the media count cannot diverge.
+  const xfsAlignmentDriveCount =
+    tiering && capacityDrive
+      ? Math.max(0, tiering.capacityTierDriveCount - hotSpares)
+      : usableDrives
+  const xfsAlignment = calculateXfsAlignment(
+    controllerOptions.stripeSize,
+    xfsAlignmentDriveCount,
+    topology,
+  )
 
   // Calculate max read/write throughput considering bottlenecks
   const maxReadThroughputMBs = Math.min(effectiveReadThroughput, minThroughput)

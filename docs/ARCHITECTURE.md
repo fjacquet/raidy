@@ -165,7 +165,7 @@ Calculates storage capacity and efficiency.
 >
 > - **Topology level = the storage target's local RAID**, not cluster-wide protection: `beegfs_raid6`, `beegfs_raid10`, `beegfs_raidz2` (ZFS RAIDz2 target), or `beegfs_single` (bare drive, no local RAID). Local efficiency is `(drivesPerTarget − 2) / drivesPerTarget` for RAID6/RAIDz2, `0.5` for RAID10, `1` for single — `drivesPerTarget` (default 12) is an explicit input because RAID6 efficiency is meaningless without target width. Because the level describes real local hardware, it also decides the **controller class** — BeeGFS is *not* pure software-defined storage (see the controller note in the Performance Engine section below).
 > - **Cluster-level protection is Buddy Mirroring**, expressed as two independent booleans in `BeeGfsOptions` rather than folded into the level enum: `storageBuddyMirror` (data, halves usable capacity when on) and `metadataBuddyMirror` (metadata, doubles the MDT capacity requirement). BeeGFS genuinely lets you mirror one without the other, which a combined level enum could not express.
-> - **Capacity is computed on whole storage targets only.** A storage target *is* a local RAID volume, so drives that do not complete one ("stranded" drives) join no target and hold no data. `calculateStorageTargets` / `resolveBeeGfsUsableDrives` (`strategies/beegfs.ts`) are the single source of truth for that derivation and are shared by three surfaces that must never disagree: `calculateVolumetry`, `BeeGfsOptionsPanel` (via `deriveBeeGfsStorageTargets`), and `useResilience` (via `resolveBeeGfsSimulationScope`). Stranded drives still count toward **raw** capacity and get their own "BeeGFS Stranded Drives" breakdown bucket; the `validators.ts` stranded-drive warning reads its count from `beeGfsDetails` rather than recomputing it.
+> - **Capacity is computed on whole storage targets only.** A storage target *is* a local RAID volume, so drives that do not complete one ("stranded" drives) join no target and hold no data. `calculateStorageTargets` / `resolveBeeGfsUsableDrives` (`strategies/beegfs.ts`) are the single source of truth for that derivation and are shared by three surfaces that must never disagree: `calculateVolumetry`, `BeeGfsOptionsPanel` (via `deriveBeeGfsStorageTargets`), and `useResilience` (via `resolveBeeGfsSimulationScope`). Stranded drives still count toward **raw** capacity and get their own "BeeGFS Stranded Drives" breakdown bucket; the `validators.ts` stranded-drive warning reads its count from `beeGfsDetails` rather than recomputing it. **The performance engine deliberately does not apply this rounding** — a stranded drive still exists on the bus and still draws from the controller/PCIe budget, so pricing it is correct for a bottleneck model even though excluding it is correct for a capacity model. The two engines can therefore report different tiered-BeeGFS drive counts by design; see the cross-referencing comments at `beeGfsTargets` in `volumetry/index.ts` and `capUsableDrives` in `performance/index.ts` (#91).
 > - **Metadata targets (MDT) reuse the shared `TieringConfig` primitive** (`src/types/topology.ts`, resolved by `src/engines/shared/tiering.ts`) instead of introducing a BeeGFS-specific concept: `fastTier` = MDT, `capacityTier` = storage targets. `resolveTiering`'s existing semantics are already exactly right for this — the fast tier counts toward **raw** capacity but never toward **usable**, the same treatment Ceph WAL/DB offload gets. A metadata-sizing advisory (`beeGfsDetails`, built in `volumetry/index.ts` following the `longhornDetails` pattern) compares MDT usable capacity against the BeeGFS-documented 0.3–0.5% rule of thumb and surfaces an estimated file count; a `validators.ts` alert fires when the MDT is undersized or absent.
 
 **Calculations:**
@@ -259,7 +259,9 @@ flowchart LR
 - Controller limits (IOPS and throughput caps) — skipped for NVMe-direct topologies (vSAN ESA)
 - PCIe bandwidth (lanes × generation speed)
 - Network bandwidth limits — for vSAN, refined by full-duplex, on-the-wire compression, and the east-west traffic fraction (writes × replication/EC + remote reads); for BeeGFS, by write amplification from Buddy Mirroring
-- XFS stripe alignment (sunit/swidth)
+- XFS stripe alignment (sunit/swidth) — for a tiered configuration this also uses the
+  spare-adjusted capacity-tier drive count, the same population the Media layer above uses, so the
+  suggested stripe width always matches the pool that actually holds data
 
 > **Per-platform network model** (`NETWORK_MODEL_BY_TOPOLOGY` in
 > `src/engines/performance/utils/bottleneck-chain.ts`) is a
@@ -505,7 +507,17 @@ Manages Monte Carlo simulation:
 - Returns result with survival probability
 
 The simulated population must describe the same cluster the capacity card does. For most
-platforms that is `driveCount × effectiveServerCount` in `effectiveServerCount` fault groups.
+platforms that is `driveCount × effectiveServerCount` in `effectiveServerCount` fault groups,
+minus hot spares (#80): `usesDistributedSpares(topology.type) ? 0 : hotSpares * effectiveServerCount`,
+clamped at zero — the identical rule volumetry (`useVolumetryCalc.ts:80`) and performance
+(`usePerformanceCalc.ts:77`) apply, so a spare is never counted as a data-bearing drive in any of
+the three engines. The four tiered platforms (S2D, vSAN OSA, Ceph, Nutanix) apply the same
+subtraction to the capacity tier inside `tieredPlatformScope`; vSAN's distributed spares zero it
+out via `usesDistributedSpares`. BeeGFS applies hot spares inside its own resolver,
+`resolveBeeGfsSimulationScope`, so it is excluded from this generic subtraction to avoid
+double-counting. The worker itself does not credit a spare with shortening the rebuild window —
+that residual gap is tracked in `docs/BACKLOG.md`.
+
 Platforms that need something else register a resolver in `SIMULATION_SCOPE_BY_TOPOLOGY`
 (`src/hooks/useResilience.ts`), a `Partial<Record<TopologyType, SimulationScopeResolver>>` lookup
 mirroring `NETWORK_MODEL_BY_TOPOLOGY` above; a topology with no entry gets the default population

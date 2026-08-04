@@ -239,7 +239,7 @@ const BeeGfsOptionsSchema = z.object({
   chunkSizeKb: z.union([z.literal(512), z.literal(1024), z.literal(2048)]),
   numTargets: z.number().int().min(1).max(64).finite(),
   network: z.enum(['ib-hdr', 'ib-ndr', '100gbe', '25gbe']),
-  fsOverheadPercent: z.number().min(0).max(100).finite(),
+  fsOverheadPercent: z.number().min(0.5).max(5).finite(),
   metadataTargets: z.boolean(),
   tiering: TieringConfigSchema.optional(),
 })

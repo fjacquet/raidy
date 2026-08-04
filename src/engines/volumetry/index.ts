@@ -185,6 +185,12 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
   // `calculateStorageTargets` is the single source of truth for this arithmetic, shared with
   // `BeeGfsOptionsPanel` via `deriveBeeGfsStorageTargets`; the result is reused verbatim for
   // `beeGfsDetails` below so the two can never drift.
+  //
+  // Deliberate divergence from performance: `src/engines/performance/index.ts` prices these same
+  // stranded drives instead of dropping them, because a drive with no storage target still
+  // exists on the bus and still draws from the controller/PCIe budget — see the comment beside
+  // `capUsableDrives` at that site for the full reasoning. Capacity and performance are allowed
+  // to see different populations here; that is intentional, not drift. See #91.
   const beeGfsTargets =
     topology.type === 'beegfs' && beeGfsOptions
       ? calculateStorageTargets(spareAdjustedDrives, beeGfsOptions.drivesPerTarget)
