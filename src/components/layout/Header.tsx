@@ -7,22 +7,7 @@ import { LanguageSwitcher, SegmentedControl, Select } from '@/components/common'
 import { ThemeToggle } from '@/components/common/ThemeToggle'
 import { useConfigStore } from '@/store'
 import type { CarbonRegion } from '@/types'
-
-// NOTE: intentionally NOT consolidated onto the canonical CARBON_REGIONS (src/types/config.ts) as
-// part of issue #87 — this list's order (norway before france, china before world_average)
-// differs from the canonical array's order (france before norway, world_average before china),
-// and canonicalizing it would silently change the option order users see in this <select>. That
-// is a behavior change, not a refactor, so it needs its own decision rather than being folded in
-// here. See issue #87 discussion.
-const CARBON_REGION_VALUES: CarbonRegion[] = [
-  'switzerland',
-  'norway',
-  'france',
-  'germany',
-  'usa_average',
-  'world_average',
-  'china',
-]
+import { CARBON_REGIONS } from '@/types'
 
 interface HeaderProps {
   onToggleGuide: () => void
@@ -36,7 +21,7 @@ export function Header({ onToggleGuide, isGuideOpen }: HeaderProps) {
   const carbonRegion = useConfigStore((state) => state.carbonRegion)
   const setCarbonRegion = useConfigStore((state) => state.setCarbonRegion)
 
-  const carbonRegions = CARBON_REGION_VALUES.map((region) => ({
+  const carbonRegions = CARBON_REGIONS.map((region) => ({
     value: region,
     label: t(`carbon.regions.${region}`),
   }))

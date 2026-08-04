@@ -357,17 +357,17 @@ ConfigStore = HardwareSlice & TopologySlice & WorkloadSlice & AdvancedSlice
 > top-level keys are stripped by `ConfigStateSchema` (Zod's default; the schema is no longer
 > `.passthrough()` at the root) rather than merged into the live store, since a key nobody reads
 > would otherwise just keep getting re-persisted into the URL. The schema's closed unions
-> (`BLOCK_SIZES`, `NETWORK_SPEEDS`, `CARBON_REGIONS`, etc.) derive from the same `as const` arrays
-> in `src/types/` that the store uses, so a new enum value can't validate on one side and
-> reject on the other. The input panels (`WorkloadPanel`, `AdvancedPanel`) import these same
-> arrays to build their `<select>` options too, rather than hand-declaring a second copy — so a
-> value added to a canonical array fails the panel's build (an exhaustiveness check on its label
-> map) instead of silently validating in the schema while never appearing in the UI. Two local
-> exceptions remain: `AdvancedPanel`'s `FS_TYPES` and `Header`'s `CARBON_REGION_VALUES` list the
-> same values in a different order than their canonical counterparts, so they were left as
-> hand-written duplicates rather than folded in — canonicalizing them would silently reorder
-> those `<select>` options, which is a behavior change (see #87). See `docs/SECURITY.md` for why
-> this distinction matters.
+> (`BLOCK_SIZES`, `NETWORK_SPEEDS`, `CARBON_REGIONS`, `FS_TYPES`, etc.) derive from the same
+> `as const` arrays in `src/types/` that the store and UI both use, so a new enum value can't
+> validate on one side and reject on the other. The input panels (`WorkloadPanel`, `AdvancedPanel`,
+> `Header`) import these same arrays to build their `<select>` options too, rather than
+> hand-declaring a second copy — so a value added to a canonical array fails the panel's build (an
+> exhaustiveness check on its label map, or an untranslated i18n key for `Header`'s
+> `t()`-driven labels) instead of silently validating in the schema while never appearing in the
+> UI. `CARBON_REGIONS` and `FS_TYPES` are ordered to match their `<select>`'s display order rather
+> than alphabetically, since that order is the only place these arrays' order is ever observed —
+> `z.enum(...)` and the `Record<Type, …>` lookups elsewhere in the codebase don't care about
+> element order. See `docs/SECURITY.md` for why the validation-boundary distinction matters.
 
 ### Key State Values
 

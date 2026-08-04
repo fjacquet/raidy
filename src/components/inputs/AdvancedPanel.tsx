@@ -10,6 +10,7 @@ import { useConfigStore } from '@/store'
 import type { ControllerType, FsType, NetworkSpeed, PCIeGen, PCIeLanes } from '@/types'
 import {
   CONTROLLER_LIMITS,
+  FS_TYPES,
   getControllerOptions,
   getControllerRequirement,
   NETWORK_SPEEDS,
@@ -48,19 +49,16 @@ const PCIE_LANES_LABELS: Record<PCIeLanes, string> = {
 }
 const PCIE_LANES_OPTIONS = PCIE_LANES.map((value) => ({ value, label: PCIE_LANES_LABELS[value] }))
 
-// NOTE: intentionally NOT consolidated onto the canonical FS_TYPES (src/types/config.ts) as part
-// of issue #87 — this list's order ('zfs' first) differs from the canonical array's order
-// ('xfs' first), and canonicalizing it would silently change the default option order users see
-// in this <select>. That is a behavior change, not a refactor, so it needs its own decision
-// rather than being folded in here. See issue #87 discussion.
-const FS_TYPES = [
-  { value: 'zfs', label: 'ZFS' },
-  { value: 'xfs', label: 'XFS' },
-  { value: 'ext4', label: 'ext4' },
-  { value: 'btrfs', label: 'Btrfs' },
-  { value: 'refs', label: 'ReFS' },
-  { value: 'ntfs', label: 'NTFS' },
-]
+/** Exhaustive over FsType — adding a value to FS_TYPES fails to compile until a label is added here. */
+const FS_TYPE_LABELS: Record<FsType, string> = {
+  zfs: 'ZFS',
+  xfs: 'XFS',
+  ext4: 'ext4',
+  btrfs: 'Btrfs',
+  refs: 'ReFS',
+  ntfs: 'NTFS',
+}
+const FS_TYPE_OPTIONS = FS_TYPES.map((value) => ({ value, label: FS_TYPE_LABELS[value] }))
 
 export function AdvancedPanel() {
   const { t } = useTranslation('advanced')
@@ -324,7 +322,7 @@ export function AdvancedPanel() {
           <Select
             id="fs-type"
             value={fsType}
-            options={FS_TYPES}
+            options={FS_TYPE_OPTIONS}
             onChange={(v) => setFsType(v as FsType)}
           />
         </div>
