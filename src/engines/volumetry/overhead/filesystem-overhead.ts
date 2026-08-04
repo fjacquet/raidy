@@ -14,11 +14,10 @@
  * - WAFL: 1-2% (NetApp spec)
  */
 
+import type { FsType } from '@/types/config'
 import type { BeeGfsOptions, NetAppOptions, SynologyOptions, Topology } from '@/types/topology'
 import { FILESYSTEM_OVERHEAD } from '@/types/topology'
-
-/** Filesystem type for user selection */
-type FsType = 'xfs' | 'ext4' | 'zfs' | 'refs' | 'ntfs' | 'btrfs'
+import { assertNever } from '@/utils/typeGuards'
 
 /**
  * Get filesystem overhead percentage for topology.
@@ -144,6 +143,6 @@ function getFsTypeOverhead(fsType: FsType): number {
     case 'ntfs':
       return FILESYSTEM_OVERHEAD.ntfs
     default:
-      return 0.02 // Fallback
+      return assertNever(fsType)
   }
 }

@@ -157,7 +157,7 @@ Calculates storage capacity and efficiency.
 >
 > **Dual-parity efficiency** follows Microsoft's stepped Reed-Solomon/LRC tables (`getS2DDualParityEfficiency` in `strategies/s2d.ts`), which differ for all-flash vs hybrid clusters — all-flash: 50% (4–6) → 66.7% (7–8) → 75% (9–15) → 80% (16); hybrid: 50% (4–6) → 66.7% (7–11) → 72.7% (12–16). The orchestrator picks the table from the resiliency media (capacity tier when tiered, else the pool drive). MAP uses the same stepped efficiency for its parity portion.
 >
-> **Storage tiering** (S2D, vSAN OSA, Ceph WAL/DB, Nutanix hybrid) is resolved once by the shared `resolveTiering` (`src/engines/shared/tiering.ts`) and reused by all three engines. Tiering activates from the platform toggle plus drive selection; the capacity tier drives usable capacity and resiliency, while the cache tier is excluded from usable and counted only toward raw.
+> **Storage tiering** (S2D, vSAN OSA, Ceph WAL/DB, Nutanix hybrid) is resolved once by the shared `resolveTiering` (`src/engines/shared/tiering.ts`) and reused by all four engines, including resilience. Tiering activates from the platform toggle plus drive selection; the capacity tier drives usable capacity and resiliency, while the cache tier is excluded from usable and counted only toward raw. `resolveTiering` takes a single `TieringResolverOptions` bag (`s2dOptions`, `vsanOptions`, `cephOptions`, `nutanixOptions`, `beeGfsOptions`) rather than four-or-five separate parameters, and `useTieringOptions()` (`src/hooks/useTieringOptions.ts`) assembles that bag once from the store. `useVolumetryCalc`, `usePerformanceCalc`, `useSustainabilityCalc` and `useResilience` all consume the same hook's output as a single `tieringOptions` prop/argument rather than hand-listing the platform fields individually — hand-listing a subset was the exact mistake that dropped a platform's options and caused issues #59, #60 and #92. Adding a new tiered platform means adding it once to `TieringResolverOptions` and `useTieringOptions()`; every consumer picks it up automatically since none of them destructure the bag into named fields.
 >
 > **Longhorn** (`strategies/longhorn.ts`) is modeled on Ceph replicated pools: usable capacity is redundancy-limited to `1/R` (R = 2 or 3 replicas), reduced by host filesystem overhead, then narrowed by a free-space guardrail (`F = 1 − "Storage Minimal Available %"`) and a snapshot reserve (divided by the snapshot headroom). It has no native compression/dedup. Growth headroom and over-provisioning are advisory readouts only — they inform the recommended committed-data ceiling but are never subtracted from usable capacity.
 >
@@ -373,17 +373,29 @@ ConfigStore = HardwareSlice & TopologySlice & WorkloadSlice & AdvancedSlice
   options existed) falls back to that slice's `DEFAULT_*_OPTIONS`, including
   gating booleans reading as `false` rather than `undefined`
 - `getDefaultState()` (used by `resetToDefaults()` and as the baseline
-  `omitDefaults()` diffs against) spreads the canonical `DEFAULT_*_OPTIONS`
-  constants from `src/types/topology.ts` rather than restating them, so the
-  two cannot drift apart
+  `omitDefaults()` diffs against) invokes each slice creator with inert
+  `set`/`get` stubs rather than restating the slices' initial state, so the
+  two cannot drift apart. This only works if every slice's `StateCreator`
+  builds its initial state eagerly and touches `set`/`get` only inside the
+  action closures it returns (the `sliceDefaults` constraint, documented on
+  that helper in `src/store/configStore.ts`) — since `getDefaultState()` runs
+  at module load and the stub throws, a slice that violates this fails on
+  first import rather than producing a silently wrong default
 
 > **Validation boundary.** Zustand's `persist` middleware wraps the partialized state in a
 > `{ state, version }` envelope before `urlHashStorage` ever sees it. `urlHashStorage.getItem`
-> (`src/store/urlStorage.ts`) detects that envelope shape and runs `validateUrlState` against
+> (`src/store/urlStorage.ts`) requires that envelope shape and runs `validateUrlState` against
 > `.state` — the actual config payload — not the envelope itself, then re-wraps the validated
 > result with the original `version` so hydration still finds `{ state, version }`. A bare/flat
-> object (older links, hand-constructed test fixtures) is still validated directly for backward
-> compatibility. See `docs/SECURITY.md` for why this distinction matters.
+> payload is rejected outright rather than validated as-is: `createJSONStorage` has wrapped state
+> in `{ state, version }` since the initial commit, so no released version can have ever written a
+> flat link — one can only come from a hand-crafted URL, and is treated as corrupt. Unknown
+> top-level keys are stripped by `ConfigStateSchema` (Zod's default; the schema is no longer
+> `.passthrough()` at the root) rather than merged into the live store, since a key nobody reads
+> would otherwise just keep getting re-persisted into the URL. The schema's closed unions
+> (`BLOCK_SIZES`, `NETWORK_SPEEDS`, `CARBON_REGIONS`, etc.) derive from the same `as const` arrays
+> in `src/types/` that the store uses, so a new enum value can't validate on one side and
+> reject on the other. See `docs/SECURITY.md` for why this distinction matters.
 
 ### Key State Values
 
@@ -545,11 +557,17 @@ that residual gap is tracked in `docs/BACKLOG.md`.
 Platforms that need something else register a resolver in `SIMULATION_SCOPE_BY_TOPOLOGY`
 (`src/hooks/useResilience.ts`), a `Partial<Record<TopologyType, SimulationScopeResolver>>` lookup
 mirroring `NETWORK_MODEL_BY_TOPOLOGY` above; a topology with no entry gets the default population
-described in the previous sentence. BeeGFS's resolver calls the exported pure helper
-`resolveBeeGfsSimulationScope`, which reuses `resolveBeeGfsUsableDrives` +
-`calculateStorageTargets` — the same functions volumetry and the options panel use — so hot
-spares, MDT tiering and stranded drives are applied identically on both sides, and the fault
-group is a whole storage target at its real width.
+described in the previous sentence. Both `tieredPlatformScope` and the BeeGFS resolver read a
+single `tieringOptions?: TieringResolverOptions` argument threaded through `UseResilienceOptions`
+and `SimulationScopeContext` — the same complete bag `useTieringOptions()` assembles for the other
+three engines (see the Storage Tiering note above) — rather than four separately hand-listed
+`*Options` props, closing the class of bug where a caller forwarded a subset of the platform
+option bags into the hook and silently dropped one (#59, #60, #92). BeeGFS's resolver reads
+`tieringOptions?.beeGfsOptions` (the bag already carries it, so it is not a separate prop) and
+calls the exported pure helper `resolveBeeGfsSimulationScope`, which reuses
+`resolveBeeGfsUsableDrives` + `calculateStorageTargets` — the same functions volumetry and the
+options panel use — so hot spares, MDT tiering and stranded drives are applied identically on
+both sides, and the fault group is a whole storage target at its real width.
 Under MDT tiering the drive characteristics handed to the worker (capacity, URE rate, AFR) also
 follow the capacity tier rather than the Hardware panel's drive. MDT drives themselves are not
 simulated — a separate protection domain, the same scope choice made for Ceph's WAL/DB tier.
@@ -645,8 +663,11 @@ PPTX library.
 
 6. **URL persistence** (`src/utils/schemas.ts`, `src/store/configStore.ts`):
    - Add a Zod schema for the new `*Options` object and wire it into `ConfigStateSchema`
-   - Add the object to `configStore.ts`'s `partialize` and `getDefaultState()` (spread the
-     `DEFAULT_*_OPTIONS` constant, don't restate it — see the URL Persistence section above)
+   - Add the field to `PERSISTED_KEYS` in `src/store/persistedKeys.ts` (or `EPHEMERAL_KEYS`,
+     with a reason, if it's deliberately excluded from shared links) — `partialize` derives
+     from this list, and `getDefaultState()` needs no edit since it already reads every slice's
+     initial state. The parity test in `tests/store/persistedKeys.spec.ts` fails until you do
+     this, by design — see the URL Persistence section above
 
 The compiler catches a missed platform at most of the above sites — an unhandled union member
 in a `switch` is a TypeScript error under strict mode. Two categories fail **silently** instead,
@@ -656,15 +677,18 @@ checklist, not an afterthought:
 - **Falls through to a wrong default instead of erroring.** `VALID_TOPOLOGY_TYPES`
   (`src/engines/volumetry/helpers/calculationHelpers.ts`) is a plain array, not a type-checked
   union — a missing entry doesn't fail to compile, it fails validation at runtime for a topology
-  that otherwise works. `overhead/filesystem-overhead.ts`'s `case` statement and
-  `performance/utils.ts`'s latency `case` statement both have a fallback branch, so an omitted
-  platform silently inherits another platform's overhead/latency number instead of erroring.
+  that otherwise works. `overhead/filesystem-overhead.ts`'s outer `case` statement (keyed on
+  `topology.type`) and `performance/utils.ts`'s latency `case` statement both have a fallback
+  branch, so an omitted platform silently inherits another platform's overhead/latency number
+  instead of erroring. (`getFsTypeOverhead`, the inner switch keyed on the closed `FsType` union,
+  is exhaustive and calls `assertNever` in its `default` — a missing filesystem case fails to
+  compile there.)
   `OutputDashboard.tsx`'s `mirrorCopies` derivation (an IIFE of platform checks) behaves the
   same way — a platform that needs a non-default `mirrorCopies` but isn't listed just gets `1`.
 - **Zod schema drift decides what a URL link actually carries.** `utils/schemas.ts` needs the
   new platform's options object added as its own schema *and* wired into the discriminated
-  `ConfigStateSchema` — omitting it doesn't fail to compile (`ConfigStateSchema` is passthrough
-  with every field optional), it silently drops that platform's options from every shared link,
+  `ConfigStateSchema` — omitting it doesn't fail to compile (every field on `ConfigStateSchema`
+  is optional), it silently drops that platform's options from every shared link,
   or worse, lets an unvalidated object through if the wiring is partial. This exact class of bug
   is what `fix(store): persist every platform's *Options through Copy URL to Share` and
   `fix(security): validate the real payload inside the persist envelope, not around it` fixed for

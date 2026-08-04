@@ -40,6 +40,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   read the selected controller's real limits. (#74)
 
 ### Changed
+- **`useResilience` now takes the shared tiering option bag instead of four hand-listed props.**
+  `s2dOptions`/`vsanOptions`/`cephOptions`/`nutanixOptions` were destructured and re-listed at the
+  call site (`OutputDashboard.tsx`), in `UseResilienceOptions`, and again inside
+  `tieredPlatformScope`'s call to `resolveTiering` — the exact hand-listing pattern that dropped a
+  platform's options and caused issues #59 and #60. Replaced all three sites with a single
+  `tieringOptions?: TieringResolverOptions` prop sourced from `useTieringOptions()`, the same
+  assembler `useVolumetryCalc`, `usePerformanceCalc` and `useSustainabilityCalc` already consume,
+  so a forgotten platform is no longer possible in resilience specifically: the value is threaded
+  through unchanged rather than destructured and re-listed. `beeGfsOptions` did not need to stay a
+  separate prop — `TieringResolverOptions` already carries it (including `drivesPerTarget`), so
+  the BeeGFS resolver now reads `tieringOptions?.beeGfsOptions`. Pure refactor: no calculated
+  number changes. (#92)
 - Validator alerts (`src/utils/validators.ts`) and the Longhorn capacity-details card
   (`src/components/outputs/LonghornCapacityDetails.tsx`) now route their messages through
   `i18n.t()` instead of hardcoded English, with `fr`/`de`/`it` translations added to
@@ -68,6 +80,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   is correct for a capacity model. Both engines now carry a comment cross-referencing the other's
   reasoning, and a test pins the divergence so it cannot silently become drift. No calculated
   values change. (#91)
+- **Forged values in a shared link are rejected instead of silently defaulted.** `blockSize`,
+  `networkSpeed`, `pcieGen`, `pcieLanes`, `carbonRegion`, `fsType` and the RAID controller were
+  free-text in the URL schema, so an arbitrary string reached a lookup table, missed, and fell
+  back to a default — a wrong calculation presented as a valid one. Each is now an enum derived
+  from the same `as const` array its TypeScript type derives from, so the schema and the lookup
+  tables are held together by the compiler. (#62)
+- **`performanceThreshold` survives a shared link.** It was absent from `partialize`, so it reset
+  while every other setting persisted. (#63)
+- **A malformed shared link is reported instead of half-loaded.** `urlStorage.ts` claimed to
+  support flat, non-enveloped payloads for backward compatibility; they have never hydrated,
+  because zustand reads `deserializedStorageValue.state`. The branch and its comment are gone, and
+  unknown top-level keys are now stripped rather than merged into the live store. (#64, #65)
+
+### Changed
+- **"Reset to defaults" now resets the performance threshold and the two drive-picker filters.**
+  They lived only in their slices' initial state, and `resetToDefaults()` merges, so the button
+  silently skipped them. Defaults are now taken from the slices themselves rather than restated.
 
 ## [1.15.1] - 2026-08-04
 

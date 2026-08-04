@@ -14,6 +14,7 @@
  * - Filesystem overhead
  */
 
+import type { FsType } from '@/types/config'
 import type { Drive } from '@/types/drive'
 import type {
   BeeGfsOptions,
@@ -82,7 +83,7 @@ export interface OverheadInput {
   powerscaleOptions: PowerScaleOptions
   cephOptions: CephOptions
   beeGfsOptions: BeeGfsOptions
-  fsType: 'xfs' | 'ext4' | 'zfs' | 'refs' | 'ntfs' | 'btrfs'
+  fsType: FsType
 }
 
 /**
