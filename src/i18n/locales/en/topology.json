@@ -339,8 +339,6 @@
       "label": "Triple Mirror",
       "description": "33% efficiency, for metadata/small configs"
     },
-    "objectSize": "Object Size (KB)",
-    "avgObjectSize": "Average object size: {{size}}",
     "systemOverhead": "System Overhead",
     "systemOverheadDesc": "Metadata, indexes, S3 protocol: {{percent}}%",
     "enableCompression": "Enable Compression",
@@ -538,9 +536,7 @@
     "compressionRatio": "Compression Ratio",
     "expectedRatio": "Expected ratio: {{ratio}}:1",
     "fgOverhead": "FG Metadata Overhead",
-    "fgOverheadDesc": "Fine granularity overhead: {{percent}}%",
-    "faultSets": "Fault Sets",
-    "faultSetsDesc": "Minimum 3 fault sets required for data protection"
+    "fgOverheadDesc": "Fine granularity overhead: {{percent}}%"
   },
   "netapp": {
     "title": "NetApp ONTAP Options",

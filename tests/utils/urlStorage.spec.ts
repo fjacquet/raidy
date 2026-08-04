@@ -133,8 +133,6 @@ describe('URL Storage - Serialization Roundtrip', () => {
         dedup: false,
         recordsize: 128,
         specialVdev: false,
-        slogDevice: false,
-        l2arcDevice: false,
         maxOccupation: 80,
       },
     }
@@ -282,8 +280,8 @@ describe('URL Storage - Serialization Roundtrip', () => {
       },
       longhornOptions: { ...DEFAULT_LONGHORN_OPTIONS, diskMode: 'root', growthHeadroom: 1.8 },
       beeGfsOptions: { ...DEFAULT_BEEGFS_OPTIONS, drivesPerTarget: 10, numTargets: 8 },
-      nutanixOptions: { ...DEFAULT_NUTANIX_OPTIONS, erasureCoding: true, ecStripe: '6_2' },
-      powerFlexOptions: { ...DEFAULT_POWERFLEX_OPTIONS, granularity: 'fine', storagePools: 3 },
+      nutanixOptions: { ...DEFAULT_NUTANIX_OPTIONS, clusterType: 'hybrid' },
+      powerFlexOptions: { ...DEFAULT_POWERFLEX_OPTIONS, granularity: 'fine', compressionRatio: 3 },
       netAppOptions: { ...DEFAULT_NETAPP_OPTIONS, raidType: 'raid_tec', dataReductionRatio: 3.5 },
     }
     const largeConfigStr = JSON.stringify(largeConfig)
@@ -405,8 +403,6 @@ describe('URL Storage - Platform Options Persistence (Task 9)', () => {
         dedup: true,
         recordsize: 4096,
         specialVdev: true,
-        slogDevice: true,
-        l2arcDevice: true,
         maxOccupation: 60,
       },
     },
@@ -510,11 +506,8 @@ describe('URL Storage - Platform Options Persistence (Task 9)', () => {
         granularity: 'fine',
         protectionMode: 'erasure',
         mirrorCopies: 2,
-        ecScheme: '12_4',
         compression: false,
         compressionRatio: 4.0,
-        storagePools: 3,
-        faultSets: 2,
         fgOverhead: 0.15,
       },
     },
@@ -523,9 +516,6 @@ describe('URL Storage - Platform Options Persistence (Task 9)', () => {
       key: 'nutanixOptions',
       value: {
         clusterType: 'hybrid',
-        replicationFactor: 3,
-        erasureCoding: true,
-        ecStripe: '6_2',
         compression: false,
         compressionRatio: 1.2,
         dedup: true,
@@ -690,7 +680,6 @@ describe('URL Storage - Platform Options Persistence (Task 9)', () => {
         cacheSize: 8192,
       },
       objectscaleOptions: {
-        objectSizeKB: 1024,
         systemOverheadPercent: 15,
         sites: 3,
         compression: true,
@@ -940,8 +929,6 @@ describe('URL Storage - Security: Malicious URL Protection (SEC-01, SEC-02, SEC-
         dedup: false,
         recordsize: 131072,
         specialVdev: false,
-        slogDevice: false,
-        l2arcDevice: false,
         maxOccupation: 80,
       },
       s2dOptions: {
@@ -977,9 +964,6 @@ describe('URL Storage - Security: Malicious URL Protection (SEC-01, SEC-02, SEC-
       },
       nutanixOptions: {
         clusterType: 'all-flash',
-        replicationFactor: 2,
-        erasureCoding: false,
-        ecStripe: '4_1',
         compression: true,
         compressionRatio: 1.5,
         dedup: false,
@@ -988,7 +972,6 @@ describe('URL Storage - Security: Malicious URL Protection (SEC-01, SEC-02, SEC-
         networkType: '25gbe',
       },
       objectscaleOptions: {
-        objectSizeKB: 1024,
         systemOverheadPercent: 15,
         sites: 1,
         compression: false,
@@ -1180,8 +1163,6 @@ describe('URL Storage - Security: Malicious URL Protection (SEC-01, SEC-02, SEC-
           dedup: false,
           recordsize: 131072,
           specialVdev: false,
-          slogDevice: false,
-          l2arcDevice: false,
           maxOccupation: 80,
         },
       })

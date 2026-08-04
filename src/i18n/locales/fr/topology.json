@@ -228,8 +228,6 @@
     },
     "ec_24_4": { "label": "EC 24+4 (Aperçu)", "description": "86% efficacité, min 8 nœuds" },
     "mirror_3": { "label": "Triple miroir", "description": "33% efficacité, pour métadonnées" },
-    "objectSize": "Taille objet (KB)",
-    "avgObjectSize": "Taille objet moyenne: {{size}}",
     "systemOverhead": "Overhead système",
     "systemOverheadDesc": "Métadonnées, index, protocole S3: {{percent}}%",
     "enableCompression": "Activer la compression",
@@ -376,9 +374,7 @@
     "compressionRatio": "Ratio de compression",
     "expectedRatio": "Ratio attendu: {{ratio}}:1",
     "fgOverhead": "Overhead métadonnées FG",
-    "fgOverheadDesc": "Overhead granularité fine: {{percent}}%",
-    "faultSets": "Ensembles de pannes",
-    "faultSetsDesc": "Minimum 3 ensembles de pannes requis"
+    "fgOverheadDesc": "Overhead granularité fine: {{percent}}%"
   },
   "netapp": {
     "title": "Options NetApp ONTAP",

@@ -2,7 +2,7 @@
  * Dell topology options panel.
  *
  * Consolidates configuration controls for all Dell storage topologies:
- * - PowerFlex: Fault sets, compression, fine-granularity overhead
+ * - PowerFlex: compression, fine-granularity overhead
  * - PowerStore: RAID levels, snapshots, inline reduction
  * - PowerScale: Node protection (N+x), snapshots, SmartQuotas, SyncIQ
  * - ObjectScale: Erasure coding, geo-replication, network efficiency
@@ -10,13 +10,7 @@
  */
 
 import { useTranslation } from 'react-i18next'
-import {
-  Label,
-  NumberInput,
-  SegmentedControl,
-  Slider,
-  Toggle,
-} from '@/components/common/FormControls'
+import { Label, SegmentedControl, Slider, Toggle } from '@/components/common/FormControls'
 import { useConfigStore } from '@/store'
 import type { PowerStoreOptions, Topology } from '@/types'
 import { POWERSTORE_MODEL_OVERHEAD } from '@/types'
@@ -105,7 +99,8 @@ export function DellOptionsPanel({ topology }: DellOptionsPanelProps) {
               ? 'ME5212: 2U, 12 drives (3.5" only)'
               : powervaultOptions.model === 'ME5224'
                 ? 'ME5224: 2U, 24 drives (2.5")'
-                : 'ME5284: 5U, 84 drives (3.5"), max density'}
+                : 'ME5284: 5U, 84 drives (3.5"), max density'}{' '}
+            — for reference only, not used in any calculation.
           </p>
         </div>
 
@@ -122,7 +117,8 @@ export function DellOptionsPanel({ topology }: DellOptionsPanelProps) {
           <p className="text-xs text-slate-500">
             {powervaultOptions.controllers === 1
               ? 'Single: 420K IOPS, 7 GB/s max'
-              : 'Dual Active: 840K IOPS, 14 GB/s max, failover support'}
+              : 'Dual Active: 840K IOPS, 14 GB/s max, failover support'}{' '}
+            — for reference only, not used in any calculation.
           </p>
         </div>
 
@@ -133,7 +129,8 @@ export function DellOptionsPanel({ topology }: DellOptionsPanelProps) {
           onChange={(v) => setPowerVaultOptions({ tiering: v })}
         />
         <p className="text-xs text-slate-500">
-          Automatically moves data between tiers (Performance SSD, Standard 10K, Archive NL-SAS)
+          Automatically moves data between tiers (Performance SSD, Standard 10K, Archive NL-SAS) —
+          for reference only, not used in any calculation.
         </p>
 
         <Toggle
@@ -143,7 +140,8 @@ export function DellOptionsPanel({ topology }: DellOptionsPanelProps) {
           onChange={(v) => setPowerVaultOptions({ ssdReadCache: v })}
         />
         <p className="text-xs text-slate-500">
-          Uses SSDs as read cache for HDD pools (not available with all-flash)
+          Uses SSDs as read cache for HDD pools (not available with all-flash) — for reference only,
+          not used in any calculation.
         </p>
 
         <Toggle
@@ -153,7 +151,8 @@ export function DellOptionsPanel({ topology }: DellOptionsPanelProps) {
           onChange={(v) => setPowerVaultOptions({ thinProvisioning: v })}
         />
         <p className="text-xs text-slate-500">
-          4MB page size thin provisioning. No compression/deduplication support.
+          4MB page size thin provisioning. No compression/deduplication support. For reference only,
+          not used in any calculation.
         </p>
 
         {/* Warning about no compression/dedup */}
@@ -172,24 +171,6 @@ export function DellOptionsPanel({ topology }: DellOptionsPanelProps) {
         <h4 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
           {t('objectscale.title')}
         </h4>
-
-        <div className="space-y-2">
-          <Label htmlFor="objectscale-object-size">{t('objectscale.objectSize')}</Label>
-          <Slider
-            id="objectscale-object-size"
-            value={objectscaleOptions.objectSizeKB}
-            min={100}
-            max={10240}
-            step={100}
-            onChange={(v) => setObjectScaleOptions({ objectSizeKB: v })}
-          />
-          <p className="text-xs text-slate-500">
-            Average object size:{' '}
-            {objectscaleOptions.objectSizeKB >= 1024
-              ? `${(objectscaleOptions.objectSizeKB / 1024).toFixed(1)} MB`
-              : `${objectscaleOptions.objectSizeKB} KB`}
-          </p>
-        </div>
 
         <div className="space-y-2">
           <Label htmlFor="objectscale-overhead" tooltip={th('dell.objectScale')}>
@@ -432,6 +413,9 @@ export function DellOptionsPanel({ topology }: DellOptionsPanelProps) {
           checked={powerscaleOptions.smartQuotas}
           onChange={(v) => setPowerScaleOptions({ smartQuotas: v })}
         />
+        <p className="text-xs text-slate-500">
+          Quota enforcement policy — for reference only, not used in any capacity calculation.
+        </p>
 
         <Toggle
           id="powerscale-synciq"
@@ -439,6 +423,10 @@ export function DellOptionsPanel({ topology }: DellOptionsPanelProps) {
           checked={powerscaleOptions.syncIQ}
           onChange={(v) => setPowerScaleOptions({ syncIQ: v })}
         />
+        <p className="text-xs text-slate-500">
+          Async DR replication — this tool sizes a single site, so the replication target's capacity
+          is out of scope. For reference only, not used in any calculation.
+        </p>
       </div>
     )
   }
@@ -519,22 +507,6 @@ export function DellOptionsPanel({ topology }: DellOptionsPanelProps) {
             </p>
           </div>
         )}
-
-        <div className="space-y-2">
-          <Label htmlFor="powerflex-fault-sets" tooltip={th('dell.powerFlex')}>
-            {t('powerflex.faultSets')}
-          </Label>
-          <NumberInput
-            id="powerflex-fault-sets"
-            value={powerFlexOptions.faultSets}
-            min={3}
-            max={16}
-            onChange={(v) => setPowerFlexOptions({ faultSets: v })}
-          />
-          <p className="text-xs text-slate-500">
-            Minimum 3 fault sets required for data protection
-          </p>
-        </div>
       </div>
     )
   }

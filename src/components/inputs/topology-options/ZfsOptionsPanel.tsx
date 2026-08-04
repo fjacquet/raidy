@@ -106,6 +106,11 @@ export function ZfsOptionsPanel() {
         checked={zfsOptions.specialVdev}
         onChange={(v) => setZfsOptions({ specialVdev: v })}
       />
+      <p className="text-xs text-slate-500">
+        For reference only. A special allocation vdev moves metadata/small blocks to fast flash on
+        real hardware, but its capacity effect depends on the special vdev's own size, which this
+        tool does not model. Recorded for your sizing sheet, not used in any calculation.
+      </p>
     </div>
   )
 }

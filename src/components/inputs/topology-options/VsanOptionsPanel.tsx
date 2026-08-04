@@ -150,6 +150,10 @@ export function VsanOptionsPanel({ topology }: VsanOptionsPanelProps) {
         checked={vsanOptions.encryption}
         onChange={(v) => setVsanOptions({ encryption: v })}
       />
+      <p className="text-xs text-slate-500">
+        For reference only. vSAN Data-at-Rest Encryption carries no published capacity tax. Recorded
+        for your sizing sheet, not used in any calculation.
+      </p>
 
       {/* Disk Group Tiering (OSA only) */}
       {isOsa && (
