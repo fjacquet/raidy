@@ -32,5 +32,95 @@
     "mdtUnderMinRecommendation": "Erhoehen Sie die Kapazitaet der Metadata-Targets auf mindestens {{recommendedTypical}} (typische Empfehlung)",
     "raidTargetNeedsRaidController": "BeeGFS {{level}}: HBA erkannt. Ein lokales Hardware-RAID-Target muss hinter einem RAID-Controller liegen, nicht hinter einem HBA im IT-Modus.",
     "raidTargetNeedsRaidControllerRecommendation": "Waehlen Sie einen RAID-Controller (PERC, LSI) oder wechseln Sie auf die Stufe beegfs_raidz2, die einen HBA im IT-Modus erfordert."
+  },
+  "ceph": {
+    "ramLow": "Ceph: Ungenuegend RAM pro OSD ({{ramPerOsd}} GB). Minimum empfohlen: 2 GB/OSD.",
+    "ramLowRecommendation": "Fuegen Sie mehr RAM hinzu oder reduzieren Sie die OSD-Anzahl. Aktuell: {{osdsPerNode}} OSDs mit {{ramPerNodeGb}} GB RAM.",
+    "ramMarginal": "Ceph: RAM pro OSD ist knapp bemessen ({{ramPerOsd}} GB). Erwaegen Sie 4 GB/OSD fuer den Produktionsbetrieb."
+  },
+  "zfs": {
+    "occupationHigh": "ZFS: Maximale Belegung auf {{maxOccupation}}% gesetzt. Die Leistung sinkt oberhalb von 80% erheblich.",
+    "occupationHighRecommendation": "Halten Sie die Pool-Belegung unter 80% fuer optimale Leistung."
+  },
+  "controller": {
+    "raidIncompatible": "{{topologyType}}: Hardware-RAID-Controller erkannt. Diese Topologie erfordert einen HBA (IT-Modus) fuer direkten Laufwerkzugriff.",
+    "raidIncompatibleRecommendation": "Verwenden Sie einen HBA wie die LSI 9400/9500-Serie oder einen Dell HBA355i. RAID-Controller verbergen die Laufwerkidentitaet und verhindern eine ordnungsgemaesse Datensicherung.",
+    "hbaWithStandardRaid": "HBA mit Standard-RAID-Topologie verwendet. Erwaegen Sie einen Hardware-RAID-Controller fuer besseren Cache und Batteriepufferung."
+  },
+  "driveType": {
+    "smrIncompatible": "SMR-Laufwerk erkannt: {{model}}. SMR-Laufwerke verursachen Timeouts und Laufwerksausschluss bei Rebuild-Vorgaengen.",
+    "smrIncompatibleRecommendation": "Verwenden Sie CMR-Laufwerke (Conventional Magnetic Recording) fuer ZFS- und S2D-Pools.",
+    "smrWarning": "SMR-Laufwerk erkannt: {{model}}. SMR-Laufwerke haben eine schlechte Zufallsschreibleistung.",
+    "smrWarningRecommendation": "Erwaegen Sie CMR-Laufwerke fuer bessere Leistung und Zuverlaessigkeit."
+  },
+  "sectorSize": {
+    "deprecated512n": "Laufwerk verwendet 512n-Sektorgroesse. Moderne Systeme bevorzugen 512e oder 4Kn.",
+    "deprecated512nRecommendation": "Erwaegen Sie fuer neue Bereitstellungen Laufwerke mit nativen 4K-Sektoren fuer beste Leistung."
+  },
+  "s2d": {
+    "cacheLow": "S2D: Weniger als 2 Cache-Laufwerke pro Knoten ({{cachePerNode}}). Microsoft empfiehlt mindestens 2.",
+    "cacheLowRecommendation": "Fuegen Sie weitere Cache-Laufwerke fuer bessere Schreibleistung und Schutz hinzu.",
+    "cacheRatioLow": "S2D: Das Cache-Verhaeltnis liegt unter 10% ({{cacheRatioPct}}%). Die Leistung kann beeintraechtigt werden.",
+    "cacheRatioLowRecommendation": "Erhoehen Sie die Cache-Tier-Groesse auf mindestens 10% der Kapazitaets-Tier.",
+    "threeWayMinNodes": "S2D: Drei-Wege-Spiegelung erfordert mindestens 3 Fehlerdomaenen (Knoten); {{faultDomains}} konfiguriert.",
+    "threeWayMinNodesRecommendation": "Fuegen Sie Knoten hinzu oder wechseln Sie zu einer Zwei-Wege-Spiegelung.",
+    "parityMinNodes": "S2D: Einfache Paritaet erfordert mindestens 3 Fehlerdomaenen (Knoten); {{faultDomains}} konfiguriert.",
+    "parityMinNodesRecommendation": "Fuegen Sie Knoten hinzu oder wechseln Sie zu einer Spiegel-Resilienz.",
+    "dualParityMinNodes": "S2D: Doppelte Paritaet erfordert mindestens 4 Fehlerdomaenen (Knoten); {{faultDomains}} konfiguriert.",
+    "dualParityMinNodesRecommendation": "Fuegen Sie Knoten hinzu oder wechseln Sie zu einer Spiegel-Resilienz.",
+    "mapMinNodes": "S2D: Spiegel-beschleunigte Paritaet erfordert mindestens 4 Fehlerdomaenen (Knoten); {{faultDomains}} konfiguriert.",
+    "mapMinNodesRecommendation": "Fuegen Sie Knoten hinzu oder wechseln Sie zu einer Spiegel-Resilienz.",
+    "singleParityDiscouraged": "S2D: Einfache Paritaet wird unterstuetzt, ist aber fuer geclustertes Storage Spaces Direct nicht empfohlen - sie toleriert nur einen Ausfall.",
+    "singleParityDiscouragedRecommendation": "Bevorzugen Sie Drei-Wege-Spiegelung oder doppelte Paritaet.",
+    "twoNodeNestedRecommended": "S2D: 2-Knoten-Cluster sollten verschachtelte Resilienz verwenden, um einen Laufwerksausfall waehrend eines Knotenausfalls zu ueberstehen.",
+    "twoNodeNestedRecommendedRecommendation": "Verwenden Sie verschachtelte Zwei-Wege-Spiegelung oder verschachtelte spiegel-beschleunigte Paritaet fuer 2-Knoten-Cluster.",
+    "threeWayRecommended": "S2D: Zwei-Wege-Spiegelung toleriert einen einzelnen Ausfall. Drei-Wege-Spiegelung ist Microsofts empfohlener Standard fuer Produktions-Hochverfuegbarkeit.",
+    "threeWayRecommendedRecommendation": "Stellen Sie die Spiegelkopien auf 3-Wege fuer Zwei-Ausfall-Toleranz um."
+  },
+  "netapp": {
+    "raidTecRecommended": "NetApp: Verwendung von RAID-DP mit Laufwerken > 10TB ({{tb}} TB). RAID-TEC fuer besseren Schutz empfohlen.",
+    "raidTecRecommendedRecommendation": "Wechseln Sie zu RAID-TEC (dreifache Paritaet) fuer Laufwerke groesser als 10TB."
+  },
+  "synology": {
+    "btrfsRecommended": "Synology: Verwendung des ext4-Dateisystems. Btrfs bietet zusaetzliche Datenschutzfunktionen.",
+    "btrfsRecommendedRecommendation": "Erwaegen Sie Btrfs fuer Snapshots, Selbstheilung und erweiterten Schutz."
+  },
+  "driveCount": {
+    "zfsRaidz1": "ZFS RAIDZ1 erfordert mindestens 3 Laufwerke.",
+    "zfsRaidz2": "ZFS RAIDZ2 erfordert mindestens 4 Laufwerke.",
+    "zfsRaidz3": "ZFS RAIDZ3 erfordert mindestens 5 Laufwerke.",
+    "s2dMin": "Redundante S2D-Konfigurationen erfordern mindestens 4 Laufwerke.",
+    "cephMinOsds": "Ceph erfordert mindestens 3 OSDs fuer eine ordnungsgemaesse Datenverteilung."
+  },
+  "powerflex": {
+    "hddNotSupported": "PowerFlex: HDD-Laufwerke werden nicht mehr unterstuetzt. Laufwerk \"{{model}}\" ist ein HDD.",
+    "hddNotSupportedRecommendation": "PowerFlex erfordert SSD- oder NVMe-Laufwerke. HDDs werden in aktuellen PowerFlex-Versionen nicht unterstuetzt.",
+    "fg3wayNotSupported": "PowerFlex: Der Fine-Granularity-Modus unterstuetzt keine Drei-Wege-Spiegelung. Nur Zwei-Wege-Spiegelung ist verfuegbar.",
+    "fg3wayNotSupportedRecommendation": "Verwenden Sie Medium Granularity fuer Drei-Wege-Spiegelung oder verwenden Sie Zwei-Wege-Spiegelung mit Fine Granularity."
+  },
+  "vsan": {
+    "esaNvmeRequired": "vSAN ESA: NVMe-Laufwerke erforderlich. Laufwerk \"{{model}}\" ist {{driveType}}.",
+    "esaNvmeRequiredRecommendation": "vSAN Express Storage Architecture (ESA) unterstuetzt nur NVMe-Laufwerke. Verwenden Sie vSAN OSA fuer SAS/SATA/HDD-Konfigurationen.",
+    "esaLowEndurance": "vSAN ESA: Laufwerk \"{{model}}\" hat eine geringe Ausdauer ({{dwpd}} DWPD).",
+    "esaLowEnduranceRecommendation": "vSAN ESA empfiehlt Laufwerke mit mindestens 1 DWPD fuer schreibintensive Arbeitslasten.",
+    "esaMinHosts": "vSAN ESA {{level}}: Erfordert mindestens {{minHosts}} Hosts, nur {{serverCount}} konfiguriert.",
+    "esaMinHostsRecommendation": "Erhoehen Sie die Serveranzahl auf mindestens {{minHosts}} Hosts fuer diese Schutzstufe.",
+    "osaHddCacheRecommended": "vSAN OSA mit HDD: SSD-Cache-Tier fuer die Leistung empfohlen.",
+    "osaHddCacheRecommendedRecommendation": "Fuegen Sie NVMe- oder SSD-Cache-Laufwerke fuer eine Hybridkonfiguration hinzu. Minimales Cache-zu-Kapazitaet-Verhaeltnis von 10%.",
+    "osaMinHosts": "vSAN OSA {{level}}: Erfordert mindestens {{minHosts}} Hosts, nur {{serverCount}} konfiguriert.",
+    "osaMinHostsRecommendation": "Erhoehen Sie die Serveranzahl auf mindestens {{minHosts}} Hosts fuer diese Schutzstufe."
+  },
+  "longhorn": {
+    "physicalUsable": "Physisch nutzbar",
+    "physicalUsableDesc": "Sichere Obergrenze fuer Anwendungsdaten, einschliesslich Snapshot-Reserve",
+    "recommendedCommittedData": "Empfohlene zugesagte Daten",
+    "recommendedCommittedDataDesc": "Sagen Sie heute diese Menge zu; laesst Wachstumsspielraum",
+    "perNodeAllocation": "Zuweisung pro Knoten",
+    "perNodeAllocationDesc": "Nutzbare Kapazitaet pro Speicherknoten",
+    "configTitle": "Longhorn-Konfiguration",
+    "replicas": "Replikate",
+    "diskMode": "Datentraegermodus",
+    "minAvailable": "Min. verfuegbar",
+    "overProvisioning": "Ueberprovisionierung"
   }
 }

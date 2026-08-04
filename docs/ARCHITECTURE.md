@@ -495,7 +495,17 @@ Manages Monte Carlo simulation:
 - Returns result with survival probability
 
 The simulated population must describe the same cluster the capacity card does. For most
-platforms that is `driveCount × effectiveServerCount` in `effectiveServerCount` fault groups.
+platforms that is `driveCount × effectiveServerCount` in `effectiveServerCount` fault groups,
+minus hot spares (#80): `usesDistributedSpares(topology.type) ? 0 : hotSpares * effectiveServerCount`,
+clamped at zero — the identical rule volumetry (`useVolumetryCalc.ts:80`) and performance
+(`usePerformanceCalc.ts:77`) apply, so a spare is never counted as a data-bearing drive in any of
+the three engines. The four tiered platforms (S2D, vSAN OSA, Ceph, Nutanix) apply the same
+subtraction to the capacity tier inside `tieredPlatformScope`; vSAN's distributed spares zero it
+out via `usesDistributedSpares`. BeeGFS applies hot spares inside its own resolver,
+`resolveBeeGfsSimulationScope`, so it is excluded from this generic subtraction to avoid
+double-counting. The worker itself does not credit a spare with shortening the rebuild window —
+that residual gap is tracked in `docs/BACKLOG.md`.
+
 Platforms that need something else register a resolver in `SIMULATION_SCOPE_BY_TOPOLOGY`
 (`src/hooks/useResilience.ts`), a `Partial<Record<TopologyType, SimulationScopeResolver>>` lookup
 mirroring `NETWORK_MODEL_BY_TOPOLOGY` above; a topology with no entry gets the default population

@@ -29,10 +29,13 @@
     "title": "RAID-Controller",
     "hbaModel": "HBA-Modell",
     "model": "Controller-Modell",
+    "eitherTitle": "Controller / HBA",
+    "eitherModel": "Controller-/HBA-Modell",
     "maxIops": "Max. IOPS",
     "maxThroughput": "Max. Durchsatz",
-    "hbaHint": "ZFS, vSAN und S2D benotigen direkten Festplattenzugriff uber HBA (IT-Modus)",
-    "raidHint": "Hardware-RAID-Controller verwalten die Festplattenredundanz"
+    "hbaHint": "Plattformen, die Redundanz in Software verwalten, benotigen direkten Festplattenzugriff uber HBA (IT-Modus)",
+    "raidHint": "Hardware-RAID-Controller verwalten die Festplattenredundanz",
+    "eitherHint": "Diese Konfiguration funktioniert sowohl mit einem Hardware-RAID-Controller als auch mit einem HBA"
   },
   "power": {
     "title": "Energie & Nachhaltigkeit",
