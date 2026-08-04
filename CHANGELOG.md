@@ -12,10 +12,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   that were collected from the UI and never reached any engine; building its guard test showed
   the pattern was broader. Walked every `DEFAULT_*_OPTIONS` object in `src/types/topology.ts` and
   decided each unconsumed field individually:
-  - **Wired into a real calculation:** `netAppOptions.compression`/`dedup` now gate
-    `dataReductionRatio` in `capacityEnhancements.ts` (`<flag> ? ratio : 1.0`), matching every
-    sibling platform's existing pattern. Previously the ratio applied unconditionally, so turning
-    both toggles off silently left a stale reduction ratio in effect.
+  - **Wired into a real calculation — moves NetApp usable capacity for some existing
+    configurations:** `netAppOptions.compression`/`dedup` now gate `dataReductionRatio` in
+    `capacityEnhancements.ts` (`<flag> ? ratio : 1.0`), matching every sibling platform's existing
+    pattern. Previously the ratio applied unconditionally, so a configuration with both reduction
+    toggles switched off but a non-1.0 `dataReductionRatio` still dialed in (e.g. left over from
+    toggling compression on, entering a ratio, then toggling it back off) silently kept applying
+    that stale ratio. **Usable capacity now decreases** for exactly that configuration shape — it
+    correctly drops back to the ungated (1.0) figure. The shipped default is unaffected either way:
+    `DEFAULT_NETAPP_OPTIONS.dataReductionRatio` is `1.0`, so a default NetApp sizing produces the
+    same result before and after this fix. If you sized a NetApp configuration on 1.16.0 with
+    compression and dedup both off and a data-reduction ratio above 1.0 still set, re-check it —
+    every other NetApp configuration (default ratio, or reduction actually enabled) is unaffected.
+    Pinned at the engine boundary in `tests/engines/volumetry.spec.ts`
+    ("NetApp dataReductionRatio gating (#110)"), asserting exact `effectiveCapacity` values for
+    compression-on, both-off, and dedup-on-only.
   - **Deleted, field and control together** (no UI, no engine reader, no citable rule to wire
     instead): `zfsOptions.slogDevice`/`l2arcDevice`; `nutanixOptions.replicationFactor`/
     `erasureCoding`/`ecStripe` (duplicates of what the `nutanix_*` topology level already encodes
