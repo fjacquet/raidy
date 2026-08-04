@@ -28,8 +28,10 @@ interface UseResilienceOptions {
   serverCount?: number
   /**
    * Per-server hot spares (the store's raw value, as the other engines take it). Spare drives
-   * are not data-bearing, so they are excluded from the simulated population — currently only
-   * for BeeGFS, see the derivation in `runSimulation`.
+   * are not data-bearing, so they are excluded from the simulated population on every path —
+   * zeroed for platforms with distributed spares (`usesDistributedSpares`), applied at the call
+   * site in `runSimulation` for the naive and tiered paths, and inside
+   * `resolveBeeGfsSimulationScope` for BeeGFS.
    */
   hotSpares?: number
   topology: Topology
