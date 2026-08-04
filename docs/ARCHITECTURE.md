@@ -157,7 +157,7 @@ Calculates storage capacity and efficiency.
 >
 > **Dual-parity efficiency** follows Microsoft's stepped Reed-Solomon/LRC tables (`getS2DDualParityEfficiency` in `strategies/s2d.ts`), which differ for all-flash vs hybrid clusters — all-flash: 50% (4–6) → 66.7% (7–8) → 75% (9–15) → 80% (16); hybrid: 50% (4–6) → 66.7% (7–11) → 72.7% (12–16). The orchestrator picks the table from the resiliency media (capacity tier when tiered, else the pool drive). MAP uses the same stepped efficiency for its parity portion.
 >
-> **Storage tiering** (S2D, vSAN OSA, Ceph WAL/DB, Nutanix hybrid) is resolved once by the shared `resolveTiering` (`src/engines/shared/tiering.ts`) and reused by all three engines. Tiering activates from the platform toggle plus drive selection; the capacity tier drives usable capacity and resiliency, while the cache tier is excluded from usable and counted only toward raw.
+> **Storage tiering** (S2D, vSAN OSA, Ceph WAL/DB, Nutanix hybrid) is resolved once by the shared `resolveTiering` (`src/engines/shared/tiering.ts`) and reused by all four engines, including resilience. Tiering activates from the platform toggle plus drive selection; the capacity tier drives usable capacity and resiliency, while the cache tier is excluded from usable and counted only toward raw. `resolveTiering` takes a single `TieringResolverOptions` bag (`s2dOptions`, `vsanOptions`, `cephOptions`, `nutanixOptions`, `beeGfsOptions`) rather than four-or-five separate parameters, and `useTieringOptions()` (`src/hooks/useTieringOptions.ts`) assembles that bag once from the store. `useVolumetryCalc`, `usePerformanceCalc`, `useSustainabilityCalc` and `useResilience` all consume the same hook's output as a single `tieringOptions` prop/argument rather than hand-listing the platform fields individually — hand-listing a subset was the exact mistake that dropped a platform's options and caused issues #59, #60 and #92. Adding a new tiered platform means adding it once to `TieringResolverOptions` and `useTieringOptions()`; every consumer picks it up automatically since none of them destructure the bag into named fields.
 >
 > **Longhorn** (`strategies/longhorn.ts`) is modeled on Ceph replicated pools: usable capacity is redundancy-limited to `1/R` (R = 2 or 3 replicas), reduced by host filesystem overhead, then narrowed by a free-space guardrail (`F = 1 − "Storage Minimal Available %"`) and a snapshot reserve (divided by the snapshot headroom). It has no native compression/dedup. Growth headroom and over-provisioning are advisory readouts only — they inform the recommended committed-data ceiling but are never subtracted from usable capacity.
 >
@@ -165,7 +165,7 @@ Calculates storage capacity and efficiency.
 >
 > - **Topology level = the storage target's local RAID**, not cluster-wide protection: `beegfs_raid6`, `beegfs_raid10`, `beegfs_raidz2` (ZFS RAIDz2 target), or `beegfs_single` (bare drive, no local RAID). Local efficiency is `(drivesPerTarget − 2) / drivesPerTarget` for RAID6/RAIDz2, `0.5` for RAID10, `1` for single — `drivesPerTarget` (default 12) is an explicit input because RAID6 efficiency is meaningless without target width. Because the level describes real local hardware, it also decides the **controller class** — BeeGFS is *not* pure software-defined storage (see the controller note in the Performance Engine section below).
 > - **Cluster-level protection is Buddy Mirroring**, expressed as two independent booleans in `BeeGfsOptions` rather than folded into the level enum: `storageBuddyMirror` (data, halves usable capacity when on) and `metadataBuddyMirror` (metadata, doubles the MDT capacity requirement). BeeGFS genuinely lets you mirror one without the other, which a combined level enum could not express.
-> - **Capacity is computed on whole storage targets only.** A storage target *is* a local RAID volume, so drives that do not complete one ("stranded" drives) join no target and hold no data. `calculateStorageTargets` / `resolveBeeGfsUsableDrives` (`strategies/beegfs.ts`) are the single source of truth for that derivation and are shared by three surfaces that must never disagree: `calculateVolumetry`, `BeeGfsOptionsPanel` (via `deriveBeeGfsStorageTargets`), and `useResilience` (via `resolveBeeGfsSimulationScope`). Stranded drives still count toward **raw** capacity and get their own "BeeGFS Stranded Drives" breakdown bucket; the `validators.ts` stranded-drive warning reads its count from `beeGfsDetails` rather than recomputing it.
+> - **Capacity is computed on whole storage targets only.** A storage target *is* a local RAID volume, so drives that do not complete one ("stranded" drives) join no target and hold no data. `calculateStorageTargets` / `resolveBeeGfsUsableDrives` (`strategies/beegfs.ts`) are the single source of truth for that derivation and are shared by three surfaces that must never disagree: `calculateVolumetry`, `BeeGfsOptionsPanel` (via `deriveBeeGfsStorageTargets`), and `useResilience` (via `resolveBeeGfsSimulationScope`). Stranded drives still count toward **raw** capacity and get their own "BeeGFS Stranded Drives" breakdown bucket; the `validators.ts` stranded-drive warning reads its count from `beeGfsDetails` rather than recomputing it. **The performance engine deliberately does not apply this rounding** — a stranded drive still exists on the bus and still draws from the controller/PCIe budget, so pricing it is correct for a bottleneck model even though excluding it is correct for a capacity model. The two engines can therefore report different tiered-BeeGFS drive counts by design; see the cross-referencing comments at `beeGfsTargets` in `volumetry/index.ts` and `capUsableDrives` in `performance/index.ts` (#91).
 > - **Metadata targets (MDT) reuse the shared `TieringConfig` primitive** (`src/types/topology.ts`, resolved by `src/engines/shared/tiering.ts`) instead of introducing a BeeGFS-specific concept: `fastTier` = MDT, `capacityTier` = storage targets. `resolveTiering`'s existing semantics are already exactly right for this — the fast tier counts toward **raw** capacity but never toward **usable**, the same treatment Ceph WAL/DB offload gets. A metadata-sizing advisory (`beeGfsDetails`, built in `volumetry/index.ts` following the `longhornDetails` pattern) compares MDT usable capacity against the BeeGFS-documented 0.3–0.5% rule of thumb and surfaces an estimated file count; a `validators.ts` alert fires when the MDT is undersized or absent.
 
 **Calculations:**
@@ -204,6 +204,42 @@ Calculates storage capacity and efficiency.
 > `useCalculations`, `useResilience`) whenever the control is hidden — the store's `serverCount`
 > itself is left untouched, so it round-trips unchanged if the user switches back.
 
+> **Fraction-vs-percent unit audit** (issue #61, `docs/BACKLOG.md` B3, closed with no code
+> change). A real bug of this shape was fixed in `[1.15.0]`:
+> `netAppOptions.snapshotReserve` is a *fraction* that `overheadCalculator.ts` multiplies
+> directly against capacity, but its Zod bound allowed `0..100` and the panel wrote a raw
+> percent into it — a slider at 5 meant a 500% reserve. Every field in `src/types/topology.ts`
+> named `*Percent`/`*Reserve`/`*Ratio`/`*Fraction`, plus every numeric option that reaches a
+> multiplication against a capacity, was re-audited on the same three axes (engine use / Zod
+> bound / UI write) and all agree:
+>
+> | Field | Engine use | Zod bound | UI write |
+> |---|---|---|---|
+> | `netAppOptions.snapshotReserve` | multiplies directly (fraction) | `0..1` | panel divides by 100 on write, multiplies by 100 on display |
+> | `powerstoreOptions.snapshotReservePercent` | divided by 100 (percent) | `0..100` | panel writes raw percent |
+> | `powerstoreOptions.systemOverheadPercent` | divided by 100 (percent) | `0..100` | panel writes raw percent |
+> | `powerscaleOptions.snapshotReservePercent` | divided by 100 (percent) | `0..100` | panel writes raw percent |
+> | `objectscaleOptions.systemOverheadPercent` | divided by 100 (percent) | `0..100` | panel writes raw percent |
+> | `objectscaleOptions.fillRatePercent` | not consumed by any engine (informational) | `0..100` | panel writes raw percent |
+> | `objectscaleOptions.networkEfficiencyFactor` | not consumed by any engine (informational) | `0..1` | panel divides by 100 on write, multiplies by 100 on display |
+> | `netAppOptions.waflOverhead` | multiplies directly (fraction) | `0..1` | panel divides by 100 on write, multiplies by 100 on display |
+> | `netAppOptions.dataReductionRatio` | multiplies directly (true ratio, not a proportion) | `1..20` | panel writes raw ratio |
+> | `nutanixOptions.systemOverhead` | multiplies directly (fraction) | `0..1` | panel divides by 100 on write, multiplies by 100 on display |
+> | `powerFlexOptions.fgOverhead` | multiplies directly (fraction) | `0..1` | panel divides by 100 on write, multiplies by 100 on display |
+> | `cephOptions.safeCapacityThreshold` | multiplies directly (fraction, default 0.85) | `0..1` | panel divides by 100 on write, multiplies by 100 on display |
+> | `cephOptions.walDbRatio` | not consumed by any engine (informational HDD:NVMe count) | `1..32` int | panel writes raw integer |
+> | `longhornOptions.minimalAvailablePercent` | divided by 100 (percent) | `0..100` | panel writes raw percent |
+> | `longhornOptions.overProvisioningPercent` | not multiplied against capacity (advisory display only) | `0..1000` | panel writes raw percent |
+> | `beeGfsOptions.fsOverheadPercent` | divided by 100 (percent) | `0.5..5` | panel writes raw percent |
+> | `TieringConfig.workingSetPercent` | divided by 100 (percent) | `0..100` | panel writes raw percent |
+> | `synologyOptions.btrfsOverhead` | **dead field** — `filesystem-overhead.ts` uses the hardcoded `FILESYSTEM_OVERHEAD.btrfs` constant instead of this option; no UI panel writes it | `0..1` | not written by any panel |
+> | `*.compressionRatio` / `*.dedupRatio` (vSAN, PowerFlex, Nutanix, PowerStore, PowerScale, ObjectScale, global) | multiply directly (true ratios, e.g. 1.5 = 1.5:1, not proportions of 1) | `1..10` | panels write the raw ratio value; no /100 or ×100 anywhere in this family |
+>
+> Every live (engine-consumed) field's three facts agree, so no code changed. `btrfsOverhead` is
+> a pre-existing dead field (unrelated bug class — nothing reads it) and `fillRatePercent` /
+> `networkEfficiencyFactor` / `walDbRatio` are informational fields no engine consumes; none of
+> the three exhibits the fraction/percent mismatch this audit was checking for.
+
 ### Module B: Performance Engine (`/src/engines/performance/`)
 
 Calculates IOPS, throughput, and identifies bottlenecks.
@@ -237,6 +273,25 @@ flowchart LR
 > PERC/LSI targets are common), so the generic "keep the user's choice unless it became invalid"
 > fallback applies.
 >
+> **`CONTROLLER_LIMITS` basis (#84).** Every entry describes ONE controller at 100% 4K random
+> read for `iops` and 100% 64K sequential read for `throughputMBs`, measured with FIO on an
+> optimal (non-degraded) volume. This is the basis and it does not change when a new controller
+> is added — mixing a rebuild-time, degraded-mode, or multi-controller-aggregate figure into
+> either field re-introduces the exact defect #84 fixed (PERC IOPS were 3.4–4.7x below any
+> measured per-controller number, from an undocumented basis, while throughput was already close
+> to the real figure — so the controller layer of the bottleneck chain was not comparable across
+> controllers). The four PERC entries are sourced from two vendor-commissioned, independently
+> verified lab reports at this exact basis: Tolly Report #223103 (Jan 2023, PERC 10/11/12 vs each
+> other, FIO on RHEL 8.6) and Signal65 PERC13 lab testing (2026), corroborated by StorageReview. Every non-PERC entry
+> (generic HBAs, LSI/Broadcom cards, Dell HBA355i/e, PowerVault ME5, PowerStore, PowerScale,
+> ObjectScale, and the generic `software`/`hardware`/`gpu` placeholders) is marked `ESTIMATED` in
+> its own comment in `CONTROLLER_LIMITS` — no published per-controller figure at this basis could
+> be found for any of them at the time of the #84 audit. **Adding a new controller:** find the
+> vendor's or an independent lab's per-controller FIO figure at this exact basis and cite it in
+> the entry's comment; if none exists, carry the estimate forward and say so — never derive a
+> number from another controller's ratio and present it as a specification. See
+> `docs/superpowers/specs/2026-08-04-controller-limits-basis.md` for the full sourcing detail.
+>
 > **Controller cache policy is not modelled.** `RaidControllerOptions.writePolicy`, `readPolicy`
 > and `cacheSize` reach the config export but no engine. A battery/flash-backed write-back cache
 > is a finite buffer: under a sustained write stream the host rate converges on the rate at which
@@ -259,7 +314,9 @@ flowchart LR
 - Controller limits (IOPS and throughput caps) — skipped for NVMe-direct topologies (vSAN ESA)
 - PCIe bandwidth (lanes × generation speed)
 - Network bandwidth limits — for vSAN, refined by full-duplex, on-the-wire compression, and the east-west traffic fraction (writes × replication/EC + remote reads); for BeeGFS, by write amplification from Buddy Mirroring
-- XFS stripe alignment (sunit/swidth)
+- XFS stripe alignment (sunit/swidth) — for a tiered configuration this also uses the
+  spare-adjusted capacity-tier drive count, the same population the Media layer above uses, so the
+  suggested stripe width always matches the pool that actually holds data
 
 > **Per-platform network model** (`NETWORK_MODEL_BY_TOPOLOGY` in
 > `src/engines/performance/utils/bottleneck-chain.ts`) is a
@@ -351,17 +408,37 @@ ConfigStore = HardwareSlice & TopologySlice & WorkloadSlice & AdvancedSlice
   options existed) falls back to that slice's `DEFAULT_*_OPTIONS`, including
   gating booleans reading as `false` rather than `undefined`
 - `getDefaultState()` (used by `resetToDefaults()` and as the baseline
-  `omitDefaults()` diffs against) spreads the canonical `DEFAULT_*_OPTIONS`
-  constants from `src/types/topology.ts` rather than restating them, so the
-  two cannot drift apart
+  `omitDefaults()` diffs against) invokes each slice creator with inert
+  `set`/`get` stubs rather than restating the slices' initial state, so the
+  two cannot drift apart. This only works if every slice's `StateCreator`
+  builds its initial state eagerly and touches `set`/`get` only inside the
+  action closures it returns (the `sliceDefaults` constraint, documented on
+  that helper in `src/store/configStore.ts`) — since `getDefaultState()` runs
+  at module load and the stub throws, a slice that violates this fails on
+  first import rather than producing a silently wrong default
 
 > **Validation boundary.** Zustand's `persist` middleware wraps the partialized state in a
 > `{ state, version }` envelope before `urlHashStorage` ever sees it. `urlHashStorage.getItem`
-> (`src/store/urlStorage.ts`) detects that envelope shape and runs `validateUrlState` against
+> (`src/store/urlStorage.ts`) requires that envelope shape and runs `validateUrlState` against
 > `.state` — the actual config payload — not the envelope itself, then re-wraps the validated
 > result with the original `version` so hydration still finds `{ state, version }`. A bare/flat
-> object (older links, hand-constructed test fixtures) is still validated directly for backward
-> compatibility. See `docs/SECURITY.md` for why this distinction matters.
+> payload is rejected outright rather than validated as-is: `createJSONStorage` has wrapped state
+> in `{ state, version }` since the initial commit, so no released version can have ever written a
+> flat link — one can only come from a hand-crafted URL, and is treated as corrupt. Unknown
+> top-level keys are stripped by `ConfigStateSchema` (Zod's default; the schema is no longer
+> `.passthrough()` at the root) rather than merged into the live store, since a key nobody reads
+> would otherwise just keep getting re-persisted into the URL. The schema's closed unions
+> (`BLOCK_SIZES`, `NETWORK_SPEEDS`, `CARBON_REGIONS`, `FS_TYPES`, etc.) derive from the same
+> `as const` arrays in `src/types/` that the store and UI both use, so a new enum value can't
+> validate on one side and reject on the other. The input panels (`WorkloadPanel`, `AdvancedPanel`,
+> `Header`) import these same arrays to build their `<select>` options too, rather than
+> hand-declaring a second copy — so a value added to a canonical array fails the panel's build (an
+> exhaustiveness check on its label map, or an untranslated i18n key for `Header`'s
+> `t()`-driven labels) instead of silently validating in the schema while never appearing in the
+> UI. `CARBON_REGIONS` and `FS_TYPES` are ordered to match their `<select>`'s display order rather
+> than alphabetically, since that order is the only place these arrays' order is ever observed —
+> `z.enum(...)` and the `Record<Type, …>` lookups elsewhere in the codebase don't care about
+> element order. See `docs/SECURITY.md` for why the validation-boundary distinction matters.
 
 ### Key State Values
 
@@ -509,15 +586,31 @@ Manages Monte Carlo simulation:
 - Returns result with survival probability
 
 The simulated population must describe the same cluster the capacity card does. For most
-platforms that is `driveCount × effectiveServerCount` in `effectiveServerCount` fault groups.
+platforms that is `driveCount × effectiveServerCount` in `effectiveServerCount` fault groups,
+minus hot spares (#80): `usesDistributedSpares(topology.type) ? 0 : hotSpares * effectiveServerCount`,
+clamped at zero — the identical rule volumetry (`useVolumetryCalc.ts:80`) and performance
+(`usePerformanceCalc.ts:77`) apply, so a spare is never counted as a data-bearing drive in any of
+the three engines. The four tiered platforms (S2D, vSAN OSA, Ceph, Nutanix) apply the same
+subtraction to the capacity tier inside `tieredPlatformScope`; vSAN's distributed spares zero it
+out via `usesDistributedSpares`. BeeGFS applies hot spares inside its own resolver,
+`resolveBeeGfsSimulationScope`, so it is excluded from this generic subtraction to avoid
+double-counting. The worker itself does not credit a spare with shortening the rebuild window —
+that residual gap is tracked in `docs/BACKLOG.md`.
+
 Platforms that need something else register a resolver in `SIMULATION_SCOPE_BY_TOPOLOGY`
 (`src/hooks/useResilience.ts`), a `Partial<Record<TopologyType, SimulationScopeResolver>>` lookup
 mirroring `NETWORK_MODEL_BY_TOPOLOGY` above; a topology with no entry gets the default population
-described in the previous sentence. BeeGFS's resolver calls the exported pure helper
-`resolveBeeGfsSimulationScope`, which reuses `resolveBeeGfsUsableDrives` +
-`calculateStorageTargets` — the same functions volumetry and the options panel use — so hot
-spares, MDT tiering and stranded drives are applied identically on both sides, and the fault
-group is a whole storage target at its real width.
+described in the previous sentence. Both `tieredPlatformScope` and the BeeGFS resolver read a
+single `tieringOptions?: TieringResolverOptions` argument threaded through `UseResilienceOptions`
+and `SimulationScopeContext` — the same complete bag `useTieringOptions()` assembles for the other
+three engines (see the Storage Tiering note above) — rather than four separately hand-listed
+`*Options` props, closing the class of bug where a caller forwarded a subset of the platform
+option bags into the hook and silently dropped one (#59, #60, #92). BeeGFS's resolver reads
+`tieringOptions?.beeGfsOptions` (the bag already carries it, so it is not a separate prop) and
+calls the exported pure helper `resolveBeeGfsSimulationScope`, which reuses
+`resolveBeeGfsUsableDrives` + `calculateStorageTargets` — the same functions volumetry and the
+options panel use — so hot spares, MDT tiering and stranded drives are applied identically on
+both sides, and the fault group is a whole storage target at its real width.
 Under MDT tiering the drive characteristics handed to the worker (capacity, URE rate, AFR) also
 follow the capacity tier rather than the Hardware panel's drive. MDT drives themselves are not
 simulated — a separate protection domain, the same scope choice made for Ceph's WAL/DB tier.
@@ -613,8 +706,11 @@ PPTX library.
 
 6. **URL persistence** (`src/utils/schemas.ts`, `src/store/configStore.ts`):
    - Add a Zod schema for the new `*Options` object and wire it into `ConfigStateSchema`
-   - Add the object to `configStore.ts`'s `partialize` and `getDefaultState()` (spread the
-     `DEFAULT_*_OPTIONS` constant, don't restate it — see the URL Persistence section above)
+   - Add the field to `PERSISTED_KEYS` in `src/store/persistedKeys.ts` (or `EPHEMERAL_KEYS`,
+     with a reason, if it's deliberately excluded from shared links) — `partialize` derives
+     from this list, and `getDefaultState()` needs no edit since it already reads every slice's
+     initial state. The parity test in `tests/store/persistedKeys.spec.ts` fails until you do
+     this, by design — see the URL Persistence section above
 
 The compiler catches a missed platform at most of the above sites — an unhandled union member
 in a `switch` is a TypeScript error under strict mode. Two categories fail **silently** instead,
@@ -624,15 +720,18 @@ checklist, not an afterthought:
 - **Falls through to a wrong default instead of erroring.** `VALID_TOPOLOGY_TYPES`
   (`src/engines/volumetry/helpers/calculationHelpers.ts`) is a plain array, not a type-checked
   union — a missing entry doesn't fail to compile, it fails validation at runtime for a topology
-  that otherwise works. `overhead/filesystem-overhead.ts`'s `case` statement and
-  `performance/utils.ts`'s latency `case` statement both have a fallback branch, so an omitted
-  platform silently inherits another platform's overhead/latency number instead of erroring.
+  that otherwise works. `overhead/filesystem-overhead.ts`'s outer `case` statement (keyed on
+  `topology.type`) and `performance/utils.ts`'s latency `case` statement both have a fallback
+  branch, so an omitted platform silently inherits another platform's overhead/latency number
+  instead of erroring. (`getFsTypeOverhead`, the inner switch keyed on the closed `FsType` union,
+  is exhaustive and calls `assertNever` in its `default` — a missing filesystem case fails to
+  compile there.)
   `OutputDashboard.tsx`'s `mirrorCopies` derivation (an IIFE of platform checks) behaves the
   same way — a platform that needs a non-default `mirrorCopies` but isn't listed just gets `1`.
 - **Zod schema drift decides what a URL link actually carries.** `utils/schemas.ts` needs the
   new platform's options object added as its own schema *and* wired into the discriminated
-  `ConfigStateSchema` — omitting it doesn't fail to compile (`ConfigStateSchema` is passthrough
-  with every field optional), it silently drops that platform's options from every shared link,
+  `ConfigStateSchema` — omitting it doesn't fail to compile (every field on `ConfigStateSchema`
+  is optional), it silently drops that platform's options from every shared link,
   or worse, lets an unvalidated object through if the wiring is partial. This exact class of bug
   is what `fix(store): persist every platform's *Options through Copy URL to Share` and
   `fix(security): validate the real payload inside the persist envelope, not around it` fixed for

@@ -24,26 +24,55 @@ import type {
 } from './topology'
 
 /** Workload block size options */
-export type BlockSize = '4K' | '8K' | '16K' | '64K' | '128K' | '256K' | '1M'
+export const BLOCK_SIZES = ['4K', '8K', '16K', '64K', '128K', '256K', '1M'] as const
+export type BlockSize = (typeof BLOCK_SIZES)[number]
 
 /** Network speed options */
-export type NetworkSpeed = '1GbE' | '10GbE' | '25GbE' | '40GbE' | '100GbE' | '200GbE' | '400GbE'
+export const NETWORK_SPEEDS = [
+  '1GbE',
+  '10GbE',
+  '25GbE',
+  '40GbE',
+  '100GbE',
+  '200GbE',
+  '400GbE',
+] as const
+export type NetworkSpeed = (typeof NETWORK_SPEEDS)[number]
 
 /** PCIe generation options */
-export type PCIeGen = 'gen3' | 'gen4' | 'gen5'
+export const PCIE_GENS = ['gen3', 'gen4', 'gen5'] as const
+export type PCIeGen = (typeof PCIE_GENS)[number]
 
 /** PCIe lane configuration */
-export type PCIeLanes = 'x4' | 'x8' | 'x16'
+export const PCIE_LANES = ['x4', 'x8', 'x16'] as const
+export type PCIeLanes = (typeof PCIE_LANES)[number]
 
-/** Carbon intensity regions */
-export type CarbonRegion =
-  | 'switzerland'
-  | 'france'
-  | 'norway'
-  | 'germany'
-  | 'usa_average'
-  | 'china'
-  | 'world_average'
+/**
+ * Carbon intensity regions. Order is the UI display order (Header's carbon-region select) —
+ * not alphabetical, not grouped by intensity. Do not "tidy" this into alphabetical order; that
+ * would silently reorder a live dropdown. z.enum() and Record<CarbonRegion, …> lookups that
+ * consume this array are order-independent, so the display order here is the only place order
+ * is observed at all.
+ */
+export const CARBON_REGIONS = [
+  'switzerland',
+  'norway',
+  'france',
+  'germany',
+  'usa_average',
+  'world_average',
+  'china',
+] as const
+export type CarbonRegion = (typeof CARBON_REGIONS)[number]
+
+/**
+ * File system types available for backup calculations. Order is the UI display order
+ * (AdvancedPanel's filesystem select) — not alphabetical. Do not "tidy" this into alphabetical
+ * order; that would silently reorder a live dropdown. z.enum() consumes this array in an
+ * order-independent way, so the display order here is the only place order is observed at all.
+ */
+export const FS_TYPES = ['zfs', 'xfs', 'ext4', 'btrfs', 'refs', 'ntfs'] as const
+export type FsType = (typeof FS_TYPES)[number]
 
 /** Hardware configuration state */
 export interface HardwareState {
@@ -142,7 +171,7 @@ export interface AdvancedState {
 /** File system options for backup calculations */
 export interface FilesystemState {
   /** File system type */
-  fsType: 'xfs' | 'ext4' | 'zfs' | 'refs' | 'ntfs' | 'btrfs'
+  fsType: FsType
   /** Supports reflink/CoW for efficient backups */
   supportsReflink: boolean
   /** Backup retention count */

@@ -7,39 +7,58 @@ import { useTranslation } from 'react-i18next'
 import { Label, Select, Slider } from '@/components/common/FormControls'
 import { shouldShowControl } from '@/engines/capabilities'
 import { useConfigStore } from '@/store'
-import type { ControllerType, NetworkSpeed, PCIeGen, PCIeLanes } from '@/types'
-import { CONTROLLER_LIMITS, getControllerOptions, requiresHba } from '@/types'
+import type { ControllerType, FsType, NetworkSpeed, PCIeGen, PCIeLanes } from '@/types'
+import {
+  CONTROLLER_LIMITS,
+  FS_TYPES,
+  getControllerOptions,
+  getControllerRequirement,
+  NETWORK_SPEEDS,
+  PCIE_GENS,
+  PCIE_LANES,
+} from '@/types'
 
-const NETWORK_SPEEDS: { value: NetworkSpeed; label: string }[] = [
-  { value: '1GbE', label: '1 GbE' },
-  { value: '10GbE', label: '10 GbE' },
-  { value: '25GbE', label: '25 GbE' },
-  { value: '40GbE', label: '40 GbE' },
-  { value: '100GbE', label: '100 GbE' },
-  { value: '200GbE', label: '200 GbE' },
-  { value: '400GbE', label: '400 GbE' },
-]
+/** Exhaustive over NetworkSpeed — adding a value to NETWORK_SPEEDS fails to compile until a label is added here. */
+const NETWORK_SPEED_LABELS: Record<NetworkSpeed, string> = {
+  '1GbE': '1 GbE',
+  '10GbE': '10 GbE',
+  '25GbE': '25 GbE',
+  '40GbE': '40 GbE',
+  '100GbE': '100 GbE',
+  '200GbE': '200 GbE',
+  '400GbE': '400 GbE',
+}
+const NETWORK_SPEED_OPTIONS = NETWORK_SPEEDS.map((value) => ({
+  value,
+  label: NETWORK_SPEED_LABELS[value],
+}))
 
-const PCIE_GENS: { value: PCIeGen; label: string }[] = [
-  { value: 'gen3', label: 'PCIe Gen 3' },
-  { value: 'gen4', label: 'PCIe Gen 4' },
-  { value: 'gen5', label: 'PCIe Gen 5' },
-]
+/** Exhaustive over PCIeGen — adding a value to PCIE_GENS fails to compile until a label is added here. */
+const PCIE_GEN_LABELS: Record<PCIeGen, string> = {
+  gen3: 'PCIe Gen 3',
+  gen4: 'PCIe Gen 4',
+  gen5: 'PCIe Gen 5',
+}
+const PCIE_GEN_OPTIONS = PCIE_GENS.map((value) => ({ value, label: PCIE_GEN_LABELS[value] }))
 
-const PCIE_LANES: { value: PCIeLanes; label: string }[] = [
-  { value: 'x4', label: 'x4' },
-  { value: 'x8', label: 'x8' },
-  { value: 'x16', label: 'x16' },
-]
+/** Exhaustive over PCIeLanes — adding a value to PCIE_LANES fails to compile until a label is added here. */
+const PCIE_LANES_LABELS: Record<PCIeLanes, string> = {
+  x4: 'x4',
+  x8: 'x8',
+  x16: 'x16',
+}
+const PCIE_LANES_OPTIONS = PCIE_LANES.map((value) => ({ value, label: PCIE_LANES_LABELS[value] }))
 
-const FS_TYPES = [
-  { value: 'zfs', label: 'ZFS' },
-  { value: 'xfs', label: 'XFS' },
-  { value: 'ext4', label: 'ext4' },
-  { value: 'btrfs', label: 'Btrfs' },
-  { value: 'refs', label: 'ReFS' },
-  { value: 'ntfs', label: 'NTFS' },
-]
+/** Exhaustive over FsType — adding a value to FS_TYPES fails to compile until a label is added here. */
+const FS_TYPE_LABELS: Record<FsType, string> = {
+  zfs: 'ZFS',
+  xfs: 'XFS',
+  ext4: 'ext4',
+  btrfs: 'Btrfs',
+  refs: 'ReFS',
+  ntfs: 'NTFS',
+}
+const FS_TYPE_OPTIONS = FS_TYPES.map((value) => ({ value, label: FS_TYPE_LABELS[value] }))
 
 export function AdvancedPanel() {
   const { t } = useTranslation('advanced')
@@ -71,9 +90,9 @@ export function AdvancedPanel() {
   } = useConfigStore()
 
   // Get available controller options based on topology type (HBA for ZFS/vSAN/S2D, RAID for
-  // others). BeeGFS resolves per level, so the level participates in both the list and the
-  // HBA/RAID labelling.
-  const needsHba = requiresHba(topology.type, topology.level)
+  // others, either for a BeeGFS level that tolerates both). BeeGFS resolves per level, so the
+  // level participates in the list and the HBA/RAID/either labelling alike.
+  const controllerRequirement = getControllerRequirement(topology.type, topology.level)
   const availableControllers = useMemo(() => {
     return getControllerOptions(topology.type, topology.level).map((controller) => ({
       value: controller,
@@ -157,7 +176,7 @@ export function AdvancedPanel() {
           <Select
             id="network-speed"
             value={networkSpeed}
-            options={NETWORK_SPEEDS}
+            options={NETWORK_SPEED_OPTIONS}
             onChange={(v) => setNetworkSpeed(v as NetworkSpeed)}
           />
         </div>
@@ -170,7 +189,7 @@ export function AdvancedPanel() {
             <Select
               id="pcie-gen"
               value={pcieGen}
-              options={PCIE_GENS}
+              options={PCIE_GEN_OPTIONS}
               onChange={(v) => setPcieGen(v as PCIeGen)}
             />
           </div>
@@ -181,7 +200,7 @@ export function AdvancedPanel() {
             <Select
               id="pcie-lanes"
               value={pcieLanes}
-              options={PCIE_LANES}
+              options={PCIE_LANES_OPTIONS}
               onChange={(v) => setPcieLanes(v as PCIeLanes)}
             />
           </div>
@@ -191,12 +210,20 @@ export function AdvancedPanel() {
       {/* Controller / HBA Section */}
       <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-surface-700">
         <h4 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-          {needsHba ? t('pcie.title') : t('controller.title')}
+          {controllerRequirement === 'hba'
+            ? t('pcie.title')
+            : controllerRequirement === 'either'
+              ? t('controller.eitherTitle')
+              : t('controller.title')}
         </h4>
 
         <div className="space-y-2">
           <Label htmlFor="controller" tooltip={th('advanced.controller')}>
-            {needsHba ? t('controller.hbaModel') : t('controller.model')}
+            {controllerRequirement === 'hba'
+              ? t('controller.hbaModel')
+              : controllerRequirement === 'either'
+                ? t('controller.eitherModel')
+                : t('controller.model')}
           </Label>
           <Select
             id="controller"
@@ -221,7 +248,11 @@ export function AdvancedPanel() {
             </div>
           )}
           <p className="text-xs text-slate-500">
-            {needsHba ? t('controller.hbaHint') : t('controller.raidHint')}
+            {controllerRequirement === 'hba'
+              ? t('controller.hbaHint')
+              : controllerRequirement === 'either'
+                ? t('controller.eitherHint')
+                : t('controller.raidHint')}
           </p>
         </div>
       </div>
@@ -291,8 +322,8 @@ export function AdvancedPanel() {
           <Select
             id="fs-type"
             value={fsType}
-            options={FS_TYPES}
-            onChange={(v) => setFsType(v as 'zfs' | 'xfs' | 'ext4' | 'btrfs' | 'refs' | 'ntfs')}
+            options={FS_TYPE_OPTIONS}
+            onChange={(v) => setFsType(v as FsType)}
           />
         </div>
 

@@ -4,6 +4,15 @@
  */
 
 import { z } from 'zod'
+import {
+  BLOCK_SIZES,
+  CARBON_REGIONS,
+  FS_TYPES,
+  NETWORK_SPEEDS,
+  PCIE_GENS,
+  PCIE_LANES,
+} from '@/types/config'
+import { CONTROLLER_TYPES } from '@/types/topology'
 
 /**
  * Standard RAID level enum
@@ -230,7 +239,7 @@ const BeeGfsOptionsSchema = z.object({
   chunkSizeKb: z.union([z.literal(512), z.literal(1024), z.literal(2048)]),
   numTargets: z.number().int().min(1).max(64).finite(),
   network: z.enum(['ib-hdr', 'ib-ndr', '100gbe', '25gbe']),
-  fsOverheadPercent: z.number().min(0).max(100).finite(),
+  fsOverheadPercent: z.number().min(0.5).max(5).finite(),
   metadataTargets: z.boolean(),
   tiering: TieringConfigSchema.optional(),
 })
@@ -254,7 +263,7 @@ const PowerFlexOptionsSchema = z.object({
  * Controller options schema
  */
 const ControllerOptionsSchema = z.object({
-  controller: z.string(),
+  controller: z.enum(CONTROLLER_TYPES),
   stripeSize: z.union([
     z.literal(64),
     z.literal(128),
@@ -372,58 +381,61 @@ const PowerVaultOptionsSchema = z.object({
  * Fields are optional to support Zustand's persist middleware,
  * which fills in defaults for missing fields from getDefaultState().
  * However, when fields ARE present, they must pass validation.
+ *
+ * Unknown top-level keys are stripped (Zod's default). The nested platform-option schemas are
+ * already strict, and an unknown key merged into the live store is read by nobody yet re-persisted
+ * on the next change — forward compatibility that only grows the URL.
  */
-export const ConfigStateSchema = z
-  .object({
-    // Hardware
-    driveId: z.string().min(1).optional(),
-    driveCount: z.number().int().min(1).max(1000).finite().optional(),
-    serverCount: z.number().int().min(1).max(100).finite().optional(),
-    serverPowerWatts: z.number().int().positive().finite().optional(),
+export const ConfigStateSchema = z.object({
+  // Hardware
+  driveId: z.string().min(1).optional(),
+  driveCount: z.number().int().min(1).max(1000).finite().optional(),
+  serverCount: z.number().int().min(1).max(100).finite().optional(),
+  serverPowerWatts: z.number().int().positive().finite().optional(),
 
-    // Topology
-    topology: TopologySchema.optional(),
-    hotSpares: z.number().int().min(0).max(100).finite().optional(),
-    zfsOptions: ZfsOptionsSchema.optional(),
-    s2dOptions: S2DOptionsSchema.optional(),
-    vsanOptions: VsanOptionsSchema.optional(),
-    cephOptions: CephOptionsSchema.optional(),
-    longhornOptions: LonghornOptionsSchema.optional(),
-    beeGfsOptions: BeeGfsOptionsSchema.optional(),
-    powerFlexOptions: PowerFlexOptionsSchema.optional(),
-    controllerOptions: ControllerOptionsSchema.optional(),
-    netAppOptions: NetAppOptionsSchema.optional(),
-    synologyOptions: SynologyOptionsSchema.optional(),
-    nutanixOptions: NutanixOptionsSchema.optional(),
-    objectscaleOptions: ObjectScaleOptionsSchema.optional(),
-    powerstoreOptions: PowerStoreOptionsSchema.optional(),
-    powerscaleOptions: PowerScaleOptionsSchema.optional(),
-    powervaultOptions: PowerVaultOptionsSchema.optional(),
+  // Topology
+  topology: TopologySchema.optional(),
+  hotSpares: z.number().int().min(0).max(100).finite().optional(),
+  zfsOptions: ZfsOptionsSchema.optional(),
+  s2dOptions: S2DOptionsSchema.optional(),
+  vsanOptions: VsanOptionsSchema.optional(),
+  cephOptions: CephOptionsSchema.optional(),
+  longhornOptions: LonghornOptionsSchema.optional(),
+  beeGfsOptions: BeeGfsOptionsSchema.optional(),
+  powerFlexOptions: PowerFlexOptionsSchema.optional(),
+  controllerOptions: ControllerOptionsSchema.optional(),
+  netAppOptions: NetAppOptionsSchema.optional(),
+  synologyOptions: SynologyOptionsSchema.optional(),
+  nutanixOptions: NutanixOptionsSchema.optional(),
+  objectscaleOptions: ObjectScaleOptionsSchema.optional(),
+  powerstoreOptions: PowerStoreOptionsSchema.optional(),
+  powerscaleOptions: PowerScaleOptionsSchema.optional(),
+  powervaultOptions: PowerVaultOptionsSchema.optional(),
 
-    // Workload
-    readPercent: z.number().min(0).max(100).finite().optional(),
-    blockSize: z.string().optional(),
-    randomPercent: z.number().min(0).max(100).finite().optional(),
-    datasetSize: z.number().positive().finite().optional(),
-    dailyWriteVolume: z.number().nonnegative().finite().optional(),
+  // Workload
+  readPercent: z.number().min(0).max(100).finite().optional(),
+  blockSize: z.enum(BLOCK_SIZES).optional(),
+  randomPercent: z.number().min(0).max(100).finite().optional(),
+  datasetSize: z.number().positive().finite().optional(),
+  dailyWriteVolume: z.number().nonnegative().finite().optional(),
 
-    // Advanced
-    compressionRatio: z.number().min(1).max(10).finite().optional(),
-    dedupRatio: z.number().min(1).max(10).finite().optional(),
-    networkSpeed: z.string().optional(),
-    pcieGen: z.string().optional(),
-    pcieLanes: z.string().optional(),
-    pue: z.number().min(1).max(3).finite().optional(),
-    carbonRegion: z.string().optional(),
-    projectYears: z.number().int().min(1).max(20).finite().optional(),
-    electricityCostPerKwh: z.number().positive().finite().optional(),
-    fsType: z.string().optional(),
-    supportsReflink: z.boolean().optional(),
-    backupRetention: z.number().int().positive().finite().optional(),
-    dailyChangeRate: z.number().min(0).max(100).finite().optional(),
-    unitSystem: z.enum(['binary', 'decimal']).optional(),
-  })
-  .passthrough() // Allow extra fields for forward compatibility
+  // Advanced
+  compressionRatio: z.number().min(1).max(10).finite().optional(),
+  dedupRatio: z.number().min(1).max(10).finite().optional(),
+  networkSpeed: z.enum(NETWORK_SPEEDS).optional(),
+  pcieGen: z.enum(PCIE_GENS).optional(),
+  pcieLanes: z.enum(PCIE_LANES).optional(),
+  pue: z.number().min(1).max(3).finite().optional(),
+  carbonRegion: z.enum(CARBON_REGIONS).optional(),
+  projectYears: z.number().int().min(1).max(20).finite().optional(),
+  electricityCostPerKwh: z.number().positive().finite().optional(),
+  fsType: z.enum(FS_TYPES).optional(),
+  supportsReflink: z.boolean().optional(),
+  backupRetention: z.number().int().positive().finite().optional(),
+  dailyChangeRate: z.number().min(0).max(100).finite().optional(),
+  unitSystem: z.enum(['binary', 'decimal']).optional(),
+  performanceThreshold: z.number().min(0.5).max(1).finite().optional(),
+})
 
 export type ConfigState = z.infer<typeof ConfigStateSchema>
 

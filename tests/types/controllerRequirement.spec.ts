@@ -96,14 +96,46 @@ describe('getControllerOptions — BeeGFS lists per level', () => {
   })
 
   it('models a beegfs_raid6 node well below the HBA ceiling', () => {
-    // The defect this fixes: a PERC H755 is 750k IOPS / 12 GB/s, the cheapest HBA in the list
-    // is 2M IOPS / 19.2 GB/s, so HBA-only classification modelled ~2.7x the real IOPS ceiling.
+    // The defect this fixes: a PERC H755 is 3.5M IOPS / 14.1 GB/s (Tolly #223103 basis, #84),
+    // the cheapest HBA in the list is 2M IOPS / 19.2 GB/s — the HBA ceiling is still not a
+    // stand-in for the RAID controller's real ceiling, so this stays a RAID-only path.
     const raidCeilings = getControllerOptions('beegfs', 'beegfs_raid6').map(
       (c) => CONTROLLER_LIMITS[c],
     )
-    expect(CONTROLLER_LIMITS.perc_h755.iops).toBe(750_000)
+    expect(CONTROLLER_LIMITS.perc_h755.iops).toBe(3_500_000)
     expect(CONTROLLER_LIMITS.hba_nvme.iops).toBe(10_000_000)
     expect(raidCeilings.every((spec) => !spec.isHba)).toBe(true)
+  })
+})
+
+describe('HBA_REQUIRED_TOPOLOGIES table contents are pinned', () => {
+  /**
+   * Deliberately hand-copied, NOT imported or derived from `HBA_REQUIRED_TOPOLOGIES` or any
+   * other table in src/. The whole point of this assertion is to catch drift in the table's
+   * *contents* — deleting or adding an entry to `HBA_REQUIRED_TOPOLOGIES` — which a test that
+   * re-derives the same table (see `legacyControllerOptions` above) cannot detect, because it
+   * shares the defect with the thing it's checking.
+   *
+   * Updating this literal must be a conscious, reviewed decision made when the table genuinely
+   * changes (a platform is added to or removed from HBA-required storage) — do NOT
+   * "helpfully" refactor it into `[...HBA_REQUIRED_TOPOLOGIES]` or any other derivation; that
+   * silently defeats the guard.
+   */
+  const EXPECTED_HBA_REQUIRED_TOPOLOGIES: TopologyType[] = [
+    'zfs',
+    's2d',
+    'vsan_osa',
+    'vsan_esa',
+    'ceph',
+    'powerflex',
+    'nutanix',
+    'longhorn',
+  ]
+
+  it('matches the hand-copied expected membership exactly, in any order', () => {
+    expect([...HBA_REQUIRED_TOPOLOGIES].sort()).toEqual(
+      [...EXPECTED_HBA_REQUIRED_TOPOLOGIES].sort(),
+    )
   })
 })
 

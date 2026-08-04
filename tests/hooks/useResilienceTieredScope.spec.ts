@@ -77,7 +77,7 @@ const CASES: PlatformCase[] = [
   },
 ]
 
-function runWith(topology: Topology, extra: Record<string, unknown>): SimulationInput {
+function runWith(topology: Topology, tieringOptions: Record<string, unknown>): SimulationInput {
   const { result } = renderHook(() =>
     useResilience({
       drive: fastDrive,
@@ -87,7 +87,7 @@ function runWith(topology: Topology, extra: Record<string, unknown>): Simulation
       topology,
       simulationCount: 10,
       autoRun: false,
-      ...extra,
+      tieringOptions,
     }),
   )
   act(() => {

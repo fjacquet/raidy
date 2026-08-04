@@ -10,6 +10,7 @@
  * Returns the bottleneck name and marks layers accordingly.
  */
 
+import type { NetworkSpeed, PCIeGen, PCIeLanes } from '@/types/config'
 import type { BottleneckLayer } from '@/types/results'
 import type {
   BeeGfsOptions,
@@ -96,28 +97,31 @@ export function getMinIOPS(layers: BottleneckLayer[]): number {
  * @returns PCIe bandwidth in MB/s and IOPS limit
  */
 export function calculatePcieLimits(
-  pcieGen: string,
-  pcieLanes: string,
+  pcieGen: PCIeGen,
+  pcieLanes: PCIeLanes,
   serverCount: number,
   blockSizeBytes: number,
 ): { bandwidth: number; iops: number } {
   /** PCIe bandwidth per lane in MB/s */
-  const PCIE_LANE_BANDWIDTH: Record<string, number> = {
+  const PCIE_LANE_BANDWIDTH: Record<PCIeGen, number> = {
     gen3: 985, // ~1GB/s per lane
     gen4: 1969, // ~2GB/s per lane
     gen5: 3938, // ~4GB/s per lane
   }
 
   /** PCIe lane count */
-  const PCIE_LANE_COUNT: Record<string, number> = {
+  const PCIE_LANE_COUNT: Record<PCIeLanes, number> = {
     x4: 4,
     x8: 8,
     x16: 16,
   }
 
-  // Each server has its own PCIe bus, so aggregate scales with serverCount
-  const laneBandwidth = PCIE_LANE_BANDWIDTH[pcieGen] ?? 0
-  const laneCount = PCIE_LANE_COUNT[pcieLanes] ?? 8
+  // Each server has its own PCIe bus, so aggregate scales with serverCount.
+  // PCIE_LANE_BANDWIDTH/PCIE_LANE_COUNT are Record<PCIeGen, …>/Record<PCIeLanes, …>, so
+  // this lookup is exhaustive — TypeScript would fail the build if a table entry were
+  // missing for a value in PCIE_GENS/PCIE_LANES, no runtime fallback needed.
+  const laneBandwidth = PCIE_LANE_BANDWIDTH[pcieGen]
+  const laneCount = PCIE_LANE_COUNT[pcieLanes]
   const pcieBandwidthPerServer = laneBandwidth * laneCount
   const pcieBandwidth = pcieBandwidthPerServer * serverCount
   const pcieIOPS = (pcieBandwidth * 1024 * 1024) / blockSizeBytes
@@ -257,13 +261,13 @@ export function resolveNetworkModel(
  * @returns Network bandwidth in MB/s and IOPS limit
  */
 export function calculateNetworkLimits(
-  networkSpeed: string,
+  networkSpeed: NetworkSpeed,
   serverCount: number,
   blockSizeBytes: number,
   model: NetworkModel = DEFAULT_NETWORK_MODEL,
 ): { bandwidth: number; iops: number } {
   /** Network speed in MB/s */
-  const NETWORK_SPEED_MBS: Record<string, number> = {
+  const NETWORK_SPEED_MBS: Record<NetworkSpeed, number> = {
     '1GbE': 125,
     '10GbE': 1250,
     '25GbE': 3125,
@@ -276,7 +280,9 @@ export function calculateNetworkLimits(
   // Each server has its own network uplink, so aggregate scales with serverCount.
   // The model raises the effective ceiling for full-duplex use and on-the-wire
   // compression, and lowers it by the fraction of traffic that crosses the fabric.
-  const networkBandwidthPerServer = NETWORK_SPEED_MBS[networkSpeed] ?? 1250 // Default to 10GbE
+  // NETWORK_SPEED_MBS is Record<NetworkSpeed, …>: exhaustive lookup, same reasoning
+  // as the PCIe table above (see calculatePCIeLimits).
+  const networkBandwidthPerServer = NETWORK_SPEED_MBS[networkSpeed]
   const networkBandwidth =
     (networkBandwidthPerServer * serverCount * model.duplex * model.compressionRatio) /
     model.trafficFraction

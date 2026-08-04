@@ -7,16 +7,7 @@ import { LanguageSwitcher, SegmentedControl, Select } from '@/components/common'
 import { ThemeToggle } from '@/components/common/ThemeToggle'
 import { useConfigStore } from '@/store'
 import type { CarbonRegion } from '@/types'
-
-const CARBON_REGION_VALUES: CarbonRegion[] = [
-  'switzerland',
-  'norway',
-  'france',
-  'germany',
-  'usa_average',
-  'world_average',
-  'china',
-]
+import { CARBON_REGIONS } from '@/types'
 
 interface HeaderProps {
   onToggleGuide: () => void
@@ -30,7 +21,7 @@ export function Header({ onToggleGuide, isGuideOpen }: HeaderProps) {
   const carbonRegion = useConfigStore((state) => state.carbonRegion)
   const setCarbonRegion = useConfigStore((state) => state.setCarbonRegion)
 
-  const carbonRegions = CARBON_REGION_VALUES.map((region) => ({
+  const carbonRegions = CARBON_REGIONS.map((region) => ({
     value: region,
     label: t(`carbon.regions.${region}`),
   }))

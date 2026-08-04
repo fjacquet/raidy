@@ -4,21 +4,15 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { effectiveServerCount } from '@/engines/capabilities'
-import { resolveTiering } from '@/engines/shared/tiering'
+import { resolveTiering, type TieringResolverOptions } from '@/engines/shared/tiering'
 import {
   calculateStorageTargets,
   resolveBeeGfsUsableDrives,
 } from '@/engines/volumetry/strategies/beegfs'
+import { usesDistributedSpares } from '@/types'
 import type { Drive } from '@/types/drive'
 import type { ResilienceResult, SimulationProgress } from '@/types/results'
-import type {
-  BeeGfsOptions,
-  CephOptions,
-  NutanixOptions,
-  S2DOptions,
-  Topology,
-  VsanOptions,
-} from '@/types/topology'
+import type { BeeGfsOptions, Topology } from '@/types/topology'
 import type { SimulationInput, SimulationOutput, WorkerOutputMessage } from '@/types/worker'
 
 interface UseResilienceOptions {
@@ -27,8 +21,10 @@ interface UseResilienceOptions {
   serverCount?: number
   /**
    * Per-server hot spares (the store's raw value, as the other engines take it). Spare drives
-   * are not data-bearing, so they are excluded from the simulated population — currently only
-   * for BeeGFS, see the derivation in `runSimulation`.
+   * are not data-bearing, so they are excluded from the simulated population on every path —
+   * zeroed for platforms with distributed spares (`usesDistributedSpares`), applied in
+   * `runSimulation` for the naive path, in `tieredPlatformScope` for the tiered platforms, and
+   * inside `resolveBeeGfsSimulationScope` for BeeGFS.
    */
   hotSpares?: number
   topology: Topology
@@ -38,18 +34,13 @@ interface UseResilienceOptions {
   /** Mirror copies per group (2 or 3). 0 = not a mirror topology. */
   mirrorCopies?: number
   /**
-   * BeeGFS-only. When set (topology.type === 'beegfs'), the worker's fault
-   * group is the storage target rather than the node — see `drivesPerTarget`.
+   * The complete per-platform tiering option bag, sourced from `useTieringOptions()` at the call
+   * site — the same bag `useVolumetryCalc`, `usePerformanceCalc` and `useSustainabilityCalc`
+   * already consume, so no platform can be hand-listed here and dropped (issues #59, #60).
+   * `tieringOptions.beeGfsOptions` doubles as this hook's BeeGFS-only input (`drivesPerTarget`
+   * for the storage-target fault group) — see `SIMULATION_SCOPE_BY_TOPOLOGY`.
    */
-  beeGfsOptions?: BeeGfsOptions
-  /**
-   * Per-platform tiering option bags. When the platform's own tiering toggle is on, the
-   * simulated population and media come from the capacity tier — see `tieredPlatformScope`.
-   */
-  s2dOptions?: S2DOptions
-  vsanOptions?: VsanOptions
-  cephOptions?: CephOptions
-  nutanixOptions?: NutanixOptions
+  tieringOptions?: TieringResolverOptions
 }
 
 interface UseResilienceResult {
@@ -133,11 +124,8 @@ interface SimulationScopeContext {
   /** Store's per-server hot spares */
   hotSpares: number
   topology: Topology
-  beeGfsOptions?: BeeGfsOptions
-  s2dOptions?: S2DOptions
-  vsanOptions?: VsanOptions
-  cephOptions?: CephOptions
-  nutanixOptions?: NutanixOptions
+  /** Complete per-platform tiering option bag — see `UseResilienceOptions.tieringOptions`. */
+  tieringOptions?: TieringResolverOptions
 }
 
 /** How a platform overrides the naive `driveCount * serverCount` population, if at all. */
@@ -166,27 +154,22 @@ type SimulationScopeResolver = (ctx: SimulationScopeContext) => PlatformSimulati
  * — that needs per-platform failure-domain work. The same limitation Ceph's WAL/DB tier already
  * had before this change.
  *
- * Hot spares are not subtracted here — no platform's resilience population subtracts them today
- * (issue #80). Counting a spare as data-bearing overstates risk, so this stays on the safe side
- * of the superset invariant documented on `resolveBeeGfsSimulationScope`.
+ * Hot spares come off the capacity tier, clamped at zero, mirroring
+ * `src/engines/volumetry/index.ts:178`, which clamps the identical quantity the identical way.
+ * vSAN rebuilds from distributed slack rather than dedicated spare drives, so
+ * `usesDistributedSpares` zeroes the subtraction for it.
  */
 function tieredPlatformScope({
   topology,
   serverCount,
-  s2dOptions,
-  vsanOptions,
-  cephOptions,
-  nutanixOptions,
+  hotSpares,
+  tieringOptions,
 }: SimulationScopeContext): PlatformSimulationScope | null {
-  const tiering = resolveTiering(topology, serverCount, {
-    s2dOptions,
-    vsanOptions,
-    cephOptions,
-    nutanixOptions,
-  })
+  const tiering = resolveTiering(topology, serverCount, tieringOptions ?? {})
   if (!tiering) return null
+  const totalHotSpares = usesDistributedSpares(topology.type) ? 0 : hotSpares * serverCount
   return {
-    driveCount: tiering.capacityTierDriveCount,
+    driveCount: Math.max(0, tiering.capacityTierDriveCount - totalHotSpares),
     groupCount: serverCount,
     mediaDrive: tiering.capacityTierDrive,
   }
@@ -204,7 +187,8 @@ function tieredPlatformScope({
  * `tieredPlatformScope`, which reads the capacity tier through `resolveTiering`.
  */
 const SIMULATION_SCOPE_BY_TOPOLOGY: Partial<Record<Topology['type'], SimulationScopeResolver>> = {
-  beegfs: ({ driveCount, serverCount, hotSpares, topology, beeGfsOptions }) => {
+  beegfs: ({ driveCount, serverCount, hotSpares, topology, tieringOptions }) => {
+    const beeGfsOptions = tieringOptions?.beeGfsOptions
     if (!beeGfsOptions) return null
     const scope = resolveBeeGfsSimulationScope(driveCount, serverCount, hotSpares, beeGfsOptions)
     // When MDT tiering is active the storage targets are built from the capacity-tier drive, not
@@ -309,11 +293,7 @@ export function useResilience(options: UseResilienceOptions): UseResilienceResul
     simulationCount = 100000, // 100K iterations for better precision on rare events
     autoRun = false,
     mirrorCopies = 0,
-    beeGfsOptions,
-    s2dOptions,
-    vsanOptions,
-    cephOptions,
-    nutanixOptions,
+    tieringOptions,
   } = options
 
   const [result, setResult] = useState<ResilienceResult | null>(null)
@@ -423,6 +403,14 @@ export function useResilience(options: UseResilienceOptions): UseResilienceResul
     // effectiveServerCount in src/engines/capabilities.ts, audit finding #14).
     const effServerCount = effectiveServerCount(serverCount, topology)
 
+    // A hot spare holds no data, so its failure is not a data-loss event. Volumetry
+    // (useVolumetryCalc.ts:80) and performance (usePerformanceCalc.ts:77) already remove spares
+    // from their populations on this exact rule; resilience did not, which inflated the failure
+    // population and understated survival for every configuration with a spare (#80).
+    // vSAN rebuilds from distributed slack space rather than dedicated spare drives, so
+    // usesDistributedSpares zeroes the subtraction there.
+    const totalHotSpares = usesDistributedSpares(topology.type) ? 0 : hotSpares * effServerCount
+
     // Platforms whose simulated population is not simply `driveCount * serverCount` resolve it
     // through the table above — for BeeGFS the fault group is the storage target, and both the
     // population and the media come from the same resolved values volumetry uses. See
@@ -432,15 +420,13 @@ export function useResilience(options: UseResilienceOptions): UseResilienceResul
       serverCount: effServerCount,
       hotSpares,
       topology,
-      beeGfsOptions,
-      s2dOptions,
-      vsanOptions,
-      cephOptions,
-      nutanixOptions,
+      tieringOptions,
     })
 
     const mediaDrive = scope?.mediaDrive ?? drive
-    const totalDriveCount = scope ? scope.driveCount : driveCount * effServerCount
+    const totalDriveCount = scope
+      ? scope.driveCount
+      : Math.max(0, driveCount * effServerCount - totalHotSpares)
     const groupCount = scope ? scope.groupCount : effServerCount
 
     const input: SimulationInput = {
@@ -465,11 +451,7 @@ export function useResilience(options: UseResilienceOptions): UseResilienceResul
     rebuildSpeedMBs,
     simulationCount,
     mirrorCopies,
-    beeGfsOptions,
-    s2dOptions,
-    vsanOptions,
-    cephOptions,
-    nutanixOptions,
+    tieringOptions,
   ])
 
   // Abort simulation

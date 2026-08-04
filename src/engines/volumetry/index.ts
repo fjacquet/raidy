@@ -6,6 +6,7 @@
 import drivesData from '@/data/drives.json'
 // Shared tiering resolver
 import { isAllFlashMedia, resolveTiering } from '@/engines/shared/tiering'
+import type { FsType } from '@/types/config'
 import type { Drive } from '@/types/drive'
 import type {
   BeeGfsCapacityDetails,
@@ -75,7 +76,7 @@ export interface VolumetryInput {
   powervaultOptions: PowerVaultOptions
   compressionRatio: number
   dedupRatio: number
-  fsType: 'xfs' | 'ext4' | 'zfs' | 'refs' | 'ntfs' | 'btrfs'
+  fsType: FsType
 }
 
 /**
@@ -184,6 +185,12 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
   // `calculateStorageTargets` is the single source of truth for this arithmetic, shared with
   // `BeeGfsOptionsPanel` via `deriveBeeGfsStorageTargets`; the result is reused verbatim for
   // `beeGfsDetails` below so the two can never drift.
+  //
+  // Deliberate divergence from performance: `src/engines/performance/index.ts` prices these same
+  // stranded drives instead of dropping them, because a drive with no storage target still
+  // exists on the bus and still draws from the controller/PCIe budget — see the comment beside
+  // `capUsableDrives` at that site for the full reasoning. Capacity and performance are allowed
+  // to see different populations here; that is intentional, not drift. See #91.
   const beeGfsTargets =
     topology.type === 'beegfs' && beeGfsOptions
       ? calculateStorageTargets(spareAdjustedDrives, beeGfsOptions.drivesPerTarget)
@@ -308,8 +315,9 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
   let longhornFreeSpaceReserve = 0
   let longhornSnapshotReserve = 0
   if (topology.type === 'longhorn' && longhornOptions) {
-    // Clamp defensively: longhornOptions rides ConfigStateSchema.passthrough() (unvalidated),
-    // so a crafted URL could otherwise smuggle in an out-of-range % or a zero headroom.
+    // Clamp defensively even though LonghornOptionsSchema validates these fields: the clamp
+    // guards against an out-of-range % or a zero headroom reaching the engine by any path,
+    // not just a crafted URL.
     const freeSpaceFactor = Math.max(
       0,
       Math.min(1, 1 - longhornOptions.minimalAvailablePercent / 100),

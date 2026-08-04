@@ -32,5 +32,95 @@
     "mdtUnderMinRecommendation": "Increase metadata target capacity to at least {{recommendedTypical}} (typical recommendation)",
     "raidTargetNeedsRaidController": "BeeGFS {{level}}: HBA detected. A local hardware RAID target must sit behind a RAID controller, not an IT-mode HBA.",
     "raidTargetNeedsRaidControllerRecommendation": "Select a RAID controller (PERC, LSI) or switch the level to beegfs_raidz2, which does require an IT-mode HBA."
+  },
+  "ceph": {
+    "ramLow": "Ceph: Insufficient RAM per OSD ({{ramPerOsd}} GB). Minimum recommended: 2 GB/OSD.",
+    "ramLowRecommendation": "Add more RAM or reduce OSD count. Current: {{osdsPerNode}} OSDs with {{ramPerNodeGb}} GB RAM.",
+    "ramMarginal": "Ceph: RAM per OSD is marginal ({{ramPerOsd}} GB). Consider 4 GB/OSD for production."
+  },
+  "zfs": {
+    "occupationHigh": "ZFS: Max occupation set to {{maxOccupation}}%. Performance degrades significantly above 80%.",
+    "occupationHighRecommendation": "Keep pool occupation below 80% for optimal performance."
+  },
+  "controller": {
+    "raidIncompatible": "{{topologyType}}: Hardware RAID controller detected. This topology requires an HBA (IT mode) for direct disk access.",
+    "raidIncompatibleRecommendation": "Use an HBA like LSI 9400/9500 series or Dell HBA355i. RAID controllers hide disk identity and prevent proper data protection.",
+    "hbaWithStandardRaid": "Using HBA with standard RAID topology. Consider using a hardware RAID controller for better cache and battery backup."
+  },
+  "driveType": {
+    "smrIncompatible": "SMR drive detected: {{model}}. SMR drives cause timeouts and disk ejection during rebuild operations.",
+    "smrIncompatibleRecommendation": "Use CMR (Conventional Magnetic Recording) drives for ZFS and S2D pools.",
+    "smrWarning": "SMR drive detected: {{model}}. SMR drives have poor random write performance.",
+    "smrWarningRecommendation": "Consider CMR drives for better performance and reliability."
+  },
+  "sectorSize": {
+    "deprecated512n": "Drive uses 512n sector size. Modern systems prefer 512e or 4Kn.",
+    "deprecated512nRecommendation": "For new deployments, consider drives with 4K native sectors for best performance."
+  },
+  "s2d": {
+    "cacheLow": "S2D: Less than 2 cache drives per node ({{cachePerNode}}). Microsoft recommends minimum 2.",
+    "cacheLowRecommendation": "Add more cache drives for better write performance and protection.",
+    "cacheRatioLow": "S2D: Cache ratio is less than 10% ({{cacheRatioPct}}%). Performance may be impacted.",
+    "cacheRatioLowRecommendation": "Increase cache tier size to at least 10% of capacity tier.",
+    "threeWayMinNodes": "S2D: Three-way mirror requires at least 3 fault domains (nodes); {{faultDomains}} configured.",
+    "threeWayMinNodesRecommendation": "Add nodes or switch to a two-way mirror.",
+    "parityMinNodes": "S2D: Single parity requires at least 3 fault domains (nodes); {{faultDomains}} configured.",
+    "parityMinNodesRecommendation": "Add nodes or switch to a mirror resiliency.",
+    "dualParityMinNodes": "S2D: Dual parity requires at least 4 fault domains (nodes); {{faultDomains}} configured.",
+    "dualParityMinNodesRecommendation": "Add nodes or switch to a mirror resiliency.",
+    "mapMinNodes": "S2D: Mirror-accelerated parity requires at least 4 fault domains (nodes); {{faultDomains}} configured.",
+    "mapMinNodesRecommendation": "Add nodes or switch to a mirror resiliency.",
+    "singleParityDiscouraged": "S2D: Single parity is supported but not recommended for clustered Storage Spaces Direct — it tolerates only one failure.",
+    "singleParityDiscouragedRecommendation": "Prefer three-way mirror or dual parity.",
+    "twoNodeNestedRecommended": "S2D: 2-node clusters should use nested resiliency to survive a drive failure during a node outage.",
+    "twoNodeNestedRecommendedRecommendation": "Use nested two-way mirror or nested mirror-accelerated parity for 2-node clusters.",
+    "threeWayRecommended": "S2D: Two-way mirror tolerates a single failure. Three-way mirror is Microsoft's recommended default for production high availability.",
+    "threeWayRecommendedRecommendation": "Switch Mirror Copies to 3-way for two-failure tolerance."
+  },
+  "netapp": {
+    "raidTecRecommended": "NetApp: Using RAID-DP with drives > 10TB ({{tb}} TB). RAID-TEC recommended for better protection.",
+    "raidTecRecommendedRecommendation": "Switch to RAID-TEC (triple parity) for drives larger than 10TB."
+  },
+  "synology": {
+    "btrfsRecommended": "Synology: Using ext4 filesystem. Btrfs provides additional data protection features.",
+    "btrfsRecommendedRecommendation": "Consider Btrfs for snapshots, self-healing, and advanced protection."
+  },
+  "driveCount": {
+    "zfsRaidz1": "ZFS RAIDZ1 requires minimum 3 drives.",
+    "zfsRaidz2": "ZFS RAIDZ2 requires minimum 4 drives.",
+    "zfsRaidz3": "ZFS RAIDZ3 requires minimum 5 drives.",
+    "s2dMin": "S2D redundant configurations require minimum 4 drives.",
+    "cephMinOsds": "Ceph requires minimum 3 OSDs for proper data distribution."
+  },
+  "powerflex": {
+    "hddNotSupported": "PowerFlex: HDD drives are no longer supported. Drive \"{{model}}\" is an HDD.",
+    "hddNotSupportedRecommendation": "PowerFlex requires SSD or NVMe drives. HDDs are not supported in current PowerFlex versions.",
+    "fg3wayNotSupported": "PowerFlex: Fine Granularity mode does not support 3-way mirror. Only 2-way mirror is available.",
+    "fg3wayNotSupportedRecommendation": "Use Medium Granularity for 3-way mirror, or use 2-way mirror with Fine Granularity."
+  },
+  "vsan": {
+    "esaNvmeRequired": "vSAN ESA: NVMe drives required. Drive \"{{model}}\" is {{driveType}}.",
+    "esaNvmeRequiredRecommendation": "vSAN Express Storage Architecture (ESA) only supports NVMe drives. Use vSAN OSA for SAS/SATA/HDD configurations.",
+    "esaLowEndurance": "vSAN ESA: Drive \"{{model}}\" has low endurance ({{dwpd}} DWPD).",
+    "esaLowEnduranceRecommendation": "vSAN ESA recommends drives with at least 1 DWPD for write-intensive workloads.",
+    "esaMinHosts": "vSAN ESA {{level}}: Requires minimum {{minHosts}} hosts, only {{serverCount}} configured.",
+    "esaMinHostsRecommendation": "Increase server count to at least {{minHosts}} hosts for this protection level.",
+    "osaHddCacheRecommended": "vSAN OSA with HDD: SSD cache tier recommended for performance.",
+    "osaHddCacheRecommendedRecommendation": "Add NVMe or SSD cache drives for hybrid configuration. Minimum 10% cache-to-capacity ratio.",
+    "osaMinHosts": "vSAN OSA {{level}}: Requires minimum {{minHosts}} hosts, only {{serverCount}} configured.",
+    "osaMinHostsRecommendation": "Increase server count to at least {{minHosts}} hosts for this protection level."
+  },
+  "longhorn": {
+    "physicalUsable": "Physical Usable",
+    "physicalUsableDesc": "Safe app-data ceiling, including snapshot reserve",
+    "recommendedCommittedData": "Recommended Committed Data",
+    "recommendedCommittedDataDesc": "Commit this much today; leaves growth headroom",
+    "perNodeAllocation": "Per-Node Allocation",
+    "perNodeAllocationDesc": "Usable capacity per storage node",
+    "configTitle": "Longhorn Configuration",
+    "replicas": "Replicas",
+    "diskMode": "Disk mode",
+    "minAvailable": "Min-available",
+    "overProvisioning": "Over-provisioning"
   }
 }

@@ -7,6 +7,150 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Dell PERC H975i (PERC13) controller option** (`perc_h975i`). Broadcom SAS5132W, PCIe Gen5
+  x16, RAID 0/1/5/6/10/50/60, supercapacitor-backed cache, up to 16 NVMe drives per controller.
+  Rated at 12,900,000 IOPS / 56,000 MB/s per controller (Signal65 PERC13 lab testing, corroborated by StorageReview, RAID 5,
+  16 NVMe, one controller). (#84)
+
+### Changed
+- **`CONTROLLER_LIMITS` PERC entries recalibrated onto a documented, consistent basis** (#84).
+  Throughput was already close to the real per-controller vendor figure; IOPS were 3.4–4.7x
+  *below* any measured per-controller number, from an undocumented basis, so the controller layer
+  of the bottleneck chain was not comparable across controllers. All four PERC entries now use
+  one controller / 100% 4K random read (IOPS) / 100% 64K sequential read (throughput) / FIO /
+  non-degraded volume, sourced from Tolly Report #223103 (Jan 2023):
+  - `perc_h755`: IOPS 750,000 → **3,500,000** (+367%), throughput 12,000 → **14,100** MB/s (+18%)
+  - `perc_h965i`: IOPS 1,200,000 → **5,148,110** (+329%), throughput 22,000 → **27,800** MB/s (+26%)
+  - `perc_h755n`: IOPS 1,000,000 → **3,402,370** (+240%), throughput 14,000 → **14,108** MB/s (+1%)
+  - `perc_h965in`: IOPS 1,800,000 → **6,918,729** (+284%), throughput 28,000 → **28,205** MB/s (+1%)
+
+  **This moves the performance results of every configuration using a PERC controller** — IOPS
+  results for PERC-backed configurations rise substantially, and for several configurations the
+  bottleneck layer itself now shifts from the controller to the drives/media or PCIe/network
+  layer, since the controller is no longer artificially the tightest ceiling in the chain. Every
+  non-PERC entry (`hba_sas`, `hba_nvme`, `lsi_9500`, `lsi_9400`, `dell_hba355i`, `dell_hba355e`,
+  `software`, `hardware`, `gpu`, `powervault_me5_*`, `powerstore_t`, `powerscale_node`,
+  `objectscale_node`) keeps its previous value and now carries an explicit `ESTIMATED` marker in
+  its comment — no published per-controller figure at this basis could be found for any of them.
+  See `docs/superpowers/specs/2026-08-04-controller-limits-basis.md` for the full basis, sources,
+  and rationale.
+
+### Fixed
+- **Resilience: hot spares are no longer simulated as data-bearing drives** (#80). The Monte Carlo
+  population now excludes hot spares on the same rule volumetry and performance use
+  (`usesDistributedSpares(topology.type) ? 0 : hotSpares * serverCount`, clamped at zero), on both
+  the naive and the tiered path. Survival rates rise for every platform configured with spares;
+  vSAN is unchanged, since it rebuilds from distributed slack rather than dedicated spare drives.
+  The default configuration ships one hot spare, so the out-of-the-box number moves.
+- **38 missing i18n keys across `fr`/`de`/`it` topology translations** rendered as raw i18n keys
+  on screen instead of translated text: `powervault.info.*` and `powerflex.info.*` were missing
+  from all three locales, `zfs.ashift512`/`ashift4k`/`ashift8k` were missing from `de`/`it`, and
+  `nutanix.info.*` was missing from `de`/`it`. Added a key-parity test
+  (`tests/i18n/parity.spec.ts`) that recursively diffs every locale's namespace files against the
+  `en` reference in both directions (missing keys and orphan keys), so future gaps like this fail
+  CI instead of shipping. (#72)
+- **`HBA_REQUIRED_TOPOLOGIES` membership is now pinned by a hand-copied test snapshot.**
+  `tests/types/controllerRequirement.spec.ts` previously guarded the level-aware controller rule
+  only against `legacyControllerOptions`, which re-derives from `HBA_REQUIRED_TOPOLOGIES` itself
+  — so it caught drift in the filter logic but not in the table's contents. Deleting `'longhorn'`
+  from the table left all 1242 tests passing, silently flipping Longhorn from HBA-only to
+  RAID-only. Added a literal, hand-copied expected-membership list directly in the test file
+  (deliberately not imported or derived) that now fails on that exact mutation. (#75)
+- **`AdvancedPanel` now has a label state for a controller requirement of `'either'`.**
+  `getControllerRequirement` returns `'hba'`, `'raid'` or `'either'`, but the panel only rendered
+  two states — so on `beegfs_single` the user saw the RAID-only heading, label ("Controller
+  Model") and hint while the dropdown actually offered HBAs and appliance controllers too. Added
+  a third `'either'` state (heading, label, hint) plus its locale strings in all four languages.
+  Reworded `controller.hbaHint`, which enumerated platforms ("ZFS, vSAN, and S2D require..."), to
+  state the underlying rule instead ("platforms that manage redundancy in software need direct
+  disk access via an HBA"), since it was already stale for `beegfs_raidz2` and an enumeration
+  goes stale every time a platform is added. No calculated number is affected — the engine always
+  read the selected controller's real limits. (#74)
+
+### Changed
+- **`useResilience` now takes the shared tiering option bag instead of four hand-listed props.**
+  `s2dOptions`/`vsanOptions`/`cephOptions`/`nutanixOptions` were destructured and re-listed at the
+  call site (`OutputDashboard.tsx`), in `UseResilienceOptions`, and again inside
+  `tieredPlatformScope`'s call to `resolveTiering` — the exact hand-listing pattern that dropped a
+  platform's options and caused issues #59 and #60. Replaced all three sites with a single
+  `tieringOptions?: TieringResolverOptions` prop sourced from `useTieringOptions()`, the same
+  assembler `useVolumetryCalc`, `usePerformanceCalc` and `useSustainabilityCalc` already consume,
+  so a forgotten platform is no longer possible in resilience specifically: the value is threaded
+  through unchanged rather than destructured and re-listed. `beeGfsOptions` did not need to stay a
+  separate prop — `TieringResolverOptions` already carries it (including `drivesPerTarget`), so
+  the BeeGFS resolver now reads `tieringOptions?.beeGfsOptions`. Pure refactor: no calculated
+  number changes. (#92)
+- **UI panels now import the canonical `as const` option arrays instead of re-declaring them.**
+  `WorkloadPanel` (`BLOCK_SIZES`), `AdvancedPanel` (`NETWORK_SPEEDS`, `PCIE_GENS`, `PCIE_LANES`,
+  `FS_TYPES`) and `Header` (`CARBON_REGIONS`) previously hand-wrote a second copy of the values
+  already defined in `src/types/config.ts`; they now import the canonical arrays and derive their
+  `<select>` options from them (an exhaustive `Record<CanonicalType, string>` label map for the
+  panels with static English labels; the existing `t('carbon.regions.…')` lookup for `Header`), so
+  adding a value to a canonical array fails to compile (or renders an untranslated key, for
+  `Header`) until a label is supplied. `AdvancedPanel`'s `fsType` `onChange` cast was narrowed from
+  a hand-inlined union to `as FsType`. `src/types/index.ts` now re-exports the value arrays
+  (`BLOCK_SIZES`, `NETWORK_SPEEDS`, `PCIE_GENS`, `PCIE_LANES`, `CARBON_REGIONS`, `FS_TYPES`) and
+  the `FsType` type alongside the existing type-only exports.
+
+  Two of the duplicates found during the sweep had a different **element order** than their
+  canonical counterpart: `AdvancedPanel`'s local `FS_TYPES` (`zfs` first) vs. the canonical array
+  (`xfs` first), and `Header`'s local `CARBON_REGION_VALUES` (`norway`/`france` and
+  `china`/`world_average` swapped) vs. canonical `CARBON_REGIONS`. Order is unobserved everywhere
+  else the canonical arrays are consumed (`z.enum(...)` in `src/utils/schemas.ts`, and
+  `Record<Type, …>` lookups in the performance/sustainability engines are all order-independent),
+  so **the canonical arrays were reordered to match the UI**, rather than reordering the UI to
+  match the canonical arrays — the UI order is the only place order is ever user-visible, and
+  reordering it would have been the actual behavior change. `CARBON_REGIONS` is now
+  `switzerland, norway, france, germany, usa_average, world_average, china` and `FS_TYPES` is now
+  `zfs, xfs, ext4, btrfs, refs, ntfs`; both arrays carry a comment noting the order is
+  display-order and must not be "tidied". Rendered `<select>` option order is unchanged in both
+  panels. (#87)
+- Validator alerts (`src/utils/validators.ts`) and the Longhorn capacity-details card
+  (`src/components/outputs/LonghornCapacityDetails.tsx`) now route their messages through
+  `i18n.t()` instead of hardcoded English, with `fr`/`de`/`it` translations added to
+  `src/i18n/locales/*/validation.json` in lockstep. All interpolated values (counts, percentages,
+  capacities) use i18next interpolation rather than string concatenation. (#71)
+### Added
+- **BeeGFS filesystem overhead control.** `BeeGfsOptionsPanel` now exposes a slider for
+  `beeGfsOptions.fsOverheadPercent` (the per-target ext4/xfs overhead, 0.5-5%, default 2%),
+  matching the `min(0.5).max(5)` Zod range in `src/utils/schemas.ts` exactly. The field already
+  fed `getFilesystemOverheadPercent` and usable capacity but had no UI control, so no user could
+  move it off its default. Unlike `chunkSizeKb` / `numTargets` / `network`, which stay
+  informational-only, this control changes a real number. (#78)
+- **XFS stripe alignment now follows the capacity tier on tiered configurations.** The performance
+  engine's `sunit`/`swidth` recommendation was still computed from the raw Hardware-panel drive
+  count even after the media layer itself was sized from the capacity tier, so tiered S2D, vSAN
+  OSA, Ceph, Nutanix and BeeGFS configurations could show a stripe width wider than the pool that
+  actually holds data. Alignment now uses the same spare-adjusted capacity-tier population as the
+  media layer, so the two can no longer diverge. Untiered configurations are unaffected. (#90)
+
+### Changed
+- **Documented, rather than changed, the tiered-BeeGFS drive-count divergence between volumetry
+  and performance.** Volumetry rounds the capacity tier down to whole storage targets, dropping
+  the "stranded" remainder that completes no target and holds no data. Performance intentionally
+  does not apply that rounding: a stranded drive still exists on the bus and still draws from the
+  controller/PCIe budget, so pricing it is correct for a bottleneck model even though excluding it
+  is correct for a capacity model. Both engines now carry a comment cross-referencing the other's
+  reasoning, and a test pins the divergence so it cannot silently become drift. No calculated
+  values change. (#91)
+- **Forged values in a shared link are rejected instead of silently defaulted.** `blockSize`,
+  `networkSpeed`, `pcieGen`, `pcieLanes`, `carbonRegion`, `fsType` and the RAID controller were
+  free-text in the URL schema, so an arbitrary string reached a lookup table, missed, and fell
+  back to a default — a wrong calculation presented as a valid one. Each is now an enum derived
+  from the same `as const` array its TypeScript type derives from, so the schema and the lookup
+  tables are held together by the compiler. (#62)
+- **`performanceThreshold` survives a shared link.** It was absent from `partialize`, so it reset
+  while every other setting persisted. (#63)
+- **A malformed shared link is reported instead of half-loaded.** `urlStorage.ts` claimed to
+  support flat, non-enveloped payloads for backward compatibility; they have never hydrated,
+  because zustand reads `deserializedStorageValue.state`. The branch and its comment are gone, and
+  unknown top-level keys are now stripped rather than merged into the live store. (#64, #65)
+
+### Changed
+- **"Reset to defaults" now resets the performance threshold and the two drive-picker filters.**
+  They lived only in their slices' initial state, and `resetToDefaults()` merges, so the button
+  silently skipped them. Defaults are now taken from the slices themselves rather than restated.
 ### Fixed
 - **Resilience worker: `drivesPerGroup` floor-division left drives unmodelled in every group
   topology.** `Math.floor(driveCount / numGroups)` in `src/workers/resilienceWorker.ts` silently
