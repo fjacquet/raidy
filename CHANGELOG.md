@@ -52,6 +52,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   fed `getFilesystemOverheadPercent` and usable capacity but had no UI control, so no user could
   move it off its default. Unlike `chunkSizeKb` / `numTargets` / `network`, which stay
   informational-only, this control changes a real number. (#78)
+- **XFS stripe alignment now follows the capacity tier on tiered configurations.** The performance
+  engine's `sunit`/`swidth` recommendation was still computed from the raw Hardware-panel drive
+  count even after the media layer itself was sized from the capacity tier, so tiered S2D, vSAN
+  OSA, Ceph, Nutanix and BeeGFS configurations could show a stripe width wider than the pool that
+  actually holds data. Alignment now uses the same spare-adjusted capacity-tier population as the
+  media layer, so the two can no longer diverge. Untiered configurations are unaffected. (#90)
+
+### Changed
+- **Documented, rather than changed, the tiered-BeeGFS drive-count divergence between volumetry
+  and performance.** Volumetry rounds the capacity tier down to whole storage targets, dropping
+  the "stranded" remainder that completes no target and holds no data. Performance intentionally
+  does not apply that rounding: a stranded drive still exists on the bus and still draws from the
+  controller/PCIe budget, so pricing it is correct for a bottleneck model even though excluding it
+  is correct for a capacity model. Both engines now carry a comment cross-referencing the other's
+  reasoning, and a test pins the divergence so it cannot silently become drift. No calculated
+  values change. (#91)
 
 ## [1.15.1] - 2026-08-04
 
