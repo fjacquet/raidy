@@ -45,6 +45,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `i18n.t()` instead of hardcoded English, with `fr`/`de`/`it` translations added to
   `src/i18n/locales/*/validation.json` in lockstep. All interpolated values (counts, percentages,
   capacities) use i18next interpolation rather than string concatenation. (#71)
+### Added
+- **BeeGFS filesystem overhead control.** `BeeGfsOptionsPanel` now exposes a slider for
+  `beeGfsOptions.fsOverheadPercent` (the per-target ext4/xfs overhead, 0.5-5%, default 2%),
+  matching the `min(0.5).max(5)` Zod range in `src/utils/schemas.ts` exactly. The field already
+  fed `getFilesystemOverheadPercent` and usable capacity but had no UI control, so no user could
+  move it off its default. Unlike `chunkSizeKb` / `numTargets` / `network`, which stay
+  informational-only, this control changes a real number. (#78)
 
 ## [1.15.1] - 2026-08-04
 
