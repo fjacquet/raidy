@@ -37,6 +37,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   platform's network behavior going forward is a table entry, not another orchestrator branch.
 
 ### Fixed
+- **BeeGFS stranded drives no longer count as usable capacity.** Usable capacity was computed
+  from every drive left after hot spares, while the validator warned *"N drive(s) do not fill a
+  full storage target and are stranded"* and the capacity card printed the same count. A storage
+  target **is** a local RAID volume, so a partial group is not a target at all: capacity is now
+  computed on `storageTargetCount × drivesPerTarget` drives only, and the stranded remainder gets
+  its own "BeeGFS Stranded Drives" breakdown bucket (raw capacity still counts every drive).
+  Measured overstatement: 4.2% at 5 nodes × 20 drives / `drivesPerTarget` 12, and ~92% at 23
+  drives / 12. The stranded-drive validation alert now reads its count from the engine's
+  `beeGfsDetails` instead of recomputing it, so the warning and the capacity card cannot name
+  different numbers. BeeGFS only — no other platform's capacity moves.
 - **Security: URL-shared configuration links were not actually validated.** Zustand's `persist`
   middleware wraps state in a `{ state, version }` envelope before `urlHashStorage` sees it, but
   validation ran against that whole envelope instead of the payload inside it. Because the

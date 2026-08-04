@@ -33,9 +33,61 @@ describe('BeeGFS volumetry — drivesPerTarget sensitivity', () => {
         beeGfsOptions: beegfs({ drivesPerTarget: 12, storageBuddyMirror: false }),
       }),
     )
-    // 12 TB raw x 8/10 x 0.98 = 9.408 TB ; 12 TB raw x 10/12 x 0.98 = 9.8 TB
-    expect(at10.usableCapacity / TB).toBeCloseTo(9.408, 4)
+    // Capacity is computed on whole storage targets only, so drivesPerTarget sets BOTH the
+    // parity fraction AND how many of the 12 drives are in a target at all:
+    //   dPT 10 -> 1 whole target (10 drives), 2 stranded: 10 TB x 8/10 x 0.98 = 7.84 TB
+    //   dPT 12 -> 1 whole target (12 drives), 0 stranded: 12 TB x 10/12 x 0.98 = 9.8 TB
+    // The wider target wins here despite its worse parity ratio, purely because it strands
+    // nothing — exactly the trade-off the panel's derived target/stranded counts surface.
+    expect(at10.usableCapacity / TB).toBeCloseTo(7.84, 4)
     expect(at12.usableCapacity / TB).toBeCloseTo(9.8, 4)
+    expect(at10.beeGfsDetails?.storageTargetCount).toBe(1)
+    expect(at10.beeGfsDetails?.strandedDrives).toBe(2)
+    expect(at12.beeGfsDetails?.strandedDrives).toBe(0)
+    // Raw still counts every drive, stranded ones included.
+    expect(at10.rawCapacity / TB).toBeCloseTo(12, 4)
+  })
+
+  it('excludes stranded drives from usable capacity and books them in the breakdown', () => {
+    // 23 drives at drivesPerTarget 12 is the near-worst case: 1 whole target, 11 stranded.
+    const result = calculateVolumetry(
+      createVolumetryInput(23, raid6, {
+        beeGfsOptions: beegfs({ drivesPerTarget: 12, storageBuddyMirror: false }),
+      }),
+    )
+    expect(result.beeGfsDetails?.storageTargetCount).toBe(1)
+    expect(result.beeGfsDetails?.strandedDrives).toBe(11)
+    // 12 TB x 10/12 x 0.98 = 9.8 TB — NOT 23 TB x 10/12 x 0.98 = 18.78 TB (a 92% overstatement).
+    expect(result.usableCapacity / TB).toBeCloseTo(9.8, 4)
+    expect(result.rawCapacity / TB).toBeCloseTo(23, 4)
+    const stranded = result.breakdown.find((b) => b.label === 'BeeGFS Stranded Drives')
+    expect(stranded?.bytes).toBeCloseTo(11 * TB, 4)
+  })
+
+  it('books no stranded-drive breakdown entry when every drive fills a target', () => {
+    const result = calculateVolumetry(
+      createVolumetryInput(24, raid6, {
+        serverCount: 2,
+        beeGfsOptions: beegfs({ drivesPerTarget: 12, storageBuddyMirror: false }),
+      }),
+    )
+    expect(result.beeGfsDetails?.strandedDrives).toBe(0)
+    expect(result.breakdown.some((b) => b.label === 'BeeGFS Stranded Drives')).toBe(false)
+  })
+
+  it('excludes hot spares before deriving whole targets', () => {
+    // 26 drives - 2 hot spares = 24 -> 2 whole targets, 0 stranded.
+    const result = calculateVolumetry(
+      createVolumetryInput(26, raid6, {
+        serverCount: 2,
+        hotSpares: 2,
+        beeGfsOptions: beegfs({ drivesPerTarget: 12, storageBuddyMirror: false }),
+      }),
+    )
+    expect(result.beeGfsDetails?.storageTargetCount).toBe(2)
+    expect(result.beeGfsDetails?.strandedDrives).toBe(0)
+    // 24 TB x 10/12 x 0.98 = 19.6 TB
+    expect(result.usableCapacity / TB).toBeCloseTo(19.6, 4)
   })
 })
 

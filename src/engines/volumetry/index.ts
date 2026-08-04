@@ -175,7 +175,31 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
   // guards) zero-state before this point when hot spares would exceed the drive count, but the
   // clamp keeps this line matching resolveBeeGfsUsableDrives's Math.max(0, ...) by construction
   // rather than by relying on validation running first.
-  const usableDrives = Math.max(0, effectiveDriveCount - hotSpares)
+  const spareAdjustedDrives = Math.max(0, effectiveDriveCount - hotSpares)
+
+  // BeeGFS: capacity is computed on WHOLE storage targets only (design spec, §Error handling).
+  // A drive that does not complete a storage target joins no local RAID group and holds no
+  // data — `validators.ts` already warns the user it is stranded and the capacity card prints
+  // the count, so it must not be counted as usable capacity as well.
+  // `calculateStorageTargets` is the single source of truth for this arithmetic, shared with
+  // `BeeGfsOptionsPanel` via `deriveBeeGfsStorageTargets`; the result is reused verbatim for
+  // `beeGfsDetails` below so the two can never drift.
+  const beeGfsTargets =
+    topology.type === 'beegfs' && beeGfsOptions
+      ? calculateStorageTargets(spareAdjustedDrives, beeGfsOptions.drivesPerTarget)
+      : null
+
+  // Data-bearing drives. Identical to `spareAdjustedDrives` for every platform except BeeGFS,
+  // where the stranded remainder is excluded — no other platform's capacity can move.
+  const usableDrives = beeGfsTargets
+    ? beeGfsTargets.storageTargetCount * (beeGfsOptions?.drivesPerTarget ?? 0)
+    : spareAdjustedDrives
+
+  // Raw capacity of the stranded BeeGFS drives: counted in raw, never in usable or parity.
+  const beeGfsStrandedCapacity = beeGfsTargets
+    ? effectiveDrive.capacity_raw * beeGfsTargets.strandedDrives
+    : 0
+
   const rawUsableCapacity = effectiveDrive.capacity_raw * usableDrives
 
   // Calculate parity/redundancy overhead
@@ -333,6 +357,7 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
     parityOverhead,
     hotSpareOverhead,
     cacheTierCapacity,
+    beeGfsStrandedCapacity,
     slopOverhead,
     s2dReserve,
     s2dInfraReserve,
@@ -401,10 +426,11 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
     const status: BeeGfsCapacityDetails['status'] =
       mdtRawCapacity === 0 ? 'none' : mdtUsableCapacity < mdtRecommendedMin ? 'under' : 'ok'
 
-    const { storageTargetCount, strandedDrives } = calculateStorageTargets(
-      usableDrives,
-      beeGfsOptions.drivesPerTarget,
-    )
+    // Reuse the exact object the usable-capacity calculation was built on — never recompute.
+    const { storageTargetCount, strandedDrives } = beeGfsTargets ?? {
+      storageTargetCount: 0,
+      strandedDrives: 0,
+    }
 
     beeGfsDetails = {
       mdtRawCapacity,

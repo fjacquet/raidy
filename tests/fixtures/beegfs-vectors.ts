@@ -25,14 +25,19 @@
  * .fsOverheadPercent`, default 2% — `src/engines/volumetry/overhead/filesystem-overhead.ts`).
  * The engine applies these in order
  * (`src/engines/volumetry/index.ts`, `src/engines/volumetry/strategies/beegfs.ts`):
- *   1. capacityAfterParity = rawCapacity x dataFraction
+ *   0. wholeTargetDrives = floor(drives / drivesPerTarget) x drivesPerTarget
+ *        Capacity is computed on WHOLE storage targets only — a storage target IS a local
+ *        RAID volume, so leftover ("stranded") drives complete no target and hold no data.
+ *   1. capacityAfterParity = wholeTargetDrives x driveSize x dataFraction
  *        dataFraction = localRaidFraction(level, drivesPerTarget) x (storageBuddyMirror ? 0.5 : 1)
  *        localRaidFraction: raid6/raidz2 -> (width-2)/width, raid10 -> 0.5, single -> 1
  *   2. usableCapacity = capacityAfterParity x (1 - fsOverheadPercent/100)   [default 2%]
  *
  * All vectors use `testDrive1TB` (1 TB decimal drives, no hot spares), so:
- *   raw = drives x 1 TB
- *   expectedUsable = raw x dataFraction x 0.98
+ *   raw = drives x 1 TB   (raw always counts every drive, stranded ones included)
+ *   expectedUsable = wholeTargetDrives x 1 TB x dataFraction x 0.98
+ * Every vector but the last has `drives` an exact multiple of `drivesPerTarget`, so
+ * wholeTargetDrives = drives there; the last vector exercises stranding explicitly.
  *
  * HONESTY NOTE (binding): of the pipeline's layers exercised here, only the Buddy
  * Mirroring 2x cost is a directly quoted BeeGFS-published number; the rest are
@@ -177,6 +182,30 @@ export const beegfsVectors: PlatformVector[] = [
     url: STORAGE_TUNING_URL,
     overrides: {
       beeGfsOptions: { ...DEFAULT_BEEGFS_OPTIONS, drivesPerTarget: 10, storageBuddyMirror: false },
+    },
+  },
+  {
+    // STRANDING VECTOR — capacity is computed on WHOLE storage targets only.
+    // 5 nodes x 20 drives = 100 drives, drivesPerTarget 12 -> floor(100/12) = 8 whole targets
+    // (96 drives) and 4 stranded drives that join no local RAID group and hold no data.
+    // Usable therefore builds on 96 TB, not 100 TB:
+    //   96 TB x (12-2)/12 = 80 TB after parity; x 0.98 (2% fs overhead) = 78.4 TB.
+    // Counting all 100 drives (the pre-fix behaviour) gives 81.67 TB, a 4.2% overstatement,
+    // and the same bug reaches ~92% at 23 drives / drivesPerTarget 12. The whole-targets-only
+    // rule is BeeGFS's own architecture: a storage target IS a local RAID volume, so a
+    // partial group is not a target at all.
+    name: 'BeeGFS RAID6, 100 drives, 5 nodes, drivesPerTarget 12 — 4 drives stranded',
+    topology: beegfs('beegfs_raid6'),
+    drives: 100,
+    serverCount: 5,
+    driveSize: TB,
+    expectedUsable: 78_400_000_000_000,
+    tolerance: 0.01,
+    source:
+      'BeeGFS system requirements (a storage target is a whole local RAID volume; drives that do not complete one are not part of any target)',
+    url: SYSTEM_REQUIREMENTS_URL,
+    overrides: {
+      beeGfsOptions: { ...DEFAULT_BEEGFS_OPTIONS, drivesPerTarget: 12, storageBuddyMirror: false },
     },
   },
 ]

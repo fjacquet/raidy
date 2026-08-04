@@ -577,10 +577,15 @@ function validateBeeGfs(
   }
 
   // Drives that don't fill a whole storage target are wasted — capacity is
-  // computed on whole targets only.
+  // computed on whole targets only (src/engines/volumetry/index.ts).
+  // Prefer the engine's own count when a result exists: `beeGfsDetails.strandedDrives` is
+  // derived from the hot-spare- and tiering-adjusted drive count that actually feeds the
+  // capacity calculation, whereas the local `driveCount % drivesPerTarget` fallback (used
+  // when the validator runs before any result, e.g. validateOrThrow) sees neither. Without
+  // this the warning could name a different number than the capacity card it sits next to.
   const drivesPerTarget = beeGfsOptions.drivesPerTarget
   if (drivesPerTarget > 0 && driveCount >= drivesPerTarget) {
-    const stranded = driveCount % drivesPerTarget
+    const stranded = beeGfsDetails?.strandedDrives ?? driveCount % drivesPerTarget
     if (stranded > 0) {
       alerts.push({
         severity: 'warning',
