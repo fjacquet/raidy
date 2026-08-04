@@ -1,9 +1,9 @@
 {
   "dataEfficiency": {
     "title": "Dateneffizienz",
-    "compression": "Komprimierungsverhaeltnis",
+    "compression": "Komprimierungsverhältnis",
     "compressionHint": "1.0 = keine Komprimierung, 2.0 = 50% Reduktion",
-    "dedup": "Deduplizierungsverhaeltnis",
+    "dedup": "Deduplizierungsverhältnis",
     "dedupHint": "1.0 = keine Dedup, 2.0 = 50% Reduktion"
   },
   "network": {
@@ -33,7 +33,7 @@
     "eitherModel": "Controller-/HBA-Modell",
     "maxIops": "Max. IOPS",
     "maxThroughput": "Max. Durchsatz",
-    "hbaHint": "Plattformen, die Redundanz in Software verwalten, benotigen direkten Festplattenzugriff uber HBA (IT-Modus)",
+    "hbaHint": "Plattformen, die Redundanz in Software verwalten, benötigen direkten Festplattenzugriff über HBA (IT-Modus)",
     "raidHint": "Hardware-RAID-Controller verwalten die Festplattenredundanz",
     "eitherHint": "Diese Konfiguration funktioniert sowohl mit einem Hardware-RAID-Controller als auch mit einem HBA"
   },
@@ -55,14 +55,14 @@
       "refs": "ReFS",
       "ntfs": "NTFS"
     },
-    "reflink": "Unterstuetzt Reflink",
-    "reflinkHint": "Copy-on-Write-Klone fuer effiziente Backups",
+    "reflink": "Unterstützt Reflink",
+    "reflinkHint": "Copy-on-Write-Klone für effiziente Backups",
     "backupRetention": "Backup-Aufbewahrung (Tage)",
-    "dailyChangeRate": "Taegliche Aenderungsrate (%)"
+    "dailyChangeRate": "Tägliche Änderungsrate (%)"
   },
   "capacityManagement": {
-    "title": "Kapazitaetsverwaltung",
+    "title": "Kapazitätsverwaltung",
     "performanceThreshold": "Leistungsschwelle",
-    "performanceThresholdHint": "Betriebskapazitaet begrenzen um Leistung zu erhalten (Standard 100%)"
+    "performanceThresholdHint": "Betriebskapazität begrenzen um Leistung zu erhalten (Standard 100%)"
   }
 }
