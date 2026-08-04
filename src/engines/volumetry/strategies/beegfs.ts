@@ -55,6 +55,35 @@ export function getLocalRaidFraction(level: string, drivesPerTarget: number): nu
   }
 }
 
+/** Storage-target derivation from a drive count: whole targets plus leftover drives. */
+export interface BeeGfsStorageTargets {
+  storageTargetCount: number
+  strandedDrives: number
+}
+
+/**
+ * Derive the number of whole storage targets and stranded (leftover) drives from an
+ * already-hot-spare-adjusted, already-tiering-resolved drive count.
+ *
+ * Single source of truth for this arithmetic — both `calculateVolumetry` (engine) and
+ * `BeeGfsOptionsPanel` (UI, before the engine has run) call this so the two surfaces cannot
+ * independently drift on the formula. Callers are responsible for passing the *same* drive
+ * count the engine would use: total drives across all servers, minus hot spares scaled by
+ * server count, using the tiering capacity-tier count instead of the Hardware panel's
+ * driveCount when MDT tiering (`metadataTargets`) is active.
+ *
+ * @param usableDrives - Drive count after hot-spare and tiering resolution (never negative)
+ * @param drivesPerTarget - Local RAID group width (BeeGfsOptions.drivesPerTarget)
+ */
+export function calculateStorageTargets(
+  usableDrives: number,
+  drivesPerTarget: number,
+): BeeGfsStorageTargets {
+  const storageTargetCount = drivesPerTarget > 0 ? Math.floor(usableDrives / drivesPerTarget) : 0
+  const strandedDrives = usableDrives - storageTargetCount * drivesPerTarget
+  return { storageTargetCount, strandedDrives }
+}
+
 export const beeGfsStrategy: VolumetryStrategy = {
   calculateDataFraction(level: string, _driveCount: number, options?: unknown): number {
     const opts = options as BeeGfsOptions | undefined

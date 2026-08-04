@@ -16,12 +16,9 @@ import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Label, SegmentedControl, Select, Slider, Toggle } from '@/components/common/FormControls'
 import { TieringPanel } from '@/components/inputs/TieringPanel'
-import drivesData from '@/data/drives.json'
+import { deriveBeeGfsStorageTargets } from '@/components/inputs/topology-options/beegfsPanelHelpers'
 import { useConfigStore } from '@/store'
-import type { Drive } from '@/types'
 import { DEFAULT_TIERING_CONFIG } from '@/types'
-
-const drives = drivesData as Record<string, Drive>
 
 // InfiniBand fabric names and Ethernet speed labels are technical proper nouns, the same
 // convention as Ceph's BlueStore/FileStore and Synology's Btrfs/EXT4 labels elsewhere in this
@@ -37,33 +34,14 @@ export function BeeGfsOptionsPanel() {
   const { t } = useTranslation('topology')
   const { beeGfsOptions, driveCount, serverCount, hotSpares, setBeeGfsOptions } = useConfigStore()
 
-  // Mirror the engine's storage-target derivation exactly (calculateVolumetry in
-  // src/engines/volumetry/index.ts) so this panel's numbers cannot diverge from the
-  // beeGfsDetails output card: when metadataTargets is on and both tier drives are
-  // selected, the capacity-tier drive count is the storage-target source (resolveTiering);
-  // otherwise it's the Hardware panel's driveCount * serverCount.
-  const tiering = beeGfsOptions.tiering
-  const tieringActive = Boolean(
-    beeGfsOptions.metadataTargets &&
-      tiering?.fastTier.driveId &&
-      drives[tiering.fastTier.driveId] &&
-      tiering?.capacityTier.driveId &&
-      drives[tiering.capacityTier.driveId],
+  // deriveBeeGfsStorageTargets shares the exact engine formula (calculateStorageTargets in
+  // src/engines/volumetry/strategies/beegfs.ts) and the hotSpares*serverCount / tiering
+  // branching useVolumetryCalc.ts applies, so this can never disagree with the beeGfsDetails
+  // output card. See tests/components/beegfsPanelHelpers.spec.ts, which pins the two together.
+  const { storageTargetCount, strandedDrives } = useMemo(
+    () => deriveBeeGfsStorageTargets(driveCount, serverCount, hotSpares, beeGfsOptions),
+    [driveCount, serverCount, hotSpares, beeGfsOptions],
   )
-
-  const { storageTargetCount, strandedDrives } = useMemo(() => {
-    const effectiveDriveCount =
-      tieringActive && tiering
-        ? tiering.capacityTier.driveCount * serverCount
-        : driveCount * serverCount
-    const usableDrives = Math.max(0, effectiveDriveCount - hotSpares)
-    const targets =
-      beeGfsOptions.drivesPerTarget > 0
-        ? Math.floor(usableDrives / beeGfsOptions.drivesPerTarget)
-        : 0
-    const stranded = usableDrives - targets * beeGfsOptions.drivesPerTarget
-    return { storageTargetCount: targets, strandedDrives: stranded }
-  }, [tieringActive, tiering, driveCount, serverCount, hotSpares, beeGfsOptions.drivesPerTarget])
 
   return (
     <div className="space-y-4 pt-3 border-t border-slate-200 dark:border-surface-700">

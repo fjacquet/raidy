@@ -38,6 +38,8 @@ import { getDataFraction } from './helpers/calculationHelpers'
 import { calculateOverheads } from './overhead/overheadCalculator'
 // Post-processing (compression, dedup, ZFS details)
 import { applyCompressionDedup, buildZfsDetails } from './postProcessing/capacityEnhancements'
+// BeeGFS storage-target derivation (shared with the UI panel)
+import { calculateStorageTargets } from './strategies/beegfs'
 // Validation module
 import {
   validateBeeGfsRequirements,
@@ -395,9 +397,10 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
     const status: BeeGfsCapacityDetails['status'] =
       mdtRawCapacity === 0 ? 'none' : mdtUsableCapacity < mdtRecommendedMin ? 'under' : 'ok'
 
-    const drivesPerTarget = beeGfsOptions.drivesPerTarget
-    const storageTargetCount = drivesPerTarget > 0 ? Math.floor(usableDrives / drivesPerTarget) : 0
-    const strandedDrives = usableDrives - storageTargetCount * drivesPerTarget
+    const { storageTargetCount, strandedDrives } = calculateStorageTargets(
+      usableDrives,
+      beeGfsOptions.drivesPerTarget,
+    )
 
     beeGfsDetails = {
       mdtRawCapacity,
