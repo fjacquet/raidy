@@ -5,6 +5,62 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **BeeGFS platform support** across all four engines. BeeGFS is modeled unlike every other
+  platform: the topology level (`beegfs_raid6`, `beegfs_raid10`, `beegfs_raidz2`,
+  `beegfs_single`) is the storage target's **local** RAID rather than a cluster-wide efficiency
+  fraction, since BeeGFS federates storage targets and has no data protection of its own.
+  Cluster-level protection is Buddy Mirroring, expressed as two independent booleans
+  (`storageBuddyMirror`, `metadataBuddyMirror`) rather than folded into the level. Metadata
+  targets reuse the existing `TieringConfig` primitive (fast tier = MDT, counts toward raw
+  capacity but never usable — the same treatment Ceph WAL/DB offload gets).
+  - Volumetry: `strategies/beegfs.ts` (target-width-aware local RAID efficiency, Buddy
+    Mirroring, 2% filesystem overhead) plus a **metadata-target sizing advisory**
+    (`beeGfsDetails`) comparing MDT usable capacity against BeeGFS's documented 0.3–0.5%
+    rule-of-thumb, an estimated file count, and a validation alert when the MDT is undersized
+    or absent.
+  - Performance: `strategies/beegfs.ts` (write-penalty by level, Buddy-Mirroring-aware) and a
+    BeeGFS entry in the new per-platform network model (see below).
+  - Resilience: wired into the Monte Carlo worker (`resilienceWorker.ts`) — parity drives by
+    level, Buddy Mirroring as `mirrorCopies: 2`, storage-target count in place of `serverCount`.
+  - UI: options panel (target width, Buddy Mirroring toggles, chunk size, network, MDT tiering
+    via the shared `TieringPanel`), capacity detail card, and i18n across en/fr/de/it.
+
+### Changed
+- **Per-platform network model refactor** (`NETWORK_MODEL_BY_TOPOLOGY` in
+  `src/engines/performance/utils/bottleneck-chain.ts`): replaced a vSAN-hardcoded branch in
+  `performance/index.ts` with a topology-keyed lookup table of network-model resolvers. vSAN
+  behavior is unchanged (its existing performance specs are the regression gate); BeeGFS is the
+  second entry, doubling write traffic on the wire when Storage Buddy Mirroring is on. Adding a
+  platform's network behavior going forward is a table entry, not another orchestrator branch.
+
+### Fixed
+- **Security: URL-shared configuration links were not actually validated.** Zustand's `persist`
+  middleware wraps state in a `{ state, version }` envelope before `urlHashStorage` sees it, but
+  validation ran against that whole envelope instead of the payload inside it. Because the
+  top-level schema is passthrough with every field optional, an envelope-only object always
+  validated trivially, so every Zod schema added for URL persistence was inert in production — a
+  crafted link could inject out-of-range or malformed values (e.g. `driveCount: 999999999`,
+  `hotSpares: 'not-a-number'`) directly into the live store. Fixed by validating the payload
+  inside the detected envelope; see `docs/SECURITY.md` for detail.
+- **All 15 platform `*Options` objects now round-trip through "Copy URL to Share"** —
+  `vsanOptions`, `cephOptions`, `longhornOptions`, `beeGfsOptions`, `powerFlexOptions`, and
+  several nested fields (`s2dOptions.tieringConfig`, `nutanixOptions.tiering`,
+  `powerstoreOptions.model`/`systemOverheadPercent`) were previously missing from the store's
+  `partialize`/Zod schemas and silently reset to defaults whenever a shared link was opened.
+  `omitDefaults()` now strips default-valued keys before compression so realistic single-platform
+  links stay well under 1KB.
+- **`resetToDefaults()` now matches a fresh page load.** `getDefaultState()` previously restated
+  every platform's default options as hand-typed literals instead of importing the canonical
+  `DEFAULT_*_OPTIONS` constants, and had drifted on five fields:
+  `s2dOptions.reserveStrategy`, `synologyOptions.cacheMode`, and three `netAppOptions` fields.
+  `getDefaultState()` now derives from the same constants `topologySlice.ts` uses, so reset and
+  initial state cannot diverge again. One of the five, `netAppOptions.snapshotReserve` moving
+  from `5` to `0.05`, also fixes a real bug: the engine treats that field as a fraction, so the
+  old reset value meant a 500% snapshot reserve.
+
 ## [1.14.0] - 2026-07-12
 
 ### Changed

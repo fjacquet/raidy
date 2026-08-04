@@ -11,6 +11,7 @@ Browser-based storage infrastructure simulator for enterprise storage platforms.
 - **S2D (Storage Spaces Direct)**: Mirror, Parity, Dual Parity, MAP with auto-tiering
 - **Ceph**: Replicated (2/3/4x) and Erasure Coded (2+1, 4+2, 8+3, 8+4) pools
 - **Longhorn**: SUSE/Kubernetes distributed block storage, R2/R3 replicated pools with free-space and snapshot guardrails
+- **BeeGFS**: Parallel filesystem with local RAID storage targets (RAID6/RAID10/RAIDz2/single), Buddy Mirroring, and metadata-target sizing advisory
 - **PowerFlex**: Medium (1MB) and Fine (8KB) granularity, 2/3-way mirror, EC 4+1/4+2/8+2/12+4
 - **vSAN**: OSA and ESA with RAID-1/5/6 policies
 - **NetApp**: RAID-DP, RAID-TEC with ADP, WAFL overhead, and data reduction

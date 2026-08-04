@@ -41,7 +41,7 @@ Raidy is a browser-based Single Page Application (SPA) / Progressive Web App (PW
 │   ├── outputs/            # Result visualizations
 │   │   ├── HeadlineBand.tsx # Persistent headline KPI band
 │   │   ├── acts/           # Narrative "acts" composed by OutputDashboard
-│   │   │   ├── CapacityAct.tsx    # Sankey/donut + breakdown + ZFS/Longhorn detail + Backup
+│   │   │   ├── CapacityAct.tsx    # Sankey/donut + breakdown + ZFS/Longhorn/BeeGFS detail + Backup
 │   │   │   ├── PerformanceAct.tsx # Gauges + bottleneck chain
 │   │   │   ├── ResilienceAct.tsx  # Monte Carlo survival
 │   │   │   ├── CostAct.tsx        # Power/energy/CO2/flash endurance
@@ -149,6 +149,8 @@ Calculates storage capacity and efficiency.
 - NetApp ONTAP: RAID-DP, RAID-TEC, ADP
 - Ceph: Replicated and Erasure Coded pools
 - Longhorn: SUSE/Kubernetes distributed block storage, replicated pools (R2/R3)
+- BeeGFS: parallel filesystem, storage-target-local RAID6/RAID10/RAIDz2/single with optional
+  Buddy Mirroring, and metadata-target sizing advisory
 - Nutanix, Synology, and more
 
 > Microsoft S2D enforces a minimum number of fault domains (nodes) per resiliency type (validated in `src/utils/validators.ts`): three-way mirror and single parity require ≥ 3, dual parity and mirror-accelerated parity (MAP) require ≥ 4. Fault domains are bounded to 2–16, the supported S2D cluster range.
@@ -158,6 +160,12 @@ Calculates storage capacity and efficiency.
 > **Storage tiering** (S2D, vSAN OSA, Ceph WAL/DB, Nutanix hybrid) is resolved once by the shared `resolveTiering` (`src/engines/shared/tiering.ts`) and reused by all three engines. Tiering activates from the platform toggle plus drive selection; the capacity tier drives usable capacity and resiliency, while the cache tier is excluded from usable and counted only toward raw.
 >
 > **Longhorn** (`strategies/longhorn.ts`) is modeled on Ceph replicated pools: usable capacity is redundancy-limited to `1/R` (R = 2 or 3 replicas), reduced by host filesystem overhead, then narrowed by a free-space guardrail (`F = 1 − "Storage Minimal Available %"`) and a snapshot reserve (divided by the snapshot headroom). It has no native compression/dedup. Growth headroom and over-provisioning are advisory readouts only — they inform the recommended committed-data ceiling but are never subtracted from usable capacity.
+>
+> **BeeGFS** (`strategies/beegfs.ts`) does not fit the level-maps-to-an-efficiency-fraction shape every other platform uses. BeeGFS federates *storage targets*, and each target is itself a local RAID volume, so the modelling is deliberately unlike the rest of the engine:
+>
+> - **Topology level = the storage target's local RAID**, not cluster-wide protection: `beegfs_raid6`, `beegfs_raid10`, `beegfs_raidz2` (ZFS RAIDz2 target), or `beegfs_single` (bare drive, no local RAID). Local efficiency is `(drivesPerTarget − 2) / drivesPerTarget` for RAID6/RAIDz2, `0.5` for RAID10, `1` for single — `drivesPerTarget` (default 12) is an explicit input because RAID6 efficiency is meaningless without target width.
+> - **Cluster-level protection is Buddy Mirroring**, expressed as two independent booleans in `BeeGfsOptions` rather than folded into the level enum: `storageBuddyMirror` (data, halves usable capacity when on) and `metadataBuddyMirror` (metadata, doubles the MDT capacity requirement). BeeGFS genuinely lets you mirror one without the other, which a combined level enum could not express.
+> - **Metadata targets (MDT) reuse the shared `TieringConfig` primitive** (`src/types/topology.ts`, resolved by `src/engines/shared/tiering.ts`) instead of introducing a BeeGFS-specific concept: `fastTier` = MDT, `capacityTier` = storage targets. `resolveTiering`'s existing semantics are already exactly right for this — the fast tier counts toward **raw** capacity but never toward **usable**, the same treatment Ceph WAL/DB offload gets. A metadata-sizing advisory (`beeGfsDetails`, built in `volumetry/index.ts` following the `longhornDetails` pattern) compares MDT usable capacity against the BeeGFS-documented 0.3–0.5% rule of thumb and surfaces an estimated file count; a `validators.ts` alert fires when the MDT is undersized or absent.
 
 **Calculations:**
 
@@ -214,8 +222,21 @@ flowchart LR
 - RAID write penalty (2x for RAID1, 4x for RAID5, 6x for RAID6); S2D mirror write penalty scales with the copy count (two-way 2×, three-way 3×, MAP = `mirrorCopies + 0.5`), with `s2dOptions` threaded through `PerformanceInput`/`usePerformanceCalc`
 - Controller limits (IOPS and throughput caps) — skipped for NVMe-direct topologies (vSAN ESA)
 - PCIe bandwidth (lanes × generation speed)
-- Network bandwidth limits — for vSAN, refined by full-duplex, on-the-wire compression, and the east-west traffic fraction (writes × replication/EC + remote reads)
+- Network bandwidth limits — for vSAN, refined by full-duplex, on-the-wire compression, and the east-west traffic fraction (writes × replication/EC + remote reads); for BeeGFS, by write amplification from Buddy Mirroring
 - XFS stripe alignment (sunit/swidth)
+
+> **Per-platform network model** (`NETWORK_MODEL_BY_TOPOLOGY` in
+> `src/engines/performance/utils/bottleneck-chain.ts`) is a
+> `Partial<Record<TopologyType, NetworkModelResolver>>` lookup table that supplies the
+> full-duplex multiplier, on-the-wire compression ratio, and fabric traffic fraction used by
+> `calculateNetworkLimits`. Topologies with no entry fall back to the neutral default (1×
+> everything, i.e. the plain aggregate-bandwidth model). This replaced a vSAN-only branch that
+> was hardcoded directly in `performance/index.ts` against `bottleneck-chain.ts`; the vSAN
+> resolver (`vsanNetworkModel`) was extracted unchanged into the table, and the BeeGFS resolver
+> (`beeGfsNetworkModel`) was added alongside it — Buddy Mirroring doubles write traffic on the
+> wire (`trafficFraction = write% × (storageBuddyMirror ? 2 : 1) + read% × 1`). Adding a
+> platform's network behaviour going forward is a table entry, not another branch in the
+> orchestrator.
 
 ### Module C: Resilience Engine (`/src/workers/resilienceWorker.ts`)
 
@@ -277,6 +298,18 @@ ConfigStore = HardwareSlice & TopologySlice & WorkloadSlice & AdvancedSlice
   link (or a link generated by a Zustand persisted before a given platform's
   options existed) falls back to that slice's `DEFAULT_*_OPTIONS`, including
   gating booleans reading as `false` rather than `undefined`
+- `getDefaultState()` (used by `resetToDefaults()` and as the baseline
+  `omitDefaults()` diffs against) spreads the canonical `DEFAULT_*_OPTIONS`
+  constants from `src/types/topology.ts` rather than restating them, so the
+  two cannot drift apart
+
+> **Validation boundary.** Zustand's `persist` middleware wraps the partialized state in a
+> `{ state, version }` envelope before `urlHashStorage` ever sees it. `urlHashStorage.getItem`
+> (`src/store/urlStorage.ts`) detects that envelope shape and runs `validateUrlState` against
+> `.state` — the actual config payload — not the envelope itself, then re-wraps the validated
+> result with the original `version` so hydration still finds `{ state, version }`. A bare/flat
+> object (older links, hand-constructed test fixtures) is still validated directly for backward
+> compatibility. See `docs/SECURITY.md` for why this distinction matters.
 
 ### Key State Values
 
@@ -391,7 +424,7 @@ Not-applicable is omitted; applicable-but-zero is still shown.
 | Component | Purpose / Data Source |
 |-----------|------------------------|
 | `HeadlineBand.tsx` | Persistent KPI band (usable/effective capacity, efficiency, peak IOPS, survival, annual energy) |
-| `acts/CapacityAct.tsx` | Sankey + donut + breakdown list + ZFS/Longhorn detail panels + Backup sub-panel |
+| `acts/CapacityAct.tsx` | Sankey + donut + breakdown list + ZFS/Longhorn/BeeGFS detail panels + Backup sub-panel |
 | `acts/PerformanceAct.tsx` | Speedometer gauges + bottleneck chain |
 | `acts/ResilienceAct.tsx` | Monte Carlo survival probability, run/progress controls |
 | `acts/CostAct.tsx` | Power, annual energy, CO2, flash endurance |
@@ -471,7 +504,7 @@ PPTX library.
 
 1. **Types** (`types/topology.ts`):
    - Add new topology type to union
-   - Define platform-specific options interface
+   - Define platform-specific options interface, with a `DEFAULT_*_OPTIONS` constant
 
 2. **Volumetry** (`engines/volumetry/index.ts`):
    - Add data fraction calculation
@@ -484,6 +517,41 @@ PPTX library.
 4. **UI** (`components/inputs/TopologyPanel.tsx`):
    - Add platform to selector
    - Create options sub-panel
+
+5. **Resilience** (`src/workers/resilienceWorker.ts`):
+   - Add a case to `getParityDrives`
+
+6. **URL persistence** (`src/utils/schemas.ts`, `src/store/configStore.ts`):
+   - Add a Zod schema for the new `*Options` object and wire it into `ConfigStateSchema`
+   - Add the object to `configStore.ts`'s `partialize` and `getDefaultState()` (spread the
+     `DEFAULT_*_OPTIONS` constant, don't restate it — see the URL Persistence section above)
+
+The compiler catches a missed platform at most of the above sites — an unhandled union member
+in a `switch` is a TypeScript error under strict mode. Two categories fail **silently** instead,
+and both were the source of real bugs during BeeGFS's implementation, so treat them as a
+checklist, not an afterthought:
+
+- **Falls through to a wrong default instead of erroring.** `VALID_TOPOLOGY_TYPES`
+  (`src/engines/volumetry/helpers/calculationHelpers.ts`) is a plain array, not a type-checked
+  union — a missing entry doesn't fail to compile, it fails validation at runtime for a topology
+  that otherwise works. `overhead/filesystem-overhead.ts`'s `case` statement and
+  `performance/utils.ts`'s latency `case` statement both have a fallback branch, so an omitted
+  platform silently inherits another platform's overhead/latency number instead of erroring.
+  `OutputDashboard.tsx`'s `mirrorCopies` derivation (an IIFE of platform checks) behaves the
+  same way — a platform that needs a non-default `mirrorCopies` but isn't listed just gets `1`.
+- **Zod schema drift decides what a URL link actually carries.** `utils/schemas.ts` needs the
+  new platform's options object added as its own schema *and* wired into the discriminated
+  `ConfigStateSchema` — omitting it doesn't fail to compile (`ConfigStateSchema` is passthrough
+  with every field optional), it silently drops that platform's options from every shared link,
+  or worse, lets an unvalidated object through if the wiring is partial. This exact class of bug
+  is what `fix(store): persist every platform's *Options through Copy URL to Share` and
+  `fix(security): validate the real payload inside the persist envelope, not around it` fixed for
+  all 15 platforms — see the URL Persistence section above.
+
+Before declaring a new platform done, verify all six numbered sites above **and** grep for the
+new topology type across `VALID_TOPOLOGY_TYPES`, `getParityDrives`, `filesystem-overhead.ts`,
+`performance/utils.ts`, `utils/schemas.ts`, and `OutputDashboard.tsx`'s `mirrorCopies` block —
+none of the six will fail a build if missed.
 
 ### Adding a New Calculation Module
 
