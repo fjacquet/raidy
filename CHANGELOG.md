@@ -81,6 +81,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   separate prop — `TieringResolverOptions` already carries it (including `drivesPerTarget`), so
   the BeeGFS resolver now reads `tieringOptions?.beeGfsOptions`. Pure refactor: no calculated
   number changes. (#92)
+- **UI panels now import the canonical `as const` option arrays instead of re-declaring them.**
+  `WorkloadPanel` (`BLOCK_SIZES`), `AdvancedPanel` (`NETWORK_SPEEDS`, `PCIE_GENS`, `PCIE_LANES`,
+  `FS_TYPES`) and `Header` (`CARBON_REGIONS`) previously hand-wrote a second copy of the values
+  already defined in `src/types/config.ts`; they now import the canonical arrays and derive their
+  `<select>` options from them (an exhaustive `Record<CanonicalType, string>` label map for the
+  panels with static English labels; the existing `t('carbon.regions.…')` lookup for `Header`), so
+  adding a value to a canonical array fails to compile (or renders an untranslated key, for
+  `Header`) until a label is supplied. `AdvancedPanel`'s `fsType` `onChange` cast was narrowed from
+  a hand-inlined union to `as FsType`. `src/types/index.ts` now re-exports the value arrays
+  (`BLOCK_SIZES`, `NETWORK_SPEEDS`, `PCIE_GENS`, `PCIE_LANES`, `CARBON_REGIONS`, `FS_TYPES`) and
+  the `FsType` type alongside the existing type-only exports.
+
+  Two of the duplicates found during the sweep had a different **element order** than their
+  canonical counterpart: `AdvancedPanel`'s local `FS_TYPES` (`zfs` first) vs. the canonical array
+  (`xfs` first), and `Header`'s local `CARBON_REGION_VALUES` (`norway`/`france` and
+  `china`/`world_average` swapped) vs. canonical `CARBON_REGIONS`. Order is unobserved everywhere
+  else the canonical arrays are consumed (`z.enum(...)` in `src/utils/schemas.ts`, and
+  `Record<Type, …>` lookups in the performance/sustainability engines are all order-independent),
+  so **the canonical arrays were reordered to match the UI**, rather than reordering the UI to
+  match the canonical arrays — the UI order is the only place order is ever user-visible, and
+  reordering it would have been the actual behavior change. `CARBON_REGIONS` is now
+  `switzerland, norway, france, germany, usa_average, world_average, china` and `FS_TYPES` is now
+  `zfs, xfs, ext4, btrfs, refs, ntfs`; both arrays carry a comment noting the order is
+  display-order and must not be "tidied". Rendered `<select>` option order is unchanged in both
+  panels. (#87)
 - Validator alerts (`src/utils/validators.ts`) and the Longhorn capacity-details card
   (`src/components/outputs/LonghornCapacityDetails.tsx`) now route their messages through
   `i18n.t()` instead of hardcoded English, with `fr`/`de`/`it` translations added to
