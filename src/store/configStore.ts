@@ -2,25 +2,9 @@
  * Main configuration store with URL persistence.
  */
 
+import type { StateCreator } from 'zustand'
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
-import {
-  DEFAULT_BEEGFS_OPTIONS,
-  DEFAULT_CEPH_OPTIONS,
-  DEFAULT_CONTROLLER_OPTIONS,
-  DEFAULT_LONGHORN_OPTIONS,
-  DEFAULT_NETAPP_OPTIONS,
-  DEFAULT_NUTANIX_OPTIONS,
-  DEFAULT_OBJECTSCALE_OPTIONS,
-  DEFAULT_POWERFLEX_OPTIONS,
-  DEFAULT_POWERSCALE_OPTIONS,
-  DEFAULT_POWERSTORE_OPTIONS,
-  DEFAULT_POWERVAULT_OPTIONS,
-  DEFAULT_S2D_OPTIONS,
-  DEFAULT_SYNOLOGY_OPTIONS,
-  DEFAULT_VSAN_OPTIONS,
-  DEFAULT_ZFS_OPTIONS,
-} from '@/types'
 import { PERSISTED_KEYS, type PersistedKey } from './persistedKeys'
 import {
   type AdvancedSlice,
@@ -74,62 +58,31 @@ export type ConfigStore = HardwareSlice &
     resetToDefaults: () => void
   }
 
-// Default state for reset
+/**
+ * The default configuration, taken from the slices themselves rather than restated here.
+ *
+ * A StateCreator's body builds its initial state eagerly and only closes over `set`/`get` inside
+ * its action functions, so invoking one with inert stubs yields the slice's defaults without
+ * touching a store. Restating them was a fourth copy of the same field list, and it had already
+ * drifted: `performanceThreshold`, `driveConnectivity` and `driveFormFactor` were missing, so
+ * `resetToDefaults()` — a merging `set` — silently left all three untouched.
+ *
+ * Each call re-invokes the creators, so the option objects are fresh: `resetToDefaults()` installs
+ * new references rather than sharing the module-level defaults.
+ */
+const sliceDefaults = <T extends object>(creator: StateCreator<T>): Partial<T> => {
+  const noop = (() => undefined) as never
+  const raw = creator(noop, noop, noop) as Record<string, unknown>
+  return Object.fromEntries(
+    Object.entries(raw).filter(([, value]) => typeof value !== 'function'),
+  ) as Partial<T>
+}
+
 const getDefaultState = () => ({
-  // Hardware defaults
-  driveId: 'ent-hdd-7k2-sata-24tb-cmr',
-  driveCount: 12,
-  serverCount: 1,
-  serverPowerWatts: 400,
-
-  // Topology defaults
-  topology: { type: 'standard' as const, level: 'RAID6' as const },
-  hotSpares: 1,
-  // Options objects are spread from the canonical DEFAULT_*_OPTIONS constants
-  // (src/types/topology.ts) — the same ones topologySlice.ts's initial state
-  // uses — rather than restated here, so resetToDefaults() and a fresh store
-  // can never drift apart again (they previously did on 5 fields: see
-  // task-9-report.md).
-  zfsOptions: { ...DEFAULT_ZFS_OPTIONS },
-  s2dOptions: { ...DEFAULT_S2D_OPTIONS },
-  vsanOptions: { ...DEFAULT_VSAN_OPTIONS },
-  cephOptions: { ...DEFAULT_CEPH_OPTIONS },
-  longhornOptions: { ...DEFAULT_LONGHORN_OPTIONS },
-  beeGfsOptions: { ...DEFAULT_BEEGFS_OPTIONS },
-  powerFlexOptions: { ...DEFAULT_POWERFLEX_OPTIONS },
-  controllerOptions: { ...DEFAULT_CONTROLLER_OPTIONS },
-  netAppOptions: { ...DEFAULT_NETAPP_OPTIONS },
-  synologyOptions: { ...DEFAULT_SYNOLOGY_OPTIONS },
-  nutanixOptions: { ...DEFAULT_NUTANIX_OPTIONS },
-  objectscaleOptions: { ...DEFAULT_OBJECTSCALE_OPTIONS },
-  powerstoreOptions: { ...DEFAULT_POWERSTORE_OPTIONS },
-  powerscaleOptions: { ...DEFAULT_POWERSCALE_OPTIONS },
-  powervaultOptions: { ...DEFAULT_POWERVAULT_OPTIONS },
-
-  // Workload defaults
-  readPercent: 70,
-  blockSize: '64K' as const,
-  randomPercent: 50,
-  datasetSize: 100 * 1024 * 1024 * 1024 * 1024,
-  dailyWriteVolume: 1024 * 1024 * 1024 * 1024,
-
-  // Advanced defaults
-  compressionRatio: 1.5,
-  dedupRatio: 1.0,
-  networkSpeed: '25GbE' as const,
-  pcieGen: 'gen4' as const,
-  pcieLanes: 'x8' as const,
-  pue: 1.4,
-  carbonRegion: 'switzerland' as const,
-  projectYears: 5,
-  electricityCostPerKwh: 0.12,
-  unitSystem: 'binary' as const,
-
-  // Filesystem defaults
-  fsType: 'zfs' as const,
-  supportsReflink: true,
-  backupRetention: 14,
-  dailyChangeRate: 5,
+  ...sliceDefaults(createHardwareSlice),
+  ...sliceDefaults(createTopologySlice),
+  ...sliceDefaults(createWorkloadSlice),
+  ...sliceDefaults(createAdvancedSlice),
 })
 
 /**

@@ -29,13 +29,6 @@ fraction field.
 field is a fraction, bound it `0..1` in `src/utils/schemas.ts`; where it is a percent, name it
 so and divide at the consumer. Add a test per field pinning the unit.
 
-### [B5](https://github.com/fjacquet/raidy/issues/63). `AdvancedState.performanceThreshold` is not persisted
-
-Absent from `partialize` in `src/store/configStore.ts`, so it resets on a shared link while every
-other setting survives.
-
-*To close:* add it to `partialize` and to `ConfigStateSchema`, with a round-trip test.
-
 ### [B6](https://github.com/fjacquet/raidy/issues/64). Dead legacy-link branch in `urlStorage.ts`
 
 The comment at `src/store/urlStorage.ts:54-55` claims flat (non-enveloped) payloads are supported

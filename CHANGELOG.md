@@ -14,6 +14,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   back to a default — a wrong calculation presented as a valid one. Each is now an enum derived
   from the same `as const` array its TypeScript type derives from, so the schema and the lookup
   tables are held together by the compiler. (#62)
+- **`performanceThreshold` survives a shared link.** It was absent from `partialize`, so it reset
+  while every other setting persisted. (#63)
+
+### Changed
+- **"Reset to defaults" now resets the performance threshold and the two drive-picker filters.**
+  They lived only in their slices' initial state, and `resetToDefaults()` merges, so the button
+  silently skipped them. Defaults are now taken from the slices themselves rather than restated.
 
 ## [1.15.1] - 2026-08-04
 
