@@ -1,19 +1,19 @@
 {
   "connectivity": {
-    "label": "Connectivite des disques",
+    "label": "Connectivité des disques",
     "all": "Tous",
     "nvme": "NVMe",
     "sas": "SAS",
     "sata": "SATA",
     "hdd": "HDD",
     "nvmeRequired": {
-      "powerstore": "Dell PowerStore necessite des disques NVMe",
-      "vsan_esa": "VMware vSAN ESA necessite des disques NVMe"
+      "powerstore": "Dell PowerStore nécessite des disques NVMe",
+      "vsan_esa": "VMware vSAN ESA nécessite des disques NVMe"
     },
     "flashOnly": {
-      "powerflex": "Dell PowerFlex necessite SSD/NVMe (HDD non supporte)",
+      "powerflex": "Dell PowerFlex nécessite SSD/NVMe (HDD non supporté)",
       "nutanix": "Les clusters All-Flash ne supportent pas les HDD",
-      "vsan_osa": "Le mode All-Flash necessite des disques SSD/NVMe"
+      "vsan_osa": "Le mode All-Flash nécessite des disques SSD/NVMe"
     }
   },
   "formFactor": {
@@ -27,39 +27,39 @@
     "m2": "M.2"
   },
   "drive": {
-    "label": "Modele de disque",
+    "label": "Modèle de disque",
     "count": "Disques par serveur",
     "countHint": "Total disques: {{total}}"
   },
   "server": {
-    "label": "Serveurs / Noeuds",
+    "label": "Serveurs / Nœuds",
     "labelRaidGroups": "Groupes RAID",
     "power": "Puissance serveur (W)",
     "powerHint": "Hors disques"
   },
   "summary": {
-    "rawCapacity": "Capacite brute",
+    "rawCapacity": "Capacité brute",
     "totalDrives": "Total disques",
-    "hardwareCost": "Cout materiel"
+    "hardwareCost": "Coût matériel"
   },
   "properties": {
-    "title": "Proprietes du disque",
-    "noDrive": "Aucun disque selectionne",
+    "title": "Propriétés du disque",
+    "noDrive": "Aucun disque sélectionné",
     "basicInfo": "Infos de base",
-    "model": "Modele",
+    "model": "Modèle",
     "type": "Type",
     "formFactor": "Format",
-    "capacity": "Capacite",
+    "capacity": "Capacité",
     "sectorSize": "Taille secteur",
     "performance": "Performance",
     "readIops": "IOPS lecture",
-    "writeIops": "IOPS ecriture",
-    "readBandwidth": "Debit lecture",
-    "writeBandwidth": "Debit ecriture",
+    "writeIops": "IOPS écriture",
+    "readBandwidth": "Débit lecture",
+    "writeBandwidth": "Débit écriture",
     "readLatency": "Latence lecture",
-    "writeLatency": "Latence ecriture",
+    "writeLatency": "Latence écriture",
     "latency": "Latence",
-    "reliability": "Fiabilite",
+    "reliability": "Fiabilité",
     "ureRate": "Taux URE",
     "afr": "AFR",
     "dwpd": "DWPD",

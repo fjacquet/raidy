@@ -134,7 +134,7 @@
       "raid1": "RAID-1 (Spiegel): Nur empfohlen für gestreckte 2-Knoten-Cluster.",
       "singleTier": "ESA ist eine einstufige Architektur. Nur NVMe-Laufwerke, keine Disk-Gruppen."
     },
-    "nvmeNotice": "vSAN ESA erfordert ausschliesslich NVMe-Laufwerke.",
+    "nvmeNotice": "vSAN ESA erfordert ausschließlich NVMe-Laufwerke.",
     "enableCompression": "Kompression aktivieren",
     "enableDedup": "Deduplizierung aktivieren",
     "enableEncryption": "Verschlüsselung aktivieren"
@@ -154,8 +154,8 @@
     "info": {
       "rf2": "RF2: 2 Kopien der Daten, 50% Speichereffizienz. Toleriert den Ausfall eines Knotens.",
       "rf3": "RF3: 3 Kopien der Daten, 33% Speichereffizienz. Toleriert den Ausfall von zwei Knoten.",
-      "ec_rf2": "EC-X (RF2): Erasure Coding 4:1 für kalte Daten, ~75% Effizienz. Heisse Daten bleiben RF2.",
-      "ec_rf3": "EC-X (RF3): Erasure Coding 6:2 für kalte Daten, ~75% Effizienz. Heisse Daten bleiben RF3."
+      "ec_rf2": "EC-X (RF2): Erasure Coding 4:1 für kalte Daten, ~75% Effizienz. Heiße Daten bleiben RF2.",
+      "ec_rf3": "EC-X (RF3): Erasure Coding 6:2 für kalte Daten, ~75% Effizienz. Heiße Daten bleiben RF3."
     },
     "clusterType": "Cluster-Typ",
     "allFlash": "All-Flash",
@@ -191,7 +191,7 @@
     "info": {
       "raid1": "RAID 1: 2-Wege Spiegel mit 50% Speichereffizienz. Einfach, schnelle Wiederherstellung. Am besten für Boot-Volumes und kleine Deployments.",
       "raid5": "RAID 5: Einfache verteilte Parität mit (n-1)/n Effizienz. 4x Schreibstrafe. Nicht empfohlen für schreibintensive Workloads.",
-      "raid6": "RAID 6: Doppelte verteilte Parität mit (n-2)/n Effizienz. 6x Schreibstrafe. Besserer Datenschutz für Laufwerke mit grosser Kapazität.",
+      "raid6": "RAID 6: Doppelte verteilte Parität mit (n-2)/n Effizienz. 6x Schreibstrafe. Besserer Datenschutz für Laufwerke mit großer Kapazität.",
       "raid10": "RAID 10: Gespiegelte Stripes mit 50% Effizienz. Beste zufällige IOPS-Performance. Ideal für Datenbanken.",
       "adapt": "ADAPT: Verteiltes RAID mit ~87% Effizienz. Reservekapazität über alle Laufwerke verteilt. Schnellste Wiederherstellung (8-10x schneller). Erfordert 12-128 Laufwerke."
     },

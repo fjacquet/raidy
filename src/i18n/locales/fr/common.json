@@ -10,13 +10,13 @@
   },
   "sections": {
     "topology": "Topologie",
-    "hardware": "Materiel",
+    "hardware": "Matériel",
     "workload": "Charge de travail",
-    "advanced": "Avance",
-    "driveProperties": "Proprietes du disque"
+    "advanced": "Avancé",
+    "driveProperties": "Propriétés du disque"
   },
   "units": {
-    "label": "Unites",
+    "label": "Unités",
     "binary": "TiO",
     "decimal": "TO"
   },
@@ -24,7 +24,7 @@
     "label": "CO\u2082",
     "regions": {
       "switzerland": "Suisse (30)",
-      "norway": "Norvege (26)",
+      "norway": "Norvège (26)",
       "france": "France (56)",
       "germany": "Allemagne (385)",
       "usa_average": "USA (386)",
@@ -35,7 +35,7 @@
   "language": {
     "label": "Langue",
     "en": "English",
-    "fr": "Francais",
+    "fr": "Français",
     "de": "Deutsch",
     "it": "Italiano"
   },
@@ -47,7 +47,7 @@
   },
   "buttons": {
     "export": "Exporter",
-    "reset": "Reinitialiser",
+    "reset": "Réinitialiser",
     "apply": "Appliquer",
     "cancel": "Annuler",
     "close": "Fermer",

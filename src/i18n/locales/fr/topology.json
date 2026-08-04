@@ -85,11 +85,11 @@
     "parity": { "label": "Parité", "description": "Parité simple" },
     "dual_parity": { "label": "Double parité", "description": "Codage d'effacement" },
     "map": { "label": "MAP", "description": "Parité accélérée par miroir" },
-    "faultDomains": "Domaines de panne (Noeuds)",
+    "faultDomains": "Domaines de panne (Nœuds)",
     "mirrorCopies": "Copies miroir",
     "2way": "2 voies",
     "3way": "3 voies",
-    "rebuildReserve": "Réserve reconstruction (1 disque/noeud, max 4)",
+    "rebuildReserve": "Réserve reconstruction (1 disque/nœud, max 4)",
     "storageTiers": "Niveaux de stockage activés"
   },
   "vsanOsa": {
@@ -128,13 +128,13 @@
     },
     "raid1": {
       "label": "RAID-1 (Miroir)",
-      "description": "Recommandé uniquement pour clusters 2 noeuds, 50% efficacité"
+      "description": "Recommandé uniquement pour clusters 2 nœuds, 50% efficacité"
     },
     "info": {
       "raid5": "RAID-5 Adaptatif: Utilise 2+1 pour 3-5 hôtes (67% efficacité) ou 4+1 pour 6+ hôtes (80% efficacité).",
       "raid5Recommended": "Recommandé pour la plupart des déploiements ESA.",
       "raid6": "RAID-6 (4+2): FTT=2, minimum 6 hôtes requis. 67% efficacité.",
-      "raid1": "RAID-1 (Miroir): Recommandé uniquement pour clusters étendus 2 noeuds. 50% efficacité.",
+      "raid1": "RAID-1 (Miroir): Recommandé uniquement pour clusters étendus 2 nœuds. 50% efficacité.",
       "singleTier": "ESA est une architecture mono-niveau. Disques NVMe uniquement, pas de groupes de disques."
     },
     "nvmeNotice": "vSAN ESA nécessite des disques NVMe uniquement. Chaque disque sert de cache et capacité.",
@@ -221,12 +221,12 @@
   },
   "objectscale": {
     "title": "Options ObjectScale",
-    "ec_12_4": { "label": "EC 12+4 (Défaut)", "description": "75% efficacité, min 5 noeuds" },
+    "ec_12_4": { "label": "EC 12+4 (Défaut)", "description": "75% efficacité, min 5 nœuds" },
     "ec_10_2": {
       "label": "EC 10+2 (Froid/Archive)",
-      "description": "83% efficacité, min 7 noeuds"
+      "description": "83% efficacité, min 7 nœuds"
     },
-    "ec_24_4": { "label": "EC 24+4 (Aperçu)", "description": "86% efficacité, min 8 noeuds" },
+    "ec_24_4": { "label": "EC 24+4 (Aperçu)", "description": "86% efficacité, min 8 nœuds" },
     "mirror_3": { "label": "Triple miroir", "description": "33% efficacité, pour métadonnées" },
     "objectSize": "Taille objet (KB)",
     "avgObjectSize": "Taille objet moyenne: {{size}}",
@@ -342,7 +342,7 @@
     "fsOverheadTooltip": "Surcharge de métadonnées du système de fichiers ext4/xfs formaté sur chaque cible de stockage.",
     "fsOverheadHint": "Surcharge du système de fichiers : {{percent}}%. Réduit la capacité utilisable — varie selon le ratio d'inodes et les options de formatage des cibles de stockage ext4/XFS.",
     "metadataTargetsToggle": "Configurer les cibles de métadonnées",
-    "metadataTargetsToggleHint": "Une fois activé, la configuration des disques des cibles de stockage passe du panneau Materiel aux sélecteurs de cibles de métadonnées ci-dessous.",
+    "metadataTargetsToggleHint": "Une fois activé, la configuration des disques des cibles de stockage passe du panneau Matériel aux sélecteurs de cibles de métadonnées ci-dessous.",
     "metadataTargets": "Cibles de métadonnées (MDT)",
     "metadataTargetsHint": "BeeGFS recommande 0,3 à 0,5% de la capacité totale pour les métadonnées — environ 150 millions de fichiers par 500 Go de capacité de métadonnées ext4."
   },

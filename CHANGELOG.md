@@ -16,6 +16,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   shows single-stream throughput does not scale linearly with `numTargets` even given that input
   — it nearly doubles from 1→2 targets, then plateaus or regresses from 2→4. Both fields stay
   labelled informational; their doc-comments in `src/types/topology.ts` now cite the research.
+### Fixed
+- **`fr` and `de` locale strings are now consistently accented.** What looked like a deliberate
+  "unaccented" convention was actually per-file drift: e.g. `fr/topology.json` carried ~420
+  accented characters while `fr/common.json` had 1, and several files (`advanced`, `hardware`,
+  `validation`, `workload`) had zero. French and German are user-facing languages of a Swiss
+  product; unaccented copy reads as broken to a native speaker. Every `fr` and `de` string has
+  been corrected to proper orthography (accents/umlauts/ß); `it` was audited too and corrected
+  where it had the same gap. This is an orthography pass only — no strings were reworded or
+  retranslated, no JSON keys changed, and interpolation placeholders (`{{count}}`, etc.) were
+  left byte-identical. (#86)
+
+### Added
+- **i18n parity test now asserts placeholder preservation.** `tests/i18n/parity.spec.ts` gained a
+  case per locale/namespace asserting every `{{placeholder}}` present in an `en` string is also
+  present in the same key's translation, so an accent/copy pass can't silently mangle a runtime
+  interpolation token the way the existing key-presence check would miss. (#86)
 ### Changed
 - **The resilience worker now tracks which node each simulated component sits on** (#113).
   Fault groups previously had no node identity, so mirror-pair membership was assigned without

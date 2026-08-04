@@ -35,7 +35,7 @@
   "language": {
     "label": "Sprache",
     "en": "English",
-    "fr": "Francais",
+    "fr": "Français",
     "de": "Deutsch",
     "it": "Italiano"
   },
@@ -47,10 +47,10 @@
   },
   "buttons": {
     "export": "Exportieren",
-    "reset": "Zuruecksetzen",
+    "reset": "Zurücksetzen",
     "apply": "Anwenden",
     "cancel": "Abbrechen",
-    "close": "Schliessen",
+    "close": "Schließen",
     "save": "Speichern"
   }
 }
