@@ -13,9 +13,16 @@ import type { PerformanceStrategy } from './PerformanceStrategy'
  *
  * `BeeGfsOptions.numTargets` and `chunkSizeKb` are deliberately NOT consulted
  * here — they are per-file striping tunables, while every figure this engine
- * produces is a cluster aggregate over all clients and files. See their
- * doc-comments in `src/types/topology.ts` for the full reasoning; both are
- * labelled informational in the options panel.
+ * produces is a cluster aggregate over all clients and files. A dedicated
+ * single-stream (single-client, single-file) output was investigated for #69
+ * and rejected: it needs a client link speed this app does not collect, and
+ * ThinkParQ's own benchmark shows the real relationship between `numTargets`
+ * and single-stream throughput is non-linear and saturates quickly (2→3→4
+ * targets gives no further gain in their test), so it is not soundly
+ * derivable from `numTargets` alone even with that missing input. See the
+ * doc-comments on both fields in `src/types/topology.ts` for the full
+ * reasoning and citation; both stay labelled informational in the options
+ * panel.
  */
 export const beeGfsPerformanceStrategy: PerformanceStrategy = {
   getWritePenalty(level: string, options?: unknown): number {
