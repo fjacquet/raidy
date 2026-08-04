@@ -11,8 +11,8 @@
       "vsan_esa": "VMware vSAN ESA erfordert NVMe-Laufwerke"
     },
     "flashOnly": {
-      "powerflex": "Dell PowerFlex erfordert SSD/NVMe (HDD nicht unterstuetzt)",
-      "nutanix": "All-Flash-Cluster unterstuetzen keine HDD",
+      "powerflex": "Dell PowerFlex erfordert SSD/NVMe (HDD nicht unterstützt)",
+      "nutanix": "All-Flash-Cluster unterstützen keine HDD",
       "vsan_osa": "All-Flash-Modus erfordert SSD/NVMe-Laufwerke"
     }
   },
@@ -38,19 +38,19 @@
     "powerHint": "Ohne Laufwerke"
   },
   "summary": {
-    "rawCapacity": "Bruttokapazitaet",
+    "rawCapacity": "Bruttokapazität",
     "totalDrives": "Laufwerke gesamt",
     "hardwareCost": "Hardwarekosten"
   },
   "properties": {
     "title": "Laufwerkseigenschaften",
-    "noDrive": "Kein Laufwerk ausgewaehlt",
+    "noDrive": "Kein Laufwerk ausgewählt",
     "basicInfo": "Basisinfo",
     "model": "Modell",
     "type": "Typ",
     "formFactor": "Formfaktor",
-    "capacity": "Kapazitaet",
-    "sectorSize": "Sektorgroesse",
+    "capacity": "Kapazität",
+    "sectorSize": "Sektorgröße",
     "performance": "Leistung",
     "readIops": "Lese-IOPS",
     "writeIops": "Schreib-IOPS",
@@ -59,7 +59,7 @@
     "readLatency": "Leselatenz",
     "writeLatency": "Schreiblatenz",
     "latency": "Latenz",
-    "reliability": "Zuverlaessigkeit",
+    "reliability": "Zuverlässigkeit",
     "ureRate": "URE-Rate",
     "afr": "AFR",
     "dwpd": "DWPD",

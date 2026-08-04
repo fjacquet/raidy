@@ -1,38 +1,38 @@
 {
   "presets": {
     "label": "Profil de charge",
-    "database": "Base de donnees (OLTP)",
+    "database": "Base de données (OLTP)",
     "olap": "Analytique (OLAP)",
     "fileServer": "Serveur de fichiers",
     "webServer": "Serveur web",
-    "videoStreaming": "Streaming video",
+    "videoStreaming": "Streaming vidéo",
     "virtualDesktop": "Bureau virtuel (VDI)",
     "backup": "Cible de sauvegarde",
     "archive": "Archive",
-    "custom": "Personnalise"
+    "custom": "Personnalisé"
   },
   "ioPattern": {
-    "label": "Modele d'E/S",
-    "readWrite": "Ratio lecture / ecriture",
+    "label": "Modèle d'E/S",
+    "readWrite": "Ratio lecture / écriture",
     "readPercent": "Lecture %",
-    "writePercent": "Ecriture %",
-    "randomSequential": "Aleatoire / Sequentiel",
-    "randomPercent": "Aleatoire %",
-    "sequentialPercent": "Sequentiel %"
+    "writePercent": "Écriture %",
+    "randomSequential": "Aléatoire / Séquentiel",
+    "randomPercent": "Aléatoire %",
+    "sequentialPercent": "Séquentiel %"
   },
   "blockSize": {
     "label": "Taille de bloc",
-    "hint4k": "4K - E/S aleatoires base de donnees",
+    "hint4k": "4K - E/S aléatoires base de données",
     "hint8k": "8K - SQL Server, Oracle",
-    "hint16k": "16K - MySQL InnoDB par defaut",
-    "hint64k": "64K - Usage general",
+    "hint16k": "16K - MySQL InnoDB par défaut",
+    "hint64k": "64K - Usage général",
     "hint128k": "128K - Serveur fichiers, virtualisation",
-    "hint256k": "256K - Montage video, gros transferts",
-    "hint1m": "1M - Sequentiel, sauvegarde"
+    "hint256k": "256K - Montage vidéo, gros transferts",
+    "hint1m": "1M - Séquentiel, sauvegarde"
   },
   "capacity": {
-    "datasetSize": "Taille totale des donnees",
-    "dailyWriteVolume": "Volume d'ecriture journalier",
-    "hint": "Utilise pour le calcul d'endurance SSD"
+    "datasetSize": "Taille totale des données",
+    "dailyWriteVolume": "Volume d'écriture journalier",
+    "hint": "Utilisé pour le calcul d'endurance SSD"
   }
 }

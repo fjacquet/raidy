@@ -6,7 +6,7 @@
     "intro": "Speicherkapazität folgt einem Wasserfallmodell: Die physische Rohkapazität wird durch mehrere Overhead-Schichten reduziert, bevor nutzbarer Speicherplatz zur Verfügung steht. Das Verständnis jeder Schicht hilft bei der genauen Speicherdimensionierung.",
     "waterfall": {
       "title": "Das Kapazitäts-Wasserfallmodell",
-      "step1": "Rohkapazität: Physische Laufwerksgrösse × Laufwerksanzahl × Serveranzahl",
+      "step1": "Rohkapazität: Physische Laufwerksgröße × Laufwerksanzahl × Serveranzahl",
       "step2": "Abzug: Paritäts-/Redundanz-Overhead (abhängig vom RAID-Level)",
       "step3": "Abzug: Hot-Spare-Reservierung",
       "step4": "Abzug: Dateisystem-Overhead (ZFS Slop, WAFL-Overhead usw.)",
@@ -49,7 +49,7 @@
       "network": "Netzwerkschicht: Verbindungsgeschwindigkeit (z. B. 10 GbE = 1,25 GB/s, 25 GbE = 3,1 GB/s, 100 GbE = 12,5 GB/s)"
     },
     "keyPoint": "Die Schicht mit dem geringsten Durchsatz ist der Engpass (im Dashboard orange hervorgehoben). Rüsten Sie immer zuerst den Engpass auf.",
-    "alignment": "Bei XFS-Dateisystemen auf RAID-Arrays sollte die Stripe-Ausrichtung (sunit/swidth) der RAID-Chunk-Grösse entsprechen, um Read-Modify-Write-Strafen bei sequenziellem I/O zu vermeiden."
+    "alignment": "Bei XFS-Dateisystemen auf RAID-Arrays sollte die Stripe-Ausrichtung (sunit/swidth) der RAID-Chunk-Größe entsprechen, um Read-Modify-Write-Strafen bei sequenziellem I/O zu vermeiden."
   },
   "resilience": {
     "title": "Ausfallsicherheit und Monte Carlo-Simulation",
@@ -65,9 +65,9 @@
     },
     "ure": {
       "title": "URE-Risiko während des Rebuild",
-      "description": "Ein URE tritt auf, wenn ein Bit auf einem verbliebenen Laufwerk während des Rebuild nicht gelesen werden kann. Die Wahrscheinlichkeit hängt von der URE-Rate des Laufwerks (10⁻¹⁴ bis 10⁻¹⁷) und der gelesenen Datenmenge ab. Grössere Laufwerke haben ein exponentiell höheres URE-Risiko während des Rebuild — deshalb ist RAID 5 mit grossen Laufwerken (10 TB+) riskant."
+      "description": "Ein URE tritt auf, wenn ein Bit auf einem verbliebenen Laufwerk während des Rebuild nicht gelesen werden kann. Die Wahrscheinlichkeit hängt von der URE-Rate des Laufwerks (10⁻¹⁴ bis 10⁻¹⁷) und der gelesenen Datenmenge ab. Größere Laufwerke haben ein exponentiell höheres URE-Risiko während des Rebuild — deshalb ist RAID 5 mit großen Laufwerken (10 TB+) riskant."
     },
-    "keyPoint": "Kleine Unterschiede in der Überlebensrate bedeuten grosse Unterschiede im absoluten Risiko: 99,9% = 1 von 1'000 Arrays verliert Daten; 99,99% = 1 von 10'000; 99,999% = 1 von 100'000.",
+    "keyPoint": "Kleine Unterschiede in der Überlebensrate bedeuten große Unterschiede im absoluten Risiko: 99,9% = 1 von 1'000 Arrays verliert Daten; 99,99% = 1 von 10'000; 99,999% = 1 von 100'000.",
     "sources": "Methodik basiert auf branchenüblicher Markov-Ketten-Ausfallanalyse und AFR-basierter Zuverlässigkeitsmodellierung."
   },
   "sustainability": {
@@ -86,9 +86,9 @@
     },
     "endurance": {
       "title": "SSD-Lebensdauer (DWPD)",
-      "description": "DWPD (Drive Writes Per Day) misst, wie oft die gesamte Laufwerkskapazität pro Tag über die Garantiezeit beschrieben werden kann. Das Überschreiten des angegebenen DWPD-Werts beschleunigt den Verschleiss und erhöht das Risiko eines vorzeitigen Ausfalls.",
+      "description": "DWPD (Drive Writes Per Day) misst, wie oft die gesamte Laufwerkskapazität pro Tag über die Garantiezeit beschrieben werden kann. Das Überschreiten des angegebenen DWPD-Werts beschleunigt den Verschleiß und erhöht das Risiko eines vorzeitigen Ausfalls.",
       "formula": "Erforderliche DWPD = Tägliches Schreibvolumen / Laufwerkskapazität",
-      "example": "Beispiel: 2 TB/Tag auf eine 1 TB SSD zu schreiben erfordert 2 DWPD. Wenn das Laufwerk für 1 DWPD ausgelegt ist, verschleisst es mit der doppelten erwarteten Rate."
+      "example": "Beispiel: 2 TB/Tag auf eine 1 TB SSD zu schreiben erfordert 2 DWPD. Wenn das Laufwerk für 1 DWPD ausgelegt ist, verschleißt es mit der doppelten erwarteten Rate."
     }
   },
   "platforms": {
@@ -96,8 +96,8 @@
     "intro": "Jede Speicherplattform hat besondere Eigenschaften, die Kapazitäts- und Leistungsberechnungen beeinflussen. Dies sind die wichtigsten plattformspezifischen Aspekte.",
     "zfs": {
       "title": "ZFS",
-      "slop": "Slop Space: ZFS reserviert Speicherplatz, um zu verhindern, dass der Pool zu 100% voll wird. Formel: MAX(128 MiB, MIN(capacity/32, 128 GiB)). Für Pools unter ~4 TiB entspricht dies ~3,1% der Kapazität. Bei grösseren Pools ist die Obergrenze 128 GiB.",
-      "ashift": "Ashift: Muss zur physischen Sektorgrösse des Laufwerks passen. Verwenden Sie ashift=12 (4K) für moderne Laufwerke. Falsche Ashift-Werte verursachen Schreibverstärkung und Leistungseinbussen.",
+      "slop": "Slop Space: ZFS reserviert Speicherplatz, um zu verhindern, dass der Pool zu 100% voll wird. Formel: MAX(128 MiB, MIN(capacity/32, 128 GiB)). Für Pools unter ~4 TiB entspricht dies ~3,1% der Kapazität. Bei größeren Pools ist die Obergrenze 128 GiB.",
+      "ashift": "Ashift: Muss zur physischen Sektorgröße des Laufwerks passen. Verwenden Sie ashift=12 (4K) für moderne Laufwerke. Falsche Ashift-Werte verursachen Schreibverstärkung und Leistungseinbußen.",
       "source": "Quelle: OpenZFS-Dokumentation, spa_slop_shift-Parameter (PR #11023)"
     },
     "vsanEsa": {
@@ -113,18 +113,18 @@
     },
     "ceph": {
       "title": "Ceph",
-      "nearfull": "Nearfull-Schwellenwert: Ceph verwendet standardmässig 85% als Nearfull-Ratio. Ab diesem Punkt geben OSDs Warnungen aus. Bei 90% (Backfillfull) wird die Wiederherstellung verweigert. Bei 95% (Full) werden Schreibvorgänge vollständig blockiert. Raidy berechnet die nutzbare Kapazität beim 85%-Schwellenwert.",
+      "nearfull": "Nearfull-Schwellenwert: Ceph verwendet standardmäßig 85% als Nearfull-Ratio. Ab diesem Punkt geben OSDs Warnungen aus. Bei 90% (Backfillfull) wird die Wiederherstellung verweigert. Bei 95% (Full) werden Schreibvorgänge vollständig blockiert. Raidy berechnet die nutzbare Kapazität beim 85%-Schwellenwert.",
       "ec": "Erasure Coding: Gängige Profile umfassen 2+1 (67%), 4+2 (67%), 8+3 (73%) und 8+4 (67%). Höhere Daten-zu-Paritäts-Verhältnisse verbessern die Effizienz, erfordern aber mehr Knoten.",
       "source": "Quelle: Ceph-Dokumentation (mon_osd_nearfull_ratio), Red Hat Ceph Storage-Dokumentation"
     },
     "s2d": {
       "title": "Storage Spaces Direct (S2D)",
       "resiliency": "Resilienz & Effizienz: two-way mirror (50%, min. 2 Knoten), three-way mirror (33%, min. 3 Knoten — empfohlen für die Produktion), single parity ((N−1)/N, min. 3 Knoten, unterstützt, aber für geclustertes S2D nicht empfohlen), dual parity (Microsofts gestufte Reed-Solomon/LRC-Effizienz — All-Flash: 50% bei 4 Knoten, 66,7% bei 7–8, 75% bei 9–15, 80% bei 16; hybrid: 50% bei 4–6, 66,7% bei 7–11, 72,7% bei 12–16; min. 4 Knoten) und mirror-accelerated parity (Kombination aus mirror + dual-parity, min. 4 Knoten).",
-      "tiering": "Speicherebenen (hybrid): Ein SSD/NVMe-Cache-Tier absorbiert Schreibvorgänge und heisse Daten und ist von der nutzbaren Kapazität ausgeschlossen (zählt aber weiterhin zur Rohkapazität); nur der Kapazitäts-Tier ist nutzbar, und die Resilienz-Effizienz gilt für diesen. Ein Hybrid-Cluster mit HDD-Kapazität verwendet Microsofts hybride Dual-Parity-Tabelle, die bei 72,7% statt 80% ihr Maximum erreicht.",
+      "tiering": "Speicherebenen (hybrid): Ein SSD/NVMe-Cache-Tier absorbiert Schreibvorgänge und heiße Daten und ist von der nutzbaren Kapazität ausgeschlossen (zählt aber weiterhin zur Rohkapazität); nur der Kapazitäts-Tier ist nutzbar, und die Resilienz-Effizienz gilt für diesen. Ein Hybrid-Cluster mit HDD-Kapazität verwendet Microsofts hybride Dual-Parity-Tabelle, die bei 72,7% statt 80% ihr Maximum erreicht.",
       "replication": "Replikation & Fehlerdomänen: Jeder Knoten ist eine Fehlerdomäne. Ein mirror hält eine vollständige Kopie pro Knoten und toleriert gleichzeitige Knoten- und Laufwerksausfälle; dual parity toleriert zwei Ausfälle. Cluster umfassen 2–16 Knoten.",
       "reserve": "Rebuild-Reserve: Lassen Sie ein Kapazitätslaufwerk pro Server für die In-Place-Reparatur frei, begrenzt auf 4 Laufwerke clusterweit — nicht einen ganzen Knoten. Die Reserve ist nicht zugewiesener Roh-Pool-Speicher, der vor dem Resilienz-Multiplikator abgezogen wird; N Roh-Laufwerke zu reservieren kostet daher N × Effizienz an nutzbarer Kapazität. Azure Local hält zusätzlich etwa 277 GB für Infrastruktur-Volumes vor (Arc Resource Bridge, AKS-Images, Performance-Verlauf).",
       "nested": "2-Knoten-Cluster: Verwenden Sie nested resiliency (nested two-way mirror ≈25% oder nested mirror-accelerated parity ≈35–40%) anstelle eines einfachen two-way mirror, damit der Cluster einen Laufwerksausfall während eines Knotenausfalls übersteht.",
-      "map": "MAP (Mirror-Accelerated Parity): Kombiniert einen ~20% mirror-Tier für heisse Daten mit einem ~80% dual-parity-Tier für kalte Daten und schafft so ein ausgewogenes Verhältnis zwischen Leistung und Kapazitätseffizienz.",
+      "map": "MAP (Mirror-Accelerated Parity): Kombiniert einen ~20% mirror-Tier für heiße Daten mit einem ~80% dual-parity-Tier für kalte Daten und schafft so ein ausgewogenes Verhältnis zwischen Leistung und Kapazitätseffizienz.",
       "refs": "ReFS/CSV: Die Volumes sind ReFS auf Cluster Shared Volumes. Der Metadaten-Overhead ist gering (~2%) und wird durch dieselbe Resilienz wie die Daten geschützt.",
       "source": "Quelle: Microsoft Learn — Storage Spaces Direct Fehlertoleranz & nested resiliency"
     },

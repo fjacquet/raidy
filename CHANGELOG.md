@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **`fr` and `de` locale strings are now consistently accented.** What looked like a deliberate
+  "unaccented" convention was actually per-file drift: e.g. `fr/topology.json` carried ~420
+  accented characters while `fr/common.json` had 1, and several files (`advanced`, `hardware`,
+  `validation`, `workload`) had zero. French and German are user-facing languages of a Swiss
+  product; unaccented copy reads as broken to a native speaker. Every `fr` and `de` string has
+  been corrected to proper orthography (accents/umlauts/ß); `it` was audited too and corrected
+  where it had the same gap. This is an orthography pass only — no strings were reworded or
+  retranslated, no JSON keys changed, and interpolation placeholders (`{{count}}`, etc.) were
+  left byte-identical. (#86)
+
+### Added
+- **i18n parity test now asserts placeholder preservation.** `tests/i18n/parity.spec.ts` gained a
+  case per locale/namespace asserting every `{{placeholder}}` present in an `en` string is also
+  present in the same key's translation, so an accent/copy pass can't silently mangle a runtime
+  interpolation token the way the existing key-presence check would miss. (#86)
+
 ## [1.16.0] - 2026-08-04
 
 > **Read this first if you sized hardware on 1.15.x.** Four published figures move in this

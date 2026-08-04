@@ -8,7 +8,7 @@
   },
   "network": {
     "title": "Rete & Bus",
-    "speed": "Velocita rete",
+    "speed": "Velocità rete",
     "speeds": {
       "1gbe": "1 GbE",
       "10gbe": "10 GbE",
@@ -33,16 +33,16 @@
     "eitherModel": "Modello controller / HBA",
     "maxIops": "IOPS max",
     "maxThroughput": "Throughput max",
-    "hbaHint": "Le piattaforme che gestiscono la ridondanza via software richiedono accesso diretto ai dischi via HBA (modalita IT)",
+    "hbaHint": "Le piattaforme che gestiscono la ridondanza via software richiedono accesso diretto ai dischi via HBA (modalità IT)",
     "raidHint": "I controller RAID hardware gestiscono la ridondanza dei dischi",
     "eitherHint": "Questa configurazione funziona sia con un controller RAID hardware sia con un HBA"
   },
   "power": {
-    "title": "Energia & Sostenibilita",
+    "title": "Energia & Sostenibilità",
     "pue": "PUE (Power Usage Effectiveness)",
     "pueHint": "1.0 = perfetto, 1.2 = eccellente, 1.4 = medio, 2.0 = scarso",
     "projectYears": "Durata progetto (Anni)",
-    "electricityCost": "Costo elettricita ($/kWh)"
+    "electricityCost": "Costo elettricità ($/kWh)"
   },
   "filesystem": {
     "title": "Filesystem & Backup",
@@ -61,8 +61,8 @@
     "dailyChangeRate": "Tasso cambio giornaliero (%)"
   },
   "capacityManagement": {
-    "title": "Gestione capacita",
+    "title": "Gestione capacità",
     "performanceThreshold": "Soglia prestazioni",
-    "performanceThresholdHint": "Limitare la capacita operativa per mantenere le prestazioni (default 100%)"
+    "performanceThresholdHint": "Limitare la capacità operativa per mantenere le prestazioni (default 100%)"
   }
 }

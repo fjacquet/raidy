@@ -1,14 +1,14 @@
 {
   "dataEfficiency": {
-    "title": "Efficacite des donnees",
+    "title": "Efficacité des données",
     "compression": "Ratio de compression",
-    "compressionHint": "1.0 = pas de compression, 2.0 = reduction de 50%",
-    "dedup": "Ratio de deduplication",
-    "dedupHint": "1.0 = pas de dedup, 2.0 = reduction de 50%"
+    "compressionHint": "1.0 = pas de compression, 2.0 = réduction de 50%",
+    "dedup": "Ratio de déduplication",
+    "dedupHint": "1.0 = pas de dédup, 2.0 = réduction de 50%"
   },
   "network": {
-    "title": "Reseau & Bus",
-    "speed": "Vitesse reseau",
+    "title": "Réseau & Bus",
+    "speed": "Vitesse réseau",
     "speeds": {
       "1gbe": "1 GbE",
       "10gbe": "10 GbE",
@@ -21,32 +21,32 @@
     }
   },
   "pcie": {
-    "title": "Adaptateur bus hote",
-    "generation": "Generation PCIe",
+    "title": "Adaptateur bus hôte",
+    "generation": "Génération PCIe",
     "lanes": "Voies PCIe"
   },
   "controller": {
-    "title": "Controleur RAID",
-    "hbaModel": "Modele HBA",
-    "model": "Modele controleur",
-    "eitherTitle": "Controleur / HBA",
-    "eitherModel": "Modele controleur / HBA",
+    "title": "Contrôleur RAID",
+    "hbaModel": "Modèle HBA",
+    "model": "Modèle contrôleur",
+    "eitherTitle": "Contrôleur / HBA",
+    "eitherModel": "Modèle contrôleur / HBA",
     "maxIops": "IOPS max",
-    "maxThroughput": "Debit max",
-    "hbaHint": "Les plateformes qui gerent la redondance de maniere logicielle necessitent un acces disque direct via HBA (mode IT)",
-    "raidHint": "Les controleurs RAID materiels gerent la redondance des disques",
-    "eitherHint": "Cette configuration fonctionne avec un controleur RAID materiel ou un HBA"
+    "maxThroughput": "Débit max",
+    "hbaHint": "Les plateformes qui gèrent la redondance de manière logicielle nécessitent un accès disque direct via HBA (mode IT)",
+    "raidHint": "Les contrôleurs RAID matériels gèrent la redondance des disques",
+    "eitherHint": "Cette configuration fonctionne avec un contrôleur RAID matériel ou un HBA"
   },
   "power": {
-    "title": "Energie & Durabilite",
+    "title": "Énergie & Durabilité",
     "pue": "PUE (Power Usage Effectiveness)",
     "pueHint": "1.0 = parfait, 1.2 = excellent, 1.4 = moyen, 2.0 = faible",
-    "projectYears": "Duree du projet (Annees)",
-    "electricityCost": "Cout electricite ($/kWh)"
+    "projectYears": "Durée du projet (Années)",
+    "electricityCost": "Coût électricité ($/kWh)"
   },
   "filesystem": {
-    "title": "Systeme de fichiers & Sauvegarde",
-    "type": "Systeme de fichiers",
+    "title": "Système de fichiers & Sauvegarde",
+    "type": "Système de fichiers",
     "types": {
       "zfs": "ZFS",
       "xfs": "XFS",
@@ -57,12 +57,12 @@
     },
     "reflink": "Supporte Reflink",
     "reflinkHint": "Clones copy-on-write pour sauvegardes efficaces",
-    "backupRetention": "Retention sauvegarde (Jours)",
+    "backupRetention": "Rétention sauvegarde (Jours)",
     "dailyChangeRate": "Taux de changement journalier (%)"
   },
   "capacityManagement": {
-    "title": "Gestion de la capacite",
+    "title": "Gestion de la capacité",
     "performanceThreshold": "Seuil de performance",
-    "performanceThresholdHint": "Limiter la capacite operationnelle pour maintenir les performances (defaut 100%)"
+    "performanceThresholdHint": "Limiter la capacité opérationnelle pour maintenir les performances (défaut 100%)"
   }
 }

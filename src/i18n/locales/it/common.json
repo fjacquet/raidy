@@ -13,10 +13,10 @@
     "hardware": "Hardware",
     "workload": "Carico di lavoro",
     "advanced": "Avanzato",
-    "driveProperties": "Proprieta disco"
+    "driveProperties": "Proprietà disco"
   },
   "units": {
-    "label": "Unita",
+    "label": "Unità",
     "binary": "TiB",
     "decimal": "TB"
   },
@@ -35,7 +35,7 @@
   "language": {
     "label": "Lingua",
     "en": "English",
-    "fr": "Francais",
+    "fr": "Français",
     "de": "Deutsch",
     "it": "Italiano"
   },

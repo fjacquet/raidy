@@ -2,136 +2,136 @@
   "title": "Principes de dimensionnement du stockage",
   "subtitle": "Comprendre le fonctionnement des calculs de stockage",
   "capacity": {
-    "title": "Fonctionnement de la capacite",
-    "intro": "La capacite de stockage suit une cascade : la capacite physique brute est reduite par plusieurs couches de surcharge avant d'obtenir l'espace utilisable. Comprendre chaque couche permet de dimensionner le stockage avec precision.",
+    "title": "Fonctionnement de la capacité",
+    "intro": "La capacité de stockage suit une cascade : la capacité physique brute est réduite par plusieurs couches de surcharge avant d'obtenir l'espace utilisable. Comprendre chaque couche permet de dimensionner le stockage avec précision.",
     "waterfall": {
-      "title": "La cascade de capacite",
-      "step1": "Capacite brute : taille physique du disque x nombre de disques x nombre de serveurs",
-      "step2": "Soustraire : surcharge de parite/redondance (depend du niveau RAID)",
-      "step3": "Soustraire : reservation pour disques de secours",
-      "step4": "Soustraire : surcharge du systeme de fichiers (slop ZFS, surcharge WAFL, etc.)",
-      "step5": "Soustraire : reserves systeme (nearfull Ceph, reserve de reconstruction S2D, etc.)",
-      "step6": "= Capacite utilisable",
-      "step7": "Multiplier : ratio de compression x ratio de deduplication",
-      "step8": "= Capacite effective (ce que vous pouvez stocker logiquement)"
+      "title": "La cascade de capacité",
+      "step1": "Capacité brute : taille physique du disque x nombre de disques x nombre de serveurs",
+      "step2": "Soustraire : surcharge de parité/redondance (dépend du niveau RAID)",
+      "step3": "Soustraire : réservation pour disques de secours",
+      "step4": "Soustraire : surcharge du système de fichiers (slop ZFS, surcharge WAFL, etc.)",
+      "step5": "Soustraire : réserves système (nearfull Ceph, réserve de reconstruction S2D, etc.)",
+      "step6": "= Capacité utilisable",
+      "step7": "Multiplier : ratio de compression x ratio de déduplication",
+      "step8": "= Capacité effective (ce que vous pouvez stocker logiquement)"
     },
-    "keyPoint": "La compression et la deduplication sont multiplicatives, pas additives. 2x compression + 2x dedup = 4x capacite effective, pas 3x. Les couches de surcharge se cumulent egalement de maniere multiplicative : 10 % parite + 5 % systeme de fichiers ≠ 15 % de perte totale."
+    "keyPoint": "La compression et la déduplication sont multiplicatives, pas additives. 2x compression + 2x dedup = 4x capacité effective, pas 3x. Les couches de surcharge se cumulent également de manière multiplicative : 10 % parité + 5 % système de fichiers ≠ 15 % de perte totale."
   },
   "raid": {
-    "title": "RAID et redondance expliques",
-    "intro": "Les niveaux RAID equilibrent trois objectifs concurrents : l'efficacite de capacite, les performances et la tolerance aux pannes. Aucun niveau RAID ne l'emporte sur les trois.",
+    "title": "RAID et redondance expliqués",
+    "intro": "Les niveaux RAID équilibrent trois objectifs concurrents : l'efficacité de capacité, les performances et la tolérance aux pannes. Aucun niveau RAID ne l'emporte sur les trois.",
     "efficiency": {
-      "title": "Formules d'efficacite",
-      "raid0": "RAID 0 : 100 % d'efficacite — aucune redondance, aucune tolerance aux pannes",
-      "raid1": "RAID 1 / RAID 10 : 50 % d'efficacite — miroir, supporte 1 panne de disque par paire",
-      "raid5": "RAID 5 : (n−1)/n d'efficacite — parite simple, supporte 1 panne de disque",
-      "raid6": "RAID 6 : (n−2)/n d'efficacite — double parite, supporte 2 pannes de disques",
-      "example": "Exemple : RAID 5 a 12 disques = (12−1)/12 = 91,7 % d'efficacite. RAID 6 = (12−2)/12 = 83,3 %."
+      "title": "Formules d'efficacité",
+      "raid0": "RAID 0 : 100 % d'efficacité — aucune redondance, aucune tolérance aux pannes",
+      "raid1": "RAID 1 / RAID 10 : 50 % d'efficacité — miroir, supporte 1 panne de disque par paire",
+      "raid5": "RAID 5 : (n−1)/n d'efficacité — parité simple, supporte 1 panne de disque",
+      "raid6": "RAID 6 : (n−2)/n d'efficacité — double parité, supporte 2 pannes de disques",
+      "example": "Exemple : RAID 5 à 12 disques = (12−1)/12 = 91,7 % d'efficacité. RAID 6 = (12−2)/12 = 83,3 %."
     },
     "writePenalty": {
-      "title": "Penalite d'ecriture",
-      "intro": "Les niveaux RAID a parite ont une penalite d'amplification d'ecriture pour les ecritures aleatoires :",
-      "raid5": "RAID 5 : penalite 4x — lecture anciennes donnees + lecture ancienne parite + ecriture nouvelles donnees + ecriture nouvelle parite",
-      "raid6": "RAID 6 : penalite 6x — identique a RAID-5 mais avec deux calculs de parite",
-      "mirror": "RAID 1/10 : penalite 2x — ecriture sur les deux moities du miroir",
-      "sequential": "Les ecritures sequentielles ont une penalite inferieure (~1,5x pour RAID-5) car les ecritures de bande complete evitent le cycle lecture-modification-ecriture.",
+      "title": "Pénalité d'écriture",
+      "intro": "Les niveaux RAID à parité ont une pénalité d'amplification d'écriture pour les écritures aléatoires :",
+      "raid5": "RAID 5 : pénalité 4x — lecture anciennes données + lecture ancienne parité + écriture nouvelles données + écriture nouvelle parité",
+      "raid6": "RAID 6 : pénalité 6x — identique à RAID-5 mais avec deux calculs de parité",
+      "mirror": "RAID 1/10 : pénalité 2x — écriture sur les deux moitiés du miroir",
+      "sequential": "Les écritures séquentielles ont une pénalité inférieure (~1,5x pour RAID-5) car les écritures de bande complète évitent le cycle lecture-modification-écriture.",
       "sources": "Sources: WintelGuy.com RAID Performance Calculator, Huawei Storage Knowledge Base"
     }
   },
   "performance": {
-    "title": "Goulots d'etranglement de performance",
-    "intro": "Les performances de stockage sont limitees par le maillon le plus faible d'une chaine de quatre couches. Ameliorer une couche qui n'est pas le goulot d'etranglement n'a aucun effet sur les performances globales.",
+    "title": "Goulots d'étranglement de performance",
+    "intro": "Les performances de stockage sont limitées par le maillon le plus faible d'une chaîne de quatre couches. Améliorer une couche qui n'est pas le goulot d'étranglement n'a aucun effet sur les performances globales.",
     "chain": {
-      "title": "La chaine des goulots d'etranglement",
-      "media": "Couche media : agregat de tous les IOPS/debits des disques (somme des disques individuels, ajustee pour la penalite d'ecriture RAID)",
-      "controller": "Couche controleur/HBA : plafond fixe du controleur RAID ou du HBA (p. ex. Broadcom 9500 : 4M IOPS, 28 Go/s)",
-      "pcie": "Couche bus PCIe : generation x voies (p. ex. Gen4 x8 = ~16 Go/s, Gen5 x16 = ~64 Go/s)",
-      "network": "Couche reseau : vitesse de liaison (p. ex. 10 GbE = 1,25 Go/s, 25 GbE = 3,1 Go/s, 100 GbE = 12,5 Go/s)"
+      "title": "La chaîne des goulots d'étranglement",
+      "media": "Couche média : agrégat de tous les IOPS/débits des disques (somme des disques individuels, ajustée pour la pénalité d'écriture RAID)",
+      "controller": "Couche contrôleur/HBA : plafond fixe du contrôleur RAID ou du HBA (p. ex. Broadcom 9500 : 4M IOPS, 28 Go/s)",
+      "pcie": "Couche bus PCIe : génération x voies (p. ex. Gen4 x8 = ~16 Go/s, Gen5 x16 = ~64 Go/s)",
+      "network": "Couche réseau : vitesse de liaison (p. ex. 10 GbE = 1,25 Go/s, 25 GbE = 3,1 Go/s, 100 GbE = 12,5 Go/s)"
     },
-    "keyPoint": "La couche avec le debit le plus faible est le goulot d'etranglement (surlignee en orange dans le tableau de bord). Ameliorez toujours le goulot d'etranglement en premier.",
-    "alignment": "Pour les systemes de fichiers XFS sur des baies RAID, l'alignement des bandes (sunit/swidth) doit correspondre a la taille de chunk RAID pour eviter les penalites de lecture-modification-ecriture sur les E/S sequentielles."
+    "keyPoint": "La couche avec le débit le plus faible est le goulot d'étranglement (surlignée en orange dans le tableau de bord). Améliorez toujours le goulot d'étranglement en premier.",
+    "alignment": "Pour les systèmes de fichiers XFS sur des baies RAID, l'alignement des bandes (sunit/swidth) doit correspondre à la taille de chunk RAID pour éviter les pénalités de lecture-modification-écriture sur les E/S séquentielles."
   },
   "resilience": {
-    "title": "Resilience et simulation Monte Carlo",
-    "intro": "Le moteur de resilience estime la probabilite de survivre un an sans perte de donnees a l'aide de la simulation Monte Carlo — une technique statistique qui execute des milliers de scenarios aleatoires.",
+    "title": "Résilience et simulation Monte Carlo",
+    "intro": "Le moteur de résilience estime la probabilité de survivre un an sans perte de données à l'aide de la simulation Monte Carlo — une technique statistique qui exécute des milliers de scénarios aléatoires.",
     "process": {
       "title": "Fonctionnement de la simulation",
-      "step1": "1. Simuler des pannes de disques aleatoires basees sur le taux de defaillance annuel (AFR)",
-      "step2": "2. Calculer le temps de reconstruction en fonction de la capacite du disque et de la vitesse de reconstruction",
-      "step3": "3. Pendant la reconstruction, calculer la probabilite d'erreur de lecture irrecuperable (URE)",
-      "step4": "4. Simuler les defaillances correlees (10 % de chance qu'une panne en declenche une autre dans les 7 jours)",
-      "step5": "5. Tenir compte des defaillances induites par le stress pendant la reconstruction (taux de defaillance 1,3x plus eleve)",
-      "step6": "Repeter plus de 10 000 fois pour une significativite statistique"
+      "step1": "1. Simuler des pannes de disques aléatoires basées sur le taux de défaillance annuel (AFR)",
+      "step2": "2. Calculer le temps de reconstruction en fonction de la capacité du disque et de la vitesse de reconstruction",
+      "step3": "3. Pendant la reconstruction, calculer la probabilité d'erreur de lecture irrécupérable (URE)",
+      "step4": "4. Simuler les défaillances corrélées (10 % de chance qu'une panne en déclenche une autre dans les 7 jours)",
+      "step5": "5. Tenir compte des défaillances induites par le stress pendant la reconstruction (taux de défaillance 1,3x plus élevé)",
+      "step6": "Répéter plus de 10 000 fois pour une significativité statistique"
     },
     "ure": {
       "title": "Risque d'URE pendant la reconstruction",
-      "description": "Une URE survient lorsqu'un bit sur un disque survivant ne peut pas etre lu pendant la reconstruction. La probabilite depend du taux d'URE du disque (10\u207b\u00b9\u2074 a 10\u207b\u00b9\u2077) et de la quantite de donnees lues. Les disques de grande capacite ont un risque d'URE exponentiellement plus eleve pendant la reconstruction — c'est pourquoi RAID-5 avec des disques de grande capacite (10 To+) est risque."
+      "description": "Une URE survient lorsqu'un bit sur un disque survivant ne peut pas être lu pendant la reconstruction. La probabilité dépend du taux d'URE du disque (10⁻¹⁴ à 10⁻¹⁷) et de la quantité de données lues. Les disques de grande capacité ont un risque d'URE exponentiellement plus élevé pendant la reconstruction — c'est pourquoi RAID-5 avec des disques de grande capacité (10 To+) est risqué."
     },
-    "keyPoint": "De petites differences dans le taux de survie representent de grandes differences en risque absolu : 99,9 % = 1 baie sur 1 000 perd des donnees ; 99,99 % = 1 sur 10 000 ; 99,999 % = 1 sur 100 000.",
-    "sources": "Methodologie basee sur l'analyse de defaillance par chaines de Markov et la modelisation de fiabilite basee sur le AFR, conformes aux standards de l'industrie."
+    "keyPoint": "De petites différences dans le taux de survie représentent de grandes différences en risque absolu : 99,9 % = 1 baie sur 1 000 perd des données ; 99,99 % = 1 sur 10 000 ; 99,999 % = 1 sur 100 000.",
+    "sources": "Méthodologie basée sur l'analyse de défaillance par chaînes de Markov et la modélisation de fiabilité basée sur le AFR, conformes aux standards de l'industrie."
   },
   "sustainability": {
-    "title": "Durabilite et TCO",
-    "intro": "Le cout total de possession (TCO) va au-dela de l'achat du materiel pour inclure l'energie, le refroidissement et l'impact environnemental sur la duree de vie du projet.",
+    "title": "Durabilité et TCO",
+    "intro": "Le coût total de possession (TCO) va au-delà de l'achat du matériel pour inclure l'énergie, le refroidissement et l'impact environnemental sur la durée de vie du projet.",
     "pue": {
       "title": "Power Usage Effectiveness (PUE)",
-      "description": "Le PUE est le ratio entre la puissance totale de l'installation et la puissance des equipements informatiques. Un PUE de 1,4 signifie que 40 % de l'energie est consacree au refroidissement et a l'infrastructure.",
+      "description": "Le PUE est le ratio entre la puissance totale de l'installation et la puissance des équipements informatiques. Un PUE de 1,4 signifie que 40 % de l'énergie est consacrée au refroidissement et à l'infrastructure.",
       "formula": "Puissance totale = (puissance disques + puissance serveur) x PUE",
       "examples": "Valeurs typiques : meilleur hyperscale ~1,06, bon entreprise ~1,3, moyenne ~1,55, installations anciennes ~2,0+"
     },
     "co2": {
-      "title": "Intensite carbone par region",
-      "description": "Les emissions de CO\u2082 dependent du reseau electrique local. Le meme materiel dans differents emplacements produit des emissions tres differentes :",
-      "comparison": "Suisse : 30 gCO\u2082/kWh (hydraulique) vs. Allemagne : 385 gCO\u2082/kWh (mix charbon/gaz) — une difference de 12x pour un materiel identique."
+      "title": "Intensité carbone par région",
+      "description": "Les émissions de CO₂ dépendent du réseau électrique local. Le même matériel dans différents emplacements produit des émissions très différentes :",
+      "comparison": "Suisse : 30 gCO₂/kWh (hydraulique) vs. Allemagne : 385 gCO₂/kWh (mix charbon/gaz) — une différence de 12x pour un matériel identique."
     },
     "endurance": {
       "title": "Endurance SSD (DWPD)",
-      "description": "DWPD (Drive Writes Per Day) mesure le nombre de fois que la capacite totale du disque peut etre ecrite par jour pendant la periode de garantie. Depasser le DWPD nominal accelere l'usure et risque une defaillance prematuree.",
-      "formula": "DWPD requis = volume d'ecriture quotidien / capacite du disque",
-      "example": "Exemple : ecrire 2 To/jour sur un SSD de 1 To necessite 2 DWPD. Si le disque est concu pour 1 DWPD, il s'usera au double du rythme prevu."
+      "description": "DWPD (Drive Writes Per Day) mesure le nombre de fois que la capacité totale du disque peut être écrite par jour pendant la période de garantie. Dépasser le DWPD nominal accélère l'usure et risque une défaillance prématurée.",
+      "formula": "DWPD requis = volume d'écriture quotidien / capacité du disque",
+      "example": "Exemple : écrire 2 To/jour sur un SSD de 1 To nécessite 2 DWPD. Si le disque est conçu pour 1 DWPD, il s'usera au double du rythme prévu."
     }
   },
   "platforms": {
-    "title": "Notes specifiques aux plateformes",
-    "intro": "Chaque plateforme de stockage possede des comportements uniques qui affectent les calculs de capacite et de performance. Voici les considerations specifiques les plus importantes par plateforme.",
+    "title": "Notes spécifiques aux plateformes",
+    "intro": "Chaque plateforme de stockage possède des comportements uniques qui affectent les calculs de capacité et de performance. Voici les considérations spécifiques les plus importantes par plateforme.",
     "zfs": {
       "title": "ZFS",
-      "slop": "Slop Space : ZFS reserve de l'espace pour empecher le pool d'atteindre 100 % de remplissage. Formule : MAX(128 Mio, MIN(capacite/32, 128 Gio)). Pour les pools de moins de ~4 Tio, cela represente ~3,1 % de la capacite. Pour les pools plus grands, c'est plafonne a 128 Gio.",
-      "ashift": "Ashift : doit correspondre a la taille de secteur physique du disque. Utilisez ashift=12 (4K) pour les disques modernes. Un ashift mal configure cause une amplification d'ecriture et une degradation des performances.",
+      "slop": "Slop Space : ZFS réserve de l'espace pour empêcher le pool d'atteindre 100 % de remplissage. Formule : MAX(128 Mio, MIN(capacité/32, 128 Gio)). Pour les pools de moins de ~4 Tio, cela représente ~3,1 % de la capacité. Pour les pools plus grands, c'est plafonné à 128 Gio.",
+      "ashift": "Ashift : doit correspondre à la taille de secteur physique du disque. Utilisez ashift=12 (4K) pour les disques modernes. Un ashift mal configuré cause une amplification d'écriture et une dégradation des performances.",
       "source": "Source: OpenZFS documentation, spa_slop_shift parameter (PR #11023)"
     },
     "vsanEsa": {
       "title": "VMware vSAN ESA",
-      "architecture": "NVMe a un seul niveau : ESA utilise un unique niveau entierement NVMe — pas de groupes de disques cache/capacite. Les disques se connectent directement au PCIe, il n'y a donc aucun controleur RAID sur le chemin d'E/S (Raidy supprime la couche controleur de la chaine de goulots d'etranglement ESA).",
-      "raid1": "RAID-1 (Mirror) : FTT=1 stocke 2 copies pour une efficacite de 50 % et necessite au moins 3 hotes (2n+1 hotes pour FTT=n). Raidy modelise le RAID-1 ESA pour les clusters a 2 noeuds ; les clusters de 3 noeuds ou plus devraient privilegier l'erasure coding.",
-      "adaptive": "RAID-5 adaptatif : vSAN choisit la largeur de bande selon le nombre d'hotes — 2+1 (67 % d'efficacite) sur 3 a 5 hotes, 4+1 (80 % d'efficacite) sur 6 hotes ou plus — et se redimensionne automatiquement a mesure que des hotes sont ajoutes ou retires.",
-      "raid6": "RAID-6 (4+2) : tolere deux pannes avec une efficacite de 67 %, minimum 6 hotes.",
-      "performance": "RAID-5/6 a la vitesse du RAID-1 : une conception log-structuree regroupe les ecritures entrantes en bandes completes, de sorte que les ecritures en erasure coding evitent la penalite de lecture-modification-ecriture de l'ancienne OSA (qui payait environ 4x/6x en RAID-5/6).",
-      "compression": "La compression est definie par strategie de stockage et appliquee avant que les donnees ne traversent le reseau (jusqu'a ~4:1 sur des donnees compressibles). La deduplication a l'echelle du cluster ne fait pas partie de l'ESA de base — la deduplication globale arrive avec VMware Cloud Foundation 9.",
-      "reserve": "Capacite reservee : conservez environ 25 a 30 % d'espace libre pour la reserve d'exploitation et la reserve de reconstruction d'hote. Auto-Policy Management peut definir une strategie par defaut optimisee pour le cluster. vSAN reconstruit a partir de cet espace libre distribue — il n'y a pas de disques de secours dedies.",
-      "source": "Source: VMware/Broadcom TechDocs — vSAN ESA « RAID-5/6 avec les performances du RAID-1 », erasure coding RAID-5 adaptatif, concepts de capacite reservee"
+      "architecture": "NVMe à un seul niveau : ESA utilise un unique niveau entièrement NVMe — pas de groupes de disques cache/capacité. Les disques se connectent directement au PCIe, il n'y a donc aucun contrôleur RAID sur le chemin d'E/S (Raidy supprime la couche contrôleur de la chaîne de goulots d'étranglement ESA).",
+      "raid1": "RAID-1 (Mirror) : FTT=1 stocke 2 copies pour une efficacité de 50 % et nécessite au moins 3 hôtes (2n+1 hôtes pour FTT=n). Raidy modélise le RAID-1 ESA pour les clusters à 2 nœuds ; les clusters de 3 nœuds ou plus devraient privilégier l'erasure coding.",
+      "adaptive": "RAID-5 adaptatif : vSAN choisit la largeur de bande selon le nombre d'hôtes — 2+1 (67 % d'efficacité) sur 3 à 5 hôtes, 4+1 (80 % d'efficacité) sur 6 hôtes ou plus — et se redimensionne automatiquement à mesure que des hôtes sont ajoutés ou retirés.",
+      "raid6": "RAID-6 (4+2) : tolère deux pannes avec une efficacité de 67 %, minimum 6 hôtes.",
+      "performance": "RAID-5/6 à la vitesse du RAID-1 : une conception log-structurée regroupe les écritures entrantes en bandes complètes, de sorte que les écritures en erasure coding évitent la pénalité de lecture-modification-écriture de l'ancienne OSA (qui payait environ 4x/6x en RAID-5/6).",
+      "compression": "La compression est définie par stratégie de stockage et appliquée avant que les données ne traversent le réseau (jusqu'à ~4:1 sur des données compressibles). La déduplication à l'échelle du cluster ne fait pas partie de l'ESA de base — la déduplication globale arrive avec VMware Cloud Foundation 9.",
+      "reserve": "Capacité réservée : conservez environ 25 à 30 % d'espace libre pour la réserve d'exploitation et la réserve de reconstruction d'hôte. Auto-Policy Management peut définir une stratégie par défaut optimisée pour le cluster. vSAN reconstruit à partir de cet espace libre distribué — il n'y a pas de disques de secours dédiés.",
+      "source": "Source: VMware/Broadcom TechDocs — vSAN ESA « RAID-5/6 avec les performances du RAID-1 », erasure coding RAID-5 adaptatif, concepts de capacité réservée"
     },
     "ceph": {
       "title": "Ceph",
-      "nearfull": "Seuil nearfull : Ceph utilise par defaut un ratio nearfull de 85 %. A ce stade, les OSD emettent des avertissements. A 90 % (backfillfull), la recuperation est refusee. A 95 % (full), les ecritures sont bloquees. Raidy calcule la capacite utilisable au seuil de 85 %.",
-      "ec": "Erasure Coding : les profils courants incluent 2+1 (67 %), 4+2 (67 %), 8+3 (73 %) et 8+4 (67 %). Des ratios donnees/parite plus eleves ameliorent l'efficacite mais necessitent plus de noeuds.",
+      "nearfull": "Seuil nearfull : Ceph utilise par défaut un ratio nearfull de 85 %. À ce stade, les OSD émettent des avertissements. À 90 % (backfillfull), la récupération est refusée. À 95 % (full), les écritures sont bloquées. Raidy calcule la capacité utilisable au seuil de 85 %.",
+      "ec": "Erasure Coding : les profils courants incluent 2+1 (67 %), 4+2 (67 %), 8+3 (73 %) et 8+4 (67 %). Des ratios données/parité plus élevés améliorent l'efficacité mais nécessitent plus de nœuds.",
       "source": "Source: Ceph documentation (mon_osd_nearfull_ratio), Red Hat Ceph Storage documentation"
     },
     "s2d": {
       "title": "Storage Spaces Direct (S2D)",
-      "resiliency": "Resilience et efficacite : two-way mirror (50 %, min. 2 noeuds), three-way mirror (33 %, min. 3 noeuds — recommande en production), single parity ((N−1)/N, min. 3 noeuds, pris en charge mais non recommande pour le S2D en cluster), dual parity (efficacite par paliers Reed-Solomon/LRC de Microsoft — all-flash : 50 % a 4 noeuds, 66,7 % a 7–8, 75 % a 9–15, 80 % a 16 ; hybride : 50 % a 4–6, 66,7 % a 7–11, 72,7 % a 12–16 ; min. 4 noeuds) et mirror-accelerated parity (combinaison mirror + dual-parity, min. 4 noeuds).",
-      "tiering": "Niveaux de stockage (hybride) : un niveau cache SSD/NVMe absorbe les ecritures et les donnees chaudes et est exclu de la capacite utilisable (il compte toujours dans la capacite brute) ; seul le niveau de capacite est utilisable, et l'efficacite de resilience s'y applique. Un cluster hybride avec capacite HDD utilise la table dual parity hybride de Microsoft, qui plafonne a 72,7 % au lieu de 80 %.",
-      "replication": "Replication et domaines de panne : chaque noeud est un domaine de panne. Un mirror conserve une copie complete par noeud et tolere des pannes simultanees de noeud et de disque ; le dual parity tolere deux pannes. Les clusters comptent de 2 a 16 noeuds.",
-      "reserve": "Reserve de reconstruction : laissez un disque de capacite libre par serveur pour la reparation sur place, plafonne a 4 disques a l'echelle du cluster — et non un noeud entier. La reserve est de l'espace brut de pool non alloue, deduit avant le multiplicateur de resilience ; reserver N disques bruts revient donc a perdre N x (efficacite) de capacite utilisable. Azure Local conserve en outre environ 277 Go pour les volumes d'infrastructure (Arc Resource Bridge, images AKS, historique des performances).",
-      "nested": "Clusters a 2 noeuds : utilisez la nested resiliency (nested two-way mirror ≈ 25 %, ou nested mirror-accelerated parity ≈ 35 a 40 %) plutot qu'un simple two-way mirror, afin que le cluster survive a une panne de disque pendant l'indisponibilite d'un noeud.",
-      "map": "MAP (Mirror-Accelerated Parity) : combine un niveau mirror d'environ 20 % pour les donnees chaudes avec un niveau dual-parity d'environ 80 % pour les donnees froides, equilibrant performances et efficacite de capacite.",
-      "refs": "ReFS/CSV : les volumes sont en ReFS sur des Cluster Shared Volumes. La surcharge de metadonnees est faible (~2 %) et est protegee par la meme resilience que les donnees.",
-      "source": "Source: Microsoft Learn — tolerance aux pannes et nested resiliency de Storage Spaces Direct"
+      "resiliency": "Résilience et efficacité : two-way mirror (50 %, min. 2 nœuds), three-way mirror (33 %, min. 3 nœuds — recommandé en production), single parity ((N−1)/N, min. 3 nœuds, pris en charge mais non recommandé pour le S2D en cluster), dual parity (efficacité par paliers Reed-Solomon/LRC de Microsoft — all-flash : 50 % à 4 nœuds, 66,7 % à 7–8, 75 % à 9–15, 80 % à 16 ; hybride : 50 % à 4–6, 66,7 % à 7–11, 72,7 % à 12–16 ; min. 4 nœuds) et mirror-accelerated parity (combinaison mirror + dual-parity, min. 4 nœuds).",
+      "tiering": "Niveaux de stockage (hybride) : un niveau cache SSD/NVMe absorbe les écritures et les données chaudes et est exclu de la capacité utilisable (il compte toujours dans la capacité brute) ; seul le niveau de capacité est utilisable, et l'efficacité de résilience s'y applique. Un cluster hybride avec capacité HDD utilise la table dual parity hybride de Microsoft, qui plafonne à 72,7 % au lieu de 80 %.",
+      "replication": "Réplication et domaines de panne : chaque nœud est un domaine de panne. Un mirror conserve une copie complète par nœud et tolère des pannes simultanées de nœud et de disque ; le dual parity tolère deux pannes. Les clusters comptent de 2 à 16 nœuds.",
+      "reserve": "Réserve de reconstruction : laissez un disque de capacité libre par serveur pour la réparation sur place, plafonnée à 4 disques à l'échelle du cluster — et non un nœud entier. La réserve est de l'espace brut de pool non alloué, déduit avant le multiplicateur de résilience ; réserver N disques bruts revient donc à perdre N x (efficacité) de capacité utilisable. Azure Local conserve en outre environ 277 Go pour les volumes d'infrastructure (Arc Resource Bridge, images AKS, historique des performances).",
+      "nested": "Clusters à 2 nœuds : utilisez la nested resiliency (nested two-way mirror ≈ 25 %, ou nested mirror-accelerated parity ≈ 35 à 40 %) plutôt qu'un simple two-way mirror, afin que le cluster survive à une panne de disque pendant l'indisponibilité d'un nœud.",
+      "map": "MAP (Mirror-Accelerated Parity) : combine un niveau mirror d'environ 20 % pour les données chaudes avec un niveau dual-parity d'environ 80 % pour les données froides, équilibrant performances et efficacité de capacité.",
+      "refs": "ReFS/CSV : les volumes sont en ReFS sur des Cluster Shared Volumes. La surcharge de métadonnées est faible (~2 %) et est protégée par la même résilience que les données.",
+      "source": "Source: Microsoft Learn — tolérance aux pannes et nested resiliency de Storage Spaces Direct"
     },
     "nutanix": {
       "title": "Nutanix",
-      "ec": "EC-X : s'applique uniquement aux donnees froides. RF2 + EC (4/1) atteint ~80 % d'efficacite. RF3 + EC (4/2) atteint ~67 %. Les donnees chaudes restent repliquees au niveau RF de base pour les performances d'ecriture.",
-      "overhead": "Surcharge systeme : Nutanix reserve ~10 % de la capacite brute pour les snapshots, les metadonnees, la CVM et les operations de reconstruction.",
+      "ec": "EC-X : s'applique uniquement aux données froides. RF2 + EC (4/1) atteint ~80 % d'efficacité. RF3 + EC (4/2) atteint ~67 %. Les données chaudes restent répliquées au niveau RF de base pour les performances d'écriture.",
+      "overhead": "Surcharge système : Nutanix réserve ~10 % de la capacité brute pour les snapshots, les métadonnées, la CVM et les opérations de reconstruction.",
       "source": "Source: Nutanix TN-2032 (Data Efficiency), NutanixBible.com"
     }
   }

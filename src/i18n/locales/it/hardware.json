@@ -1,6 +1,6 @@
 {
   "connectivity": {
-    "label": "Connettivita disco",
+    "label": "Connettività disco",
     "all": "Tutti",
     "nvme": "NVMe",
     "sas": "SAS",
@@ -13,7 +13,7 @@
     "flashOnly": {
       "powerflex": "Dell PowerFlex richiede SSD/NVMe (HDD non supportato)",
       "nutanix": "I cluster All-Flash non supportano HDD",
-      "vsan_osa": "La modalita All-Flash richiede dischi SSD/NVMe"
+      "vsan_osa": "La modalità All-Flash richiede dischi SSD/NVMe"
     }
   },
   "formFactor": {
@@ -38,18 +38,18 @@
     "powerHint": "Esclusi i dischi"
   },
   "summary": {
-    "rawCapacity": "Capacita grezza",
+    "rawCapacity": "Capacità grezza",
     "totalDrives": "Dischi totali",
     "hardwareCost": "Costo hardware"
   },
   "properties": {
-    "title": "Proprieta disco",
+    "title": "Proprietà disco",
     "noDrive": "Nessun disco selezionato",
     "basicInfo": "Info base",
     "model": "Modello",
     "type": "Tipo",
     "formFactor": "Fattore di forma",
-    "capacity": "Capacita",
+    "capacity": "Capacità",
     "sectorSize": "Dim. settore",
     "performance": "Prestazioni",
     "readIops": "IOPS lettura",
@@ -59,7 +59,7 @@
     "readLatency": "Latenza lettura",
     "writeLatency": "Latenza scrittura",
     "latency": "Latenza",
-    "reliability": "Affidabilita",
+    "reliability": "Affidabilità",
     "ureRate": "Tasso URE",
     "afr": "AFR",
     "dwpd": "DWPD",
