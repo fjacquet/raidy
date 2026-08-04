@@ -256,7 +256,12 @@ export type RaidControllerType =
 /** Combined controller/HBA types */
 export type ControllerType = HbaType | RaidControllerType
 
-/** Topologies that require HBA (direct disk access) - software-defined storage only */
+/**
+ * Topologies that require HBA (direct disk access) - software-defined storage only.
+ *
+ * BeeGFS is deliberately ABSENT: its controller class depends on the level, not on
+ * the platform, so it is resolved by `BEEGFS_CONTROLLER_REQUIREMENT` below.
+ */
 export const HBA_REQUIRED_TOPOLOGIES: TopologyType[] = [
   'zfs',
   's2d',
@@ -266,13 +271,56 @@ export const HBA_REQUIRED_TOPOLOGIES: TopologyType[] = [
   'powerflex',
   'nutanix',
   'longhorn',
-  'beegfs',
   // Note: powerscale and objectscale are appliances with built-in controllers, not HBA-based
 ]
 
+/**
+ * Controller class a topology can attach its drives through.
+ * - `hba` — software-defined storage that addresses raw disks (IT mode)
+ * - `raid` — the drives sit behind a hardware or software RAID controller
+ * - `either` — both are physically valid, so the UI offers the union
+ */
+export type ControllerRequirement = 'hba' | 'raid' | 'either'
+
+/**
+ * BeeGFS does not protect data itself. Every storage target is a LOCAL volume that
+ * BeeGFS sees as a single block device — it never sees the disks. So the controller
+ * class follows the level (the local RAID), not the platform:
+ * - RAID6 / RAID10 targets are normally built on a hardware RAID controller (PERC, LSI).
+ * - RAIDz2 needs an IT-mode HBA because ZFS addresses the disks directly.
+ * - One drive per target works behind either.
+ *
+ * Classifying BeeGFS as pure SDS (HBA-only) modelled a RAID6 node with the HBA
+ * ceiling — ~2.7x the IOPS and ~1.6x the throughput a PERC H755 really offers.
+ */
+const BEEGFS_CONTROLLER_REQUIREMENT: Record<BeeGfsTopology, ControllerRequirement> = {
+  beegfs_raid6: 'raid',
+  beegfs_raid10: 'raid',
+  beegfs_raidz2: 'hba',
+  beegfs_single: 'either',
+}
+
+/**
+ * Resolve which controller class a topology may use.
+ *
+ * `level` is optional so existing callers keep working; it only changes the answer
+ * for BeeGFS. Every other platform resolves from `HBA_REQUIRED_TOPOLOGIES` exactly
+ * as before and can never return `'either'`.
+ */
+export function getControllerRequirement(
+  topologyType: TopologyType,
+  level?: string,
+): ControllerRequirement {
+  if (topologyType === 'beegfs') {
+    // No level supplied: fall back to the default level's class (beegfs_raid6 -> raid).
+    return BEEGFS_CONTROLLER_REQUIREMENT[level as BeeGfsTopology] ?? 'raid'
+  }
+  return HBA_REQUIRED_TOPOLOGIES.includes(topologyType) ? 'hba' : 'raid'
+}
+
 /** Check if topology requires HBA */
-export function requiresHba(topologyType: TopologyType): boolean {
-  return HBA_REQUIRED_TOPOLOGIES.includes(topologyType)
+export function requiresHba(topologyType: TopologyType, level?: string): boolean {
+  return getControllerRequirement(topologyType, level) === 'hba'
 }
 
 /**
@@ -303,9 +351,29 @@ export interface RaidControllerOptions {
   stripeSize: 64 | 128 | 256 | 512 | 1024
   /** Read policy */
   readPolicy: 'read-ahead' | 'no-read-ahead' | 'adaptive'
-  /** Write policy */
+  /**
+   * Write policy.
+   *
+   * Deliberately NOT consumed by the performance engine, and the same reasoning applies
+   * to `readPolicy` and `cacheSize`. The engine models SUSTAINED IOPS and throughput. A
+   * battery/flash-backed write-back cache is a finite buffer: under a sustained write
+   * stream the host rate converges on the rate at which the cache drains to the array, so
+   * once the cache saturates the ceiling is the back-end array's, unchanged. The RAID 5/6
+   * read-modify-write penalty (read old data + P + Q, write new data + P + Q) is a
+   * back-end disk cost that the cache defers but never removes.
+   *
+   * The real benefits — write latency (ack from NVRAM instead of media) and burst
+   * absorption — are properties of the *unsaturated* cache, i.e. of a transient this
+   * engine does not model. There is one genuine sustained effect, full-stripe write
+   * coalescing, which converts a 6-I/O RMW into an (N+2)/N full-stripe write; but its
+   * magnitude is a function of write locality and stripe alignment, and no platform's
+   * write penalty in this engine is workload-dependent. Deriving a factor without a
+   * locality model would mean inventing one, so it is left unmodelled and documented.
+   *
+   * Exported to the config report (`exportConfig.ts`) so the operator still records it.
+   */
   writePolicy: 'write-back' | 'write-through' | 'write-back-with-bbu'
-  /** Cache size in MB (for hardware controllers) */
+  /** Cache size in MB (for hardware controllers) — see `writePolicy`: not consumed by any engine */
   cacheSize?: number
 }
 
@@ -919,22 +987,38 @@ const APPLIANCE_CONTROLLERS: Partial<Record<TopologyType, ControllerType[]>> = {
  * vSAN ESA is NVMe-only with direct PCIe attach, so it must default to the NVMe
  * HBA rather than the first (SAS) HBA in the list. Topologies absent here fall
  * back to "first valid controller" / "only switch when the current is invalid".
+ *
+ * BeeGFS is deliberately absent. This map is keyed by topology TYPE and so cannot
+ * express a per-level preference, and BeeGFS mandates no specific model: mdraid and
+ * PERC/LSI RAID6 targets are both common, and any IT-mode HBA suits RAIDz2. A
+ * declared default here is applied unconditionally on every `setTopology`, which
+ * would discard the user's explicit controller choice each time they change level.
+ * The generic "keep the choice unless it became invalid" fallback already snaps to a
+ * valid controller across every BeeGFS level transition.
  */
 export const DEFAULT_CONTROLLER_BY_TOPOLOGY: Partial<Record<TopologyType, ControllerType>> = {
   vsan_esa: 'hba_nvme',
 }
 
-/** Get controller options filtered by topology requirements */
-export function getControllerOptions(topologyType: TopologyType): ControllerType[] {
+/**
+ * Get controller options filtered by topology requirements.
+ *
+ * `level` is optional and only affects BeeGFS (see `getControllerRequirement`); the
+ * list returned for every other topology is unchanged.
+ */
+export function getControllerOptions(topologyType: TopologyType, level?: string): ControllerType[] {
   // Storage appliances have fixed built-in controllers
   const applianceControllers = APPLIANCE_CONTROLLERS[topologyType]
   if (applianceControllers) {
     return applianceControllers
   }
 
-  // Software-defined storage needs HBAs, traditional RAID needs controllers
-  const needsHba = requiresHba(topologyType)
-  return (Object.keys(CONTROLLER_LIMITS) as ControllerType[]).filter(
-    (key) => CONTROLLER_LIMITS[key].isHba === needsHba,
-  )
+  // Software-defined storage needs HBAs, traditional RAID needs controllers,
+  // and a level that admits both (beegfs_single) gets the union.
+  const requirement = getControllerRequirement(topologyType, level)
+  const allControllers = Object.keys(CONTROLLER_LIMITS) as ControllerType[]
+  if (requirement === 'either') {
+    return allControllers
+  }
+  return allControllers.filter((key) => CONTROLLER_LIMITS[key].isHba === (requirement === 'hba'))
 }

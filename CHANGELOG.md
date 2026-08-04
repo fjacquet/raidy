@@ -37,6 +37,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   platform's network behavior going forward is a table entry, not another orchestrator branch.
 
 ### Fixed
+- **BeeGFS is no longer classified as pure software-defined storage — the HBA rule is now
+  level-aware.** `'beegfs'` was listed in `HBA_REQUIRED_TOPOLOGIES` alongside Ceph and vSAN, so
+  `getControllerOptions()` offered **only** IT-mode HBAs. BeeGFS never sees the disks: each
+  storage target is a *local* volume it addresses as one block device, and in the most common
+  deployment that device is a hardware RAID6 volume on a PERC or LSI controller. Because the
+  bottleneck chain's Controller layer reads `CONTROLLER_LIMITS[controller]`, a BeeGFS RAID6 node
+  was modelled with roughly **2.7× the controller IOPS ceiling and 1.6× the throughput** it
+  really has (Dell PERC H755 = 750 000 IOPS / 12 000 MB/s vs the cheapest HBA at 2 000 000 IOPS /
+  19 200 MB/s) — an optimistic error. The rule now resolves through the new
+  `getControllerRequirement(type, level?)`, which returns `'raid'` for `beegfs_raid6` and
+  `beegfs_raid10`, `'hba'` for `beegfs_raidz2` (ZFS needs direct disk access), and `'either'` for
+  `beegfs_single` (one drive per target works both ways, so the UI offers the union). Changing
+  BeeGFS level re-snaps the controller to a valid one, and a validation error fires if a
+  hardware-RAID BeeGFS level is loaded from a link with an HBA selected. `requiresHba` and
+  `getControllerOptions` gained an optional `level` argument: **every other platform's controller
+  list and numeric output are unchanged**, with or without it.
 - **`NetAppOptions.snapshotReserve` unit confusion.** The field is a *fraction* —
   `overheadCalculator.ts` multiplies capacity by it directly — but its Zod bound was
   `.min(0).max(100)` and the panel slider wrote raw percent into it, so moving the slider to 5
@@ -46,6 +62,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   previously-nonsensical non-default slider positions move. The two `snapshotReservePercent`
   fields (PowerStore, PowerScale) were checked and are correct — percent everywhere, divided by
   100 in the engine.
+  - **User-visible consequence for old shared links.** A link created *after* someone moved the
+    old NetApp snapshot-reserve slider encodes a value above the new `0..1` bound, so it now
+    fails validation on load. Rejection is whole-payload: the **entire** configuration resets to
+    defaults, not just the NetApp options. This is correct — those links encode a ≥100% reserve
+    that drives usable capacity to zero or negative — but it means such a link no longer restores
+    anything. Re-share the configuration to get a valid link.
 - **BeeGFS `chunkSizeKb` and `numTargets` are now labelled informational.** Both are real BeeGFS
   tunables but had no consumer anywhere in `src/engines/` — two controls a user could move with
   zero effect on any output. They are now marked informational in the panel (tooltip + hint) the
@@ -54,6 +76,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the total storage-target count, and the bottleneck chain has no per-file layer for a chunk
   boundary to act on. The reasoning is recorded on the fields themselves in
   `src/types/topology.ts`. No calculated result changes.
+- **Controller cache policy documented as not modelled.** `RaidControllerOptions.writePolicy`,
+  `readPolicy` and `cacheSize` reach the config export but no engine, and were investigated as
+  part of the BeeGFS controller work. They stay unmodelled by determination, not by omission:
+  this engine reports **sustained** IOPS and throughput, and a battery/flash-backed write-back
+  cache is a finite buffer — under a sustained write stream the host rate converges on the rate
+  at which the cache drains to the array, so the ceiling is the back-end array's and the RAID 5/6
+  read-modify-write cost is deferred, never removed. The real benefits (write latency, burst
+  absorption) belong to the *unsaturated* cache, a transient the engine does not represent. The
+  derivation is recorded on the `writePolicy` type. No calculated result changes.
 - **BeeGFS stranded drives no longer count as usable capacity.** Usable capacity was computed
   from every drive left after hot spares, while the validator warned *"N drive(s) do not fill a
   full storage target and are stranded"* and the capacity card printed the same count. A storage

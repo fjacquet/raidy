@@ -70,10 +70,15 @@ export interface SimulationScope {
  *   fix they belong to no storage target and hold no data.
  * - The fault group is the whole storage target at its real width, so `drivesPerTarget` still
  *   reaches the simulation — the property the group model exists to preserve.
- * - Degenerate case: if not even one whole target forms, every remaining drive goes into ONE
- *   group. That group is wider, and therefore more failure-prone, than any real target, so the
- *   fallback stays on the conservative side of the invariant instead of simulating zero drives
- *   and reporting 100% survival.
+ * - Degenerate case: if not even one whole target forms, every remaining USABLE drive goes into
+ *   ONE group. That group is wider, and therefore more failure-prone, than any real target, so
+ *   the fallback stays on the conservative side of the invariant.
+ * - Fully degenerate case: when hot spares consume the whole population there are no usable
+ *   drives left, so this returns `{ driveCount: 0, groupCount: 1 }` and the worker reports 100%
+ *   survival. That is vacuously true rather than optimistic — a cluster with no data-bearing
+ *   drive holds no data to lose — and volumetry zero-states the same input, so the two panels
+ *   agree. It is NOT clamped: fabricating a drive would report a non-zero risk for data that
+ *   does not exist. See `resolveBeeGfsSimulationScope` tests for the pinned behaviour.
  *
  * MDT drives are not simulated: they are a separate protection domain with their own buddy
  * mirroring, and this panel reports on the storage-target data path. That matches how Ceph's

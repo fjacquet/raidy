@@ -87,7 +87,10 @@ export const createTopologySlice: StateCreator<TopologySlice> = (set) => ({
   setTopology: (topology) =>
     set((state) => {
       // Get valid controllers for the new topology
-      const validControllers = getControllerOptions(topology.type)
+      // BeeGFS resolves its controller class from the level (RAID6/RAID10 target -> RAID
+      // controller, RAIDz2 -> IT-mode HBA), so the level must be passed: changing level
+      // alone can invalidate the current controller.
+      const validControllers = getControllerOptions(topology.type, topology.level)
       const currentController = state.controllerOptions.controller
 
       // Some topologies mandate a specific controller (e.g. vSAN ESA → NVMe HBA). When one

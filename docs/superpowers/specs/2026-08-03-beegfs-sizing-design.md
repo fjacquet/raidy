@@ -36,6 +36,25 @@ Additional architecture reference: [BeeGFS Reference Architecture (June 2026)](h
 3. **Target width is an explicit input**: `drivesPerTarget`, default 12. RAID6 efficiency is meaningless without it. The target count is derived and shown read-only.
 4. **Metadata targets reuse the existing `TieringConfig` primitive** (`src/types/topology.ts:181-207`, resolved by `src/engines/shared/tiering.ts`). Its semantics are already exactly right: the fast tier counts toward **raw** capacity but never toward usable — the same treatment Ceph WAL/DB offload gets today. `fastTier` = MDT, `capacityTier` = ST. The `TieringPanel.tsx` UI is reused as-is.
 5. **All four engines in v1.** Sustainability needs no code (it is platform-agnostic).
+6. **The controller class follows the LEVEL, not the platform.** *(Added post-implementation —
+   see the correction note below.)* `getControllerRequirement(type, level?)` returns `'raid'` for
+   `beegfs_raid6` / `beegfs_raid10`, `'hba'` for `beegfs_raidz2`, and `'either'` for
+   `beegfs_single`. BeeGFS is **not** entered in `HBA_REQUIRED_TOPOLOGIES`.
+
+> **Correction — BeeGFS is not pure software-defined storage.** The implementation initially put
+> `'beegfs'` in `HBA_REQUIRED_TOPOLOGIES` (`src/types/topology.ts`), classifying it alongside Ceph
+> and vSAN, so `getControllerOptions()` offered **only** HBAs. That contradicts this document's own
+> Problem statement — "each storage target is a **local RAID volume**". BeeGFS never sees the
+> disks: it addresses one block device per target, and in the most common deployment that device is
+> a hardware RAID6 volume on a PERC or LSI controller. An IT-mode HBA is required only for
+> `beegfs_raidz2`, because ZFS addresses disks directly.
+>
+> The error was quantitatively material and **optimistic**: the bottleneck chain's Controller layer
+> reads `CONTROLLER_LIMITS[controller]`, where a Dell PERC H755 is 750 000 IOPS / 12 000 MB/s while
+> the cheapest HBA in the list is 2 000 000 IOPS / 19 200 MB/s — roughly 2.7× the controller IOPS
+> ceiling and 1.6× the throughput a real RAID6 node would have. This spec never stated the SDS
+> classification explicitly (it was asserted in the implementation brief), which is why every review
+> checked against the wrong premise; Decision 6 above records the correct rule at the source.
 
 ### Rejected alternatives
 
@@ -105,6 +124,22 @@ getWritePenalty(level, options):
 ```
 
 Reads scale linearly with drive count; writes are `driveCount × driveIOPS × write% / penalty`. Latency gets a `case 'beegfs'` in `performance/utils.ts` reflecting client–server network overhead (close to Ceph, above `standard`).
+
+> **Controller write-back cache is deliberately not modelled.** `RaidControllerOptions.writePolicy`
+> (`'write-back' | 'write-through' | 'write-back-with-bbu'`) exists and is exported to the config
+> report, but it does not feed the write penalty, and no other platform consumes it — of the whole
+> `RaidControllerOptions` interface only `controller` and `stripeSize` reach any engine. This engine
+> models **sustained** IOPS and throughput. A battery/flash-backed write-back cache is a finite
+> buffer: under a sustained write stream the host rate converges on the rate at which the cache
+> drains to the array, so once the cache saturates the ceiling is the back-end array's, and the RAID
+> 6 read-modify-write cost (read old data + P + Q, write new data + P + Q = 6 back-end I/Os) is
+> deferred by the cache but never removed. The genuine benefits — write latency (ack from NVRAM
+> instead of media) and burst absorption — are properties of the *unsaturated* cache, i.e. of a
+> transient with no representation in this engine. There is one real sustained effect, full-stripe
+> write coalescing, which converts a 6-I/O RMW into an `(N+2)/N` full-stripe write; but its
+> magnitude is a function of write locality and stripe alignment, no platform's write penalty in
+> this engine is workload-dependent, and quantifying it would mean inventing a locality model. It is
+> therefore documented on the `writePolicy` type rather than approximated.
 
 **Network model generalisation.** Buddy Mirroring doubles write traffic on the wire. Today the only platform with a non-default `NetworkModel` is vSAN, hardcoded at `performance/index.ts:300-306` against `bottleneck-chain.ts:137-177`. This is replaced by a `NETWORK_MODEL_BY_TOPOLOGY: Partial<Record<TopologyType, NetworkModelResolver>>` lookup. vSAN behaviour must be bit-identical afterwards — its existing performance specs are the regression gate, and they are run before the BeeGFS entry is added. BeeGFS contributes `trafficFraction = write% × (buddy ? 2 : 1) + read% × 1`.
 

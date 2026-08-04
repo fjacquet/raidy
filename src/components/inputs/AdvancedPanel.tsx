@@ -70,14 +70,16 @@ export function AdvancedPanel() {
     setPerformanceThreshold,
   } = useConfigStore()
 
-  // Get available controller options based on topology type (HBA for ZFS/vSAN/S2D, RAID for others)
-  const needsHba = requiresHba(topology.type)
+  // Get available controller options based on topology type (HBA for ZFS/vSAN/S2D, RAID for
+  // others). BeeGFS resolves per level, so the level participates in both the list and the
+  // HBA/RAID labelling.
+  const needsHba = requiresHba(topology.type, topology.level)
   const availableControllers = useMemo(() => {
-    return getControllerOptions(topology.type).map((controller) => ({
+    return getControllerOptions(topology.type, topology.level).map((controller) => ({
       value: controller,
       label: CONTROLLER_LIMITS[controller].name,
     }))
-  }, [topology.type])
+  }, [topology.type, topology.level])
 
   const selectedController = CONTROLLER_LIMITS[controllerOptions.controller]
 

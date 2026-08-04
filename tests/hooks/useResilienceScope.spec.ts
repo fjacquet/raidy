@@ -91,6 +91,19 @@ describe('resolveBeeGfsSimulationScope', () => {
     expect(scope.driveCount).toBe(8)
   })
 
+  it('reports the vacuous zero-drive case when hot spares consume every drive', () => {
+    // Pins the ONE case the "never zero drives" claim did not cover, now that the doc-comment
+    // and docs/ARCHITECTURE.md say so plainly. 4 drives, 4 hot spares -> no usable drive at all.
+    // This is not clamped on purpose: a cluster with no data-bearing drive holds no data to
+    // lose, so 100% survival is vacuously true rather than optimistic, and volumetry
+    // zero-states the same input so the two panels agree. Fabricating a drive to force a
+    // non-zero risk would report risk for data that does not exist.
+    const scope = resolveBeeGfsSimulationScope(4, 1, 4, beegfs({ drivesPerTarget: 12 }))
+    expect(scope.driveCount).toBe(0)
+    expect(scope.groupCount).toBe(1)
+    expect(engineTargetCount(4, 1, 4, beegfs({ drivesPerTarget: 12 }))).toBe(-1)
+  })
+
   it('agrees with the engine across a sweep of drive/spare/width combinations', () => {
     for (const driveCount of [10, 12, 20, 24, 28]) {
       for (const serverCount of [1, 2, 5]) {

@@ -18,7 +18,7 @@ import type {
   VsanOptions,
   ZfsOptions,
 } from '@/types/topology'
-import { CONTROLLER_LIMITS, requiresHba } from '@/types/topology'
+import { CONTROLLER_LIMITS, getControllerRequirement } from '@/types/topology'
 import { formatBytes } from '@/utils/units'
 
 /** i18n lookup for the `validation` namespace, used outside React components. */
@@ -115,9 +115,25 @@ function validateControllerCompatibility(
   topology: Topology,
   controller: ControllerType,
 ): ValidationAlert | null {
-  const needsHba = requiresHba(topology.type)
+  // BeeGFS resolves its controller class from the level: a RAIDz2 target needs IT mode,
+  // a RAID6/RAID10 target belongs behind a RAID controller.
+  const requirement = getControllerRequirement(topology.type, topology.level)
+  const needsHba = requirement === 'hba'
   const controllerSpec = CONTROLLER_LIMITS[controller]
   const isHba = controllerSpec?.isHba ?? false
+
+  // A hardware-RAID BeeGFS target modelled behind an HBA inherits the HBA's much higher
+  // ceiling (10M IOPS on NVMe direct attach vs 750k on a PERC H755) — an optimistic error.
+  // The store snaps the controller on topology change, so this is only reachable from a
+  // hand-crafted or pre-existing shared URL.
+  if (requirement === 'raid' && isHba && topology.type === 'beegfs') {
+    return {
+      severity: 'error',
+      code: 'BEEGFS_RAID_TARGET_NEEDS_RAID_CONTROLLER',
+      message: tv('beegfs.raidTargetNeedsRaidController', { level: topology.level }),
+      recommendation: tv('beegfs.raidTargetNeedsRaidControllerRecommendation'),
+    }
+  }
 
   if (needsHba && !isHba) {
     return {

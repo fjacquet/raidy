@@ -163,7 +163,7 @@ Calculates storage capacity and efficiency.
 >
 > **BeeGFS** (`strategies/beegfs.ts`) does not fit the level-maps-to-an-efficiency-fraction shape every other platform uses. BeeGFS federates *storage targets*, and each target is itself a local RAID volume, so the modelling is deliberately unlike the rest of the engine:
 >
-> - **Topology level = the storage target's local RAID**, not cluster-wide protection: `beegfs_raid6`, `beegfs_raid10`, `beegfs_raidz2` (ZFS RAIDz2 target), or `beegfs_single` (bare drive, no local RAID). Local efficiency is `(drivesPerTarget − 2) / drivesPerTarget` for RAID6/RAIDz2, `0.5` for RAID10, `1` for single — `drivesPerTarget` (default 12) is an explicit input because RAID6 efficiency is meaningless without target width.
+> - **Topology level = the storage target's local RAID**, not cluster-wide protection: `beegfs_raid6`, `beegfs_raid10`, `beegfs_raidz2` (ZFS RAIDz2 target), or `beegfs_single` (bare drive, no local RAID). Local efficiency is `(drivesPerTarget − 2) / drivesPerTarget` for RAID6/RAIDz2, `0.5` for RAID10, `1` for single — `drivesPerTarget` (default 12) is an explicit input because RAID6 efficiency is meaningless without target width. Because the level describes real local hardware, it also decides the **controller class** — BeeGFS is *not* pure software-defined storage (see the controller note in the Performance Engine section below).
 > - **Cluster-level protection is Buddy Mirroring**, expressed as two independent booleans in `BeeGfsOptions` rather than folded into the level enum: `storageBuddyMirror` (data, halves usable capacity when on) and `metadataBuddyMirror` (metadata, doubles the MDT capacity requirement). BeeGFS genuinely lets you mirror one without the other, which a combined level enum could not express.
 > - **Capacity is computed on whole storage targets only.** A storage target *is* a local RAID volume, so drives that do not complete one ("stranded" drives) join no target and hold no data. `calculateStorageTargets` / `resolveBeeGfsUsableDrives` (`strategies/beegfs.ts`) are the single source of truth for that derivation and are shared by three surfaces that must never disagree: `calculateVolumetry`, `BeeGfsOptionsPanel` (via `deriveBeeGfsStorageTargets`), and `useResilience` (via `resolveBeeGfsSimulationScope`). Stranded drives still count toward **raw** capacity and get their own "BeeGFS Stranded Drives" breakdown bucket; the `validators.ts` stranded-drive warning reads its count from `beeGfsDetails` rather than recomputing it.
 > - **Metadata targets (MDT) reuse the shared `TieringConfig` primitive** (`src/types/topology.ts`, resolved by `src/engines/shared/tiering.ts`) instead of introducing a BeeGFS-specific concept: `fastTier` = MDT, `capacityTier` = storage targets. `resolveTiering`'s existing semantics are already exactly right for this — the fast tier counts toward **raw** capacity but never toward **usable**, the same treatment Ceph WAL/DB offload gets. A metadata-sizing advisory (`beeGfsDetails`, built in `volumetry/index.ts` following the `longhornDetails` pattern) compares MDT usable capacity against the BeeGFS-documented 0.3–0.5% rule of thumb and surfaces an estimated file count; a `validators.ts` alert fires when the MDT is undersized or absent.
@@ -216,6 +216,34 @@ flowchart LR
 ```
 
 > vSAN ESA is NVMe-direct (drives attach straight to PCIe), so its chain omits the controller/HBA layer: Media → PCIe → Network.
+
+> **Which controllers a topology may use** is resolved by `getControllerRequirement(type, level?)`
+> in `src/types/topology.ts`, which returns `'hba'`, `'raid'` or `'either'`; `requiresHba` and
+> `getControllerOptions` are thin wrappers over it, and the store's `setTopology` snaps the
+> selected controller whenever the current one becomes invalid. Software-defined platforms
+> (ZFS, S2D, vSAN, Ceph, PowerFlex, Nutanix, Longhorn) resolve to `'hba'` from
+> `HBA_REQUIRED_TOPOLOGIES`; appliances (PowerVault, PowerStore, PowerScale, ObjectScale) get
+> their fixed built-in controllers; everything else resolves to `'raid'`.
+>
+> **BeeGFS is the one platform whose answer depends on the *level*, not the type.** BeeGFS never
+> sees the disks — each storage target is a local volume it addresses as a single block device —
+> so the controller class follows the local RAID: `beegfs_raid6` and `beegfs_raid10` are
+> hardware-RAID targets (`'raid'`), `beegfs_raidz2` needs an IT-mode HBA because ZFS addresses
+> disks directly (`'hba'`), and `beegfs_single` (one drive per target) works behind either
+> (`'either'`, so the UI offers the union). Classifying BeeGFS as pure SDS modelled a RAID6 node
+> at the HBA ceiling — ~2.7× the IOPS and ~1.6× the throughput of a real PERC H755. BeeGFS
+> declares no entry in `DEFAULT_CONTROLLER_BY_TOPOLOGY`: that map is keyed by type so it cannot
+> express a per-level preference, and BeeGFS mandates no specific model (both mdraid and
+> PERC/LSI targets are common), so the generic "keep the user's choice unless it became invalid"
+> fallback applies.
+>
+> **Controller cache policy is not modelled.** `RaidControllerOptions.writePolicy`, `readPolicy`
+> and `cacheSize` reach the config export but no engine. A battery/flash-backed write-back cache
+> is a finite buffer: under a sustained write stream the host rate converges on the rate at which
+> the cache drains to the array, so the sustained ceiling is the back-end array's and the RAID
+> 5/6 read-modify-write penalty is deferred, never removed. The real benefits — write latency and
+> burst absorption — are properties of the *unsaturated* cache, a transient this engine does not
+> model. See the doc-comment on `writePolicy` for the full derivation.
 
 **Calculations:**
 
@@ -469,8 +497,16 @@ simulated — a separate protection domain, the same scope choice made for Ceph'
 The resilience model carries a deliberate invariant: **its simulated failure set must be a
 superset of the physically real one**, so the tool may understate resilience but never overstate
 it. Hot spares and stranded drives are excluded because their failure is genuinely not a
-data-loss event; when not even one whole target forms, every remaining drive is put into a
-single over-wide group rather than simulating zero drives and reporting 100% survival.
+data-loss event; when not even one whole target forms, every remaining *usable* drive is put
+into a single over-wide group, which is more failure-prone than any real target and therefore
+stays on the conservative side of the invariant.
+
+One degenerate input remains: if hot spares consume the entire population there are no
+usable drives left, the simulation runs over zero drives and reports 100% survival. That is
+not a modelling claim — a cluster with no data-bearing drive holds no data to lose, and
+volumetry independently zero-states the same configuration, so the dashboard stays internally
+consistent (0 usable capacity alongside 0% risk). Clamping to a synthetic drive would report a
+non-zero risk for data that does not exist, so the behaviour is documented rather than clamped.
 
 ### `useFormatBytes()`
 

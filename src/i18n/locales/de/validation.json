@@ -29,6 +29,8 @@
     "strandedDrives": "{{stranded}} Laufwerk(e) fuellen kein vollstaendiges Storage-Target von {{drivesPerTarget}} und sind ungenutzt",
     "noMdt": "Keine Metadata-Targets konfiguriert - aktivieren Sie die Metadata-Target-Dimensionierung, um das MDT zu dimensionieren",
     "mdtUnderMin": "Die Kapazitaet der Metadata-Targets liegt unter dem von BeeGFS empfohlenen Minimum von {{recommendedMin}}",
-    "mdtUnderMinRecommendation": "Erhoehen Sie die Kapazitaet der Metadata-Targets auf mindestens {{recommendedTypical}} (typische Empfehlung)"
+    "mdtUnderMinRecommendation": "Erhoehen Sie die Kapazitaet der Metadata-Targets auf mindestens {{recommendedTypical}} (typische Empfehlung)",
+    "raidTargetNeedsRaidController": "BeeGFS {{level}}: HBA erkannt. Ein lokales Hardware-RAID-Target muss hinter einem RAID-Controller liegen, nicht hinter einem HBA im IT-Modus.",
+    "raidTargetNeedsRaidControllerRecommendation": "Waehlen Sie einen RAID-Controller (PERC, LSI) oder wechseln Sie auf die Stufe beegfs_raidz2, die einen HBA im IT-Modus erfordert."
   }
 }

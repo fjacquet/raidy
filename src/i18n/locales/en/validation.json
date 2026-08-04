@@ -29,6 +29,8 @@
     "strandedDrives": "{{stranded}} drive(s) do not fill a full storage target of {{drivesPerTarget}} and are stranded",
     "noMdt": "No metadata targets configured — enable metadata target sizing to size the MDT",
     "mdtUnderMin": "Metadata target capacity is below BeeGFS's recommended minimum of {{recommendedMin}}",
-    "mdtUnderMinRecommendation": "Increase metadata target capacity to at least {{recommendedTypical}} (typical recommendation)"
+    "mdtUnderMinRecommendation": "Increase metadata target capacity to at least {{recommendedTypical}} (typical recommendation)",
+    "raidTargetNeedsRaidController": "BeeGFS {{level}}: HBA detected. A local hardware RAID target must sit behind a RAID controller, not an IT-mode HBA.",
+    "raidTargetNeedsRaidControllerRecommendation": "Select a RAID controller (PERC, LSI) or switch the level to beegfs_raidz2, which does require an IT-mode HBA."
   }
 }
