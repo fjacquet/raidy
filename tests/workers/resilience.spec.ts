@@ -1631,17 +1631,22 @@ describe('Resilience Worker - BeeGFS', () => {
   })
 
   it('beegfs_raid10 with buddy mirroring has strictly better survival than without', async () => {
-    // Without buddy mirroring: beegfs_raid10 is a plain location-agnostic
-    // drive-pair mirror (2-drive groups, tolerate 1 failure per pair) —
-    // mirrorCopies is 0/absent.
-    // With buddy mirroring: mirrorCopies = 2 merges pairs of local mirror-pairs
-    // into a 4-drive buddy unit (tolerate 3 of 4) — see effectiveMirrorGroupWidth
-    // in the worker. This is the mirror-topology analogue of the beegfs_raid6
-    // group-buddy test above; regression guard for the bug where buddy mirroring
-    // used to be a complete no-op on beegfs_raid10 (effectiveMirrorCopies always
-    // evaluated to 2 regardless of mirrorCopies).
+    // beegfs_raid10 is a GROUP topology: the fault group is the storage target,
+    // and the caller passes the target count as serverCount.
+    // Without buddy mirroring: 4 targets of 10 drives, each lost at 2 failures.
+    // With buddy mirroring: mirrorCopies = 2 merges target pairs into 2 buddy
+    // units of 20 drives, each lost at 4 failures.
+    // Regression guard for the bug where buddy mirroring was a complete no-op on
+    // beegfs_raid10 (effectiveMirrorCopies always evaluated to 2 regardless of
+    // mirrorCopies).
+    //
+    // serverCount was added to this payload in fix round 2: beegfs_raid10 no
+    // longer takes the drive-pair mirror path, so a payload with no serverCount
+    // now means "one storage target", which cannot be buddy mirrored at all.
+    // The assertion itself is unchanged.
     const sharedPayload = {
-      driveCount: 40, // 20 local mirror-pairs / 10 buddy units
+      driveCount: 40,
+      serverCount: 4, // 4 storage targets of drivesPerTarget = 10
       driveCapacityBytes: 8_000_000_000_000,
       rebuildSpeedMBs: 150,
       ureRate: 13 as const,
@@ -1669,6 +1674,87 @@ describe('Resilience Worker - BeeGFS', () => {
     expect(withoutBuddy).toBeDefined()
     expect(withBuddy).toBeDefined()
     expect(withBuddy.survivalRate).toBeGreaterThan(withoutBuddy.survivalRate)
+  })
+
+  it('beegfs_raid10 + buddy: survival does not improve as drivesPerTarget grows', async () => {
+    // A RAID10 storage target holding `drivesPerTarget` drives is
+    // `drivesPerTarget / 2` striped mirror pairs and is lost when ANY one of
+    // them loses both drives, so wider targets are strictly MORE likely to
+    // fail. The caller passes serverCount = floor(totalDrives / drivesPerTarget),
+    // so the same 48-drive cluster at drivesPerTarget 4 / 8 / 24 arrives as
+    // serverCount 12 / 6 / 2. Survival must be non-increasing along that
+    // sequence. Before this fix the mirror path never saw drivesPerTarget at
+    // all and returned the same number for all three.
+    const sharedPayload = {
+      driveCount: 48,
+      driveCapacityBytes: 20_000_000_000_000,
+      rebuildSpeedMBs: 150,
+      ureRate: 16 as const, // high URE rating: isolate the group-geometry effect
+      afrPercent: 45.0,
+      simulationCount: 4000,
+      raidLevel: 'beegfs_raid10',
+      mirrorCopies: 2, // buddy mirroring on
+    }
+
+    const survivalFor = async (serverCount: number): Promise<number> => {
+      mockPostMessage.mockClear()
+      vi.resetModules()
+      await import('@/workers/resilienceWorker')
+      const handler = (self as { onmessage: ((e: MessageEvent) => void) | null }).onmessage
+      handler?.({
+        data: { type: 'START', payload: { ...sharedPayload, serverCount } },
+      } as MessageEvent)
+      return mockPostMessage.mock.calls.find((c) => c[0].type === 'RESULT')?.[0].payload
+        .survivalRate as number
+    }
+
+    const wide = await survivalFor(2) // drivesPerTarget 24 -> 1 buddy unit of 48
+    const medium = await survivalFor(6) // drivesPerTarget 8  -> 3 buddy units of 16
+    const narrow = await survivalFor(12) // drivesPerTarget 4  -> 6 buddy units of 8
+
+    expect(narrow).toBeGreaterThanOrEqual(medium)
+    expect(medium).toBeGreaterThanOrEqual(wide)
+    // Coarse bands: the ends must be clearly separated, not merely ordered.
+    expect(narrow).toBeGreaterThan(0.8)
+    expect(wide).toBeLessThan(0.45)
+  })
+
+  it('beegfs_raid10 + buddy: an odd storage-target count gets no buddy credit', async () => {
+    // With an odd target count at least one target is necessarily unpaired and
+    // has no buddy protection. Merging floor(serverCount / 2) units would pool
+    // that unprotected target's drives into a merged unit and hide it, which
+    // would overstate resilience. The worker therefore withholds buddy credit
+    // entirely for odd serverCount, falling back to the unmerged per-target
+    // model — i.e. identical to buddy-off, within Monte Carlo noise.
+    const sharedPayload = {
+      driveCount: 30,
+      serverCount: 3, // odd: 3 targets of 10 drives
+      driveCapacityBytes: 8_000_000_000_000,
+      rebuildSpeedMBs: 150,
+      ureRate: 16 as const,
+      afrPercent: 9.0,
+      simulationCount: 4000,
+      raidLevel: 'beegfs_raid10',
+    }
+
+    await importWorker()
+    let handler = (self as { onmessage: ((e: MessageEvent) => void) | null }).onmessage
+    handler?.({ data: { type: 'START', payload: sharedPayload } } as MessageEvent)
+    const buddyOff = mockPostMessage.mock.calls.find((c) => c[0].type === 'RESULT')?.[0].payload
+
+    mockPostMessage.mockClear()
+    vi.resetModules()
+    await import('@/workers/resilienceWorker')
+    handler = (self as { onmessage: ((e: MessageEvent) => void) | null }).onmessage
+    handler?.({
+      data: { type: 'START', payload: { ...sharedPayload, mirrorCopies: 2 } },
+    } as MessageEvent)
+    const buddyOn = mockPostMessage.mock.calls.find((c) => c[0].type === 'RESULT')?.[0].payload
+
+    expect(buddyOff).toBeDefined()
+    expect(buddyOn).toBeDefined()
+    // Same model on both sides: only Monte Carlo noise should separate them.
+    expect(Math.abs(buddyOn.survivalRate - buddyOff.survivalRate)).toBeLessThan(0.05)
   })
 
   it('beegfs_single with buddy mirroring survives single-drive losses (parity 0 + mirrorCopies 2)', async () => {
