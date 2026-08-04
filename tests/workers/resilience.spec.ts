@@ -1677,6 +1677,12 @@ describe('Resilience Worker - BeeGFS', () => {
   })
 
   it('beegfs_raid10 + buddy: survival does not improve as drivesPerTarget grows', async () => {
+    // Three sequential simulationCount: 4000 Monte Carlo runs, each with a fresh
+    // vi.resetModules() + worker re-import. Comfortably under 1s on plain `vitest run`,
+    // but v8 coverage instrumentation reliably pushes it past Vitest's 5000ms default —
+    // deterministically, not intermittently (verified 8/8 failures under --coverage).
+    // 30000ms leaves ample margin for instrumentation overhead without touching
+    // simulationCount, which the assertions below rely on for wide, well-separated bands.
     // A RAID10 storage target holding `drivesPerTarget` drives is
     // `drivesPerTarget / 2` striped mirror pairs and is lost when ANY one of
     // them loses both drives, so wider targets are strictly MORE likely to
@@ -1717,7 +1723,7 @@ describe('Resilience Worker - BeeGFS', () => {
     // Coarse bands: the ends must be clearly separated, not merely ordered.
     expect(narrow).toBeGreaterThan(0.8)
     expect(wide).toBeLessThan(0.45)
-  })
+  }, 30000)
 
   it('beegfs_raid10 + buddy: an odd storage-target count gets no buddy credit', async () => {
     // With an odd target count at least one target is necessarily unpaired and
