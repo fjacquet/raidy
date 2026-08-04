@@ -32,5 +32,95 @@
     "mdtUnderMinRecommendation": "Aumenta la capacita dei target di metadati ad almeno {{recommendedTypical}} (raccomandazione tipica)",
     "raidTargetNeedsRaidController": "BeeGFS {{level}}: HBA rilevato. Un target RAID hardware locale deve trovarsi dietro un controller RAID, non un HBA in modalita IT.",
     "raidTargetNeedsRaidControllerRecommendation": "Seleziona un controller RAID (PERC, LSI) o passa al livello beegfs_raidz2, che richiede effettivamente un HBA in modalita IT."
+  },
+  "ceph": {
+    "ramLow": "Ceph: RAM insufficiente per OSD ({{ramPerOsd}} GB). Minimo raccomandato: 2 GB/OSD.",
+    "ramLowRecommendation": "Aggiungi piu RAM o riduci il numero di OSD. Attuale: {{osdsPerNode}} OSD con {{ramPerNodeGb}} GB di RAM.",
+    "ramMarginal": "Ceph: La RAM per OSD e al limite ({{ramPerOsd}} GB). Considera 4 GB/OSD per la produzione."
+  },
+  "zfs": {
+    "occupationHigh": "ZFS: Occupazione massima impostata a {{maxOccupation}}%. Le prestazioni si degradano significativamente sopra l'80%.",
+    "occupationHighRecommendation": "Mantieni l'occupazione del pool sotto l'80% per prestazioni ottimali."
+  },
+  "controller": {
+    "raidIncompatible": "{{topologyType}}: Controller RAID hardware rilevato. Questa topologia richiede un HBA (modalita IT) per l'accesso diretto ai dischi.",
+    "raidIncompatibleRecommendation": "Usa un HBA come la serie LSI 9400/9500 o un Dell HBA355i. I controller RAID nascondono l'identita del disco e impediscono una corretta protezione dei dati.",
+    "hbaWithStandardRaid": "Utilizzo di un HBA con topologia RAID standard. Considera un controller RAID hardware per una migliore cache e backup a batteria."
+  },
+  "driveType": {
+    "smrIncompatible": "Disco SMR rilevato: {{model}}. I dischi SMR causano timeout ed espulsione del disco durante le operazioni di rebuild.",
+    "smrIncompatibleRecommendation": "Usa dischi CMR (Conventional Magnetic Recording) per i pool ZFS e S2D.",
+    "smrWarning": "Disco SMR rilevato: {{model}}. I dischi SMR hanno scarse prestazioni in scrittura casuale.",
+    "smrWarningRecommendation": "Considera dischi CMR per migliori prestazioni e affidabilita."
+  },
+  "sectorSize": {
+    "deprecated512n": "Il disco utilizza settori di dimensione 512n. I sistemi moderni preferiscono 512e o 4Kn.",
+    "deprecated512nRecommendation": "Per nuove implementazioni, considera dischi con settori nativi 4K per le migliori prestazioni."
+  },
+  "s2d": {
+    "cacheLow": "S2D: Meno di 2 dischi di cache per nodo ({{cachePerNode}}). Microsoft raccomanda un minimo di 2.",
+    "cacheLowRecommendation": "Aggiungi altri dischi di cache per migliori prestazioni di scrittura e protezione.",
+    "cacheRatioLow": "S2D: Il rapporto di cache e inferiore al 10% ({{cacheRatioPct}}%). Le prestazioni potrebbero essere compromesse.",
+    "cacheRatioLowRecommendation": "Aumenta la dimensione del livello di cache ad almeno il 10% del livello di capacita.",
+    "threeWayMinNodes": "S2D: Il mirror a tre vie richiede almeno 3 domini di errore (nodi); {{faultDomains}} configurato/i.",
+    "threeWayMinNodesRecommendation": "Aggiungi nodi o passa a un mirror a due vie.",
+    "parityMinNodes": "S2D: La parita singola richiede almeno 3 domini di errore (nodi); {{faultDomains}} configurato/i.",
+    "parityMinNodesRecommendation": "Aggiungi nodi o passa a una resilienza mirror.",
+    "dualParityMinNodes": "S2D: La doppia parita richiede almeno 4 domini di errore (nodi); {{faultDomains}} configurato/i.",
+    "dualParityMinNodesRecommendation": "Aggiungi nodi o passa a una resilienza mirror.",
+    "mapMinNodes": "S2D: La parita accelerata da mirror richiede almeno 4 domini di errore (nodi); {{faultDomains}} configurato/i.",
+    "mapMinNodesRecommendation": "Aggiungi nodi o passa a una resilienza mirror.",
+    "singleParityDiscouraged": "S2D: La parita singola e supportata ma sconsigliata per Storage Spaces Direct in cluster - tollera solo un guasto.",
+    "singleParityDiscouragedRecommendation": "Preferisci il mirror a tre vie o la doppia parita.",
+    "twoNodeNestedRecommended": "S2D: I cluster a 2 nodi dovrebbero usare la resilienza annidata per sopravvivere a un guasto del disco durante un'interruzione del nodo.",
+    "twoNodeNestedRecommendedRecommendation": "Usa il mirror a due vie annidato o la parita accelerata da mirror annidata per cluster a 2 nodi.",
+    "threeWayRecommended": "S2D: Il mirror a due vie tollera un singolo guasto. Il mirror a tre vie e l'impostazione predefinita raccomandata da Microsoft per l'alta disponibilita in produzione.",
+    "threeWayRecommendedRecommendation": "Passa le copie mirror a 3 vie per la tolleranza a due guasti."
+  },
+  "netapp": {
+    "raidTecRecommended": "NetApp: Utilizzo di RAID-DP con dischi > 10TB ({{tb}} TB). RAID-TEC raccomandato per una migliore protezione.",
+    "raidTecRecommendedRecommendation": "Passa a RAID-TEC (parita tripla) per dischi superiori a 10TB."
+  },
+  "synology": {
+    "btrfsRecommended": "Synology: Utilizzo del filesystem ext4. Btrfs offre funzionalita di protezione dati aggiuntive.",
+    "btrfsRecommendedRecommendation": "Considera Btrfs per snapshot, auto-riparazione e protezione avanzata."
+  },
+  "driveCount": {
+    "zfsRaidz1": "ZFS RAIDZ1 richiede un minimo di 3 dischi.",
+    "zfsRaidz2": "ZFS RAIDZ2 richiede un minimo di 4 dischi.",
+    "zfsRaidz3": "ZFS RAIDZ3 richiede un minimo di 5 dischi.",
+    "s2dMin": "Le configurazioni ridondanti S2D richiedono un minimo di 4 dischi.",
+    "cephMinOsds": "Ceph richiede un minimo di 3 OSD per una corretta distribuzione dei dati."
+  },
+  "powerflex": {
+    "hddNotSupported": "PowerFlex: I dischi HDD non sono piu supportati. Il disco \"{{model}}\" e un HDD.",
+    "hddNotSupportedRecommendation": "PowerFlex richiede dischi SSD o NVMe. Gli HDD non sono supportati nelle versioni attuali di PowerFlex.",
+    "fg3wayNotSupported": "PowerFlex: La modalita Fine Granularity non supporta il mirror a tre vie. E disponibile solo il mirror a due vie.",
+    "fg3wayNotSupportedRecommendation": "Usa Medium Granularity per il mirror a tre vie, oppure usa il mirror a due vie con Fine Granularity."
+  },
+  "vsan": {
+    "esaNvmeRequired": "vSAN ESA: Dischi NVMe richiesti. Il disco \"{{model}}\" e di tipo {{driveType}}.",
+    "esaNvmeRequiredRecommendation": "vSAN Express Storage Architecture (ESA) supporta solo dischi NVMe. Usa vSAN OSA per configurazioni SAS/SATA/HDD.",
+    "esaLowEndurance": "vSAN ESA: Il disco \"{{model}}\" ha una bassa resistenza ({{dwpd}} DWPD).",
+    "esaLowEnduranceRecommendation": "vSAN ESA raccomanda dischi con almeno 1 DWPD per carichi di lavoro ad alta scrittura.",
+    "esaMinHosts": "vSAN ESA {{level}}: Richiede un minimo di {{minHosts}} host, solo {{serverCount}} configurato/i.",
+    "esaMinHostsRecommendation": "Aumenta il numero di server ad almeno {{minHosts}} host per questo livello di protezione.",
+    "osaHddCacheRecommended": "vSAN OSA con HDD: Livello di cache SSD raccomandato per le prestazioni.",
+    "osaHddCacheRecommendedRecommendation": "Aggiungi dischi di cache NVMe o SSD per una configurazione ibrida. Rapporto cache-capacita minimo del 10%.",
+    "osaMinHosts": "vSAN OSA {{level}}: Richiede un minimo di {{minHosts}} host, solo {{serverCount}} configurato/i.",
+    "osaMinHostsRecommendation": "Aumenta il numero di server ad almeno {{minHosts}} host per questo livello di protezione."
+  },
+  "longhorn": {
+    "physicalUsable": "Capacita fisica utilizzabile",
+    "physicalUsableDesc": "Tetto massimo sicuro per i dati applicativi, inclusa la riserva per gli snapshot",
+    "recommendedCommittedData": "Dati impegnati raccomandati",
+    "recommendedCommittedDataDesc": "Impegna questa quantita oggi; lascia margine di crescita",
+    "perNodeAllocation": "Allocazione per nodo",
+    "perNodeAllocationDesc": "Capacita utilizzabile per nodo di storage",
+    "configTitle": "Configurazione Longhorn",
+    "replicas": "Repliche",
+    "diskMode": "Modalita disco",
+    "minAvailable": "Min-disponibile",
+    "overProvisioning": "Sovrapprovisionamento"
   }
 }

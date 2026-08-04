@@ -8,7 +8,7 @@ import { Label, Select, Slider } from '@/components/common/FormControls'
 import { shouldShowControl } from '@/engines/capabilities'
 import { useConfigStore } from '@/store'
 import type { ControllerType, NetworkSpeed, PCIeGen, PCIeLanes } from '@/types'
-import { CONTROLLER_LIMITS, getControllerOptions, requiresHba } from '@/types'
+import { CONTROLLER_LIMITS, getControllerOptions, getControllerRequirement } from '@/types'
 
 const NETWORK_SPEEDS: { value: NetworkSpeed; label: string }[] = [
   { value: '1GbE', label: '1 GbE' },
@@ -71,9 +71,9 @@ export function AdvancedPanel() {
   } = useConfigStore()
 
   // Get available controller options based on topology type (HBA for ZFS/vSAN/S2D, RAID for
-  // others). BeeGFS resolves per level, so the level participates in both the list and the
-  // HBA/RAID labelling.
-  const needsHba = requiresHba(topology.type, topology.level)
+  // others, either for a BeeGFS level that tolerates both). BeeGFS resolves per level, so the
+  // level participates in the list and the HBA/RAID/either labelling alike.
+  const controllerRequirement = getControllerRequirement(topology.type, topology.level)
   const availableControllers = useMemo(() => {
     return getControllerOptions(topology.type, topology.level).map((controller) => ({
       value: controller,
@@ -191,12 +191,20 @@ export function AdvancedPanel() {
       {/* Controller / HBA Section */}
       <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-surface-700">
         <h4 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-          {needsHba ? t('pcie.title') : t('controller.title')}
+          {controllerRequirement === 'hba'
+            ? t('pcie.title')
+            : controllerRequirement === 'either'
+              ? t('controller.eitherTitle')
+              : t('controller.title')}
         </h4>
 
         <div className="space-y-2">
           <Label htmlFor="controller" tooltip={th('advanced.controller')}>
-            {needsHba ? t('controller.hbaModel') : t('controller.model')}
+            {controllerRequirement === 'hba'
+              ? t('controller.hbaModel')
+              : controllerRequirement === 'either'
+                ? t('controller.eitherModel')
+                : t('controller.model')}
           </Label>
           <Select
             id="controller"
@@ -221,7 +229,11 @@ export function AdvancedPanel() {
             </div>
           )}
           <p className="text-xs text-slate-500">
-            {needsHba ? t('controller.hbaHint') : t('controller.raidHint')}
+            {controllerRequirement === 'hba'
+              ? t('controller.hbaHint')
+              : controllerRequirement === 'either'
+                ? t('controller.eitherHint')
+                : t('controller.raidHint')}
           </p>
         </div>
       </div>

@@ -51,6 +51,10 @@ phase-18 vector records its own source URL inline and in
 
 Component tests mock `react-i18next`'s `useTranslation`, so they assert structure/behavior, not real translation output. JSX in tests uses the automatic runtime (Vite 8 default) — no `import React` needed.
 
+## i18n key parity
+
+`tests/i18n/parity.spec.ts` guards the four locales (`en`, `fr`, `de`, `it`) under `src/i18n/locales/` against drift from the `en` reference. It discovers the locale and namespace lists from disk (no hand-listed file pairs) and, for every namespace, recursively flattens nested keys to dotted paths, then asserts both directions per locale: no `en` key is missing from the translation, and no translation key is an orphan absent from `en`. Failures name the exact locale, namespace, and missing/orphan key path. This is what catches raw i18n keys rendering on screen (missing translation) and dead/typo'd keys (orphan translation) before they ship.
+
 ## Before pushing
 
 ```bash

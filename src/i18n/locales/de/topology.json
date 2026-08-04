@@ -63,6 +63,9 @@
     "draid2": { "label": "dRAID2", "description": "Verteiltes RAID-Z2" },
     "draid3": { "label": "dRAID3", "description": "Verteiltes RAID-Z3" },
     "ashift": "Sektorgrösse (ashift)",
+    "ashift512": "512B (ashift=9)",
+    "ashift4k": "4K (ashift=12)",
+    "ashift8k": "8K (ashift=13)",
     "enableCompression": "Kompression aktivieren",
     "compressionAlgorithm": "Kompressionsalgorithmus",
     "lz4": "LZ4 (schnell)",
@@ -148,6 +151,12 @@
       "label": "EC-X (RF3)",
       "description": "Erasure Coding 6:2 mit RF3 Basis, ~75% Effizienz"
     },
+    "info": {
+      "rf2": "RF2: 2 Kopien der Daten, 50% Speichereffizienz. Toleriert den Ausfall eines Knotens.",
+      "rf3": "RF3: 3 Kopien der Daten, 33% Speichereffizienz. Toleriert den Ausfall von zwei Knoten.",
+      "ec_rf2": "EC-X (RF2): Erasure Coding 4:1 für kalte Daten, ~75% Effizienz. Heisse Daten bleiben RF2.",
+      "ec_rf3": "EC-X (RF3): Erasure Coding 6:2 für kalte Daten, ~75% Effizienz. Heisse Daten bleiben RF3."
+    },
     "clusterType": "Cluster-Typ",
     "allFlash": "All-Flash",
     "hybrid": "Hybrid",
@@ -178,6 +187,13 @@
     "adapt": {
       "label": "ADAPT (Empfohlen)",
       "description": "Verteiltes RAID, ~87% Effizienz, 12-128 Laufwerke"
+    },
+    "info": {
+      "raid1": "RAID 1: 2-Wege Spiegel mit 50% Speichereffizienz. Einfach, schnelle Wiederherstellung. Am besten für Boot-Volumes und kleine Deployments.",
+      "raid5": "RAID 5: Einfache verteilte Parität mit (n-1)/n Effizienz. 4x Schreibstrafe. Nicht empfohlen für schreibintensive Workloads.",
+      "raid6": "RAID 6: Doppelte verteilte Parität mit (n-2)/n Effizienz. 6x Schreibstrafe. Besserer Datenschutz für Laufwerke mit grosser Kapazität.",
+      "raid10": "RAID 10: Gespiegelte Stripes mit 50% Effizienz. Beste zufällige IOPS-Performance. Ideal für Datenbanken.",
+      "adapt": "ADAPT: Verteiltes RAID mit ~87% Effizienz. Reservekapazität über alle Laufwerke verteilt. Schnellste Wiederherstellung (8-10x schneller). Erfordert 12-128 Laufwerke."
     },
     "model": "Modell",
     "modelDesc": {
@@ -348,6 +364,11 @@
     "ec_12_4": {
       "label": "EC 12+4",
       "description": "Erasure Coding 12+4, 75% Effizienz, -30% IOPS"
+    },
+    "info": {
+      "medium": "Medium Granularity (1MB): Standardmodus mit geringerem Metadaten-Overhead. Unterstützt 2-Wege- und 3-Wege-Spiegelung.",
+      "fine": "Fine Granularity (8KB): Besser für kleine zufällige I/O. Unterstützt nur 2-Wege-Spiegelung. 12-15% Metadaten-Overhead.",
+      "ec": "Erasure Coding: Höhere Kapazitätseffizienz, aber ~30% niedrigere IOPS durch CPU-Overhead. Erfordert PowerFlex 4.5+."
     },
     "enableCompression": "Kompression aktivieren",
     "compressionRatio": "Kompressionsverhältnis",

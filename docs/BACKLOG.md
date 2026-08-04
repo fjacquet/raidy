@@ -65,27 +65,6 @@ payloads are stripped. Nothing reads the unknown keys.
 *To close:* decide whether passthrough is still needed (it may exist for forward compatibility
 with newer links). If so, document why; if not, tighten it.
 
-### [B19](https://github.com/fjacquet/raidy/issues/80). Resilience never excludes hot spares from the simulated population, for any platform
-
-`src/hooks/useResilience.ts`'s naive path (every platform without a `SIMULATION_SCOPE_BY_TOPOLOGY`
-entry) uses `totalDriveCount = driveCount * effServerCount` with no hot-spare subtraction. Every
-hot spare is currently simulated as a data-bearing drive. Contrast with volumetry and performance,
-which both subtract `hotSpares * effServerCount` (zeroed for vSAN's distributed-spare model). The
-tiered-platform resolver (`tieredPlatformScope`, shared by S2D, vSAN OSA, Ceph and Nutanix) shares
-the same omission — it deliberately does not subtract hot spares either, so this covers those four
-code paths too, not just the naive one.
-
-Safe direction (counting a spare as data-bearing is conservative), so not urgent — but it means
-resilience currently overstates risk for every platform with `hotSpares > 0`, and understates it
-for vSAN by never zeroing spares that don't exist as dedicated drives. Kept separate from tiering
-work because fixing it moves every platform's resilience numbers, not just the tiered ones.
-
-*To close:* mirror the volumetry/performance pattern — subtract
-`usesDistributedSpares(topology.type) ? 0 : hotSpares * effServerCount`, clamped `>= 0`, with
-before/after vectors for standard RAID, ZFS, and each tiered platform.
-
----
-
 ## Modelling precision — safe direction, worth improving
 
 All of these understate rather than overstate. That is deliberate: a sizing tool that overstates
@@ -130,69 +109,33 @@ bug fix.
 drives out of the simulated groups; failures beyond total group capacity all land in group 0.
 Pre-existing and shared with RAID 50/60.
 
+### [B20](https://github.com/fjacquet/raidy/issues/93). Hot spares get no rebuild-window credit in the resilience simulation
+
+Fixing #80 excluded hot spares from the simulated data-bearing population (naive path and
+`tieredPlatformScope`, both clamped at zero; BeeGFS already handled this in its own resolver). The
+population-count side is correct now, but `src/workers/resilienceWorker.ts` still has no concept
+of a standby drive shortening the rebuild exposure window: in the real system a hot spare lets a
+rebuild start immediately on first failure rather than waiting for a replacement to be sourced and
+installed, which shortens the window during which a second failure is catastrophic. A spared and a
+spare-free configuration currently see the same rebuild-time distribution.
+
+Safe direction (not crediting a spare is conservative, same as every other item in this section),
+so not urgent.
+
+*To close:* have the worker start the rebuild timer at zero elapsed time (rather than adding a
+sourcing/replacement delay) when `hotSpares > 0` for the platform in question, with before/after
+vectors showing survival-rate movement for a spared vs. spare-free configuration.
+
 ---
 
 ## Test and tooling debt
-
-### [B13](https://github.com/fjacquet/raidy/issues/71). i18n: hardcoded English outside the BeeGFS surface
-
-`src/components/outputs/.../LonghornCapacityDetails.tsx` and roughly fifteen validators in
-`src/utils/validators.ts` emit hardcoded English. `src/i18n/locales/*/validation.json` exists but
-was unused before the BeeGFS alerts.
-
-Note two conventions discovered during the BeeGFS i18n work, neither documented anywhere:
-`fr`/`de`/`it` `validation.json` are written **without accents or umlauts**, and
-`topologyConstants.ts` hardcodes English for topology type and level labels on **every** platform
-— those never pass through `t()`.
-
-*To close:* route the remaining validators through the `i18n.t()` pattern already used by the
-BeeGFS alerts, and decide deliberately whether the unaccented convention should stay.
-
-### [B14](https://github.com/fjacquet/raidy/issues/72). Roughly 34 pre-existing missing i18n keys
-
-`powervault.info.*` and `powerflex.info.*` missing from `fr`/`de`/`it`; `zfs.ashift*` and
-`nutanix.info.*` missing from `de`/`it`. They render as raw keys.
-
-*To close:* add the missing keys, then add an i18n-parity test — the repo has none, which is why
-these went unnoticed.
 
 ### [B15](https://github.com/fjacquet/raidy/issues/73). `npm run test:coverage` fails when run concurrently with another vitest process
 
 Vitest cleans `reportsDirectory` on start, so a parallel invocation kills the coverage run with
 `Something removed the coverage directory "coverage/.tmp"`. Relevant to CI job layout.
 
-### [B16](https://github.com/fjacquet/raidy/issues/74). `AdvancedPanel` has no label state for a controller requirement of `'either'`
-
-`getControllerRequirement` returns `'hba'`, `'raid'` or `'either'`. `AdvancedPanel` only renders
-two states, so on `beegfs_single` the user sees the heading "RAID Controller", the label
-"Controller Model" and the hint *"Hardware RAID controllers manage disk redundancy"* while the
-dropdown offers HBAs and appliance controllers as well. The list itself is correct and the engine
-reads the selected controller's real limits, so no number is affected — but the panel reads as
-wrong.
-
-Related, pre-existing: `controller.hbaHint` says "ZFS, vSAN, and S2D require direct disk access
-via HBA" and is now also shown for `beegfs_raidz2`, which it does not mention. Also pre-existing:
-the union list for `'either'` includes appliance controllers, the same way
-`getControllerOptions('standard')` always has (`isHba: false`, unqualified filter). Fixing that
-for BeeGFS alone would be inconsistent; fixing it globally moves `standard`'s list.
-
-*To close:* add a third label state plus its four locale strings, and reword `hbaHint` to be
-platform-agnostic.
-
-### [B17](https://github.com/fjacquet/raidy/issues/75). The controller-requirement test net is circular on table membership
-
-`tests/types/controllerRequirement.spec.ts` guards the level-aware controller rule by comparing
-against a `legacyControllerOptions` helper — but that helper re-derives from
-`HBA_REQUIRED_TOPOLOGIES`, the very table the rule reads. It catches drift in the *filter logic
-and signature*; it does not catch drift in the *table contents*.
-
-Measured: deleting `'longhorn'` from `HBA_REQUIRED_TOPOLOGIES` leaves **all 1242 tests passing**,
-silently flipping Longhorn from HBA-only to RAID-only. (Deleting `'ceph'` fails exactly one test,
-and only because an unrelated pre-existing validator spec happens to cover it.)
-
-*To close:* add a hardcoded expected-membership assertion for `HBA_REQUIRED_TOPOLOGIES` — the one
-place where a hand-copied snapshot is the right tool, precisely because it must not share a
-source with the thing it validates.
+---
 
 ## How to close an item
 

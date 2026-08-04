@@ -63,6 +63,9 @@
     "draid2": { "label": "dRAID2", "description": "RAID-Z2 distribuito" },
     "draid3": { "label": "dRAID3", "description": "RAID-Z3 distribuito" },
     "ashift": "Dimensione settore (ashift)",
+    "ashift512": "512B (ashift=9)",
+    "ashift4k": "4K (ashift=12)",
+    "ashift8k": "8K (ashift=13)",
     "enableCompression": "Abilita compressione",
     "compressionAlgorithm": "Algoritmo di compressione",
     "lz4": "LZ4 (veloce)",
@@ -148,6 +151,12 @@
       "label": "EC-X (RF3)",
       "description": "Erasure Coding 6:2 base RF3, ~75% efficienza"
     },
+    "info": {
+      "rf2": "RF2: 2 copie dei dati, 50% di efficienza di storage. Tollera il guasto di un singolo nodo.",
+      "rf3": "RF3: 3 copie dei dati, 33% di efficienza di storage. Tollera il guasto di due nodi.",
+      "ec_rf2": "EC-X (RF2): Erasure coding 4:1 per dati freddi, ~75% di efficienza. I dati caldi restano RF2.",
+      "ec_rf3": "EC-X (RF3): Erasure coding 6:2 per dati freddi, ~75% di efficienza. I dati caldi restano RF3."
+    },
     "clusterType": "Tipo cluster",
     "allFlash": "All-Flash",
     "hybrid": "Ibrido",
@@ -178,6 +187,13 @@
     "adapt": {
       "label": "ADAPT (Raccomandato)",
       "description": "RAID distribuito, ~87% efficienza, 12-128 dischi"
+    },
+    "info": {
+      "raid1": "RAID 1: mirror a 2 vie con 50% di efficienza di storage. Semplice, ricostruzioni rapide. Ideale per volumi di boot e piccoli deployment.",
+      "raid5": "RAID 5: parità distribuita singola con efficienza (n-1)/n. Penalità di scrittura 4x. Non raccomandato per workload a scrittura intensiva.",
+      "raid6": "RAID 6: parità distribuita doppia con efficienza (n-2)/n. Penalità di scrittura 6x. Migliore protezione dati per dischi ad alta capacità.",
+      "raid10": "RAID 10: stripe con mirror, efficienza 50%. Migliori prestazioni IOPS casuali. Ideale per database.",
+      "adapt": "ADAPT: RAID distribuito con ~87% di efficienza. Capacità di riserva distribuita su tutti i dischi. Ricostruzioni più rapide (8-10x più veloci). Richiede 12-128 dischi."
     },
     "model": "Modello",
     "modelDesc": {
@@ -345,6 +361,11 @@
     "ec_12_4": {
       "label": "EC 12+4",
       "description": "Erasure coding 12+4, 75% efficienza, -30% IOPS"
+    },
+    "info": {
+      "medium": "Medium Granularity (1MB): modalità standard con minore overhead di metadati. Supporta mirroring a 2 e 3 vie.",
+      "fine": "Fine Granularity (8KB): migliore per I/O casuale di piccole dimensioni. Supporta solo mirroring a 2 vie. 12-15% di overhead metadati.",
+      "ec": "Erasure Coding: maggiore efficienza di capacità ma ~30% IOPS inferiori a causa dell'overhead CPU. Richiede PowerFlex 4.5+."
     },
     "enableCompression": "Abilita compressione",
     "compressionRatio": "Rapporto compressione",
