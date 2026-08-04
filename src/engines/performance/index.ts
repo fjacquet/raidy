@@ -239,6 +239,26 @@ export function calculatePerformance(input: PerformanceInput): PerformanceResult
       ws * (cacheCount * c.performance.bandwidth_read_mb) +
       (1 - ws) * (capCount * p.performance.bandwidth_read_mb)
     writeBW = cacheCount * c.performance.bandwidth_write_mb
+  } else if (tiering && capacityDrive) {
+    // Every other tiered platform (vSAN OSA disk groups, Ceph WAL/DB offload, Nutanix hybrid,
+    // BeeGFS metadata targets): the bulk pool is the capacity tier, so the media layer is sized
+    // from that drive and that count — the same substitution volumetry makes.
+    //
+    // The fast tier contributes nothing here. S2D's blend above encodes S2D's write-back cache
+    // semantics (writes fully absorbed by the cache, reads split by working set); vSAN's cache
+    // tier, Ceph's WAL/DB (which accelerates the commit path and serves no data at all) and
+    // Nutanix's hybrid tier each behave differently. Modelling them needs per-platform research
+    // — a generic blend would be a guess presented as a number. Declining to model the fast tier
+    // understates these platforms, which is the safe direction.
+    const p = capacityDrive
+    // Mirrors `spareAdjustedDrives` in src/engines/volumetry/index.ts so both engines describe
+    // the same drive population.
+    const capUsableDrives = Math.max(0, tiering.capacityTierDriveCount - hotSpares)
+    const capDriveIOPS = Math.min(p.performance.iops_read, p.performance.iops_write)
+    readCapIOPS = capDriveIOPS * capUsableDrives
+    writeCapIOPS = readCapIOPS
+    readBW = p.performance.bandwidth_read_mb * capUsableDrives
+    writeBW = p.performance.bandwidth_write_mb * capUsableDrives
   } else {
     readCapIOPS = totalDriveIOPS
     writeCapIOPS = totalDriveIOPS
@@ -366,6 +386,10 @@ export function calculatePerformance(input: PerformanceInput): PerformanceResult
   const minThroughput = getMinThroughput(layers)
 
   // XFS alignment
+  // Known inconsistency: `usableDrives` here is the raw Hardware-panel population even when the
+  // media layer above was sized from the capacity tier. Stripe alignment is a display value, not
+  // part of the bottleneck chain, and which tier a stripe aligns to is a separate judgement call.
+  // Tracked in the design spec's out-of-scope list.
   const xfsAlignment = calculateXfsAlignment(controllerOptions.stripeSize, usableDrives, topology)
 
   // Calculate max read/write throughput considering bottlenecks

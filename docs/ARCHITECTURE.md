@@ -248,6 +248,13 @@ flowchart LR
 **Calculations:**
 
 - Per-drive IOPS and bandwidth. For tiered S2D the media layer is tier-aware (first-order write-back model): writes are absorbed by the cache tier, reads are a working-set-weighted blend of cache and capacity tiers
+
+  For a tiered configuration the Media layer is sized from the **capacity tier** — its drive specs
+  and its drive count, hot spares subtracted — matching volumetry. S2D is the only platform that
+  also models a cache-tier contribution (a write-back blend weighted by `workingSetPercent`). vSAN
+  OSA, Ceph, Nutanix and BeeGFS deliberately model no fast-tier contribution: their cache semantics
+  differ from each other and from S2D's, so a shared blend would be a guess. This understates them,
+  which is the safe direction.
 - RAID write penalty (2x for RAID1, 4x for RAID5, 6x for RAID6); S2D mirror write penalty scales with the copy count (two-way 2×, three-way 3×, MAP = `mirrorCopies + 0.5`), with `s2dOptions` threaded through `PerformanceInput`/`usePerformanceCalc`
 - Controller limits (IOPS and throughput caps) — skipped for NVMe-direct topologies (vSAN ESA)
 - PCIe bandwidth (lanes × generation speed)
