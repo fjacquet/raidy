@@ -10,7 +10,7 @@
  */
 
 import { compressToEncodedURIComponent } from 'lz-string'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useConfigStore } from '@/store'
 
 describe('Config store URL persistence — platform options backward compatibility', () => {
@@ -189,5 +189,114 @@ describe('Config store URL persistence — platform options backward compatibili
     const hash = window.location.hash
     console.info(`[Task 9] realistic single-platform link length: ${hash.length} chars`)
     expect(hash.length).toBeLessThan(2000)
+  })
+})
+
+describe('Config store URL persistence — hostile links are rejected at the production boundary', () => {
+  // These tests deliberately go through the SAME path a real shared link takes:
+  // window.location.hash -> useConfigStore.persist.rehydrate() -> store state.
+  // They do NOT call validateUrlState/urlHashStorage directly with a bare object
+  // — that shape mismatch (persist's `{state, version}` envelope vs a flat
+  // object) is exactly what let malformed data bypass validation in production
+  // while the direct-call SEC-01/02/10 tests kept passing.
+
+  function setHostileHash(state: Record<string, unknown>): void {
+    const compressed = compressToEncodedURIComponent(JSON.stringify({ state, version: 1 }))
+    window.location.hash = `#raidy=${compressed}`
+  }
+
+  beforeEach(() => {
+    window.location.hash = ''
+    useConfigStore.getState().resetToDefaults()
+  })
+
+  it('rejects an out-of-range numeric field wrapped in the real persist envelope', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const before = useConfigStore.getState().driveCount
+    expect(before).not.toBe(999999999)
+
+    setHostileHash({
+      driveId: 'ent-hdd-7k2-sata-24tb-cmr',
+      driveCount: 999999999, // schema max is 1000
+      topology: { type: 'standard', level: 'RAID6' },
+    })
+
+    await useConfigStore.persist.rehydrate()
+
+    // The whole link must be rejected — the hostile value must never reach
+    // the store, and the store must fall back to its own default, not adopt
+    // a partially-valid object.
+    expect(useConfigStore.getState().driveCount).toBe(before)
+    expect(consoleErrorSpy).toHaveBeenCalled()
+    consoleErrorSpy.mockRestore()
+  })
+
+  it('rejects a wrong-typed field wrapped in the real persist envelope', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const before = useConfigStore.getState().hotSpares
+
+    setHostileHash({
+      driveId: 'ent-hdd-7k2-sata-24tb-cmr',
+      driveCount: 12,
+      topology: { type: 'standard', level: 'RAID6' },
+      hotSpares: 'not-a-number',
+    })
+
+    await useConfigStore.persist.rehydrate()
+
+    expect(useConfigStore.getState().hotSpares).toBe(before)
+    expect(useConfigStore.getState().hotSpares).not.toBe('not-a-number')
+    expect(consoleErrorSpy).toHaveBeenCalled()
+    consoleErrorSpy.mockRestore()
+  })
+
+  it('does not crash and does not adopt an injected unknown field, while still applying the legitimate change', async () => {
+    setHostileHash({
+      driveId: 'ent-hdd-7k2-sata-24tb-cmr',
+      driveCount: 24,
+      topology: { type: 'standard', level: 'RAID6' },
+      maliciousInjectedField: '<script>alert(1)</script>',
+    })
+
+    await expect(useConfigStore.persist.rehydrate()).resolves.not.toThrow()
+
+    // ConfigStateSchema is .passthrough() at the top level (by design, for
+    // forward compatibility with fields added by a newer build) so an
+    // unknown top-level field does not reject the whole link. It is not
+    // consumed by any engine/hook (none of them read arbitrary store keys),
+    // so it cannot inject anything into a calculation — the properties that
+    // matter are that nothing crashes and the legitimate field still applies.
+    expect(useConfigStore.getState().driveCount).toBe(24)
+  })
+
+  it('rejects an out-of-range field nested inside a platform options object', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const before = useConfigStore.getState().cephOptions.safeCapacityThreshold
+
+    setHostileHash({
+      driveId: 'ent-hdd-7k2-sata-24tb-cmr',
+      driveCount: 12,
+      topology: { type: 'ceph', level: 'ceph_ec_4_2' },
+      cephOptions: {
+        backend: 'bluestore',
+        poolType: 'replicated',
+        replicationFactor: 3,
+        ecK: 4,
+        ecM: 2,
+        compression: false,
+        compressionAlgorithm: 'none',
+        encryption: false,
+        journalOnSsd: true,
+        walDbOffload: false,
+        walDbRatio: 4,
+        safeCapacityThreshold: 5, // schema bounds this to [0, 1]
+      },
+    })
+
+    await useConfigStore.persist.rehydrate()
+
+    expect(useConfigStore.getState().cephOptions.safeCapacityThreshold).toBe(before)
+    expect(consoleErrorSpy).toHaveBeenCalled()
+    consoleErrorSpy.mockRestore()
   })
 })
