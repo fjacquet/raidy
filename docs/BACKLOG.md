@@ -65,27 +65,6 @@ payloads are stripped. Nothing reads the unknown keys.
 *To close:* decide whether passthrough is still needed (it may exist for forward compatibility
 with newer links). If so, document why; if not, tighten it.
 
-### [B19](https://github.com/fjacquet/raidy/issues/80). Resilience never excludes hot spares from the simulated population, for any platform
-
-`src/hooks/useResilience.ts`'s naive path (every platform without a `SIMULATION_SCOPE_BY_TOPOLOGY`
-entry) uses `totalDriveCount = driveCount * effServerCount` with no hot-spare subtraction. Every
-hot spare is currently simulated as a data-bearing drive. Contrast with volumetry and performance,
-which both subtract `hotSpares * effServerCount` (zeroed for vSAN's distributed-spare model). The
-tiered-platform resolver (`tieredPlatformScope`, shared by S2D, vSAN OSA, Ceph and Nutanix) shares
-the same omission — it deliberately does not subtract hot spares either, so this covers those four
-code paths too, not just the naive one.
-
-Safe direction (counting a spare as data-bearing is conservative), so not urgent — but it means
-resilience currently overstates risk for every platform with `hotSpares > 0`, and understates it
-for vSAN by never zeroing spares that don't exist as dedicated drives. Kept separate from tiering
-work because fixing it moves every platform's resilience numbers, not just the tiered ones.
-
-*To close:* mirror the volumetry/performance pattern — subtract
-`usesDistributedSpares(topology.type) ? 0 : hotSpares * effServerCount`, clamped `>= 0`, with
-before/after vectors for standard RAID, ZFS, and each tiered platform.
-
----
-
 ## Modelling precision — safe direction, worth improving
 
 All of these understate rather than overstate. That is deliberate: a sizing tool that overstates
@@ -129,6 +108,23 @@ bug fix.
 `Math.floor(driveCount / numGroups)` in the resilience worker can leave up to `numGroups - 1`
 drives out of the simulated groups; failures beyond total group capacity all land in group 0.
 Pre-existing and shared with RAID 50/60.
+
+### [B20](https://github.com/fjacquet/raidy/issues/93). Hot spares get no rebuild-window credit in the resilience simulation
+
+Fixing #80 excluded hot spares from the simulated data-bearing population (naive path and
+`tieredPlatformScope`, both clamped at zero; BeeGFS already handled this in its own resolver). The
+population-count side is correct now, but `src/workers/resilienceWorker.ts` still has no concept
+of a standby drive shortening the rebuild exposure window: in the real system a hot spare lets a
+rebuild start immediately on first failure rather than waiting for a replacement to be sourced and
+installed, which shortens the window during which a second failure is catastrophic. A spared and a
+spare-free configuration currently see the same rebuild-time distribution.
+
+Safe direction (not crediting a spare is conservative, same as every other item in this section),
+so not urgent.
+
+*To close:* have the worker start the rebuild timer at zero elapsed time (rather than adding a
+sourcing/replacement delay) when `hotSpares > 0` for the platform in question, with before/after
+vectors showing survival-rate movement for a spared vs. spare-free configuration.
 
 ---
 

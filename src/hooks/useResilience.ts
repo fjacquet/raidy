@@ -167,13 +167,15 @@ type SimulationScopeResolver = (ctx: SimulationScopeContext) => PlatformSimulati
  * — that needs per-platform failure-domain work. The same limitation Ceph's WAL/DB tier already
  * had before this change.
  *
- * Hot spares are not subtracted here — no platform's resilience population subtracts them today
- * (issue #80). Counting a spare as data-bearing overstates risk, so this stays on the safe side
- * of the superset invariant documented on `resolveBeeGfsSimulationScope`.
+ * Hot spares come off the capacity tier, clamped at zero, mirroring
+ * `src/engines/volumetry/index.ts:178`, which clamps the identical quantity the identical way.
+ * vSAN rebuilds from distributed slack rather than dedicated spare drives, so
+ * `usesDistributedSpares` zeroes the subtraction for it.
  */
 function tieredPlatformScope({
   topology,
   serverCount,
+  hotSpares,
   s2dOptions,
   vsanOptions,
   cephOptions,
@@ -186,8 +188,9 @@ function tieredPlatformScope({
     nutanixOptions,
   })
   if (!tiering) return null
+  const totalHotSpares = usesDistributedSpares(topology.type) ? 0 : hotSpares * serverCount
   return {
-    driveCount: tiering.capacityTierDriveCount,
+    driveCount: Math.max(0, tiering.capacityTierDriveCount - totalHotSpares),
     groupCount: serverCount,
     mediaDrive: tiering.capacityTierDrive,
   }

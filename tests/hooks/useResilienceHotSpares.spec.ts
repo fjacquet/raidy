@@ -10,11 +10,12 @@
 
 import { act, renderHook } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { useResilience } from '@/hooks/useResilience'
+import { resolveBeeGfsSimulationScope, useResilience } from '@/hooks/useResilience'
+import { DEFAULT_BEEGFS_OPTIONS, DEFAULT_S2D_OPTIONS, DEFAULT_VSAN_OPTIONS } from '@/types'
 import type { Topology } from '@/types/topology'
 import type { SimulationInput } from '@/types/worker'
 import { installMockWorker } from '../fixtures/mock-worker'
-import { capacityDrive } from '../fixtures/tiering-fixtures'
+import { buildTieringConfig, capacityDrive } from '../fixtures/tiering-fixtures'
 
 let posted: SimulationInput[] = []
 let uninstall: () => void
@@ -91,5 +92,44 @@ describe('useResilience hot spares — naive path', () => {
   it('subtracts nothing for vSAN ESA, which rebuilds from distributed slack', () => {
     const esa: Topology = { type: 'vsan_esa', level: 'vsan_esa_raid5' }
     expect(runWith(esa, 3).driveCount).toBe(24)
+  })
+})
+
+/** 2 fast + 6 capacity drives per node — the shared shape used by the other tiering specs. */
+const tiering = buildTieringConfig(2, 6)
+
+describe('useResilience hot spares — tiered path', () => {
+  it('excludes hot spares from the capacity tier (S2D)', () => {
+    const s2d: Topology = { type: 's2d', level: 'mirror' }
+    const input = runWith(s2d, 1, {
+      s2dOptions: { ...DEFAULT_S2D_OPTIONS, storageTiers: true, tieringConfig: tiering },
+    })
+    // 6 capacity drives x 2 nodes = 12, minus 1 spare per node = 10
+    expect(input.driveCount).toBe(10)
+    expect(input.serverCount).toBe(2)
+  })
+
+  it('subtracts nothing for vSAN OSA, which rebuilds from distributed slack', () => {
+    const osa: Topology = { type: 'vsan_osa', level: 'vsan_osa_raid1' }
+    const input = runWith(osa, 3, {
+      vsanOptions: { ...DEFAULT_VSAN_OPTIONS, tiering },
+    })
+    expect(input.driveCount).toBe(12)
+  })
+
+  it('clamps at zero when spares exceed the capacity tier', () => {
+    const s2d: Topology = { type: 's2d', level: 'mirror' }
+    const input = runWith(s2d, 99, {
+      s2dOptions: { ...DEFAULT_S2D_OPTIONS, storageTiers: true, tieringConfig: tiering },
+    })
+    expect(input.driveCount).toBe(0)
+  })
+
+  it('does not subtract twice for BeeGFS, which applies spares in its own resolver', () => {
+    const beegfs: Topology = { type: 'beegfs', level: 'beegfs_raid6' }
+    const input = runWith(beegfs, 1, { beeGfsOptions: DEFAULT_BEEGFS_OPTIONS })
+    const expected = resolveBeeGfsSimulationScope(12, 2, 1, DEFAULT_BEEGFS_OPTIONS)
+    expect(input.driveCount).toBe(expected.driveCount)
+    expect(input.serverCount).toBe(expected.groupCount)
   })
 })
