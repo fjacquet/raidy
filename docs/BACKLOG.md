@@ -15,18 +15,6 @@ which touched enough shared code to expose pre-existing gaps.
 ## Correctness — real defects, non-blocking
 
 
-### [B8](https://github.com/fjacquet/raidy/issues/66). `beegfs_raid10` unmerged tolerance is pessimistic for wide targets
-
-`src/workers/resilienceWorker.ts` gives an unmerged `beegfs_raid10` target a tolerance of 1, so
-the simulation kills it at any 2 failures. A real 12-drive RAID10 target survives up to 6
-failures if each lands in a distinct mirror pair. Closing this needs per-pair state inside a
-group rather than a flat counter.
-
-### [B9](https://github.com/fjacquet/raidy/issues/67). Group-path `bitsRead` overstates URE exposure for `beegfs_raid10`
-
-Rebuild is modelled as reading `(drivesPerGroup - 1) × capacity`, but a RAID10 rebuild reads only
-the surviving mirror partner.
-
 ### [B10](https://github.com/fjacquet/raidy/issues/68). Odd `serverCount` creates a visible survival discontinuity under buddy mirroring
 
 Buddy credit is withheld when the storage-target count is odd, because an unpaired target has no
@@ -47,12 +35,6 @@ Both are consequently labelled informational in the UI rather than wired to an i
 *To close:* add a genuine single-stream / per-file throughput output to the performance engine.
 Then `numTargets` and `chunkSizeKb` have something honest to bind to. This is a feature, not a
 bug fix.
-
-### [B12](https://github.com/fjacquet/raidy/issues/70). `drivesPerGroup` floor-division leaves drives unmodelled
-
-`Math.floor(driveCount / numGroups)` in the resilience worker can leave up to `numGroups - 1`
-drives out of the simulated groups; failures beyond total group capacity all land in group 0.
-Pre-existing and shared with RAID 50/60.
 
 ### [B20](https://github.com/fjacquet/raidy/issues/93). Hot spares get no rebuild-window credit in the resilience simulation
 

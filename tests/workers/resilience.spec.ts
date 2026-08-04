@@ -1721,8 +1721,18 @@ describe('Resilience Worker - BeeGFS', () => {
     expect(narrow).toBeGreaterThanOrEqual(medium)
     expect(medium).toBeGreaterThanOrEqual(wide)
     // Coarse bands: the ends must be clearly separated, not merely ordered.
+    // `wide`'s upper bound moved from 0.45 to 0.7 by issue #67: this test's
+    // "high URE rating: isolate the group-geometry effect" comment above only
+    // holds if the read-volume formula is itself correct. Before #67 the
+    // group-path bitsRead formula still overstated `wide`'s rebuild-read
+    // volume ((drivesPerGroup - 1) x capacity on a 48-drive merged unit), so
+    // `wide`'s low survival was partly an artifact of that bug, not purely
+    // the tolerance geometry this test is named for. With the corrected
+    // 1-drive mirror rebuild-read volume, `wide` measures ~0.58-0.59
+    // (measured across several runs); 0.7 keeps meaningful separation from
+    // `narrow`'s ~0.95+ without re-pinning noise-level precision.
     expect(narrow).toBeGreaterThan(0.8)
-    expect(wide).toBeLessThan(0.45)
+    expect(wide).toBeLessThan(0.7)
   }, 30000)
 
   it('beegfs_raid10 + buddy: an odd storage-target count gets no buddy credit', async () => {
