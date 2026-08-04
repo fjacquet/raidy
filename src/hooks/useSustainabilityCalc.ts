@@ -33,6 +33,7 @@ export function useSustainabilityCalc(usableCapacity: number): SustainabilityRes
     vsanOptions,
     cephOptions,
     nutanixOptions,
+    beeGfsOptions,
     // Workload
     dailyWriteVolume,
     // Advanced (sustainability-related only)
@@ -70,6 +71,7 @@ export function useSustainabilityCalc(usableCapacity: number): SustainabilityRes
       vsanOptions,
       cephOptions,
       nutanixOptions,
+      beeGfsOptions,
     })
 
     try {
@@ -124,5 +126,6 @@ export function useSustainabilityCalc(usableCapacity: number): SustainabilityRes
     vsanOptions,
     cephOptions,
     nutanixOptions,
+    beeGfsOptions,
   ])
 }

@@ -122,14 +122,29 @@ describe('calculatePerformance tiered media layer', () => {
         expect(tiered.throughputMBs).not.toBeCloseTo(untiered.throughputMBs)
       })
 
-      it('leaves an untiered configuration unchanged', () => {
-        // `tiering: undefined` must produce exactly the raw-drive path.
+      it('leaves an untiered configuration unchanged, and driveCount actually reaches the media layer', () => {
+        // `tiering: undefined` must read driveCount from the Hardware panel, not merely default
+        // to it — so this compares against a config whose drive count genuinely differs, which
+        // can fail if the naive path stopped reading `driveCount`.
+        //
+        // The media layer's reported IOPS is `blendedIOPS`, not the raw `driveIOPS * usableDrives`
+        // product, so its absolute value depends on `effectiveWritePenalty`, which is topology-
+        // specific and not exported. But `effectiveWritePenalty` and the PowerFlex CPU factor
+        // depend only on the topology (and `randomPercent`, fixed at 100 here) — never on
+        // `driveCount` — so `blendedIOPS` is exactly linear in `usableDrives` for a fixed
+        // topology. Because `randomPercent` is 100, throughput reduces to
+        // `blendedIOPS * blockSizeBytes / MiB` too (`iopsLimitedThroughput`, sequential ratio 0),
+        // so it is linear in `usableDrives` as well. The ratio between two configs on the same
+        // topology must therefore equal the ratio of their usable drive counts exactly, whatever
+        // this topology's write penalty happens to be — a hand-derived expectation that does not
+        // call `calculatePerformance` to produce itself.
+        const OTHER_DRIVE_COUNT = 40
         const untiered = mediaLayer(inputFor(topology))
-        const expected = mediaLayer(
-          inputFor(topology, { drive: fastDrive, driveCount: HARDWARE_DRIVE_COUNT }),
-        )
+        const otherCount = mediaLayer(inputFor(topology, { driveCount: OTHER_DRIVE_COUNT }))
+        const expectedRatio = (HARDWARE_DRIVE_COUNT - HOT_SPARES) / (OTHER_DRIVE_COUNT - HOT_SPARES)
 
-        expect(untiered).toEqual(expected)
+        expect(untiered.iops / otherCount.iops).toBeCloseTo(expectedRatio, 9)
+        expect(untiered.throughputMBs / otherCount.throughputMBs).toBeCloseTo(expectedRatio, 9)
       })
     })
   }

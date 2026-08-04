@@ -30,9 +30,14 @@ const FAST_DRIVE_ID = 'ent-nvme-pcie4-960gb-m2-ri'
 /** Capacity tier: 18TB HDD (ure_rate 15, afr 0.44) */
 const CAPACITY_DRIVE_ID = 'ent-hdd-7k2-sata-18tb-cmr'
 
-// Non-null: both ids are fixed entries in drives.json, asserted by the premise test below.
-const fastDrive = drives[FAST_DRIVE_ID] as Drive
-const capacityDrive = drives[CAPACITY_DRIVE_ID] as Drive
+function getDriveById(id: string): Drive {
+  const drive = drives[id]
+  if (!drive) throw new Error(`fixture drive not found: ${id}`)
+  return drive
+}
+
+const fastDrive = getDriveById(FAST_DRIVE_ID)
+const capacityDrive = getDriveById(CAPACITY_DRIVE_ID)
 
 /** 2 fast + 6 capacity drives per node. */
 const tiering = {

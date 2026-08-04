@@ -70,13 +70,15 @@ with newer links). If so, document why; if not, tighten it.
 `src/hooks/useResilience.ts`'s naive path (every platform without a `SIMULATION_SCOPE_BY_TOPOLOGY`
 entry) uses `totalDriveCount = driveCount * effServerCount` with no hot-spare subtraction. Every
 hot spare is currently simulated as a data-bearing drive. Contrast with volumetry and performance,
-which both subtract `hotSpares * effServerCount` (zeroed for vSAN's distributed-spare model).
+which both subtract `hotSpares * effServerCount` (zeroed for vSAN's distributed-spare model). The
+tiered-platform resolver (`tieredPlatformScope`, shared by S2D, vSAN OSA, Ceph and Nutanix) shares
+the same omission — it deliberately does not subtract hot spares either, so this covers those four
+code paths too, not just the naive one.
 
 Safe direction (counting a spare as data-bearing is conservative), so not urgent — but it means
 resilience currently overstates risk for every platform with `hotSpares > 0`, and understates it
-for vSAN by never zeroing spares that don't exist as dedicated drives. Found while scoping B1;
-kept separate because fixing it moves every platform's resilience numbers, not just the tiered
-ones.
+for vSAN by never zeroing spares that don't exist as dedicated drives. Kept separate from tiering
+work because fixing it moves every platform's resilience numbers, not just the tiered ones.
 
 *To close:* mirror the volumetry/performance pattern — subtract
 `usesDistributedSpares(topology.type) ? 0 : hotSpares * effServerCount`, clamped `>= 0`, with

@@ -149,18 +149,6 @@ interface PlatformSimulationScope extends SimulationScope {
 type SimulationScopeResolver = (ctx: SimulationScopeContext) => PlatformSimulationScope | null
 
 /**
- * Per-platform simulation-scope overrides, keyed by topology type.
- *
- * A table rather than a branch at the call site, mirroring `NETWORK_MODEL_BY_TOPOLOGY` in
- * `src/engines/performance/utils/bottleneck-chain.ts`, which solved the structurally identical
- * problem for the network model. Platforms absent from this table fall back to the naive
- * `driveCount * serverCount` population with `serverCount` fault groups.
- *
- * BeeGFS resolves its own storage-target population itself; the four tiered platforms share
- * `tieredPlatformScope`, which reads the capacity tier through `resolveTiering`.
- */
-
-/**
  * Population and media for the platforms that tier through `resolveTiering`: S2D storage tiers,
  * vSAN OSA disk groups, Ceph WAL/DB offload, Nutanix hybrid clusters.
  *
@@ -204,6 +192,17 @@ function tieredPlatformScope({
   }
 }
 
+/**
+ * Per-platform simulation-scope overrides, keyed by topology type.
+ *
+ * A table rather than a branch at the call site, mirroring `NETWORK_MODEL_BY_TOPOLOGY` in
+ * `src/engines/performance/utils/bottleneck-chain.ts`, which solved the structurally identical
+ * problem for the network model. Platforms absent from this table fall back to the naive
+ * `driveCount * serverCount` population with `serverCount` fault groups.
+ *
+ * BeeGFS resolves its own storage-target population itself; the four tiered platforms share
+ * `tieredPlatformScope`, which reads the capacity tier through `resolveTiering`.
+ */
 const SIMULATION_SCOPE_BY_TOPOLOGY: Partial<Record<Topology['type'], SimulationScopeResolver>> = {
   beegfs: ({ driveCount, serverCount, hotSpares, topology, beeGfsOptions }) => {
     if (!beeGfsOptions) return null

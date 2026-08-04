@@ -497,7 +497,7 @@ platforms that is `driveCount × effectiveServerCount` in `effectiveServerCount`
 Platforms that need something else register a resolver in `SIMULATION_SCOPE_BY_TOPOLOGY`
 (`src/hooks/useResilience.ts`), a `Partial<Record<TopologyType, SimulationScopeResolver>>` lookup
 mirroring `NETWORK_MODEL_BY_TOPOLOGY` above; a topology with no entry gets the default population
-described in the previous sentence. Its resolver calls the exported pure helper
+described in the previous sentence. BeeGFS's resolver calls the exported pure helper
 `resolveBeeGfsSimulationScope`, which reuses `resolveBeeGfsUsableDrives` +
 `calculateStorageTargets` — the same functions volumetry and the options panel use — so hot
 spares, MDT tiering and stranded drives are applied identically on both sides, and the fault

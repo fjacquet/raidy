@@ -11,10 +11,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Tiered configurations are sized from the capacity tier in every engine.** Resilience simulated
   the Hardware panel's drive count and media for tiered S2D, vSAN OSA, Ceph and Nutanix, and the
   performance engine costed the bulk pool against the cache-tier drive for every tiered platform
-  except S2D. Both now read the capacity tier through `resolveTiering`, matching volumetry.
-  **Tiered vSAN OSA, Ceph, Nutanix and BeeGFS resilience and performance numbers change** —
-  they were wrong before. Untiered configurations are unaffected. Fast-tier failure cascades and
-  cache-tier performance contributions remain deliberately unmodelled. (#59, #60)
+  except S2D. The sustainability engine's power, CO2, TCO and flash-endurance figures had the same
+  gap for tiered BeeGFS. All three now read the capacity tier through `resolveTiering`, matching
+  volumetry. **Resilience numbers change for tiered S2D, vSAN OSA, Ceph and Nutanix; performance
+  numbers change for tiered vSAN OSA, Ceph, Nutanix and BeeGFS; sustainability numbers change for
+  tiered BeeGFS** — they were wrong before. Untiered configurations are unaffected. Fast-tier
+  failure cascades and cache-tier performance contributions remain deliberately unmodelled.
+  (#59, #60)
 
 ## [1.15.0] - 2026-08-04
 

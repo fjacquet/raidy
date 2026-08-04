@@ -251,8 +251,7 @@ export function calculatePerformance(input: PerformanceInput): PerformanceResult
     // — a generic blend would be a guess presented as a number. Declining to model the fast tier
     // understates these platforms, which is the safe direction.
     const p = capacityDrive
-    // Mirrors `spareAdjustedDrives` in src/engines/volumetry/index.ts so both engines describe
-    // the same drive population.
+    // Mirrors `spareAdjustedDrives` in src/engines/volumetry/index.ts.
     const capUsableDrives = Math.max(0, tiering.capacityTierDriveCount - hotSpares)
     const capDriveIOPS = Math.min(p.performance.iops_read, p.performance.iops_write)
     readCapIOPS = capDriveIOPS * capUsableDrives
