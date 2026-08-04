@@ -170,8 +170,12 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
     ? (tieredCapacity.capacityTierDrive?.capacity_raw ?? 0) * hotSpares
     : drive.capacity_raw * hotSpares
 
-  // Usable drives after hot spares (capacity tier only when tiered)
-  const usableDrives = effectiveDriveCount - hotSpares
+  // Usable drives after hot spares (capacity tier only when tiered). Defensively clamped to
+  // >= 0: currently inert because validateBeeGfsRequirements (and the analogous per-platform
+  // guards) zero-state before this point when hot spares would exceed the drive count, but the
+  // clamp keeps this line matching resolveBeeGfsUsableDrives's Math.max(0, ...) by construction
+  // rather than by relying on validation running first.
+  const usableDrives = Math.max(0, effectiveDriveCount - hotSpares)
   const rawUsableCapacity = effectiveDrive.capacity_raw * usableDrives
 
   // Calculate parity/redundancy overhead

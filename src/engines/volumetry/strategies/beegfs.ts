@@ -16,8 +16,16 @@
  * @see https://doc.beegfs.io/latest/advanced_topics/storage_tuning.html
  */
 
-import type { BeeGfsOptions } from '@/types/topology'
+import { resolveTiering } from '@/engines/shared/tiering'
+import type { BeeGfsOptions, Topology } from '@/types/topology'
+import { usesDistributedSpares } from '@/types/topology'
 import type { VolumetryStrategy } from './VolumetryStrategy'
+
+/**
+ * Placeholder topology used only to select `resolveTiering`'s BeeGFS branch — the level is
+ * irrelevant to tiering resolution (only `topology.type` is inspected there).
+ */
+const BEEGFS_TOPOLOGY: Topology = { type: 'beegfs', level: 'beegfs_raid6' }
 
 /** Minimum drives per target for each local RAID level */
 export const BEEGFS_MIN_DRIVES_PER_TARGET: Record<string, number> = {
@@ -82,6 +90,37 @@ export function calculateStorageTargets(
   const storageTargetCount = drivesPerTarget > 0 ? Math.floor(usableDrives / drivesPerTarget) : 0
   const strandedDrives = usableDrives - storageTargetCount * drivesPerTarget
   return { storageTargetCount, strandedDrives }
+}
+
+/**
+ * Resolve the usable (post-hot-spare, post-tiering) drive count for BeeGFS from *per-server*
+ * store values — the shape `BeeGfsOptionsPanel` actually has before a calculation result
+ * exists.
+ *
+ * This is the single source of truth for the arithmetic that diverged twice between the panel
+ * and the engine: it calls the real `resolveTiering` (not a hand-rolled gate) so any future
+ * change to the tiering-activation condition is picked up automatically, and it scales
+ * `hotSpares` by `serverCount` the same way — through the same `usesDistributedSpares` check —
+ * that `useVolumetryCalc.ts` applies before calling `calculateVolumetry`. If BeeGFS is ever
+ * added to `DISTRIBUTED_SPARE_TOPOLOGIES`, both call sites follow without a code change here.
+ *
+ * @param driveCount - Hardware panel's per-server drive count (used only when tiering is inactive)
+ * @param serverCount - Store's serverCount
+ * @param hotSpares - Store's per-server hotSpares
+ * @param beeGfsOptions - Store's beeGfsOptions (drivesPerTarget, metadataTargets, tiering, ...)
+ */
+export function resolveBeeGfsUsableDrives(
+  driveCount: number,
+  serverCount: number,
+  hotSpares: number,
+  beeGfsOptions: BeeGfsOptions,
+): number {
+  const tieredCapacity = resolveTiering(BEEGFS_TOPOLOGY, serverCount, { beeGfsOptions })
+  const effectiveDriveCount = tieredCapacity
+    ? tieredCapacity.capacityTierDriveCount
+    : driveCount * serverCount
+  const totalHotSpares = usesDistributedSpares(BEEGFS_TOPOLOGY.type) ? 0 : hotSpares * serverCount
+  return Math.max(0, effectiveDriveCount - totalHotSpares)
 }
 
 export const beeGfsStrategy: VolumetryStrategy = {
