@@ -27,6 +27,7 @@
     "efficiency": "Efficacité",
     "zfsBreakdown": "Répartition capacité ZFS",
     "longhornBreakdown": "Dimensionnement capacité Longhorn",
+    "beegfsBreakdown": "Dimensionnement de capacité BeeGFS",
     "dualUnitHint": "Double affichage: TiB (binaire) / TB (décimal)",
     "segments": {
       "usable": "Utilisable",
@@ -48,6 +49,30 @@
       "dedupGain": "Gain déduplication",
       "effectiveCapacity": "Capacité effective finale",
       "ofRaw": "de la capacité brute"
+    },
+    "beegfs": {
+      "mdtRaw": "Capacité brute MDT",
+      "mdtRawDesc": "Capacité brute des cibles de métadonnées configurées",
+      "mdtUsable": "Capacité utilisable MDT",
+      "mdtUsableDesc": "Capacité utilisable après surcoût du système de fichiers des cibles de métadonnées",
+      "mdtRecommendedMin": "Minimum recommandé",
+      "mdtRecommendedMinDesc": "Recommandation BeeGFS de 0,3% de la capacité totale",
+      "mdtRecommendedTypical": "Typique recommandé",
+      "mdtRecommendedTypicalDesc": "Recommandation BeeGFS de 0,5% de la capacité totale",
+      "configTitle": "Résumé de la configuration",
+      "status": "État du dimensionnement des métadonnées",
+      "statusValue": {
+        "ok": "OK",
+        "under": "Sous la recommandation",
+        "none": "Non configuré"
+      },
+      "estimatedFileCount": "Nombre de fichiers estimé",
+      "storageTargetCount": "Cibles de stockage",
+      "strandedDrives": "Disques perdus",
+      "storageBuddyMirror": "Mise en miroir Buddy (stockage)",
+      "metadataBuddyMirror": "Mise en miroir Buddy (métadonnées)",
+      "on": "Activé",
+      "off": "Désactivé"
     }
   },
   "performance": {

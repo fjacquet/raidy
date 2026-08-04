@@ -22,5 +22,13 @@
     "zfsSlop": "ZFS reserviert 1/32 der Pool-Kapazitaet fuer Metadaten und COW-Operationen",
     "compressionRecommended": "Komprimierung empfohlen fuer diesen Arbeitslasttyp",
     "reflinkBackup": "Reflink-faehiges Dateisystem ermoeglicht platzsparende Backups"
+  },
+  "beegfs": {
+    "buddyMirrorMinNodes": "Storage Buddy Mirroring benoetigt mindestens 2 Knoten ({{serverCount}} konfiguriert)",
+    "buddyMirrorMinNodesRecommendation": "Fuegen Sie einen zweiten Knoten hinzu oder deaktivieren Sie Storage Buddy Mirroring",
+    "strandedDrives": "{{stranded}} Laufwerk(e) fuellen kein vollstaendiges Storage-Target von {{drivesPerTarget}} und sind ungenutzt",
+    "noMdt": "Keine Metadata-Targets konfiguriert - aktivieren Sie die Metadata-Target-Dimensionierung, um das MDT zu dimensionieren",
+    "mdtUnderMin": "Die Kapazitaet der Metadata-Targets liegt unter dem von BeeGFS empfohlenen Minimum von {{recommendedMin}}",
+    "mdtUnderMinRecommendation": "Erhoehen Sie die Kapazitaet der Metadata-Targets auf mindestens {{recommendedTypical}} (typische Empfehlung)"
   }
 }

@@ -477,6 +477,26 @@
     "overProvisioning": "Over-Provisioning (advisory)",
     "overProvisioningValue": "{{pct}}% thin-provisioning limit"
   },
+  "beegfs": {
+    "title": "BeeGFS Options",
+    "drivesPerTarget": "Drives per Storage Target",
+    "drivesPerTargetDerived": "{{targets}} storage targets, {{stranded}} stranded drive(s)",
+    "drivesPerTargetHint": "Drives in each storage target's local RAID group. BeeGFS recommends 10-12 drives for RAID6 targets.",
+    "storageBuddyMirror": "Storage Buddy Mirroring",
+    "storageBuddyMirrorHint": "Synchronous replication between pairs of storage targets on different nodes. Halves usable capacity.",
+    "metadataBuddyMirror": "Metadata Buddy Mirroring",
+    "metadataBuddyMirrorHint": "Synchronous replication between pairs of metadata targets. No effect on data capacity.",
+    "chunkSize": "Chunk Size",
+    "numTargets": "Number of Targets",
+    "numTargetsHint": "Storage targets a single file is striped across. Affects performance only, not capacity.",
+    "network": "Cluster Interconnect",
+    "networkTooltip": "Informational only — does not affect any calculated result.",
+    "networkHint": "For reference only. Link bandwidth used in calculations comes from the Network Speed setting in the Advanced panel, not from this selection.",
+    "metadataTargetsToggle": "Configure Metadata Targets",
+    "metadataTargetsToggleHint": "When enabled, storage-target drive configuration moves from the Hardware panel into the metadata target pickers below.",
+    "metadataTargets": "Metadata Targets (MDT)",
+    "metadataTargetsHint": "BeeGFS recommends 0.3-0.5% of total capacity for metadata — roughly 150 million files per 500 GB of ext4 metadata capacity."
+  },
   "powerflex": {
     "title": "PowerFlex Options",
     "medium_2way": {
@@ -651,6 +671,12 @@
       "capacityTier": "OSD Devices",
       "fastTierHint": "NVMe for BlueStore WAL and RocksDB",
       "capacityTierHint": "Primary OSD storage (HDD or SSD)"
+    },
+    "beegfs": {
+      "fastTier": "Metadata Targets (NVMe/SSD)",
+      "capacityTier": "Storage Targets",
+      "fastTierHint": "NVMe/SSD for fast metadata (MDT) storage",
+      "capacityTierHint": "Bulk storage for file data"
     }
   }
 }

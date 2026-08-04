@@ -27,6 +27,7 @@
     "efficiency": "Effizienz",
     "zfsBreakdown": "ZFS-Kapazitätsaufschlüsselung",
     "longhornBreakdown": "Longhorn-Kapazitätsdimensionierung",
+    "beegfsBreakdown": "BeeGFS-Kapazitätsdimensionierung",
     "dualUnitHint": "Duale Anzeige: TiB (binär) / TB (dezimal)",
     "segments": {
       "usable": "Nutzbar",
@@ -48,6 +49,30 @@
       "dedupGain": "Deduplizierungsgewinn",
       "effectiveCapacity": "Effektive Endkapazität",
       "ofRaw": "der Bruttokapazität"
+    },
+    "beegfs": {
+      "mdtRaw": "MDT-Rohkapazität",
+      "mdtRawDesc": "Rohkapazität der konfigurierten Metadata-Targets",
+      "mdtUsable": "MDT-Nutzkapazität",
+      "mdtUsableDesc": "Nutzbare Kapazität nach Dateisystem-Overhead der Metadata-Targets",
+      "mdtRecommendedMin": "Empfohlenes Minimum",
+      "mdtRecommendedMinDesc": "BeeGFS-Richtwert von 0,3% der Gesamtkapazität",
+      "mdtRecommendedTypical": "Empfohlener Typischwert",
+      "mdtRecommendedTypicalDesc": "BeeGFS-Richtwert von 0,5% der Gesamtkapazität",
+      "configTitle": "Konfigurationsübersicht",
+      "status": "Status der Metadaten-Dimensionierung",
+      "statusValue": {
+        "ok": "OK",
+        "under": "Unter Empfehlung",
+        "none": "Nicht konfiguriert"
+      },
+      "estimatedFileCount": "Geschätzte Dateianzahl",
+      "storageTargetCount": "Storage-Targets",
+      "strandedDrives": "Ungenutzte Laufwerke",
+      "storageBuddyMirror": "Storage Buddy Mirroring",
+      "metadataBuddyMirror": "Metadata Buddy Mirroring",
+      "on": "Ein",
+      "off": "Aus"
     }
   },
   "performance": {

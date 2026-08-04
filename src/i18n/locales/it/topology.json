@@ -299,6 +299,26 @@
     "overProvisioning": "Over-provisioning (indicativo)",
     "overProvisioningValue": "limite di thin-provisioning {{pct}}%"
   },
+  "beegfs": {
+    "title": "Opzioni BeeGFS",
+    "drivesPerTarget": "Dischi per target di storage",
+    "drivesPerTargetDerived": "{{targets}} target di storage, {{stranded}} disco/i inutilizzato/i",
+    "drivesPerTargetHint": "Dischi nel gruppo RAID locale di ciascun target di storage. BeeGFS consiglia 10-12 dischi per i target RAID6.",
+    "storageBuddyMirror": "Buddy Mirroring di storage",
+    "storageBuddyMirrorHint": "Replica sincrona tra coppie di target di storage su nodi diversi. Dimezza la capacità utilizzabile.",
+    "metadataBuddyMirror": "Buddy Mirroring dei metadati",
+    "metadataBuddyMirrorHint": "Replica sincrona tra coppie di target di metadati. Nessun effetto sulla capacità dei dati.",
+    "chunkSize": "Dimensione chunk",
+    "numTargets": "Numero di target",
+    "numTargetsHint": "Target di storage su cui un file viene distribuito (striping). Influisce solo sulle prestazioni, non sulla capacità.",
+    "network": "Interconnessione del cluster",
+    "networkTooltip": "Solo informativo — non influisce su alcun risultato calcolato.",
+    "networkHint": "Solo a titolo informativo. La banda utilizzata nei calcoli proviene dall'impostazione Velocità di rete nel pannello Avanzate, non da questa selezione.",
+    "metadataTargetsToggle": "Configura target di metadati",
+    "metadataTargetsToggleHint": "Se attivato, la configurazione dei dischi dei target di storage passa dal pannello Hardware ai selettori dei target di metadati sottostanti.",
+    "metadataTargets": "Target di metadati (MDT)",
+    "metadataTargetsHint": "BeeGFS consiglia lo 0,3-0,5% della capacità totale per i metadati — circa 150 milioni di file ogni 500 GB di capacità di metadati ext4."
+  },
   "powerflex": {
     "title": "Opzioni PowerFlex",
     "medium_2way": {
@@ -453,6 +473,12 @@
       "capacityTier": "Dispositivi OSD",
       "fastTierHint": "NVMe per BlueStore WAL e RocksDB",
       "capacityTierHint": "Storage OSD primario (HDD o SSD)"
+    },
+    "beegfs": {
+      "fastTier": "Target di metadati (NVMe/SSD)",
+      "capacityTier": "Target di storage",
+      "fastTierHint": "NVMe/SSD per lo storage rapido dei metadati (MDT)",
+      "capacityTierHint": "Storage di massa per i dati dei file"
     }
   }
 }
