@@ -128,15 +128,6 @@ vectors showing survival-rate movement for a spared vs. spare-free configuration
 
 ---
 
-## Test and tooling debt
-
-### [B15](https://github.com/fjacquet/raidy/issues/73). `npm run test:coverage` fails when run concurrently with another vitest process
-
-Vitest cleans `reportsDirectory` on start, so a parallel invocation kills the coverage run with
-`Something removed the coverage directory "coverage/.tmp"`. Relevant to CI job layout.
-
----
-
 ## How to close an item
 
 This repo treats stale docs as a defect, not a follow-up: update the matching doc in `docs/` in

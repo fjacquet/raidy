@@ -17,6 +17,11 @@ npm test -- tests/engines/volumetry.spec.ts   # single file
 > terminal, an editor test runner — makes the coverage run fail with
 > `Something removed the coverage directory "coverage/.tmp"`. It is a collision, not a real
 > coverage failure: stop the other run and re-run. No extra flags are needed otherwise.
+>
+> CI is unaffected: the shared workflow (`fjacquet/ci/.github/workflows/web-ci.yml`) runs
+> `test:run` and never invokes `test:coverage`, so the two cannot collide there. Keep it that
+> way — a coverage job added alongside the existing test job would have to run in a separate
+> job or a separate `reportsDirectory`.
 
 
 ## Type-checking the tests
