@@ -2864,7 +2864,6 @@ describe('Volumetry Engine - Error Handling', () => {
         powervaultOptions: DEFAULT_POWERVAULT_OPTIONS,
         nutanixOptions: {
           ...DEFAULT_NUTANIX_OPTIONS,
-          replicationFactor: 2,
           clusterType: 'hybrid',
           compression: false,
           compressionRatio: 1.0,
@@ -2923,7 +2922,6 @@ describe('Volumetry Engine - Error Handling', () => {
         powervaultOptions: DEFAULT_POWERVAULT_OPTIONS,
         nutanixOptions: {
           ...DEFAULT_NUTANIX_OPTIONS,
-          replicationFactor: 3,
           clusterType: 'all-flash', // No tiering
           compression: false,
           compressionRatio: 1.0,
@@ -2967,7 +2965,6 @@ describe('Volumetry Engine - Error Handling', () => {
         powervaultOptions: DEFAULT_POWERVAULT_OPTIONS,
         nutanixOptions: {
           ...DEFAULT_NUTANIX_OPTIONS,
-          replicationFactor: 3,
           clusterType: 'hybrid',
           compression: false,
           compressionRatio: 1.0,

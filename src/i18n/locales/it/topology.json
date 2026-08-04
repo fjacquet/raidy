@@ -225,8 +225,6 @@
     },
     "ec_24_4": { "label": "EC 24+4 (Anteprima)", "description": "86% efficienza, min 8 nodi" },
     "mirror_3": { "label": "Triplo mirror", "description": "33% efficienza, per metadati" },
-    "objectSize": "Dimensione oggetto (KB)",
-    "avgObjectSize": "Dimensione oggetto media: {{size}}",
     "systemOverhead": "Overhead sistema",
     "systemOverheadDesc": "Metadati, indici, protocollo S3: {{percent}}%",
     "enableCompression": "Abilita compressione",
@@ -367,9 +365,7 @@
     "compressionRatio": "Rapporto compressione",
     "expectedRatio": "Rapporto previsto: {{ratio}}:1",
     "fgOverhead": "Overhead metadati FG",
-    "fgOverheadDesc": "Overhead granularità fine: {{percent}}%",
-    "faultSets": "Set di errore",
-    "faultSetsDesc": "Minimo 3 set di errore richiesti"
+    "fgOverheadDesc": "Overhead granularità fine: {{percent}}%"
   },
   "netapp": {
     "title": "Opzioni NetApp ONTAP",

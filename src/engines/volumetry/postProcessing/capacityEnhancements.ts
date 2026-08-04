@@ -92,10 +92,14 @@ export function applyCompressionDedup(
     return usableCapacity * compressionRatio * dedupRatio
   }
 
-  // NetApp DRR (Data Reduction Ratio) - applies on top of standard compression/dedup
-  // Includes zero-detection + inline dedup + inline compression + compaction
+  // NetApp DRR (Data Reduction Ratio) - applies on top of standard compression/dedup.
+  // Gated on compression || dedup, matching every other platform's <flag> ? ratio : 1.0
+  // pattern below, so turning both toggles off actually removes the reduction instead
+  // of silently keeping whatever ratio was last dialed in.
   if (topology.type === 'proprietary' && topology.level.startsWith('netapp_')) {
-    return usableCapacity * netAppOptions.dataReductionRatio
+    const netAppDrr =
+      netAppOptions.compression || netAppOptions.dedup ? netAppOptions.dataReductionRatio : 1.0
+    return usableCapacity * netAppDrr
   }
 
   // PowerFlex compression ratio (only for modes with compression enabled)

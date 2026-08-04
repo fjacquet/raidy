@@ -222,8 +222,6 @@
     "ec_10_2": { "label": "EC 10+2 (Kalt/Archiv)", "description": "83% Effizienz, min 7 Knoten" },
     "ec_24_4": { "label": "EC 24+4 (Vorschau)", "description": "86% Effizienz, min 8 Knoten" },
     "mirror_3": { "label": "Dreifach-Spiegel", "description": "33% Effizienz, für Metadaten" },
-    "objectSize": "Objektgrösse (KB)",
-    "avgObjectSize": "Durchschnittliche Objektgrösse: {{size}}",
     "systemOverhead": "System-Overhead",
     "systemOverheadDesc": "Metadaten, Indizes, S3-Protokoll: {{percent}}%",
     "enableCompression": "Kompression aktivieren",
@@ -370,9 +368,7 @@
     "compressionRatio": "Kompressionsverhältnis",
     "expectedRatio": "Erwartetes Verhältnis: {{ratio}}:1",
     "fgOverhead": "FG Metadaten-Overhead",
-    "fgOverheadDesc": "Fine Granularity Overhead: {{percent}}%",
-    "faultSets": "Fehler-Sets",
-    "faultSetsDesc": "Minimum 3 Fehler-Sets erforderlich"
+    "fgOverheadDesc": "Fine Granularity Overhead: {{percent}}%"
   },
   "netapp": {
     "title": "NetApp ONTAP-Optionen",

@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Completed the #104 unconsumed-option-fields sweep (#110).** #104 removed four option fields
+  that were collected from the UI and never reached any engine; building its guard test showed
+  the pattern was broader. Walked every `DEFAULT_*_OPTIONS` object in `src/types/topology.ts` and
+  decided each unconsumed field individually:
+  - **Wired into a real calculation:** `netAppOptions.compression`/`dedup` now gate
+    `dataReductionRatio` in `capacityEnhancements.ts` (`<flag> ? ratio : 1.0`), matching every
+    sibling platform's existing pattern. Previously the ratio applied unconditionally, so turning
+    both toggles off silently left a stale reduction ratio in effect.
+  - **Deleted, field and control together** (no UI, no engine reader, no citable rule to wire
+    instead): `zfsOptions.slogDevice`/`l2arcDevice`; `nutanixOptions.replicationFactor`/
+    `erasureCoding`/`ecStripe` (duplicates of what the `nutanix_*` topology level already encodes
+    — RF/EC-X was never actually read from these fields, only from the level string);
+    `powerFlexOptions.ecScheme`/`storagePools`/`faultSets` (the last had a live control and a
+    hint claiming "Minimum 3 fault sets required for data protection" that nothing enforced);
+    `objectscaleOptions.objectSizeKB` (live slider; its type comment falsely claimed it "impacts
+    performance calculations" — nothing read it).
+  - **Kept informational by decision**, matching the #78 BeeGFS precedent, with hint text in each
+    options panel now saying so explicitly: `zfsOptions.specialVdev`; `vsanOptions.encryption`;
+    `powerscaleOptions.smartQuotas`/`syncIQ`; `cephOptions.backend`/`encryption`/`journalOnSsd`;
+    `longhornOptions.overProvisioningPercent`; every field on `powervaultOptions` (`model`,
+    `controllers`, `tiering`, `ssdReadCache`, `thinProvisioning` — this tool models PowerVault ME5
+    with one flat overhead regardless of configuration); `synologyOptions.modelSeries`/`ssdCache`/
+    `cacheMode`; `netAppOptions.platform`/`adpVersion`/`zeroDetection`.
+  - **Confirmed still-accurate:** `raidControllerOptions.readPolicy`/`writePolicy` were already
+    documented informational-by-decision in a prior change; `vsanOptions.diskGroupMode`, flagged as
+    unconsumed in the original issue, is now read by the #89 fast-tier performance models
+    (released in 1.16.0), so it needed no action.
+  - `powerstoreOptions.model` is not read directly by any engine, but drives `systemOverheadPercent`
+    via a UI preset in `DellOptionsPanel.tsx` (`POWERSTORE_MODEL_OVERHEAD[model]`), which the
+    engine does read — kept as-is, documented as indirectly wired rather than informational.
+  - `tests/utils/optionFieldsConsumed.spec.ts` replaces its four-field #104 pin with a general
+    sweep: every `DEFAULT_*_OPTIONS` field must be read in `src/engines/`, `src/workers/` (except
+    `resilienceWorker.ts`, out of scope for this change), or one of `validators.ts`/
+    `exportConfig.ts`/`TakeawayAct.tsx` — or be named in an explicit allowlist carrying its reason.
+  - All removed controls' locale keys were removed from all four languages (`en`/`fr`/`de`/`it`).
+    The affected Zod schemas in `src/utils/schemas.ts` are plain `z.object()` (strip unknown keys
+    rather than reject), confirmed for each schema touched here, so existing shared links
+    carrying a since-removed field continue to validate and simply drop that key.
+
 ## [1.16.0] - 2026-08-04
 
 > **Read this first if you sized hardware on 1.15.x.** Four published figures move in this

@@ -40,7 +40,8 @@ export function CephOptionsPanel() {
         <p className="text-xs text-slate-500">
           {cephOptions.backend === 'bluestore'
             ? 'Modern backend with direct disk access, better performance'
-            : 'Legacy backend using filesystem, compatibility mode'}
+            : 'Legacy backend using filesystem, compatibility mode'}{' '}
+          — for reference only, not used in any calculation.
         </p>
       </div>
 
@@ -79,6 +80,10 @@ export function CephOptionsPanel() {
         checked={cephOptions.encryption}
         onChange={(v) => setCephOptions({ encryption: v })}
       />
+      <p className="text-xs text-slate-500">
+        For reference only. Ceph's dm-crypt encryption carries no published capacity tax. Recorded
+        for your sizing sheet, not used in any calculation.
+      </p>
 
       <Toggle
         id="ceph-journal-ssd"
@@ -86,6 +91,10 @@ export function CephOptionsPanel() {
         checked={cephOptions.journalOnSsd}
         onChange={(v) => setCephOptions({ journalOnSsd: v })}
       />
+      <p className="text-xs text-slate-500">
+        For reference only. Legacy FileStore journal placement — superseded by the WAL/DB Offload
+        setting below for BlueStore. Not used in any calculation.
+      </p>
 
       <Toggle
         id="ceph-wal-db-offload"
