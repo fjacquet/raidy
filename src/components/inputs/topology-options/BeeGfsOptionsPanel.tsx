@@ -19,6 +19,10 @@
  *     model (see the type doc-comments for the full reasoning). They are
  *     surfaced so a sizing sheet can record the intended configuration, and
  *     they persist through "Copy URL to Share", but they compute nothing.
+ *
+ * `fsOverheadPercent` is the opposite of those three: it IS wired into
+ * `getFilesystemOverheadPercent` (src/engines/volumetry/overhead/filesystem-overhead.ts) and
+ * changes usable capacity, so its control carries no "informational" label.
  */
 
 import { useMemo } from 'react'
@@ -131,6 +135,23 @@ export function BeeGfsOptionsPanel() {
           }
         />
         <p className="text-xs text-slate-500">{t('beegfs.networkHint')}</p>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="beegfs-fs-overhead" tooltip={t('beegfs.fsOverheadTooltip')}>
+          {t('beegfs.fsOverhead')}
+        </Label>
+        <Slider
+          id="beegfs-fs-overhead"
+          value={beeGfsOptions.fsOverheadPercent}
+          min={0.5}
+          max={5}
+          step={0.1}
+          onChange={(v) => setBeeGfsOptions({ fsOverheadPercent: v })}
+        />
+        <p className="text-xs text-slate-500">
+          {t('beegfs.fsOverheadHint', { percent: beeGfsOptions.fsOverheadPercent.toFixed(1) })}
+        </p>
       </div>
 
       <Toggle
