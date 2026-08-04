@@ -13,26 +13,26 @@
   },
   "ioPattern": {
     "label": "I/O-Muster",
-    "readWrite": "Lese-/Schreibverhaeltnis",
+    "readWrite": "Lese-/Schreibverhältnis",
     "readPercent": "Lesen %",
     "writePercent": "Schreiben %",
-    "randomSequential": "Zufaellig / Sequentiell",
-    "randomPercent": "Zufaellig %",
+    "randomSequential": "Zufällig / Sequentiell",
+    "randomPercent": "Zufällig %",
     "sequentialPercent": "Sequentiell %"
   },
   "blockSize": {
-    "label": "Blockgroesse",
+    "label": "Blockgröße",
     "hint4k": "4K - Datenbank-Random-I/O",
     "hint8k": "8K - SQL Server, Oracle",
     "hint16k": "16K - MySQL InnoDB Standard",
     "hint64k": "64K - Allgemein",
     "hint128k": "128K - Dateiserver, Virtualisierung",
-    "hint256k": "256K - Videoschnitt, grosse Dateien",
+    "hint256k": "256K - Videoschnitt, große Dateien",
     "hint1m": "1M - Sequentiell, Backup"
   },
   "capacity": {
-    "datasetSize": "Gesamte Datengroesse",
-    "dailyWriteVolume": "Taegliches Schreibvolumen",
-    "hint": "Fuer SSD-Endurance-Berechnung verwendet"
+    "datasetSize": "Gesamte Datengröße",
+    "dailyWriteVolume": "Tägliches Schreibvolumen",
+    "hint": "Für SSD-Endurance-Berechnung verwendet"
   }
 }

@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Documented
+
+- Researched whether BeeGFS's `numTargets` and `chunkSizeKb` (issue #69) could drive a genuine
+  single-stream (single-client, single-file) throughput output. Concluded no: a realistic
+  single-stream ceiling needs a client link speed this app does not collect, and ThinkParQ's own
+  published benchmark ("Picking the right number of targets per server for BeeGFS", March 2015)
+  shows single-stream throughput does not scale linearly with `numTargets` even given that input
+  — it nearly doubles from 1→2 targets, then plateaus or regresses from 2→4. Both fields stay
+  labelled informational; their doc-comments in `src/types/topology.ts` now cite the research.
+### Fixed
+- **`fr` and `de` locale strings are now consistently accented.** What looked like a deliberate
+  "unaccented" convention was actually per-file drift: e.g. `fr/topology.json` carried ~420
+  accented characters while `fr/common.json` had 1, and several files (`advanced`, `hardware`,
+  `validation`, `workload`) had zero. French and German are user-facing languages of a Swiss
+  product; unaccented copy reads as broken to a native speaker. Every `fr` and `de` string has
+  been corrected to proper orthography (accents/umlauts/ß); `it` was audited too and corrected
+  where it had the same gap. This is an orthography pass only — no strings were reworded or
+  retranslated, no JSON keys changed, and interpolation placeholders (`{{count}}`, etc.) were
+  left byte-identical. (#86)
+
+### Added
+- **i18n parity test now asserts placeholder preservation.** `tests/i18n/parity.spec.ts` gained a
+  case per locale/namespace asserting every `{{placeholder}}` present in an `en` string is also
+  present in the same key's translation, so an accent/copy pass can't silently mangle a runtime
+  interpolation token the way the existing key-presence check would miss. (#86)
 ### Fixed
 - **Completed the #104 unconsumed-option-fields sweep (#110).** #104 removed four option fields
   that were collected from the UI and never reached any engine; building its guard test showed

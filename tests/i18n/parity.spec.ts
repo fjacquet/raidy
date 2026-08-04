@@ -44,6 +44,24 @@ const flattenKeys = (obj: object, prefix = ''): string[] =>
       : [path]
   })
 
+/** Recursively collects dotted key paths mapped to their leaf string value. */
+const flattenEntries = (obj: object, prefix = ''): Record<string, unknown> =>
+  Object.entries(obj).reduce<Record<string, unknown>>((acc, [key, value]) => {
+    const path = prefix ? `${prefix}.${key}` : key
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      Object.assign(acc, flattenEntries(value as object, path))
+    } else {
+      acc[path] = value
+    }
+    return acc
+  }, {})
+
+const PLACEHOLDER_PATTERN = /\{\{\s*[\w-]+\s*\}\}/g
+
+/** Extracts the set of `{{placeholder}}` tokens present in a string value. */
+const extractPlaceholders = (value: unknown): string[] =>
+  typeof value === 'string' ? (value.match(PLACEHOLDER_PATTERN) ?? []) : []
+
 describe('i18n key parity against en reference', () => {
   it.each(targetLocales)('%s has no locale-specific namespace files missing', (locale) => {
     const localeNamespaces = readdirSync(join(LOCALES_DIR, locale))
@@ -71,6 +89,32 @@ describe('i18n key parity against en reference', () => {
         if (orphans.length > 0) {
           const list = orphans.map((key) => `${locale}/${namespace}: ${key}`).join('\n')
           throw new Error(`Found ${orphans.length} orphan key(s) not present in en:\n${list}`)
+        }
+      })
+
+      it.each(
+        targetLocales,
+      )('%s preserves every {{placeholder}} present in the en value', (locale) => {
+        const enEntries = flattenEntries(loadNamespace(REFERENCE_LOCALE, namespace))
+        const localeEntries = flattenEntries(loadNamespace(locale, namespace))
+        const problems: string[] = []
+
+        for (const [key, enValue] of Object.entries(enEntries)) {
+          const enPlaceholders = new Set(extractPlaceholders(enValue))
+          if (enPlaceholders.size === 0) continue
+
+          const localeValue = localeEntries[key]
+          const localePlaceholders = new Set(extractPlaceholders(localeValue))
+          const missing = [...enPlaceholders].filter((p) => !localePlaceholders.has(p))
+          if (missing.length > 0) {
+            problems.push(`${locale}/${namespace}: ${key} missing ${missing.join(', ')}`)
+          }
+        }
+
+        if (problems.length > 0) {
+          throw new Error(
+            `Found ${problems.length} value(s) with dropped/mangled placeholder(s):\n${problems.join('\n')}`,
+          )
         }
       })
     })
