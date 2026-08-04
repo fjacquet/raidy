@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **`HBA_REQUIRED_TOPOLOGIES` membership is now pinned by a hand-copied test snapshot.**
+  `tests/types/controllerRequirement.spec.ts` previously guarded the level-aware controller rule
+  only against `legacyControllerOptions`, which re-derives from `HBA_REQUIRED_TOPOLOGIES` itself
+  — so it caught drift in the filter logic but not in the table's contents. Deleting `'longhorn'`
+  from the table left all 1242 tests passing, silently flipping Longhorn from HBA-only to
+  RAID-only. Added a literal, hand-copied expected-membership list directly in the test file
+  (deliberately not imported or derived) that now fails on that exact mutation. (#75)
+
 ## [1.15.1] - 2026-08-04
 
 ### Fixed

@@ -179,21 +179,6 @@ for BeeGFS alone would be inconsistent; fixing it globally moves `standard`'s li
 *To close:* add a third label state plus its four locale strings, and reword `hbaHint` to be
 platform-agnostic.
 
-### [B17](https://github.com/fjacquet/raidy/issues/75). The controller-requirement test net is circular on table membership
-
-`tests/types/controllerRequirement.spec.ts` guards the level-aware controller rule by comparing
-against a `legacyControllerOptions` helper — but that helper re-derives from
-`HBA_REQUIRED_TOPOLOGIES`, the very table the rule reads. It catches drift in the *filter logic
-and signature*; it does not catch drift in the *table contents*.
-
-Measured: deleting `'longhorn'` from `HBA_REQUIRED_TOPOLOGIES` leaves **all 1242 tests passing**,
-silently flipping Longhorn from HBA-only to RAID-only. (Deleting `'ceph'` fails exactly one test,
-and only because an unrelated pre-existing validator spec happens to cover it.)
-
-*To close:* add a hardcoded expected-membership assertion for `HBA_REQUIRED_TOPOLOGIES` — the one
-place where a hand-copied snapshot is the right tool, precisely because it must not share a
-source with the thing it validates.
-
 ---
 
 ### [B18](https://github.com/fjacquet/raidy/issues/78). `BeeGfsOptions.fsOverheadPercent` feeds a real calculation but has no UI control
