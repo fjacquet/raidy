@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **38 missing i18n keys across `fr`/`de`/`it` topology translations** rendered as raw i18n keys
+  on screen instead of translated text: `powervault.info.*` and `powerflex.info.*` were missing
+  from all three locales, `zfs.ashift512`/`ashift4k`/`ashift8k` were missing from `de`/`it`, and
+  `nutanix.info.*` was missing from `de`/`it`. Added a key-parity test
+  (`tests/i18n/parity.spec.ts`) that recursively diffs every locale's namespace files against the
+  `en` reference in both directions (missing keys and orphan keys), so future gaps like this fail
+  CI instead of shipping. (#72)
+
 ## [1.15.1] - 2026-08-04
 
 ### Fixed
