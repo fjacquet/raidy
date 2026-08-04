@@ -165,6 +165,7 @@ Calculates storage capacity and efficiency.
 >
 > - **Topology level = the storage target's local RAID**, not cluster-wide protection: `beegfs_raid6`, `beegfs_raid10`, `beegfs_raidz2` (ZFS RAIDz2 target), or `beegfs_single` (bare drive, no local RAID). Local efficiency is `(drivesPerTarget − 2) / drivesPerTarget` for RAID6/RAIDz2, `0.5` for RAID10, `1` for single — `drivesPerTarget` (default 12) is an explicit input because RAID6 efficiency is meaningless without target width.
 > - **Cluster-level protection is Buddy Mirroring**, expressed as two independent booleans in `BeeGfsOptions` rather than folded into the level enum: `storageBuddyMirror` (data, halves usable capacity when on) and `metadataBuddyMirror` (metadata, doubles the MDT capacity requirement). BeeGFS genuinely lets you mirror one without the other, which a combined level enum could not express.
+> - **Capacity is computed on whole storage targets only.** A storage target *is* a local RAID volume, so drives that do not complete one ("stranded" drives) join no target and hold no data. `calculateStorageTargets` / `resolveBeeGfsUsableDrives` (`strategies/beegfs.ts`) are the single source of truth for that derivation and are shared by three surfaces that must never disagree: `calculateVolumetry`, `BeeGfsOptionsPanel` (via `deriveBeeGfsStorageTargets`), and `useResilience` (via `resolveBeeGfsSimulationScope`). Stranded drives still count toward **raw** capacity and get their own "BeeGFS Stranded Drives" breakdown bucket; the `validators.ts` stranded-drive warning reads its count from `beeGfsDetails` rather than recomputing it.
 > - **Metadata targets (MDT) reuse the shared `TieringConfig` primitive** (`src/types/topology.ts`, resolved by `src/engines/shared/tiering.ts`) instead of introducing a BeeGFS-specific concept: `fastTier` = MDT, `capacityTier` = storage targets. `resolveTiering`'s existing semantics are already exactly right for this — the fast tier counts toward **raw** capacity but never toward **usable**, the same treatment Ceph WAL/DB offload gets. A metadata-sizing advisory (`beeGfsDetails`, built in `volumetry/index.ts` following the `longhornDetails` pattern) compares MDT usable capacity against the BeeGFS-documented 0.3–0.5% rule of thumb and surfaces an estimated file count; a `validators.ts` alert fires when the MDT is undersized or absent.
 
 **Calculations:**
@@ -454,6 +455,22 @@ Manages Monte Carlo simulation:
 - Spawns Web Worker
 - Handles progress updates
 - Returns result with survival probability
+
+The simulated population must describe the same cluster the capacity card does. For most
+platforms that is `driveCount × effectiveServerCount` in `effectiveServerCount` fault groups.
+**BeeGFS** instead goes through the exported pure helper `resolveBeeGfsSimulationScope`, which
+reuses `resolveBeeGfsUsableDrives` + `calculateStorageTargets` — the same functions volumetry
+and the options panel use — so hot spares, MDT tiering and stranded drives are applied
+identically on both sides, and the fault group is a whole storage target at its real width.
+Under MDT tiering the drive characteristics handed to the worker (capacity, URE rate, AFR) also
+follow the capacity tier rather than the Hardware panel's drive. MDT drives themselves are not
+simulated — a separate protection domain, the same scope choice made for Ceph's WAL/DB tier.
+
+The resilience model carries a deliberate invariant: **its simulated failure set must be a
+superset of the physically real one**, so the tool may understate resilience but never overstate
+it. Hot spares and stranded drives are excluded because their failure is genuinely not a
+data-loss event; when not even one whole target forms, every remaining drive is put into a
+single over-wide group rather than simulating zero drives and reporting 100% survival.
 
 ### `useFormatBytes()`
 

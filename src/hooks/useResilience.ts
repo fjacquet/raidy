@@ -4,6 +4,11 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { effectiveServerCount } from '@/engines/capabilities'
+import { resolveTiering } from '@/engines/shared/tiering'
+import {
+  calculateStorageTargets,
+  resolveBeeGfsUsableDrives,
+} from '@/engines/volumetry/strategies/beegfs'
 import type { Drive } from '@/types/drive'
 import type { ResilienceResult, SimulationProgress } from '@/types/results'
 import type { BeeGfsOptions, Topology } from '@/types/topology'
@@ -13,6 +18,12 @@ interface UseResilienceOptions {
   drive: Drive | null
   driveCount: number
   serverCount?: number
+  /**
+   * Per-server hot spares (the store's raw value, as the other engines take it). Spare drives
+   * are not data-bearing, so they are excluded from the simulated population — currently only
+   * for BeeGFS, see the derivation in `runSimulation`.
+   */
+  hotSpares?: number
   topology: Topology
   rebuildSpeedMBs?: number
   simulationCount?: number
@@ -33,6 +44,64 @@ interface UseResilienceResult {
   error: string | null
   runSimulation: () => void
   abort: () => void
+}
+
+/** Simulated drive population and fault-group count handed to the worker. */
+export interface SimulationScope {
+  driveCount: number
+  groupCount: number
+}
+
+/**
+ * Derive the BeeGFS simulated population from the SAME resolved values volumetry uses
+ * (`resolveBeeGfsUsableDrives` + `calculateStorageTargets`, the single source of truth in
+ * `src/engines/volumetry/strategies/beegfs.ts`) rather than from `driveCount * serverCount`,
+ * which applied neither hot spares nor MDT tiering. Pre-fix, 100 drives with 10 hot spares at
+ * `drivesPerTarget` 12 gave volumetry 7 targets and resilience 8 groups; under MDT tiering it
+ * simulated the stale Hardware-panel drive count against a completely different capacity tier.
+ * The capacity card and the resilience panel now describe one cluster.
+ *
+ * Superset invariant (the simulated failure set must never be smaller than the physically real
+ * one, so this tool may understate resilience but never overstate it):
+ * - Hot spares are excluded. A spare holds no data, so its failure is not a data-loss event in
+ *   the real system either — the previous model counted spares as data-bearing, which was
+ *   conservative; the new model is exact, and exact ⊇ real.
+ * - Stranded drives are excluded for the same reason: after the whole-targets-only capacity
+ *   fix they belong to no storage target and hold no data.
+ * - The fault group is the whole storage target at its real width, so `drivesPerTarget` still
+ *   reaches the simulation — the property the group model exists to preserve.
+ * - Degenerate case: if not even one whole target forms, every remaining drive goes into ONE
+ *   group. That group is wider, and therefore more failure-prone, than any real target, so the
+ *   fallback stays on the conservative side of the invariant instead of simulating zero drives
+ *   and reporting 100% survival.
+ *
+ * MDT drives are not simulated: they are a separate protection domain with their own buddy
+ * mirroring, and this panel reports on the storage-target data path. That matches how Ceph's
+ * WAL/DB offload tier is treated (also not simulated) and is the pre-existing scope of the
+ * panel, not something this derivation introduced.
+ *
+ * @param driveCount - Hardware panel's per-server drive count
+ * @param serverCount - Already clamped by `effectiveServerCount`
+ * @param hotSpares - Store's per-server hot spares
+ */
+export function resolveBeeGfsSimulationScope(
+  driveCount: number,
+  serverCount: number,
+  hotSpares: number,
+  beeGfsOptions: BeeGfsOptions,
+): SimulationScope {
+  const usableDrives = resolveBeeGfsUsableDrives(driveCount, serverCount, hotSpares, beeGfsOptions)
+  const { storageTargetCount } = calculateStorageTargets(
+    usableDrives,
+    beeGfsOptions.drivesPerTarget,
+  )
+  if (storageTargetCount > 0) {
+    return {
+      driveCount: storageTargetCount * beeGfsOptions.drivesPerTarget,
+      groupCount: storageTargetCount,
+    }
+  }
+  return { driveCount: usableDrives, groupCount: 1 }
 }
 
 /**
@@ -118,6 +187,7 @@ export function useResilience(options: UseResilienceOptions): UseResilienceResul
     drive,
     driveCount,
     serverCount = 1,
+    hotSpares = 0,
     topology,
     rebuildSpeedMBs = 200, // Default 200 MB/s rebuild speed (modern RAID controllers)
     simulationCount = 100000, // 100K iterations for better precision on rare events
@@ -232,23 +302,35 @@ export function useResilience(options: UseResilienceOptions): UseResilienceResul
     // (defense in depth — the OutputDashboard call site passes a pre-clamped value; see
     // effectiveServerCount in src/engines/capabilities.ts, audit finding #14).
     const effServerCount = effectiveServerCount(serverCount, topology)
-    const totalDriveCount = driveCount * effServerCount
 
-    // BeeGFS: the worker's fault group is the storage target, not the node —
-    // reuse totalDriveCount (already the cluster-wide drive count) rather than
-    // recomputing it. Clamp to at least 1 group.
-    const groupCount =
+    // BeeGFS: the fault group is the storage target, and both the drive population and the
+    // group count come from the same resolved values volumetry uses — see
+    // resolveBeeGfsSimulationScope above for the derivation and the superset proof.
+    const beeGfs =
       topology.type === 'beegfs' && beeGfsOptions
-        ? Math.max(1, Math.floor(totalDriveCount / beeGfsOptions.drivesPerTarget))
-        : effServerCount
+        ? resolveBeeGfsSimulationScope(driveCount, effServerCount, hotSpares, beeGfsOptions)
+        : null
+
+    // When BeeGFS MDT tiering is active the storage targets are built from the capacity-tier
+    // drive, not the Hardware panel's drive. Simulating NVMe metadata media with the capacity
+    // tier's HDD capacity/AFR (or vice versa) is the same class of error as the drive-count
+    // mismatch above, so the media characteristics follow the same resolution.
+    const beeGfsTiering =
+      topology.type === 'beegfs' && beeGfsOptions
+        ? resolveTiering(topology, effServerCount, { beeGfsOptions })
+        : null
+    const mediaDrive = beeGfsTiering?.capacityTierDrive ?? drive
+
+    const totalDriveCount = beeGfs ? beeGfs.driveCount : driveCount * effServerCount
+    const groupCount = beeGfs ? beeGfs.groupCount : effServerCount
 
     const input: SimulationInput = {
       driveCount: totalDriveCount,
       raidLevel: getRaidLevel(topology),
-      driveCapacityBytes: drive.capacity_raw,
+      driveCapacityBytes: mediaDrive.capacity_raw,
       rebuildSpeedMBs,
-      ureRate: drive.reliability.ure_rate,
-      afrPercent: drive.reliability.afr,
+      ureRate: mediaDrive.reliability.ure_rate,
+      afrPercent: mediaDrive.reliability.afr,
       simulationCount,
       serverCount: groupCount,
       mirrorCopies,
@@ -259,6 +341,7 @@ export function useResilience(options: UseResilienceOptions): UseResilienceResul
     drive,
     driveCount,
     serverCount,
+    hotSpares,
     topology,
     rebuildSpeedMBs,
     simulationCount,

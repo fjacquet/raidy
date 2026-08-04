@@ -105,6 +105,7 @@ export function OutputDashboard() {
     drive: selectedDrive,
     driveCount,
     serverCount: effectiveServerCount(serverCount, topology),
+    hotSpares,
     topology,
     rebuildSpeedMBs: 150,
     simulationCount: isMobile ? 1000 : 10000, // 1K on mobile, 10K on desktop

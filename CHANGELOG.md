@@ -47,6 +47,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   drives / 12. The stranded-drive validation alert now reads its count from the engine's
   `beeGfsDetails` instead of recomputing it, so the warning and the capacity card cannot name
   different numbers. BeeGFS only — no other platform's capacity moves.
+- **BeeGFS resilience and capacity now describe the same cluster.** `useResilience` derived its
+  drive count and fault-group count from `driveCount × serverCount`, applying neither hot spares
+  nor MDT tiering, while volumetry used the hot-spare- and tiering-resolved count: 100 drives
+  with 10 hot spares at `drivesPerTarget` 12 gave volumetry 7 storage targets and resilience 8
+  groups, and with MDT tiering configured the worker simulated the stale Hardware-panel drive
+  count (112 drives, 9 groups) against a 48-drive capacity tier. Both sides now go through the
+  same `resolveBeeGfsUsableDrives` / `calculateStorageTargets` pair via the new exported
+  `resolveBeeGfsSimulationScope`, and under tiering the drive capacity/URE/AFR handed to the
+  worker follow the capacity tier instead of modelling MDT NVMe as capacity-tier HDD. The
+  model's superset invariant is preserved — see `docs/ARCHITECTURE.md`. BeeGFS only; every other
+  platform's simulation input is byte-identical.
 - **Security: URL-shared configuration links were not actually validated.** Zustand's `persist`
   middleware wraps state in a `{ state, version }` envelope before `urlHashStorage` sees it, but
   validation ran against that whole envelope instead of the payload inside it. Because the
