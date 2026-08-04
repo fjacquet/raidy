@@ -16,6 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   tables are held together by the compiler. (#62)
 - **`performanceThreshold` survives a shared link.** It was absent from `partialize`, so it reset
   while every other setting persisted. (#63)
+- **A malformed shared link is reported instead of half-loaded.** `urlStorage.ts` claimed to
+  support flat, non-enveloped payloads for backward compatibility; they have never hydrated,
+  because zustand reads `deserializedStorageValue.state`. The branch and its comment are gone, and
+  unknown top-level keys are now stripped rather than merged into the live store. (#64, #65)
 
 ### Changed
 - **"Reset to defaults" now resets the performance threshold and the two drive-picker filters.**

@@ -341,11 +341,18 @@ ConfigStore = HardwareSlice & TopologySlice & WorkloadSlice & AdvancedSlice
 
 > **Validation boundary.** Zustand's `persist` middleware wraps the partialized state in a
 > `{ state, version }` envelope before `urlHashStorage` ever sees it. `urlHashStorage.getItem`
-> (`src/store/urlStorage.ts`) detects that envelope shape and runs `validateUrlState` against
+> (`src/store/urlStorage.ts`) requires that envelope shape and runs `validateUrlState` against
 > `.state` — the actual config payload — not the envelope itself, then re-wraps the validated
 > result with the original `version` so hydration still finds `{ state, version }`. A bare/flat
-> object (older links, hand-constructed test fixtures) is still validated directly for backward
-> compatibility. See `docs/SECURITY.md` for why this distinction matters.
+> payload is rejected outright rather than validated as-is: `createJSONStorage` has wrapped state
+> in `{ state, version }` since the initial commit, so no released version can have ever written a
+> flat link — one can only come from a hand-crafted URL, and is treated as corrupt. Unknown
+> top-level keys are stripped by `ConfigStateSchema` (Zod's default; the schema is no longer
+> `.passthrough()` at the root) rather than merged into the live store, since a key nobody reads
+> would otherwise just keep getting re-persisted into the URL. The schema's closed unions
+> (`BLOCK_SIZES`, `NETWORK_SPEEDS`, `CARBON_REGIONS`, etc.) derive from the same `as const` arrays
+> in `src/types/` that the store and UI use, so a new enum value can't validate on one side and
+> reject on the other. See `docs/SECURITY.md` for why this distinction matters.
 
 ### Key State Values
 
