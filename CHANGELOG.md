@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Documented
+
+- Researched whether BeeGFS's `numTargets` and `chunkSizeKb` (issue #69) could drive a genuine
+  single-stream (single-client, single-file) throughput output. Concluded no: a realistic
+  single-stream ceiling needs a client link speed this app does not collect, and ThinkParQ's own
+  published benchmark ("Picking the right number of targets per server for BeeGFS", March 2015)
+  shows single-stream throughput does not scale linearly with `numTargets` even given that input
+  — it nearly doubles from 1→2 targets, then plateaus or regresses from 2→4. Both fields stay
+  labelled informational; their doc-comments in `src/types/topology.ts` now cite the research.
 ### Changed
 - **The resilience worker now tracks which node each simulated component sits on** (#113).
   Fault groups previously had no node identity, so mirror-pair membership was assigned without

@@ -16,9 +16,13 @@
  *   - `chunkSizeKb` and `numTargets` — see the same file. Both are real BeeGFS
  *     tunables with real performance effects on hardware, but this engine
  *     reports cluster aggregates only, and neither has an honest aggregate
- *     model (see the type doc-comments for the full reasoning). They are
- *     surfaced so a sizing sheet can record the intended configuration, and
- *     they persist through "Copy URL to Share", but they compute nothing.
+ *     model (see the type doc-comments for the full reasoning). A dedicated
+ *     single-stream output was researched for #69 and rejected — it needs a
+ *     client link speed this app does not collect, and BeeGFS's own
+ *     published benchmarks show single-stream throughput does not scale
+ *     linearly with `numTargets` in any case. They are surfaced so a sizing
+ *     sheet can record the intended configuration, and they persist through
+ *     "Copy URL to Share", but they compute nothing.
  *
  * `fsOverheadPercent` is the opposite of those three: it IS wired into
  * `getFilesystemOverheadPercent` (src/engines/volumetry/overhead/filesystem-overhead.ts) and
