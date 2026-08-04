@@ -145,6 +145,14 @@ function getRaidWritePenalty(
 }
 
 /**
+ * The IOPS a drive can sustain, as the lower of its read and write ratings — drives share a
+ * single capacity budget between reads and writes, so the smaller figure is the real ceiling.
+ */
+function limitingIOPS(drive: Drive): number {
+  return Math.min(drive.performance.iops_read, drive.performance.iops_write)
+}
+
+/**
  * Calculate complete performance results.
  */
 export function calculatePerformance(input: PerformanceInput): PerformanceResult {
@@ -197,7 +205,7 @@ export function calculatePerformance(input: PerformanceInput): PerformanceResult
 
   // --- Media Layer (drives) ---
   // Base IOPS from drives (use lower of read/write as drives share capacity)
-  const driveIOPS = Math.min(drive.performance.iops_read, drive.performance.iops_write)
+  const driveIOPS = limitingIOPS(drive)
   const totalDriveIOPS = driveIOPS * usableDrives
 
   // Calculate effective write penalty based on random vs sequential mix
@@ -253,7 +261,7 @@ export function calculatePerformance(input: PerformanceInput): PerformanceResult
     const p = capacityDrive
     // Mirrors `spareAdjustedDrives` in src/engines/volumetry/index.ts.
     const capUsableDrives = Math.max(0, tiering.capacityTierDriveCount - hotSpares)
-    const capDriveIOPS = Math.min(p.performance.iops_read, p.performance.iops_write)
+    const capDriveIOPS = limitingIOPS(p)
     readCapIOPS = capDriveIOPS * capUsableDrives
     writeCapIOPS = readCapIOPS
     readBW = p.performance.bandwidth_read_mb * capUsableDrives

@@ -12,16 +12,10 @@ import { renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { usePerformanceCalc } from '@/hooks/usePerformanceCalc'
 import { useConfigStore } from '@/store'
-import { DEFAULT_BEEGFS_OPTIONS, DEFAULT_TIERING_CONFIG } from '@/types'
+import { DEFAULT_BEEGFS_OPTIONS } from '@/types'
+import { buildTieringConfig, FAST_DRIVE_ID } from '../fixtures/tiering-fixtures'
 
-const FAST_DRIVE_ID = 'ent-nvme-pcie4-960gb-m2-ri'
-const CAPACITY_DRIVE_ID = 'ent-hdd-7k2-sata-18tb-cmr'
-
-const tiering = {
-  ...DEFAULT_TIERING_CONFIG,
-  fastTier: { driveId: FAST_DRIVE_ID, driveCount: 2 },
-  capacityTier: { driveId: CAPACITY_DRIVE_ID, driveCount: 6 },
-}
+const tiering = buildTieringConfig(2, 6)
 
 function mediaIops(): number {
   const { result } = renderHook(() => usePerformanceCalc())

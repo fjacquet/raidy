@@ -6,14 +6,11 @@
  * through to an `else` that read the raw `drive` and `usableDrives`, so a hybrid cluster was
  * costed as if its bulk pool were made of cache-tier NVMe.
  *
- * The fast tier's own contribution is deliberately NOT modelled here. S2D's write-back-cache
- * blend encodes S2D-specific semantics; vSAN's cache tier, Ceph's WAL/DB offload (which
- * accelerates the commit path and serves no data at all) and Nutanix's hybrid tier each behave
- * differently, and a generic blend would be a guess presented as a number.
+ * The fast tier's own contribution is deliberately not modelled for these platforms; see the
+ * branch comment in `src/engines/performance/index.ts` for why.
  */
 
 import { describe, expect, it } from 'vitest'
-import drivesData from '@/data/drives.json'
 import { calculatePerformance, type PerformanceInput } from '@/engines/performance'
 import type { TieredCapacityResult } from '@/engines/shared/tiering'
 import {
@@ -23,19 +20,8 @@ import {
   DEFAULT_NUTANIX_OPTIONS,
   DEFAULT_POWERFLEX_OPTIONS,
 } from '@/types'
-import type { Drive } from '@/types/drive'
 import type { Topology } from '@/types/topology'
-
-const drives = drivesData as Record<string, Drive>
-
-function getDriveById(id: string): Drive {
-  const drive = drives[id]
-  if (!drive) throw new Error(`fixture drive not found: ${id}`)
-  return drive
-}
-
-const fastDrive = getDriveById('ent-nvme-pcie4-960gb-m2-ri')
-const capacityDrive = getDriveById('ent-hdd-7k2-sata-18tb-cmr')
+import { capacityDrive, fastDrive } from '../../fixtures/tiering-fixtures'
 
 const SERVER_COUNT = 4
 const HARDWARE_DRIVE_COUNT = 32

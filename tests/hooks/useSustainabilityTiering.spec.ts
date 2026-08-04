@@ -12,10 +12,8 @@ import { renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { useSustainabilityCalc } from '@/hooks/useSustainabilityCalc'
 import { useConfigStore } from '@/store'
-import { DEFAULT_BEEGFS_OPTIONS, DEFAULT_TIERING_CONFIG } from '@/types'
-
-const FAST_DRIVE_ID = 'ent-nvme-pcie4-960gb-m2-ri'
-const CAPACITY_DRIVE_ID = 'ent-hdd-7k2-sata-18tb-cmr'
+import { DEFAULT_BEEGFS_OPTIONS } from '@/types'
+import { buildTieringConfig, FAST_DRIVE_ID } from '../fixtures/tiering-fixtures'
 
 // power = idle_watts * 0.3 + load_watts * 0.7 (see calculatePower in src/engines/sustainability/index.ts)
 const FAST_DRIVE_AVG_WATTS = 2.5 * 0.3 + 6 * 0.7 // 4.95 W
@@ -25,11 +23,7 @@ const FAST_TIER_COUNT_PER_NODE = 2
 const CAPACITY_TIER_COUNT_PER_NODE = 6
 const SERVER_COUNT = 4
 
-const tiering = {
-  ...DEFAULT_TIERING_CONFIG,
-  fastTier: { driveId: FAST_DRIVE_ID, driveCount: FAST_TIER_COUNT_PER_NODE },
-  capacityTier: { driveId: CAPACITY_DRIVE_ID, driveCount: CAPACITY_TIER_COUNT_PER_NODE },
-}
+const tiering = buildTieringConfig(FAST_TIER_COUNT_PER_NODE, CAPACITY_TIER_COUNT_PER_NODE)
 
 function drivePowerWatts(): number {
   const { result } = renderHook(() => useSustainabilityCalc(0))

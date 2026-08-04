@@ -9,61 +9,31 @@
  */
 
 import { act, renderHook } from '@testing-library/react'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import drivesData from '@/data/drives.json'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { useResilience } from '@/hooks/useResilience'
 import {
   DEFAULT_CEPH_OPTIONS,
   DEFAULT_NUTANIX_OPTIONS,
   DEFAULT_S2D_OPTIONS,
-  DEFAULT_TIERING_CONFIG,
   DEFAULT_VSAN_OPTIONS,
 } from '@/types'
-import type { Drive } from '@/types/drive'
 import type { Topology } from '@/types/topology'
 import type { SimulationInput } from '@/types/worker'
-
-const drives = drivesData as Record<string, Drive>
-
-/** Fast tier: 960GB NVMe (ure_rate 17, afr 0.5) */
-const FAST_DRIVE_ID = 'ent-nvme-pcie4-960gb-m2-ri'
-/** Capacity tier: 18TB HDD (ure_rate 15, afr 0.44) */
-const CAPACITY_DRIVE_ID = 'ent-hdd-7k2-sata-18tb-cmr'
-
-function getDriveById(id: string): Drive {
-  const drive = drives[id]
-  if (!drive) throw new Error(`fixture drive not found: ${id}`)
-  return drive
-}
-
-const fastDrive = getDriveById(FAST_DRIVE_ID)
-const capacityDrive = getDriveById(CAPACITY_DRIVE_ID)
+import { installMockWorker } from '../fixtures/mock-worker'
+import { buildTieringConfig, capacityDrive, fastDrive } from '../fixtures/tiering-fixtures'
 
 /** 2 fast + 6 capacity drives per node. */
-const tiering = {
-  ...DEFAULT_TIERING_CONFIG,
-  fastTier: { driveId: FAST_DRIVE_ID, driveCount: 2 },
-  capacityTier: { driveId: CAPACITY_DRIVE_ID, driveCount: 6 },
-}
+const tiering = buildTieringConfig(2, 6)
 
 let posted: SimulationInput[] = []
-
-class MockWorker {
-  onmessage: ((event: MessageEvent) => void) | null = null
-  onerror: ((event: ErrorEvent) => void) | null = null
-  postMessage(message: { type: string; payload: SimulationInput }) {
-    if (message.type === 'START') posted.push(message.payload)
-  }
-  terminate() {}
-}
+let uninstall: () => void
 
 beforeEach(() => {
-  posted = []
-  vi.stubGlobal('Worker', MockWorker)
+  ;({ posted, uninstall } = installMockWorker())
 })
 
 afterEach(() => {
-  vi.unstubAllGlobals()
+  uninstall()
 })
 
 type PlatformCase = {

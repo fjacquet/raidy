@@ -8,6 +8,7 @@ import drivesData from '@/data/drives.json'
 import { effectiveServerCount } from '@/engines/capabilities'
 import { calculatePerformance } from '@/engines/performance'
 import { resolveTiering } from '@/engines/shared/tiering'
+import { useTieringOptions } from '@/hooks/useTieringOptions'
 import { useConfigStore } from '@/store'
 import type { Drive } from '@/types'
 import { usesDistributedSpares } from '@/types'
@@ -46,6 +47,8 @@ export function usePerformanceCalc(): PerformanceResult {
     pcieLanes,
   } = useConfigStore()
 
+  const tieringOptions = useTieringOptions()
+
   // Get selected drive
   const drive = drives[driveId]
 
@@ -74,13 +77,7 @@ export function usePerformanceCalc(): PerformanceResult {
     const totalHotSpares = usesDistributedSpares(topology.type) ? 0 : hotSpares * effServerCount
 
     // Resolve tiering for hybrid configurations (S2D, vSAN OSA, Ceph, Nutanix)
-    const tiering = resolveTiering(topology, effServerCount, {
-      s2dOptions,
-      vsanOptions,
-      cephOptions,
-      nutanixOptions,
-      beeGfsOptions,
-    })
+    const tiering = resolveTiering(topology, effServerCount, tieringOptions)
 
     try {
       return calculatePerformance({
@@ -150,5 +147,6 @@ export function usePerformanceCalc(): PerformanceResult {
     vsanOptions,
     s2dOptions,
     beeGfsOptions,
+    tieringOptions,
   ])
 }
