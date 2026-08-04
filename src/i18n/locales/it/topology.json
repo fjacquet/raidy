@@ -313,7 +313,7 @@
     "numTargetsHint": "Target di storage su cui un file viene distribuito (striping). Influisce solo sulle prestazioni, non sulla capacità.",
     "network": "Interconnessione del cluster",
     "networkTooltip": "Solo informativo — non influisce su alcun risultato calcolato.",
-    "networkHint": "Solo a titolo informativo. La banda utilizzata nei calcoli proviene dall'impostazione Velocità di rete nel pannello Avanzate, non da questa selezione.",
+    "networkHint": "Solo a titolo informativo. La banda utilizzata nei calcoli proviene dall'impostazione Velocità di rete nel pannello Avanzato, non da questa selezione.",
     "metadataTargetsToggle": "Configura target di metadati",
     "metadataTargetsToggleHint": "Se attivato, la configurazione dei dischi dei target di storage passa dal pannello Hardware ai selettori dei target di metadati sottostanti.",
     "metadataTargets": "Target di metadati (MDT)",
