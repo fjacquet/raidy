@@ -68,6 +68,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   is correct for a capacity model. Both engines now carry a comment cross-referencing the other's
   reasoning, and a test pins the divergence so it cannot silently become drift. No calculated
   values change. (#91)
+- **Forged values in a shared link are rejected instead of silently defaulted.** `blockSize`,
+  `networkSpeed`, `pcieGen`, `pcieLanes`, `carbonRegion`, `fsType` and the RAID controller were
+  free-text in the URL schema, so an arbitrary string reached a lookup table, missed, and fell
+  back to a default — a wrong calculation presented as a valid one. Each is now an enum derived
+  from the same `as const` array its TypeScript type derives from, so the schema and the lookup
+  tables are held together by the compiler. (#62)
+- **`performanceThreshold` survives a shared link.** It was absent from `partialize`, so it reset
+  while every other setting persisted. (#63)
+- **A malformed shared link is reported instead of half-loaded.** `urlStorage.ts` claimed to
+  support flat, non-enveloped payloads for backward compatibility; they have never hydrated,
+  because zustand reads `deserializedStorageValue.state`. The branch and its comment are gone, and
+  unknown top-level keys are now stripped rather than merged into the live store. (#64, #65)
+
+### Changed
+- **"Reset to defaults" now resets the performance threshold and the two drive-picker filters.**
+  They lived only in their slices' initial state, and `resetToDefaults()` merges, so the button
+  silently skipped them. Defaults are now taken from the slices themselves rather than restated.
 
 ## [1.15.1] - 2026-08-04
 

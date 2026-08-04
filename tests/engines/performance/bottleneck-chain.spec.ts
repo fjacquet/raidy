@@ -63,10 +63,10 @@ describe('calculateNetworkLimits', () => {
     expect(iops).toBeCloseTo((bandwidth * 1024 * 1024) / BLOCK_64K, 3)
   })
 
-  it('defaults unknown network speeds to 10GbE', () => {
-    const { bandwidth } = calculateNetworkLimits('999GbE', 1, BLOCK_64K)
-    expect(bandwidth).toBeCloseTo(1250, 5)
-  })
+  // `networkSpeed` is `NetworkSpeed` (closed union, Important 4), so an unknown speed is now a
+  // compile-time error, not a runtime fallback — `NETWORK_SPEED_MBS` is `Record<NetworkSpeed,
+  // number>` and exhaustive by construction. The `?? 1250` runtime fallback this test used to
+  // cover was removed as unreachable; there is no longer a runtime path to exercise here.
 })
 
 describe('resolveNetworkModel', () => {

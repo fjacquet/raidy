@@ -29,41 +29,6 @@ fraction field.
 field is a fraction, bound it `0..1` in `src/utils/schemas.ts`; where it is a percent, name it
 so and divide at the consumer. Add a test per field pinning the unit.
 
-### [B4](https://github.com/fjacquet/raidy/issues/62). Free-text fields in the URL schema should be enums
-
-In `src/utils/schemas.ts`: `blockSize`, `networkSpeed`, `pcieGen`, `pcieLanes`, `carbonRegion`,
-`fsType` and `controllerOptions.controller` are typed `z.string()`. Arbitrary strings from a
-crafted link reach the store. They feed lookup tables that fall back on a miss, so the impact is
-a silently-defaulted calculation rather than a crash.
-
-*To close:* replace each with `z.enum([...])` derived from the same source the lookup table uses,
-so they cannot drift apart.
-
-### [B5](https://github.com/fjacquet/raidy/issues/63). `AdvancedState.performanceThreshold` is not persisted
-
-Absent from `partialize` in `src/store/configStore.ts`, so it resets on a shared link while every
-other setting survives.
-
-*To close:* add it to `partialize` and to `ConfigStateSchema`, with a round-trip test.
-
-### [B6](https://github.com/fjacquet/raidy/issues/64). Dead legacy-link branch in `urlStorage.ts`
-
-The comment at `src/store/urlStorage.ts:54-55` claims flat (non-enveloped) payloads are supported
-for backward compatibility. They have never hydrated: zustand's persist reads
-`deserializedStorageValue.state`, which is `undefined` for a flat object. The branch exists only
-for direct-call tests.
-
-*To close:* either wire it so legacy links genuinely load, or delete the branch and the comment.
-Do not leave a comment asserting a capability the code lacks.
-
-### [B7](https://github.com/fjacquet/raidy/issues/65). Root-level `.passthrough()` admits unknown keys into the store
-
-`ConfigStateSchema` is passthrough at the top level, so an unknown top-level key from a URL is
-merged into the live store object. Nested platform-options schemas are strict, so nested hostile
-payloads are stripped. Nothing reads the unknown keys.
-
-*To close:* decide whether passthrough is still needed (it may exist for forward compatibility
-with newer links). If so, document why; if not, tighten it.
 
 ## Modelling precision — safe direction, worth improving
 

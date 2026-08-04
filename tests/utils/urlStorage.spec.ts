@@ -9,6 +9,17 @@
 import { compressToEncodedURIComponent } from 'lz-string'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { copyShareableUrl, getShareableUrl, urlHashStorage } from '@/store/urlStorage'
+import {
+  DEFAULT_BEEGFS_OPTIONS,
+  DEFAULT_CEPH_OPTIONS,
+  DEFAULT_LONGHORN_OPTIONS,
+  DEFAULT_NETAPP_OPTIONS,
+  DEFAULT_NUTANIX_OPTIONS,
+  DEFAULT_POWERFLEX_OPTIONS,
+  DEFAULT_S2D_OPTIONS,
+  DEFAULT_VSAN_OPTIONS,
+  DEFAULT_ZFS_OPTIONS,
+} from '@/types'
 
 /**
  * Narrows the sync-or-async union returned by the Zustand StateStorage API.
@@ -19,6 +30,11 @@ import { copyShareableUrl, getShareableUrl, urlHashStorage } from '@/store/urlSt
 function expectSyncString(v: string | Promise<string | null>): string {
   if (typeof v !== 'string') throw new Error('expected a synchronous string from storage')
   return v
+}
+
+/** The shape zustand's `createJSONStorage` actually writes. */
+function envelope(state: unknown): string {
+  return JSON.stringify({ state, version: 1 })
 }
 
 // Mock window object
@@ -55,13 +71,12 @@ beforeEach(() => {
 describe('URL Storage - Serialization Roundtrip', () => {
   it('should roundtrip simple state correctly', () => {
     const stateKey = 'storage-state'
-    const originalState = JSON.stringify({
+    const originalState = {
       driveCount: 8,
-      driveModel: 'wd-gold-12tb',
-    })
+    }
 
     // Serialize: setItem
-    urlHashStorage.setItem(stateKey, originalState)
+    urlHashStorage.setItem(stateKey, envelope(originalState))
 
     // Extract from mocked replaceState call
     expect(mockHistory.replaceState).toHaveBeenCalled()
@@ -73,10 +88,10 @@ describe('URL Storage - Serialization Roundtrip', () => {
     const retrievedState = urlHashStorage.getItem(stateKey)
 
     // Verify roundtrip
-    expect(retrievedState).toBe(originalState)
+    expect(retrievedState).toBe(envelope(originalState))
     expect(retrievedState).not.toBeNull()
     if (retrievedState) {
-      expect(JSON.parse(expectSyncString(retrievedState))).toEqual(JSON.parse(originalState))
+      expect(JSON.parse(expectSyncString(retrievedState)).state).toEqual(originalState)
     }
   })
 
@@ -85,13 +100,12 @@ describe('URL Storage - Serialization Roundtrip', () => {
     const raidConfig = {
       topology: { type: 'standard', level: 'RAID5' },
       driveCount: 8,
-      driveModel: 'wd-gold-12tb',
       hotSpares: 1,
       serverCount: 1,
     }
 
     // Roundtrip
-    urlHashStorage.setItem(stateKey, JSON.stringify(raidConfig))
+    urlHashStorage.setItem(stateKey, envelope(raidConfig))
     const newUrl = mockHistory.replaceState.mock.calls[0]?.[2]
     mockLocation.hash = `#${newUrl.split('#')[1]}`
     const retrieved = urlHashStorage.getItem(stateKey)
@@ -99,7 +113,7 @@ describe('URL Storage - Serialization Roundtrip', () => {
     // Verify
     expect(retrieved).not.toBeNull()
     if (retrieved) {
-      const parsed = JSON.parse(expectSyncString(retrieved))
+      const parsed = JSON.parse(expectSyncString(retrieved)).state
       expect(parsed).toMatchObject(raidConfig)
       expect(parsed.topology.level).toBe('RAID5')
       expect(parsed.driveCount).toBe(8)
@@ -112,7 +126,6 @@ describe('URL Storage - Serialization Roundtrip', () => {
     const zfsConfig = {
       topology: { type: 'zfs', level: 'raidz2' },
       driveCount: 6,
-      driveModel: 'samsung-870-evo-4tb',
       zfsOptions: {
         ashift: 12,
         compression: true,
@@ -127,7 +140,7 @@ describe('URL Storage - Serialization Roundtrip', () => {
     }
 
     // Roundtrip
-    urlHashStorage.setItem(stateKey, JSON.stringify(zfsConfig))
+    urlHashStorage.setItem(stateKey, envelope(zfsConfig))
     const newUrl = mockHistory.replaceState.mock.calls[0]?.[2]
     mockLocation.hash = `#${newUrl.split('#')[1]}`
     const retrieved = urlHashStorage.getItem(stateKey)
@@ -135,7 +148,7 @@ describe('URL Storage - Serialization Roundtrip', () => {
     // Verify all ZFS options preserved
     expect(retrieved).not.toBeNull()
     if (retrieved) {
-      const parsed = JSON.parse(expectSyncString(retrieved))
+      const parsed = JSON.parse(expectSyncString(retrieved)).state
       expect(parsed).toMatchObject(zfsConfig)
       expect(parsed.zfsOptions.compression).toBe(true)
       expect(parsed.zfsOptions.compressionType).toBe('lz4')
@@ -152,7 +165,6 @@ describe('URL Storage - Serialization Roundtrip', () => {
     const vsanConfig = {
       topology: { type: 'vsan_esa', level: 'vsan_esa_raid5' },
       driveCount: 8,
-      driveModel: 'intel-p5520-3.84tb',
       serverCount: 8, // affects adaptive efficiency
       vsanOptions: {
         diskGroupMode: 'all-flash',
@@ -165,7 +177,7 @@ describe('URL Storage - Serialization Roundtrip', () => {
     }
 
     // Roundtrip
-    urlHashStorage.setItem(stateKey, JSON.stringify(vsanConfig))
+    urlHashStorage.setItem(stateKey, envelope(vsanConfig))
     const newUrl = mockHistory.replaceState.mock.calls[0]?.[2]
     mockLocation.hash = `#${newUrl.split('#')[1]}`
     const retrieved = urlHashStorage.getItem(stateKey)
@@ -173,7 +185,7 @@ describe('URL Storage - Serialization Roundtrip', () => {
     // Verify vSAN options preserved
     expect(retrieved).not.toBeNull()
     if (retrieved) {
-      const parsed = JSON.parse(expectSyncString(retrieved))
+      const parsed = JSON.parse(expectSyncString(retrieved)).state
       expect(parsed).toMatchObject(vsanConfig)
       expect(parsed.serverCount).toBe(8)
       expect(parsed.vsanOptions.dedup).toBe(true)
@@ -186,20 +198,14 @@ describe('URL Storage - Serialization Roundtrip', () => {
     const completeConfig = {
       // Hardware
       driveCount: 12,
-      driveModel: 'seagate-exos-x18-18tb',
       serverCount: 4,
       hotSpares: 2,
       // Topology
       topology: { type: 's2d', level: 'mirror' },
       // Workload
-      workloadProfile: 'database',
-      randomReadPercent: 70,
-      randomWritePercent: 20,
-      blockSize: '8192',
+      blockSize: '64K',
       // Advanced settings
-      networkSpeed: '25000',
-      controllerType: 'hba_12g',
-      raidChunkSize: 256,
+      networkSpeed: '25GbE',
       compressionRatio: 1.5,
       dedupRatio: 1.2,
       // S2D options
@@ -213,7 +219,7 @@ describe('URL Storage - Serialization Roundtrip', () => {
     }
 
     // Roundtrip
-    urlHashStorage.setItem(stateKey, JSON.stringify(completeConfig))
+    urlHashStorage.setItem(stateKey, envelope(completeConfig))
     const newUrl = mockHistory.replaceState.mock.calls[0]?.[2]
     mockLocation.hash = `#${newUrl.split('#')[1]}`
     const retrieved = urlHashStorage.getItem(stateKey)
@@ -221,13 +227,12 @@ describe('URL Storage - Serialization Roundtrip', () => {
     // Verify all fields preserved
     expect(retrieved).not.toBeNull()
     if (retrieved) {
-      const parsed = JSON.parse(expectSyncString(retrieved))
+      const parsed = JSON.parse(expectSyncString(retrieved)).state
       expect(parsed).toMatchObject(completeConfig)
       expect(parsed.driveCount).toBe(12)
       expect(parsed.hotSpares).toBe(2)
-      expect(parsed.workloadProfile).toBe('database')
-      expect(parsed.blockSize).toBe('8192')
-      expect(parsed.networkSpeed).toBe('25000')
+      expect(parsed.blockSize).toBe('64K')
+      expect(parsed.networkSpeed).toBe('25GbE')
       expect(parsed.compressionRatio).toBe(1.5)
       expect(parsed.s2dOptions.faultDomains).toBe(4)
     }
@@ -235,94 +240,63 @@ describe('URL Storage - Serialization Roundtrip', () => {
 
   it('should roundtrip empty/minimal configuration', () => {
     const stateKey = 'storage-state'
-    const minimalConfig = JSON.stringify({})
+    const minimalConfig = {}
 
     // Roundtrip
-    urlHashStorage.setItem(stateKey, minimalConfig)
+    urlHashStorage.setItem(stateKey, envelope(minimalConfig))
     const newUrl = mockHistory.replaceState.mock.calls[0]?.[2]
     mockLocation.hash = `#${newUrl.split('#')[1]}`
     const retrieved = urlHashStorage.getItem(stateKey)
 
     // Verify empty object preserved
-    expect(retrieved).toBe(minimalConfig)
+    expect(retrieved).toBe(envelope(minimalConfig))
     expect(retrieved).not.toBeNull()
     if (retrieved) {
-      expect(JSON.parse(expectSyncString(retrieved))).toEqual({})
-    }
-  })
-
-  it('should handle special characters in configuration values', () => {
-    const stateKey = 'storage-state'
-    const specialCharsConfig = JSON.stringify({
-      customLabel: 'Production Storage @ DC-01 (2024)',
-      notes: 'Server: rack-42/node-3 | Contact: admin@example.com',
-      tags: ['high-priority', 'tier-1', 'finance/accounting'],
-    })
-
-    // Roundtrip
-    urlHashStorage.setItem(stateKey, specialCharsConfig)
-    const newUrl = mockHistory.replaceState.mock.calls[0]?.[2]
-    mockLocation.hash = `#${newUrl.split('#')[1]}`
-    const retrieved = urlHashStorage.getItem(stateKey)
-
-    // Verify special chars preserved
-    expect(retrieved).toBe(specialCharsConfig)
-    expect(retrieved).not.toBeNull()
-    if (retrieved) {
-      const parsed = JSON.parse(expectSyncString(retrieved))
-      expect(parsed.customLabel).toBe('Production Storage @ DC-01 (2024)')
-      expect(parsed.notes).toContain('admin@example.com')
+      expect(JSON.parse(expectSyncString(retrieved)).state).toEqual({})
     }
   })
 
   it('should compress URL for complex configuration', () => {
     const stateKey = 'storage-state'
-    // Create a large config with repetitive data that compresses well
+    // A configuration this large only happens through repeated string keys and structurally
+    // similar nested objects, not through free-text fields (the schema has none) — the
+    // platform-options objects are what make a real configuration big. This test calls
+    // urlHashStorage directly, bypassing the store's `partialize`, which is what strips
+    // default-equal values from a real shared link; every option below is therefore adjusted
+    // away from its `DEFAULT_*_OPTIONS` value on at least one field, so the fixture stays large
+    // even if a future test migrates it through `partialize` instead.
     const largeConfig = {
       driveCount: 24,
-      driveModel: 'samsung-pm9a3-3.84tb',
       topology: { type: 'ceph', level: 'ceph_ec_4_2' },
+      zfsOptions: { ...DEFAULT_ZFS_OPTIONS, ashift: 9, recordsize: 4096 },
+      s2dOptions: { ...DEFAULT_S2D_OPTIONS, faultDomains: 8, storageTiers: true },
+      vsanOptions: { ...DEFAULT_VSAN_OPTIONS, dedup: true, dedupRatio: 1.3 },
       // cephOptions shape must match CephOptions (src/types/topology.ts) now that
       // Task 9 added a real Zod schema for it.
       cephOptions: {
-        backend: 'bluestore',
+        ...DEFAULT_CEPH_OPTIONS,
         poolType: 'erasure',
         replicationFactor: 3,
-        ecK: 4,
-        ecM: 2,
         compression: true,
         compressionAlgorithm: 'zstd',
-        encryption: false,
-        journalOnSsd: true,
-        walDbOffload: false,
-        walDbRatio: 4,
-        safeCapacityThreshold: 0.85,
       },
-      performanceMetrics: {
-        iopsRead: 250000,
-        iopsWrite: 150000,
-        bandwidthReadMb: 12000,
-        bandwidthWriteMb: 8000,
-      },
-      // Add repetitive data that compresses well
-      nodes: Array(20).fill({
-        id: 'node-001',
-        rack: 'rack-42',
-        datacenter: 'dc-west-1',
-        status: 'active',
-      }),
+      longhornOptions: { ...DEFAULT_LONGHORN_OPTIONS, diskMode: 'root', growthHeadroom: 1.8 },
+      beeGfsOptions: { ...DEFAULT_BEEGFS_OPTIONS, drivesPerTarget: 10, numTargets: 8 },
+      nutanixOptions: { ...DEFAULT_NUTANIX_OPTIONS, erasureCoding: true, ecStripe: '6_2' },
+      powerFlexOptions: { ...DEFAULT_POWERFLEX_OPTIONS, granularity: 'fine', storagePools: 3 },
+      netAppOptions: { ...DEFAULT_NETAPP_OPTIONS, raidType: 'raid_tec', dataReductionRatio: 3.5 },
     }
     const largeConfigStr = JSON.stringify(largeConfig)
 
     // Get compressed version
     const compressed = compressToEncodedURIComponent(largeConfigStr)
 
-    // With repetitive data, compression should work
-    // LZ compression is effective on repetitive patterns
+    // A real configuration this size is dominated by repeated key names and structurally
+    // similar option objects, which LZ-String's dictionary compression exploits well.
     expect(compressed.length).toBeLessThan(largeConfigStr.length)
 
     // Roundtrip
-    urlHashStorage.setItem(stateKey, largeConfigStr)
+    urlHashStorage.setItem(stateKey, envelope(largeConfig))
     const newUrl = mockHistory.replaceState.mock.calls[0]?.[2]
     mockLocation.hash = `#${newUrl.split('#')[1]}`
     const retrieved = urlHashStorage.getItem(stateKey)
@@ -330,19 +304,19 @@ describe('URL Storage - Serialization Roundtrip', () => {
     // Verify
     expect(retrieved).not.toBeNull()
     if (retrieved) {
-      const parsed = JSON.parse(expectSyncString(retrieved))
+      const parsed = JSON.parse(expectSyncString(retrieved)).state
       expect(parsed).toMatchObject(largeConfig)
     }
   })
 
   it('should snapshot URL format for regression prevention', () => {
     const stateKey = 'storage-state'
-    const config = JSON.stringify({
+    const config = {
       topology: { type: 'standard', level: 'RAID6' },
       driveCount: 6,
-    })
+    }
 
-    urlHashStorage.setItem(stateKey, config)
+    urlHashStorage.setItem(stateKey, envelope(config))
     const newUrl = mockHistory.replaceState.mock.calls[0]?.[2]
 
     // Snapshot the URL format
@@ -353,14 +327,10 @@ describe('URL Storage - Serialization Roundtrip', () => {
     const stateKey = 'storage-state'
     const maxConfig = {
       driveCount: 60,
-      driveModel: 'micron-9400-15.36tb',
       serverCount: 16,
       hotSpares: 4,
       topology: { type: 'proprietary', level: 'netapp_raid_tec' },
-      workloadProfile: 'mixed',
-      networkSpeed: '100000',
-      controllerType: 'smartpqi_gen5',
-      raidChunkSize: 1024,
+      networkSpeed: '100GbE',
       compressionRatio: 2.5,
       dedupRatio: 3.0,
       netAppOptions: {
@@ -374,20 +344,10 @@ describe('URL Storage - Serialization Roundtrip', () => {
         dedup: true,
         zeroDetection: true,
       },
-      performanceTargets: {
-        iopsTarget: 1000000,
-        latencyTargetMs: 1,
-        bandwidthTargetMb: 50000,
-      },
-      costConstraints: {
-        maxBudgetUsd: 500000,
-        maxPowerWatts: 20000,
-        maxRackUnits: 42,
-      },
     }
 
     // Roundtrip
-    urlHashStorage.setItem(stateKey, JSON.stringify(maxConfig))
+    urlHashStorage.setItem(stateKey, envelope(maxConfig))
     const newUrl = mockHistory.replaceState.mock.calls[0]?.[2]
     mockLocation.hash = `#${newUrl.split('#')[1]}`
     const retrieved = urlHashStorage.getItem(stateKey)
@@ -395,11 +355,32 @@ describe('URL Storage - Serialization Roundtrip', () => {
     // Verify all fields preserved
     expect(retrieved).not.toBeNull()
     if (retrieved) {
-      const parsed = JSON.parse(expectSyncString(retrieved))
+      const parsed = JSON.parse(expectSyncString(retrieved)).state
       expect(parsed).toMatchObject(maxConfig)
       expect(parsed.driveCount).toBe(60)
       expect(parsed.netAppOptions.raidType).toBe('raid_tec')
-      expect(parsed.costConstraints.maxBudgetUsd).toBe(500000)
+    }
+  })
+
+  it('preserves special characters in driveId through an enveloped round trip', () => {
+    // driveId is z.string().min(1) — a free-text drive-database key, not a closed union
+    // (see the design spec's Decision 1) — so it can carry characters an LZ-String +
+    // URI-encoded hash must survive byte-identical: @ | / ( ).
+    const stateKey = 'storage-state'
+    const config = {
+      driveId: 'custom-drive @ DC-01 (2024) | rack-42/node-3',
+      driveCount: 8,
+    }
+
+    urlHashStorage.setItem(stateKey, envelope(config))
+    const newUrl = mockHistory.replaceState.mock.calls[0]?.[2]
+    mockLocation.hash = `#${newUrl.split('#')[1]}`
+    const retrieved = urlHashStorage.getItem(stateKey)
+
+    expect(retrieved).not.toBeNull()
+    if (retrieved) {
+      const parsed = JSON.parse(expectSyncString(retrieved)).state
+      expect(parsed.driveId).toBe(config.driveId)
     }
   })
 })
@@ -580,38 +561,32 @@ describe('URL Storage - Platform Options Persistence (Task 9)', () => {
     const stateKey = 'storage-state'
     const config = { ...baseConfig(), [key]: value }
 
-    urlHashStorage.setItem(stateKey, JSON.stringify(config))
+    urlHashStorage.setItem(stateKey, envelope(config))
     const newUrl = mockHistory.replaceState.mock.calls[0]?.[2]
     mockLocation.hash = `#${newUrl.split('#')[1]}`
     const retrieved = urlHashStorage.getItem(stateKey)
 
     expect(retrieved).not.toBeNull()
-    const parsed = JSON.parse(expectSyncString(retrieved as string))
+    const parsed = JSON.parse(expectSyncString(retrieved as string)).state
     expect(parsed[key]).toEqual(value)
   })
 
-  it('omits the new platform options fields entirely when a legacy link never carried them', () => {
+  it('rejects a flat (non-enveloped) link, which no released version has ever written', () => {
     const stateKey = 'storage-state'
-    const legacyConfig = {
+    const flatConfig = {
       ...baseConfig(),
       topology: { type: 'ceph', level: 'ceph_ec_4_2' },
     }
 
-    urlHashStorage.setItem(stateKey, JSON.stringify(legacyConfig))
+    urlHashStorage.setItem(stateKey, JSON.stringify(flatConfig))
     const newUrl = mockHistory.replaceState.mock.calls[0]?.[2]
     mockLocation.hash = `#${newUrl.split('#')[1]}`
     const retrieved = urlHashStorage.getItem(stateKey)
 
-    expect(retrieved).not.toBeNull()
-    const parsed = JSON.parse(expectSyncString(retrieved as string))
-    // Absent, never an undefined-but-present or partial object — the store's
-    // default merge (see tests/store/urlPersistenceOptions.spec.ts) is what
-    // supplies the DEFAULT_*_OPTIONS fallback for these.
-    expect(parsed.cephOptions).toBeUndefined()
-    expect(parsed.vsanOptions).toBeUndefined()
-    expect(parsed.longhornOptions).toBeUndefined()
-    expect(parsed.beeGfsOptions).toBeUndefined()
-    expect(parsed.powerFlexOptions).toBeUndefined()
+    // `createJSONStorage` has wrapped state in `{ state, version }` since the initial commit, so
+    // a flat payload can only come from a hand-crafted link, and is now rejected outright rather
+    // than hydrated with the new platform-option fields silently missing.
+    expect(retrieved).toBeNull()
   })
 
   describe('malformed platform options are rejected, not adopted', () => {
@@ -635,7 +610,7 @@ describe('URL Storage - Platform Options Persistence (Task 9)', () => {
         },
       }
 
-      urlHashStorage.setItem('storage-state', JSON.stringify(config))
+      urlHashStorage.setItem('storage-state', envelope(config))
       const newUrl = mockHistory.replaceState.mock.calls[0]?.[2]
       mockLocation.hash = `#${newUrl.split('#')[1]}`
       const result = urlHashStorage.getItem('storage-state')
@@ -660,13 +635,13 @@ describe('URL Storage - Platform Options Persistence (Task 9)', () => {
         },
       }
 
-      urlHashStorage.setItem('storage-state', JSON.stringify(config))
+      urlHashStorage.setItem('storage-state', envelope(config))
       const newUrl = mockHistory.replaceState.mock.calls[0]?.[2]
       mockLocation.hash = `#${newUrl.split('#')[1]}`
       const result = urlHashStorage.getItem('storage-state')
 
       expect(result).not.toBeNull()
-      const parsed = JSON.parse(expectSyncString(result as string))
+      const parsed = JSON.parse(expectSyncString(result as string)).state
       expect(parsed.beeGfsOptions.maliciousInjectedField).toBeUndefined()
       expect(parsed.beeGfsOptions.drivesPerTarget).toBe(12)
     })
@@ -691,7 +666,7 @@ describe('URL Storage - Platform Options Persistence (Task 9)', () => {
         },
       }
 
-      urlHashStorage.setItem('storage-state', JSON.stringify(config))
+      urlHashStorage.setItem('storage-state', envelope(config))
       const newUrl = mockHistory.replaceState.mock.calls[0]?.[2]
       mockLocation.hash = `#${newUrl.split('#')[1]}`
       const result = urlHashStorage.getItem('storage-state')
@@ -852,10 +827,10 @@ describe('URL Storage - Backward Compatibility', () => {
 
   it('should preserve URL across re-serialization', () => {
     const stateKey = 'storage-state'
-    const config = JSON.stringify({ driveCount: 4, topology: { type: 'standard', level: 'RAID5' } })
+    const config = { driveCount: 4, topology: { type: 'standard', level: 'RAID5' } }
 
     // First serialization
-    urlHashStorage.setItem(stateKey, config)
+    urlHashStorage.setItem(stateKey, envelope(config))
     const url1 = mockHistory.replaceState.mock.calls[0]?.[2]
     mockLocation.hash = `#${url1.split('#')[1]}`
 
@@ -1080,7 +1055,7 @@ describe('URL Storage - Security: Malicious URL Protection (SEC-01, SEC-02, SEC-
    * Helper to set URL hash with compressed malicious state
    */
   function setMaliciousUrlHash(state: unknown): void {
-    const compressed = compressToEncodedURIComponent(JSON.stringify(state))
+    const compressed = compressToEncodedURIComponent(envelope(state))
     mockLocation.hash = `#raidy=${compressed}`
   }
 
@@ -1269,7 +1244,7 @@ describe('URL Storage - Security: Malicious URL Protection (SEC-01, SEC-02, SEC-
 
       expect(result).not.toBeNull()
       if (!result) throw new Error('Expected result to be non-null')
-      const parsed = JSON.parse(expectSyncString(result))
+      const parsed = JSON.parse(expectSyncString(result)).state
       expect(parsed.driveId).toBe('ent-hdd-7k2-sata-24tb-cmr')
       expect(parsed.driveCount).toBe(12)
     })
@@ -1310,7 +1285,7 @@ describe('URL Storage - Security: Malicious URL Protection (SEC-01, SEC-02, SEC-
 
       expect(result).not.toBeNull()
       if (!result) throw new Error('Expected result to be non-null')
-      const parsed = JSON.parse(expectSyncString(result))
+      const parsed = JSON.parse(expectSyncString(result)).state
       expect(parsed.driveCount).toBe(12)
       expect(parsed.topology.type).toBe('standard')
       expect(parsed.topology.level).toBe('RAID6')
@@ -1326,7 +1301,7 @@ describe('URL Storage - Security: Malicious URL Protection (SEC-01, SEC-02, SEC-
 
       expect(result).not.toBeNull()
       if (!result) throw new Error('Expected result to be non-null')
-      const parsed = JSON.parse(expectSyncString(result))
+      const parsed = JSON.parse(expectSyncString(result)).state
       expect(parsed.topology.type).toBe('zfs')
       expect(parsed.topology.level).toBe('raidz2')
     })
@@ -1339,7 +1314,7 @@ describe('URL Storage - Security: Malicious URL Protection (SEC-01, SEC-02, SEC-
 
       expect(result).not.toBeNull()
       if (!result) throw new Error('Expected result to be non-null')
-      const parsed = JSON.parse(expectSyncString(result))
+      const parsed = JSON.parse(expectSyncString(result)).state
       expect(parsed.driveCount).toBe(1000)
     })
 
@@ -1351,7 +1326,7 @@ describe('URL Storage - Security: Malicious URL Protection (SEC-01, SEC-02, SEC-
 
       expect(result).not.toBeNull()
       if (!result) throw new Error('Expected result to be non-null')
-      const parsed = JSON.parse(expectSyncString(result))
+      const parsed = JSON.parse(expectSyncString(result)).state
       expect(parsed.driveCount).toBe(1)
     })
   })

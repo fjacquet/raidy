@@ -16,7 +16,9 @@ import { validateUrlState } from '@/utils/schemas'
  * `newValue = { state: options.partialize(...), version: options.version }`),
  * and `hydrate()` reading `deserializedStorageValue.state` /
  * `.version` back out. The compressed hash therefore decodes to that
- * envelope, not to a flat config object.
+ * envelope, and nothing else — a payload that is not `{ state, version }`
+ * cannot have come from any released version of this app and is rejected
+ * as a corrupt link rather than treated as a legacy shape.
  */
 interface PersistEnvelope {
   state: unknown
@@ -50,12 +52,19 @@ export const urlHashStorage: StateStorage = {
 
       const parsed = JSON.parse(decompressed)
 
-      // Validate the REAL config payload, not the persist envelope wrapping it.
-      // A bare/flat object (older links, hand-constructed test fixtures) is
-      // validated as-is for backward compatibility.
-      const envelope = isPersistEnvelope(parsed)
-      const rawState = envelope ? (parsed as PersistEnvelope).state : parsed
-      const validated = validateUrlState(rawState)
+      // Validate the REAL config payload, not the persist envelope wrapping it. A payload that
+      // is not an envelope cannot have come from any released version — `createJSONStorage` has
+      // wrapped state in `{ state, version }` since the initial commit — so it is treated as a
+      // corrupt link rather than a legacy one.
+      if (!isPersistEnvelope(parsed)) {
+        console.error('Configuration link is not in the expected format')
+        toast.error('Invalid configuration link', {
+          description: 'The shared configuration link is invalid. Using default settings instead.',
+          duration: 5000,
+        })
+        return null
+      }
+      const validated = validateUrlState(parsed.state)
 
       if (!validated) {
         // Validation failed - notify user with toast
@@ -69,9 +78,7 @@ export const urlHashStorage: StateStorage = {
 
       // Re-wrap in the envelope Zustand expects (preserving `version`) so
       // hydration reads the validated config, not the raw unvalidated one.
-      const output = envelope
-        ? { state: validated, version: (parsed as PersistEnvelope).version }
-        : validated
+      const output = { state: validated, version: parsed.version }
 
       // Return validated state as JSON string for Zustand
       return JSON.stringify(output)

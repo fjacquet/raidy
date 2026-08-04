@@ -24,26 +24,44 @@ import type {
 } from './topology'
 
 /** Workload block size options */
-export type BlockSize = '4K' | '8K' | '16K' | '64K' | '128K' | '256K' | '1M'
+export const BLOCK_SIZES = ['4K', '8K', '16K', '64K', '128K', '256K', '1M'] as const
+export type BlockSize = (typeof BLOCK_SIZES)[number]
 
 /** Network speed options */
-export type NetworkSpeed = '1GbE' | '10GbE' | '25GbE' | '40GbE' | '100GbE' | '200GbE' | '400GbE'
+export const NETWORK_SPEEDS = [
+  '1GbE',
+  '10GbE',
+  '25GbE',
+  '40GbE',
+  '100GbE',
+  '200GbE',
+  '400GbE',
+] as const
+export type NetworkSpeed = (typeof NETWORK_SPEEDS)[number]
 
 /** PCIe generation options */
-export type PCIeGen = 'gen3' | 'gen4' | 'gen5'
+export const PCIE_GENS = ['gen3', 'gen4', 'gen5'] as const
+export type PCIeGen = (typeof PCIE_GENS)[number]
 
 /** PCIe lane configuration */
-export type PCIeLanes = 'x4' | 'x8' | 'x16'
+export const PCIE_LANES = ['x4', 'x8', 'x16'] as const
+export type PCIeLanes = (typeof PCIE_LANES)[number]
 
 /** Carbon intensity regions */
-export type CarbonRegion =
-  | 'switzerland'
-  | 'france'
-  | 'norway'
-  | 'germany'
-  | 'usa_average'
-  | 'china'
-  | 'world_average'
+export const CARBON_REGIONS = [
+  'switzerland',
+  'france',
+  'norway',
+  'germany',
+  'usa_average',
+  'china',
+  'world_average',
+] as const
+export type CarbonRegion = (typeof CARBON_REGIONS)[number]
+
+/** File system types available for backup calculations */
+export const FS_TYPES = ['xfs', 'ext4', 'zfs', 'refs', 'ntfs', 'btrfs'] as const
+export type FsType = (typeof FS_TYPES)[number]
 
 /** Hardware configuration state */
 export interface HardwareState {
@@ -142,7 +160,7 @@ export interface AdvancedState {
 /** File system options for backup calculations */
 export interface FilesystemState {
   /** File system type */
-  fsType: 'xfs' | 'ext4' | 'zfs' | 'refs' | 'ntfs' | 'btrfs'
+  fsType: FsType
   /** Supports reflink/CoW for efficient backups */
   supportsReflink: boolean
   /** Backup retention count */

@@ -230,30 +230,36 @@ export interface S2DOptions {
 }
 
 /** HBA types for direct disk passthrough (required for ZFS, vSAN, S2D, etc.) */
-export type HbaType =
-  | 'hba_sas' // Generic SAS HBA (IT mode)
-  | 'hba_nvme' // NVMe HBA / direct attach
-  | 'lsi_9500' // Broadcom/LSI 9500 series (24G SAS)
-  | 'lsi_9400' // Broadcom/LSI 9400 series (12G SAS)
-  | 'dell_hba355i' // Dell HBA355i (12G SAS)
-  | 'dell_hba355e' // Dell HBA355e external (12G SAS)
+export const HBA_TYPES = [
+  'hba_sas', // Generic SAS HBA (IT mode)
+  'hba_nvme', // NVMe HBA / direct attach
+  'lsi_9500', // Broadcom/LSI 9500 series (24G SAS)
+  'lsi_9400', // Broadcom/LSI 9400 series (12G SAS)
+  'dell_hba355i', // Dell HBA355i (12G SAS)
+  'dell_hba355e', // Dell HBA355e external (12G SAS)
+] as const
+export type HbaType = (typeof HBA_TYPES)[number]
 
 /** RAID controller types including Dell PERC */
-export type RaidControllerType =
-  | 'software'
-  | 'hardware'
-  | 'gpu'
-  | 'perc_h755' // Dell PERC H755 (PCIe Gen4)
-  | 'perc_h965i' // Dell PERC H965i (PCIe Gen5)
-  | 'perc_h755n' // Dell PERC H755N (NVMe)
-  | 'perc_h965in' // Dell PERC H965iN (NVMe Gen5)
-  | 'powervault_me5_single' // Dell PowerVault ME5 (Single Controller)
-  | 'powervault_me5_dual' // Dell PowerVault ME5 (Dual Active Controllers)
-  | 'powerstore_t' // Dell PowerStore T Model (integrated appliance)
-  | 'powerscale_node' // Dell PowerScale Node Controller (Isilon)
-  | 'objectscale_node' // Dell ObjectScale Node Controller (ECS-based)
+export const RAID_CONTROLLER_TYPES = [
+  'software',
+  'hardware',
+  'gpu',
+  'perc_h755', // Dell PERC H755 (PCIe Gen4)
+  'perc_h965i', // Dell PERC H965i (PCIe Gen5)
+  'perc_h755n', // Dell PERC H755N (NVMe)
+  'perc_h965in', // Dell PERC H965iN (NVMe Gen5)
+  'powervault_me5_single', // Dell PowerVault ME5 (Single Controller)
+  'powervault_me5_dual', // Dell PowerVault ME5 (Dual Active Controllers)
+  'powerstore_t', // Dell PowerStore T Model (integrated appliance)
+  'powerscale_node', // Dell PowerScale Node Controller (Isilon)
+  'objectscale_node', // Dell ObjectScale Node Controller (ECS-based)
+] as const
+export type RaidControllerType = (typeof RAID_CONTROLLER_TYPES)[number]
 
-/** Combined controller/HBA types */
+/** Every controller value, in HBA-then-RAID order. Derived so `CONTROLLER_LIMITS` below stays
+ * exhaustive by compilation: adding a member here breaks the build until the table follows. */
+export const CONTROLLER_TYPES = [...HBA_TYPES, ...RAID_CONTROLLER_TYPES] as const
 export type ControllerType = HbaType | RaidControllerType
 
 /**
