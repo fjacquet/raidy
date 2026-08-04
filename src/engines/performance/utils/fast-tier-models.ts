@@ -49,6 +49,28 @@ export interface FastTierResult {
 /** Resolves a platform's fast-tier contribution from the tiering/workload context. */
 export type FastTierModelResolver = (ctx: FastTierModelContext) => FastTierResult
 
+/**
+ * Bounded two-tier throughput (issue #111).
+ *
+ * If a fixed fraction `shareA` of total traffic T must be served by a tier with capacity `capA`,
+ * and the remaining `1 - shareA` by a tier with capacity `capB`, both tiers work concurrently but
+ * each is bounded by its own ceiling: `shareA·T ≤ capA` AND `(1-shareA)·T ≤ capB`. The achievable
+ * T is therefore the tighter of the two: `T = min(capA / shareA, capB / (1 - shareA))`.
+ *
+ * A weighted SUM of `capA` and `capB` (`shareA·capA + (1-shareA)·capB`) is not a throughput —
+ * it's an average of two capacities, and it lets the fast tier's raw capacity leak into the total
+ * in proportion to how LITTLE traffic it serves, so the answer gets more absurd the faster the
+ * cache is. Do not "simplify" this back to a weighted sum.
+ *
+ * `shareA` is clamped at the edges (0 or 1) to avoid dividing by zero: at `shareA = 0` everything
+ * is served by tier B, so `T = capB`; at `shareA = 1` everything is served by tier A, so `T = capA`.
+ */
+export function boundedTierThroughput(shareA: number, capA: number, capB: number): number {
+  if (shareA <= 0) return capB
+  if (shareA >= 1) return capA
+  return Math.min(capA / shareA, capB / (1 - shareA))
+}
+
 /** The capacity-tier-only baseline every "no model" and gated-off case falls back to. */
 function capacityOnly(p: Drive, capUsableDrives: number): FastTierResult {
   const capDriveIOPS = Math.min(p.performance.iops_read, p.performance.iops_write)
@@ -88,11 +110,16 @@ function vsanFastTierModel(ctx: FastTierModelContext): FastTierResult {
 
   if (vsanOptions?.diskGroupMode === 'hybrid') {
     const ws = (ctx.workingSetPercent ?? 20) / 100
-    const readCapIOPS =
-      ws * (cacheCount * c.performance.iops_read) + (1 - ws) * (capCount * p.performance.iops_read)
-    const readBW =
-      ws * (cacheCount * c.performance.bandwidth_read_mb) +
-      (1 - ws) * (capCount * p.performance.bandwidth_read_mb)
+    const readCapIOPS = boundedTierThroughput(
+      ws,
+      cacheCount * c.performance.iops_read,
+      capCount * p.performance.iops_read,
+    )
+    const readBW = boundedTierThroughput(
+      ws,
+      cacheCount * c.performance.bandwidth_read_mb,
+      capCount * p.performance.bandwidth_read_mb,
+    )
     return { readCapIOPS, writeCapIOPS, readBW, writeBW }
   }
 
@@ -118,18 +145,25 @@ function vsanFastTierModel(ctx: FastTierModelContext): FastTierResult {
  * 10 touches/10min for sequential) with no vendor-published hit-rate or working-set percentage
  * to anchor a `workingSetPercent`-style split — leaving reads on the capacity-tier-only path is
  * a deliberate decision, not an omission.
+ *
+ * Writes: bounded the same way vSAN/S2D's read blend is (#111) — `randomRatio` of the total write
+ * throughput must clear the OpLog's ceiling and `sequentialRatio` must clear the capacity tier's,
+ * concurrently, so the achievable total is `boundedTierThroughput`, not a weighted sum.
  */
 function nutanixFastTierModel(ctx: FastTierModelContext): FastTierResult {
   const { cacheDrive: c, cacheCount, capacityDrive: p, capUsableDrives, randomPercent } = ctx
   const randomRatio = randomPercent / 100
-  const sequentialRatio = 1 - randomRatio
 
-  const writeCapIOPS =
-    randomRatio * (cacheCount * c.performance.iops_write) +
-    sequentialRatio * (capUsableDrives * p.performance.iops_write)
-  const writeBW =
-    randomRatio * (cacheCount * c.performance.bandwidth_write_mb) +
-    sequentialRatio * (capUsableDrives * p.performance.bandwidth_write_mb)
+  const writeCapIOPS = boundedTierThroughput(
+    randomRatio,
+    cacheCount * c.performance.iops_write,
+    capUsableDrives * p.performance.iops_write,
+  )
+  const writeBW = boundedTierThroughput(
+    randomRatio,
+    cacheCount * c.performance.bandwidth_write_mb,
+    capUsableDrives * p.performance.bandwidth_write_mb,
+  )
 
   const capacityReads = capacityOnly(p, capUsableDrives)
   return {

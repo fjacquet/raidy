@@ -44,7 +44,7 @@ import {
   identifyBottleneck,
   resolveNetworkModel,
 } from './utils/bottleneck-chain'
-import { resolveFastTierModel } from './utils/fast-tier-models'
+import { boundedTierThroughput, resolveFastTierModel } from './utils/fast-tier-models'
 
 export interface PerformanceInput {
   drive: Drive
@@ -239,14 +239,20 @@ export function calculatePerformance(input: PerformanceInput): PerformanceResult
     const cacheCount = tiering.cacheTierDriveCount
     const capCount = tiering.capacityTierDriveCount
     const ws = (workingSetPercent ?? 20) / 100
-    // Reads blend by working set: hot data served from cache tier, cold from capacity tier
-    readCapIOPS =
-      ws * (cacheCount * c.performance.iops_read) + (1 - ws) * (capCount * p.performance.iops_read)
+    // Reads blend by working set: hot data served from cache tier, cold from capacity tier.
+    // Bounded, not a weighted sum — see `boundedTierThroughput` for why (#111).
+    readCapIOPS = boundedTierThroughput(
+      ws,
+      cacheCount * c.performance.iops_read,
+      capCount * p.performance.iops_read,
+    )
     // Writes are absorbed by the fast cache tier (write-back)
     writeCapIOPS = cacheCount * c.performance.iops_write
-    readBW =
-      ws * (cacheCount * c.performance.bandwidth_read_mb) +
-      (1 - ws) * (capCount * p.performance.bandwidth_read_mb)
+    readBW = boundedTierThroughput(
+      ws,
+      cacheCount * c.performance.bandwidth_read_mb,
+      capCount * p.performance.bandwidth_read_mb,
+    )
     writeBW = cacheCount * c.performance.bandwidth_write_mb
   } else if (tiering && capacityDrive) {
     // Every other tiered platform (vSAN OSA disk groups, Ceph WAL/DB offload, Nutanix hybrid,

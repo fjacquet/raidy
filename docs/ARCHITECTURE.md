@@ -339,6 +339,20 @@ flowchart LR
   `randomPercent`, `vsanOptions.diskGroupMode`) — none invents a number the app does not collect.
   See `docs/superpowers/specs/2026-08-04-fast-tier-performance-research.md` for the per-platform
   research and sourcing behind these choices (issue #89).
+
+  > **Two-tier blends are bounded, not weighted sums** (issue #111). When a fixed fraction of
+  > traffic must be served by each of two tiers concurrently (S2D/vSAN's read blend by
+  > `workingSetPercent`, Nutanix's write blend by `randomPercent`), the achievable total is capped
+  > by whichever tier saturates first — `T = min(capA / shareA, capB / (1 - shareA))` — not a
+  > weighted average of the two tiers' capacities. A weighted sum lets the fast tier's raw
+  > capacity leak into the total in proportion to how *little* traffic it serves, so the answer
+  > gets more absurd the faster the cache is (e.g. `ws=0.5`, cache 1,000,000 IOPS, capacity 1,000
+  > IOPS: weighted-sum formula gives 500,500; the correct bound gives ~2,000). All three blends
+  > share one helper, `boundedTierThroughput` in `fast-tier-models.ts`, so they cannot drift back
+  > into the wrong shape. The write-back absorption itself (`writeCapIOPS = cacheCount ×
+  > cacheWriteIOPS` for S2D/vSAN, unconditional on any split) is a different, still-open question —
+  > it models unbounded write-back with no destage/drain-rate ceiling, tracked separately from
+  > this fix.
 - RAID write penalty (2x for RAID1, 4x for RAID5, 6x for RAID6); S2D mirror write penalty scales with the copy count (two-way 2×, three-way 3×, MAP = `mirrorCopies + 0.5`), with `s2dOptions` threaded through `PerformanceInput`/`usePerformanceCalc`
 - Controller limits (IOPS and throughput caps) — skipped for NVMe-direct topologies (vSAN ESA)
 - PCIe bandwidth (lanes × generation speed)

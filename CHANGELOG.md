@@ -37,6 +37,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
   Adding a platform's fast-tier model is now a table entry in `FAST_TIER_MODEL_BY_TOPOLOGY`
   (`src/engines/performance/utils/fast-tier-models.ts`), not a branch in the orchestrator.
+- **Fixed: tiered S2D (and now vSAN OSA hybrid) read IOPS/throughput were computed with an
+  unachievable formula — the corrected numbers drop sharply** (#111). This is the opposite
+  movement from the vSAN OSA/Nutanix increase above, and for a different reason: it's a bug fix,
+  not a new model. The read blend split `workingSetPercent` of traffic to the cache tier and the
+  rest to the capacity tier, then took a **weighted average of the two tiers' raw IOPS/bandwidth
+  capacities** as the achievable total. That is not a throughput — both tiers must clear their own
+  share of the *same* total concurrently (`shareA·T ≤ capA` and `(1−shareA)·T ≤ capB`), so the
+  true achievable total is bounded by whichever tier saturates first
+  (`T = min(capA / shareA, capB / (1 − shareA))`), not their weighted sum. The old formula let a
+  fast cache tier's raw capacity leak into the total in proportion to how *little* traffic it
+  actually served — the faster the cache, the more inflated the number (e.g. `ws=0.5`, cache
+  1,000,000 IOPS, capacity 1,000 IOPS: old formula gave 500,500; the correct bound gives ~2,000).
+  Both S2D's read blend and vSAN OSA hybrid's (which reused it, per #89 above) are corrected via a
+  single shared `boundedTierThroughput` helper so they cannot drift apart again. Write-back
+  absorption itself (`writeCapIOPS = cacheCount × cacheWriteIOPS`, unconditional and uncapped by
+  any destage/drain rate) is unaffected by this fix and remains a known, separately-tracked
+  simplification.
 - **`CONTROLLER_LIMITS` PERC entries recalibrated onto a documented, consistent basis** (#84).
   Throughput was already close to the real per-controller vendor figure; IOPS were 3.4–4.7x
   *below* any measured per-controller number, from an undocumented basis, so the controller layer
