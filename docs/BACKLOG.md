@@ -161,24 +161,6 @@ these went unnoticed.
 Vitest cleans `reportsDirectory` on start, so a parallel invocation kills the coverage run with
 `Something removed the coverage directory "coverage/.tmp"`. Relevant to CI job layout.
 
-### [B16](https://github.com/fjacquet/raidy/issues/74). `AdvancedPanel` has no label state for a controller requirement of `'either'`
-
-`getControllerRequirement` returns `'hba'`, `'raid'` or `'either'`. `AdvancedPanel` only renders
-two states, so on `beegfs_single` the user sees the heading "RAID Controller", the label
-"Controller Model" and the hint *"Hardware RAID controllers manage disk redundancy"* while the
-dropdown offers HBAs and appliance controllers as well. The list itself is correct and the engine
-reads the selected controller's real limits, so no number is affected — but the panel reads as
-wrong.
-
-Related, pre-existing: `controller.hbaHint` says "ZFS, vSAN, and S2D require direct disk access
-via HBA" and is now also shown for `beegfs_raidz2`, which it does not mention. Also pre-existing:
-the union list for `'either'` includes appliance controllers, the same way
-`getControllerOptions('standard')` always has (`isHba: false`, unqualified filter). Fixing that
-for BeeGFS alone would be inconsistent; fixing it globally moves `standard`'s list.
-
-*To close:* add a third label state plus its four locale strings, and reword `hbaHint` to be
-platform-agnostic.
-
 ---
 
 ### [B18](https://github.com/fjacquet/raidy/issues/78). `BeeGfsOptions.fsOverheadPercent` feeds a real calculation but has no UI control

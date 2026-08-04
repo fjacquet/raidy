@@ -29,10 +29,13 @@
     "title": "Controller RAID",
     "hbaModel": "Modello HBA",
     "model": "Modello controller",
+    "eitherTitle": "Controller / HBA",
+    "eitherModel": "Modello controller / HBA",
     "maxIops": "IOPS max",
     "maxThroughput": "Throughput max",
-    "hbaHint": "ZFS, vSAN e S2D richiedono accesso diretto ai dischi via HBA (modalita IT)",
-    "raidHint": "I controller RAID hardware gestiscono la ridondanza dei dischi"
+    "hbaHint": "Le piattaforme che gestiscono la ridondanza via software richiedono accesso diretto ai dischi via HBA (modalita IT)",
+    "raidHint": "I controller RAID hardware gestiscono la ridondanza dei dischi",
+    "eitherHint": "Questa configurazione funziona sia con un controller RAID hardware sia con un HBA"
   },
   "power": {
     "title": "Energia & Sostenibilita",

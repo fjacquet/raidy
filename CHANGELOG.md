@@ -15,6 +15,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   from the table left all 1242 tests passing, silently flipping Longhorn from HBA-only to
   RAID-only. Added a literal, hand-copied expected-membership list directly in the test file
   (deliberately not imported or derived) that now fails on that exact mutation. (#75)
+- **`AdvancedPanel` now has a label state for a controller requirement of `'either'`.**
+  `getControllerRequirement` returns `'hba'`, `'raid'` or `'either'`, but the panel only rendered
+  two states — so on `beegfs_single` the user saw the RAID-only heading, label ("Controller
+  Model") and hint while the dropdown actually offered HBAs and appliance controllers too. Added
+  a third `'either'` state (heading, label, hint) plus its locale strings in all four languages.
+  Reworded `controller.hbaHint`, which enumerated platforms ("ZFS, vSAN, and S2D require..."), to
+  state the underlying rule instead ("platforms that manage redundancy in software need direct
+  disk access via an HBA"), since it was already stale for `beegfs_raidz2` and an enumeration
+  goes stale every time a platform is added. No calculated number is affected — the engine always
+  read the selected controller's real limits. (#74)
 
 ## [1.15.1] - 2026-08-04
 
