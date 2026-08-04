@@ -14,26 +14,6 @@ which touched enough shared code to expose pre-existing gaps.
 
 ## Correctness — real defects, non-blocking
 
-### [B3](https://github.com/fjacquet/raidy/issues/61). Fraction-vs-percent unit confusion in snapshot-reserve fields
-
-`overheadCalculator.ts` multiplies capacity by `netAppOptions.snapshotReserve` as a **fraction**.
-The default is `0.05`. Two related fields are named `…Percent`
-(`powerscaleOptions.snapshotReservePercent`, `powerstoreOptions.snapshotReservePercent`) and
-should be audited for the same confusion.
-
-Two instances of this bug have already been fixed: `getDefaultState()` carried `5` (a 500%
-reserve on Reset), and the NetApp panel slider wrote a raw 0–20 integer straight into the
-fraction field.
-
-*To close:* audit every reserve/ratio/percent field for the unit its consumer expects. Where a
-field is a fraction, bound it `0..1` in `src/utils/schemas.ts`; where it is a percent, name it
-so and divide at the consumer. Add a test per field pinning the unit.
-
-
-## Modelling precision — safe direction, worth improving
-
-All of these understate rather than overstate. That is deliberate: a sizing tool that overstates
-resilience or capacity is worse than one that is coarse.
 
 ### [B8](https://github.com/fjacquet/raidy/issues/66). `beegfs_raid10` unmerged tolerance is pessimistic for wide targets
 
