@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Validator alerts (`src/utils/validators.ts`) and the Longhorn capacity-details card
+  (`src/components/outputs/LonghornCapacityDetails.tsx`) now route their messages through
+  `i18n.t()` instead of hardcoded English, with `fr`/`de`/`it` translations added to
+  `src/i18n/locales/*/validation.json` in lockstep. All interpolated values (counts, percentages,
+  capacities) use i18next interpolation rather than string concatenation. (#71)
+
 ## [1.15.1] - 2026-08-04
 
 ### Fixed

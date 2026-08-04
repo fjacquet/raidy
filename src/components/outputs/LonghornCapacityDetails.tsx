@@ -7,6 +7,7 @@
  * of the ZFS capacity details card.
  */
 
+import { useTranslation } from 'react-i18next'
 import type { LonghornCapacityDetails as LonghornCapacityDetailsType } from '@/types/results'
 import { CapacityRow } from './CapacityRow'
 
@@ -15,6 +16,7 @@ interface LonghornCapacityDetailsProps {
 }
 
 export function LonghornCapacityDetails({ details }: LonghornCapacityDetailsProps) {
+  const { t } = useTranslation('validation')
   const {
     physicalUsable,
     recommendedCommittedData,
@@ -28,48 +30,52 @@ export function LonghornCapacityDetails({ details }: LonghornCapacityDetailsProp
   return (
     <div className="space-y-1">
       <CapacityRow
-        label="Physical Usable"
+        label={t('longhorn.physicalUsable')}
         bytes={physicalUsable}
-        description="Safe app-data ceiling, including snapshot reserve"
+        description={t('longhorn.physicalUsableDesc')}
         highlight
       />
 
       <CapacityRow
-        label="Recommended Committed Data"
+        label={t('longhorn.recommendedCommittedData')}
         bytes={recommendedCommittedData}
-        description="Commit this much today; leaves growth headroom"
+        description={t('longhorn.recommendedCommittedDataDesc')}
         highlight
         color="text-primary-400"
       />
 
       <CapacityRow
-        label="Per-Node Allocation"
+        label={t('longhorn.perNodeAllocation')}
         bytes={perNodeUsable}
-        description="Usable capacity per storage node"
+        description={t('longhorn.perNodeAllocationDesc')}
       />
 
       {/* Longhorn Configuration Summary */}
       <div className="mt-4 pt-4 border-t border-slate-200 dark:border-surface-700">
         <h4 className="text-sm font-semibold text-slate-900 dark:text-white mb-2">
-          Longhorn Configuration
+          {t('longhorn.configTitle')}
         </h4>
         <div className="grid grid-cols-2 gap-2 text-sm">
           <div>
-            <span className="text-slate-500 dark:text-slate-500">Replicas:</span>
+            <span className="text-slate-500 dark:text-slate-500">{t('longhorn.replicas')}:</span>
             <span className="text-slate-800 dark:text-slate-200 ml-2">{replicaCount}</span>
           </div>
           <div>
-            <span className="text-slate-500 dark:text-slate-500">Disk mode:</span>
+            <span className="text-slate-500 dark:text-slate-500">{t('longhorn.diskMode')}:</span>
             <span className="text-slate-800 dark:text-slate-200 ml-2 capitalize">{diskMode}</span>
           </div>
           <div>
-            <span className="text-slate-500 dark:text-slate-500">Min-available:</span>
+            <span className="text-slate-500 dark:text-slate-500">
+              {t('longhorn.minAvailable')}:
+            </span>
             <span className="text-slate-800 dark:text-slate-200 ml-2">
               {minimalAvailablePercent}%
             </span>
           </div>
           <div>
-            <span className="text-slate-500 dark:text-slate-500">Over-provisioning:</span>
+            <span className="text-slate-500 dark:text-slate-500">
+              {t('longhorn.overProvisioning')}:
+            </span>
             <span className="text-slate-800 dark:text-slate-200 ml-2">
               {overProvisioningPercent}%
             </span>

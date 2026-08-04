@@ -75,8 +75,8 @@ function validateCephRam(
     return {
       severity: 'warning',
       code: 'CEPH_RAM_LOW',
-      message: `Ceph: Insufficient RAM per OSD (${ramPerOsd.toFixed(1)} GB). Minimum recommended: 2 GB/OSD.`,
-      recommendation: `Add more RAM or reduce OSD count. Current: ${osdsPerNode} OSDs with ${ramPerNodeGb} GB RAM.`,
+      message: tv('ceph.ramLow', { ramPerOsd: ramPerOsd.toFixed(1) }),
+      recommendation: tv('ceph.ramLowRecommendation', { osdsPerNode, ramPerNodeGb }),
     }
   }
 
@@ -84,7 +84,7 @@ function validateCephRam(
     return {
       severity: 'info',
       code: 'CEPH_RAM_MARGINAL',
-      message: `Ceph: RAM per OSD is marginal (${ramPerOsd.toFixed(1)} GB). Consider 4 GB/OSD for production.`,
+      message: tv('ceph.ramMarginal', { ramPerOsd: ramPerOsd.toFixed(1) }),
     }
   }
 
@@ -100,8 +100,8 @@ function validateZfsOccupation(zfsOptions: ZfsOptions): ValidationAlert | null {
     return {
       severity: 'warning',
       code: 'ZFS_OCCUPATION_HIGH',
-      message: `ZFS: Max occupation set to ${zfsOptions.maxOccupation}%. Performance degrades significantly above 80%.`,
-      recommendation: 'Keep pool occupation below 80% for optimal performance.',
+      message: tv('zfs.occupationHigh', { maxOccupation: zfsOptions.maxOccupation }),
+      recommendation: tv('zfs.occupationHighRecommendation'),
     }
   }
   return null
@@ -139,8 +139,8 @@ function validateControllerCompatibility(
     return {
       severity: 'error',
       code: 'RAID_CONTROLLER_INCOMPATIBLE',
-      message: `${topology.type.toUpperCase()}: Hardware RAID controller detected. This topology requires an HBA (IT mode) for direct disk access.`,
-      recommendation: `Use an HBA like LSI 9400/9500 series or Dell HBA355i. RAID controllers hide disk identity and prevent proper data protection.`,
+      message: tv('controller.raidIncompatible', { topologyType: topology.type.toUpperCase() }),
+      recommendation: tv('controller.raidIncompatibleRecommendation'),
     }
   }
 
@@ -148,7 +148,7 @@ function validateControllerCompatibility(
     return {
       severity: 'info',
       code: 'HBA_WITH_STANDARD_RAID',
-      message: `Using HBA with standard RAID topology. Consider using a hardware RAID controller for better cache and battery backup.`,
+      message: tv('controller.hbaWithStandardRaid'),
     }
   }
 
@@ -172,15 +172,15 @@ function validateDriveType(drive: Drive, topology: Topology): ValidationAlert | 
       return {
         severity: 'error',
         code: 'SMR_DRIVE_INCOMPATIBLE',
-        message: `SMR drive detected: ${drive.model}. SMR drives cause timeouts and disk ejection during rebuild operations.`,
-        recommendation: 'Use CMR (Conventional Magnetic Recording) drives for ZFS and S2D pools.',
+        message: tv('driveType.smrIncompatible', { model: drive.model }),
+        recommendation: tv('driveType.smrIncompatibleRecommendation'),
       }
     }
     return {
       severity: 'warning',
       code: 'SMR_DRIVE_WARNING',
-      message: `SMR drive detected: ${drive.model}. SMR drives have poor random write performance.`,
-      recommendation: 'Consider CMR drives for better performance and reliability.',
+      message: tv('driveType.smrWarning', { model: drive.model }),
+      recommendation: tv('driveType.smrWarningRecommendation'),
     }
   }
 
@@ -196,9 +196,8 @@ function validateSectorSize(drive: Drive): ValidationAlert | null {
     return {
       severity: 'info',
       code: 'SECTOR_512N_DEPRECATED',
-      message: `Drive uses 512n sector size. Modern systems prefer 512e or 4Kn.`,
-      recommendation:
-        'For new deployments, consider drives with 4K native sectors for best performance.',
+      message: tv('sectorSize.deprecated512n'),
+      recommendation: tv('sectorSize.deprecated512nRecommendation'),
     }
   }
   return null
@@ -218,8 +217,8 @@ function validateS2DCache(s2dOptions: S2DOptions): ValidationAlert | null {
       return {
         severity: 'warning',
         code: 'S2D_CACHE_LOW',
-        message: `S2D: Less than 2 cache drives per node (${cachePerNode.toFixed(1)}). Microsoft recommends minimum 2.`,
-        recommendation: 'Add more cache drives for better write performance and protection.',
+        message: tv('s2d.cacheLow', { cachePerNode: cachePerNode.toFixed(1) }),
+        recommendation: tv('s2d.cacheLowRecommendation'),
       }
     }
   }
@@ -242,8 +241,8 @@ function validateCacheRatio(s2dOptions: S2DOptions): ValidationAlert | null {
       return {
         severity: 'warning',
         code: 'S2D_CACHE_RATIO_LOW',
-        message: `S2D: Cache ratio is less than 10% (${(cacheRatio * 100).toFixed(1)}%). Performance may be impacted.`,
-        recommendation: 'Increase cache tier size to at least 10% of capacity tier.',
+        message: tv('s2d.cacheRatioLow', { cacheRatioPct: (cacheRatio * 100).toFixed(1) }),
+        recommendation: tv('s2d.cacheRatioLowRecommendation'),
       }
     }
   }
@@ -272,32 +271,32 @@ function validateS2DResiliency(topology: Topology, s2dOptions: S2DOptions): Vali
     alerts.push({
       severity: 'error',
       code: 'S2D_3WAY_MIN_NODES',
-      message: `S2D: Three-way mirror requires at least 3 fault domains (nodes); ${faultDomains} configured.`,
-      recommendation: 'Add nodes or switch to a two-way mirror.',
+      message: tv('s2d.threeWayMinNodes', { faultDomains }),
+      recommendation: tv('s2d.threeWayMinNodesRecommendation'),
     })
   }
   if (level === 'parity' && faultDomains < 3) {
     alerts.push({
       severity: 'error',
       code: 'S2D_PARITY_MIN_NODES',
-      message: `S2D: Single parity requires at least 3 fault domains (nodes); ${faultDomains} configured.`,
-      recommendation: 'Add nodes or switch to a mirror resiliency.',
+      message: tv('s2d.parityMinNodes', { faultDomains }),
+      recommendation: tv('s2d.parityMinNodesRecommendation'),
     })
   }
   if (level === 'dual_parity' && faultDomains < 4) {
     alerts.push({
       severity: 'error',
       code: 'S2D_DUAL_PARITY_MIN_NODES',
-      message: `S2D: Dual parity requires at least 4 fault domains (nodes); ${faultDomains} configured.`,
-      recommendation: 'Add nodes or switch to a mirror resiliency.',
+      message: tv('s2d.dualParityMinNodes', { faultDomains }),
+      recommendation: tv('s2d.dualParityMinNodesRecommendation'),
     })
   }
   if (level === 'map' && faultDomains < 4) {
     alerts.push({
       severity: 'error',
       code: 'S2D_MAP_MIN_NODES',
-      message: `S2D: Mirror-accelerated parity requires at least 4 fault domains (nodes); ${faultDomains} configured.`,
-      recommendation: 'Add nodes or switch to a mirror resiliency.',
+      message: tv('s2d.mapMinNodes', { faultDomains }),
+      recommendation: tv('s2d.mapMinNodesRecommendation'),
     })
   }
 
@@ -306,9 +305,8 @@ function validateS2DResiliency(topology: Topology, s2dOptions: S2DOptions): Vali
     alerts.push({
       severity: 'warning',
       code: 'S2D_SINGLE_PARITY_DISCOURAGED',
-      message:
-        'S2D: Single parity is supported but not recommended for clustered Storage Spaces Direct — it tolerates only one failure.',
-      recommendation: 'Prefer three-way mirror or dual parity.',
+      message: tv('s2d.singleParityDiscouraged'),
+      recommendation: tv('s2d.singleParityDiscouragedRecommendation'),
     })
   }
 
@@ -317,10 +315,8 @@ function validateS2DResiliency(topology: Topology, s2dOptions: S2DOptions): Vali
     alerts.push({
       severity: 'warning',
       code: 'S2D_2NODE_NESTED_RECOMMENDED',
-      message:
-        'S2D: 2-node clusters should use nested resiliency to survive a drive failure during a node outage.',
-      recommendation:
-        'Use nested two-way mirror or nested mirror-accelerated parity for 2-node clusters.',
+      message: tv('s2d.twoNodeNestedRecommended'),
+      recommendation: tv('s2d.twoNodeNestedRecommendedRecommendation'),
     })
   }
 
@@ -329,9 +325,8 @@ function validateS2DResiliency(topology: Topology, s2dOptions: S2DOptions): Vali
     alerts.push({
       severity: 'info',
       code: 'S2D_3WAY_RECOMMENDED',
-      message:
-        "S2D: Two-way mirror tolerates a single failure. Three-way mirror is Microsoft's recommended default for production high availability.",
-      recommendation: 'Switch Mirror Copies to 3-way for two-failure tolerance.',
+      message: tv('s2d.threeWayRecommended'),
+      recommendation: tv('s2d.threeWayRecommendedRecommendation'),
     })
   }
 
@@ -349,8 +344,10 @@ function validateNetAppRaid(drive: Drive, netAppOptions: NetAppOptions): Validat
     return {
       severity: 'warning',
       code: 'NETAPP_RAID_TEC_RECOMMENDED',
-      message: `NetApp: Using RAID-DP with drives > 10TB (${(drive.capacity_raw / (1024 * 1024 * 1024 * 1024)).toFixed(1)} TB). RAID-TEC recommended for better protection.`,
-      recommendation: 'Switch to RAID-TEC (triple parity) for drives larger than 10TB.',
+      message: tv('netapp.raidTecRecommended', {
+        tb: (drive.capacity_raw / (1024 * 1024 * 1024 * 1024)).toFixed(1),
+      }),
+      recommendation: tv('netapp.raidTecRecommendedRecommendation'),
     }
   }
 
@@ -366,9 +363,8 @@ function validateSynologyFilesystem(synologyOptions: SynologyOptions): Validatio
     return {
       severity: 'info',
       code: 'SYNOLOGY_BTRFS_RECOMMENDED',
-      message:
-        'Synology: Using ext4 filesystem. Btrfs provides additional data protection features.',
-      recommendation: 'Consider Btrfs for snapshots, self-healing, and advanced protection.',
+      message: tv('synology.btrfsRecommended'),
+      recommendation: tv('synology.btrfsRecommendedRecommendation'),
     }
   }
   return null
@@ -384,21 +380,21 @@ function validateDriveCount(driveCount: number, topology: Topology): ValidationA
         return {
           severity: 'error',
           code: 'ZFS_RAIDZ1_MIN_DRIVES',
-          message: 'ZFS RAIDZ1 requires minimum 3 drives.',
+          message: tv('driveCount.zfsRaidz1'),
         }
       }
       if (topology.level === 'raidz2' && driveCount < 4) {
         return {
           severity: 'error',
           code: 'ZFS_RAIDZ2_MIN_DRIVES',
-          message: 'ZFS RAIDZ2 requires minimum 4 drives.',
+          message: tv('driveCount.zfsRaidz2'),
         }
       }
       if (topology.level === 'raidz3' && driveCount < 5) {
         return {
           severity: 'error',
           code: 'ZFS_RAIDZ3_MIN_DRIVES',
-          message: 'ZFS RAIDZ3 requires minimum 5 drives.',
+          message: tv('driveCount.zfsRaidz3'),
         }
       }
       break
@@ -408,7 +404,7 @@ function validateDriveCount(driveCount: number, topology: Topology): ValidationA
         return {
           severity: 'error',
           code: 'S2D_MIN_DRIVES',
-          message: 'S2D redundant configurations require minimum 4 drives.',
+          message: tv('driveCount.s2dMin'),
         }
       }
       break
@@ -418,7 +414,7 @@ function validateDriveCount(driveCount: number, topology: Topology): ValidationA
         return {
           severity: 'warning',
           code: 'CEPH_MIN_OSDS',
-          message: 'Ceph requires minimum 3 OSDs for proper data distribution.',
+          message: tv('driveCount.cephMinOsds'),
         }
       }
       break
@@ -443,9 +439,8 @@ function validatePowerFlex(
     alerts.push({
       severity: 'error',
       code: 'POWERFLEX_HDD_NOT_SUPPORTED',
-      message: `PowerFlex: HDD drives are no longer supported. Drive "${drive.model}" is an HDD.`,
-      recommendation:
-        'PowerFlex requires SSD or NVMe drives. HDDs are not supported in current PowerFlex versions.',
+      message: tv('powerflex.hddNotSupported', { model: drive.model }),
+      recommendation: tv('powerflex.hddNotSupportedRecommendation'),
     })
   }
 
@@ -458,10 +453,8 @@ function validatePowerFlex(
     alerts.push({
       severity: 'error',
       code: 'POWERFLEX_FG_3WAY_NOT_SUPPORTED',
-      message:
-        'PowerFlex: Fine Granularity mode does not support 3-way mirror. Only 2-way mirror is available.',
-      recommendation:
-        'Use Medium Granularity for 3-way mirror, or use 2-way mirror with Fine Granularity.',
+      message: tv('powerflex.fg3wayNotSupported'),
+      recommendation: tv('powerflex.fg3wayNotSupportedRecommendation'),
     })
   }
 
@@ -490,9 +483,8 @@ function validateVsan(
       alerts.push({
         severity: 'error',
         code: 'VSAN_ESA_NVME_REQUIRED',
-        message: `vSAN ESA: NVMe drives required. Drive "${drive.model}" is ${drive.type}.`,
-        recommendation:
-          'vSAN Express Storage Architecture (ESA) only supports NVMe drives. Use vSAN OSA for SAS/SATA/HDD configurations.',
+        message: tv('vsan.esaNvmeRequired', { model: drive.model, driveType: drive.type }),
+        recommendation: tv('vsan.esaNvmeRequiredRecommendation'),
       })
     }
 
@@ -501,9 +493,8 @@ function validateVsan(
       alerts.push({
         severity: 'warning',
         code: 'VSAN_ESA_LOW_ENDURANCE',
-        message: `vSAN ESA: Drive "${drive.model}" has low endurance (${drive.reliability.dwpd} DWPD).`,
-        recommendation:
-          'vSAN ESA recommends drives with at least 1 DWPD for write-intensive workloads.',
+        message: tv('vsan.esaLowEndurance', { model: drive.model, dwpd: drive.reliability.dwpd }),
+        recommendation: tv('vsan.esaLowEnduranceRecommendation'),
       })
     }
 
@@ -518,8 +509,8 @@ function validateVsan(
       alerts.push({
         severity: 'error',
         code: 'VSAN_ESA_MIN_HOSTS',
-        message: `vSAN ESA ${topology.level}: Requires minimum ${minHosts} hosts, only ${serverCount} configured.`,
-        recommendation: `Increase server count to at least ${minHosts} hosts for this protection level.`,
+        message: tv('vsan.esaMinHosts', { level: topology.level, minHosts, serverCount }),
+        recommendation: tv('vsan.esaMinHostsRecommendation', { minHosts }),
       })
     }
   }
@@ -531,9 +522,8 @@ function validateVsan(
       alerts.push({
         severity: 'info',
         code: 'VSAN_OSA_HDD_CACHE_RECOMMENDED',
-        message: 'vSAN OSA with HDD: SSD cache tier recommended for performance.',
-        recommendation:
-          'Add NVMe or SSD cache drives for hybrid configuration. Minimum 10% cache-to-capacity ratio.',
+        message: tv('vsan.osaHddCacheRecommended'),
+        recommendation: tv('vsan.osaHddCacheRecommendedRecommendation'),
       })
     }
 
@@ -549,8 +539,8 @@ function validateVsan(
       alerts.push({
         severity: 'error',
         code: 'VSAN_OSA_MIN_HOSTS',
-        message: `vSAN OSA ${topology.level}: Requires minimum ${minHosts} hosts, only ${serverCount} configured.`,
-        recommendation: `Increase server count to at least ${minHosts} hosts for this protection level.`,
+        message: tv('vsan.osaMinHosts', { level: topology.level, minHosts, serverCount }),
+        recommendation: tv('vsan.osaMinHostsRecommendation', { minHosts }),
       })
     }
   }

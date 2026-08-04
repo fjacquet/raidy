@@ -134,20 +134,6 @@ Pre-existing and shared with RAID 50/60.
 
 ## Test and tooling debt
 
-### [B13](https://github.com/fjacquet/raidy/issues/71). i18n: hardcoded English outside the BeeGFS surface
-
-`src/components/outputs/.../LonghornCapacityDetails.tsx` and roughly fifteen validators in
-`src/utils/validators.ts` emit hardcoded English. `src/i18n/locales/*/validation.json` exists but
-was unused before the BeeGFS alerts.
-
-Note two conventions discovered during the BeeGFS i18n work, neither documented anywhere:
-`fr`/`de`/`it` `validation.json` are written **without accents or umlauts**, and
-`topologyConstants.ts` hardcodes English for topology type and level labels on **every** platform
-— those never pass through `t()`.
-
-*To close:* route the remaining validators through the `i18n.t()` pattern already used by the
-BeeGFS alerts, and decide deliberately whether the unaccented convention should stay.
-
 ### [B14](https://github.com/fjacquet/raidy/issues/72). Roughly 34 pre-existing missing i18n keys
 
 `powervault.info.*` and `powerflex.info.*` missing from `fr`/`de`/`it`; `zfs.ashift*` and
