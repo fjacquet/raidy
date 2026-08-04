@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **Dell PERC H975i (PERC13) controller option** (`perc_h975i`). Broadcom SAS5132W, PCIe Gen5
   x16, RAID 0/1/5/6/10/50/60, supercapacitor-backed cache, up to 16 NVMe drives per controller.
-  Rated at 12,900,000 IOPS / 56,000 MB/s per controller (Signal65 / Dell H20137, Feb 2026, RAID 5,
+  Rated at 12,900,000 IOPS / 56,000 MB/s per controller (Signal65 PERC13 lab testing, corroborated by StorageReview, RAID 5,
   16 NVMe, one controller). (#84)
 
 ### Changed

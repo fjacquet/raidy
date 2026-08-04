@@ -246,7 +246,7 @@ flowchart LR
 > to the real figure — so the controller layer of the bottleneck chain was not comparable across
 > controllers). The four PERC entries are sourced from two vendor-commissioned, independently
 > verified lab reports at this exact basis: Tolly Report #223103 (Jan 2023, PERC 10/11/12 vs each
-> other, FIO on RHEL 8.6) and Signal65 / Dell H20137 (Feb 2026, PERC13). Every non-PERC entry
+> other, FIO on RHEL 8.6) and Signal65 PERC13 lab testing (2026), corroborated by StorageReview. Every non-PERC entry
 > (generic HBAs, LSI/Broadcom cards, Dell HBA355i/e, PowerVault ME5, PowerStore, PowerScale,
 > ObjectScale, and the generic `software`/`hardware`/`gpu` placeholders) is marked `ESTIMATED` in
 > its own comment in `CONTROLLER_LIMITS` — no published per-controller figure at this basis could

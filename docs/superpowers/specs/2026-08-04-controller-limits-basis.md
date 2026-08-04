@@ -42,7 +42,7 @@ Both sources measure at the stated basis, one controller, independently verified
   Generation Server Performance vs PERC 11 & PERC 10" — commissioned by Dell, testing by
   Broadcom, verified by Tolly, FIO on RHEL 8.6. SAS results: 16x 24G SAS SSD, one controller
   (Table 2, tests 1 and 2). NVMe results: 8 NVMe SSDs, one controller (Table 4, tests 14 and 15).
-- **Signal65 / Dell H20137** (February 2026), "Meet PERC13: The Gen5 NVMe HW RAID Breakthrough"
+- **Signal65 PERC13 lab testing** (2026), corroborated by StorageReview's PERC13 review, "Meet PERC13: The Gen5 NVMe HW RAID Breakthrough"
   — lab-validated on PowerEdge 17G, RAID 5, 16 NVMe drives, one controller.
 
 | Key | Controller | iops (old → new) | throughputMBs (old → new) | Source |
@@ -51,7 +51,7 @@ Both sources measure at the stated basis, one controller, independently verified
 | `perc_h755n` | PERC11 NVMe (H755N) | 1,000,000 → **3,402,370** | 14,000 → **14,108** | Tolly #223103 Table 4, tests 15 & 14, PERC 11 col. |
 | `perc_h965i` | PERC12 SAS (H965i) | 1,200,000 → **5,148,110** | 22,000 → **27,800** | Tolly #223103 Table 2, tests 2 & 1, PERC 12 col. |
 | `perc_h965in` | PERC12 NVMe (H965iN) | 1,800,000 → **6,918,729** | 28,000 → **28,205** | Tolly #223103 Table 4, tests 15 & 14, PERC 12 col. |
-| `perc_h975i` | PERC13 NVMe (H975i) — new | — → **12,900,000** | — → **56,000** | Signal65 H20137, RAID5 16 NVMe. |
+| `perc_h975i` | PERC13 NVMe (H975i) — new | — → **12,900,000** | — → **56,000** | Signal65 PERC13 lab testing / StorageReview, RAID5, 16 NVMe. |
 
 Values are used exactly as measured — not rounded, not "harmonised" between entries. The odd
 figures (e.g. `3,402,370`) are measurements; their oddness is the evidence they were measured

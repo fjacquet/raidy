@@ -938,7 +938,7 @@ export const FILESYSTEM_OVERHEAD = {
  *     by Broadcom, verified by Tolly, FIO on RHEL 8.6. SAS results: 16x 24G SAS SSD, one
  *     controller (Table 2, tests 1 and 2). NVMe results: 8 NVMe SSDs, one controller (Table 4,
  *     tests 14 and 15).
- *   - **Signal65 / Dell H20137** (February 2026), "Meet PERC13: The Gen5 NVMe HW RAID
+ *   - **Signal65 PERC13 lab testing** (2026), corroborated by StorageReview's PERC13 review, "Meet PERC13: The Gen5 NVMe HW RAID
  *     Breakthrough" — lab-validated on PowerEdge 17G, RAID 5, 16 NVMe drives, one controller.
  *
  * Each PERC entry's comment cites its source table/test so the next person adding a PERC
@@ -1004,7 +1004,7 @@ export const CONTROLLER_LIMITS: Record<
     name: 'Dell PERC H965iN (NVMe)',
     isHba: false,
   },
-  // Signal65 / Dell H20137 (Feb 2026), "Meet PERC13", RAID 5, 16 NVMe, one controller.
+  // Signal65 PERC13 lab testing, corroborated by storagereview.com/review/dell-perc13. RAID 5, 16 NVMe, one controller.
   // Dell PERC H975i: Broadcom SAS5132W, PCIe Gen5 x16, RAID 0/1/5/6/10/50/60,
   // supercapacitor-backed cache, up to 16 NVMe drives per controller.
   perc_h975i: {
