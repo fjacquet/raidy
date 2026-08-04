@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **XFS stripe alignment now follows the capacity tier on tiered configurations.** The performance
+  engine's `sunit`/`swidth` recommendation was still computed from the raw Hardware-panel drive
+  count even after the media layer itself was sized from the capacity tier, so tiered S2D, vSAN
+  OSA, Ceph, Nutanix and BeeGFS configurations could show a stripe width wider than the pool that
+  actually holds data. Alignment now uses the same spare-adjusted capacity-tier population as the
+  media layer, so the two can no longer diverge. Untiered configurations are unaffected. (#90)
+
 ## [1.15.1] - 2026-08-04
 
 ### Fixed

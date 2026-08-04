@@ -259,7 +259,9 @@ flowchart LR
 - Controller limits (IOPS and throughput caps) — skipped for NVMe-direct topologies (vSAN ESA)
 - PCIe bandwidth (lanes × generation speed)
 - Network bandwidth limits — for vSAN, refined by full-duplex, on-the-wire compression, and the east-west traffic fraction (writes × replication/EC + remote reads); for BeeGFS, by write amplification from Buddy Mirroring
-- XFS stripe alignment (sunit/swidth)
+- XFS stripe alignment (sunit/swidth) — for a tiered configuration this also uses the
+  spare-adjusted capacity-tier drive count, the same population the Media layer above uses, so the
+  suggested stripe width always matches the pool that actually holds data
 
 > **Per-platform network model** (`NETWORK_MODEL_BY_TOPOLOGY` in
 > `src/engines/performance/utils/bottleneck-chain.ts`) is a

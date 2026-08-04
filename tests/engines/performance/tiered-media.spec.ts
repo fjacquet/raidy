@@ -135,6 +135,28 @@ describe('calculatePerformance tiered media layer', () => {
     })
   }
 
+  for (const { name, topology } of TIERED_PLATFORMS) {
+    it(`${name}: XFS alignment follows the capacity tier's spare-adjusted count, not the Hardware panel's`, () => {
+      const tiered = calculatePerformance(inputFor(topology, { tiering })).xfsAlignment
+      // Reference: same cluster described directly as the capacity tier (drive + count), no
+      // tiering — proves alignment reads the resolved capacity-tier population, matching the
+      // media layer above rather than diverging from it.
+      const reference = calculatePerformance(
+        inputFor(topology, {
+          drive: capacityDrive,
+          driveCount: CAPACITY_TIER_COUNT,
+          hotSpares: HOT_SPARES,
+        }),
+      ).xfsAlignment
+
+      expect(tiered).toEqual(reference)
+
+      // And it must differ from what the raw Hardware-panel count would have produced.
+      const rawHardwarePanel = calculatePerformance(inputFor(topology)).xfsAlignment
+      expect(tiered?.swidth).not.toBe(rawHardwarePanel?.swidth)
+    })
+  }
+
   it('leaves the tiered S2D write-back-cache branch untouched', () => {
     const s2d: Topology = { type: 's2d', level: 'mirror' }
     const tieredS2d = mediaLayer(inputFor(s2d, { tiering, workingSetPercent: 20 }))
