@@ -37,6 +37,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   platform's network behavior going forward is a table entry, not another orchestrator branch.
 
 ### Fixed
+- **`NetAppOptions.snapshotReserve` unit confusion.** The field is a *fraction* —
+  `overheadCalculator.ts` multiplies capacity by it directly — but its Zod bound was
+  `.min(0).max(100)` and the panel slider wrote raw percent into it, so moving the slider to 5
+  meant a **500%** snapshot reserve and a crafted link with `100` validated into a 100× reserve.
+  The bound is now `0..1`, and the slider converts on both sides (still displayed in percent).
+  The default (`0.05` = 5%) and therefore every default NetApp result is unchanged; only
+  previously-nonsensical non-default slider positions move. The two `snapshotReservePercent`
+  fields (PowerStore, PowerScale) were checked and are correct — percent everywhere, divided by
+  100 in the engine.
 - **BeeGFS `chunkSizeKb` and `numTargets` are now labelled informational.** Both are real BeeGFS
   tunables but had no consumer anywhere in `src/engines/` — two controls a user could move with
   zero effect on any output. They are now marked informational in the panel (tooltip + hint) the

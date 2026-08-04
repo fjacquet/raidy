@@ -405,7 +405,12 @@ export interface NetAppOptions {
   raidType: 'raid_dp' | 'raid_tec'
   /** Advanced Drive Partitioning version */
   adpVersion: 'none' | 'adpv1' | 'adpv2'
-  /** Snapshot reserve percentage (0-20%, default 5% or 0% on AFF) */
+  /**
+   * Snapshot reserve as a FRACTION of capacity after parity (0–0.2; default 0.05 = 5%, or 0
+   * on AFF). Not a percent: `overheadCalculator.ts` multiplies by this value directly, unlike
+   * `PowerStoreOptions`/`PowerScaleOptions.snapshotReservePercent`, which are divided by 100
+   * there. The NetApp panel's slider works in percent and converts on both sides.
+   */
   snapshotReserve: number
   /** Data Reduction Ratio (1.0 = none, 3.0 = 3:1 compression+dedup) */
   dataReductionRatio: number

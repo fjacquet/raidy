@@ -367,7 +367,7 @@ describe('URL Storage - Serialization Roundtrip', () => {
         platform: 'aff_a' as const,
         raidType: 'raid_tec' as const,
         adpVersion: 'adpv2' as const,
-        snapshotReserve: 20,
+        snapshotReserve: 0.2, // FRACTION (=20%), see NetAppOptions.snapshotReserve
         dataReductionRatio: 3.5,
         waflOverhead: 0.1,
         compression: true,
@@ -754,7 +754,7 @@ describe('URL Storage - Platform Options Persistence (Task 9)', () => {
         platform: 'aff_a',
         raidType: 'raid_tec',
         adpVersion: 'adpv2',
-        snapshotReserve: 10,
+        snapshotReserve: 0.1, // FRACTION (=10%)
         dataReductionRatio: 3.5,
         waflOverhead: 0.015,
         compression: true,
@@ -796,7 +796,11 @@ describe('URL Storage - Platform Options Persistence (Task 9)', () => {
     console.info(
       `[Task 9] pathological all-platforms-customized compressed length: ${compressed.length} chars`,
     )
-    expect(compressed.length).toBeLessThan(4000)
+    // Tight bound on purpose. The payload is a fixed literal and LZ-String is deterministic,
+    // so this measures 2827 chars on every run — a `< 4000` bound had 30% slack and no
+    // discriminating power. ~3% headroom absorbs an incidental field rename without letting a
+    // real regression (a platform's options object escaping omitDefaults, ~200-500 chars) pass.
+    expect(compressed.length).toBeLessThan(2900)
   })
 })
 
@@ -988,7 +992,7 @@ describe('URL Storage - Security: Malicious URL Protection (SEC-01, SEC-02, SEC-
         platform: 'aff_a',
         raidType: 'raid_dp',
         adpVersion: 'adpv2',
-        snapshotReserve: 5,
+        snapshotReserve: 0.05, // FRACTION (=5%)
         dataReductionRatio: 3.0,
         waflOverhead: 0.015,
         compression: true,
@@ -1133,6 +1137,29 @@ describe('URL Storage - Security: Malicious URL Protection (SEC-01, SEC-02, SEC-
       const result = urlHashStorage.getItem('raidy')
 
       expect(result).toBeNull()
+    })
+
+    it('should reject a NetApp snapshotReserve above 1 (it is a fraction, not a percent)', () => {
+      // overheadCalculator.ts multiplies capacityAfterParity by this value directly, so the
+      // old `.max(100)` bound let a crafted link validate a 100x snapshot reserve. The panel
+      // slider works in percent and divides by 100 on the way in, so 100 can never come from
+      // the UI — only from a hand-edited link.
+      const maliciousState = createValidState({
+        netAppOptions: {
+          platform: 'aff_a',
+          raidType: 'raid_dp',
+          adpVersion: 'adpv2',
+          snapshotReserve: 100,
+          dataReductionRatio: 3.0,
+          waflOverhead: 0.015,
+          compression: true,
+          dedup: true,
+          zeroDetection: true,
+        },
+      })
+      setMaliciousUrlHash(maliciousState)
+
+      expect(urlHashStorage.getItem('raidy')).toBeNull()
     })
 
     it('should reject negative percentages', () => {

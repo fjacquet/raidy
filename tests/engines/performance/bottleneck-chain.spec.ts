@@ -129,16 +129,26 @@ describe('resolveNetworkModel', () => {
       expect(limitsOn.bandwidth).toBeLessThan(limitsOff.bandwidth)
     })
 
-    it('floors the traffic fraction at 0.1 for a degenerate workload mix', () => {
-      // Even at the theoretical minimum (impossible in practice since read+write=100%),
-      // the floor guards against a divide-by-zero in calculateNetworkLimits.
-      const model = resolveNetworkModel('beegfs', {
-        level: 'beegfs_raid6',
-        readPercent: 100,
-        serverCount: 4,
-        beeGfsOptions: { ...DEFAULT_BEEGFS_OPTIONS, storageBuddyMirror: false },
-      })
-      expect(model?.trafficFraction).toBeGreaterThanOrEqual(0.1)
+    it('bottoms out at exactly 1.0 — the 0.1 floor is never the binding constraint', () => {
+      // The previous version of this test asserted `>= 0.1` against a model whose minimum over
+      // ALL inputs is 1.0, so it could not fail. Assert the reachable minimum instead: since
+      // readRatio + writeRatio = 1 and both amplifications are >= 1, the fraction is 1.0 at
+      // every read/write mix without buddy mirroring, and >= 1.0 with it. Any mutation that
+      // dropped an amplification below 1, or let the 0.1 floor bind, fails here.
+      const fractions: number[] = []
+      for (const storageBuddyMirror of [false, true]) {
+        for (let readPercent = 0; readPercent <= 100; readPercent += 5) {
+          const model = resolveNetworkModel('beegfs', {
+            level: 'beegfs_raid6',
+            readPercent,
+            serverCount: 4,
+            beeGfsOptions: { ...DEFAULT_BEEGFS_OPTIONS, storageBuddyMirror },
+          })
+          fractions.push(model?.trafficFraction ?? Number.NaN)
+        }
+      }
+      expect(Math.min(...fractions)).toBe(1)
+      expect(Math.max(...fractions)).toBe(2) // 100% writes with buddy mirroring
     })
   })
 })

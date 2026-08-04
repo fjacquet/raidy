@@ -152,20 +152,23 @@ describe('BeeGFS volumetry — MDT via tiering', () => {
     )
 
     expect(mirrored.usableCapacity).toBeCloseTo(noMirror.usableCapacity, -2)
-    expect(mirrored.beeGfsDetails?.mdtUsableCapacity ?? 0).toBeCloseTo(
-      (noMirror.beeGfsDetails?.mdtUsableCapacity ?? 0) / 2,
-      -2,
-    )
+    // Absolute values, not a ratio against the engine's own output: 2 x 960 GB MDT drives ->
+    // 1.92 TB raw, x 0.5 for the RAID1/RAID10 metadata volume -> 960 GB, halved again by
+    // metadata buddy mirroring -> 480 GB. Pinning the ratio alone left the 0.5 factor free.
+    expect(noMirror.beeGfsDetails?.mdtRawCapacity).toBeCloseTo(1_920_000_000_000, -3)
+    expect(noMirror.beeGfsDetails?.mdtUsableCapacity).toBeCloseTo(960_000_000_000, -3)
+    expect(mirrored.beeGfsDetails?.mdtUsableCapacity).toBeCloseTo(480_000_000_000, -3)
   })
 
   it('estimated file count matches the 500 GB / 150M ext4 density', () => {
     const result = calculateVolumetry(
       createVolumetryInput(0, raid6, { beeGfsOptions: tieredOptions(false) }),
     )
-    const details = result.beeGfsDetails
-    expect(details).toBeDefined()
-    const expectedFileCount = ((details?.mdtUsableCapacity ?? 0) / 500_000_000_000) * 150_000_000
-    expect(details?.estimatedFileCount).toBeCloseTo(expectedFileCount, 4)
+    // Absolute expectation, NOT a recomputation of the engine's formula from the engine's own
+    // mdtUsableCapacity — that earlier form stayed green when the 0.5 MDT factor was mutated
+    // to 0.45, because both sides moved together.
+    // 960 GB usable MDT / 500 GB x 150M files = 288M files.
+    expect(result.beeGfsDetails?.estimatedFileCount).toBeCloseTo(288_000_000, 0)
   })
 
   it('advisory status transitions none -> under -> ok', () => {

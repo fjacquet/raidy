@@ -25,6 +25,8 @@ From ThinkParQ / BeeGFS documentation:
 | RAID6 storage target width | 10–12 drives is the recommended balance | [Storage Node Tuning](https://doc.beegfs.io/latest/advanced_topics/storage_tuning.html) |
 | Striping (`numtargets`, `chunksize` 512 K) | performance only, no capacity effect | idem |
 
+> **As-built divergence.** `numtargets` and `chunksize` ended up **informational**, not modelled. `numtargets` is a *per-file* stripe width, so it caps single-file throughput, while every performance figure this tool reports is a cluster aggregate bounded by the total storage-target count; `chunksize` shapes per-target sequential efficiency, and the bottleneck chain has no per-file layer for a chunk boundary to act on. Both are labelled informational in the panel (tooltip + hint) rather than wired to an invented formula. See the doc-comments on `BeeGfsOptions.chunkSizeKb` / `numTargets`.
+
 Additional architecture reference: [BeeGFS Reference Architecture (June 2026)](https://www.beegfs.io/c/wp-content/uploads/2026/06/BeeGFS-Ref-architecture-June-2026pdf.pdf), [NetApp BeeGFS sizing guidelines](https://github.com/NetAppDocs/beegfs/blob/main/second-gen/beegfs-design-solution-sizing-guidelines.adoc).
 
 ## Decisions
@@ -55,10 +57,11 @@ export interface BeeGfsOptions {
   drivesPerTarget: number          // default 12
   storageBuddyMirror: boolean      // default false → usable ×0.5
   metadataBuddyMirror: boolean     // default true  → MDT requirement ×2
-  chunkSizeKb: 512 | 1024 | 2048   // default 512, sequential performance
-  numTargets: number               // per-file stripe width, default 4, performance only
-  network: 'ib-hdr' | 'ib-ndr' | '100gbe' | '25gbe'  // default '100gbe'
+  chunkSizeKb: 512 | 1024 | 2048   // default 512, informational (see divergence note above)
+  numTargets: number               // per-file stripe width, default 4, informational
+  network: 'ib-hdr' | 'ib-ndr' | '100gbe' | '25gbe'  // default '100gbe', informational
   fsOverheadPercent: number        // ext4/xfs under the targets, default 2
+  metadataTargets: boolean         // default false — AS-BUILT ADDITION, see below
   tiering?: TieringConfig          // fastTier = MDT, capacityTier = ST
 }
 ```
@@ -91,6 +94,8 @@ status              = mdtUsable < mdtRecommendedMin ? 'under' : 'ok'
 
 Surfaced in the capacity card, plus a `validators.ts` alert when `status === 'under'` or when no MDT is configured at all.
 
+> **As-built addition: the `metadataTargets` opt-in gate.** The spec above let MDT tiering activate as soon as both `TieringPanel` drive pickers were filled in. That is a trap: enabling tiering also switches the *storage-target* drive selection from the Hardware sidebar to `tiering.capacityTier`, so simply exploring the MDT pickers would silently move the capacity calculation onto a different drive. Implementation added an explicit `metadataTargets: boolean` (default `false`) that gates both the `TieringPanel` render and the `resolveTiering` branch, mirroring Ceph's existing `walDbOffload` toggle. This is an improvement on what the spec describes and is the shipped behaviour.
+
 ### Performance
 
 ```
@@ -99,14 +104,16 @@ getWritePenalty(level, options):
   return base × (storageBuddyMirror ? 2 : 1)
 ```
 
-Reads scale linearly with drive count (striping across `numTargets`); writes are `driveCount × driveIOPS × write% / penalty`. Latency gets a `case 'beegfs'` in `performance/utils.ts` reflecting client–server network overhead (close to Ceph, above `standard`).
+Reads scale linearly with drive count; writes are `driveCount × driveIOPS × write% / penalty`. Latency gets a `case 'beegfs'` in `performance/utils.ts` reflecting client–server network overhead (close to Ceph, above `standard`).
 
 **Network model generalisation.** Buddy Mirroring doubles write traffic on the wire. Today the only platform with a non-default `NetworkModel` is vSAN, hardcoded at `performance/index.ts:300-306` against `bottleneck-chain.ts:137-177`. This is replaced by a `NETWORK_MODEL_BY_TOPOLOGY: Partial<Record<TopologyType, NetworkModelResolver>>` lookup. vSAN behaviour must be bit-identical afterwards — its existing performance specs are the regression gate, and they are run before the BeeGFS entry is added. BeeGFS contributes `trafficFraction = write% × (buddy ? 2 : 1) + read% × 1`.
 
 ### Resilience
 
 - `resilienceWorker.ts` `getParityDrives`: `beegfs_raid6`/`beegfs_raidz2` → 2, `beegfs_raid10` → 1, `beegfs_single` → 0.
-- `OutputDashboard.tsx`: pass `mirrorCopies: 2` when `storageBuddyMirror` is on, and pass the **storage target count** (`floor(driveCount × serverCount / drivesPerTarget)`) where the worker expects `serverCount`. The worker already overloads that field as the RAID-group count (`resilienceWorker.ts:139-140`), so the worker contract is unchanged.
+- `OutputDashboard.tsx`: pass `mirrorCopies: 2` when `storageBuddyMirror` is on, and pass the **storage target count** where the worker expects `serverCount`. The worker already overloads that field as the RAID-group count, so the worker contract is unchanged.
+
+> **As-built divergence.** The wiring landed in `useResilience.ts` rather than `OutputDashboard.tsx`, and the target count is **not** `floor(driveCount × serverCount / drivesPerTarget)` as written above — that expression applies neither hot spares nor MDT tiering, so it disagreed with the capacity card (100 drives / 10 spares / `drivesPerTarget` 12: volumetry 7 targets, resilience 8 groups). The shipped derivation is the exported `resolveBeeGfsSimulationScope`, which reuses volumetry's own `resolveBeeGfsUsableDrives` + `calculateStorageTargets`, so both surfaces describe one cluster. Under MDT tiering the drive capacity/URE/AFR handed to the worker also follow the capacity tier.
 
 ### Sustainability
 
@@ -127,13 +134,13 @@ Each is a pure function of its inputs and testable in isolation, matching the ex
 ## Error handling
 
 - `drivesPerTarget` below the level minimum (4 for RAID6/RAIDz2, 2 for RAID10) → validation alert, no NaN.
-- `driveCount × serverCount` not a multiple of `drivesPerTarget` → warning showing the wasted drives; capacity is computed on whole targets only.
+- Usable drives (after hot spares and MDT tiering) not a multiple of `drivesPerTarget` → warning showing the wasted drives; capacity is computed on whole targets only. **As built and verified:** `usableDrives = storageTargetCount × drivesPerTarget`, so stranded drives contribute to raw capacity (and their own breakdown bucket) but never to usable. The warning's count comes from `beeGfsDetails.strandedDrives`, the same number the capacity card prints.
 - `storageBuddyMirror` with fewer than 2 nodes → alert (buddy groups must span fault domains).
 - No MDT configured → advisory notice, not an error; BeeGFS can co-locate metadata on storage nodes.
 
 ## Testing
 
-- `tests/fixtures/beegfs-vectors.ts` — sourced `PlatformVector[]` following the `longhorn-vectors.ts` documentation rigour. Vectors: RAID6 ×12 no buddy (83.3 %), RAID6 ×12 buddy (41.7 %), RAID10 no buddy (50 %), RAID10 buddy (25 %), `single` + buddy (50 %), and one case with separate MDT proving the fast tier lands in raw only.
+- `tests/fixtures/beegfs-vectors.ts` — sourced `PlatformVector[]` following the `longhorn-vectors.ts` documentation rigour. Vectors: RAID6 ×12 no buddy (83.3 %), RAID6 ×12 buddy (41.7 %), RAID10 no buddy (50 %), RAID10 buddy (25 %), `single` + buddy (50 %), a RAID6 ×10 target-width case, and a **stranding** case (5 nodes × 20 drives at `drivesPerTarget` 12 → 8 whole targets, 4 stranded) pinning the whole-targets-only rule below. The separate-MDT case lives in `tests/engines/volumetry/beegfs.spec.ts` rather than the vector file.
 - `tests/engines/volumetry/vectors/beegfs.spec.ts` — loop harness.
 - `tests/engines/volumetry/beegfs.spec.ts` — behavioural: advisory status transitions, estimated file count, `drivesPerTarget` sensitivity, `metadataBuddyMirror` has no effect on usable.
 - vSAN performance specs must pass unchanged after the network-model refactor.

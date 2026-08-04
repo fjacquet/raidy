@@ -12,6 +12,7 @@
 import { compressToEncodedURIComponent } from 'lz-string'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useConfigStore } from '@/store'
+import { DEFAULT_BEEGFS_OPTIONS } from '@/types'
 
 describe('Config store URL persistence — platform options backward compatibility', () => {
   beforeEach(() => {
@@ -20,6 +21,29 @@ describe('Config store URL persistence — platform options backward compatibili
   })
 
   it('falls back to full DEFAULT_*_OPTIONS objects when a legacy link omits every new platform option', async () => {
+    // Seed the ONE options object the legacy payload below actually carries, to a value the
+    // payload contradicts. Without a discriminating seed somewhere this whole test would pass
+    // with `getItem` stubbed to return null, since `beforeEach` already leaves the store at
+    // its defaults.
+    //
+    // Deliberately NOT seeding the omitted objects: zustand's default merge is
+    // `{ ...currentState, ...persistedState }`, so a key absent from the link keeps whatever
+    // the live store holds. On the production path — one `rehydrate()` at store creation,
+    // over the initial state — that IS the defaults, which is exactly what the assertions
+    // below describe. Seeding them would test a rehydrate-over-a-dirty-store scenario the app
+    // never performs, and would fail for a reason that is not a defect. The real regression
+    // risk for the omitted objects (a loosened schema installing a *partial* object) is
+    // covered by the rejection test that follows.
+    useConfigStore.setState({
+      s2dOptions: {
+        ...useConfigStore.getState().s2dOptions,
+        faultDomains: 2,
+        reserveStrategy: 'drive_failure',
+        storageTiers: false,
+      },
+    })
+    expect(useConfigStore.getState().s2dOptions.faultDomains).toBe(2)
+
     // Simulates a link generated before this fix: no vsanOptions, cephOptions,
     // longhornOptions, beeGfsOptions, powerFlexOptions and no s2dOptions.tieringConfig.
     const legacyPayload = {
@@ -74,14 +98,46 @@ describe('Config store URL persistence — platform options backward compatibili
     expect(state.powerFlexOptions.protectionMode).toBe('mirror')
 
     // s2dOptions itself WAS in the link (fully valid, no tieringConfig) — it must
-    // be honored as-is, and the optional tieringConfig field must not resurrect
-    // stale data from the previous store state.
+    // be honored as-is, overwriting the seeded values above, and the optional
+    // tieringConfig field must not resurrect stale data from the previous store state.
     expect(state.s2dOptions.storageTiers).toBe(true)
+    expect(state.s2dOptions.faultDomains).toBe(4)
+    expect(state.s2dOptions.reserveStrategy).toBe('node_failure')
     expect(state.s2dOptions.tieringConfig).toBeUndefined()
 
     // Fields the legacy link DID carry are still honored.
     expect(state.driveCount).toBe(12)
     expect(state.topology).toEqual({ type: 'beegfs', level: 'beegfs_raid6' })
+  })
+
+  it('rejects a link carrying a PARTIAL options object rather than installing it', async () => {
+    // The failure mode the full-default assertions above cannot see: a schema loosened to
+    // `.partial()` would let a half-populated options object through, and zustand's shallow
+    // merge replaces the whole key, leaving the store holding an object with missing fields
+    // that every engine then reads as `undefined`. Seed non-defaults so a green run proves
+    // the payload was rejected wholesale and the live state survived untouched.
+    const seeded = {
+      ...useConfigStore.getState().longhornOptions,
+      diskMode: 'root' as const,
+      minimalAvailablePercent: 25,
+    }
+    useConfigStore.setState({ longhornOptions: seeded })
+
+    const partialPayload = {
+      driveCount: 30,
+      // Missing snapshotHeadroom / growthHeadroom / overProvisioningPercent.
+      longhornOptions: { diskMode: 'dedicated', minimalAvailablePercent: 10 },
+    }
+    window.location.hash = `#raidy=${compressToEncodedURIComponent(
+      JSON.stringify({ state: partialPayload, version: 1 }),
+    )}`
+
+    await useConfigStore.persist.rehydrate()
+
+    const state = useConfigStore.getState()
+    expect(state.longhornOptions).toEqual(seeded)
+    // The whole payload is rejected, so the valid sibling field does not land either.
+    expect(state.driveCount).not.toBe(30)
   })
 
   it('round-trips a fully populated set of platform options through the real store', async () => {
@@ -114,7 +170,9 @@ describe('Config store URL persistence — platform options backward compatibili
     // URL) then restore the captured hash to simulate opening a fresh tab on
     // the previously shared link.
     useConfigStore.getState().resetToDefaults()
-    expect(useConfigStore.getState().beeGfsOptions.metadataTargets).toBe(false)
+    // Assert the WHOLE object was wiped, not just the gating boolean: every field asserted
+    // after rehydration must therefore have come from the URL, not from surviving state.
+    expect(useConfigStore.getState().beeGfsOptions).toEqual(DEFAULT_BEEGFS_OPTIONS)
     window.location.hash = persistedHash
 
     await useConfigStore.persist.rehydrate()
@@ -188,7 +246,10 @@ describe('Config store URL persistence — platform options backward compatibili
 
     const hash = window.location.hash
     console.info(`[Task 9] realistic single-platform link length: ${hash.length} chars`)
-    expect(hash.length).toBeLessThan(2000)
+    // Tight bound on purpose: deterministic payload, measures 822 chars on every run. The
+    // previous `< 2000` had 2.4x slack, so an entire extra platform options object could
+    // leak into a realistic link without failing anything.
+    expect(hash.length).toBeLessThan(870)
   })
 
   it('omits every default-valued *Options object from a genuinely fresh store — not just after resetToDefaults()', () => {

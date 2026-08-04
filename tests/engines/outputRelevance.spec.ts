@@ -85,16 +85,27 @@ describe('shouldShowSection', () => {
     expect(shouldShowSection('longhornDetails', noLonghorn)).toBe(false)
   })
   it('hides beegfsDetails unless beeGfsDetails present', () => {
-    const c: SectionContext = {
+    // Vary ONE thing at a time. The earlier version flipped topology AND details together, so
+    // deleting the `beeGfsDetails != null` conjunct from outputRelevance.ts left it green.
+    const both: SectionContext = {
       topology: { type: 'beegfs', level: 'beegfs_raid6' },
       volumetry: vol({ beeGfsDetails: {} as never }),
     }
-    expect(shouldShowSection('beegfsDetails', c)).toBe(true)
-    const noBeeGfs: SectionContext = {
-      topology: { type: 'standard', level: 'RAID5' },
+    expect(shouldShowSection('beegfsDetails', both)).toBe(true)
+
+    // Right topology, no details — isolates the `beeGfsDetails != null` conjunct.
+    const noDetails: SectionContext = {
+      topology: { type: 'beegfs', level: 'beegfs_raid6' },
       volumetry: vol(),
     }
-    expect(shouldShowSection('beegfsDetails', noBeeGfs)).toBe(false)
+    expect(shouldShowSection('beegfsDetails', noDetails)).toBe(false)
+
+    // Details present, wrong topology — isolates the topology conjunct.
+    const wrongTopology: SectionContext = {
+      topology: { type: 'standard', level: 'RAID5' },
+      volumetry: vol({ beeGfsDetails: {} as never }),
+    }
+    expect(shouldShowSection('beegfsDetails', wrongTopology)).toBe(false)
   })
   it('shows backup only when hasBackup', () => {
     expect(shouldShowSection('backup', { hasBackup: true })).toBe(true)

@@ -274,7 +274,11 @@ const NetAppOptionsSchema = z.object({
   platform: z.enum(['aff_a', 'aff_c', 'fas', 'asa', 'e_series']),
   raidType: z.enum(['raid_dp', 'raid_tec']),
   adpVersion: z.enum(['none', 'adpv1', 'adpv2']),
-  snapshotReserve: z.number().min(0).max(100).finite(),
+  // FRACTION, not a percent: overheadCalculator.ts multiplies capacityAfterParity by this
+  // value directly (unlike powerstore/powerscale `snapshotReservePercent`, which are divided
+  // by 100 there). A `.max(100)` bound let a crafted link validate a 100x reserve; the panel
+  // slider works in percent and divides by 100 on the way in.
+  snapshotReserve: z.number().min(0).max(1).finite(),
   dataReductionRatio: z.number().min(1).max(20).finite(),
   waflOverhead: z.number().min(0).max(1).finite(),
   compression: z.boolean(),
