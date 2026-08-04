@@ -47,8 +47,11 @@ export type {
 } from './results'
 // Topology types
 export type {
+  BeeGfsOptions,
+  BeeGfsTopology,
   CephOptions,
   CephTopology,
+  ControllerRequirement,
   ControllerType,
   HbaType,
   LonghornOptions,
@@ -86,6 +89,7 @@ export type {
 } from './topology'
 export {
   CONTROLLER_LIMITS,
+  DEFAULT_BEEGFS_OPTIONS,
   DEFAULT_CEPH_OPTIONS,
   DEFAULT_CONTROLLER_BY_TOPOLOGY,
   DEFAULT_CONTROLLER_OPTIONS,
@@ -105,6 +109,7 @@ export {
   DISTRIBUTED_SPARE_TOPOLOGIES,
   FILESYSTEM_OVERHEAD,
   getControllerOptions,
+  getControllerRequirement,
   HBA_REQUIRED_TOPOLOGIES,
   isVsanTopology,
   POWERSTORE_MODEL_OVERHEAD,

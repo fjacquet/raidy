@@ -22,7 +22,7 @@ export interface TieringPanelProps {
   /** Number of servers/nodes (for per-server display) */
   serverCount: number
   /** Platform name for contextual labels */
-  platform: 's2d' | 'vsan' | 'ceph'
+  platform: 's2d' | 'vsan' | 'ceph' | 'beegfs'
   /** Whether to show cache mode selector */
   showCacheMode?: boolean
   /** Whether to show working set slider */

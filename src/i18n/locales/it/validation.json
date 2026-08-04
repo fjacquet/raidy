@@ -22,5 +22,15 @@
     "zfsSlop": "ZFS riserva 1/32 della capacita del pool per metadati e operazioni COW",
     "compressionRecommended": "Compressione raccomandata per questo tipo di carico",
     "reflinkBackup": "Filesystem con reflink permette backup efficienti in spazio"
+  },
+  "beegfs": {
+    "buddyMirrorMinNodes": "Il Buddy Mirroring di storage richiede almeno 2 nodi ({{serverCount}} configurato/i)",
+    "buddyMirrorMinNodesRecommendation": "Aggiungi un secondo nodo o disattiva il Buddy Mirroring di storage",
+    "strandedDrives": "{{stranded}} disco/i non riempiono un target di storage completo di {{drivesPerTarget}} e sono inutilizzati",
+    "noMdt": "Nessun target di metadati configurato - attiva il dimensionamento dei target di metadati per dimensionare l'MDT",
+    "mdtUnderMin": "La capacita dei target di metadati e inferiore al minimo consigliato da BeeGFS di {{recommendedMin}}",
+    "mdtUnderMinRecommendation": "Aumenta la capacita dei target di metadati ad almeno {{recommendedTypical}} (raccomandazione tipica)",
+    "raidTargetNeedsRaidController": "BeeGFS {{level}}: HBA rilevato. Un target RAID hardware locale deve trovarsi dietro un controller RAID, non un HBA in modalita IT.",
+    "raidTargetNeedsRaidControllerRecommendation": "Seleziona un controller RAID (PERC, LSI) o passa al livello beegfs_raidz2, che richiede effettivamente un HBA in modalita IT."
   }
 }

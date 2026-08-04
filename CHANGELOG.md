@@ -5,6 +5,131 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **BeeGFS platform support** across all four engines. BeeGFS is modeled unlike every other
+  platform: the topology level (`beegfs_raid6`, `beegfs_raid10`, `beegfs_raidz2`,
+  `beegfs_single`) is the storage target's **local** RAID rather than a cluster-wide efficiency
+  fraction, since BeeGFS federates storage targets and has no data protection of its own.
+  Cluster-level protection is Buddy Mirroring, expressed as two independent booleans
+  (`storageBuddyMirror`, `metadataBuddyMirror`) rather than folded into the level. Metadata
+  targets reuse the existing `TieringConfig` primitive (fast tier = MDT, counts toward raw
+  capacity but never usable — the same treatment Ceph WAL/DB offload gets).
+  - Volumetry: `strategies/beegfs.ts` (target-width-aware local RAID efficiency, Buddy
+    Mirroring, 2% filesystem overhead) plus a **metadata-target sizing advisory**
+    (`beeGfsDetails`) comparing MDT usable capacity against BeeGFS's documented 0.3–0.5%
+    rule-of-thumb, an estimated file count, and a validation alert when the MDT is undersized
+    or absent.
+  - Performance: `strategies/beegfs.ts` (write-penalty by level, Buddy-Mirroring-aware) and a
+    BeeGFS entry in the new per-platform network model (see below).
+  - Resilience: wired into the Monte Carlo worker (`resilienceWorker.ts`) — parity drives by
+    level, Buddy Mirroring as `mirrorCopies: 2`, storage-target count in place of `serverCount`.
+  - UI: options panel (target width, Buddy Mirroring toggles, chunk size, network, MDT tiering
+    via the shared `TieringPanel`), capacity detail card, and i18n across en/fr/de/it.
+
+### Changed
+- **Per-platform network model refactor** (`NETWORK_MODEL_BY_TOPOLOGY` in
+  `src/engines/performance/utils/bottleneck-chain.ts`): replaced a vSAN-hardcoded branch in
+  `performance/index.ts` with a topology-keyed lookup table of network-model resolvers. vSAN
+  behavior is unchanged (its existing performance specs are the regression gate); BeeGFS is the
+  second entry, doubling write traffic on the wire when Storage Buddy Mirroring is on. Adding a
+  platform's network behavior going forward is a table entry, not another orchestrator branch.
+
+### Fixed
+- **BeeGFS is no longer classified as pure software-defined storage — the HBA rule is now
+  level-aware.** `'beegfs'` was listed in `HBA_REQUIRED_TOPOLOGIES` alongside Ceph and vSAN, so
+  `getControllerOptions()` offered **only** IT-mode HBAs. BeeGFS never sees the disks: each
+  storage target is a *local* volume it addresses as one block device, and in the most common
+  deployment that device is a hardware RAID6 volume on a PERC or LSI controller. Because the
+  bottleneck chain's Controller layer reads `CONTROLLER_LIMITS[controller]`, a BeeGFS RAID6 node
+  was modelled with roughly **2.7× the controller IOPS ceiling and 1.6× the throughput** it
+  really has (Dell PERC H755 = 750 000 IOPS / 12 000 MB/s vs the cheapest HBA at 2 000 000 IOPS /
+  19 200 MB/s) — an optimistic error. The rule now resolves through the new
+  `getControllerRequirement(type, level?)`, which returns `'raid'` for `beegfs_raid6` and
+  `beegfs_raid10`, `'hba'` for `beegfs_raidz2` (ZFS needs direct disk access), and `'either'` for
+  `beegfs_single` (one drive per target works both ways, so the UI offers the union). Changing
+  BeeGFS level re-snaps the controller to a valid one, and a validation error fires if a
+  hardware-RAID BeeGFS level is loaded from a link with an HBA selected. `requiresHba` and
+  `getControllerOptions` gained an optional `level` argument: **every other platform's controller
+  list and numeric output are unchanged**, with or without it.
+- **`NetAppOptions.snapshotReserve` unit confusion.** The field is a *fraction* —
+  `overheadCalculator.ts` multiplies capacity by it directly — but its Zod bound was
+  `.min(0).max(100)` and the panel slider wrote raw percent into it, so moving the slider to 5
+  meant a **500%** snapshot reserve and a crafted link with `100` validated into a 100× reserve.
+  The bound is now `0..1`, and the slider converts on both sides (still displayed in percent).
+  The default (`0.05` = 5%) and therefore every default NetApp result is unchanged; only
+  previously-nonsensical non-default slider positions move. The two `snapshotReservePercent`
+  fields (PowerStore, PowerScale) were checked and are correct — percent everywhere, divided by
+  100 in the engine.
+  - **User-visible consequence for old shared links.** A link created *after* someone moved the
+    old NetApp snapshot-reserve slider encodes a value above the new `0..1` bound, so it now
+    fails validation on load. Rejection is whole-payload: the **entire** configuration resets to
+    defaults, not just the NetApp options. This is correct — those links encode a ≥100% reserve
+    that drives usable capacity to zero or negative — but it means such a link no longer restores
+    anything. Re-share the configuration to get a valid link.
+- **BeeGFS `chunkSizeKb` and `numTargets` are now labelled informational.** Both are real BeeGFS
+  tunables but had no consumer anywhere in `src/engines/` — two controls a user could move with
+  zero effect on any output. They are now marked informational in the panel (tooltip + hint) the
+  same way `network` already was, rather than wired to a fabricated formula: `numTargets` caps
+  *single-file* throughput while every performance figure here is a cluster aggregate bounded by
+  the total storage-target count, and the bottleneck chain has no per-file layer for a chunk
+  boundary to act on. The reasoning is recorded on the fields themselves in
+  `src/types/topology.ts`. No calculated result changes.
+- **Controller cache policy documented as not modelled.** `RaidControllerOptions.writePolicy`,
+  `readPolicy` and `cacheSize` reach the config export but no engine, and were investigated as
+  part of the BeeGFS controller work. They stay unmodelled by determination, not by omission:
+  this engine reports **sustained** IOPS and throughput, and a battery/flash-backed write-back
+  cache is a finite buffer — under a sustained write stream the host rate converges on the rate
+  at which the cache drains to the array, so the ceiling is the back-end array's and the RAID 5/6
+  read-modify-write cost is deferred, never removed. The real benefits (write latency, burst
+  absorption) belong to the *unsaturated* cache, a transient the engine does not represent. The
+  derivation is recorded on the `writePolicy` type. No calculated result changes.
+- **BeeGFS stranded drives no longer count as usable capacity.** Usable capacity was computed
+  from every drive left after hot spares, while the validator warned *"N drive(s) do not fill a
+  full storage target and are stranded"* and the capacity card printed the same count. A storage
+  target **is** a local RAID volume, so a partial group is not a target at all: capacity is now
+  computed on `storageTargetCount × drivesPerTarget` drives only, and the stranded remainder gets
+  its own "BeeGFS Stranded Drives" breakdown bucket (raw capacity still counts every drive).
+  Measured overstatement: 4.2% at 5 nodes × 20 drives / `drivesPerTarget` 12, and ~92% at 23
+  drives / 12. The stranded-drive validation alert now reads its count from the engine's
+  `beeGfsDetails` instead of recomputing it, so the warning and the capacity card cannot name
+  different numbers. BeeGFS only — no other platform's capacity moves.
+- **BeeGFS resilience and capacity now describe the same cluster.** `useResilience` derived its
+  drive count and fault-group count from `driveCount × serverCount`, applying neither hot spares
+  nor MDT tiering, while volumetry used the hot-spare- and tiering-resolved count: 100 drives
+  with 10 hot spares at `drivesPerTarget` 12 gave volumetry 7 storage targets and resilience 8
+  groups, and with MDT tiering configured the worker simulated the stale Hardware-panel drive
+  count (112 drives, 9 groups) against a 48-drive capacity tier. Both sides now go through the
+  same `resolveBeeGfsUsableDrives` / `calculateStorageTargets` pair via the new exported
+  `resolveBeeGfsSimulationScope`, and under tiering the drive capacity/URE/AFR handed to the
+  worker follow the capacity tier instead of modelling MDT NVMe as capacity-tier HDD. The
+  model's superset invariant is preserved — see `docs/ARCHITECTURE.md`. BeeGFS only; every other
+  platform's simulation input is byte-identical.
+- **Security: URL-shared configuration links were not actually validated.** Zustand's `persist`
+  middleware wraps state in a `{ state, version }` envelope before `urlHashStorage` sees it, but
+  validation ran against that whole envelope instead of the payload inside it. Because the
+  top-level schema is passthrough with every field optional, an envelope-only object always
+  validated trivially, so every Zod schema added for URL persistence was inert in production — a
+  crafted link could inject out-of-range or malformed values (e.g. `driveCount: 999999999`,
+  `hotSpares: 'not-a-number'`) directly into the live store. Fixed by validating the payload
+  inside the detected envelope; see `docs/SECURITY.md` for detail.
+- **All 15 platform `*Options` objects now round-trip through "Copy URL to Share"** —
+  `vsanOptions`, `cephOptions`, `longhornOptions`, `beeGfsOptions`, `powerFlexOptions`, and
+  several nested fields (`s2dOptions.tieringConfig`, `nutanixOptions.tiering`,
+  `powerstoreOptions.model`/`systemOverheadPercent`) were previously missing from the store's
+  `partialize`/Zod schemas and silently reset to defaults whenever a shared link was opened.
+  `omitDefaults()` now strips default-valued keys before compression so realistic single-platform
+  links stay well under 1KB.
+- **`resetToDefaults()` now matches a fresh page load.** `getDefaultState()` previously restated
+  every platform's default options as hand-typed literals instead of importing the canonical
+  `DEFAULT_*_OPTIONS` constants, and had drifted on five fields:
+  `s2dOptions.reserveStrategy`, `synologyOptions.cacheMode`, and three `netAppOptions` fields.
+  `getDefaultState()` now derives from the same constants `topologySlice.ts` uses, so reset and
+  initial state cannot diverge again. One of the five, `netAppOptions.snapshotReserve` moving
+  from `5` to `0.05`, also fixes a real bug: the engine treats that field as a fraction, so the
+  old reset value meant a 500% snapshot reserve.
+
 ## [1.14.0] - 2026-07-12
 
 ### Changed

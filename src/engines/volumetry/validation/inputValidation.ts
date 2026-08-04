@@ -12,7 +12,8 @@
 import type { TieredCapacityResult } from '@/engines/shared/tiering'
 import type { Drive } from '@/types/drive'
 import type { VolumetryResult } from '@/types/results'
-import type { Topology } from '@/types/topology'
+import type { BeeGfsOptions, Topology } from '@/types/topology'
+import { BEEGFS_MIN_DRIVES_PER_TARGET } from '../strategies/beegfs'
 
 /**
  * Zero-state result for invalid configurations.
@@ -82,6 +83,59 @@ export function validateReplicaPlacement(
     const rawCapacity = drive?.capacity_raw ? drive.capacity_raw * driveCount : 0
     return createZeroStateResult(`Need ≥ ${replicas} nodes for ${replicas} replicas`, rawCapacity)
   }
+  return null
+}
+
+/**
+ * Validate BeeGFS-specific requirements. Returns a zero-state result (with raw
+ * capacity preserved) when any guard fails, else null:
+ * - Buddy Mirroring needs at least 2 nodes (buddy groups must span fault domains).
+ * - `drivesPerTarget` must be at least the level's physical RAID minimum (e.g. a
+ *   dual-parity RAID6/RAIDz2 target needs >= 4 drives) — below that, the target
+ *   is not a valid instance of the chosen RAID level and any resulting
+ *   `dataFraction` would not correspond to the actual configuration.
+ * - The effective drive count must form at least one whole storage target.
+ *
+ * Must run AFTER tiering is resolved (like {@link validateDriveCount}): when MDT
+ * tiering is configured, the top-level `driveCount` is conventionally 0 ("not
+ * used when tiering enabled" — see S2D/Ceph tests), and the storage-target
+ * drive count comes from the capacity tier instead.
+ */
+export function validateBeeGfsRequirements(
+  topology: Topology | null | undefined,
+  drive: Drive | null | undefined,
+  driveCount: number,
+  serverCount: number,
+  hotSpares: number,
+  beeGfsOptions: BeeGfsOptions | null | undefined,
+  tieredCapacity: TieredCapacityResult | null,
+): VolumetryResult | null {
+  if (topology?.type !== 'beegfs' || !beeGfsOptions) return null
+
+  const rawCapacity = drive?.capacity_raw ? drive.capacity_raw * driveCount : 0
+
+  if (beeGfsOptions.storageBuddyMirror === true && serverCount < 2) {
+    return createZeroStateResult('Buddy mirroring needs >= 2 nodes', rawCapacity)
+  }
+
+  const drivesPerTarget = beeGfsOptions.drivesPerTarget
+  const minDrivesPerTarget = BEEGFS_MIN_DRIVES_PER_TARGET[topology.level] ?? 4
+  if (drivesPerTarget < minDrivesPerTarget) {
+    return createZeroStateResult(
+      `${topology.level} needs >= ${minDrivesPerTarget} drives per target`,
+      rawCapacity,
+    )
+  }
+
+  const effectiveDriveCount = tieredCapacity ? tieredCapacity.capacityTierDriveCount : driveCount
+  const effectiveDrives = effectiveDriveCount - hotSpares
+  if (drivesPerTarget > 0 && effectiveDrives < drivesPerTarget) {
+    return createZeroStateResult(
+      `Need >= ${drivesPerTarget} drives for one storage target`,
+      rawCapacity,
+    )
+  }
+
   return null
 }
 

@@ -5,6 +5,23 @@
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 import {
+  DEFAULT_BEEGFS_OPTIONS,
+  DEFAULT_CEPH_OPTIONS,
+  DEFAULT_CONTROLLER_OPTIONS,
+  DEFAULT_LONGHORN_OPTIONS,
+  DEFAULT_NETAPP_OPTIONS,
+  DEFAULT_NUTANIX_OPTIONS,
+  DEFAULT_OBJECTSCALE_OPTIONS,
+  DEFAULT_POWERFLEX_OPTIONS,
+  DEFAULT_POWERSCALE_OPTIONS,
+  DEFAULT_POWERSTORE_OPTIONS,
+  DEFAULT_POWERVAULT_OPTIONS,
+  DEFAULT_S2D_OPTIONS,
+  DEFAULT_SYNOLOGY_OPTIONS,
+  DEFAULT_VSAN_OPTIONS,
+  DEFAULT_ZFS_OPTIONS,
+} from '@/types'
+import {
   type AdvancedSlice,
   createAdvancedSlice,
   createHardwareSlice,
@@ -15,6 +32,38 @@ import {
   type WorkloadSlice,
 } from './slices'
 import { urlHashStorage } from './urlStorage'
+
+/**
+ * Drop top-level keys whose value is structurally identical to the default,
+ * before compressing for the URL hash. Shared links are dominated by the ~15
+ * platform-specific `*Options` objects; most links only touch one platform, so
+ * the other 14 default-valued objects would otherwise be serialized verbatim
+ * on every share. Omitting them is safe: a key missing entirely from the
+ * persisted payload already falls back to the store's own default value via
+ * Zustand's persist `merge` (`{ ...currentState, ...persistedState }`), so
+ * this is purely a size optimization — it cannot change what a round-trip
+ * produces. See docs/ARCHITECTURE.md and task-9-report.md for the measured
+ * URL-length impact.
+ */
+function omitDefaults<T extends Record<string, unknown>>(
+  state: T,
+  defaults: { [K in keyof T]?: unknown },
+): Partial<T> {
+  const result: Partial<T> = {}
+  for (const key of Object.keys(state) as (keyof T)[]) {
+    const value = state[key]
+    const fallback = defaults[key]
+    // Most persisted keys are primitives; settle those without stringifying. Only the
+    // platform-options objects reach the structural comparison. This runs on every
+    // persisted state change, i.e. on every keystroke in an input.
+    if (value === fallback) continue
+    if (value !== null && typeof value === 'object') {
+      if (JSON.stringify(value) === JSON.stringify(fallback)) continue
+    }
+    result[key] = value
+  }
+  return result
+}
 
 // Combined store type
 export type ConfigStore = HardwareSlice &
@@ -35,95 +84,26 @@ const getDefaultState = () => ({
   // Topology defaults
   topology: { type: 'standard' as const, level: 'RAID6' as const },
   hotSpares: 1,
-  zfsOptions: {
-    ashift: 12 as const,
-    compression: true,
-    compressionType: 'lz4' as const,
-    dedup: false,
-    recordsize: 131072,
-    specialVdev: false,
-    slogDevice: false,
-    l2arcDevice: false,
-    maxOccupation: 80,
-  },
-  s2dOptions: {
-    faultDomains: 4,
-    mirrorCopies: 2 as const,
-    rebuildReserve: true,
-    reserveStrategy: 'node_failure' as const,
-    storageTiers: false,
-  },
-  controllerOptions: {
-    controller: 'software' as const,
-    stripeSize: 256 as const,
-    readPolicy: 'adaptive' as const,
-    writePolicy: 'write-back' as const,
-  },
-  netAppOptions: {
-    platform: 'aff_a' as const,
-    raidType: 'raid_dp' as const,
-    adpVersion: 'adpv2' as const,
-    snapshotReserve: 5,
-    dataReductionRatio: 3.0,
-    waflOverhead: 0.015,
-    compression: true,
-    dedup: true,
-    zeroDetection: true,
-  },
-  synologyOptions: {
-    filesystem: 'btrfs' as const,
-    btrfsOverhead: 0.04,
-    systemPartitionSize: 25 * 1024 * 1024 * 1024, // 25GB
-    modelSeries: 'plus' as const,
-    ssdCache: false,
-    cacheMode: 'read_only' as const,
-  },
-  nutanixOptions: {
-    clusterType: 'all-flash' as const,
-    replicationFactor: 2 as const,
-    erasureCoding: false,
-    ecStripe: '4_1' as const,
-    compression: true,
-    compressionRatio: 1.5,
-    dedup: false,
-    dedupRatio: 1.0,
-    systemOverhead: 0.1,
-    networkType: '25gbe' as const,
-  },
-  objectscaleOptions: {
-    objectSizeKB: 1024,
-    systemOverheadPercent: 15,
-    networkEfficiencyFactor: 0.55,
-    sites: 1,
-    fillRatePercent: 80,
-    compression: false,
-    compressionRatio: 1.0,
-  },
-  powerstoreOptions: {
-    model: 'powerstore_5200q' as const,
-    compression: true,
-    compressionRatio: 1.5,
-    dedup: false,
-    dedupRatio: 1.0,
-    snapshotReservePercent: 20,
-    systemOverheadPercent: 5,
-  },
-  powerscaleOptions: {
-    compression: true,
-    compressionRatio: 1.5,
-    dedup: false,
-    dedupRatio: 1.0,
-    snapshotReservePercent: 20,
-    smartQuotas: false,
-    syncIQ: false,
-  },
-  powervaultOptions: {
-    model: 'ME5224' as const,
-    controllers: 2 as const,
-    tiering: false,
-    ssdReadCache: false,
-    thinProvisioning: true,
-  },
+  // Options objects are spread from the canonical DEFAULT_*_OPTIONS constants
+  // (src/types/topology.ts) — the same ones topologySlice.ts's initial state
+  // uses — rather than restated here, so resetToDefaults() and a fresh store
+  // can never drift apart again (they previously did on 5 fields: see
+  // task-9-report.md).
+  zfsOptions: { ...DEFAULT_ZFS_OPTIONS },
+  s2dOptions: { ...DEFAULT_S2D_OPTIONS },
+  vsanOptions: { ...DEFAULT_VSAN_OPTIONS },
+  cephOptions: { ...DEFAULT_CEPH_OPTIONS },
+  longhornOptions: { ...DEFAULT_LONGHORN_OPTIONS },
+  beeGfsOptions: { ...DEFAULT_BEEGFS_OPTIONS },
+  powerFlexOptions: { ...DEFAULT_POWERFLEX_OPTIONS },
+  controllerOptions: { ...DEFAULT_CONTROLLER_OPTIONS },
+  netAppOptions: { ...DEFAULT_NETAPP_OPTIONS },
+  synologyOptions: { ...DEFAULT_SYNOLOGY_OPTIONS },
+  nutanixOptions: { ...DEFAULT_NUTANIX_OPTIONS },
+  objectscaleOptions: { ...DEFAULT_OBJECTSCALE_OPTIONS },
+  powerstoreOptions: { ...DEFAULT_POWERSTORE_OPTIONS },
+  powerscaleOptions: { ...DEFAULT_POWERSCALE_OPTIONS },
+  powervaultOptions: { ...DEFAULT_POWERVAULT_OPTIONS },
 
   // Workload defaults
   readPercent: 70,
@@ -151,6 +131,15 @@ const getDefaultState = () => ({
   dailyChangeRate: 5,
 })
 
+/**
+ * Frozen snapshot of the defaults, used only as the comparison baseline in `partialize`.
+ *
+ * `partialize` runs on every persisted state change, so rebuilding the default state — fifteen
+ * `DEFAULT_*_OPTIONS` spreads — on each call was pure waste. `resetToDefaults` still calls
+ * `getDefaultState()` so it installs fresh objects rather than sharing these references.
+ */
+const DEFAULT_STATE_BASELINE = getDefaultState()
+
 export const useConfigStore = create<ConfigStore>()(
   persist(
     (...args) => ({
@@ -164,44 +153,53 @@ export const useConfigStore = create<ConfigStore>()(
       name: 'raidy',
       storage: createJSONStorage(() => urlHashStorage),
       version: 1,
-      partialize: (state) => ({
-        // Only persist configuration values, not actions
-        driveId: state.driveId,
-        driveCount: state.driveCount,
-        serverCount: state.serverCount,
-        serverPowerWatts: state.serverPowerWatts,
-        topology: state.topology,
-        hotSpares: state.hotSpares,
-        zfsOptions: state.zfsOptions,
-        s2dOptions: state.s2dOptions,
-        controllerOptions: state.controllerOptions,
-        netAppOptions: state.netAppOptions,
-        synologyOptions: state.synologyOptions,
-        nutanixOptions: state.nutanixOptions,
-        objectscaleOptions: state.objectscaleOptions,
-        powerstoreOptions: state.powerstoreOptions,
-        powerscaleOptions: state.powerscaleOptions,
-        powervaultOptions: state.powervaultOptions,
-        readPercent: state.readPercent,
-        blockSize: state.blockSize,
-        randomPercent: state.randomPercent,
-        datasetSize: state.datasetSize,
-        dailyWriteVolume: state.dailyWriteVolume,
-        compressionRatio: state.compressionRatio,
-        dedupRatio: state.dedupRatio,
-        networkSpeed: state.networkSpeed,
-        pcieGen: state.pcieGen,
-        pcieLanes: state.pcieLanes,
-        pue: state.pue,
-        carbonRegion: state.carbonRegion,
-        projectYears: state.projectYears,
-        electricityCostPerKwh: state.electricityCostPerKwh,
-        fsType: state.fsType,
-        supportsReflink: state.supportsReflink,
-        backupRetention: state.backupRetention,
-        dailyChangeRate: state.dailyChangeRate,
-        unitSystem: state.unitSystem,
-      }),
+      partialize: (state) =>
+        omitDefaults(
+          {
+            // Only persist configuration values, not actions
+            driveId: state.driveId,
+            driveCount: state.driveCount,
+            serverCount: state.serverCount,
+            serverPowerWatts: state.serverPowerWatts,
+            topology: state.topology,
+            hotSpares: state.hotSpares,
+            zfsOptions: state.zfsOptions,
+            s2dOptions: state.s2dOptions,
+            vsanOptions: state.vsanOptions,
+            cephOptions: state.cephOptions,
+            longhornOptions: state.longhornOptions,
+            beeGfsOptions: state.beeGfsOptions,
+            powerFlexOptions: state.powerFlexOptions,
+            controllerOptions: state.controllerOptions,
+            netAppOptions: state.netAppOptions,
+            synologyOptions: state.synologyOptions,
+            nutanixOptions: state.nutanixOptions,
+            objectscaleOptions: state.objectscaleOptions,
+            powerstoreOptions: state.powerstoreOptions,
+            powerscaleOptions: state.powerscaleOptions,
+            powervaultOptions: state.powervaultOptions,
+            readPercent: state.readPercent,
+            blockSize: state.blockSize,
+            randomPercent: state.randomPercent,
+            datasetSize: state.datasetSize,
+            dailyWriteVolume: state.dailyWriteVolume,
+            compressionRatio: state.compressionRatio,
+            dedupRatio: state.dedupRatio,
+            networkSpeed: state.networkSpeed,
+            pcieGen: state.pcieGen,
+            pcieLanes: state.pcieLanes,
+            pue: state.pue,
+            carbonRegion: state.carbonRegion,
+            projectYears: state.projectYears,
+            electricityCostPerKwh: state.electricityCostPerKwh,
+            fsType: state.fsType,
+            supportsReflink: state.supportsReflink,
+            backupRetention: state.backupRetention,
+            dailyChangeRate: state.dailyChangeRate,
+            unitSystem: state.unitSystem,
+          },
+          DEFAULT_STATE_BASELINE,
+        ),
     },
   ),
 )

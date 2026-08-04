@@ -5,6 +5,7 @@
 
 import type { DriveConnectivity, FormFactorFilter } from './drive'
 import type {
+  BeeGfsOptions,
   CephOptions,
   LonghornOptions,
   NetAppOptions,
@@ -82,6 +83,8 @@ export interface TopologyState {
   cephOptions: CephOptions
   /** Longhorn-specific options */
   longhornOptions: LonghornOptions
+  /** BeeGFS-specific options */
+  beeGfsOptions: BeeGfsOptions
   /** PowerFlex-specific options */
   powerFlexOptions: PowerFlexOptions
   /** NetApp-specific options */

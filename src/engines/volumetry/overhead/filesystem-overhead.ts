@@ -14,7 +14,7 @@
  * - WAFL: 1-2% (NetApp spec)
  */
 
-import type { NetAppOptions, SynologyOptions, Topology } from '@/types/topology'
+import type { BeeGfsOptions, NetAppOptions, SynologyOptions, Topology } from '@/types/topology'
 import { FILESYSTEM_OVERHEAD } from '@/types/topology'
 
 /** Filesystem type for user selection */
@@ -29,6 +29,7 @@ type FsType = 'xfs' | 'ext4' | 'zfs' | 'refs' | 'ntfs' | 'btrfs'
  * @param fsType - User-selected filesystem type (used for standard RAID)
  * @param synologyOptions - Synology-specific options (filesystem type)
  * @param netAppOptions - NetApp-specific options (WAFL overhead)
+ * @param beeGfsOptions - BeeGFS-specific options (per-target ext4/xfs overhead)
  * @returns Overhead percentage as decimal (0-1)
  *
  * @example
@@ -53,8 +54,13 @@ export function getFilesystemOverheadPercent(
   fsType: FsType,
   synologyOptions?: SynologyOptions,
   netAppOptions?: NetAppOptions,
+  beeGfsOptions?: BeeGfsOptions,
 ): number {
   switch (topology.type) {
+    case 'beegfs':
+      // BeeGFS stores chunks on a local ext4/xfs per storage target (~2%)
+      return (beeGfsOptions?.fsOverheadPercent ?? 2) / 100
+
     case 'zfs':
       // ZFS metadata overhead (slop handled separately)
       return 0.01

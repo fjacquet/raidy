@@ -92,15 +92,21 @@ export function NetAppOptionsPanel() {
         <Label htmlFor="netapp-snapshot-reserve" tooltip={th('netapp.snapshot')}>
           {t('common.snapshotReserve')}
         </Label>
+        {/*
+          `snapshotReserve` is stored as a FRACTION (the engine multiplies capacity by it
+          directly), but the slider and its readout are in percent — so the value is scaled on
+          both sides. Before this conversion the slider wrote raw percent into a field the
+          engine read as a fraction: moving it to 5 meant a 500% snapshot reserve.
+        */}
         <Slider
           id="netapp-snapshot-reserve"
-          value={netAppOptions.snapshotReserve}
+          value={Math.round(netAppOptions.snapshotReserve * 100)}
           min={0}
           max={20}
-          onChange={(v) => setNetAppOptions({ snapshotReserve: v })}
+          onChange={(v) => setNetAppOptions({ snapshotReserve: v / 100 })}
         />
         <p className="text-xs text-slate-500">
-          Snapshot reserve: {netAppOptions.snapshotReserve}%
+          Snapshot reserve: {Math.round(netAppOptions.snapshotReserve * 100)}%
           {netAppOptions.platform.startsWith('aff') && netAppOptions.snapshotReserve === 0
             ? ' (typical for AFF)'
             : ''}

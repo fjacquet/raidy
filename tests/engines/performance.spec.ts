@@ -8,6 +8,7 @@
 import { describe, expect, it } from 'vitest'
 import { calculatePerformance, type PerformanceInput } from '@/engines/performance'
 import {
+  DEFAULT_BEEGFS_OPTIONS,
   DEFAULT_CEPH_OPTIONS,
   DEFAULT_CONTROLLER_OPTIONS,
   DEFAULT_NUTANIX_OPTIONS,
@@ -2423,5 +2424,95 @@ describe('Performance Engine - vSAN ESA bottleneck chain', () => {
       expect(networkLayer).toBeDefined()
       expect(networkLayer?.throughputMBs).toBeCloseTo(62_500, 0)
     })
+  })
+})
+
+describe('Performance Engine - BeeGFS', () => {
+  const beegfsTopology = { type: 'beegfs', level: 'beegfs_raid6' } as const
+
+  it('changing storageBuddyMirror changes the performance result', () => {
+    const withoutBuddy: PerformanceInput = {
+      ...createInput(48, beegfsTopology, testSsdNvme, 100, 4),
+      beeGfsOptions: { ...DEFAULT_BEEGFS_OPTIONS, storageBuddyMirror: false },
+    }
+    const withBuddy: PerformanceInput = {
+      ...createInput(48, beegfsTopology, testSsdNvme, 100, 4),
+      beeGfsOptions: { ...DEFAULT_BEEGFS_OPTIONS, storageBuddyMirror: true },
+    }
+
+    const resultWithoutBuddy = calculatePerformance(withoutBuddy)
+    const resultWithBuddy = calculatePerformance(withBuddy)
+
+    // Buddy mirroring doubles the write penalty, so write IOPS/throughput drop.
+    expect(resultWithBuddy.writePenalty as number).toBeGreaterThan(
+      resultWithoutBuddy.writePenalty as number,
+    )
+    expect(resultWithBuddy.maxWriteThroughputMBs).toBeLessThan(
+      resultWithoutBuddy.maxWriteThroughputMBs,
+    )
+  })
+
+  it('is network-limited earlier with buddy mirroring on for a write-heavy workload', () => {
+    const base = createInput(48, beegfsTopology, testSsdNvme, 100, 4)
+    const withoutBuddy: PerformanceInput = {
+      ...base,
+      readPercent: 10,
+      networkSpeed: '25GbE',
+      beeGfsOptions: { ...DEFAULT_BEEGFS_OPTIONS, storageBuddyMirror: false },
+    }
+    const withBuddy: PerformanceInput = {
+      ...base,
+      readPercent: 10,
+      networkSpeed: '25GbE',
+      beeGfsOptions: { ...DEFAULT_BEEGFS_OPTIONS, storageBuddyMirror: true },
+    }
+
+    const networkWithoutBuddy = calculatePerformance(withoutBuddy).layers.find((l) =>
+      l.name.startsWith('Network'),
+    )
+    const networkWithBuddy = calculatePerformance(withBuddy).layers.find((l) =>
+      l.name.startsWith('Network'),
+    )
+
+    expect(networkWithoutBuddy).toBeDefined()
+    expect(networkWithBuddy).toBeDefined()
+    // Buddy mirroring doubles write traffic on the wire, lowering the effective
+    // network throughput ceiling for the same write-heavy workload.
+    expect(networkWithBuddy?.throughputMBs).toBeLessThan(
+      networkWithoutBuddy?.throughputMBs as number,
+    )
+  })
+
+  it('resolves to exactly the neutral network model without buddy mirroring', () => {
+    const input: PerformanceInput = {
+      ...createInput(48, beegfsTopology, testSsdNvme, 100, 4),
+      networkSpeed: '25GbE',
+      beeGfsOptions: { ...DEFAULT_BEEGFS_OPTIONS, storageBuddyMirror: false },
+    }
+    const naive: PerformanceInput = {
+      ...createInput(48, { type: 'standard', level: 'RAID6' }, testSsdNvme, 100, 4),
+      networkSpeed: '25GbE',
+    }
+
+    const beegfsNetwork = calculatePerformance(input).layers.find((l) =>
+      l.name.startsWith('Network'),
+    )
+    const naiveNetwork = calculatePerformance(naive).layers.find((l) =>
+      l.name.startsWith('Network'),
+    )
+
+    // Without buddy mirroring, BeeGFS' network model resolves to the same neutral
+    // aggregate ceiling as a platform with no network model refinement at all.
+    expect(beegfsNetwork?.throughputMBs).toBeCloseTo(naiveNetwork?.throughputMBs as number, 5)
+  })
+
+  it('gives BeeGFS a higher estimated latency than standard RAID (client-server network round-trip)', () => {
+    const beegfsInput = createInput(48, beegfsTopology, testSsdNvme, 100, 4)
+    const standardInput = createInput(48, { type: 'standard', level: 'RAID6' }, testSsdNvme, 100, 4)
+
+    const beegfsLatency = calculatePerformance(beegfsInput).estimatedLatencyUs as number
+    const standardLatency = calculatePerformance(standardInput).estimatedLatencyUs as number
+
+    expect(beegfsLatency).toBeGreaterThan(standardLatency)
   })
 })

@@ -5,6 +5,7 @@
  * Dell, Proprietary (Synology/NetApp), PowerFlex, S2D, vSAN, Ceph, ZFS, Nutanix
  */
 
+import { beeGfsPerformanceStrategy } from '@engines/performance/strategies/beegfs'
 import { cephPerformanceStrategy } from '@engines/performance/strategies/ceph'
 import { dellPerformanceStrategy } from '@engines/performance/strategies/dell'
 import { longhornPerformanceStrategy } from '@engines/performance/strategies/longhorn'
@@ -530,6 +531,108 @@ describe('Longhorn Performance Strategy', () => {
         READ_PERCENT,
       )
       expect(result).toBeCloseTo(expectedIOPS(2.0), 0)
+    })
+  })
+})
+
+// ─── BeeGFS Performance Strategy ────────────────────────────────────────────
+
+describe('BeeGFS Performance Strategy', () => {
+  describe('getWritePenalty', () => {
+    describe.each([
+      ['beegfs_raid6', 6],
+      ['beegfs_raidz2', 6],
+      ['beegfs_raid10', 2],
+      ['beegfs_single', 1],
+    ] as [string, number][])('level %s, no buddy mirroring', (level, expected) => {
+      it(`returns ${expected}`, () => {
+        expect(
+          beeGfsPerformanceStrategy.getWritePenalty(level, { storageBuddyMirror: false }),
+        ).toBe(expected)
+      })
+    })
+
+    describe.each([
+      ['beegfs_raid6', 12],
+      ['beegfs_raidz2', 12],
+      ['beegfs_raid10', 4],
+      ['beegfs_single', 2],
+    ] as [string, number][])('level %s, buddy mirroring on', (level, expected) => {
+      it(`doubles to ${expected}`, () => {
+        expect(beeGfsPerformanceStrategy.getWritePenalty(level, { storageBuddyMirror: true })).toBe(
+          expected,
+        )
+      })
+    })
+
+    it('returns 6 for unknown level with no options (default)', () => {
+      expect(beeGfsPerformanceStrategy.getWritePenalty('unknown')).toBe(6)
+    })
+  })
+
+  describe('calculateIOPS', () => {
+    it('calculates standard IOPS for RAID6, no buddy mirroring', () => {
+      const result = beeGfsPerformanceStrategy.calculateIOPS(
+        'beegfs_raid6',
+        DRIVES,
+        IOPS_PER_DRIVE,
+        READ_PERCENT,
+        { storageBuddyMirror: false },
+      )
+      expect(result).toBeCloseTo(expectedIOPS(6), 0)
+    })
+
+    it('calculates lower IOPS for RAID6 with buddy mirroring (2x penalty)', () => {
+      const result = beeGfsPerformanceStrategy.calculateIOPS(
+        'beegfs_raid6',
+        DRIVES,
+        IOPS_PER_DRIVE,
+        READ_PERCENT,
+        { storageBuddyMirror: true },
+      )
+      expect(result).toBeCloseTo(expectedIOPS(12), 0)
+    })
+
+    it('calculates standard IOPS for RAID10, no buddy mirroring', () => {
+      const result = beeGfsPerformanceStrategy.calculateIOPS(
+        'beegfs_raid10',
+        DRIVES,
+        IOPS_PER_DRIVE,
+        READ_PERCENT,
+        { storageBuddyMirror: false },
+      )
+      expect(result).toBeCloseTo(expectedIOPS(2), 0)
+    })
+
+    it('calculates IOPS for single (no local RAID), no buddy mirroring', () => {
+      const result = beeGfsPerformanceStrategy.calculateIOPS(
+        'beegfs_single',
+        DRIVES,
+        IOPS_PER_DRIVE,
+        READ_PERCENT,
+        { storageBuddyMirror: false },
+      )
+      expect(result).toBeCloseTo(expectedIOPS(1), 0)
+    })
+
+    it('reads scale linearly with drive count regardless of buddy mirroring', () => {
+      const noBuddy = beeGfsPerformanceStrategy.calculateIOPS(
+        'beegfs_raid10',
+        DRIVES,
+        IOPS_PER_DRIVE,
+        100,
+        { storageBuddyMirror: false },
+      )
+      const withBuddy = beeGfsPerformanceStrategy.calculateIOPS(
+        'beegfs_raid10',
+        DRIVES,
+        IOPS_PER_DRIVE,
+        100,
+        { storageBuddyMirror: true },
+      )
+      // 100% reads: buddy mirroring only affects writes, so read-only IOPS is unchanged
+      expect(noBuddy).toBeCloseTo(withBuddy, 5)
+      expect(noBuddy).toBeCloseTo(DRIVES * IOPS_PER_DRIVE, 5)
     })
   })
 })

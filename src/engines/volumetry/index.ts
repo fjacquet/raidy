@@ -7,8 +7,14 @@ import drivesData from '@/data/drives.json'
 // Shared tiering resolver
 import { isAllFlashMedia, resolveTiering } from '@/engines/shared/tiering'
 import type { Drive } from '@/types/drive'
-import type { LonghornCapacityDetails, VolumetryResult, ZfsCapacityDetails } from '@/types/results'
 import type {
+  BeeGfsCapacityDetails,
+  LonghornCapacityDetails,
+  VolumetryResult,
+  ZfsCapacityDetails,
+} from '@/types/results'
+import type {
+  BeeGfsOptions,
   CephOptions,
   LonghornOptions,
   NetAppOptions,
@@ -32,8 +38,11 @@ import { getDataFraction } from './helpers/calculationHelpers'
 import { calculateOverheads } from './overhead/overheadCalculator'
 // Post-processing (compression, dedup, ZFS details)
 import { applyCompressionDedup, buildZfsDetails } from './postProcessing/capacityEnhancements'
+// BeeGFS storage-target derivation (shared with the UI panel)
+import { calculateStorageTargets } from './strategies/beegfs'
 // Validation module
 import {
+  validateBeeGfsRequirements,
   validateDrive,
   validateDriveCount,
   validateReplicaPlacement,
@@ -58,6 +67,7 @@ export interface VolumetryInput {
   powerscaleOptions: PowerScaleOptions
   cephOptions: CephOptions
   longhornOptions: LonghornOptions
+  beeGfsOptions: BeeGfsOptions
   powerFlexOptions: PowerFlexOptions
   netAppOptions: NetAppOptions
   synologyOptions: SynologyOptions
@@ -92,6 +102,7 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
     powerscaleOptions,
     cephOptions,
     longhornOptions,
+    beeGfsOptions,
     powerFlexOptions,
     netAppOptions,
     synologyOptions,
@@ -115,7 +126,22 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
     vsanOptions,
     cephOptions,
     nutanixOptions,
+    beeGfsOptions,
   })
+
+  // BeeGFS: Buddy Mirroring needs >= 2 nodes, and drive count must form >= 1 storage target.
+  // Runs after tiering resolves, since driveCount is conventionally 0 when MDT tiering is
+  // configured (see validateDriveCount below).
+  const beeGfsValidation = validateBeeGfsRequirements(
+    topology,
+    drive,
+    driveCount,
+    serverCount,
+    hotSpares,
+    beeGfsOptions,
+    tieredCapacity,
+  )
+  if (beeGfsValidation) return beeGfsValidation
 
   // Validate drive count
   const driveCountValidation = validateDriveCount(driveCount, tieredCapacity)
@@ -144,8 +170,36 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
     ? (tieredCapacity.capacityTierDrive?.capacity_raw ?? 0) * hotSpares
     : drive.capacity_raw * hotSpares
 
-  // Usable drives after hot spares (capacity tier only when tiered)
-  const usableDrives = effectiveDriveCount - hotSpares
+  // Usable drives after hot spares (capacity tier only when tiered). Defensively clamped to
+  // >= 0: currently inert because validateBeeGfsRequirements (and the analogous per-platform
+  // guards) zero-state before this point when hot spares would exceed the drive count, but the
+  // clamp keeps this line matching resolveBeeGfsUsableDrives's Math.max(0, ...) by construction
+  // rather than by relying on validation running first.
+  const spareAdjustedDrives = Math.max(0, effectiveDriveCount - hotSpares)
+
+  // BeeGFS: capacity is computed on WHOLE storage targets only (design spec, §Error handling).
+  // A drive that does not complete a storage target joins no local RAID group and holds no
+  // data — `validators.ts` already warns the user it is stranded and the capacity card prints
+  // the count, so it must not be counted as usable capacity as well.
+  // `calculateStorageTargets` is the single source of truth for this arithmetic, shared with
+  // `BeeGfsOptionsPanel` via `deriveBeeGfsStorageTargets`; the result is reused verbatim for
+  // `beeGfsDetails` below so the two can never drift.
+  const beeGfsTargets =
+    topology.type === 'beegfs' && beeGfsOptions
+      ? calculateStorageTargets(spareAdjustedDrives, beeGfsOptions.drivesPerTarget)
+      : null
+
+  // Data-bearing drives. Identical to `spareAdjustedDrives` for every platform except BeeGFS,
+  // where the stranded remainder is excluded — no other platform's capacity can move.
+  const usableDrives = beeGfsTargets
+    ? beeGfsTargets.storageTargetCount * (beeGfsOptions?.drivesPerTarget ?? 0)
+    : spareAdjustedDrives
+
+  // Raw capacity of the stranded BeeGFS drives: counted in raw, never in usable or parity.
+  const beeGfsStrandedCapacity = beeGfsTargets
+    ? effectiveDrive.capacity_raw * beeGfsTargets.strandedDrives
+    : 0
+
   const rawUsableCapacity = effectiveDrive.capacity_raw * usableDrives
 
   // Calculate parity/redundancy overhead
@@ -155,6 +209,7 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
     s2dOptions,
     cephOptions,
     nutanixOptions,
+    beeGfsOptions,
     serverCount,
     isAllFlash,
   )
@@ -203,6 +258,7 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
     powerstoreOptions,
     powerscaleOptions,
     cephOptions,
+    beeGfsOptions,
     fsType,
   })
 
@@ -301,6 +357,7 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
     parityOverhead,
     hotSpareOverhead,
     cacheTierCapacity,
+    beeGfsStrandedCapacity,
     slopOverhead,
     s2dReserve,
     s2dInfraReserve,
@@ -353,6 +410,42 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
     }
   }
 
+  // Build BeeGFS-specific metadata-target (MDT) advisory if BeeGFS topology.
+  // Metadata rule of thumb (ThinkParQ): 0.3-0.5% of usable data capacity, 500 GB (decimal)
+  // of ext4 metadata ~ 150M files.
+  let beeGfsDetails: BeeGfsCapacityDetails | undefined
+  if (topology.type === 'beegfs' && beeGfsOptions) {
+    const GB_500 = 500 * 1_000_000_000
+    const FILES_PER_500GB = 150_000_000
+
+    const mdtRawCapacity = cacheTierCapacity
+    const mdtUsableCapacity = mdtRawCapacity * 0.5 * (beeGfsOptions.metadataBuddyMirror ? 0.5 : 1)
+    const mdtRecommendedMin = usableCapacity * 0.003
+    const mdtRecommendedTypical = usableCapacity * 0.005
+    const estimatedFileCount = (mdtUsableCapacity / GB_500) * FILES_PER_500GB
+    const status: BeeGfsCapacityDetails['status'] =
+      mdtRawCapacity === 0 ? 'none' : mdtUsableCapacity < mdtRecommendedMin ? 'under' : 'ok'
+
+    // Reuse the exact object the usable-capacity calculation was built on — never recompute.
+    const { storageTargetCount, strandedDrives } = beeGfsTargets ?? {
+      storageTargetCount: 0,
+      strandedDrives: 0,
+    }
+
+    beeGfsDetails = {
+      mdtRawCapacity,
+      mdtUsableCapacity,
+      mdtRecommendedMin,
+      mdtRecommendedTypical,
+      estimatedFileCount,
+      status,
+      storageTargetCount,
+      strandedDrives,
+      storageBuddyMirror: beeGfsOptions.storageBuddyMirror,
+      metadataBuddyMirror: beeGfsOptions.metadataBuddyMirror,
+    }
+  }
+
   return {
     rawCapacity,
     parityOverhead,
@@ -365,5 +458,6 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
     breakdown,
     zfsDetails,
     longhornDetails,
+    beeGfsDetails,
   }
 }

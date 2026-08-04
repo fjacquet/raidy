@@ -4,6 +4,7 @@
 
 import { useTranslation } from 'react-i18next'
 import { Label, Select, Slider } from '@/components/common/FormControls'
+import { BeeGfsOptionsPanel } from '@/components/inputs/topology-options/BeeGfsOptionsPanel'
 import { CephOptionsPanel } from '@/components/inputs/topology-options/CephOptionsPanel'
 import { DellOptionsPanel } from '@/components/inputs/topology-options/DellOptionsPanel'
 import { LonghornOptionsPanel } from '@/components/inputs/topology-options/LonghornOptionsPanel'
@@ -114,6 +115,9 @@ export function TopologyPanel() {
 
       {/* Longhorn Options */}
       {topology.type === 'longhorn' && <LonghornOptionsPanel />}
+
+      {/* BeeGFS Options */}
+      {topology.type === 'beegfs' && <BeeGfsOptionsPanel />}
 
       {/* NetApp Options (proprietary type with netapp_ prefix) */}
       {topology.type === 'proprietary' && topology.level.startsWith('netapp_') && (

@@ -16,6 +16,7 @@
 
 import type { Drive } from '@/types/drive'
 import type {
+  BeeGfsOptions,
   CephOptions,
   NetAppOptions,
   NutanixOptions,
@@ -80,6 +81,7 @@ export interface OverheadInput {
   powerstoreOptions: PowerStoreOptions
   powerscaleOptions: PowerScaleOptions
   cephOptions: CephOptions
+  beeGfsOptions: BeeGfsOptions
   fsType: 'xfs' | 'ext4' | 'zfs' | 'refs' | 'ntfs' | 'btrfs'
 }
 
@@ -105,6 +107,7 @@ export function calculateOverheads(input: OverheadInput): OverheadResult {
     powerstoreOptions,
     powerscaleOptions,
     cephOptions,
+    beeGfsOptions,
     fsType,
   } = input
 
@@ -192,6 +195,7 @@ export function calculateOverheads(input: OverheadInput): OverheadResult {
     fsType,
     synologyOptions,
     netAppOptions,
+    beeGfsOptions,
   )
   const capacityForFs = Math.max(
     0,

@@ -160,7 +160,12 @@ export function calculateEstimatedLatency(
 
   switch (topology.type) {
     case 'ceph':
-      // Ceph formula: (Lat_media × 2) + Lat_réseau + Overhead_CPU
+    case 'beegfs':
+      // BeeGFS is a client-server parallel filesystem: every I/O crosses the network to
+      // a storage service, there is no local block path. That is the same round-trip
+      // shape as Ceph, so it reuses the Ceph formula: (Lat_media × 2) + Lat_réseau + Overhead_CPU.
+      // cephOptions is undefined for BeeGFS topologies, so this resolves to the
+      // replication-level overhead (not the erasure-coding branch) below.
       cpuOverhead =
         cephOptions?.poolType === 'erasure'
           ? CPU_OVERHEAD_US.erasure_coding

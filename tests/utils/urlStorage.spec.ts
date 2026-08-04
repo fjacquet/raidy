@@ -146,16 +146,21 @@ describe('URL Storage - Serialization Roundtrip', () => {
 
   it('should roundtrip vSAN ESA configuration', () => {
     const stateKey = 'storage-state'
+    // vsanOptions shape must match VsanOptions (src/types/topology.ts) now that
+    // Task 9 added a real Zod schema for it — the field is validated, not just
+    // passed through, so a fake ad-hoc shape (ftt/ftm/...) is correctly rejected.
     const vsanConfig = {
       topology: { type: 'vsan_esa', level: 'vsan_esa_raid5' },
       driveCount: 8,
       driveModel: 'intel-p5520-3.84tb',
       serverCount: 8, // affects adaptive efficiency
       vsanOptions: {
-        ftt: 1,
-        ftm: 'raid5',
-        dedupEnabled: true,
-        compressionEnabled: true,
+        diskGroupMode: 'all-flash',
+        compression: true,
+        compressionRatio: 1.5,
+        dedup: true,
+        dedupRatio: 1.2,
+        encryption: false,
       },
     }
 
@@ -171,8 +176,8 @@ describe('URL Storage - Serialization Roundtrip', () => {
       const parsed = JSON.parse(expectSyncString(retrieved))
       expect(parsed).toMatchObject(vsanConfig)
       expect(parsed.serverCount).toBe(8)
-      expect(parsed.vsanOptions.ftt).toBe(1)
-      expect(parsed.vsanOptions.dedupEnabled).toBe(true)
+      expect(parsed.vsanOptions.dedup).toBe(true)
+      expect(parsed.vsanOptions.dedupRatio).toBe(1.2)
     }
   })
 
@@ -277,11 +282,21 @@ describe('URL Storage - Serialization Roundtrip', () => {
       driveCount: 24,
       driveModel: 'samsung-pm9a3-3.84tb',
       topology: { type: 'ceph', level: 'ceph_ec_4_2' },
+      // cephOptions shape must match CephOptions (src/types/topology.ts) now that
+      // Task 9 added a real Zod schema for it.
       cephOptions: {
-        poolType: 'erasure_coded',
-        ecProfile: '4+2',
-        minSize: 5,
-        crushRule: 'default',
+        backend: 'bluestore',
+        poolType: 'erasure',
+        replicationFactor: 3,
+        ecK: 4,
+        ecM: 2,
+        compression: true,
+        compressionAlgorithm: 'zstd',
+        encryption: false,
+        journalOnSsd: true,
+        walDbOffload: false,
+        walDbRatio: 4,
+        safeCapacityThreshold: 0.85,
       },
       performanceMetrics: {
         iopsRead: 250000,
@@ -352,7 +367,7 @@ describe('URL Storage - Serialization Roundtrip', () => {
         platform: 'aff_a' as const,
         raidType: 'raid_tec' as const,
         adpVersion: 'adpv2' as const,
-        snapshotReserve: 20,
+        snapshotReserve: 0.2, // FRACTION (=20%), see NetAppOptions.snapshotReserve
         dataReductionRatio: 3.5,
         waflOverhead: 0.1,
         compression: true,
@@ -386,6 +401,406 @@ describe('URL Storage - Serialization Roundtrip', () => {
       expect(parsed.netAppOptions.raidType).toBe('raid_tec')
       expect(parsed.costConstraints.maxBudgetUsd).toBe(500000)
     }
+  })
+})
+
+describe('URL Storage - Platform Options Persistence (Task 9)', () => {
+  function baseConfig() {
+    return {
+      driveId: 'ent-hdd-7k2-sata-24tb-cmr',
+      driveCount: 12,
+      topology: { type: 'standard', level: 'RAID6' },
+    }
+  }
+
+  const platformCases: Array<{ name: string; key: string; value: Record<string, unknown> }> = [
+    {
+      name: 'ZFS',
+      key: 'zfsOptions',
+      value: {
+        ashift: 9,
+        compression: false,
+        compressionType: 'zstd',
+        dedup: true,
+        recordsize: 4096,
+        specialVdev: true,
+        slogDevice: true,
+        l2arcDevice: true,
+        maxOccupation: 60,
+      },
+    },
+    {
+      name: 'S2D (with tieringConfig)',
+      key: 's2dOptions',
+      value: {
+        faultDomains: 8,
+        mirrorCopies: 3,
+        rebuildReserve: false,
+        reserveStrategy: 'drive_failure',
+        storageTiers: true,
+        tieringConfig: {
+          enabled: true,
+          fastTier: { driveId: 'nvme-x', driveCount: 2 },
+          capacityTier: { driveId: 'hdd-y', driveCount: 10 },
+          cacheMode: 'write-through',
+          workingSetPercent: 30,
+        },
+      },
+    },
+    {
+      name: 'vSAN',
+      key: 'vsanOptions',
+      value: {
+        diskGroupMode: 'hybrid',
+        compression: false,
+        compressionRatio: 2.0,
+        dedup: true,
+        dedupRatio: 1.3,
+        encryption: true,
+        tiering: {
+          enabled: true,
+          fastTier: { driveId: 'ssd', driveCount: 2 },
+          capacityTier: { driveId: 'hdd', driveCount: 8 },
+          cacheMode: 'read-only',
+          workingSetPercent: 15,
+        },
+      },
+    },
+    {
+      name: 'Ceph',
+      key: 'cephOptions',
+      value: {
+        backend: 'filestore',
+        poolType: 'erasure',
+        replicationFactor: 4,
+        ecK: 8,
+        ecM: 3,
+        compression: true,
+        compressionAlgorithm: 'zstd',
+        encryption: true,
+        journalOnSsd: false,
+        walDbOffload: true,
+        walDbRatio: 6,
+        safeCapacityThreshold: 0.9,
+        tiering: {
+          enabled: true,
+          fastTier: { driveId: 'nvme', driveCount: 2 },
+          capacityTier: { driveId: 'hdd', driveCount: 12 },
+          cacheMode: 'write-back',
+          workingSetPercent: 25,
+        },
+      },
+    },
+    {
+      name: 'Longhorn',
+      key: 'longhornOptions',
+      value: {
+        diskMode: 'root',
+        minimalAvailablePercent: 25,
+        snapshotHeadroom: 1.5,
+        growthHeadroom: 1.8,
+        overProvisioningPercent: 300,
+      },
+    },
+    {
+      name: 'BeeGFS',
+      key: 'beeGfsOptions',
+      value: {
+        drivesPerTarget: 10,
+        storageBuddyMirror: true,
+        metadataBuddyMirror: false,
+        chunkSizeKb: 1024,
+        numTargets: 8,
+        network: 'ib-ndr',
+        fsOverheadPercent: 3,
+        metadataTargets: true,
+        tiering: {
+          enabled: true,
+          fastTier: { driveId: 'mdt', driveCount: 2 },
+          capacityTier: { driveId: 'ost', driveCount: 40 },
+          cacheMode: 'write-back',
+          workingSetPercent: 10,
+        },
+      },
+    },
+    {
+      name: 'PowerFlex',
+      key: 'powerFlexOptions',
+      value: {
+        granularity: 'fine',
+        protectionMode: 'erasure',
+        mirrorCopies: 2,
+        ecScheme: '12_4',
+        compression: false,
+        compressionRatio: 4.0,
+        storagePools: 3,
+        faultSets: 2,
+        fgOverhead: 0.15,
+      },
+    },
+    {
+      name: 'Nutanix (with tiering)',
+      key: 'nutanixOptions',
+      value: {
+        clusterType: 'hybrid',
+        replicationFactor: 3,
+        erasureCoding: true,
+        ecStripe: '6_2',
+        compression: false,
+        compressionRatio: 1.2,
+        dedup: true,
+        dedupRatio: 1.4,
+        systemOverhead: 0.08,
+        networkType: 'rdma',
+        tiering: {
+          enabled: true,
+          fastTier: { driveId: 'nvme', driveCount: 4 },
+          capacityTier: { driveId: 'hdd', driveCount: 20 },
+          cacheMode: 'write-back',
+          workingSetPercent: 20,
+        },
+      },
+    },
+    {
+      name: 'PowerStore',
+      key: 'powerstoreOptions',
+      value: {
+        model: 'powerstore_3200',
+        compression: false,
+        compressionRatio: 3.0,
+        dedup: true,
+        dedupRatio: 2.5,
+        snapshotReservePercent: 30,
+        systemOverheadPercent: 8,
+      },
+    },
+  ]
+
+  it.each(platformCases)('round-trips $name options through the URL hash', ({ key, value }) => {
+    const stateKey = 'storage-state'
+    const config = { ...baseConfig(), [key]: value }
+
+    urlHashStorage.setItem(stateKey, JSON.stringify(config))
+    const newUrl = mockHistory.replaceState.mock.calls[0]?.[2]
+    mockLocation.hash = `#${newUrl.split('#')[1]}`
+    const retrieved = urlHashStorage.getItem(stateKey)
+
+    expect(retrieved).not.toBeNull()
+    const parsed = JSON.parse(expectSyncString(retrieved as string))
+    expect(parsed[key]).toEqual(value)
+  })
+
+  it('omits the new platform options fields entirely when a legacy link never carried them', () => {
+    const stateKey = 'storage-state'
+    const legacyConfig = {
+      ...baseConfig(),
+      topology: { type: 'ceph', level: 'ceph_ec_4_2' },
+    }
+
+    urlHashStorage.setItem(stateKey, JSON.stringify(legacyConfig))
+    const newUrl = mockHistory.replaceState.mock.calls[0]?.[2]
+    mockLocation.hash = `#${newUrl.split('#')[1]}`
+    const retrieved = urlHashStorage.getItem(stateKey)
+
+    expect(retrieved).not.toBeNull()
+    const parsed = JSON.parse(expectSyncString(retrieved as string))
+    // Absent, never an undefined-but-present or partial object — the store's
+    // default merge (see tests/store/urlPersistenceOptions.spec.ts) is what
+    // supplies the DEFAULT_*_OPTIONS fallback for these.
+    expect(parsed.cephOptions).toBeUndefined()
+    expect(parsed.vsanOptions).toBeUndefined()
+    expect(parsed.longhornOptions).toBeUndefined()
+    expect(parsed.beeGfsOptions).toBeUndefined()
+    expect(parsed.powerFlexOptions).toBeUndefined()
+  })
+
+  describe('malformed platform options are rejected, not adopted', () => {
+    it('rejects a wrong-typed field inside a new options object', () => {
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const config = {
+        ...baseConfig(),
+        cephOptions: {
+          backend: 'bluestore',
+          poolType: 'replicated',
+          replicationFactor: 3,
+          ecK: 4,
+          ecM: 2,
+          compression: false,
+          compressionAlgorithm: 'none',
+          encryption: false,
+          journalOnSsd: true,
+          walDbOffload: 'yes', // wrong type: should be boolean
+          walDbRatio: 4,
+          safeCapacityThreshold: 0.85,
+        },
+      }
+
+      urlHashStorage.setItem('storage-state', JSON.stringify(config))
+      const newUrl = mockHistory.replaceState.mock.calls[0]?.[2]
+      mockLocation.hash = `#${newUrl.split('#')[1]}`
+      const result = urlHashStorage.getItem('storage-state')
+
+      expect(result).toBeNull()
+      consoleErrorSpy.mockRestore()
+    })
+
+    it('strips an unknown extra field inside a new options object rather than rejecting it', () => {
+      const config = {
+        ...baseConfig(),
+        beeGfsOptions: {
+          drivesPerTarget: 12,
+          storageBuddyMirror: false,
+          metadataBuddyMirror: true,
+          chunkSizeKb: 512,
+          numTargets: 4,
+          network: '100gbe',
+          fsOverheadPercent: 2,
+          metadataTargets: false,
+          maliciousInjectedField: '<script>alert(1)</script>',
+        },
+      }
+
+      urlHashStorage.setItem('storage-state', JSON.stringify(config))
+      const newUrl = mockHistory.replaceState.mock.calls[0]?.[2]
+      mockLocation.hash = `#${newUrl.split('#')[1]}`
+      const result = urlHashStorage.getItem('storage-state')
+
+      expect(result).not.toBeNull()
+      const parsed = JSON.parse(expectSyncString(result as string))
+      expect(parsed.beeGfsOptions.maliciousInjectedField).toBeUndefined()
+      expect(parsed.beeGfsOptions.drivesPerTarget).toBe(12)
+    })
+
+    it('rejects an out-of-range number inside a new options object', () => {
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const config = {
+        ...baseConfig(),
+        cephOptions: {
+          backend: 'bluestore',
+          poolType: 'replicated',
+          replicationFactor: 3,
+          ecK: 4,
+          ecM: 2,
+          compression: false,
+          compressionAlgorithm: 'none',
+          encryption: false,
+          journalOnSsd: true,
+          walDbOffload: false,
+          walDbRatio: 4,
+          safeCapacityThreshold: 5, // out of range: schema bounds this to [0, 1]
+        },
+      }
+
+      urlHashStorage.setItem('storage-state', JSON.stringify(config))
+      const newUrl = mockHistory.replaceState.mock.calls[0]?.[2]
+      mockLocation.hash = `#${newUrl.split('#')[1]}`
+      const result = urlHashStorage.getItem('storage-state')
+
+      expect(result).toBeNull()
+      consoleErrorSpy.mockRestore()
+    })
+  })
+
+  it('measures the compressed URL length for a pathological all-15-platforms-customized config', () => {
+    const maximalConfig = {
+      driveId: 'ent-hdd-7k2-sata-24tb-cmr',
+      driveCount: 60,
+      serverCount: 16,
+      serverPowerWatts: 650,
+      topology: { type: 'beegfs', level: 'beegfs_raid6' },
+      hotSpares: 4,
+      ...Object.fromEntries(platformCases.map(({ key, value }) => [key, value])),
+      controllerOptions: {
+        controller: 'perc_h965i',
+        stripeSize: 256,
+        readPolicy: 'adaptive',
+        writePolicy: 'write-back',
+        cacheSize: 8192,
+      },
+      objectscaleOptions: {
+        objectSizeKB: 1024,
+        systemOverheadPercent: 15,
+        networkEfficiencyFactor: 0.55,
+        sites: 3,
+        fillRatePercent: 82,
+        compression: true,
+        compressionRatio: 2.0,
+      },
+      powerscaleOptions: {
+        compression: true,
+        compressionRatio: 1.8,
+        dedup: true,
+        dedupRatio: 1.5,
+        snapshotReservePercent: 25,
+        smartQuotas: true,
+        syncIQ: true,
+      },
+      powervaultOptions: {
+        model: 'ME5284',
+        controllers: 2,
+        tiering: true,
+        ssdReadCache: true,
+        thinProvisioning: true,
+      },
+      synologyOptions: {
+        filesystem: 'btrfs',
+        btrfsOverhead: 0.04,
+        systemPartitionSize: 25 * 1024 * 1024 * 1024,
+        modelSeries: 'xs',
+        ssdCache: true,
+        cacheMode: 'read_write',
+      },
+      netAppOptions: {
+        platform: 'aff_a',
+        raidType: 'raid_tec',
+        adpVersion: 'adpv2',
+        snapshotReserve: 0.1, // FRACTION (=10%)
+        dataReductionRatio: 3.5,
+        waflOverhead: 0.015,
+        compression: true,
+        dedup: true,
+        zeroDetection: true,
+      },
+      readPercent: 70,
+      blockSize: '64K',
+      randomPercent: 50,
+      datasetSize: 500 * 1024 * 1024 * 1024 * 1024,
+      dailyWriteVolume: 5 * 1024 * 1024 * 1024 * 1024,
+      compressionRatio: 1.5,
+      dedupRatio: 1.0,
+      networkSpeed: '100GbE',
+      pcieGen: 'gen5',
+      pcieLanes: 'x16',
+      pue: 1.3,
+      carbonRegion: 'switzerland',
+      projectYears: 5,
+      electricityCostPerKwh: 0.12,
+      fsType: 'zfs',
+      supportsReflink: true,
+      backupRetention: 30,
+      dailyChangeRate: 5,
+      unitSystem: 'binary',
+    }
+
+    const serialized = JSON.stringify(maximalConfig)
+    const compressed = compressToEncodedURIComponent(serialized)
+
+    // This scenario (every one of the ~15 platform options objects customized
+    // away from its default simultaneously) never happens in the real app —
+    // the UI only lets a user edit the *currently selected* topology's options
+    // object, so at most one of these ~15 objects is ever non-default at a
+    // time. It is measured here as a pathological upper bound, not a realistic
+    // budget target; see the realistic single-platform scenario in
+    // tests/store/urlPersistenceOptions.spec.ts for the number that matters
+    // for actual shared links, and task-9-report.md for both figures.
+    console.info(
+      `[Task 9] pathological all-platforms-customized compressed length: ${compressed.length} chars`,
+    )
+    // Tight bound on purpose. The payload is a fixed literal and LZ-String is deterministic,
+    // so this measures 2827 chars on every run — a `< 4000` bound had 30% slack and no
+    // discriminating power. ~3% headroom absorbs an incidental field rename without letting a
+    // real regression (a platform's options object escaping omitDefaults, ~200-500 chars) pass.
+    expect(compressed.length).toBeLessThan(2900)
   })
 })
 
@@ -577,7 +992,7 @@ describe('URL Storage - Security: Malicious URL Protection (SEC-01, SEC-02, SEC-
         platform: 'aff_a',
         raidType: 'raid_dp',
         adpVersion: 'adpv2',
-        snapshotReserve: 5,
+        snapshotReserve: 0.05, // FRACTION (=5%)
         dataReductionRatio: 3.0,
         waflOverhead: 0.015,
         compression: true,
@@ -722,6 +1137,29 @@ describe('URL Storage - Security: Malicious URL Protection (SEC-01, SEC-02, SEC-
       const result = urlHashStorage.getItem('raidy')
 
       expect(result).toBeNull()
+    })
+
+    it('should reject a NetApp snapshotReserve above 1 (it is a fraction, not a percent)', () => {
+      // overheadCalculator.ts multiplies capacityAfterParity by this value directly, so the
+      // old `.max(100)` bound let a crafted link validate a 100x snapshot reserve. The panel
+      // slider works in percent and divides by 100 on the way in, so 100 can never come from
+      // the UI — only from a hand-edited link.
+      const maliciousState = createValidState({
+        netAppOptions: {
+          platform: 'aff_a',
+          raidType: 'raid_dp',
+          adpVersion: 'adpv2',
+          snapshotReserve: 100,
+          dataReductionRatio: 3.0,
+          waflOverhead: 0.015,
+          compression: true,
+          dedup: true,
+          zeroDetection: true,
+        },
+      })
+      setMaliciousUrlHash(maliciousState)
+
+      expect(urlHashStorage.getItem('raidy')).toBeNull()
     })
 
     it('should reject negative percentages', () => {

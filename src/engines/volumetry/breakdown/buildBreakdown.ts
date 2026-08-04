@@ -25,6 +25,8 @@ export interface BreakdownInput {
   parityOverhead: number
   hotSpareOverhead: number
   cacheTierCapacity: number
+  /** BeeGFS only: raw capacity of drives that do not complete a storage target (0 elsewhere) */
+  beeGfsStrandedCapacity: number
   slopOverhead: number
   s2dReserve: number
   s2dInfraReserve: number
@@ -75,6 +77,7 @@ export function buildBreakdown(input: BreakdownInput): BreakdownEntry[] {
     parityOverhead,
     hotSpareOverhead,
     cacheTierCapacity,
+    beeGfsStrandedCapacity,
     slopOverhead,
     s2dReserve,
     s2dInfraReserve,
@@ -130,6 +133,17 @@ export function buildBreakdown(input: BreakdownInput): BreakdownEntry[] {
       bytes: cacheTierCapacity,
       percent: (cacheTierCapacity / rawCapacity) * 100,
       color: 'var(--color-cache)',
+    })
+  }
+
+  // BeeGFS drives that do not complete a storage target: raw capacity that is neither usable
+  // nor parity, so it needs its own bucket or the breakdown would not reconcile with raw.
+  if (beeGfsStrandedCapacity > 0) {
+    breakdown.push({
+      label: 'BeeGFS Stranded Drives',
+      bytes: beeGfsStrandedCapacity,
+      percent: (beeGfsStrandedCapacity / rawCapacity) * 100,
+      color: 'var(--color-overhead)',
     })
   }
 

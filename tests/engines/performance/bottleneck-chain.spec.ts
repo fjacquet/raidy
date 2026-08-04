@@ -1,15 +1,19 @@
 /**
  * Unit tests for the network bottleneck model used by the performance engine.
  *
- * Covers the vSAN traffic-fraction estimate and the backward-compatible
- * network-limit calculation (neutral default must reproduce the legacy formula).
+ * Covers the vSAN traffic-fraction estimate, the BeeGFS per-platform network model,
+ * and the backward-compatible network-limit calculation (neutral default must
+ * reproduce the legacy formula).
  */
 
 import { describe, expect, it } from 'vitest'
 import {
   calculateNetworkLimits,
   getVsanNetworkTrafficFraction,
+  NETWORK_MODEL_BY_TOPOLOGY,
+  resolveNetworkModel,
 } from '@/engines/performance/utils/bottleneck-chain'
+import { DEFAULT_BEEGFS_OPTIONS } from '@/types/topology'
 
 const BLOCK_64K = 64 * 1024
 
@@ -62,5 +66,89 @@ describe('calculateNetworkLimits', () => {
   it('defaults unknown network speeds to 10GbE', () => {
     const { bandwidth } = calculateNetworkLimits('999GbE', 1, BLOCK_64K)
     expect(bandwidth).toBeCloseTo(1250, 5)
+  })
+})
+
+describe('resolveNetworkModel', () => {
+  it('has no entry for platforms without a network model refinement (e.g. standard RAID)', () => {
+    expect(NETWORK_MODEL_BY_TOPOLOGY.standard).toBeUndefined()
+    expect(
+      resolveNetworkModel('standard', { level: 'RAID6', readPercent: 50, serverCount: 1 }),
+    ).toBeUndefined()
+  })
+
+  describe('BeeGFS', () => {
+    it('resolves to exactly the neutral default (fraction 1.0) without buddy mirroring', () => {
+      const model = resolveNetworkModel('beegfs', {
+        level: 'beegfs_raid6',
+        readPercent: 30,
+        serverCount: 4,
+        beeGfsOptions: { ...DEFAULT_BEEGFS_OPTIONS, storageBuddyMirror: false },
+      })
+      expect(model).toEqual({ duplex: 1, compressionRatio: 1, trafficFraction: 1.0 })
+    })
+
+    it('resolves to the neutral default even with no beeGfsOptions at all', () => {
+      const model = resolveNetworkModel('beegfs', {
+        level: 'beegfs_raid6',
+        readPercent: 70,
+        serverCount: 4,
+      })
+      expect(model).toEqual({ duplex: 1, compressionRatio: 1, trafficFraction: 1.0 })
+    })
+
+    it('doubles the write traffic fraction when storage buddy mirroring is on', () => {
+      // 80% write, 20% read, buddy on: 0.8 × 2 + 0.2 × 1 = 1.8
+      const model = resolveNetworkModel('beegfs', {
+        level: 'beegfs_raid6',
+        readPercent: 20,
+        serverCount: 4,
+        beeGfsOptions: { ...DEFAULT_BEEGFS_OPTIONS, storageBuddyMirror: true },
+      })
+      expect(model?.trafficFraction).toBeCloseTo(1.8, 5)
+    })
+
+    it('is network-limited earlier with buddy mirroring on than off, for the same write-heavy workload', () => {
+      const ctxBase = { level: 'beegfs_raid6', readPercent: 10, serverCount: 4 }
+      const modelOff = resolveNetworkModel('beegfs', {
+        ...ctxBase,
+        beeGfsOptions: { ...DEFAULT_BEEGFS_OPTIONS, storageBuddyMirror: false },
+      })
+      const modelOn = resolveNetworkModel('beegfs', {
+        ...ctxBase,
+        beeGfsOptions: { ...DEFAULT_BEEGFS_OPTIONS, storageBuddyMirror: true },
+      })
+      expect(modelOff).toBeDefined()
+      expect(modelOn).toBeDefined()
+
+      const limitsOff = calculateNetworkLimits('100GbE', 4, BLOCK_64K, modelOff)
+      const limitsOn = calculateNetworkLimits('100GbE', 4, BLOCK_64K, modelOn)
+
+      // Higher traffic fraction -> lower effective bandwidth ceiling -> hits the
+      // network bottleneck at a lower throughput than the no-buddy configuration.
+      expect(limitsOn.bandwidth).toBeLessThan(limitsOff.bandwidth)
+    })
+
+    it('bottoms out at exactly 1.0 — the 0.1 floor is never the binding constraint', () => {
+      // The previous version of this test asserted `>= 0.1` against a model whose minimum over
+      // ALL inputs is 1.0, so it could not fail. Assert the reachable minimum instead: since
+      // readRatio + writeRatio = 1 and both amplifications are >= 1, the fraction is 1.0 at
+      // every read/write mix without buddy mirroring, and >= 1.0 with it. Any mutation that
+      // dropped an amplification below 1, or let the 0.1 floor bind, fails here.
+      const fractions: number[] = []
+      for (const storageBuddyMirror of [false, true]) {
+        for (let readPercent = 0; readPercent <= 100; readPercent += 5) {
+          const model = resolveNetworkModel('beegfs', {
+            level: 'beegfs_raid6',
+            readPercent,
+            serverCount: 4,
+            beeGfsOptions: { ...DEFAULT_BEEGFS_OPTIONS, storageBuddyMirror },
+          })
+          fractions.push(model?.trafficFraction ?? Number.NaN)
+        }
+      }
+      expect(Math.min(...fractions)).toBe(1)
+      expect(Math.max(...fractions)).toBe(2) // 100% writes with buddy mirroring
+    })
   })
 })

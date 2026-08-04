@@ -9,6 +9,27 @@ import type { StateStorage } from 'zustand/middleware'
 import { validateUrlState } from '@/utils/schemas'
 
 /**
+ * Zustand's `persist` middleware (via `createJSONStorage`) wraps the
+ * partialized state in `{ state, version }` before it ever reaches this
+ * module's `setItem` — see `zustand/middleware.js`'s `setItem`/`getItem`
+ * (`storage.setItem(name, JSON.stringify(newValue))` where
+ * `newValue = { state: options.partialize(...), version: options.version }`),
+ * and `hydrate()` reading `deserializedStorageValue.state` /
+ * `.version` back out. The compressed hash therefore decodes to that
+ * envelope, not to a flat config object.
+ */
+interface PersistEnvelope {
+  state: unknown
+  version?: number
+}
+
+function isPersistEnvelope(value: unknown): value is PersistEnvelope {
+  if (typeof value !== 'object' || value === null || !('state' in value)) return false
+  const state = (value as Record<string, unknown>).state
+  return typeof state === 'object' && state !== null
+}
+
+/**
  * Custom StateStorage that syncs state to URL hash with LZ compression.
  * Enables "Copy URL to Share" functionality without backend.
  */
@@ -27,9 +48,14 @@ export const urlHashStorage: StateStorage = {
       const decompressed = decompressFromEncodedURIComponent(compressed)
       if (!decompressed) return null
 
-      // Parse and validate the deserialized state
       const parsed = JSON.parse(decompressed)
-      const validated = validateUrlState(parsed)
+
+      // Validate the REAL config payload, not the persist envelope wrapping it.
+      // A bare/flat object (older links, hand-constructed test fixtures) is
+      // validated as-is for backward compatibility.
+      const envelope = isPersistEnvelope(parsed)
+      const rawState = envelope ? (parsed as PersistEnvelope).state : parsed
+      const validated = validateUrlState(rawState)
 
       if (!validated) {
         // Validation failed - notify user with toast
@@ -41,8 +67,14 @@ export const urlHashStorage: StateStorage = {
         return null
       }
 
+      // Re-wrap in the envelope Zustand expects (preserving `version`) so
+      // hydration reads the validated config, not the raw unvalidated one.
+      const output = envelope
+        ? { state: validated, version: (parsed as PersistEnvelope).version }
+        : validated
+
       // Return validated state as JSON string for Zustand
-      return JSON.stringify(validated)
+      return JSON.stringify(output)
     } catch (error) {
       console.error('Failed to parse URL hash state:', error)
       toast.error('Invalid configuration link', {

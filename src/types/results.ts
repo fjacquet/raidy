@@ -31,6 +31,40 @@ export interface VolumetryResult {
   zfsDetails?: ZfsCapacityDetails
   /** Longhorn-specific detailed capacity breakdown (only present when topology is Longhorn) */
   longhornDetails?: LonghornCapacityDetails
+  /** BeeGFS-specific metadata-target advisory (only present when topology is BeeGFS) */
+  beeGfsDetails?: BeeGfsCapacityDetails
+}
+
+/**
+ * BeeGFS metadata-target sizing advisory.
+ *
+ * ThinkParQ recommends provisioning 0.3-0.5% of total storage capacity for
+ * metadata, and reports that 500 GB of ext4 metadata capacity holds roughly
+ * 150 million files.
+ *
+ * @see https://doc.beegfs.io/latest/system_design/system_requirements.html
+ * @see https://doc.beegfs.io/latest/advanced_topics/metadata_tuning.html
+ */
+export interface BeeGfsCapacityDetails {
+  /** Raw capacity of the metadata targets (0 when no MDT configured), in bytes */
+  mdtRawCapacity: number
+  /** MDT capacity after RAID1/10 and metadata buddy mirroring, in bytes */
+  mdtUsableCapacity: number
+  /** Lower bound of the ThinkParQ rule (0.3% of usable data capacity), in bytes */
+  mdtRecommendedMin: number
+  /** Typical target of the ThinkParQ rule (0.5% of usable data capacity), in bytes */
+  mdtRecommendedTypical: number
+  /** Files the MDT can hold, from the 500 GB ~ 150M files ext4 density */
+  estimatedFileCount: number
+  /** Whether the MDT meets the recommendation */
+  status: 'ok' | 'under' | 'none'
+  /** Number of whole storage targets formed by the storage drives */
+  storageTargetCount: number
+  /** Drives left over because they do not fill a whole storage target */
+  strandedDrives: number
+  /** Buddy mirroring state, echoed for display */
+  storageBuddyMirror: boolean
+  metadataBuddyMirror: boolean
 }
 
 /** ZFS-specific capacity breakdown for detailed display */

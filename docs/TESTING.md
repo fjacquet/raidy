@@ -12,6 +12,13 @@ npm run test:ui       # browser UI
 npm test -- tests/engines/volumetry.spec.ts   # single file
 ```
 
+> **Run `npm run test:coverage` on its own.** Vitest wipes `coverage/` (its `reportsDirectory`)
+> on start, so a second vitest invocation running concurrently — a watch-mode session, another
+> terminal, an editor test runner — makes the coverage run fail with
+> `Something removed the coverage directory "coverage/.tmp"`. It is a collision, not a real
+> coverage failure: stop the other run and re-run. No extra flags are needed otherwise.
+
+
 ## Type-checking the tests
 
 The test suite is type-checked, not just executed: `npm run typecheck` runs `tsc --noEmit -p tsconfig.test.json` over `tests/**`. Test files must satisfy the same strict settings as `src/` (including `noUncheckedIndexedAccess`). Use the real domain types and `DEFAULT_*_OPTIONS` (from `@/types/topology`) when constructing fixtures; do not paper over type errors with `as any` / `@ts-ignore` (reserved only for the deliberate invalid-input tests).

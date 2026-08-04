@@ -1,7 +1,7 @@
 # Security Configuration
 
 **Project:** Raidy Storage Simulator
-**Last Updated:** 2026-01-18
+**Last Updated:** 2026-08-04
 
 ## Overview
 
@@ -105,6 +105,21 @@ When scan finds issues:
 **Test:**
 Load URL: `http://localhost:5173/#config=<malicious_payload>`
 Expected: User sees notification "Configuration link is invalid"
+
+**Fixed vulnerability (2026-08-04):** `urlHashStorage.getItem` validated the wrong object.
+Zustand's `persist` middleware wraps the partialized state in a `{ state, version }` envelope
+before `urlHashStorage` ever sees it, but validation was run against that whole envelope
+instead of the `.state` payload inside it. Because `ConfigStateSchema` is passthrough with
+every field optional, an object whose only keys are `state` and `version` always validated
+trivially — every Zod schema added for URL persistence was inert in the running app. A crafted
+link (e.g. `driveCount: 999999999` or `hotSpares: 'not-a-number'`) passed straight through
+`persist.rehydrate()` into the live store, undetected by the existing SEC-01/02/10 test suite
+because those tests called the validator directly on a flat object, not through the real
+envelope-wrapped production path. Fixed by validating `.state` inside the detected envelope
+and re-wrapping the validated result before returning it to Zustand; regression coverage now
+exercises the production boundary (`window.location.hash` → `persist.rehydrate()` → store
+state) in `tests/store/urlPersistenceOptions.spec.ts` rather than calling the validator
+directly. See `src/store/urlStorage.ts` and `docs/ARCHITECTURE.md`'s URL Persistence section.
 
 ### PDF Export Sanitization
 

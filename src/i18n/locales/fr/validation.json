@@ -22,5 +22,15 @@
     "zfsSlop": "ZFS reserve 1/32 de la capacite du pool pour les metadonnees et COW",
     "compressionRecommended": "Compression recommandee pour ce type de charge",
     "reflinkBackup": "Systeme de fichiers avec reflink permet des sauvegardes efficaces en espace"
+  },
+  "beegfs": {
+    "buddyMirrorMinNodes": "Le Buddy Mirroring de stockage necessite au moins 2 noeuds ({{serverCount}} configure(s))",
+    "buddyMirrorMinNodesRecommendation": "Ajoutez un second noeud ou desactivez le Buddy Mirroring de stockage",
+    "strandedDrives": "{{stranded}} disque(s) ne remplissent pas une cible de stockage complete de {{drivesPerTarget}} et sont perdus",
+    "noMdt": "Aucune cible de metadonnees configuree - activez le dimensionnement des cibles de metadonnees pour dimensionner le MDT",
+    "mdtUnderMin": "La capacite des cibles de metadonnees est inferieure au minimum recommande par BeeGFS de {{recommendedMin}}",
+    "mdtUnderMinRecommendation": "Augmentez la capacite des cibles de metadonnees a au moins {{recommendedTypical}} (recommandation typique)",
+    "raidTargetNeedsRaidController": "BeeGFS {{level}} : HBA detecte. Une cible RAID materielle locale doit se trouver derriere un controleur RAID, pas un HBA en mode IT.",
+    "raidTargetNeedsRaidControllerRecommendation": "Choisissez un controleur RAID (PERC, LSI) ou passez au niveau beegfs_raidz2, qui exige bien un HBA en mode IT."
   }
 }

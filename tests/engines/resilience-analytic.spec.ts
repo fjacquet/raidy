@@ -159,7 +159,11 @@ describe('Resilience Analytic Cross-Check — RAID-5 vs closed-form MTTDL', () =
     // (Monte Carlo vs closed-form differ by URE/correlated-failure modeling).
     expect(ratio).toBeGreaterThan(0.1)
     expect(ratio).toBeLessThan(10)
-  }, 60_000)
+    // simulationCount: 1_000_000 comfortably finishes well under 60s on plain `vitest run`,
+    // but v8 coverage instrumentation pushes it past that margin deterministically under
+    // `--coverage`. 180s leaves ample margin for instrumentation overhead without touching
+    // simulationCount, which the order-of-magnitude assertions above rely on for signal.
+  }, 180_000)
 })
 
 describe('Resilience Analytic Cross-Check — RAID-6 vs closed-form MTTDL', () => {
@@ -193,5 +197,9 @@ describe('Resilience Analytic Cross-Check — RAID-6 vs closed-form MTTDL', () =
 
     expect(ratio).toBeGreaterThan(0.1)
     expect(ratio).toBeLessThan(10)
-  }, 60_000)
+    // simulationCount: 1_000_000 comfortably finishes well under 60s on plain `vitest run`,
+    // but v8 coverage instrumentation pushes it past that margin deterministically under
+    // `--coverage`. 180s leaves ample margin for instrumentation overhead without touching
+    // simulationCount, which the order-of-magnitude assertions above rely on for signal.
+  }, 180_000)
 })

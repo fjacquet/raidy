@@ -35,6 +35,7 @@ export function usePerformanceCalc(): PerformanceResult {
     nutanixOptions,
     vsanOptions,
     s2dOptions,
+    beeGfsOptions,
     // Workload
     readPercent,
     randomPercent,
@@ -99,6 +100,7 @@ export function usePerformanceCalc(): PerformanceResult {
         nutanixOptions,
         vsanOptions,
         s2dOptions,
+        beeGfsOptions,
         tiering,
         workingSetPercent: s2dOptions?.tieringConfig?.workingSetPercent ?? 20,
       })
@@ -146,5 +148,6 @@ export function usePerformanceCalc(): PerformanceResult {
     nutanixOptions,
     vsanOptions,
     s2dOptions,
+    beeGfsOptions,
   ])
 }

@@ -96,6 +96,18 @@ export type LonghornTopology =
   | 'longhorn_r2' // 2 replicas, 50% efficiency
   | 'longhorn_r3' // 3 replicas, 33% efficiency
 
+/**
+ * BeeGFS topologies — the level describes the *local* RAID of each storage
+ * target, not a BeeGFS-level protection scheme. BeeGFS federates targets; it
+ * does not protect data itself. Cluster protection comes from Buddy Mirroring,
+ * which is an independent option (see BeeGfsOptions).
+ */
+export type BeeGfsTopology =
+  | 'beegfs_raid6' // storage target = local RAID6 (default, 10-12 drives recommended)
+  | 'beegfs_raid10' // storage target = local RAID10
+  | 'beegfs_raidz2' // storage target = ZFS RAIDz2
+  | 'beegfs_single' // one drive = one target, no local RAID
+
 /** Dell PowerFlex topologies (SSD/NVMe only - HDD no longer supported) */
 export type PowerFlexTopology =
   | 'powerflex_medium_2way' // Medium granularity, 2-way mirror (1MB chunk)
@@ -137,6 +149,7 @@ export type TopologyType =
   | 'nutanix'
   | 'powervault' // Dell PowerVault ME5 (mid-range block storage)
   | 'longhorn'
+  | 'beegfs' // BeeGFS parallel filesystem (HPC/AI)
 
 /** Union of all topology configurations */
 export type Topology =
@@ -154,6 +167,7 @@ export type Topology =
   | { type: 'nutanix'; level: NutanixTopology }
   | { type: 'powervault'; level: PowerVaultTopology }
   | { type: 'longhorn'; level: LonghornTopology }
+  | { type: 'beegfs'; level: BeeGfsTopology }
 
 /** ZFS-specific configuration options */
 export interface ZfsOptions {
@@ -242,7 +256,12 @@ export type RaidControllerType =
 /** Combined controller/HBA types */
 export type ControllerType = HbaType | RaidControllerType
 
-/** Topologies that require HBA (direct disk access) - software-defined storage only */
+/**
+ * Topologies that require HBA (direct disk access) - software-defined storage only.
+ *
+ * BeeGFS is deliberately ABSENT: its controller class depends on the level, not on
+ * the platform, so it is resolved by `BEEGFS_CONTROLLER_REQUIREMENT` below.
+ */
 export const HBA_REQUIRED_TOPOLOGIES: TopologyType[] = [
   'zfs',
   's2d',
@@ -255,9 +274,53 @@ export const HBA_REQUIRED_TOPOLOGIES: TopologyType[] = [
   // Note: powerscale and objectscale are appliances with built-in controllers, not HBA-based
 ]
 
+/**
+ * Controller class a topology can attach its drives through.
+ * - `hba` — software-defined storage that addresses raw disks (IT mode)
+ * - `raid` — the drives sit behind a hardware or software RAID controller
+ * - `either` — both are physically valid, so the UI offers the union
+ */
+export type ControllerRequirement = 'hba' | 'raid' | 'either'
+
+/**
+ * BeeGFS does not protect data itself. Every storage target is a LOCAL volume that
+ * BeeGFS sees as a single block device — it never sees the disks. So the controller
+ * class follows the level (the local RAID), not the platform:
+ * - RAID6 / RAID10 targets are normally built on a hardware RAID controller (PERC, LSI).
+ * - RAIDz2 needs an IT-mode HBA because ZFS addresses the disks directly.
+ * - One drive per target works behind either.
+ *
+ * Classifying BeeGFS as pure SDS (HBA-only) modelled a RAID6 node with the HBA
+ * ceiling — ~2.7x the IOPS and ~1.6x the throughput a PERC H755 really offers.
+ */
+const BEEGFS_CONTROLLER_REQUIREMENT: Record<BeeGfsTopology, ControllerRequirement> = {
+  beegfs_raid6: 'raid',
+  beegfs_raid10: 'raid',
+  beegfs_raidz2: 'hba',
+  beegfs_single: 'either',
+}
+
+/**
+ * Resolve which controller class a topology may use.
+ *
+ * `level` is optional so existing callers keep working; it only changes the answer
+ * for BeeGFS. Every other platform resolves from `HBA_REQUIRED_TOPOLOGIES` exactly
+ * as before and can never return `'either'`.
+ */
+export function getControllerRequirement(
+  topologyType: TopologyType,
+  level?: string,
+): ControllerRequirement {
+  if (topologyType === 'beegfs') {
+    // No level supplied: fall back to the default level's class (beegfs_raid6 -> raid).
+    return BEEGFS_CONTROLLER_REQUIREMENT[level as BeeGfsTopology] ?? 'raid'
+  }
+  return HBA_REQUIRED_TOPOLOGIES.includes(topologyType) ? 'hba' : 'raid'
+}
+
 /** Check if topology requires HBA */
-export function requiresHba(topologyType: TopologyType): boolean {
-  return HBA_REQUIRED_TOPOLOGIES.includes(topologyType)
+export function requiresHba(topologyType: TopologyType, level?: string): boolean {
+  return getControllerRequirement(topologyType, level) === 'hba'
 }
 
 /**
@@ -288,9 +351,29 @@ export interface RaidControllerOptions {
   stripeSize: 64 | 128 | 256 | 512 | 1024
   /** Read policy */
   readPolicy: 'read-ahead' | 'no-read-ahead' | 'adaptive'
-  /** Write policy */
+  /**
+   * Write policy.
+   *
+   * Deliberately NOT consumed by the performance engine, and the same reasoning applies
+   * to `readPolicy` and `cacheSize`. The engine models SUSTAINED IOPS and throughput. A
+   * battery/flash-backed write-back cache is a finite buffer: under a sustained write
+   * stream the host rate converges on the rate at which the cache drains to the array, so
+   * once the cache saturates the ceiling is the back-end array's, unchanged. The RAID 5/6
+   * read-modify-write penalty (read old data + P + Q, write new data + P + Q) is a
+   * back-end disk cost that the cache defers but never removes.
+   *
+   * The real benefits — write latency (ack from NVRAM instead of media) and burst
+   * absorption — are properties of the *unsaturated* cache, i.e. of a transient this
+   * engine does not model. There is one genuine sustained effect, full-stripe write
+   * coalescing, which converts a 6-I/O RMW into an (N+2)/N full-stripe write; but its
+   * magnitude is a function of write locality and stripe alignment, and no platform's
+   * write penalty in this engine is workload-dependent. Deriving a factor without a
+   * locality model would mean inventing one, so it is left unmodelled and documented.
+   *
+   * Exported to the config report (`exportConfig.ts`) so the operator still records it.
+   */
   writePolicy: 'write-back' | 'write-through' | 'write-back-with-bbu'
-  /** Cache size in MB (for hardware controllers) */
+  /** Cache size in MB (for hardware controllers) — see `writePolicy`: not consumed by any engine */
   cacheSize?: number
 }
 
@@ -390,7 +473,12 @@ export interface NetAppOptions {
   raidType: 'raid_dp' | 'raid_tec'
   /** Advanced Drive Partitioning version */
   adpVersion: 'none' | 'adpv1' | 'adpv2'
-  /** Snapshot reserve percentage (0-20%, default 5% or 0% on AFF) */
+  /**
+   * Snapshot reserve as a FRACTION of capacity after parity (0–0.2; default 0.05 = 5%, or 0
+   * on AFF). Not a percent: `overheadCalculator.ts` multiplies by this value directly, unlike
+   * `PowerStoreOptions`/`PowerScaleOptions.snapshotReservePercent`, which are divided by 100
+   * there. The NetApp panel's slider works in percent and converts on both sides.
+   */
   snapshotReserve: number
   /** Data Reduction Ratio (1.0 = none, 3.0 = 3:1 compression+dedup) */
   dataReductionRatio: number
@@ -446,6 +534,82 @@ export interface LonghornOptions {
   growthHeadroom: number
   /** Storage Over-Provisioning % — advisory display only (thin-provisioning scheduling) */
   overProvisioningPercent: number
+}
+
+/**
+ * BeeGFS configuration options.
+ *
+ * BeeGFS has no data protection of its own: each storage target is a local RAID
+ * volume (the topology level) and cluster protection is Buddy Mirroring —
+ * synchronous replication between *pairs* of targets, costing exactly 2x
+ * capacity. Data and metadata buddy mirroring are configured independently.
+ *
+ * Metadata targets (MDT) are modelled with the shared TieringConfig primitive:
+ * fastTier = MDT, capacityTier = storage targets. MDT drives count toward raw
+ * capacity but never toward usable capacity.
+ *
+ * @see https://doc.beegfs.io/latest/system_design/system_requirements.html
+ */
+export interface BeeGfsOptions {
+  /** Drives per storage target (the local RAID group width). BeeGFS recommends 10-12 for RAID6. */
+  drivesPerTarget: number
+  /** Buddy mirroring for storage targets — halves usable capacity */
+  storageBuddyMirror: boolean
+  /** Buddy mirroring for metadata targets — doubles the MDT capacity requirement */
+  metadataBuddyMirror: boolean
+  /**
+   * Chunk size in KB (BeeGFS default 512K), for display purposes only.
+   *
+   * Chunk size is a real BeeGFS tunable — it trades per-file parallelism against per-target
+   * sequential efficiency on real hardware. It is deliberately NOT wired into the performance
+   * engine: that engine models the bottleneck chain (Media → Controller → PCIe → Network) in
+   * cluster aggregates driven by the workload panel's `blockSize` and `randomPercent`, and it
+   * has no per-file layer for a chunk boundary to interact with. Any factor applied here would
+   * be an invented curve with no reference behind it, which is worse than an honest gap. The
+   * BeeGFS options panel labels this control informational (tooltip + hint) so the user is not
+   * misled; it exists so a sizing sheet can record the intended configuration.
+   */
+  chunkSizeKb: 512 | 1024 | 2048
+  /**
+   * Per-file stripe width in targets (BeeGFS `numtargets`, default 4), for display only.
+   *
+   * `numtargets` caps the throughput of a SINGLE file: one file is striped over at most this
+   * many storage targets. Every performance figure this tool reports is a cluster aggregate
+   * over all clients and all files, and that aggregate is bounded by the total storage-target
+   * count, not by any one file's stripe width — the HPC workloads BeeGFS is built for run many
+   * concurrent files precisely so the aggregate is not `numtargets`-bound. Applying this as a
+   * multiplier on the aggregate would understate a real cluster by up to
+   * `storageTargetCount / numTargets`. Modelling it honestly would need a single-file /
+   * single-stream output the dashboard does not have, so the control is labelled informational
+   * (tooltip + hint) in the BeeGFS options panel rather than wired to a fabricated formula.
+   */
+  numTargets: number
+  /**
+   * Cluster interconnect, for display purposes only. The bottleneck chain's network
+   * layer is already driven by the store-level `networkSpeed` (AdvancedSlice), which is
+   * the single source of truth for per-server bandwidth across every platform. This
+   * field uses a BeeGFS-flavoured vocabulary (IB fabrics) that does not map 1:1 onto
+   * `NetworkSpeed`'s Ethernet-speed enum, so it is intentionally not wired into the
+   * bandwidth calculation — introducing a conversion table would create a second source
+   * of truth for the same number. It exists so the BeeGFS options panel can show the
+   * interconnect the user actually has (relevant to `BEEGFS_MIN_DRIVES_PER_TARGET`-style
+   * sizing guidance and future latency-only refinements), without affecting throughput.
+   */
+  network: 'ib-hdr' | 'ib-ndr' | '100gbe' | '25gbe'
+  /** Overhead of the ext4/xfs filesystem under each target, in percent */
+  fsOverheadPercent: number
+  /**
+   * Explicit opt-in for configuring metadata targets (MDT) separately from the Hardware
+   * panel's drive/count, mirroring Ceph's `walDbOffload` toggle. Default `false`: with no
+   * MDT configured, BeeGFS co-locates metadata on the storage nodes and `beeGfsDetails.status`
+   * is `'none'`. Enabling this switches the storage-target drive selection from the Hardware
+   * sidebar to the `tiering.capacityTier` picker (see `resolveTiering` in
+   * src/engines/shared/tiering.ts) — the panel must make that switch explicit, not implicit,
+   * since the two drive counts can otherwise silently diverge.
+   */
+  metadataTargets: boolean
+  /** Metadata target configuration (fastTier = MDT, capacityTier = storage targets) */
+  tiering?: TieringConfig
 }
 
 /** PowerFlex configuration options */
@@ -644,6 +808,25 @@ export const DEFAULT_LONGHORN_OPTIONS: LonghornOptions = {
   overProvisioningPercent: 200,
 }
 
+/**
+ * Default BeeGFS options.
+ *
+ * 12 drives per RAID6 target sits in the 10-12 range BeeGFS recommends as the
+ * capacity/resilience/performance balance. Metadata buddy mirroring defaults on
+ * (losing the namespace loses the filesystem); storage buddy mirroring defaults
+ * off since most HPC deployments rely on the local RAID and restore from tape.
+ */
+export const DEFAULT_BEEGFS_OPTIONS: BeeGfsOptions = {
+  drivesPerTarget: 12,
+  storageBuddyMirror: false,
+  metadataBuddyMirror: true,
+  chunkSizeKb: 512,
+  numTargets: 4,
+  network: '100gbe',
+  fsOverheadPercent: 2,
+  metadataTargets: false,
+}
+
 /** Default tiering configuration */
 export const DEFAULT_TIERING_CONFIG: TieringConfig = {
   enabled: false,
@@ -804,22 +987,38 @@ const APPLIANCE_CONTROLLERS: Partial<Record<TopologyType, ControllerType[]>> = {
  * vSAN ESA is NVMe-only with direct PCIe attach, so it must default to the NVMe
  * HBA rather than the first (SAS) HBA in the list. Topologies absent here fall
  * back to "first valid controller" / "only switch when the current is invalid".
+ *
+ * BeeGFS is deliberately absent. This map is keyed by topology TYPE and so cannot
+ * express a per-level preference, and BeeGFS mandates no specific model: mdraid and
+ * PERC/LSI RAID6 targets are both common, and any IT-mode HBA suits RAIDz2. A
+ * declared default here is applied unconditionally on every `setTopology`, which
+ * would discard the user's explicit controller choice each time they change level.
+ * The generic "keep the choice unless it became invalid" fallback already snaps to a
+ * valid controller across every BeeGFS level transition.
  */
 export const DEFAULT_CONTROLLER_BY_TOPOLOGY: Partial<Record<TopologyType, ControllerType>> = {
   vsan_esa: 'hba_nvme',
 }
 
-/** Get controller options filtered by topology requirements */
-export function getControllerOptions(topologyType: TopologyType): ControllerType[] {
+/**
+ * Get controller options filtered by topology requirements.
+ *
+ * `level` is optional and only affects BeeGFS (see `getControllerRequirement`); the
+ * list returned for every other topology is unchanged.
+ */
+export function getControllerOptions(topologyType: TopologyType, level?: string): ControllerType[] {
   // Storage appliances have fixed built-in controllers
   const applianceControllers = APPLIANCE_CONTROLLERS[topologyType]
   if (applianceControllers) {
     return applianceControllers
   }
 
-  // Software-defined storage needs HBAs, traditional RAID needs controllers
-  const needsHba = requiresHba(topologyType)
-  return (Object.keys(CONTROLLER_LIMITS) as ControllerType[]).filter(
-    (key) => CONTROLLER_LIMITS[key].isHba === needsHba,
-  )
+  // Software-defined storage needs HBAs, traditional RAID needs controllers,
+  // and a level that admits both (beegfs_single) gets the union.
+  const requirement = getControllerRequirement(topologyType, level)
+  const allControllers = Object.keys(CONTROLLER_LIMITS) as ControllerType[]
+  if (requirement === 'either') {
+    return allControllers
+  }
+  return allControllers.filter((key) => CONTROLLER_LIMITS[key].isHba === (requirement === 'hba'))
 }

@@ -9,14 +9,15 @@
  * excluded from usable and counted only toward raw (so cluster efficiency reflects it).
  *
  * Used by S2D (Storage Spaces tiering), vSAN OSA (disk groups), Ceph (WAL/DB offload),
- * and Nutanix (hybrid cluster). All three calculation engines (volumetry, performance,
- * sustainability) resolve tiering through this single module so the cache/capacity split
- * is computed once and identically.
+ * Nutanix (hybrid cluster), and BeeGFS (metadata targets). All three calculation engines
+ * (volumetry, performance, sustainability) resolve tiering through this single module so the
+ * cache/capacity split is computed once and identically.
  */
 
 import drivesData from '@/data/drives.json'
 import type { Drive } from '@/types/drive'
 import type {
+  BeeGfsOptions,
   CephOptions,
   NutanixOptions,
   S2DOptions,
@@ -86,6 +87,7 @@ export interface TieringResolverOptions {
   vsanOptions?: VsanOptions
   cephOptions?: CephOptions
   nutanixOptions?: NutanixOptions
+  beeGfsOptions?: BeeGfsOptions
 }
 
 /**
@@ -99,7 +101,7 @@ export function resolveTiering(
   serverCount: number,
   options: TieringResolverOptions,
 ): TieredCapacityResult | null {
-  const { s2dOptions, vsanOptions, cephOptions, nutanixOptions } = options
+  const { s2dOptions, vsanOptions, cephOptions, nutanixOptions, beeGfsOptions } = options
 
   // S2D Storage Spaces tiering (SSD cache + HDD/SSD capacity)
   if (topology.type === 's2d' && s2dOptions?.storageTiers && s2dOptions.tieringConfig) {
@@ -123,6 +125,15 @@ export function resolveTiering(
     nutanixOptions.tiering
   ) {
     return calculateTieredCapacity(nutanixOptions.tiering, serverCount)
+  }
+
+  // BeeGFS metadata targets (fast tier = MDT, capacity tier = storage targets).
+  // MDT drives count toward raw capacity but never toward usable data capacity.
+  // Gated on the explicit `metadataTargets` opt-in (mirrors Ceph's `walDbOffload` above) so
+  // filling in the tiering drive pickers can never silently switch the storage-target drive
+  // selection away from the Hardware panel without the user asking for it.
+  if (topology.type === 'beegfs' && beeGfsOptions?.metadataTargets && beeGfsOptions.tiering) {
+    return calculateTieredCapacity(beeGfsOptions.tiering, serverCount)
   }
 
   return null

@@ -5,6 +5,7 @@
  */
 import type { VolumetryInput } from '@/engines/volumetry'
 import {
+  DEFAULT_BEEGFS_OPTIONS,
   DEFAULT_CEPH_OPTIONS,
   DEFAULT_LONGHORN_OPTIONS,
   DEFAULT_NETAPP_OPTIONS,
@@ -77,6 +78,7 @@ export function createVolumetryInput(
     powerscaleOptions: DEFAULT_POWERSCALE_OPTIONS,
     cephOptions: DEFAULT_CEPH_OPTIONS,
     longhornOptions: DEFAULT_LONGHORN_OPTIONS,
+    beeGfsOptions: DEFAULT_BEEGFS_OPTIONS,
     powerFlexOptions: DEFAULT_POWERFLEX_OPTIONS,
     netAppOptions: DEFAULT_NETAPP_OPTIONS,
     synologyOptions: DEFAULT_SYNOLOGY_OPTIONS,

@@ -27,6 +27,7 @@
     "efficiency": "Efficiency",
     "zfsBreakdown": "ZFS Capacity Breakdown",
     "longhornBreakdown": "Longhorn Capacity Sizing",
+    "beegfsBreakdown": "BeeGFS Capacity Sizing",
     "dualUnitHint": "Dual-unit display: TiB (binary) / TB (decimal)",
     "segments": {
       "usable": "Usable",
@@ -48,6 +49,30 @@
       "dedupGain": "Dedup Gain",
       "effectiveCapacity": "Final Effective Capacity",
       "ofRaw": "of raw capacity"
+    },
+    "beegfs": {
+      "mdtRaw": "MDT Raw Capacity",
+      "mdtRawDesc": "Raw capacity of configured metadata targets",
+      "mdtUsable": "MDT Usable Capacity",
+      "mdtUsableDesc": "Usable capacity after metadata-target filesystem overhead",
+      "mdtRecommendedMin": "Recommended Minimum",
+      "mdtRecommendedMinDesc": "BeeGFS's 0.3% of total capacity guideline",
+      "mdtRecommendedTypical": "Recommended Typical",
+      "mdtRecommendedTypicalDesc": "BeeGFS's 0.5% of total capacity guideline",
+      "configTitle": "Configuration Summary",
+      "status": "Metadata Sizing Status",
+      "statusValue": {
+        "ok": "OK",
+        "under": "Below Recommended",
+        "none": "Not Configured"
+      },
+      "estimatedFileCount": "Estimated File Count",
+      "storageTargetCount": "Storage Targets",
+      "strandedDrives": "Stranded Drives",
+      "storageBuddyMirror": "Storage Buddy Mirroring",
+      "metadataBuddyMirror": "Metadata Buddy Mirroring",
+      "on": "On",
+      "off": "Off"
     }
   },
   "performance": {

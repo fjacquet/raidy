@@ -37,6 +37,7 @@ export function useCalculations(): CalculationResults {
     powerFlexOptions,
     netAppOptions,
     synologyOptions,
+    beeGfsOptions,
     controllerOptions,
   } = useConfigStore()
 
@@ -92,6 +93,8 @@ export function useCalculations(): CalculationResults {
     netAppOptions,
     synologyOptions,
     vsanOptions,
+    beeGfsOptions,
+    beeGfsDetails: volumetry.beeGfsDetails,
   })
 
   // If blocking errors found, return error state

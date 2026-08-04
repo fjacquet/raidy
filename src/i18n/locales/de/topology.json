@@ -302,6 +302,29 @@
     "overProvisioning": "Overprovisioning (Hinweis)",
     "overProvisioningValue": "Thin-Provisioning-Grenze {{pct}}%"
   },
+  "beegfs": {
+    "title": "BeeGFS-Optionen",
+    "drivesPerTarget": "Laufwerke pro Storage-Target",
+    "drivesPerTargetDerived": "{{targets}} Storage-Targets, {{stranded}} ungenutzte(s) Laufwerk(e)",
+    "drivesPerTargetHint": "Laufwerke in der lokalen RAID-Gruppe jedes Storage-Targets. BeeGFS empfiehlt 10-12 Laufwerke für RAID6-Targets.",
+    "storageBuddyMirror": "Storage Buddy Mirroring",
+    "storageBuddyMirrorHint": "Synchrone Replikation zwischen Paaren von Storage-Targets auf unterschiedlichen Knoten. Halbiert die nutzbare Kapazität.",
+    "metadataBuddyMirror": "Metadata Buddy Mirroring",
+    "metadataBuddyMirrorHint": "Synchrone Replikation zwischen Paaren von Metadata-Targets. Ohne Auswirkung auf die Datenkapazität.",
+    "chunkSize": "Chunk-Grösse",
+    "chunkSizeTooltip": "Nur informativ — beeinflusst kein berechnetes Ergebnis.",
+    "chunkSizeHint": "Nur zur Information. Die Chunk-Grösse beeinflusst auf realer Hardware die sequenzielle Effizienz je Target, dieses Werkzeug modelliert die Engpasskette jedoch als Cluster-Aggregat und hat keine Ebene pro Datei, auf die eine Chunk-Grenze wirken könnte. Wird für Ihre Sizing-Unterlagen festgehalten, fliesst in keine Berechnung ein.",
+    "numTargets": "Anzahl Targets",
+    "numTargetsTooltip": "Nur informativ — beeinflusst kein berechnetes Ergebnis.",
+    "numTargetsHint": "Nur zur Information. Storage-Targets, über die eine Datei gestriped wird. Das begrenzt den Durchsatz einer einzelnen Datei, während alle hier gezeigten Performance-Werte Cluster-Aggregate sind, begrenzt durch die Gesamtzahl der Storage-Targets. Wird für Ihre Sizing-Unterlagen festgehalten, fliesst in keine Berechnung ein.",
+    "network": "Cluster-Interconnect",
+    "networkTooltip": "Nur informativ — beeinflusst kein berechnetes Ergebnis.",
+    "networkHint": "Nur zur Information. Die in den Berechnungen verwendete Bandbreite stammt aus der Einstellung Netzwerkgeschwindigkeit im Bereich Erweitert, nicht aus dieser Auswahl.",
+    "metadataTargetsToggle": "Metadata-Targets konfigurieren",
+    "metadataTargetsToggleHint": "Bei Aktivierung wechselt die Laufwerkskonfiguration der Storage-Targets vom Hardware-Panel zu den Metadata-Target-Auswahlfeldern unten.",
+    "metadataTargets": "Metadata-Targets (MDT)",
+    "metadataTargetsHint": "BeeGFS empfiehlt 0,3-0,5% der Gesamtkapazität für Metadaten — etwa 150 Millionen Dateien pro 500 GB ext4-Metadatenkapazität."
+  },
   "powerflex": {
     "title": "PowerFlex-Optionen",
     "medium_2way": {
@@ -456,6 +479,12 @@
       "capacityTier": "OSD-Geräte",
       "fastTierHint": "NVMe für BlueStore WAL und RocksDB",
       "capacityTierHint": "Primärer OSD-Speicher (HDD oder SSD)"
+    },
+    "beegfs": {
+      "fastTier": "Metadata-Targets (NVMe/SSD)",
+      "capacityTier": "Storage-Targets",
+      "fastTierHint": "NVMe/SSD für schnellen Metadaten-Speicher (MDT)",
+      "capacityTierHint": "Massenspeicher für Dateidaten"
     }
   }
 }

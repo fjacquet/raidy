@@ -74,6 +74,10 @@ const TopologySchema = z.discriminatedUnion('type', [
     level: z.enum(['longhorn_r2', 'longhorn_r3']),
   }),
   z.object({
+    type: z.literal('beegfs'),
+    level: z.enum(['beegfs_raid6', 'beegfs_raid10', 'beegfs_raidz2', 'beegfs_single']),
+  }),
+  z.object({
     type: z.literal('powerflex'),
     level: z.enum([
       'powerflex_medium_2way',
@@ -142,6 +146,25 @@ const ZfsOptionsSchema = z.object({
 })
 
 /**
+ * Storage tier schema (used by TieringConfig for dual drive-pool platforms)
+ */
+const StorageTierSchema = z.object({
+  driveId: z.string(),
+  driveCount: z.number().int().min(0).max(1000).finite(),
+})
+
+/**
+ * Tiering configuration schema (fast tier / capacity tier pair)
+ */
+const TieringConfigSchema = z.object({
+  enabled: z.boolean(),
+  fastTier: StorageTierSchema,
+  capacityTier: StorageTierSchema,
+  cacheMode: z.enum(['write-back', 'write-through', 'read-only']),
+  workingSetPercent: z.number().min(0).max(100).finite(),
+})
+
+/**
  * S2D options schema
  */
 const S2DOptionsSchema = z.object({
@@ -151,6 +174,80 @@ const S2DOptionsSchema = z.object({
   rebuildReserve: z.boolean(),
   reserveStrategy: z.enum(['drive_failure', 'node_failure']),
   storageTiers: z.boolean(),
+  tieringConfig: TieringConfigSchema.optional(),
+})
+
+/**
+ * vSAN options schema
+ */
+const VsanOptionsSchema = z.object({
+  diskGroupMode: z.enum(['hybrid', 'all-flash']),
+  compression: z.boolean(),
+  compressionRatio: z.number().min(1).max(10).finite(),
+  dedup: z.boolean(),
+  dedupRatio: z.number().min(1).max(10).finite(),
+  encryption: z.boolean(),
+  tiering: TieringConfigSchema.optional(),
+})
+
+/**
+ * Ceph options schema
+ */
+const CephOptionsSchema = z.object({
+  backend: z.enum(['bluestore', 'filestore']),
+  poolType: z.enum(['replicated', 'erasure']),
+  replicationFactor: z.union([z.literal(2), z.literal(3), z.literal(4)]),
+  ecK: z.number().int().min(1).max(32).finite(),
+  ecM: z.number().int().min(1).max(16).finite(),
+  compression: z.boolean(),
+  compressionAlgorithm: z.enum(['none', 'snappy', 'zstd', 'lz4']),
+  encryption: z.boolean(),
+  journalOnSsd: z.boolean(),
+  walDbOffload: z.boolean(),
+  walDbRatio: z.number().int().min(1).max(32).finite(),
+  safeCapacityThreshold: z.number().min(0).max(1).finite(),
+  tiering: TieringConfigSchema.optional(),
+})
+
+/**
+ * Longhorn options schema
+ */
+const LonghornOptionsSchema = z.object({
+  diskMode: z.enum(['dedicated', 'root']),
+  minimalAvailablePercent: z.number().min(0).max(100).finite(),
+  snapshotHeadroom: z.number().min(1).max(5).finite(),
+  growthHeadroom: z.number().min(1).max(5).finite(),
+  overProvisioningPercent: z.number().min(0).max(1000).finite(),
+})
+
+/**
+ * BeeGFS options schema
+ */
+const BeeGfsOptionsSchema = z.object({
+  drivesPerTarget: z.number().int().min(1).max(64).finite(),
+  storageBuddyMirror: z.boolean(),
+  metadataBuddyMirror: z.boolean(),
+  chunkSizeKb: z.union([z.literal(512), z.literal(1024), z.literal(2048)]),
+  numTargets: z.number().int().min(1).max(64).finite(),
+  network: z.enum(['ib-hdr', 'ib-ndr', '100gbe', '25gbe']),
+  fsOverheadPercent: z.number().min(0).max(100).finite(),
+  metadataTargets: z.boolean(),
+  tiering: TieringConfigSchema.optional(),
+})
+
+/**
+ * PowerFlex options schema
+ */
+const PowerFlexOptionsSchema = z.object({
+  granularity: z.enum(['medium', 'fine']),
+  protectionMode: z.enum(['mirror', 'erasure']),
+  mirrorCopies: z.union([z.literal(2), z.literal(3)]),
+  ecScheme: z.enum(['4_1', '4_2', '8_2', '12_4']),
+  compression: z.boolean(),
+  compressionRatio: z.number().min(1).max(10).finite(),
+  storagePools: z.number().int().min(1).max(100).finite(),
+  faultSets: z.number().int().min(1).max(100).finite(),
+  fgOverhead: z.number().min(0).max(1).finite(),
 })
 
 /**
@@ -177,7 +274,11 @@ const NetAppOptionsSchema = z.object({
   platform: z.enum(['aff_a', 'aff_c', 'fas', 'asa', 'e_series']),
   raidType: z.enum(['raid_dp', 'raid_tec']),
   adpVersion: z.enum(['none', 'adpv1', 'adpv2']),
-  snapshotReserve: z.number().min(0).max(100).finite(),
+  // FRACTION, not a percent: overheadCalculator.ts multiplies capacityAfterParity by this
+  // value directly (unlike powerstore/powerscale `snapshotReservePercent`, which are divided
+  // by 100 there). A `.max(100)` bound let a crafted link validate a 100x reserve; the panel
+  // slider works in percent and divides by 100 on the way in.
+  snapshotReserve: z.number().min(0).max(1).finite(),
   dataReductionRatio: z.number().min(1).max(20).finite(),
   waflOverhead: z.number().min(0).max(1).finite(),
   compression: z.boolean(),
@@ -211,6 +312,7 @@ const NutanixOptionsSchema = z.object({
   dedupRatio: z.number().min(1).max(10).finite(),
   systemOverhead: z.number().min(0).max(1).finite(),
   networkType: z.enum(['10gbe', '25gbe', 'rdma']),
+  tiering: TieringConfigSchema.optional(),
 })
 
 /**
@@ -230,11 +332,13 @@ const ObjectScaleOptionsSchema = z.object({
  * PowerStore options schema
  */
 const PowerStoreOptionsSchema = z.object({
+  model: z.enum(['powerstore_3200', 'powerstore_5200t', 'powerstore_5200q', 'custom']),
   compression: z.boolean(),
   compressionRatio: z.number().min(1).max(10).finite(),
   dedup: z.boolean(),
   dedupRatio: z.number().min(1).max(10).finite(),
   snapshotReservePercent: z.number().min(0).max(100).finite(),
+  systemOverheadPercent: z.number().min(0).max(100).finite(),
 })
 
 /**
@@ -282,6 +386,11 @@ export const ConfigStateSchema = z
     hotSpares: z.number().int().min(0).max(100).finite().optional(),
     zfsOptions: ZfsOptionsSchema.optional(),
     s2dOptions: S2DOptionsSchema.optional(),
+    vsanOptions: VsanOptionsSchema.optional(),
+    cephOptions: CephOptionsSchema.optional(),
+    longhornOptions: LonghornOptionsSchema.optional(),
+    beeGfsOptions: BeeGfsOptionsSchema.optional(),
+    powerFlexOptions: PowerFlexOptionsSchema.optional(),
     controllerOptions: ControllerOptionsSchema.optional(),
     netAppOptions: NetAppOptionsSchema.optional(),
     synologyOptions: SynologyOptionsSchema.optional(),

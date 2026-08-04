@@ -4,6 +4,7 @@
 
 import type { StateCreator } from 'zustand'
 import type {
+  BeeGfsOptions,
   CephOptions,
   LonghornOptions,
   NetAppOptions,
@@ -22,6 +23,7 @@ import type {
   ZfsOptions,
 } from '@/types'
 import {
+  DEFAULT_BEEGFS_OPTIONS,
   DEFAULT_CEPH_OPTIONS,
   DEFAULT_CONTROLLER_BY_TOPOLOGY,
   DEFAULT_CONTROLLER_OPTIONS,
@@ -52,6 +54,7 @@ export interface TopologySlice extends TopologyState {
   setPowerScaleOptions: (options: Partial<PowerScaleOptions>) => void
   setCephOptions: (options: Partial<CephOptions>) => void
   setLonghornOptions: (options: Partial<LonghornOptions>) => void
+  setBeeGfsOptions: (options: Partial<BeeGfsOptions>) => void
   setPowerFlexOptions: (options: Partial<PowerFlexOptions>) => void
   setNetAppOptions: (options: Partial<NetAppOptions>) => void
   setSynologyOptions: (options: Partial<SynologyOptions>) => void
@@ -72,6 +75,7 @@ export const createTopologySlice: StateCreator<TopologySlice> = (set) => ({
   powerscaleOptions: { ...DEFAULT_POWERSCALE_OPTIONS },
   cephOptions: { ...DEFAULT_CEPH_OPTIONS },
   longhornOptions: { ...DEFAULT_LONGHORN_OPTIONS },
+  beeGfsOptions: { ...DEFAULT_BEEGFS_OPTIONS },
   powerFlexOptions: { ...DEFAULT_POWERFLEX_OPTIONS },
   netAppOptions: { ...DEFAULT_NETAPP_OPTIONS },
   synologyOptions: { ...DEFAULT_SYNOLOGY_OPTIONS },
@@ -83,7 +87,10 @@ export const createTopologySlice: StateCreator<TopologySlice> = (set) => ({
   setTopology: (topology) =>
     set((state) => {
       // Get valid controllers for the new topology
-      const validControllers = getControllerOptions(topology.type)
+      // BeeGFS resolves its controller class from the level (RAID6/RAID10 target -> RAID
+      // controller, RAIDz2 -> IT-mode HBA), so the level must be passed: changing level
+      // alone can invalidate the current controller.
+      const validControllers = getControllerOptions(topology.type, topology.level)
       const currentController = state.controllerOptions.controller
 
       // Some topologies mandate a specific controller (e.g. vSAN ESA → NVMe HBA). When one
@@ -129,6 +136,8 @@ export const createTopologySlice: StateCreator<TopologySlice> = (set) => ({
     set((state) => ({ cephOptions: { ...state.cephOptions, ...options } })),
   setLonghornOptions: (options) =>
     set((state) => ({ longhornOptions: { ...state.longhornOptions, ...options } })),
+  setBeeGfsOptions: (options) =>
+    set((state) => ({ beeGfsOptions: { ...state.beeGfsOptions, ...options } })),
   setPowerFlexOptions: (options) =>
     set((state) => ({ powerFlexOptions: { ...state.powerFlexOptions, ...options } })),
   setNetAppOptions: (options) =>
