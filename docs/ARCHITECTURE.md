@@ -359,7 +359,15 @@ ConfigStore = HardwareSlice & TopologySlice & WorkloadSlice & AdvancedSlice
 > would otherwise just keep getting re-persisted into the URL. The schema's closed unions
 > (`BLOCK_SIZES`, `NETWORK_SPEEDS`, `CARBON_REGIONS`, etc.) derive from the same `as const` arrays
 > in `src/types/` that the store uses, so a new enum value can't validate on one side and
-> reject on the other. See `docs/SECURITY.md` for why this distinction matters.
+> reject on the other. The input panels (`WorkloadPanel`, `AdvancedPanel`) import these same
+> arrays to build their `<select>` options too, rather than hand-declaring a second copy — so a
+> value added to a canonical array fails the panel's build (an exhaustiveness check on its label
+> map) instead of silently validating in the schema while never appearing in the UI. Two local
+> exceptions remain: `AdvancedPanel`'s `FS_TYPES` and `Header`'s `CARBON_REGION_VALUES` list the
+> same values in a different order than their canonical counterparts, so they were left as
+> hand-written duplicates rather than folded in — canonicalizing them would silently reorder
+> those `<select>` options, which is a behavior change (see #87). See `docs/SECURITY.md` for why
+> this distinction matters.
 
 ### Key State Values
 
