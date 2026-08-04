@@ -124,12 +124,6 @@ Both are consequently labelled informational in the UI rather than wired to an i
 Then `numTargets` and `chunkSizeKb` have something honest to bind to. This is a feature, not a
 bug fix.
 
-### [B12](https://github.com/fjacquet/raidy/issues/70). `drivesPerGroup` floor-division leaves drives unmodelled
-
-`Math.floor(driveCount / numGroups)` in the resilience worker can leave up to `numGroups - 1`
-drives out of the simulated groups; failures beyond total group capacity all land in group 0.
-Pre-existing and shared with RAID 50/60.
-
 ---
 
 ## Test and tooling debt

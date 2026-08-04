@@ -288,6 +288,12 @@ Monte Carlo simulation for data loss probability.
 - Correlated batch failures
 - Stress-induced failures during rebuild
 
+**Group topology (RAID 50/60, every BeeGFS group level):** drives are partitioned into
+`numGroups` independent fault groups via `distributeAcrossGroups()`, which spreads the
+`driveCount % numGroups` remainder one-per-group across the first groups rather than dropping it
+— every drive is modelled, at the cost of groups being heterogeneous in width. See
+`tests/fixtures/resilience-vectors.ts` for measured before/after survival figures.
+
 ### Module D: Sustainability Engine (`/src/engines/sustainability/`)
 
 Power consumption, carbon footprint, and TCO.

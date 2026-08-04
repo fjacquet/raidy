@@ -26,6 +26,22 @@ function isMirrorTopology(raidLevel: string): boolean {
 }
 
 /**
+ * Split `total` drives across `groups` fault groups as evenly as possible.
+ * `Math.floor(total / groups)` alone can leave up to `groups - 1` drives
+ * unassigned to any simulated group (issue #70), and failures beyond total
+ * group capacity all landed on group 0 by array-index fallbacks. Distributing
+ * the remainder — the first `total % groups` groups get one extra drive —
+ * means every drive is modelled, at the cost of making groups heterogeneous
+ * in width.
+ */
+export function distributeAcrossGroups(total: number, groups: number): number[] {
+  if (groups <= 0) return []
+  const base = Math.floor(total / groups)
+  const remainder = total % groups
+  return Array.from({ length: groups }, (_, g) => base + (g < remainder ? 1 : 0))
+}
+
+/**
  * Check if a RAID level uses group-based redundancy (RAID 50/60).
  * Group topologies stripe across independent RAID groups. Data loss only occurs
  * when a single group exceeds its parity tolerance, not from failures across groups.
@@ -233,6 +249,14 @@ function runSingleSimulation(input: SimulationInput): {
       ? Math.max(1, Math.floor(serverCount / 2))
       : serverCount
     : 0
+  // Heterogeneous group widths (#70): the remainder of driveCount / numGroups is
+  // distributed one-per-group across the first `driveCount % numGroups` groups
+  // instead of being silently dropped by Math.floor. Every drive is now inside
+  // exactly one simulated group.
+  const groupWidths: number[] = isGroup ? distributeAcrossGroups(driveCount, numGroups) : []
+  // Representative group width for the rebuild-read-volume formula below — still
+  // a single scalar bitsRead for the whole group topology at this stage (the
+  // per-group-width URE fix is #67, tracked separately).
   const drivesPerGroup = isGroup && numGroups > 0 ? Math.floor(driveCount / numGroups) : 0
   const parityPerGroup = isBuddyMirroredGroup ? parityDrives * 2 + 1 : parityDrives // 1 for RAID 50, 2 for RAID 60
 
@@ -332,10 +356,11 @@ function runSingleSimulation(input: SimulationInput): {
             return { survived: false, rebuildTimeHours, hadURE, hadDualFailure }
           }
         } else if (isGroup) {
-          // Group topology: assign failure to a group weighted by surviving drives
-          // Each group has (drivesPerGroup - groupFailures[g]) surviving drives
+          // Group topology: assign failure to a group weighted by surviving drives.
+          // Each group has (groupWidths[g] - groupFailures[g]) surviving drives —
+          // groups can differ in width now that the remainder is distributed (#70).
           const survivingPerGroup = groupFailures.map(
-            (_f, g) => drivesPerGroup - (groupFailures[g] ?? 0),
+            (_f, g) => (groupWidths[g] ?? 0) - (groupFailures[g] ?? 0),
           )
           const totalSurviving = survivingPerGroup.reduce((a, b) => a + b, 0)
 

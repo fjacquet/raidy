@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Resilience worker: `drivesPerGroup` floor-division left drives unmodelled in every group
+  topology.** `Math.floor(driveCount / numGroups)` in `src/workers/resilienceWorker.ts` silently
+  dropped up to `numGroups - 1` drives from every simulated group whenever
+  `driveCount % numGroups != 0` — those drives could never fail, and any failure beyond total
+  group capacity landed on group 0 by array-index fallback. `distributeAcrossGroups()` now spreads
+  the remainder one-per-group across the first `driveCount % numGroups` groups instead, so groups
+  are heterogeneous in width but every drive is modelled. Pre-existing and shared by RAID 50/60
+  and every BeeGFS group level (`beegfs_raid6`, `beegfs_raidz2`, `beegfs_raid10`).
+  **Moves RAID 50/60 numbers, not only BeeGFS** — measured (20,000 iterations): RAID50, 11 drives
+  / 3 groups, survival 66.06% -> 60.07% (lower, correctly — the previously-unmodelled drives are
+  now exposed to failure); RAID60, 14 drives / 4 groups, survival 99.980% -> 99.965%. New
+  validation vectors and property-based tests (`fast-check`) in
+  `tests/fixtures/resilience-vectors.ts` and `tests/workers/resilience-group-modelling.spec.ts`.
+  (#70)
+
 ## [1.15.1] - 2026-08-04
 
 ### Fixed
