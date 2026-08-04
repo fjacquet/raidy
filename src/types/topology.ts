@@ -559,14 +559,20 @@ export interface BeeGfsOptions {
   /**
    * Chunk size in KB (BeeGFS default 512K), for display purposes only.
    *
-   * Chunk size is a real BeeGFS tunable — it trades per-file parallelism against per-target
-   * sequential efficiency on real hardware. It is deliberately NOT wired into the performance
-   * engine: that engine models the bottleneck chain (Media → Controller → PCIe → Network) in
-   * cluster aggregates driven by the workload panel's `blockSize` and `randomPercent`, and it
-   * has no per-file layer for a chunk boundary to interact with. Any factor applied here would
-   * be an invented curve with no reference behind it, which is worse than an honest gap. The
-   * BeeGFS options panel labels this control informational (tooltip + hint) so the user is not
-   * misled; it exists so a sizing sheet can record the intended configuration.
+   * Chunk size is a real BeeGFS tunable, and per the BeeGFS striping docs it is not purely a
+   * layout knob: too small a chunk relative to the client's write size forces more messages to
+   * the servers, which "may cause performance loss"
+   * (https://doc.beegfs.io/latest/advanced_topics/striping.html). But that effect depends on
+   * the client's own I/O transfer size, which this app does not collect — the workload panel's
+   * `blockSize` describes the *drive-level* I/O the performance engine already models, not the
+   * client-to-server message size a BeeGFS chunk boundary interacts with. It is deliberately
+   * NOT wired into the performance engine: that engine models the bottleneck chain
+   * (Media → Controller → PCIe → Network) in cluster aggregates, and has no per-file layer for
+   * a chunk boundary to interact with. Any factor applied here would be an invented curve with
+   * no reference behind it, which is worse than an honest gap (investigated alongside
+   * `numTargets` for #69 — see that field's doc-comment for the full reasoning and citation).
+   * The BeeGFS options panel labels this control informational (tooltip + hint) so the user is
+   * not misled; it exists so a sizing sheet can record the intended configuration.
    */
   chunkSizeKb: 512 | 1024 | 2048
   /**
@@ -578,9 +584,28 @@ export interface BeeGfsOptions {
    * count, not by any one file's stripe width — the HPC workloads BeeGFS is built for run many
    * concurrent files precisely so the aggregate is not `numtargets`-bound. Applying this as a
    * multiplier on the aggregate would understate a real cluster by up to
-   * `storageTargetCount / numTargets`. Modelling it honestly would need a single-file /
-   * single-stream output the dashboard does not have, so the control is labelled informational
-   * (tooltip + hint) in the BeeGFS options panel rather than wired to a fabricated formula.
+   * `storageTargetCount / numTargets`.
+   *
+   * A dedicated single-stream (single-client, single-file) output was investigated (#69) and
+   * deliberately NOT added, for two independent reasons:
+   *
+   * 1. Missing input: a realistic single-stream ceiling is `min(client NIC link,
+   *    numTargets × per-target sequential rate)`, but this app collects neither a client
+   *    count nor a client link speed — `network` here and `networkSpeed` (AdvancedSlice) both
+   *    describe server/cluster-side interconnect, not what one client node has. Inventing a
+   *    default client link would be a fabricated number, not a derived one.
+   * 2. Even with that input, ThinkParQ's own published benchmark shows the relationship is
+   *    not close to linear and not derivable from `numTargets` alone: for a single client
+   *    process reading against 4 individual RAID6 targets, raising `numtargets` from 1→2
+   *    nearly doubles sequential-read throughput, but 2→3→4 gives no further gain and can
+   *    even regress slightly — the ceiling is set by client-side threading/read-ahead
+   *    behaviour this app does not model, not by `numTargets × per-target rate`. See
+   *    "Picking the right number of targets per server for BeeGFS" (Heichler, ThinkParQ,
+   *    March 2015), §5 ("sequential read - 1 worker per disk", numtargets=1..4 series),
+   *    https://www.beegfs.io/docs/whitepapers/Picking_the_right_Number_of_Targets_per_Server_for_BeeGFS_by_ThinkParQ.pdf
+   *
+   * So the control stays labelled informational (tooltip + hint) in the BeeGFS options panel
+   * rather than wired to a fabricated formula.
    */
   numTargets: number
   /**

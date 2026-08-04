@@ -22,20 +22,6 @@ buddy. Correct and deliberately conservative, but a 5-target cluster reports wor
 a 4-target one, which reads as a bug to a user. Needs either heterogeneous per-group state or a
 UI note explaining the cliff.
 
-### [B11](https://github.com/fjacquet/raidy/issues/69). No single-stream throughput output — `numTargets` has nothing to bind to
-
-BeeGFS's `numtargets` is a **per-file** stripe width, while every performance figure this tool
-reports is a cluster aggregate bounded by the total storage-target count. Applying it as an
-aggregate multiplier would understate real clusters by up to `storageTargetCount / numTargets`,
-and would be wrongest for exactly BeeGFS's many-concurrent-file HPC case. `chunkSizeKb` likewise
-shapes per-target sequential efficiency with no per-file layer to act on.
-
-Both are consequently labelled informational in the UI rather than wired to an invented formula.
-
-*To close:* add a genuine single-stream / per-file throughput output to the performance engine.
-Then `numTargets` and `chunkSizeKb` have something honest to bind to. This is a feature, not a
-bug fix.
-
 ### [B20](https://github.com/fjacquet/raidy/issues/93). Hot spares get no rebuild-window credit in the resilience simulation
 
 Fixing #80 excluded hot spares from the simulated data-bearing population (naive path and
