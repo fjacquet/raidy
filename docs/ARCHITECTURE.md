@@ -294,8 +294,15 @@ Monte Carlo simulation for data loss probability.
 — every drive is modelled, at the cost of groups being heterogeneous in width. A group's
 rebuild-read volume (and therefore its URE exposure) is computed per group from its own width,
 except mirrored group layouts (`beegfs_raid10`): a RAID10 target rebuilds by reading only the
-surviving mirror partner (one drive), never the whole target. See
-`tests/fixtures/resilience-vectors.ts` for measured before/after survival figures.
+surviving mirror partner (one drive), never the whole target. Unmerged `beegfs_raid10` groups
+also get dedicated per-pair state via `buildGroupPairState()` instead of the flat failure counter
+every other group layout uses — a width-W target is `floor(W / 2)` independent mirror pairs (plus
+one unpaired, unprotected drive if W is odd), and the target is lost only when one specific pair
+loses both members, not at a fixed group-wide failure count. Buddy-merged `beegfs_raid10` groups
+(two targets combined into one doubled-tolerance unit) are unaffected and keep the flat counter.
+The per-simulation topology/group/pair setup (`computeTopologyModel`) is computed once per Monte
+Carlo run rather than once per iteration, since none of it depends on the random failure draws.
+See `tests/fixtures/resilience-vectors.ts` for measured before/after survival figures.
 
 ### Module D: Sustainability Engine (`/src/engines/sustainability/`)
 

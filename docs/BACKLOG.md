@@ -91,13 +91,6 @@ before/after vectors for standard RAID, ZFS, and each tiered platform.
 All of these understate rather than overstate. That is deliberate: a sizing tool that overstates
 resilience or capacity is worse than one that is coarse.
 
-### [B8](https://github.com/fjacquet/raidy/issues/66). `beegfs_raid10` unmerged tolerance is pessimistic for wide targets
-
-`src/workers/resilienceWorker.ts` gives an unmerged `beegfs_raid10` target a tolerance of 1, so
-the simulation kills it at any 2 failures. A real 12-drive RAID10 target survives up to 6
-failures if each lands in a distinct mirror pair. Closing this needs per-pair state inside a
-group rather than a flat counter.
-
 ### [B10](https://github.com/fjacquet/raidy/issues/68). Odd `serverCount` creates a visible survival discontinuity under buddy mirroring
 
 Buddy credit is withheld when the storage-target count is odd, because an unpaired target has no

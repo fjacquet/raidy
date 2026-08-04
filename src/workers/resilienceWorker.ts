@@ -41,6 +41,56 @@ export function distributeAcrossGroups(total: number, groups: number): number[] 
   return Array.from({ length: groups }, (_, g) => base + (g < remainder ? 1 : 0))
 }
 
+export interface GroupPairState {
+  /** Capacity (surviving-copy count) of each pair slot, flattened across all groups: 2 for a real mirror pair, 1 for an unpaired/unprotected drive left over by an odd group width. */
+  pairCapacity: number[]
+  /** Owning group index of each flattened pair slot. */
+  pairGroupIndex: number[]
+  /** Index into the flattened arrays where each group's pairs start. */
+  groupPairStart: number[]
+  /** Number of pair slots (real pairs + at most one solo slot) in each group. */
+  groupPairCount: number[]
+}
+
+/**
+ * Build the flattened per-pair state for mirrored group layouts (unmerged
+ * beegfs_raid10, issue #66): each group of width W is floor(W / 2) real mirror
+ * pairs (capacity 2) plus one unpaired/unprotected drive (capacity 1) if W is
+ * odd. Flattened rather than an array-of-arrays so this — run once per Monte
+ * Carlo iteration, up to 100K times — stays a handful of O(driveCount)
+ * allocations instead of one allocation per group.
+ */
+export function buildGroupPairState(groupWidths: number[]): GroupPairState {
+  const numGroups = groupWidths.length
+  const groupPairStart: number[] = new Array(numGroups)
+  const groupPairCount: number[] = new Array(numGroups)
+  let offset = 0
+  for (let g = 0; g < numGroups; g++) {
+    const width = groupWidths[g] ?? 0
+    const pairs = Math.ceil(width / 2)
+    groupPairStart[g] = offset
+    groupPairCount[g] = pairs
+    offset += pairs
+  }
+  const pairCapacity: number[] = new Array(offset)
+  const pairGroupIndex: number[] = new Array(offset)
+  for (let g = 0; g < numGroups; g++) {
+    const width = groupWidths[g] ?? 0
+    const fullPairs = Math.floor(width / 2)
+    const hasSolo = width % 2 === 1
+    const start = groupPairStart[g] ?? 0
+    for (let p = 0; p < fullPairs; p++) {
+      pairCapacity[start + p] = 2
+      pairGroupIndex[start + p] = g
+    }
+    if (hasSolo) {
+      pairCapacity[start + fullPairs] = 1 // unpaired drive: no mirror partner, tolerance 0
+      pairGroupIndex[start + fullPairs] = g
+    }
+  }
+  return { pairCapacity, pairGroupIndex, groupPairStart, groupPairCount }
+}
+
 /**
  * Check if a RAID level uses group-based redundancy (RAID 50/60).
  * Group topologies stripe across independent RAID groups. Data loss only occurs
@@ -114,74 +164,66 @@ export function getParityDrives(raidLevel: string): number {
   return 1 // Default to single parity
 }
 
-/**
- * Run a single Monte Carlo simulation.
- * Returns true if the array survives, false if data loss occurs.
- *
- * This model includes:
- * - Individual drive failures based on AFR
- * - Correlated/batch failures (drives from same batch fail together)
- * - URE (Unrecoverable Read Error) during rebuild
- * - Stress-induced failures (rebuild increases failure rate of remaining drives)
- */
-function runSingleSimulation(input: SimulationInput): {
-  survived: boolean
+interface TopologyModel {
+  parityDrives: number
+  isGroup: boolean
+  isMirror: boolean
+  effectiveMirrorCopies: number
+  numMirrorGroups: number
+  mirrorParityPerGroup: number
+  numGroups: number
+  groupWidths: number[]
+  parityPerGroup: number
+  usesPerPairGroupModel: boolean
+  pairCapacity: number[]
+  pairGroupIndex: number[]
+  groupPairStart: number[]
+  groupPairCount: number[]
   rebuildTimeHours: number
-  hadURE: boolean
-  hadDualFailure: boolean
-} {
+  ureRatePerBit: number
+  bitsRead: number
+  ureProbability: number
+  groupUreProbability: number[]
+}
+
+/**
+ * Precompute everything derived from `input` that does NOT depend on the
+ * random failure draws — topology classification, group widths, per-pair
+ * state, rebuild-read volumes. All of it is identical across every one of the
+ * up to 100K Monte Carlo iterations for a given input, so `runSimulation`
+ * computes it once and passes it to every `runSingleSimulation` call instead
+ * of each iteration reallocating group/pair arrays from scratch (issues #66,
+ * #67, #70 added several new arrays here — keeping this out of the hot loop
+ * keeps per-pair state from turning into allocation-heavy-per-iteration work).
+ */
+function computeTopologyModel(input: SimulationInput): TopologyModel {
   const {
     driveCount,
     raidLevel,
     driveCapacityBytes,
     rebuildSpeedMBs,
     ureRate,
-    afrPercent,
     serverCount = 1,
     mirrorCopies = 0,
   } = input
 
   const parityDrives = getParityDrives(raidLevel)
 
-  // Base daily failure rate per drive
-  const baseDailyFailureRate = afrPercent / 100 / 365
-
-  // Correlated failure factor: 10% chance a failure triggers another within 7 days
-  // This models batch failures from same manufacturing lot
-  const correlatedFailureProbability = 0.1
-  const correlatedFailureWindowDays = 7
-
-  // Stress factor: rebuild increases failure rate of remaining drives by 30%
-  const rebuildStressFactor = 1.3
-
-  // Topology classification. Computed before the zero-redundancy early return
-  // below: a caller can pass mirrorCopies (e.g. BeeGFS buddy mirroring) even for
-  // a level whose local redundancy is zero (beegfs_single), and that mirror
-  // layer must still apply.
+  // Topology classification. A caller can pass mirrorCopies (e.g. BeeGFS buddy
+  // mirroring) even for a level whose local redundancy is zero (beegfs_single),
+  // and that mirror layer must still apply.
   //
   // A level's own group-vs-mirror shape (RAID 50/60, BeeGFS RAID6/RAIDZ2/RAID10
   // storage targets) always wins over a generic mirrorCopies input —
   // mirrorCopies then layers an *additional* mirror on top of the group
   // (buddy mirroring pairs storage targets, it does not replace their local
-  // redundancy — see the buddy-pair handling in the group-topology branch
-  // below). Only when the level has no native group shape does mirrorCopies
-  // switch on the drive-pair mirror model directly (e.g. plain 'mirror' /
-  // 'raid1', or beegfs_single which has no local redundancy of its own).
+  // redundancy — see the buddy-pair handling below). Only when the level has
+  // no native group shape does mirrorCopies switch on the drive-pair mirror
+  // model directly (e.g. plain 'mirror' / 'raid1', or beegfs_single which has
+  // no local redundancy of its own).
   const isGroup = isGroupTopology(raidLevel)
   const isMirror = !isGroup && (mirrorCopies >= 2 || isMirrorTopology(raidLevel))
   const effectiveMirrorCopies = mirrorCopies >= 2 ? mirrorCopies : 2
-
-  // No redundancy and no mirror layer = any failure is data loss
-  if (parityDrives === 0 && !isMirror) {
-    for (let day = 0; day < 365; day++) {
-      for (let drive = 0; drive < driveCount; drive++) {
-        if (random() < baseDailyFailureRate) {
-          return { survived: false, rebuildTimeHours: 0, hadURE: false, hadDualFailure: true }
-        }
-      }
-    }
-    return { survived: true, rebuildTimeHours: 0, hadURE: false, hadDualFailure: false }
-  }
 
   // Calculate rebuild time in hours
   const driveCapacityMB = driveCapacityBytes / (1024 * 1024)
@@ -215,14 +257,14 @@ function runSingleSimulation(input: SimulationInput): {
   //
   // Proof, per configuration, on any failure pattern:
   //  - Unmerged (buddy off, or odd serverCount). A group is one storage
-  //    target; it is declared dead at `> parityDrives` failures.
+  //    target; it is declared dead at `> parityDrives` failures — EXCEPT
+  //    beegfs_raid10, which since #66 uses per-pair state instead of this
+  //    flat counter (see buildGroupPairState below): a real RAID10 target is
+  //    lost only when both drives of the SAME mirror pair die, and that is
+  //    now exactly what the simulation checks, not merely `>= 2` failures
+  //    anywhere in the target.
   //    * beegfs_raid6 / beegfs_raidz2 (parityDrives 2): a real target is lost
   //      once a 3rd drive in it fails — exactly the simulated threshold.
-  //    * beegfs_raid10 (parityDrives 1): a real target is lost only when both
-  //      drives of the SAME mirror pair die, which needs >= 2 failures in the
-  //      target; the simulation flags every >= 2 pattern regardless of which
-  //      pairs were hit. Real loss => simulated loss. Strict superset (2
-  //      failures in different pairs are survivable in reality, flagged here).
   //    * Cluster-wide: BeeGFS stripes across targets, so losing any single
   //      target is data loss with buddy mirroring off — matching "any group
   //      over tolerance".
@@ -233,9 +275,12 @@ function runSingleSimulation(input: SimulationInput): {
   //    The simulated threshold fires at `> 2 * parityDrives + 1`, i.e. at
   //    2 * parityDrives + 2. Real loss => simulated loss. Strict superset:
   //    2 * parityDrives + 2 failures concentrated in A alone are flagged here
-  //    but survivable in reality (B is intact).
+  //    but survivable in reality (B is intact). (Buddy-merged beegfs_raid10
+  //    keeps the flat counter — #66 is specifically about the unmerged case.)
   // URE-triggered losses only add further simulated failures on top, so they
-  // preserve the superset direction.
+  // preserve the superset direction for every group EXCEPT the per-pair
+  // beegfs_raid10 case, which is exact rather than conservative by
+  // construction (#66).
   //
   // Direction property for beegfs_raid10 (why `drivesPerTarget` now matters):
   // `serverCount = floor(totalDrives / drivesPerTarget)`, so a larger
@@ -264,6 +309,22 @@ function runSingleSimulation(input: SimulationInput): {
   // beegfs_raid10's rebuild-read volume and therefore its URE exposure
   // (safe-direction bug: it could only overstate risk, never understate it).
   const isMirroredGroupLayout = isGroup && raidLevel.toLowerCase() === 'beegfs_raid10'
+
+  // Per-pair mirror modelling for unmerged beegfs_raid10 groups (#66): a RAID10
+  // storage target of width W is floor(W / 2) independent mirror pairs (plus one
+  // unpaired, unprotected drive if W is odd), and the target is lost only when
+  // BOTH drives of one specific pair fail — not at a fixed group-wide failure
+  // count. The flat `parityPerGroup` counter used by every other group layout
+  // cannot express that: it kills the group at failure count `parityDrives + 1`
+  // (= 2) regardless of which pairs those failures hit, which is pessimistic for
+  // wide targets (a 12-drive target really tolerates up to 6 failures, one per
+  // pair). Buddy-merged beegfs_raid10 groups are unaffected — #66 is specifically
+  // about the pessimistic *unmerged* tolerance — and keep the flat model above.
+  const usesPerPairGroupModel = isMirroredGroupLayout && !isBuddyMirroredGroup
+
+  const { pairCapacity, pairGroupIndex, groupPairStart, groupPairCount } = usesPerPairGroupModel
+    ? buildGroupPairState(groupWidths)
+    : { pairCapacity: [], pairGroupIndex: [], groupPairStart: [], groupPairCount: [] }
 
   // URE probability during rebuild
   const ureRatePerBit = 10 ** -ureRate
@@ -299,6 +360,97 @@ function runSingleSimulation(input: SimulationInput): {
         return 1 - (1 - ureRatePerBit) ** groupBitsRead
       })
     : []
+
+  return {
+    parityDrives,
+    isGroup,
+    isMirror,
+    effectiveMirrorCopies,
+    numMirrorGroups,
+    mirrorParityPerGroup,
+    numGroups,
+    groupWidths,
+    parityPerGroup,
+    usesPerPairGroupModel,
+    pairCapacity,
+    pairGroupIndex,
+    groupPairStart,
+    groupPairCount,
+    rebuildTimeHours,
+    ureRatePerBit,
+    bitsRead,
+    ureProbability,
+    groupUreProbability,
+  }
+}
+
+/**
+ * Run a single Monte Carlo simulation.
+ * Returns true if the array survives, false if data loss occurs.
+ *
+ * This model includes:
+ * - Individual drive failures based on AFR
+ * - Correlated/batch failures (drives from same batch fail together)
+ * - URE (Unrecoverable Read Error) during rebuild
+ * - Stress-induced failures (rebuild increases failure rate of remaining drives)
+ */
+function runSingleSimulation(
+  input: SimulationInput,
+  topo: TopologyModel,
+): {
+  survived: boolean
+  rebuildTimeHours: number
+  hadURE: boolean
+  hadDualFailure: boolean
+} {
+  const { driveCount, afrPercent } = input
+  const {
+    parityDrives,
+    isGroup,
+    isMirror,
+    effectiveMirrorCopies,
+    numMirrorGroups,
+    mirrorParityPerGroup,
+    numGroups,
+    groupWidths,
+    parityPerGroup,
+    usesPerPairGroupModel,
+    pairCapacity,
+    pairGroupIndex,
+    groupPairStart,
+    groupPairCount,
+    rebuildTimeHours,
+    ureProbability,
+    groupUreProbability,
+  } = topo
+
+  // Base daily failure rate per drive
+  const baseDailyFailureRate = afrPercent / 100 / 365
+
+  // Correlated failure factor: 10% chance a failure triggers another within 7 days
+  // This models batch failures from same manufacturing lot
+  const correlatedFailureProbability = 0.1
+  const correlatedFailureWindowDays = 7
+
+  // Stress factor: rebuild increases failure rate of remaining drives by 30%
+  const rebuildStressFactor = 1.3
+
+  // No redundancy and no mirror layer = any failure is data loss
+  if (parityDrives === 0 && !isMirror) {
+    for (let day = 0; day < 365; day++) {
+      for (let drive = 0; drive < driveCount; drive++) {
+        if (random() < baseDailyFailureRate) {
+          return { survived: false, rebuildTimeHours: 0, hadURE: false, hadDualFailure: true }
+        }
+      }
+    }
+    return { survived: true, rebuildTimeHours: 0, hadURE: false, hadDualFailure: false }
+  }
+
+  // Per-iteration mutable state only — the group/pair *structure* (widths,
+  // capacities, offsets) is precomputed once per simulation run in
+  // computeTopologyModel, not reallocated here on every one of the 100K calls.
+  const pairFailures: number[] = usesPerPairGroupModel ? new Array(pairCapacity.length).fill(0) : []
 
   // Simulate one year of operation
   let failedDrives = 0
@@ -401,26 +553,77 @@ function runSingleSimulation(input: SimulationInput): {
           groupFailures[hitGroup] = (groupFailures[hitGroup] ?? 0) + 1
           const groupUre = groupUreProbability[hitGroup] ?? 0
 
-          // Data loss if any group exceeds its parity tolerance
-          if ((groupFailures[hitGroup] ?? 0) > parityPerGroup) {
-            hadDualFailure = true
-            return { survived: false, rebuildTimeHours, hadURE, hadDualFailure }
-          }
+          if (usesPerPairGroupModel) {
+            // Pick which mirror pair inside the group absorbs the failure, weighted
+            // by each pair's surviving capacity — identical logic to the isMirror
+            // branch above, scoped to this one group's pair range (#66).
+            const start = groupPairStart[hitGroup] ?? 0
+            const count = groupPairCount[hitGroup] ?? 0
 
-          // Start or extend rebuild
-          if (!isRebuilding) {
-            isRebuilding = true
-            rebuildDaysRemaining = Math.ceil(rebuildTimeHours / 24)
+            const survivingPerPair: number[] = []
+            let totalPairSurviving = 0
+            for (let p = 0; p < count; p++) {
+              const idx = start + p
+              const surviving = (pairCapacity[idx] ?? 0) - (pairFailures[idx] ?? 0)
+              survivingPerPair.push(surviving)
+              totalPairSurviving += surviving
+            }
 
-            // URE fatal only when the hit group is at its parity limit
-            if ((groupFailures[hitGroup] ?? 0) >= parityPerGroup && random() < groupUre) {
+            let rp = random() * totalPairSurviving
+            let hitPairOffset = 0
+            for (let p = 0; p < count; p++) {
+              rp -= survivingPerPair[p] ?? 0
+              if (rp <= 0) {
+                hitPairOffset = p
+                break
+              }
+            }
+            const hitPair = start + hitPairOffset
+
+            pairFailures[hitPair] = (pairFailures[hitPair] ?? 0) + 1
+            const capacity = pairCapacity[hitPair] ?? 1
+
+            // Data loss only when THIS pair loses every copy it has — not at a
+            // fixed group-wide failure count (#66).
+            if ((pairFailures[hitPair] ?? 0) >= capacity) {
+              hadDualFailure = true
+              return { survived: false, rebuildTimeHours, hadURE, hadDualFailure }
+            }
+
+            if (!isRebuilding) {
+              isRebuilding = true
+              rebuildDaysRemaining = Math.ceil(rebuildTimeHours / 24)
+            }
+
+            // URE only fatal when this specific pair is down to its last
+            // surviving copy (mirrors the isMirror branch's "at parity limit"
+            // condition, scoped per-pair instead of per-group).
+            if ((pairFailures[hitPair] ?? 0) >= capacity - 1 && random() < groupUre) {
               hadURE = true
               return { survived: false, rebuildTimeHours, hadURE, hadDualFailure }
             }
           } else {
-            if ((groupFailures[hitGroup] ?? 0) >= parityPerGroup && random() < groupUre) {
-              hadURE = true
+            // Data loss if any group exceeds its parity tolerance
+            if ((groupFailures[hitGroup] ?? 0) > parityPerGroup) {
+              hadDualFailure = true
               return { survived: false, rebuildTimeHours, hadURE, hadDualFailure }
+            }
+
+            // Start or extend rebuild
+            if (!isRebuilding) {
+              isRebuilding = true
+              rebuildDaysRemaining = Math.ceil(rebuildTimeHours / 24)
+
+              // URE fatal only when the hit group is at its parity limit
+              if ((groupFailures[hitGroup] ?? 0) >= parityPerGroup && random() < groupUre) {
+                hadURE = true
+                return { survived: false, rebuildTimeHours, hadURE, hadDualFailure }
+              }
+            } else {
+              if ((groupFailures[hitGroup] ?? 0) >= parityPerGroup && random() < groupUre) {
+                hadURE = true
+                return { survived: false, rebuildTimeHours, hadURE, hadDualFailure }
+              }
             }
           }
         } else {
@@ -466,12 +669,26 @@ function runSingleSimulation(input: SimulationInput): {
           }
         }
         if (isGroup) {
-          // Rebuild the most degraded group first
-          let maxIdx = 0
-          for (let g = 1; g < numGroups; g++) {
-            if ((groupFailures[g] ?? 0) > (groupFailures[maxIdx] ?? 0)) maxIdx = g
-          }
-          {
+          if (usesPerPairGroupModel) {
+            // Rebuild the most degraded pair first (mirrors the isMirror repair
+            // logic above, scoped per-pair instead of per-group, #66).
+            let maxIdx = 0
+            for (let p = 1; p < pairFailures.length; p++) {
+              if ((pairFailures[p] ?? 0) > (pairFailures[maxIdx] ?? 0)) maxIdx = p
+            }
+            const cur = pairFailures[maxIdx] ?? 0
+            if (cur > 0) {
+              pairFailures[maxIdx] = cur - 1
+              const owningGroup = pairGroupIndex[maxIdx] ?? 0
+              const groupCur = groupFailures[owningGroup] ?? 0
+              if (groupCur > 0) groupFailures[owningGroup] = groupCur - 1
+            }
+          } else {
+            // Rebuild the most degraded group first
+            let maxIdx = 0
+            for (let g = 1; g < numGroups; g++) {
+              if ((groupFailures[g] ?? 0) > (groupFailures[maxIdx] ?? 0)) maxIdx = g
+            }
             const cur = groupFailures[maxIdx] ?? 0
             if (cur > 0) groupFailures[maxIdx] = cur - 1
           }
@@ -499,9 +716,10 @@ function runSimulation(input: SimulationInput): void {
   let rebuildCount = 0
 
   const progressInterval = Math.max(1, Math.floor(simulationCount / 100))
+  const topo = computeTopologyModel(input)
 
   for (let i = 0; i < simulationCount; i++) {
-    const result = runSingleSimulation(input)
+    const result = runSingleSimulation(input, topo)
 
     if (result.survived) {
       survivedCount++

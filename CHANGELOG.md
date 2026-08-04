@@ -30,6 +30,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   drive-pair mirror model's formula exactly. Safe-direction bug (overstated URE risk), so survival
   only rises. Measured (20,000 iterations, unmerged `beegfs_raid10`, 40 drives / 4 targets of 10):
   survival 9.3% -> 32.5%. New validation vector in `tests/fixtures/resilience-vectors.ts`. (#67)
+- **Resilience worker: `beegfs_raid10` unmerged tolerance was pessimistic for wide targets.** The
+  flat `parityPerGroup` failure counter killed an unmerged `beegfs_raid10` target at ANY 2
+  failures, when a real RAID10 target of width W tolerates up to W/2 failures provided each lands
+  in a distinct mirror pair. `buildGroupPairState()` now gives these groups per-pair state (flat,
+  pre-sized arrays — not an array-of-arrays, to avoid allocation-heavy setup across the worker's
+  100K Monte Carlo iterations): a group dies only when one specific pair loses both members.
+  Safe-direction bug (understated resilience), so survival rises. At the same AFR/URE combination
+  used for the #67 vector above, #66 alone barely moves the number (32.3% -> 31.6%, within Monte
+  Carlo noise) because URE already dominates death there; isolated with a near-zero URE rate
+  instead (20,000 iterations, unmerged, 40 drives / 4 targets of 10, moderate AFR): survival
+  97.1% -> 99.50%. New validation vectors and a `fast-check` property suite for
+  `buildGroupPairState` in `tests/fixtures/resilience-vectors.ts` and
+  `tests/workers/resilience-group-modelling.spec.ts`. (#66)
+
+  Also hoists the per-simulation topology/group/pair setup (`computeTopologyModel`) out of the
+  100K-iteration Monte Carlo loop and into a single per-run computation, since none of it depends
+  on the random failure draws — a straight perf mitigation for the extra per-pair arrays #66
+  introduces, not a behavior change.
 
 ## [1.15.1] - 2026-08-04
 

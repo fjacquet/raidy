@@ -1,7 +1,8 @@
 /**
  * Resilience worker group-modelling vectors — issues #70 (`drivesPerGroup`
- * floor-division leaves drives unmodelled) and #67 (group-path `bitsRead`
- * overstates URE exposure for `beegfs_raid10`).
+ * floor-division leaves drives unmodelled), #67 (group-path `bitsRead`
+ * overstates URE exposure for `beegfs_raid10`), and #66 (`beegfs_raid10`
+ * unmerged tolerance is pessimistic for wide targets).
  *
  * Unlike the capacity vectors elsewhere in this directory, `resilienceWorker.ts`
  * runs a stochastic Monte Carlo simulation (`Math.random()`, no seed), so these
@@ -47,6 +48,24 @@
  * death rate at this AFR/URE combination, which is why fixing the read volume
  * alone recovers most of the total improvement later attributed to #66+#67
  * combined.
+ *
+ * ### #66 — `beegfs_raid10` unmerged tolerance is pessimistic for wide targets
+ *
+ * The flat `parityPerGroup` counter killed an unmerged `beegfs_raid10` target
+ * at ANY 2 failures, when a real RAID10 target of width W tolerates up to W/2
+ * failures provided each lands in a distinct mirror pair. Fixed with per-pair
+ * state (`buildGroupPairState`): a group now dies only when one specific pair
+ * loses both members. Safe-direction bug (understated resilience), so
+ * survival rises.
+ *
+ * At the same AFR/URE combination as the #67 vector above, #66 alone barely
+ * moves the number (32.3% -> 31.6%, within Monte Carlo noise) because URE
+ * already dominates the death rate there — most simulated years never
+ * accumulate the 2+ failures needed to even reach the tolerance question. To
+ * isolate #66's own effect, the dedicated vector below uses a near-zero URE
+ * rate (10^17) so failure-count tolerance is the dominant death mode. Measured
+ * (20,000 iterations, unmerged, 40 drives / 4 targets of 10, moderate AFR,
+ * near-zero URE): survival 97.1% -> 99.50%.
  */
 
 export interface ResilienceVector {
@@ -116,10 +135,48 @@ export const resilienceGroupVectors: ResilienceVector[] = [
       simulationCount: 20000,
       raidLevel: 'beegfs_raid10',
     },
-    // Measured post-fix (tolerance still a flat counter, #66 not yet applied):
-    // ~32.5% (pre-fix: ~9.3%). Wide band — this vector's tolerance widens
-    // further once #66 lands per-pair state on top of this fix.
+    // Measured post-fix (both #67 and #66 now applied): ~31.6% — statistically
+    // indistinguishable from the #67-only ~32.5% at this AFR/URE combination,
+    // because URE (not the tolerance model) dominates death here. See the
+    // dedicated #66 vectors below for a config that isolates the tolerance effect.
     expectSurvivalAbove: 0.2,
     expectSurvivalBelow: 0.45,
+  },
+  {
+    name: 'beegfs_raid10 unmerged, 40 drives / 4 targets of 10: per-pair tolerance, near-zero URE',
+    issue: '#66',
+    payload: {
+      driveCount: 40,
+      serverCount: 4,
+      driveCapacityBytes: 4_000_000_000_000,
+      rebuildSpeedMBs: 400,
+      ureRate: 17,
+      afrPercent: 15.0,
+      simulationCount: 20000,
+      raidLevel: 'beegfs_raid10',
+    },
+    // Measured: pre-fix (flat tolerance) ~97.1%, post-fix (per-pair) ~99.50%.
+    // Near-zero URE rate isolates the tolerance-model effect from URE.
+    expectSurvivalAbove: 0.98,
+  },
+  {
+    name: 'beegfs_raid10 unmerged, 12 drives / 1 target: per-pair tolerance survives multi-pair failures',
+    issue: '#66',
+    payload: {
+      driveCount: 12,
+      serverCount: 1,
+      driveCapacityBytes: 4_000_000_000_000,
+      rebuildSpeedMBs: 150,
+      ureRate: 17,
+      afrPercent: 8.0,
+      simulationCount: 20000,
+      raidLevel: 'beegfs_raid10',
+    },
+    // A 12-drive target is 6 independent mirror pairs; the old flat counter
+    // (tolerance 1) killed it at any 2nd failure anywhere in the target. The
+    // per-pair model only kills it when one pair loses both members, so
+    // survival should be comfortably higher than the old tolerance-1 model
+    // would produce under this AFR.
+    expectSurvivalAbove: 0.5,
   },
 ]
