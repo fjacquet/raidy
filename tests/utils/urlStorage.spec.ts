@@ -461,7 +461,6 @@ describe('URL Storage - Platform Options Persistence (Task 9)', () => {
         encryption: true,
         journalOnSsd: false,
         walDbOffload: true,
-        walDbRatio: 6,
         safeCapacityThreshold: 0.9,
         tiering: {
           enabled: true,
@@ -605,7 +604,6 @@ describe('URL Storage - Platform Options Persistence (Task 9)', () => {
           encryption: false,
           journalOnSsd: true,
           walDbOffload: 'yes', // wrong type: should be boolean
-          walDbRatio: 4,
           safeCapacityThreshold: 0.85,
         },
       }
@@ -661,7 +659,6 @@ describe('URL Storage - Platform Options Persistence (Task 9)', () => {
           encryption: false,
           journalOnSsd: true,
           walDbOffload: false,
-          walDbRatio: 4,
           safeCapacityThreshold: 5, // out of range: schema bounds this to [0, 1]
         },
       }
@@ -695,9 +692,7 @@ describe('URL Storage - Platform Options Persistence (Task 9)', () => {
       objectscaleOptions: {
         objectSizeKB: 1024,
         systemOverheadPercent: 15,
-        networkEfficiencyFactor: 0.55,
         sites: 3,
-        fillRatePercent: 82,
         compression: true,
         compressionRatio: 2.0,
       },
@@ -719,7 +714,6 @@ describe('URL Storage - Platform Options Persistence (Task 9)', () => {
       },
       synologyOptions: {
         filesystem: 'btrfs',
-        btrfsOverhead: 0.04,
         systemPartitionSize: 25 * 1024 * 1024 * 1024,
         modelSeries: 'xs',
         ssdCache: true,
@@ -976,7 +970,6 @@ describe('URL Storage - Security: Malicious URL Protection (SEC-01, SEC-02, SEC-
       },
       synologyOptions: {
         filesystem: 'btrfs',
-        btrfsOverhead: 0.04,
         systemPartitionSize: 25 * 1024 * 1024 * 1024,
         modelSeries: 'plus',
         ssdCache: false,
@@ -997,9 +990,7 @@ describe('URL Storage - Security: Malicious URL Protection (SEC-01, SEC-02, SEC-
       objectscaleOptions: {
         objectSizeKB: 1024,
         systemOverheadPercent: 15,
-        networkEfficiencyFactor: 0.55,
         sites: 1,
-        fillRatePercent: 80,
         compression: false,
         compressionRatio: 1.0,
       },

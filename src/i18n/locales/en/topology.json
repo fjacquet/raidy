@@ -343,8 +343,6 @@
     "avgObjectSize": "Average object size: {{size}}",
     "systemOverhead": "System Overhead",
     "systemOverheadDesc": "Metadata, indexes, S3 protocol: {{percent}}%",
-    "networkEfficiency": "Network Efficiency",
-    "networkEfficiencyDesc": "East-West traffic factor: {{percent}}%",
     "enableCompression": "Enable Compression",
     "compressionRatio": "Compression Ratio",
     "expectedRatio": "Expected ratio: {{ratio}}:1"
@@ -456,8 +454,6 @@
     "enableEncryption": "Enable Encryption",
     "journalOnSsd": "Journal/WAL on SSD",
     "walDbOffload": "WAL/DB on Separate NVMe",
-    "walDbRatio": "HDDs per WAL/DB NVMe",
-    "walDbRatioDesc": "Ratio of HDDs to NVMe drives for WAL/DB offload",
     "safeCapacity": "Safe Capacity Threshold",
     "safeCapacityDesc": "Ceph nearfull threshold: {{percent}}%"
   },

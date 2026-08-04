@@ -10,13 +10,7 @@
  */
 
 import { useTranslation } from 'react-i18next'
-import {
-  Label,
-  NumberInput,
-  SegmentedControl,
-  Slider,
-  Toggle,
-} from '@/components/common/FormControls'
+import { Label, SegmentedControl, Slider, Toggle } from '@/components/common/FormControls'
 import { TieringPanel } from '@/components/inputs/TieringPanel'
 import { CEPH_COMPRESSION_RATIOS } from '@/engines/volumetry/postProcessing/capacityEnhancements'
 import { useConfigStore } from '@/store'
@@ -101,38 +95,22 @@ export function CephOptionsPanel() {
       />
 
       {cephOptions.walDbOffload && (
-        <>
-          <div className="space-y-2">
-            <Label htmlFor="ceph-wal-ratio">{t('ceph.walDbRatio')}</Label>
-            <NumberInput
-              id="ceph-wal-ratio"
-              value={cephOptions.walDbRatio}
-              min={2}
-              max={12}
-              onChange={(v) => setCephOptions({ walDbRatio: v })}
-            />
-            <p className="text-xs text-slate-500">
-              Ratio of HDDs to NVMe drives for WAL/DB offload
-            </p>
-          </div>
-
-          <TieringPanel
-            config={cephOptions.tiering ?? DEFAULT_TIERING_CONFIG}
-            onChange={(tiering) =>
-              setCephOptions({
-                tiering: {
-                  ...DEFAULT_TIERING_CONFIG,
-                  ...cephOptions.tiering,
-                  ...tiering,
-                },
-              })
-            }
-            serverCount={serverCount}
-            platform="ceph"
-            showCacheMode={false}
-            showWorkingSet={false}
-          />
-        </>
+        <TieringPanel
+          config={cephOptions.tiering ?? DEFAULT_TIERING_CONFIG}
+          onChange={(tiering) =>
+            setCephOptions({
+              tiering: {
+                ...DEFAULT_TIERING_CONFIG,
+                ...cephOptions.tiering,
+                ...tiering,
+              },
+            })
+          }
+          serverCount={serverCount}
+          platform="ceph"
+          showCacheMode={false}
+          showWorkingSet={false}
+        />
       )}
 
       <div className="space-y-2">
