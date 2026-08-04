@@ -94,6 +94,23 @@ payloads are stripped. Nothing reads the unknown keys.
 *To close:* decide whether passthrough is still needed (it may exist for forward compatibility
 with newer links). If so, document why; if not, tighten it.
 
+### [B19](https://github.com/fjacquet/raidy/issues/80). Resilience never excludes hot spares from the simulated population, for any platform
+
+`src/hooks/useResilience.ts`'s naive path (every platform without a `SIMULATION_SCOPE_BY_TOPOLOGY`
+entry) uses `totalDriveCount = driveCount * effServerCount` with no hot-spare subtraction. Every
+hot spare is currently simulated as a data-bearing drive. Contrast with volumetry and performance,
+which both subtract `hotSpares * effServerCount` (zeroed for vSAN's distributed-spare model).
+
+Safe direction (counting a spare as data-bearing is conservative), so not urgent — but it means
+resilience currently overstates risk for every platform with `hotSpares > 0`, and understates it
+for vSAN by never zeroing spares that don't exist as dedicated drives. Found while scoping B1;
+kept separate because fixing it moves every platform's resilience numbers, not just the tiered
+ones.
+
+*To close:* mirror the volumetry/performance pattern — subtract
+`usesDistributedSpares(topology.type) ? 0 : hotSpares * effServerCount`, clamped `>= 0`, with
+before/after vectors for standard RAID, ZFS, and each tiered platform.
+
 ---
 
 ## Modelling precision — safe direction, worth improving
