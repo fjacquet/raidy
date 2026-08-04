@@ -37,6 +37,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   platform's network behavior going forward is a table entry, not another orchestrator branch.
 
 ### Fixed
+- **BeeGFS `chunkSizeKb` and `numTargets` are now labelled informational.** Both are real BeeGFS
+  tunables but had no consumer anywhere in `src/engines/` — two controls a user could move with
+  zero effect on any output. They are now marked informational in the panel (tooltip + hint) the
+  same way `network` already was, rather than wired to a fabricated formula: `numTargets` caps
+  *single-file* throughput while every performance figure here is a cluster aggregate bounded by
+  the total storage-target count, and the bottleneck chain has no per-file layer for a chunk
+  boundary to act on. The reasoning is recorded on the fields themselves in
+  `src/types/topology.ts`. No calculated result changes.
 - **BeeGFS stranded drives no longer count as usable capacity.** Usable capacity was computed
   from every drive left after hot spares, while the validator warned *"N drive(s) do not fill a
   full storage target and are stranded"* and the capacity card printed the same count. A storage

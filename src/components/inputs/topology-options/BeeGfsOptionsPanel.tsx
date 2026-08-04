@@ -3,13 +3,22 @@
  *
  * Controls: storage-target width (drives per RAID6/RAID10/RAIDz2 target,
  * with derived target count / stranded drives), storage & metadata Buddy
- * Mirroring, per-file striping (chunk size + numTargets, performance only),
- * cluster interconnect (display only — see BeeGfsOptions.network in
- * src/types/topology.ts), and an explicit `metadataTargets` opt-in gating
+ * Mirroring, and an explicit `metadataTargets` opt-in gating
  * metadata target (MDT) sizing via TieringPanel — mirrors Ceph's
  * `walDbOffload` toggle so filling in the MDT drive pickers can never
  * silently switch the storage-target drive selection away from the
  * Hardware panel (see resolveTiering in src/engines/shared/tiering.ts).
+ *
+ * Three controls here are INFORMATIONAL — each is labelled as such in the UI
+ * (tooltip + hint) so the user is never misled into thinking a slider they
+ * can move is changing a number on the right-hand side:
+ *   - `network`   — see BeeGfsOptions.network in src/types/topology.ts.
+ *   - `chunkSizeKb` and `numTargets` — see the same file. Both are real BeeGFS
+ *     tunables with real performance effects on hardware, but this engine
+ *     reports cluster aggregates only, and neither has an honest aggregate
+ *     model (see the type doc-comments for the full reasoning). They are
+ *     surfaced so a sizing sheet can record the intended configuration, and
+ *     they persist through "Copy URL to Share", but they compute nothing.
  */
 
 import { useMemo } from 'react'
@@ -84,7 +93,7 @@ export function BeeGfsOptionsPanel() {
       <p className="text-xs text-slate-500 -mt-2">{t('beegfs.metadataBuddyMirrorHint')}</p>
 
       <div className="space-y-2">
-        <Label>{t('beegfs.chunkSize')}</Label>
+        <Label tooltip={t('beegfs.chunkSizeTooltip')}>{t('beegfs.chunkSize')}</Label>
         <SegmentedControl
           value={String(beeGfsOptions.chunkSizeKb)}
           options={[
@@ -94,10 +103,13 @@ export function BeeGfsOptionsPanel() {
           ]}
           onChange={(v) => setBeeGfsOptions({ chunkSizeKb: Number(v) as 512 | 1024 | 2048 })}
         />
+        <p className="text-xs text-slate-500">{t('beegfs.chunkSizeHint')}</p>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="beegfs-num-targets">{t('beegfs.numTargets')}</Label>
+        <Label htmlFor="beegfs-num-targets" tooltip={t('beegfs.numTargetsTooltip')}>
+          {t('beegfs.numTargets')}
+        </Label>
         <Slider
           id="beegfs-num-targets"
           value={beeGfsOptions.numTargets}

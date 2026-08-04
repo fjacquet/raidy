@@ -484,9 +484,32 @@ export interface BeeGfsOptions {
   storageBuddyMirror: boolean
   /** Buddy mirroring for metadata targets — doubles the MDT capacity requirement */
   metadataBuddyMirror: boolean
-  /** Chunk size in KB (BeeGFS default 512K) — sequential performance only */
+  /**
+   * Chunk size in KB (BeeGFS default 512K), for display purposes only.
+   *
+   * Chunk size is a real BeeGFS tunable — it trades per-file parallelism against per-target
+   * sequential efficiency on real hardware. It is deliberately NOT wired into the performance
+   * engine: that engine models the bottleneck chain (Media → Controller → PCIe → Network) in
+   * cluster aggregates driven by the workload panel's `blockSize` and `randomPercent`, and it
+   * has no per-file layer for a chunk boundary to interact with. Any factor applied here would
+   * be an invented curve with no reference behind it, which is worse than an honest gap. The
+   * BeeGFS options panel labels this control informational (tooltip + hint) so the user is not
+   * misled; it exists so a sizing sheet can record the intended configuration.
+   */
   chunkSizeKb: 512 | 1024 | 2048
-  /** Per-file stripe width in targets (BeeGFS `numtargets`, default 4) — performance only */
+  /**
+   * Per-file stripe width in targets (BeeGFS `numtargets`, default 4), for display only.
+   *
+   * `numtargets` caps the throughput of a SINGLE file: one file is striped over at most this
+   * many storage targets. Every performance figure this tool reports is a cluster aggregate
+   * over all clients and all files, and that aggregate is bounded by the total storage-target
+   * count, not by any one file's stripe width — the HPC workloads BeeGFS is built for run many
+   * concurrent files precisely so the aggregate is not `numtargets`-bound. Applying this as a
+   * multiplier on the aggregate would understate a real cluster by up to
+   * `storageTargetCount / numTargets`. Modelling it honestly would need a single-file /
+   * single-stream output the dashboard does not have, so the control is labelled informational
+   * (tooltip + hint) in the BeeGFS options panel rather than wired to a fabricated formula.
+   */
   numTargets: number
   /**
    * Cluster interconnect, for display purposes only. The bottleneck chain's network
