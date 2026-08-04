@@ -21,6 +21,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`tests/i18n/parity.spec.ts`) that recursively diffs every locale's namespace files against the
   `en` reference in both directions (missing keys and orphan keys), so future gaps like this fail
   CI instead of shipping. (#72)
+- **`HBA_REQUIRED_TOPOLOGIES` membership is now pinned by a hand-copied test snapshot.**
+  `tests/types/controllerRequirement.spec.ts` previously guarded the level-aware controller rule
+  only against `legacyControllerOptions`, which re-derives from `HBA_REQUIRED_TOPOLOGIES` itself
+  — so it caught drift in the filter logic but not in the table's contents. Deleting `'longhorn'`
+  from the table left all 1242 tests passing, silently flipping Longhorn from HBA-only to
+  RAID-only. Added a literal, hand-copied expected-membership list directly in the test file
+  (deliberately not imported or derived) that now fails on that exact mutation. (#75)
+- **`AdvancedPanel` now has a label state for a controller requirement of `'either'`.**
+  `getControllerRequirement` returns `'hba'`, `'raid'` or `'either'`, but the panel only rendered
+  two states — so on `beegfs_single` the user saw the RAID-only heading, label ("Controller
+  Model") and hint while the dropdown actually offered HBAs and appliance controllers too. Added
+  a third `'either'` state (heading, label, hint) plus its locale strings in all four languages.
+  Reworded `controller.hbaHint`, which enumerated platforms ("ZFS, vSAN, and S2D require..."), to
+  state the underlying rule instead ("platforms that manage redundancy in software need direct
+  disk access via an HBA"), since it was already stale for `beegfs_raidz2` and an enumeration
+  goes stale every time a platform is added. No calculated number is affected — the engine always
+  read the selected controller's real limits. (#74)
 
 ### Changed
 - Validator alerts (`src/utils/validators.ts`) and the Longhorn capacity-details card

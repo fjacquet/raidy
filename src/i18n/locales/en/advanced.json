@@ -29,10 +29,13 @@
     "title": "RAID Controller",
     "hbaModel": "HBA Model",
     "model": "Controller Model",
+    "eitherTitle": "Controller / HBA",
+    "eitherModel": "Controller / HBA Model",
     "maxIops": "Max IOPS",
     "maxThroughput": "Max Throughput",
-    "hbaHint": "ZFS, vSAN, and S2D require direct disk access via HBA (IT mode)",
-    "raidHint": "Hardware RAID controllers manage disk redundancy"
+    "hbaHint": "Platforms that manage redundancy in software need direct disk access via an HBA (IT mode)",
+    "raidHint": "Hardware RAID controllers manage disk redundancy",
+    "eitherHint": "This configuration works behind either a hardware RAID controller or an HBA"
   },
   "power": {
     "title": "Power & Sustainability",

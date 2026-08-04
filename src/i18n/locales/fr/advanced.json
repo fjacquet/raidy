@@ -29,10 +29,13 @@
     "title": "Controleur RAID",
     "hbaModel": "Modele HBA",
     "model": "Modele controleur",
+    "eitherTitle": "Controleur / HBA",
+    "eitherModel": "Modele controleur / HBA",
     "maxIops": "IOPS max",
     "maxThroughput": "Debit max",
-    "hbaHint": "ZFS, vSAN et S2D necessitent un acces disque direct via HBA (mode IT)",
-    "raidHint": "Les controleurs RAID materiels gerent la redondance des disques"
+    "hbaHint": "Les plateformes qui gerent la redondance de maniere logicielle necessitent un acces disque direct via HBA (mode IT)",
+    "raidHint": "Les controleurs RAID materiels gerent la redondance des disques",
+    "eitherHint": "Cette configuration fonctionne avec un controleur RAID materiel ou un HBA"
   },
   "power": {
     "title": "Energie & Durabilite",

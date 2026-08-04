@@ -107,6 +107,37 @@ describe('getControllerOptions — BeeGFS lists per level', () => {
   })
 })
 
+describe('HBA_REQUIRED_TOPOLOGIES table contents are pinned', () => {
+  /**
+   * Deliberately hand-copied, NOT imported or derived from `HBA_REQUIRED_TOPOLOGIES` or any
+   * other table in src/. The whole point of this assertion is to catch drift in the table's
+   * *contents* — deleting or adding an entry to `HBA_REQUIRED_TOPOLOGIES` — which a test that
+   * re-derives the same table (see `legacyControllerOptions` above) cannot detect, because it
+   * shares the defect with the thing it's checking.
+   *
+   * Updating this literal must be a conscious, reviewed decision made when the table genuinely
+   * changes (a platform is added to or removed from HBA-required storage) — do NOT
+   * "helpfully" refactor it into `[...HBA_REQUIRED_TOPOLOGIES]` or any other derivation; that
+   * silently defeats the guard.
+   */
+  const EXPECTED_HBA_REQUIRED_TOPOLOGIES: TopologyType[] = [
+    'zfs',
+    's2d',
+    'vsan_osa',
+    'vsan_esa',
+    'ceph',
+    'powerflex',
+    'nutanix',
+    'longhorn',
+  ]
+
+  it('matches the hand-copied expected membership exactly, in any order', () => {
+    expect([...HBA_REQUIRED_TOPOLOGIES].sort()).toEqual(
+      [...EXPECTED_HBA_REQUIRED_TOPOLOGIES].sort(),
+    )
+  })
+})
+
 describe('every other platform is unchanged by the shared signature change', () => {
   const REGRESSION_NET: TopologyType[] = ['ceph', 'zfs', 'standard', 'vsan_esa']
 
