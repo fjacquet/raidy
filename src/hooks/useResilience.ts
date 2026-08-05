@@ -480,6 +480,11 @@ export function useResilience(options: UseResilienceOptions): UseResilienceResul
       simulationCount,
       serverCount: groupCount,
       mirrorCopies,
+      // Whether rebuild can start immediately or must first wait out a replacement-sourcing
+      // delay (#93) — see SimulationInput.hasHotSpare. Reuses `totalHotSpares` (already zeroed
+      // for `usesDistributedSpares` platforms above), so vSAN — which has no dedicated spare
+      // drive to credit — gets no credit here either, without a platform-specific branch.
+      hasHotSpare: totalHotSpares > 0,
     }
 
     worker.postMessage({ type: 'START', payload: input })
