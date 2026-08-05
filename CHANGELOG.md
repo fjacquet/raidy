@@ -29,6 +29,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   never executed while implying a platform could opt out. It now asserts unconditionally that all
   fifteen types subtract — which is precisely the invariant that forces the UI decision to live
   outside the capability map.
+- **The YAML / Ansible / Terraform export (#124).** 429 lines, no dedicated test, and it only
+  ever knew **ZFS** — one platform of fifteen. What the ZFS path emitted was three lines:
+  `zfs_ashift`, `zfs_recordsize`, and a device glob.
+
+  The question the issue asked was whether it earned its keep, and the answer is no. Raidy sizes
+  storage; it does not provision it. A Terraform fragment derived from a capacity estimate has no
+  hosts, no network and no credentials, so it is not deployable — which left the feature costing
+  maintenance and test surface, and standing as a place every new platform "should" be wired into.
+  Expanding it was proposed during the input-panel relevance design and rejected there for the
+  same reason.
+
+  **What users keep.** The PDF and PPTX exports are untouched — a presales deliverable has an
+  obvious consumer. So are the ZFS provisioning commands in the Take-away card's collapsible
+  section, which are the copy-paste-able output people actually used. `zfsOptions.compressionType`
+  is still live for exactly that reason.
+
+  Removed with it: three buttons, six locale keys across all four languages, the barrel re-export,
+  and the now-unreachable `controllerOptions` read in `OutputDashboard`. The Take-away export grid
+  drops from four columns to two.
 
 ### Changed
 

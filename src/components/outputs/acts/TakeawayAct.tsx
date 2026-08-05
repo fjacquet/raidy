@@ -15,9 +15,6 @@ export interface TakeawayActProps {
   exportError: boolean
   onExportPdf: () => void
   onExportPptx: () => void
-  onExportYaml: () => void
-  onExportAnsible: () => void
-  onExportTerraform: () => void
 }
 
 export function TakeawayAct({
@@ -28,9 +25,6 @@ export function TakeawayAct({
   exportError,
   onExportPdf,
   onExportPptx,
-  onExportYaml,
-  onExportAnsible,
-  onExportTerraform,
 }: TakeawayActProps) {
   const { t } = useTranslation('output')
 
@@ -47,7 +41,7 @@ export function TakeawayAct({
           </p>
         )}
 
-        <div className={`grid grid-cols-2 md:grid-cols-4 gap-4 ${exportError ? '' : 'mt-4'}`}>
+        <div className={`grid grid-cols-2 gap-4 ${exportError ? '' : 'mt-4'}`}>
           <button
             type="button"
             onClick={onExportPdf}
@@ -101,90 +95,6 @@ export function TakeawayAct({
             </span>
             <span className="text-xs text-slate-500 dark:text-slate-400">
               {t('export.pptxDesc')}
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={onExportYaml}
-            disabled={!selectedDrive}
-            className="flex flex-col items-center gap-2 p-4 rounded-lg bg-slate-100 dark:bg-surface-700 hover:bg-slate-200 dark:hover:bg-surface-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            <svg
-              className="w-8 h-8 text-yellow-400"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              aria-hidden="true"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-              />
-            </svg>
-            <span className="text-sm font-medium text-slate-900 dark:text-white">
-              {t('export.yaml')}
-            </span>
-            <span className="text-xs text-slate-500 dark:text-slate-400">
-              {t('export.yamlDesc')}
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={onExportAnsible}
-            disabled={!selectedDrive}
-            className="flex flex-col items-center gap-2 p-4 rounded-lg bg-slate-100 dark:bg-surface-700 hover:bg-slate-200 dark:hover:bg-surface-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            <svg
-              className="w-8 h-8 text-blue-400"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              aria-hidden="true"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"
-              />
-            </svg>
-            <span className="text-sm font-medium text-slate-900 dark:text-white">
-              {t('export.ansible')}
-            </span>
-            <span className="text-xs text-slate-500 dark:text-slate-400">
-              {t('export.ansibleDesc')}
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={onExportTerraform}
-            disabled={!selectedDrive}
-            className="flex flex-col items-center gap-2 p-4 rounded-lg bg-slate-100 dark:bg-surface-700 hover:bg-slate-200 dark:hover:bg-surface-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            <svg
-              className="w-8 h-8 text-purple-400"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              aria-hidden="true"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-              />
-            </svg>
-            <span className="text-sm font-medium text-slate-900 dark:text-white">
-              {t('export.terraform')}
-            </span>
-            <span className="text-xs text-slate-500 dark:text-slate-400">
-              {t('export.terraformDesc')}
             </span>
           </button>
         </div>

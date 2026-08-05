@@ -161,12 +161,6 @@
     "pdfDesc": "Full report",
     "pptx": "PowerPoint",
     "pptxDesc": "Slide deck",
-    "yaml": "YAML",
-    "yamlDesc": "Configuration",
-    "ansible": "Ansible",
-    "ansibleDesc": "Playbook",
-    "terraform": "Terraform",
-    "terraformDesc": "GCP Config",
     "footer": "Export your storage configuration for documentation or infrastructure automation."
   },
   "pptx": {

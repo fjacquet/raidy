@@ -2,8 +2,8 @@
  * General sweep for issue #110 (successor to the narrow #104 guard it replaces): every field
  * of every `DEFAULT_*_OPTIONS` object in src/types/topology.ts must either be read somewhere
  * real — an engine (`src/engines/**`), the resilience worker's non-worker callers, or one of a
- * short list of known non-UI consumer files (`validators.ts`, `exportConfig.ts`,
- * `TakeawayAct.tsx`) — or be named in the `ALLOWLIST` below with a reason.
+ * short list of known non-UI consumer files (`validators.ts`, `TakeawayAct.tsx`) — or be named
+ * in the `ALLOWLIST` below with a reason.
  *
  * #104 removed four fields with no consumer at all (`synologyOptions.btrfsOverhead`,
  * `objectscaleOptions.fillRatePercent`/`networkEfficiencyFactor`, `cephOptions.walDbRatio`).
@@ -71,7 +71,7 @@ const ALLOWLIST: Record<string, string[]> = {
  * Fields that change VISIBLE OUTPUT but no COMPUTED NUMBER.
  *
  * These pass the sweep only because `EXTRA_CONSUMER_FILES` treats any read in validators /
- * exportConfig / TakeawayAct as real. That is a loophole wide enough to admit a genuinely dead
+ * TakeawayAct as real. That is a loophole wide enough to admit a genuinely dead
  * field that happens to be logged somewhere, so the category is named here rather than left to
  * pass by accident. They are deliberately kept: unlike the fields deleted in the 2026-08-05
  * relevance sweep, moving these changes something the user can see.
@@ -80,7 +80,7 @@ const ALLOWLIST: Record<string, string[]> = {
  * a real calculation, it graduates out of this list and the assertion says so.
  */
 const UI_ONLY_CONSUMERS: Record<string, string> = {
-  compressionType: 'generates the `zfs set compression=` line in the export and Takeaway card',
+  compressionType: 'generates the `zfs set compression=` line in the Takeaway provisioning card',
   raidType: 'drives a NETAPP_RAID_TEC_RECOMMENDED validation warning, not a capacity figure',
 }
 
@@ -96,7 +96,6 @@ const UI_ONLY_CONSUMERS: Record<string, string> = {
 /** Files, outside src/engines and src/workers, known to be real (non-UI-setter) consumers. */
 const EXTRA_CONSUMER_FILES = [
   'src/utils/validators.ts',
-  'src/utils/exportConfig.ts',
   'src/components/outputs/acts/TakeawayAct.tsx',
 ]
 
