@@ -680,8 +680,16 @@ minus hot spares (#80): `usesDistributedSpares(topology.type) ? 0 : hotSpares * 
 clamped at zero — the identical rule volumetry (`useVolumetryCalc.ts:80`) and performance
 (`usePerformanceCalc.ts:77`) apply, so a spare is never counted as a data-bearing drive in any of
 the three engines. The four tiered platforms (S2D, vSAN OSA, Ceph, Nutanix) apply the same
-subtraction to the capacity tier inside `tieredPlatformScope`; vSAN's distributed spares zero it
-out via `usesDistributedSpares`. BeeGFS applies hot spares inside its own resolver,
+subtraction to the capacity tier inside `tieredPlatformScope` — though as of the 2026-08-05
+relevance sweep all four are in `DISTRIBUTED_SPARE_TOPOLOGIES`, so the subtraction resolves to
+zero for every one of them, and BeeGFS is the platform that now exercises that tiered path with
+a non-zero spare count. Ten platforms rebuild from distributed reserve capacity and zero the
+subtraction via `usesDistributedSpares`; the five that keep dedicated spares are standard RAID,
+ZFS, PowerVault, Synology/NetApp (`proprietary`) and BeeGFS. Note that
+`PLATFORM_CAPABILITIES.supportsHotSpares` stays `true` for all fifteen: the engines really do
+subtract, and the zeroing happens in the hooks before the engine is called, which is why the
+capability probe (driving `calculateVolumetry` directly) would fail if the flag were flipped.
+BeeGFS applies hot spares inside its own resolver,
 `resolveBeeGfsSimulationScope`, so it is excluded from this generic subtraction to avoid
 double-counting. The worker itself does not credit a spare with shortening the rebuild window —
 that residual gap is tracked in `docs/BACKLOG.md`.

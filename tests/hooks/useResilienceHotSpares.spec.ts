@@ -99,14 +99,30 @@ describe('useResilience hot spares — naive path', () => {
 const tiering = buildTieringConfig(2, 6)
 
 describe('useResilience hot spares — tiered path', () => {
-  it('excludes hot spares from the capacity tier (S2D)', () => {
+  /**
+   * These two cases used S2D as their vehicle until S2D joined DISTRIBUTED_SPARE_TOPOLOGIES
+   * (Microsoft documents reserve capacity taken evenly from every drive, not spare disks).
+   * The behaviour under test — subtracting spares from the CAPACITY tier, and clamping at
+   * zero — is unchanged; only the platform that still exercises it has moved. BeeGFS tiers
+   * (metadata targets) and keeps dedicated spares, since its storage targets are local
+   * hardware RAID volumes.
+   */
+  it('excludes hot spares from the capacity tier (BeeGFS metadata targets)', () => {
+    const beegfs: Topology = { type: 'beegfs', level: 'beegfs_raid6' }
+    const input = runWith(beegfs, 1, {
+      beeGfsOptions: { ...DEFAULT_BEEGFS_OPTIONS, metadataTargets: true, tiering },
+    })
+    // 6 capacity drives x 2 nodes = 12, minus 1 spare per node = 10
+    expect(input.driveCount).toBe(10)
+  })
+
+  it('subtracts nothing for S2D, which now rebuilds from pool reserve capacity', () => {
     const s2d: Topology = { type: 's2d', level: 'mirror' }
     const input = runWith(s2d, 1, {
       s2dOptions: { ...DEFAULT_S2D_OPTIONS, storageTiers: true, tieringConfig: tiering },
     })
-    // 6 capacity drives x 2 nodes = 12, minus 1 spare per node = 10
-    expect(input.driveCount).toBe(10)
-    expect(input.serverCount).toBe(2)
+    // 6 capacity drives x 2 nodes = 12, and the spare is ignored.
+    expect(input.driveCount).toBe(12)
   })
 
   it('subtracts nothing for vSAN OSA, which rebuilds from distributed slack', () => {
@@ -118,9 +134,9 @@ describe('useResilience hot spares — tiered path', () => {
   })
 
   it('clamps at zero when spares exceed the capacity tier', () => {
-    const s2d: Topology = { type: 's2d', level: 'mirror' }
-    const input = runWith(s2d, 99, {
-      s2dOptions: { ...DEFAULT_S2D_OPTIONS, storageTiers: true, tieringConfig: tiering },
+    const beegfs: Topology = { type: 'beegfs', level: 'beegfs_raid6' }
+    const input = runWith(beegfs, 99, {
+      beeGfsOptions: { ...DEFAULT_BEEGFS_OPTIONS, metadataTargets: true, tiering },
     })
     expect(input.driveCount).toBe(0)
   })

@@ -323,11 +323,55 @@ export function requiresHba(topologyType: TopologyType, level?: string): boolean
 }
 
 /**
- * Topologies that rebuild from distributed slack space instead of dedicated
- * hot-spare drives. vSAN (both OSA and ESA) reserves free capacity across the
- * cluster for rebuilds — it never uses dedicated spare disks.
+ * Topologies that rebuild from distributed reserve capacity instead of dedicated hot-spare
+ * drives, so a "hot spares" input is not something their administrator configures.
+ *
+ * Per vendor documentation:
+ *  - `vsan_osa` / `vsan_esa` — vSAN reserves free capacity across the cluster; never spare disks.
+ *  - `s2d`        — reserve capacity "serves the same function as a hot spare" but is "taken
+ *                   evenly from every drive in the pool" (Microsoft, Storage Pool deep dive).
+ *  - `powerscale` — Virtual Hot Spare: reserved space as a percentage or virtual-drive count,
+ *                   not a physical disk (OneFS Administration Guide).
+ *  - `powerstore` — "Dedicated hot spare drives are not required"; spare space is distributed
+ *                   across each resiliency set (Dell KB 000188491).
+ *  - `powerflex`  — spare capacity spread across all disks (Dell KB 000219120).
+ *  - `nutanix`    — many-to-many rebuild across the cluster, no single hot-spare destination
+ *                   (Definitive Guide to AOS Storage).
+ *  - `ceph`       — no traditional hot spare; recovery backfills into free cluster capacity
+ *                   (Red Hat Ceph Storage Operations Guide).
+ *  - `longhorn`   — replicas rebuild onto any node with free space, governed by the minimum
+ *                   free-space threshold (Longhorn space-consumption guideline).
+ *  - `objectscale` — INFERRED, not sourced: 12+4 erasure coding disperses fragments across
+ *                   nodes and recovery re-creates them on the survivors, which leaves no role
+ *                   for a spare drive. No vendor document states this outright.
+ *
+ * Platforms deliberately NOT here, because their vendors document dedicated spares: standard
+ * RAID (PERC/mdadm global hot spares), ZFS (spare vdevs), PowerVault ME5 (global and dedicated
+ * spares), Synology DSM (Hot Spare in Storage Manager), NetApp ONTAP (two per disk type is the
+ * documented best practice), and BeeGFS — whose storage targets are local hardware RAID
+ * volumes, so spares matter at the controller level even though BeeGFS itself has no such
+ * concept.
+ *
+ * NOTE: this is deliberately separate from `PLATFORM_CAPABILITIES.supportsHotSpares`, which
+ * stays `true` for every type. The engines genuinely subtract hot spares for all fifteen; the
+ * zeroing happens in the hooks (`useVolumetryCalc`, `usePerformanceCalc`, `useResilience`)
+ * before the engine is called. Setting the capability flag false would make the capability
+ * probe fail, correctly — it drives `calculateVolumetry` directly and would still see the
+ * subtraction. Two mechanisms describe hot-spare relevance and only this one drives the UI;
+ * unifying them is issue #130.
  */
-export const DISTRIBUTED_SPARE_TOPOLOGIES: TopologyType[] = ['vsan_osa', 'vsan_esa']
+export const DISTRIBUTED_SPARE_TOPOLOGIES: TopologyType[] = [
+  'vsan_osa',
+  'vsan_esa',
+  's2d',
+  'ceph',
+  'powerflex',
+  'powerstore',
+  'powerscale',
+  'objectscale',
+  'nutanix',
+  'longhorn',
+]
 
 /** Check if topology uses distributed spare capacity (no dedicated hot-spare drives) */
 export function usesDistributedSpares(topologyType: TopologyType): boolean {

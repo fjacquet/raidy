@@ -9,6 +9,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Eight more platforms rebuild from distributed reserve capacity, so the hot-spare control is
+  gone for them.** S2D, Ceph, Nutanix, Longhorn, PowerFlex, PowerStore, PowerScale and
+  ObjectScale join vSAN, which was already handled. Each vendor documents rebuild from reserved
+  or free capacity rather than from dedicated spare drives — Microsoft is explicit that S2D's
+  reserve capacity "serves the same function as a hot spare" but is "taken evenly from every
+  drive in the pool", and Dell states outright that "dedicated hot spare drives are not
+  required" on PowerStore. Where the control was shown, it configured something those platforms
+  do not have.
+
+  **Usable capacity increases on these platforms for anyone who had set a hot spare.** Measured
+  at 12 drives × 4 nodes with 2 spares per node:
+
+  | Platform | Before | After | Change |
+  |---|---|---|---|
+  | S2D (mirror) | 17.4 TB | 21.3 TB | +23% |
+  | Ceph (3× replicated) | 11.1 TB | 13.3 TB | +20% |
+  | Nutanix (RF2) | 17.7 TB | 21.3 TB | +20% |
+  | Longhorn (R3) | 9.90 TB | 11.9 TB | +20% |
+
+  Standard RAID, ZFS, PowerVault ME5, Synology, NetApp and BeeGFS keep the control — all six
+  document dedicated spares, and are unaffected. ObjectScale's inclusion rests on its
+  erasure-coding architecture rather than a vendor statement; that is marked as inference in the
+  code rather than presented as a citation.
+
 - **The default number of hot spares is now 0, was 1.** A hot spare is a deliberate design
   choice, not an assumption a sizing tool should make for you. The old default quietly reduced
   usable capacity on first load for every platform that honours spares, so the figure shown

@@ -218,6 +218,10 @@ export function shouldShowControl(
     case 'dedup':
       return caps.supportsDedup
     case 'hotSpares':
+      // NOTE: no UI calls this. The hot-spare slider is gated on `usesDistributedSpares`
+      // (src/types/topology.ts) instead, and `supportsHotSpares` is true for all fifteen types
+      // so it carries no information today. The two mechanisms cannot simply be merged — see
+      // issue #130 and the note on DISTRIBUTED_SPARE_TOPOLOGIES.
       return caps.supportsHotSpares
     case 'serverCount':
       return caps.hasServerCount
