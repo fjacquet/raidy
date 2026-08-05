@@ -109,7 +109,8 @@
     "simulations": "Durchgeführte Simulationen",
     "clickToRun": "Klicken Sie auf \"Simulation starten\" zum Berechnen",
     "iterations": "Monte-Carlo-Iterationen",
-    "includesCorrelated": "Inkl. korrelierter Ausfälle & Rebuild-Stress"
+    "includesCorrelated": "Inkl. korrelierter Ausfälle & Rebuild-Stress",
+    "oddTargetNote": "Dieser Cluster hat eine ungerade Anzahl von Storage-Targets, sodass ein Target unpaarig bleibt und keine Buddy-Spiegelungsgutschrift erhält. Verwenden Sie eine gerade Anzahl von Storage-Targets für vollen Buddy-Schutz."
   },
   "power": {
     "title": "Energie & Nachhaltigkeit",

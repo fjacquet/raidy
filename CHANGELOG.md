@@ -20,6 +20,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   tolerance check in this file); each of the three now gets an explicit 15000ms timeout, the same
   treatment already applied to `beegfs_raid10 + buddy: survival does not improve as
   drivesPerTarget grows` for the analogous `--coverage`-instrumentation case.
+- **Odd BeeGFS storage-target counts no longer read as a resilience bug (#68).** Buddy-mirror
+  credit is correctly withheld when the storage-target count is odd (an unpaired target has no
+  buddy), but that made a 5-target cluster report worse survival than a 4-target one with no
+  explanation. The resilience panel now shows an explanatory note whenever a BeeGFS group
+  topology (`beegfs_raid6`, `beegfs_raidz2`, `beegfs_raid10`) has buddy mirroring on and an odd
+  storage-target count, telling the user an even count is needed for full buddy credit.
+  Translated in `en`/`fr`/`de`/`it`. Per-group heterogeneous state (giving the unpaired target
+  partial credit) was considered but not attempted: it would require the worker's group model to
+  carry a per-group tolerance instead of one scalar `parityPerGroup`, touching the failure-count,
+  URE, and rebuild-time logic the extensive superset-invariant proof comments in
+  `resilienceWorker.ts` depend on — more than a "contained change," so the conservative UI note is
+  the fix per the issue's own ruling.
 
 ### Documented
 

@@ -109,7 +109,8 @@
     "simulations": "Simulazioni eseguite",
     "clickToRun": "Clicca \"Avvia simulazione\" per calcolare",
     "iterations": "iterazioni Monte Carlo",
-    "includesCorrelated": "Include guasti correlati e stress di rebuild"
+    "includesCorrelated": "Include guasti correlati e stress di rebuild",
+    "oddTargetNote": "Questo cluster ha un numero dispari di target di storage, quindi un target resta spaiato e non riceve alcun credito di mirroring buddy. Usa un numero pari di target di storage per la piena protezione buddy."
   },
   "power": {
     "title": "Energia & Sostenibilità",

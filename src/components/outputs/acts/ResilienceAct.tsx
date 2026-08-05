@@ -116,6 +116,16 @@ export function ResilienceAct({
             </div>
           </div>
 
+          {/* Odd BeeGFS storage-target count: buddy credit withheld (issue #68) */}
+          {result.oddTargetCountNoBuddyCredit && (
+            <div className="pt-3 border-t border-slate-200 dark:border-surface-700">
+              <p className="text-xs text-amber-600 dark:text-amber-400 flex items-start gap-2">
+                <span aria-hidden="true">⚠</span>
+                <span>{t('resilience.oddTargetNote')}</span>
+              </p>
+            </div>
+          )}
+
           {/* Recommendations */}
           {result.recommendations.length > 0 && (
             <div className="pt-3 border-t border-slate-200 dark:border-surface-700">
