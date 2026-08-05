@@ -2650,6 +2650,45 @@ describe('Volumetry Engine - Error Handling', () => {
       expect(result.filesystemOverhead).toBeGreaterThan(0)
     })
 
+    describe('NetApp dataReductionRatio gating (#110)', () => {
+      // 8 x 1TB drives, RAID-DP: dataFraction = (8-2)/8 = 0.75, so pre-DRR usableCapacity
+      // (effectiveCapacity's input) is exactly 8e12 * 0.75 = 6e12 bytes. waflOverhead and
+      // snapshotReserve are zeroed so no other overhead perturbs that number, isolating the
+      // compression/dedup gate as the only thing that can move effectiveCapacity from here.
+      // dataReductionRatio: 2.5 is set on every case so a regression to the old ungated
+      // `return usableCapacity * netAppOptions.dataReductionRatio` is visible even when the
+      // gating flags are false — see capacityEnhancements.ts's `applyCompressionDedup`.
+      const baseNetAppOptions = {
+        ...DEFAULT_NETAPP_OPTIONS,
+        waflOverhead: 0,
+        snapshotReserve: 0,
+        dataReductionRatio: 2.5,
+      }
+
+      function netAppEffectiveCapacity(compression: boolean, dedup: boolean): number {
+        const input = createInput(8, { type: 'proprietary', level: 'netapp_raid_dp' })
+        input.netAppOptions = { ...baseNetAppOptions, compression, dedup }
+        return calculateVolumetry(input).effectiveCapacity
+      }
+
+      it('applies the ratio when compression is on (dedup off)', () => {
+        expect(netAppEffectiveCapacity(true, false)).toBe(15_000_000_000_000)
+      })
+
+      it('does NOT apply the ratio when both compression and dedup are off', () => {
+        // This is the regression case: before the #110 fix, dataReductionRatio applied
+        // unconditionally, so this configuration incorrectly returned 15e12 instead of the
+        // ungated 6e12 pre-DRR capacity.
+        expect(netAppEffectiveCapacity(false, false)).toBe(6_000_000_000_000)
+      })
+
+      it('applies the ratio when dedup is on (compression off) — the OR case', () => {
+        // Pins the gate as compression || dedup, not compression && dedup: a future edit that
+        // silently swaps the OR for an AND would under-apply the ratio here.
+        expect(netAppEffectiveCapacity(false, true)).toBe(15_000_000_000_000)
+      })
+    })
+
     it('should handle all supported filesystems', () => {
       const topologies = [
         { type: 'standard' as const, level: 'RAID5' as const },
@@ -2864,7 +2903,6 @@ describe('Volumetry Engine - Error Handling', () => {
         powervaultOptions: DEFAULT_POWERVAULT_OPTIONS,
         nutanixOptions: {
           ...DEFAULT_NUTANIX_OPTIONS,
-          replicationFactor: 2,
           clusterType: 'hybrid',
           compression: false,
           compressionRatio: 1.0,
@@ -2923,7 +2961,6 @@ describe('Volumetry Engine - Error Handling', () => {
         powervaultOptions: DEFAULT_POWERVAULT_OPTIONS,
         nutanixOptions: {
           ...DEFAULT_NUTANIX_OPTIONS,
-          replicationFactor: 3,
           clusterType: 'all-flash', // No tiering
           compression: false,
           compressionRatio: 1.0,
@@ -2967,7 +3004,6 @@ describe('Volumetry Engine - Error Handling', () => {
         powervaultOptions: DEFAULT_POWERVAULT_OPTIONS,
         nutanixOptions: {
           ...DEFAULT_NUTANIX_OPTIONS,
-          replicationFactor: 3,
           clusterType: 'hybrid',
           compression: false,
           compressionRatio: 1.0,

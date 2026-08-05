@@ -181,12 +181,16 @@ export interface ZfsOptions {
   dedup: boolean
   /** Record size in bytes */
   recordsize: number
-  /** Special allocation class enabled (metadata on fast flash) */
+  /**
+   * Special allocation class enabled (metadata on fast flash).
+   *
+   * Kept informational by decision: a real ZFS pool tunable a pool architect
+   * expects to record (metadata/small-block allocation class on a separate fast
+   * vdev), but its capacity effect depends on the special vdev's own size and the
+   * pool's small-block mix, neither of which this tool models. See the hint text
+   * in `ZfsOptionsPanel.tsx`.
+   */
   specialVdev: boolean
-  /** Separate SLOG (ZIL) device for sync writes */
-  slogDevice: boolean
-  /** L2ARC read cache device (SSD/NVMe) */
-  l2arcDevice: boolean
   /** Maximum recommended occupation before performance degradation (default 80%) */
   maxOccupation: number
 }
@@ -396,7 +400,14 @@ export interface VsanOptions {
   dedup: boolean
   /** Expected deduplication ratio (1.0 = none, 1.2 = 1.2:1) */
   dedupRatio: number
-  /** Enable encryption */
+  /**
+   * Enable encryption (Data-at-Rest Encryption).
+   *
+   * Kept informational by decision: a real vSAN cluster setting an operator expects
+   * to record, but vSAN DARE is applied below the dedup/compression layer with no
+   * published capacity tax in VMware's sizing guidance, so there is no citable
+   * overhead to model. See the hint text in `VsanOptionsPanel.tsx`.
+   */
   encryption: boolean
   /** Tiering configuration (disk groups with cache + capacity) - OSA only */
   tiering?: TieringConfig
@@ -408,18 +419,30 @@ export interface SynologyOptions {
   filesystem: 'btrfs' | 'ext4'
   /** System partition size per disk in bytes (20-30GB) */
   systemPartitionSize: number
-  /** NAS model series (J series has CPU limitations) */
+  /**
+   * NAS model series (J series has CPU limitations).
+   *
+   * Kept informational by decision: a real Synology model choice worth recording
+   * for the sizing sheet, but this tool applies the same `filesystem`/parity math
+   * regardless of series — there is no citable per-series capacity or throughput
+   * delta to apply. See the hint text in `SynologyOptionsPanel.tsx`.
+   */
   modelSeries: 'j' | 'value' | 'plus' | 'xs'
-  /** Enable SSD cache */
+  /**
+   * Enable SSD cache.
+   *
+   * Kept informational by decision, together with `cacheMode`: SSD read/write cache
+   * accelerates hot-data access on real DSM but is additive hardware, not a
+   * reduction of the HDD pool's usable capacity, so it does not change any number
+   * this tool computes. See the hint text in `SynologyOptionsPanel.tsx`.
+   */
   ssdCache: boolean
-  /** SSD cache mode */
+  /** SSD cache mode — see `ssdCache` */
   cacheMode: 'read_only' | 'read_write'
 }
 
 /** Dell ObjectScale-specific configuration options (Object Storage S3) - per SME specs */
 export interface ObjectScaleOptions {
-  /** Average object size in KB (10KB - 1GB, impacts performance calculations) */
-  objectSizeKB: number
   /** System overhead percentage (10-20% for formatting, metadata, rebalance, rebuild) */
   systemOverheadPercent: number
   /** Number of sites in Replication Group (1-8, impacts geo-overhead) */
@@ -432,7 +455,15 @@ export interface ObjectScaleOptions {
 
 /** Dell PowerStore-specific configuration options (Block Storage) */
 export interface PowerStoreOptions {
-  /** Hardware model class — determines default system overhead */
+  /**
+   * Hardware model class.
+   *
+   * Not read directly by any engine — it is a UI preset picker. Selecting a model
+   * in `DellOptionsPanel.tsx` writes `POWERSTORE_MODEL_OVERHEAD[model]` into
+   * `systemOverheadPercent` (unless `model` is `'custom'`), and `systemOverheadPercent`
+   * is what `overheadCalculator.ts` actually reads. The field itself is still worth
+   * persisting (it drives the preset and is shown back to the user), so it stays.
+   */
   model: 'powerstore_3200' | 'powerstore_5200t' | 'powerstore_5200q' | 'custom'
   /** Enable compression */
   compression: boolean
@@ -460,19 +491,48 @@ export interface PowerScaleOptions {
   dedupRatio: number
   /** Snapshot reserve percentage */
   snapshotReservePercent: number
-  /** SmartQuotas enabled */
+  /**
+   * SmartQuotas enabled.
+   *
+   * Kept informational by decision: a real PowerScale administrative feature (quota
+   * enforcement policy), but it is an access-control mechanism, not a capacity
+   * multiplier — it does not change how much usable capacity this tool computes.
+   * See the hint text in the PowerScale section of `DellOptionsPanel.tsx`.
+   */
   smartQuotas: boolean
-  /** SyncIQ replication enabled */
+  /**
+   * SyncIQ (async replication) enabled.
+   *
+   * Kept informational by decision: this tool sizes a single site/cluster only, so
+   * a DR-target's capacity is out of scope by design — the same reason no other
+   * platform's replication-target sizing is modeled here.
+   */
   syncIQ: boolean
 }
 
 /** NetApp storage-specific configuration options */
 export interface NetAppOptions {
-  /** Storage platform */
+  /**
+   * Storage platform.
+   *
+   * Kept informational by decision: a real ONTAP platform choice worth recording,
+   * but this tool's WAFL overhead and DRR math (`filesystem-overhead.ts`,
+   * `capacityEnhancements.ts`) apply uniformly across platforms — there is no
+   * citable per-platform capacity delta to model. See the hint text in
+   * `NetAppOptionsPanel.tsx`.
+   */
   platform: 'aff_a' | 'aff_c' | 'fas' | 'asa' | 'e_series'
-  /** RAID type */
+  /** RAID type — read by `validators.ts` (RAID-TEC recommended above 10TB drives) */
   raidType: 'raid_dp' | 'raid_tec'
-  /** Advanced Drive Partitioning version */
+  /**
+   * Advanced Drive Partitioning version.
+   *
+   * Kept informational by decision: real ADP root-data partitioning recovers most
+   * of the capacity a dedicated root aggregate would otherwise cost, but the exact
+   * recovered fraction depends on shelf/node layout this tool does not model, so
+   * `waflOverhead` stays a flat constant regardless of this setting. See the hint
+   * text in `NetAppOptionsPanel.tsx`.
+   */
   adpVersion: 'none' | 'adpv1' | 'adpv2'
   /**
    * Snapshot reserve as a FRACTION of capacity after parity (0–0.2; default 0.05 = 5%, or 0
@@ -481,21 +541,40 @@ export interface NetAppOptions {
    * there. The NetApp panel's slider works in percent and converts on both sides.
    */
   snapshotReserve: number
-  /** Data Reduction Ratio (1.0 = none, 3.0 = 3:1 compression+dedup) */
+  /**
+   * Data Reduction Ratio (1.0 = none, 3.0 = 3:1 compression+dedup). Gated in
+   * `capacityEnhancements.ts` by `compression || dedup`, matching every other
+   * platform's `<flag> ? ratio : 1.0` pattern.
+   */
   dataReductionRatio: number
   /** WAFL filesystem overhead (0.01-0.02 = 1-2%) */
   waflOverhead: number
-  /** Enable inline compression */
+  /** Enable inline compression — gates `dataReductionRatio`, see its doc comment */
   compression: boolean
-  /** Enable inline deduplication */
+  /** Enable inline deduplication — gates `dataReductionRatio`, see its doc comment */
   dedup: boolean
-  /** Enable zero-block detection */
+  /**
+   * Enable zero-block detection.
+   *
+   * Kept informational by decision: a real ONTAP data-reduction feature, but its
+   * contribution is already folded into whatever `dataReductionRatio` the user
+   * enters — there is no separate, citable zero-block fraction to split out and
+   * apply on its own. See the hint text in `NetAppOptionsPanel.tsx`.
+   */
   zeroDetection: boolean
 }
 
 /** Ceph storage-specific configuration options */
 export interface CephOptions {
-  /** Storage backend */
+  /**
+   * Storage backend.
+   *
+   * Kept informational by decision: BlueStore vs FileStore is a real architecture
+   * choice (FileStore is legacy/deprecated upstream), but this tool has no
+   * per-backend overhead split to apply — `journalOnSsd` and `walDbOffload` already
+   * carry the placement-tuning half of this decision. See the hint text in
+   * `CephOptionsPanel.tsx`.
+   */
   backend: 'bluestore' | 'filestore'
   /** Pool type */
   poolType: 'replicated' | 'erasure'
@@ -509,9 +588,24 @@ export interface CephOptions {
   compression: boolean
   /** Compression algorithm */
   compressionAlgorithm: 'none' | 'snappy' | 'zstd' | 'lz4'
-  /** Enable encryption */
+  /**
+   * Enable encryption.
+   *
+   * Kept informational by decision: a real Ceph OSD-level encryption setting an
+   * operator expects to record, but Ceph's dm-crypt layer carries no published
+   * capacity tax, so there is no citable overhead to model. See the hint text in
+   * `CephOptionsPanel.tsx`.
+   */
   encryption: boolean
-  /** OSD journal on SSD */
+  /**
+   * OSD journal on SSD (legacy FileStore concept).
+   *
+   * Kept informational by decision: for the modern BlueStore backend (the default,
+   * see `backend`), `walDbOffload` below is the field this tool actually models for
+   * WAL/DB tiering — `journalOnSsd` is FileStore's separate journal-partition
+   * concept, superseded by `walDbOffload` for BlueStore and left unmodelled the
+   * same way `backend` is. See the hint text in `CephOptionsPanel.tsx`.
+   */
   journalOnSsd: boolean
   /** WAL/DB offload to separate NVMe (for HDD OSDs) */
   walDbOffload: boolean
@@ -531,7 +625,15 @@ export interface LonghornOptions {
   snapshotHeadroom: number
   /** Growth headroom G ≥ 1.0 — advisory only, never subtracted from usable */
   growthHeadroom: number
-  /** Storage Over-Provisioning % — advisory display only (thin-provisioning scheduling) */
+  /**
+   * Storage Over-Provisioning % (Longhorn's thin-provisioning scheduling setting).
+   *
+   * Kept informational by decision: it is read by `src/engines/volumetry/index.ts`
+   * and echoed into `longhornDetails.overProvisioningPercent` for the results panel,
+   * but it does not change any computed usable-capacity number — no formula in this
+   * tool derives a schedulable/provisionable capacity from it. See the hint text in
+   * `LonghornOptionsPanel.tsx`.
+   */
   overProvisioningPercent: number
 }
 
@@ -651,16 +753,10 @@ export interface PowerFlexOptions {
   protectionMode: 'mirror' | 'erasure'
   /** Mirror copies (for mirror mode) */
   mirrorCopies: 2 | 3
-  /** Erasure coding scheme (for erasure mode) */
-  ecScheme: '4_1' | '4_2' | '8_2' | '12_4'
   /** Enable compression (Ultra mode) */
   compression: boolean
   /** Compression ratio (1.0 = none, 2.0 = 2:1, 4.0 = 4:1) */
   compressionRatio: number
-  /** Storage pools count */
-  storagePools: number
-  /** Fault sets (for distributed placement) */
-  faultSets: number
   /** Fine Granularity metadata overhead (12-15% for FG mode) */
   fgOverhead: number
 }
@@ -669,12 +765,6 @@ export interface PowerFlexOptions {
 export interface NutanixOptions {
   /** Cluster configuration: All-Flash or Hybrid */
   clusterType: 'all-flash' | 'hybrid'
-  /** Replication Factor (RF2 or RF3) */
-  replicationFactor: 2 | 3
-  /** Enable Erasure Coding (EC-X) for cold data */
-  erasureCoding: boolean
-  /** EC-X stripe configuration (only if erasureCoding is true) */
-  ecStripe: '4_1' | '6_2'
   /** Enable inline compression */
   compression: boolean
   /** Expected compression ratio (1.0 = none, 1.5 = 1.5:1) */
@@ -692,6 +782,17 @@ export interface NutanixOptions {
 }
 
 /** Dell PowerVault ME5 configuration options */
+/**
+ * Dell PowerVault ME5 options.
+ *
+ * Every field below is kept informational by decision: they are real ME5 hardware
+ * and licensing choices worth recording on a sizing sheet, but `overheadCalculator.ts`
+ * models ME5 with a single flat ~1% metadata overhead (see the "PowerVault ME5:
+ * minimal metadata overhead" comment in `filesystem-overhead.ts`) regardless of
+ * chassis, controller count, tiering, cache, or provisioning mode — there is no
+ * per-option capacity or performance delta published for ME5 to model instead. See
+ * the hint text in `DellOptionsPanel.tsx`'s PowerVault section.
+ */
 export interface PowerVaultOptions {
   /** Model: ME5212 (12 drives), ME5224 (24 drives), ME5284 (84 drives) */
   model: 'ME5212' | 'ME5224' | 'ME5284'
@@ -731,8 +832,6 @@ export const DEFAULT_ZFS_OPTIONS: ZfsOptions = {
   dedup: false,
   recordsize: 131072, // 128K
   specialVdev: false,
-  slogDevice: false,
-  l2arcDevice: false,
   maxOccupation: 80, // Performance degrades beyond 80%
 }
 
@@ -766,7 +865,6 @@ export const DEFAULT_VSAN_OPTIONS: VsanOptions = {
 
 /** Default ObjectScale options - per SME specs */
 export const DEFAULT_OBJECTSCALE_OPTIONS: ObjectScaleOptions = {
-  objectSizeKB: 1024, // 1MB average object size
   systemOverheadPercent: 15, // 10-20% for formatting, metadata, rebalance, rebuild
   sites: 1, // Single site (1-8 supported for geo-replication)
   compression: false,
@@ -869,20 +967,24 @@ export const DEFAULT_POWERFLEX_OPTIONS: PowerFlexOptions = {
   granularity: 'medium',
   protectionMode: 'mirror',
   mirrorCopies: 2, // Fine granularity only supports 2-way mirror
-  ecScheme: '8_2',
   compression: true,
   compressionRatio: 2.0, // 2:1 compression
-  storagePools: 1,
-  faultSets: 1, // Fault sets are optional (1 = no fault sets, distributed placement)
   fgOverhead: 0.12, // 12% FG metadata overhead
 }
 
-/** Default Nutanix AOS options */
+/**
+ * Default Nutanix AOS options.
+ *
+ * RF/EC-X configuration is carried entirely by the `nutanix_*` topology `level`
+ * (`nutanix_rf2` / `nutanix_rf3` / `nutanix_ec_rf2` / `nutanix_ec_rf3`, see
+ * `nutanixStrategy` in src/engines/volumetry/strategies/nutanix.ts) — there used to
+ * be a parallel `replicationFactor`/`erasureCoding`/`ecStripe` trio on this options
+ * object that duplicated that choice but had no UI control and no reader anywhere;
+ * it was removed rather than wired, since the topology level is already the single
+ * source of truth for RF/EC-X.
+ */
 export const DEFAULT_NUTANIX_OPTIONS: NutanixOptions = {
   clusterType: 'all-flash',
-  replicationFactor: 2, // RF2 is standard
-  erasureCoding: false,
-  ecStripe: '4_1', // 4:1 striping (75% efficiency)
   compression: true,
   compressionRatio: 1.5, // 1.5:1 inline compression
   dedup: false,

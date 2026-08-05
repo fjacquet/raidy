@@ -149,8 +149,6 @@ const ZfsOptionsSchema = z.object({
   dedup: z.boolean(),
   recordsize: z.number().int().positive().finite(),
   specialVdev: z.boolean(),
-  slogDevice: z.boolean(),
-  l2arcDevice: z.boolean(),
   maxOccupation: z.number().int().min(1).max(100).finite(),
 })
 
@@ -250,11 +248,8 @@ const PowerFlexOptionsSchema = z.object({
   granularity: z.enum(['medium', 'fine']),
   protectionMode: z.enum(['mirror', 'erasure']),
   mirrorCopies: z.union([z.literal(2), z.literal(3)]),
-  ecScheme: z.enum(['4_1', '4_2', '8_2', '12_4']),
   compression: z.boolean(),
   compressionRatio: z.number().min(1).max(10).finite(),
-  storagePools: z.number().int().min(1).max(100).finite(),
-  faultSets: z.number().int().min(1).max(100).finite(),
   fgOverhead: z.number().min(0).max(1).finite(),
 })
 
@@ -310,9 +305,6 @@ const SynologyOptionsSchema = z.object({
  */
 const NutanixOptionsSchema = z.object({
   clusterType: z.enum(['all-flash', 'hybrid']),
-  replicationFactor: z.union([z.literal(2), z.literal(3)]),
-  erasureCoding: z.boolean(),
-  ecStripe: z.enum(['4_1', '6_2']),
   compression: z.boolean(),
   compressionRatio: z.number().min(1).max(10).finite(),
   dedup: z.boolean(),
@@ -326,7 +318,6 @@ const NutanixOptionsSchema = z.object({
  * ObjectScale options schema
  */
 const ObjectScaleOptionsSchema = z.object({
-  objectSizeKB: z.number().int().positive().finite(),
   systemOverheadPercent: z.number().min(0).max(100).finite(),
   sites: z.number().int().min(1).max(8).finite(),
   compression: z.boolean(),
