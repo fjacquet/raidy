@@ -24,7 +24,7 @@ const performance: PerformanceResult = {
   mediaCeilingMBs: 0,
   mediaCeilingIOPS: 0,
   layers: [],
-  bottleneckDescription: '',
+  bottleneck: { kind: 'none' as const },
 }
 const sustainability: SustainabilityResult = {
   annualEnergyKwh: 5000,

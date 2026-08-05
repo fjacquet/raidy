@@ -10,6 +10,7 @@ import i18n from '@/i18n'
 import type { Drive } from '@/types/drive'
 import type { CalculationResults } from '@/types/results'
 import type { Topology, ZfsOptions } from '@/types/topology'
+import { formatBottleneck } from './formatBottleneck'
 import { formatBytes as formatBytesUtil, type UnitSystem } from './units'
 
 // Swiss locale mapping for number formatting
@@ -43,6 +44,14 @@ function formatNumber(value: number): string {
  */
 function t(key: string, options?: Record<string, string | number>): string {
   return i18n.t(`pdf:${key}`, options) as string
+}
+
+/**
+ * The bottleneck sentence lives in the `output` namespace, shared with the dashboard, rather than
+ * being duplicated into `pdf:` — see `formatBottleneck` (#139).
+ */
+function tOutput(key: string, options?: Record<string, string | number>): string {
+  return i18n.t(`output:${key}`, options) as string
 }
 
 /**
@@ -188,7 +197,7 @@ export function exportToPdf(config: ExportConfig): void {
       ],
       [t('performance.maxReadIops'), formatNumber(performance.maxReadIOPS)],
       [t('performance.maxWriteIops'), formatNumber(performance.maxWriteIOPS)],
-      [t('performance.bottleneck'), performance.bottleneckDescription],
+      [t('performance.bottleneck'), formatBottleneck(performance.bottleneck, tOutput)],
     ],
     theme: 'striped',
     headStyles: { fillColor: [30, 64, 175] },

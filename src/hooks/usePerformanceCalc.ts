@@ -65,7 +65,7 @@ export function usePerformanceCalc(): PerformanceResult {
         mediaCeilingMBs: 0,
         mediaCeilingIOPS: 0,
         layers: [],
-        bottleneckDescription: 'No drive selected',
+        bottleneck: { kind: 'noDrive' },
       }
     }
 
@@ -134,7 +134,7 @@ export function usePerformanceCalc(): PerformanceResult {
         mediaCeilingMBs: 0,
         mediaCeilingIOPS: 0,
         layers: [],
-        bottleneckDescription: 'Performance calculation failed',
+        bottleneck: { kind: 'error' },
       }
     }
   }, [

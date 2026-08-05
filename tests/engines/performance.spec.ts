@@ -478,9 +478,14 @@ describe('Performance Engine - Bottleneck Analysis', () => {
     const input = createInput(4, { type: 'standard', level: 'RAID5' })
     const result = calculatePerformance(input)
 
-    expect(result.bottleneckDescription).toBeDefined()
-    expect(typeof result.bottleneckDescription).toBe('string')
-    expect(result.bottleneckDescription.length).toBeGreaterThan(0)
+    // Structured since #139: the engine reports WHICH layer binds, and the render sites write
+    // the sentence. Asserting the shape rather than a string length also makes this test mean
+    // something — a non-empty English string was true of the old hardcoded prose by construction.
+    expect(result.bottleneck.kind).toBe('layer')
+    if (result.bottleneck.kind === 'layer') {
+      expect(result.bottleneck.layerName.length).toBeGreaterThan(0)
+      expect(result.bottleneck.throughputMBs).toBeGreaterThan(0)
+    }
   })
 })
 

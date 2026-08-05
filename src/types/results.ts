@@ -130,6 +130,29 @@ export interface BottleneckLayer {
   utilization: number
 }
 
+/**
+ * The bottleneck outcome as data rather than a sentence (#139).
+ *
+ * It used to be a pre-rendered English string — `"Bottleneck: Controller (8000 MB/s)"` — built in
+ * the engine and shown verbatim in the dashboard and the PDF, so French, German and Italian users
+ * read English there. The engine cannot fix that itself: `src/engines/**` is pure functions with
+ * no i18n, and the PDF path would freeze whatever language was current when it ran. So the engine
+ * reports what it found and each render site writes the sentence.
+ *
+ * `layerName` stays untranslated on purpose: it is `Media (Drives)`, a controller model, `PCIe
+ * gen5 x16` or `Network (100GbE)` — technical identifiers the project convention leaves alone.
+ * Only the prose around it needs keys.
+ */
+export type BottleneckStatus =
+  /** A layer binds, at `throughputMBs`. */
+  | { kind: 'layer'; layerName: string; throughputMBs: number }
+  /** Layers were computed but none could be singled out. */
+  | { kind: 'none' }
+  /** No drive is selected, so nothing was computed. */
+  | { kind: 'noDrive' }
+  /** The calculation threw; the result is a zero state. */
+  | { kind: 'error' }
+
 export interface PerformanceResult {
   /** Maximum system read throughput in MB/s */
   maxReadThroughputMBs: number
@@ -155,8 +178,8 @@ export interface PerformanceResult {
   mediaCeilingIOPS: number
   /** Bottleneck analysis for each layer */
   layers: BottleneckLayer[]
-  /** Overall bottleneck description */
-  bottleneckDescription: string
+  /** Which layer binds, or why no figure could be produced. See {@link BottleneckStatus}. */
+  bottleneck: BottleneckStatus
   /** XFS stripe alignment recommendations */
   xfsAlignment?: {
     sunit: number

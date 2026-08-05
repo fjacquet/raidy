@@ -15,27 +15,39 @@ import { OptionsSection } from './dellShared'
 
 type PowerVaultLevel = Extract<Topology, { type: 'powervault' }>['level']
 
-/** Level descriptions, keyed exhaustively so a new level cannot silently render an empty box. */
-const LEVEL_DESCRIPTIONS: Record<PowerVaultLevel, { title: string; body: string }> = {
+/**
+ * i18n keys per level, exhaustive so a new level cannot silently render an empty box (#142).
+ *
+ * The paths are written out in FULL rather than assembled from the level name, deliberately: the
+ * orphan-key test scans the source for literal keys, and a template like
+ * `` t(`powervault.level.${key}.body`) `` is invisible to it. Written this way the scan sees every
+ * key, so deleting a level's translations without deleting its entry here fails the suite —
+ * which is the same reason `topologyConstants.ts` spells its keys out.
+ *
+ * The RAID names and `ADAPT` live in the locale files' `title` rather than being hardcoded here.
+ * They are technical terms, but they sit inside a sentence whose order a translator may need to
+ * change.
+ */
+const LEVEL_KEYS: Record<PowerVaultLevel, { title: string; body: string }> = {
   powervault_raid1: {
-    title: 'RAID 1:',
-    body: '2-way mirror with 50% storage efficiency. Simple, fast rebuilds. Best for boot volumes and small deployments.',
+    title: 'powervault.level.raid1.title',
+    body: 'powervault.level.raid1.body',
   },
   powervault_raid5: {
-    title: 'RAID 5:',
-    body: 'Single distributed parity with (n-1)/n efficiency. 4x write penalty. Not recommended for write-intensive workloads.',
+    title: 'powervault.level.raid5.title',
+    body: 'powervault.level.raid5.body',
   },
   powervault_raid6: {
-    title: 'RAID 6:',
-    body: 'Dual distributed parity with (n-2)/n efficiency. 6x write penalty. Better data protection for large capacity drives.',
+    title: 'powervault.level.raid6.title',
+    body: 'powervault.level.raid6.body',
   },
   powervault_raid10: {
-    title: 'RAID 10:',
-    body: 'Mirrored stripes with 50% efficiency. Best random IOPS performance. Ideal for databases.',
+    title: 'powervault.level.raid10.title',
+    body: 'powervault.level.raid10.body',
   },
   powervault_adapt: {
-    title: 'ADAPT:',
-    body: 'Distributed RAID with ~87% efficiency. Spare capacity distributed across all drives. Fastest rebuilds (8-10x faster). Requires 12-128 drives.',
+    title: 'powervault.level.adapt.title',
+    body: 'powervault.level.adapt.body',
   },
 }
 
@@ -45,20 +57,20 @@ export function PowerVaultOptionsPanel({
   topology: Extract<Topology, { type: 'powervault' }>
 }) {
   const { t } = useTranslation('topology')
-  const description = LEVEL_DESCRIPTIONS[topology.level]
+  const keys = LEVEL_KEYS[topology.level]
 
   return (
     <OptionsSection title={t('powervault.title')}>
       <div className="p-3 bg-white dark:bg-surface-800 rounded-lg text-xs text-slate-500 dark:text-slate-400">
         <p>
-          <strong className="text-slate-600 dark:text-slate-300">{description.title}</strong>{' '}
-          {description.body}
+          <strong className="text-slate-600 dark:text-slate-300">{t(keys.title)}</strong>{' '}
+          {t(keys.body)}
         </p>
       </div>
 
       <div className="p-3 bg-amber-900/20 border border-amber-700/30 rounded-lg text-xs text-amber-300">
-        <strong>Note:</strong> PowerVault ME5 does not support inline compression or deduplication.
-        For data reduction features, consider PowerStore or PowerScale.
+        <strong>{t('powervault.noDataReduction.label')}</strong>{' '}
+        {t('powervault.noDataReduction.body')}
       </div>
     </OptionsSection>
   )

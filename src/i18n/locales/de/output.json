@@ -86,7 +86,11 @@
     "sustainedHint": "Dauerlast = was das System hält, sobald der Cache voll ist. Dimensionieren Sie kontinuierliche Ingestion anhand von Dauerlast, nicht Burst.",
     "bottleneck": {
       "title": "Engpassanalyse",
-      "controller": "Controller-Limit"
+      "controller": "Controller-Limit",
+      "layer": "Engpass: {{layer}} ({{throughput}} MB/s)",
+      "none": "Kein Engpass erkannt",
+      "noDrive": "Kein Laufwerk ausgewählt",
+      "error": "Performance-Berechnung fehlgeschlagen"
     }
   },
   "resilience": {

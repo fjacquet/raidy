@@ -265,6 +265,32 @@
       "raid5": "RAID 5: parità distribuita singola con efficienza (n-1)/n. Penalità di scrittura 4x. Non raccomandato per workload a scrittura intensiva.",
       "raid6": "RAID 6: parità distribuita doppia con efficienza (n-2)/n. Penalità di scrittura 6x. Migliore protezione dati per dischi ad alta capacità.",
       "raid10": "RAID 10: stripe con mirror, efficienza 50%. Migliori prestazioni IOPS casuali. Ideale per database."
+    },
+    "level": {
+      "raid1": {
+        "title": "RAID 1:",
+        "body": "Mirror a 2 vie con 50% di efficienza di storage. Semplice, ricostruzioni rapide. Ideale per volumi di avvio e piccole installazioni."
+      },
+      "raid5": {
+        "title": "RAID 5:",
+        "body": "Parità singola distribuita con efficienza (n-1)/n. Penalità di scrittura 4x. Sconsigliato per carichi con molte scritture."
+      },
+      "raid6": {
+        "title": "RAID 6:",
+        "body": "Doppia parità distribuita con efficienza (n-2)/n. Penalità di scrittura 6x. Protezione migliore per dischi di grande capacità."
+      },
+      "raid10": {
+        "title": "RAID 10:",
+        "body": "Stripe con mirroring, 50% di efficienza. Migliori IOPS casuali. Ideale per i database."
+      },
+      "adapt": {
+        "title": "ADAPT:",
+        "body": "RAID distribuito con efficienza ~87%. Capacità di spare distribuita su tutti i dischi. Ricostruzioni più rapide (8-10 volte). Richiede da 12 a 128 dischi."
+      }
+    },
+    "noDataReduction": {
+      "label": "Nota:",
+      "body": "PowerVault ME5 non supporta compressione né deduplica inline. Per la riduzione dei dati valutare PowerStore o PowerScale."
     }
   },
   "objectscale": {
@@ -301,7 +327,13 @@
       "description": "Stripe mirror, 50% efficienza"
     },
     "model": "Modello",
-    "systemOverhead": "Overhead di sistema"
+    "systemOverhead": "Overhead di sistema",
+    "hint": {
+      "model3200": "3200: fascia entry-level, 5% di overhead di sistema",
+      "model5200t": "5200T: all-flash serie T, 7% di overhead di sistema",
+      "model5200q": "5200Q: quad-controller, 5% di overhead di sistema (riferimento Dell Sizer)",
+      "custom": "Personalizzato: {{percent}}% definito dall’utente"
+    }
   },
   "powerscale": {
     "title": "Opzioni PowerScale",
@@ -457,7 +489,21 @@
       "medium": "Medium Granularity (1MB): modalità standard con minore overhead di metadati. Supporta mirroring a 2 e 3 vie.",
       "fine": "Fine Granularity (8KB): migliore per I/O casuale di piccole dimensioni. Supporta solo mirroring a 2 vie. 12-15% di overhead metadati."
     },
-    "fgOverhead": "Overhead metadati FG"
+    "fgOverhead": "Overhead metadati FG",
+    "mode": {
+      "medium": {
+        "title": "Granularità media (1 MB):",
+        "body": "Modalità standard con minor overhead di metadati. Supporta mirroring a 2 e 3 vie."
+      },
+      "fine": {
+        "title": "Granularità fine (8 KB):",
+        "body": "Migliore per piccole I/O casuali. Solo mirroring a 2 vie. Overhead di metadati del 12-15%."
+      },
+      "ec": {
+        "title": "Erasure coding:",
+        "body": "Maggiore efficienza di capacità ma IOPS inferiori di circa il 30% per overhead della CPU. Richiede PowerFlex 4.5+."
+      }
+    }
   },
   "netapp": {
     "title": "Opzioni NetApp ONTAP",
