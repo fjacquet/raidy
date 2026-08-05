@@ -438,9 +438,7 @@
     "snapshotHeadroom": "Snapshot-Reserve",
     "snapshotHeadroomValue": "+{{pct}}% für Snapshot-Ketten reserviert",
     "growthHeadroom": "Wachstumsreserve (Hinweis)",
-    "growthHeadroomValue": "+{{pct}}% Wachstum (nicht vom Nutzbaren abgezogen)",
-    "overProvisioning": "Overprovisioning (Hinweis)",
-    "overProvisioningValue": "Thin-Provisioning-Grenze {{pct}}%"
+    "growthHeadroomValue": "+{{pct}}% Wachstum (nicht vom Nutzbaren abgezogen)"
   },
   "beegfs": {
     "title": "BeeGFS-Optionen",
@@ -451,15 +449,6 @@
     "storageBuddyMirrorHint": "Synchrone Replikation zwischen Paaren von Storage-Targets auf unterschiedlichen Knoten. Halbiert die nutzbare Kapazität.",
     "metadataBuddyMirror": "Metadata Buddy Mirroring",
     "metadataBuddyMirrorHint": "Synchrone Replikation zwischen Paaren von Metadata-Targets. Ohne Auswirkung auf die Datenkapazität.",
-    "chunkSize": "Chunk-Grösse",
-    "chunkSizeTooltip": "Nur informativ — beeinflusst kein berechnetes Ergebnis.",
-    "chunkSizeHint": "Nur zur Information. Die Chunk-Grösse beeinflusst auf realer Hardware die sequenzielle Effizienz je Target, dieses Werkzeug modelliert die Engpasskette jedoch als Cluster-Aggregat und hat keine Ebene pro Datei, auf die eine Chunk-Grenze wirken könnte. Wird für Ihre Sizing-Unterlagen festgehalten, fliesst in keine Berechnung ein.",
-    "numTargets": "Anzahl Targets",
-    "numTargetsTooltip": "Nur informativ — beeinflusst kein berechnetes Ergebnis.",
-    "numTargetsHint": "Nur zur Information. Storage-Targets, über die eine Datei gestriped wird. Das begrenzt den Durchsatz einer einzelnen Datei, während alle hier gezeigten Performance-Werte Cluster-Aggregate sind, begrenzt durch die Gesamtzahl der Storage-Targets. Wird für Ihre Sizing-Unterlagen festgehalten, fliesst in keine Berechnung ein.",
-    "network": "Cluster-Interconnect",
-    "networkTooltip": "Nur informativ — beeinflusst kein berechnetes Ergebnis.",
-    "networkHint": "Nur zur Information. Die in den Berechnungen verwendete Bandbreite stammt aus der Einstellung Netzwerkgeschwindigkeit im Bereich Erweitert, nicht aus dieser Auswahl.",
     "fsOverhead": "Dateisystem-Overhead",
     "fsOverheadTooltip": "Metadaten-Overhead des auf jedem Storage-Target formatierten ext4/xfs-Dateisystems.",
     "fsOverheadHint": "Dateisystem-Overhead: {{percent}}%. Reduziert die nutzbare Kapazität — variiert je nach Inode-Verhältnis und Formatierungsoptionen der ext4/XFS-Storage-Targets.",
@@ -511,14 +500,6 @@
   },
   "netapp": {
     "title": "NetApp ONTAP-Optionen",
-    "platform": {
-      "label": "Plattform",
-      "aff_a": "AFF A-Series",
-      "aff_c": "AFF C-Series",
-      "fas": "FAS",
-      "asa": "ASA (SAN)",
-      "e_series": "E-Series"
-    },
     "platformDesc": {
       "aff_a": "All-Flash FAS A-Series: Hohe Performance",
       "aff_c": "All-Flash FAS C-Series: Kapazitätsoptimiert",
@@ -533,7 +514,6 @@
       "raid_tec": "Dreifache Parität: Empfohlen für Laufwerke > 10TB",
       "raid_dp": "Doppelte Parität: Standardschutz"
     },
-    "adp": "Erweiterte Laufwerkspartitionierung",
     "adpNone": "Keine",
     "adpV1": "ADP v1",
     "adpV2": "ADP v2 (Root-Data)",
@@ -547,7 +527,6 @@
     "snapshotAffNote": " (typisch für AFF)",
     "inlineCompression": "Inline-Kompression",
     "inlineDedup": "Inline-Deduplizierung",
-    "zeroDetection": "Zero-Block-Erkennung",
     "dataReductionRatio": "Datenreduktionsverhältnis",
     "dataReductionDesc": "Erwartetes DRR: {{ratio}}:1 (Kompression + Deduplizierung)",
     "waflOverhead": "WAFL-Overhead",
@@ -574,26 +553,11 @@
       "btrfs": "Btrfs: Snapshots, Datenschutz, ~4% Overhead",
       "ext4": "EXT4: Legacy, keine Snapshots, geringerer Overhead"
     },
-    "modelSeries": "Modellserie",
     "series": {
       "j": "J Series (Einstieg)",
       "value": "Value Series",
       "plus": "Plus Series",
       "xs": "XS/XS+ (Enterprise)"
-    },
-    "modelSeriesDesc": {
-      "j": "J Series: Einstiegsklasse, begrenzte CPU für RAID-Parität",
-      "value": "Value Series: Heim-/Kleinbüronutzung",
-      "plus": "Plus Series: KMU mit Btrfs-Support",
-      "xs": "XS Series: Enterprise mit hoher Performance"
-    },
-    "ssdCache": "SSD-Cache",
-    "cacheMode": "Cache-Modus",
-    "readOnly": "Nur Lesen",
-    "readWrite": "Lesen/Schreiben",
-    "cacheModeDesc": {
-      "readWrite": "Lese-/Schreib-Cache: Bessere Performance, benötigt 2 SSDs",
-      "readOnly": "Nur-Lese-Cache: Beschleunigt nur Lesevorgänge"
     },
     "systemPartition": "Systempartitionsgrösse",
     "systemPartitionDesc": "Systempartition pro Laufwerk: {{size}} GB"

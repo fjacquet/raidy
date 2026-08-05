@@ -9,11 +9,7 @@
  */
 
 import { useTranslation } from 'react-i18next'
-import { Label, SegmentedControl, Select, Slider, Toggle } from '@/components/common/FormControls'
-import {
-  NETAPP_ADP_OPTIONS,
-  NETAPP_PLATFORM_OPTIONS,
-} from '@/components/inputs/topology-options/topologyConstants'
+import { Label, SegmentedControl, Slider, Toggle } from '@/components/common/FormControls'
 import { useConfigStore } from '@/store'
 
 export function NetAppOptionsPanel() {
@@ -26,31 +22,6 @@ export function NetAppOptionsPanel() {
       <h4 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
         {t('netapp.title')}
       </h4>
-
-      <div className="space-y-2">
-        <Label htmlFor="netapp-platform">{t('netapp.platform')}</Label>
-        <Select
-          id="netapp-platform"
-          value={netAppOptions.platform}
-          options={NETAPP_PLATFORM_OPTIONS}
-          onChange={(v) =>
-            setNetAppOptions({
-              platform: v as 'aff_a' | 'aff_c' | 'fas' | 'asa' | 'e_series',
-            })
-          }
-        />
-        <p className="text-xs text-slate-500">
-          {netAppOptions.platform === 'aff_a'
-            ? 'All-Flash FAS A-Series: High performance'
-            : netAppOptions.platform === 'aff_c'
-              ? 'All-Flash FAS C-Series: Capacity optimized'
-              : netAppOptions.platform === 'fas'
-                ? 'Fabric-Attached Storage: Hybrid HDD/SSD'
-                : netAppOptions.platform === 'asa'
-                  ? 'All-Flash SAN Array: Block-only SAN'
-                  : 'E-Series: High-performance block storage'}
-        </p>
-      </div>
 
       <div className="space-y-2">
         <Label>{t('netapp.raidType')}</Label>
@@ -66,25 +37,6 @@ export function NetAppOptionsPanel() {
           {netAppOptions.raidType === 'raid_tec'
             ? 'Triple parity: Recommended for drives > 10TB'
             : 'Double parity: Standard protection'}
-        </p>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="netapp-adp" tooltip={th('netapp.adp')}>
-          {t('netapp.adp')}
-        </Label>
-        <Select
-          id="netapp-adp"
-          value={netAppOptions.adpVersion}
-          options={NETAPP_ADP_OPTIONS}
-          onChange={(v) => setNetAppOptions({ adpVersion: v as 'none' | 'adpv1' | 'adpv2' })}
-        />
-        <p className="text-xs text-slate-500">
-          {netAppOptions.adpVersion === 'adpv2'
-            ? 'ADP v2: Root-data partitioning, better capacity utilization'
-            : netAppOptions.adpVersion === 'adpv1'
-              ? 'ADP v1: Basic root partitioning'
-              : 'No partitioning: Traditional dedicated root drives'}
         </p>
       </div>
 
@@ -107,9 +59,6 @@ export function NetAppOptionsPanel() {
         />
         <p className="text-xs text-slate-500">
           Snapshot reserve: {Math.round(netAppOptions.snapshotReserve * 100)}%
-          {netAppOptions.platform.startsWith('aff') && netAppOptions.snapshotReserve === 0
-            ? ' (typical for AFF)'
-            : ''}
         </p>
       </div>
 
@@ -125,13 +74,6 @@ export function NetAppOptionsPanel() {
         label={t('netapp.inlineDedup')}
         checked={netAppOptions.dedup}
         onChange={(v) => setNetAppOptions({ dedup: v })}
-      />
-
-      <Toggle
-        id="netapp-zero-detection"
-        label={t('netapp.zeroDetection')}
-        checked={netAppOptions.zeroDetection}
-        onChange={(v) => setNetAppOptions({ zeroDetection: v })}
       />
 
       {(netAppOptions.compression || netAppOptions.dedup) && (

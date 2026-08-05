@@ -60,28 +60,6 @@ const ALLOWLIST: Record<string, string[]> = {
   DEFAULT_POWERSTORE_OPTIONS: [
     'model', // wired indirectly: UI preset writes systemOverheadPercent, which IS engine-read
   ],
-  DEFAULT_LONGHORN_OPTIONS: [
-    'overProvisioningPercent', // informational by decision — echoed to results, not used in any formula
-  ],
-  DEFAULT_SYNOLOGY_OPTIONS: [
-    'modelSeries', // informational by decision — same filesystem/parity math applies to every series
-    'ssdCache', // informational by decision — additive hardware, not a capacity reduction
-    'cacheMode', // informational by decision — see ssdCache
-  ],
-  DEFAULT_NETAPP_OPTIONS: [
-    'platform', // informational by decision — WAFL/DRR math applies uniformly across platforms
-    'adpVersion', // informational by decision — recovered fraction depends on layout, not modelled
-    'zeroDetection', // informational by decision — folded into the user-entered dataReductionRatio
-  ],
-  DEFAULT_BEEGFS_OPTIONS: [
-    // The original #78 precedent this whole allowlist mirrors: real BeeGFS tunables with real
-    // per-target/per-file effects on hardware, but this engine reports cluster aggregates only
-    // and has no per-file layer for them to act on. See BeeGfsOptionsPanel.tsx's hint text
-    // (chunkSizeHint/numTargetsHint/networkHint) and the doc comments on BeeGfsOptions itself.
-    'chunkSizeKb',
-    'numTargets',
-    'network',
-  ],
 }
 
 /** Files, outside src/engines and src/workers, known to be real (non-UI-setter) consumers. */

@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Removed
+- **Ten more inert controls, across NetApp, Synology, Longhorn and BeeGFS.** NetApp's Platform,
+  ADP version and Zero Detection; Synology's Model Series, SSD Cache and Cache Mode; Longhorn's
+  Over-Provisioning; and BeeGFS's Chunk Size, Number of Targets and Network fabric. The BeeGFS
+  three are the original #78 precedent this whole sweep follows — real tunables with real
+  hardware effects that this engine, reporting cluster aggregates, has no honest model for.
+  Longhorn's Over-Provisioning was echoed into the Longhorn results card, so **that output row
+  is gone too**: it displayed a number the user can no longer influence. **No calculated figure
+  changes.**
 - **Five more inert controls: Ceph's Backend, Encryption and Journal-on-SSD, vSAN's Encryption,
   and ZFS's Special vdev.** Each was a real platform feature the tool does not model — dm-crypt
   and vSAN DARE carry no published capacity tax, BlueStore-vs-FileStore has no per-backend

@@ -8,8 +8,7 @@
  */
 
 import { useTranslation } from 'react-i18next'
-import { Label, SegmentedControl, Select, Slider, Toggle } from '@/components/common/FormControls'
-import { SYNOLOGY_MODEL_OPTIONS } from '@/components/inputs/topology-options/topologyConstants'
+import { Label, SegmentedControl, Slider } from '@/components/common/FormControls'
 import { useConfigStore } from '@/store'
 
 export function SynologyOptionsPanel() {
@@ -39,51 +38,6 @@ export function SynologyOptionsPanel() {
             : 'EXT4: Legacy, no snapshots, lower overhead'}
         </p>
       </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="synology-model">{t('synology.modelSeries')}</Label>
-        <Select
-          id="synology-model"
-          value={synologyOptions.modelSeries}
-          options={SYNOLOGY_MODEL_OPTIONS}
-          onChange={(v) => setSynologyOptions({ modelSeries: v as 'j' | 'value' | 'plus' | 'xs' })}
-        />
-        <p className="text-xs text-slate-500">
-          {synologyOptions.modelSeries === 'j'
-            ? 'J Series: Entry-level, limited CPU for RAID parity'
-            : synologyOptions.modelSeries === 'value'
-              ? 'Value Series: Home/small office use'
-              : synologyOptions.modelSeries === 'plus'
-                ? 'Plus Series: SMB with Btrfs support'
-                : 'XS Series: Enterprise with high performance'}
-        </p>
-      </div>
-
-      <Toggle
-        id="synology-ssd-cache"
-        label={t('synology.ssdCache')}
-        checked={synologyOptions.ssdCache}
-        onChange={(v) => setSynologyOptions({ ssdCache: v })}
-      />
-
-      {synologyOptions.ssdCache && (
-        <div className="space-y-2">
-          <Label>{t('synology.cacheMode')}</Label>
-          <SegmentedControl
-            value={synologyOptions.cacheMode}
-            options={[
-              { value: 'read_only', label: 'Read Only' },
-              { value: 'read_write', label: 'Read/Write' },
-            ]}
-            onChange={(v) => setSynologyOptions({ cacheMode: v as 'read_only' | 'read_write' })}
-          />
-          <p className="text-xs text-slate-500">
-            {synologyOptions.cacheMode === 'read_write'
-              ? 'Read/Write cache: Better performance, requires 2 SSDs for protection'
-              : 'Read-only cache: Accelerates reads only'}
-          </p>
-        </div>
-      )}
 
       <div className="space-y-2">
         <Label htmlFor="synology-system-partition" tooltip={th('synology.systemPartition')}>

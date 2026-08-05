@@ -277,7 +277,7 @@ describe('URL Storage - Serialization Roundtrip', () => {
         compressionAlgorithm: 'zstd',
       },
       longhornOptions: { ...DEFAULT_LONGHORN_OPTIONS, diskMode: 'root', growthHeadroom: 1.8 },
-      beeGfsOptions: { ...DEFAULT_BEEGFS_OPTIONS, drivesPerTarget: 10, numTargets: 8 },
+      beeGfsOptions: { ...DEFAULT_BEEGFS_OPTIONS, drivesPerTarget: 10 },
       nutanixOptions: { ...DEFAULT_NUTANIX_OPTIONS, clusterType: 'hybrid' },
       powerFlexOptions: { ...DEFAULT_POWERFLEX_OPTIONS, granularity: 'fine', compressionRatio: 3 },
       netAppOptions: { ...DEFAULT_NETAPP_OPTIONS, raidType: 'raid_tec', dataReductionRatio: 3.5 },
@@ -330,15 +330,12 @@ describe('URL Storage - Serialization Roundtrip', () => {
       compressionRatio: 2.5,
       dedupRatio: 3.0,
       netAppOptions: {
-        platform: 'aff_a' as const,
         raidType: 'raid_tec' as const,
-        adpVersion: 'adpv2' as const,
         snapshotReserve: 0.2, // FRACTION (=20%), see NetAppOptions.snapshotReserve
         dataReductionRatio: 3.5,
         waflOverhead: 0.1,
         compression: true,
         dedup: true,
-        zeroDetection: true,
       },
     }
 
@@ -465,7 +462,6 @@ describe('URL Storage - Platform Options Persistence (Task 9)', () => {
         minimalAvailablePercent: 25,
         snapshotHeadroom: 1.5,
         growthHeadroom: 1.8,
-        overProvisioningPercent: 300,
       },
     },
     {
@@ -475,9 +471,6 @@ describe('URL Storage - Platform Options Persistence (Task 9)', () => {
         drivesPerTarget: 10,
         storageBuddyMirror: true,
         metadataBuddyMirror: false,
-        chunkSizeKb: 1024,
-        numTargets: 8,
-        network: 'ib-ndr',
         fsOverheadPercent: 3,
         metadataTargets: true,
         tiering: {
@@ -599,9 +592,6 @@ describe('URL Storage - Platform Options Persistence (Task 9)', () => {
           drivesPerTarget: 12,
           storageBuddyMirror: false,
           metadataBuddyMirror: true,
-          chunkSizeKb: 512,
-          numTargets: 4,
-          network: '100gbe',
           fsOverheadPercent: 2,
           metadataTargets: false,
           maliciousInjectedField: '<script>alert(1)</script>',
@@ -677,20 +667,14 @@ describe('URL Storage - Platform Options Persistence (Task 9)', () => {
       synologyOptions: {
         filesystem: 'btrfs',
         systemPartitionSize: 25 * 1024 * 1024 * 1024,
-        modelSeries: 'xs',
-        ssdCache: true,
-        cacheMode: 'read_write',
       },
       netAppOptions: {
-        platform: 'aff_a',
         raidType: 'raid_tec',
-        adpVersion: 'adpv2',
         snapshotReserve: 0.1, // FRACTION (=10%)
         dataReductionRatio: 3.5,
         waflOverhead: 0.015,
         compression: true,
         dedup: true,
-        zeroDetection: true,
       },
       readPercent: 70,
       blockSize: '64K',
@@ -916,22 +900,16 @@ describe('URL Storage - Security: Malicious URL Protection (SEC-01, SEC-02, SEC-
         writePolicy: 'write-back',
       },
       netAppOptions: {
-        platform: 'aff_a',
         raidType: 'raid_dp',
-        adpVersion: 'adpv2',
         snapshotReserve: 0.05, // FRACTION (=5%)
         dataReductionRatio: 3.0,
         waflOverhead: 0.015,
         compression: true,
         dedup: true,
-        zeroDetection: true,
       },
       synologyOptions: {
         filesystem: 'btrfs',
         systemPartitionSize: 25 * 1024 * 1024 * 1024,
-        modelSeries: 'plus',
-        ssdCache: false,
-        cacheMode: 'read_only',
       },
       nutanixOptions: {
         clusterType: 'all-flash',
@@ -1056,15 +1034,12 @@ describe('URL Storage - Security: Malicious URL Protection (SEC-01, SEC-02, SEC-
       // the UI — only from a hand-edited link.
       const maliciousState = createValidState({
         netAppOptions: {
-          platform: 'aff_a',
           raidType: 'raid_dp',
-          adpVersion: 'adpv2',
           snapshotReserve: 100,
           dataReductionRatio: 3.0,
           waflOverhead: 0.015,
           compression: true,
           dedup: true,
-          zeroDetection: true,
         },
       })
       setMaliciousUrlHash(maliciousState)

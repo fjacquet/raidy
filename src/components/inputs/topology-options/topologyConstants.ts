@@ -343,26 +343,3 @@ export const TOPOLOGY_LEVELS: Record<
     { value: 'netapp_raid_tec', label: 'NetApp RAID-TEC', description: 'Triple parity' },
   ],
 }
-
-// NetApp platform options
-export const NETAPP_PLATFORM_OPTIONS = [
-  { value: 'aff_a', label: 'AFF A-Series' },
-  { value: 'aff_c', label: 'AFF C-Series' },
-  { value: 'fas', label: 'FAS' },
-  { value: 'asa', label: 'ASA (SAN)' },
-  { value: 'e_series', label: 'E-Series' },
-]
-
-export const NETAPP_ADP_OPTIONS = [
-  { value: 'none', label: 'None' },
-  { value: 'adpv1', label: 'ADP v1' },
-  { value: 'adpv2', label: 'ADP v2 (Root-Data)' },
-]
-
-// Synology model series options
-export const SYNOLOGY_MODEL_OPTIONS = [
-  { value: 'j', label: 'J Series (Entry)' },
-  { value: 'value', label: 'Value Series' },
-  { value: 'plus', label: 'Plus Series' },
-  { value: 'xs', label: 'XS/XS+ (Enterprise)' },
-]

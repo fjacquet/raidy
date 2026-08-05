@@ -17,8 +17,8 @@ export function LonghornOptionsPanel() {
     // Presets follow Longhorn best practice: dedicated → 10% + 200%, root → 25% + 100%.
     setLonghornOptions(
       mode === 'dedicated'
-        ? { diskMode: mode, minimalAvailablePercent: 10, overProvisioningPercent: 200 }
-        : { diskMode: mode, minimalAvailablePercent: 25, overProvisioningPercent: 100 },
+        ? { diskMode: mode, minimalAvailablePercent: 10 }
+        : { diskMode: mode, minimalAvailablePercent: 25 },
     )
   }
 
@@ -88,20 +88,6 @@ export function LonghornOptionsPanel() {
           {t('longhorn.growthHeadroomValue', {
             pct: Math.round((longhornOptions.growthHeadroom - 1) * 100),
           })}
-        </p>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="longhorn-overprov">{t('longhorn.overProvisioning')}</Label>
-        <Slider
-          id="longhorn-overprov"
-          value={longhornOptions.overProvisioningPercent}
-          min={100}
-          max={500}
-          onChange={(v) => setLonghornOptions({ overProvisioningPercent: v })}
-        />
-        <p className="text-xs text-slate-500">
-          {t('longhorn.overProvisioningValue', { pct: longhornOptions.overProvisioningPercent })}
         </p>
       </div>
     </div>

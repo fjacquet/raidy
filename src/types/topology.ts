@@ -398,26 +398,7 @@ export interface SynologyOptions {
   filesystem: 'btrfs' | 'ext4'
   /** System partition size per disk in bytes (20-30GB) */
   systemPartitionSize: number
-  /**
-   * NAS model series (J series has CPU limitations).
-   *
-   * Kept informational by decision: a real Synology model choice worth recording
-   * for the sizing sheet, but this tool applies the same `filesystem`/parity math
-   * regardless of series — there is no citable per-series capacity or throughput
-   * delta to apply. See the hint text in `SynologyOptionsPanel.tsx`.
-   */
-  modelSeries: 'j' | 'value' | 'plus' | 'xs'
-  /**
-   * Enable SSD cache.
-   *
-   * Kept informational by decision, together with `cacheMode`: SSD read/write cache
-   * accelerates hot-data access on real DSM but is additive hardware, not a
-   * reduction of the HDD pool's usable capacity, so it does not change any number
-   * this tool computes. See the hint text in `SynologyOptionsPanel.tsx`.
-   */
-  ssdCache: boolean
   /** SSD cache mode — see `ssdCache` */
-  cacheMode: 'read_only' | 'read_write'
 }
 
 /** Dell ObjectScale-specific configuration options (Object Storage S3) - per SME specs */
@@ -474,28 +455,8 @@ export interface PowerScaleOptions {
 
 /** NetApp storage-specific configuration options */
 export interface NetAppOptions {
-  /**
-   * Storage platform.
-   *
-   * Kept informational by decision: a real ONTAP platform choice worth recording,
-   * but this tool's WAFL overhead and DRR math (`filesystem-overhead.ts`,
-   * `capacityEnhancements.ts`) apply uniformly across platforms — there is no
-   * citable per-platform capacity delta to model. See the hint text in
-   * `NetAppOptionsPanel.tsx`.
-   */
-  platform: 'aff_a' | 'aff_c' | 'fas' | 'asa' | 'e_series'
   /** RAID type — read by `validators.ts` (RAID-TEC recommended above 10TB drives) */
   raidType: 'raid_dp' | 'raid_tec'
-  /**
-   * Advanced Drive Partitioning version.
-   *
-   * Kept informational by decision: real ADP root-data partitioning recovers most
-   * of the capacity a dedicated root aggregate would otherwise cost, but the exact
-   * recovered fraction depends on shelf/node layout this tool does not model, so
-   * `waflOverhead` stays a flat constant regardless of this setting. See the hint
-   * text in `NetAppOptionsPanel.tsx`.
-   */
-  adpVersion: 'none' | 'adpv1' | 'adpv2'
   /**
    * Snapshot reserve as a FRACTION of capacity after parity (0–0.2; default 0.05 = 5%, or 0
    * on AFF). Not a percent: `overheadCalculator.ts` multiplies by this value directly, unlike
@@ -515,15 +476,6 @@ export interface NetAppOptions {
   compression: boolean
   /** Enable inline deduplication — gates `dataReductionRatio`, see its doc comment */
   dedup: boolean
-  /**
-   * Enable zero-block detection.
-   *
-   * Kept informational by decision: a real ONTAP data-reduction feature, but its
-   * contribution is already folded into whatever `dataReductionRatio` the user
-   * enters — there is no separate, citable zero-block fraction to split out and
-   * apply on its own. See the hint text in `NetAppOptionsPanel.tsx`.
-   */
-  zeroDetection: boolean
 }
 
 /** Ceph storage-specific configuration options */
@@ -558,16 +510,6 @@ export interface LonghornOptions {
   snapshotHeadroom: number
   /** Growth headroom G ≥ 1.0 — advisory only, never subtracted from usable */
   growthHeadroom: number
-  /**
-   * Storage Over-Provisioning % (Longhorn's thin-provisioning scheduling setting).
-   *
-   * Kept informational by decision: it is read by `src/engines/volumetry/index.ts`
-   * and echoed into `longhornDetails.overProvisioningPercent` for the results panel,
-   * but it does not change any computed usable-capacity number — no formula in this
-   * tool derives a schedulable/provisionable capacity from it. See the hint text in
-   * `LonghornOptionsPanel.tsx`.
-   */
-  overProvisioningPercent: number
 }
 
 /**
@@ -591,70 +533,6 @@ export interface BeeGfsOptions {
   storageBuddyMirror: boolean
   /** Buddy mirroring for metadata targets — doubles the MDT capacity requirement */
   metadataBuddyMirror: boolean
-  /**
-   * Chunk size in KB (BeeGFS default 512K), for display purposes only.
-   *
-   * Chunk size is a real BeeGFS tunable, and per the BeeGFS striping docs it is not purely a
-   * layout knob: too small a chunk relative to the client's write size forces more messages to
-   * the servers, which "may cause performance loss"
-   * (https://doc.beegfs.io/latest/advanced_topics/striping.html). But that effect depends on
-   * the client's own I/O transfer size, which this app does not collect — the workload panel's
-   * `blockSize` describes the *drive-level* I/O the performance engine already models, not the
-   * client-to-server message size a BeeGFS chunk boundary interacts with. It is deliberately
-   * NOT wired into the performance engine: that engine models the bottleneck chain
-   * (Media → Controller → PCIe → Network) in cluster aggregates, and has no per-file layer for
-   * a chunk boundary to interact with. Any factor applied here would be an invented curve with
-   * no reference behind it, which is worse than an honest gap (investigated alongside
-   * `numTargets` for #69 — see that field's doc-comment for the full reasoning and citation).
-   * The BeeGFS options panel labels this control informational (tooltip + hint) so the user is
-   * not misled; it exists so a sizing sheet can record the intended configuration.
-   */
-  chunkSizeKb: 512 | 1024 | 2048
-  /**
-   * Per-file stripe width in targets (BeeGFS `numtargets`, default 4), for display only.
-   *
-   * `numtargets` caps the throughput of a SINGLE file: one file is striped over at most this
-   * many storage targets. Every performance figure this tool reports is a cluster aggregate
-   * over all clients and all files, and that aggregate is bounded by the total storage-target
-   * count, not by any one file's stripe width — the HPC workloads BeeGFS is built for run many
-   * concurrent files precisely so the aggregate is not `numtargets`-bound. Applying this as a
-   * multiplier on the aggregate would understate a real cluster by up to
-   * `storageTargetCount / numTargets`.
-   *
-   * A dedicated single-stream (single-client, single-file) output was investigated (#69) and
-   * deliberately NOT added, for two independent reasons:
-   *
-   * 1. Missing input: a realistic single-stream ceiling is `min(client NIC link,
-   *    numTargets × per-target sequential rate)`, but this app collects neither a client
-   *    count nor a client link speed — `network` here and `networkSpeed` (AdvancedSlice) both
-   *    describe server/cluster-side interconnect, not what one client node has. Inventing a
-   *    default client link would be a fabricated number, not a derived one.
-   * 2. Even with that input, ThinkParQ's own published benchmark shows the relationship is
-   *    not close to linear and not derivable from `numTargets` alone: for a single client
-   *    process reading against 4 individual RAID6 targets, raising `numtargets` from 1→2
-   *    nearly doubles sequential-read throughput, but 2→3→4 gives no further gain and can
-   *    even regress slightly — the ceiling is set by client-side threading/read-ahead
-   *    behaviour this app does not model, not by `numTargets × per-target rate`. See
-   *    "Picking the right number of targets per server for BeeGFS" (Heichler, ThinkParQ,
-   *    March 2015), §5 ("sequential read - 1 worker per disk", numtargets=1..4 series),
-   *    https://www.beegfs.io/docs/whitepapers/Picking_the_right_Number_of_Targets_per_Server_for_BeeGFS_by_ThinkParQ.pdf
-   *
-   * So the control stays labelled informational (tooltip + hint) in the BeeGFS options panel
-   * rather than wired to a fabricated formula.
-   */
-  numTargets: number
-  /**
-   * Cluster interconnect, for display purposes only. The bottleneck chain's network
-   * layer is already driven by the store-level `networkSpeed` (AdvancedSlice), which is
-   * the single source of truth for per-server bandwidth across every platform. This
-   * field uses a BeeGFS-flavoured vocabulary (IB fabrics) that does not map 1:1 onto
-   * `NetworkSpeed`'s Ethernet-speed enum, so it is intentionally not wired into the
-   * bandwidth calculation — introducing a conversion table would create a second source
-   * of truth for the same number. It exists so the BeeGFS options panel can show the
-   * interconnect the user actually has (relevant to `BEEGFS_MIN_DRIVES_PER_TARGET`-style
-   * sizing guidance and future latency-only refinements), without affecting throughput.
-   */
-  network: 'ib-hdr' | 'ib-ndr' | '100gbe' | '25gbe'
   /**
    * Overhead of the ext4/xfs filesystem under each storage target, in percent
    * (e.g. `2` = 2%). User-configurable in the BeeGFS options panel (range 0.5-5%,
@@ -834,7 +712,6 @@ export const DEFAULT_LONGHORN_OPTIONS: LonghornOptions = {
   minimalAvailablePercent: 10,
   snapshotHeadroom: 1.2,
   growthHeadroom: 1.2,
-  overProvisioningPercent: 200,
 }
 
 /**
@@ -849,9 +726,6 @@ export const DEFAULT_BEEGFS_OPTIONS: BeeGfsOptions = {
   drivesPerTarget: 12,
   storageBuddyMirror: false,
   metadataBuddyMirror: true,
-  chunkSizeKb: 512,
-  numTargets: 4,
-  network: '100gbe',
   fsOverheadPercent: 2,
   metadataTargets: false,
 }
@@ -899,22 +773,16 @@ export const DEFAULT_NUTANIX_OPTIONS: NutanixOptions = {
 export const DEFAULT_SYNOLOGY_OPTIONS: SynologyOptions = {
   filesystem: 'btrfs',
   systemPartitionSize: 25 * 1024 * 1024 * 1024, // 25GB per disk
-  modelSeries: 'plus',
-  ssdCache: false,
-  cacheMode: 'read_write',
 }
 
 /** Default NetApp options */
 export const DEFAULT_NETAPP_OPTIONS: NetAppOptions = {
-  platform: 'aff_a',
   raidType: 'raid_dp',
-  adpVersion: 'adpv2',
   snapshotReserve: 0.05, // 5% default
   dataReductionRatio: 1.0, // No reduction by default
   waflOverhead: 0.015, // 1.5% WAFL overhead
   compression: true,
   dedup: false,
-  zeroDetection: true,
 }
 
 /** Filesystem overhead constants */

@@ -217,7 +217,6 @@ const LonghornOptionsSchema = z.object({
   minimalAvailablePercent: z.number().min(0).max(100).finite(),
   snapshotHeadroom: z.number().min(1).max(5).finite(),
   growthHeadroom: z.number().min(1).max(5).finite(),
-  overProvisioningPercent: z.number().min(0).max(1000).finite(),
 })
 
 /**
@@ -227,9 +226,6 @@ const BeeGfsOptionsSchema = z.object({
   drivesPerTarget: z.number().int().min(1).max(64).finite(),
   storageBuddyMirror: z.boolean(),
   metadataBuddyMirror: z.boolean(),
-  chunkSizeKb: z.union([z.literal(512), z.literal(1024), z.literal(2048)]),
-  numTargets: z.number().int().min(1).max(64).finite(),
-  network: z.enum(['ib-hdr', 'ib-ndr', '100gbe', '25gbe']),
   fsOverheadPercent: z.number().min(0.5).max(5).finite(),
   metadataTargets: z.boolean(),
   tiering: TieringConfigSchema.optional(),
@@ -268,9 +264,7 @@ const ControllerOptionsSchema = z.object({
  * NetApp options schema
  */
 const NetAppOptionsSchema = z.object({
-  platform: z.enum(['aff_a', 'aff_c', 'fas', 'asa', 'e_series']),
   raidType: z.enum(['raid_dp', 'raid_tec']),
-  adpVersion: z.enum(['none', 'adpv1', 'adpv2']),
   // FRACTION, not a percent: overheadCalculator.ts multiplies capacityAfterParity by this
   // value directly (unlike powerstore/powerscale `snapshotReservePercent`, which are divided
   // by 100 there). A `.max(100)` bound let a crafted link validate a 100x reserve; the panel
@@ -280,7 +274,6 @@ const NetAppOptionsSchema = z.object({
   waflOverhead: z.number().min(0).max(1).finite(),
   compression: z.boolean(),
   dedup: z.boolean(),
-  zeroDetection: z.boolean(),
 })
 
 /**
@@ -289,9 +282,6 @@ const NetAppOptionsSchema = z.object({
 const SynologyOptionsSchema = z.object({
   filesystem: z.enum(['btrfs', 'ext4']),
   systemPartitionSize: z.number().int().positive().finite(),
-  modelSeries: z.enum(['j', 'value', 'plus', 'xs']),
-  ssdCache: z.boolean(),
-  cacheMode: z.enum(['read_only', 'read_write']),
 })
 
 /**

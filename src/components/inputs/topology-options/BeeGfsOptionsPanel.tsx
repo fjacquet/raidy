@@ -9,43 +9,29 @@
  * silently switch the storage-target drive selection away from the
  * Hardware panel (see resolveTiering in src/engines/shared/tiering.ts).
  *
- * Three controls here are INFORMATIONAL — each is labelled as such in the UI
- * (tooltip + hint) so the user is never misled into thinking a slider they
- * can move is changing a number on the right-hand side:
- *   - `network`   — see BeeGfsOptions.network in src/types/topology.ts.
- *   - `chunkSizeKb` and `numTargets` — see the same file. Both are real BeeGFS
- *     tunables with real performance effects on hardware, but this engine
- *     reports cluster aggregates only, and neither has an honest aggregate
- *     model (see the type doc-comments for the full reasoning). A dedicated
- *     single-stream output was researched for #69 and rejected — it needs a
- *     client link speed this app does not collect, and BeeGFS's own
- *     published benchmarks show single-stream throughput does not scale
- *     linearly with `numTargets` in any case. They are surfaced so a sizing
- *     sheet can record the intended configuration, and they persist through
- *     "Copy URL to Share", but they compute nothing.
+ * This panel once carried three further controls — `chunkSizeKb`, `numTargets`
+ * and `network` — each labelled "informational" because it computed nothing.
+ * They were deleted: a control followed by a sentence explaining it does not
+ * work is worse than no control. All three are real BeeGFS tunables with real
+ * performance effects on hardware, and the reasons this engine does not model
+ * them are recorded where they help the person maintaining the model rather
+ * than the person configuring one — #69 researched a single-stream output and
+ * rejected it, because it needs a client link speed this app does not collect,
+ * and ThinkParQ's own benchmarks show single-stream throughput does not scale
+ * linearly with target count in any case.
  *
- * `fsOverheadPercent` is the opposite of those three: it IS wired into
- * `getFilesystemOverheadPercent` (src/engines/volumetry/overhead/filesystem-overhead.ts) and
- * changes usable capacity, so its control carries no "informational" label.
+ * `fsOverheadPercent` is wired into `getFilesystemOverheadPercent`
+ * (src/engines/volumetry/overhead/filesystem-overhead.ts) and changes usable
+ * capacity — every control still on this panel does.
  */
 
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Label, SegmentedControl, Select, Slider, Toggle } from '@/components/common/FormControls'
+import { Label, Slider, Toggle } from '@/components/common/FormControls'
 import { TieringPanel } from '@/components/inputs/TieringPanel'
 import { deriveBeeGfsStorageTargets } from '@/components/inputs/topology-options/beegfsPanelHelpers'
 import { useConfigStore } from '@/store'
 import { DEFAULT_TIERING_CONFIG } from '@/types'
-
-// InfiniBand fabric names and Ethernet speed labels are technical proper nouns, the same
-// convention as Ceph's BlueStore/FileStore and Synology's Btrfs/EXT4 labels elsewhere in this
-// panel family — left untranslated deliberately, not an oversight.
-const BEEGFS_NETWORK_OPTIONS = [
-  { value: 'ib-hdr', label: 'InfiniBand HDR' },
-  { value: 'ib-ndr', label: 'InfiniBand NDR' },
-  { value: '100gbe', label: '100GbE' },
-  { value: '25gbe', label: '25GbE' },
-]
 
 export function BeeGfsOptionsPanel() {
   const { t } = useTranslation('topology')
@@ -99,47 +85,6 @@ export function BeeGfsOptionsPanel() {
         onChange={(v) => setBeeGfsOptions({ metadataBuddyMirror: v })}
       />
       <p className="text-xs text-slate-500 -mt-2">{t('beegfs.metadataBuddyMirrorHint')}</p>
-
-      <div className="space-y-2">
-        <Label tooltip={t('beegfs.chunkSizeTooltip')}>{t('beegfs.chunkSize')}</Label>
-        <SegmentedControl
-          value={String(beeGfsOptions.chunkSizeKb)}
-          options={[
-            { value: '512', label: '512K' },
-            { value: '1024', label: '1024K' },
-            { value: '2048', label: '2048K' },
-          ]}
-          onChange={(v) => setBeeGfsOptions({ chunkSizeKb: Number(v) as 512 | 1024 | 2048 })}
-        />
-        <p className="text-xs text-slate-500">{t('beegfs.chunkSizeHint')}</p>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="beegfs-num-targets" tooltip={t('beegfs.numTargetsTooltip')}>
-          {t('beegfs.numTargets')}
-        </Label>
-        <Slider
-          id="beegfs-num-targets"
-          value={beeGfsOptions.numTargets}
-          min={1}
-          max={16}
-          onChange={(v) => setBeeGfsOptions({ numTargets: v })}
-        />
-        <p className="text-xs text-slate-500">{t('beegfs.numTargetsHint')}</p>
-      </div>
-
-      <div className="space-y-2">
-        <Label tooltip={t('beegfs.networkTooltip')}>{t('beegfs.network')}</Label>
-        <Select
-          id="beegfs-network"
-          value={beeGfsOptions.network}
-          options={BEEGFS_NETWORK_OPTIONS}
-          onChange={(v) =>
-            setBeeGfsOptions({ network: v as 'ib-hdr' | 'ib-ndr' | '100gbe' | '25gbe' })
-          }
-        />
-        <p className="text-xs text-slate-500">{t('beegfs.networkHint')}</p>
-      </div>
 
       <div className="space-y-2">
         <Label htmlFor="beegfs-fs-overhead" tooltip={t('beegfs.fsOverheadTooltip')}>

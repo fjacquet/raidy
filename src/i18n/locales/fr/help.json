@@ -74,7 +74,6 @@
   },
   "netapp": {
     "wafl": "Le système de fichiers WAFL de NetApp a environ 1,5 % de surcharge pour les métadonnées internes. Ce montant est soustrait de la capacité utilisable.",
-    "adp": "Advanced Data Partitioning (ADP) partage les disques entre les agrégats racine et de données, améliorant l'utilisation de la capacité sur les systèmes de petite taille.",
     "snapshot": "La réserve de snapshots (5 % par défaut) est un espace pré-alloué pour les copies instantanées. Définie à 0 % pour les baies tout-flash avec déduplication en ligne."
   },
   "synology": {

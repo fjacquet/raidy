@@ -438,9 +438,7 @@
     "snapshotHeadroom": "Snapshot Headroom",
     "snapshotHeadroomValue": "+{{pct}}% reserved for snapshot chains",
     "growthHeadroom": "Growth Headroom (advisory)",
-    "growthHeadroomValue": "+{{pct}}% growth allowance (not subtracted from usable)",
-    "overProvisioning": "Over-Provisioning (advisory)",
-    "overProvisioningValue": "{{pct}}% thin-provisioning limit"
+    "growthHeadroomValue": "+{{pct}}% growth allowance (not subtracted from usable)"
   },
   "beegfs": {
     "title": "BeeGFS Options",
@@ -451,15 +449,6 @@
     "storageBuddyMirrorHint": "Synchronous replication between pairs of storage targets on different nodes. Halves usable capacity.",
     "metadataBuddyMirror": "Metadata Buddy Mirroring",
     "metadataBuddyMirrorHint": "Synchronous replication between pairs of metadata targets. No effect on data capacity.",
-    "chunkSize": "Chunk Size",
-    "chunkSizeTooltip": "Informational only — does not affect any calculated result.",
-    "chunkSizeHint": "For reference only. Chunk size shapes per-target sequential efficiency on real hardware, but this tool models the bottleneck chain in cluster aggregates and has no per-file layer for a chunk boundary to act on. Recorded for your sizing sheet, not used in any calculation.",
-    "numTargets": "Number of Targets",
-    "numTargetsTooltip": "Informational only — does not affect any calculated result.",
-    "numTargetsHint": "For reference only. Storage targets a single file is striped across. This caps single-file throughput, while every performance figure shown here is a cluster aggregate bounded by the total storage-target count. Recorded for your sizing sheet, not used in any calculation.",
-    "network": "Cluster Interconnect",
-    "networkTooltip": "Informational only — does not affect any calculated result.",
-    "networkHint": "For reference only. Link bandwidth used in calculations comes from the Network Speed setting in the Advanced panel, not from this selection.",
     "fsOverhead": "Filesystem Overhead",
     "fsOverheadTooltip": "Metadata overhead of the ext4/xfs filesystem formatted on each storage target.",
     "fsOverheadHint": "Filesystem overhead: {{percent}}%. Reduces usable capacity — varies with inode ratio and formatting options on ext4/XFS storage targets.",
@@ -511,14 +500,6 @@
   },
   "netapp": {
     "title": "NetApp ONTAP Options",
-    "platform": {
-      "label": "Platform",
-      "aff_a": "AFF A-Series",
-      "aff_c": "AFF C-Series",
-      "fas": "FAS",
-      "asa": "ASA (SAN)",
-      "e_series": "E-Series"
-    },
     "platformDesc": {
       "aff_a": "All-Flash FAS A-Series: High performance",
       "aff_c": "All-Flash FAS C-Series: Capacity optimized",
@@ -533,7 +514,6 @@
       "raid_tec": "Triple parity: Recommended for drives > 10TB",
       "raid_dp": "Double parity: Standard protection"
     },
-    "adp": "Advanced Drive Partitioning",
     "adpNone": "None",
     "adpV1": "ADP v1",
     "adpV2": "ADP v2 (Root-Data)",
@@ -547,7 +527,6 @@
     "snapshotAffNote": " (typical for AFF)",
     "inlineCompression": "Inline Compression",
     "inlineDedup": "Inline Deduplication",
-    "zeroDetection": "Zero-Block Detection",
     "dataReductionRatio": "Data Reduction Ratio",
     "dataReductionDesc": "Expected DRR: {{ratio}}:1 (compression + dedup)",
     "waflOverhead": "WAFL Overhead",
@@ -574,26 +553,11 @@
       "btrfs": "Btrfs: Snapshots, data protection, ~4% overhead",
       "ext4": "EXT4: Legacy, no snapshots, lower overhead"
     },
-    "modelSeries": "Model Series",
     "series": {
       "j": "J Series (Entry)",
       "value": "Value Series",
       "plus": "Plus Series",
       "xs": "XS/XS+ (Enterprise)"
-    },
-    "modelSeriesDesc": {
-      "j": "J Series: Entry-level, limited CPU for RAID parity",
-      "value": "Value Series: Home/small office use",
-      "plus": "Plus Series: SMB with Btrfs support",
-      "xs": "XS Series: Enterprise with high performance"
-    },
-    "ssdCache": "SSD Cache",
-    "cacheMode": "Cache Mode",
-    "readOnly": "Read Only",
-    "readWrite": "Read/Write",
-    "cacheModeDesc": {
-      "readWrite": "Read/Write cache: Better performance, requires 2 SSDs for protection",
-      "readOnly": "Read-only cache: Accelerates reads only"
     },
     "systemPartition": "System Partition Size",
     "systemPartitionDesc": "System partition per disk: {{size}} GB"

@@ -89,7 +89,6 @@ describe('Volumetry Engine - Longhorn (capacity guardrails)', () => {
     minimalAvailablePercent: 25,
     snapshotHeadroom: 1.2,
     growthHeadroom: 1.2,
-    overProvisioningPercent: 100,
   }
 
   it('applies free-space + snapshot reserves to physical usable', () => {
@@ -105,7 +104,6 @@ describe('Volumetry Engine - Longhorn (capacity guardrails)', () => {
     expect((d?.recommendedCommittedData ?? 0) / 1e12).toBeCloseTo(3.09375, 4)
     expect((d?.perNodeUsable ?? 0) / 1e12).toBeCloseTo(1.2375, 4)
     expect(d?.replicaCount).toBe(3)
-    expect(d?.overProvisioningPercent).toBe(100)
   })
 
   it('R2 usable is exactly 1.5× R3 usable (same inputs)', () => {

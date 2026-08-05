@@ -74,7 +74,6 @@
   },
   "netapp": {
     "wafl": "NetApp WAFL filesystem has approximately 1.5% overhead for internal metadata. This is subtracted from usable capacity.",
-    "adp": "Advanced Data Partitioning (ADP) shares drives between root and data aggregates, improving capacity utilization on smaller systems.",
     "snapshot": "Snapshot reserve (default 5%) is pre-allocated space for point-in-time copies. Set to 0% for all-flash arrays with inline dedup."
   },
   "synology": {

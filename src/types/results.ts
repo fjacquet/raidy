@@ -112,7 +112,6 @@ export interface LonghornCapacityDetails {
   /** Storage Minimal Available % guardrail */
   minimalAvailablePercent: number
   /** Storage Over-Provisioning % (advisory display) */
-  overProvisioningPercent: number
   /** Disk deployment model */
   diskMode: 'dedicated' | 'root'
 }

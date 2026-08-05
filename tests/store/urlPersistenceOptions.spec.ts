@@ -91,7 +91,6 @@ describe('Config store URL persistence — platform options backward compatibili
       minimalAvailablePercent: 10,
       snapshotHeadroom: 1.2,
       growthHeadroom: 1.2,
-      overProvisioningPercent: 200,
     })
     expect(state.powerFlexOptions.granularity).toBe('medium')
     expect(state.powerFlexOptions.protectionMode).toBe('mirror')
@@ -145,9 +144,6 @@ describe('Config store URL persistence — platform options backward compatibili
         drivesPerTarget: 10,
         storageBuddyMirror: true,
         metadataBuddyMirror: false,
-        chunkSizeKb: 1024,
-        numTargets: 8,
-        network: 'ib-ndr',
         fsOverheadPercent: 3,
         metadataTargets: true,
         tiering: {
@@ -180,9 +176,6 @@ describe('Config store URL persistence — platform options backward compatibili
       drivesPerTarget: 10,
       storageBuddyMirror: true,
       metadataBuddyMirror: false,
-      chunkSizeKb: 1024,
-      numTargets: 8,
-      network: 'ib-ndr',
       fsOverheadPercent: 3,
       metadataTargets: true,
       tiering: {
@@ -211,9 +204,6 @@ describe('Config store URL persistence — platform options backward compatibili
         drivesPerTarget: 10,
         storageBuddyMirror: true,
         metadataBuddyMirror: false,
-        chunkSizeKb: 1024,
-        numTargets: 8,
-        network: 'ib-ndr',
         fsOverheadPercent: 3,
         metadataTargets: true,
         tiering: {

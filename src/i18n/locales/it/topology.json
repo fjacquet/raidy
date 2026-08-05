@@ -438,9 +438,7 @@
     "snapshotHeadroom": "Margine snapshot",
     "snapshotHeadroomValue": "+{{pct}}% riservato per le catene di snapshot",
     "growthHeadroom": "Margine di crescita (indicativo)",
-    "growthHeadroomValue": "+{{pct}}% di crescita (non sottratto dall'utilizzabile)",
-    "overProvisioning": "Over-provisioning (indicativo)",
-    "overProvisioningValue": "limite di thin-provisioning {{pct}}%"
+    "growthHeadroomValue": "+{{pct}}% di crescita (non sottratto dall'utilizzabile)"
   },
   "beegfs": {
     "title": "Opzioni BeeGFS",
@@ -451,15 +449,6 @@
     "storageBuddyMirrorHint": "Replica sincrona tra coppie di target di storage su nodi diversi. Dimezza la capacità utilizzabile.",
     "metadataBuddyMirror": "Buddy Mirroring dei metadati",
     "metadataBuddyMirrorHint": "Replica sincrona tra coppie di target di metadati. Nessun effetto sulla capacità dei dati.",
-    "chunkSize": "Dimensione chunk",
-    "chunkSizeTooltip": "Solo informativo — non influisce su alcun risultato calcolato.",
-    "chunkSizeHint": "Solo a titolo informativo. La dimensione del chunk incide sull'efficienza sequenziale di ogni target su hardware reale, ma questo strumento modella la catena dei colli di bottiglia in forma aggregata a livello di cluster e non ha alcuno strato per singolo file su cui un confine di chunk possa agire. Registrato per il tuo documento di dimensionamento, non usato in alcun calcolo.",
-    "numTargets": "Numero di target",
-    "numTargetsTooltip": "Solo informativo — non influisce su alcun risultato calcolato.",
-    "numTargetsHint": "Solo a titolo informativo. Target di storage su cui un file viene distribuito (striping). Limita il throughput di un singolo file, mentre tutti i valori di prestazione mostrati qui sono aggregati di cluster, limitati dal numero totale di target di storage. Registrato per il tuo documento di dimensionamento, non usato in alcun calcolo.",
-    "network": "Interconnessione del cluster",
-    "networkTooltip": "Solo informativo — non influisce su alcun risultato calcolato.",
-    "networkHint": "Solo a titolo informativo. La banda utilizzata nei calcoli proviene dall'impostazione Velocità di rete nel pannello Avanzato, non da questa selezione.",
     "fsOverhead": "Overhead del filesystem",
     "fsOverheadTooltip": "Overhead dei metadati del filesystem ext4/xfs formattato su ciascun target di storage.",
     "fsOverheadHint": "Overhead del filesystem: {{percent}}%. Riduce la capacità utilizzabile — varia in base al rapporto di inode e alle opzioni di formattazione dei target di storage ext4/XFS.",
@@ -511,14 +500,6 @@
   },
   "netapp": {
     "title": "Opzioni NetApp ONTAP",
-    "platform": {
-      "label": "Piattaforma",
-      "aff_a": "AFF A-Series",
-      "aff_c": "AFF C-Series",
-      "fas": "FAS",
-      "asa": "ASA (SAN)",
-      "e_series": "E-Series"
-    },
     "platformDesc": {
       "aff_a": "All-Flash FAS A-Series: Alte prestazioni",
       "aff_c": "All-Flash FAS C-Series: Ottimizzato capacità",
@@ -533,7 +514,6 @@
       "raid_tec": "Tripla parità: Raccomandato per dischi > 10TB",
       "raid_dp": "Doppia parità: Protezione standard"
     },
-    "adp": "Partizionamento avanzato dischi",
     "adpNone": "Nessuno",
     "adpV1": "ADP v1",
     "adpV2": "ADP v2 (Root-Data)",
@@ -547,7 +527,6 @@
     "snapshotAffNote": " (tipico per AFF)",
     "inlineCompression": "Compressione inline",
     "inlineDedup": "Deduplicazione inline",
-    "zeroDetection": "Rilevamento blocchi zero",
     "dataReductionRatio": "Rapporto riduzione dati",
     "dataReductionDesc": "DRR previsto: {{ratio}}:1 (compressione + deduplica)",
     "waflOverhead": "Overhead WAFL",
@@ -574,26 +553,11 @@
       "btrfs": "Btrfs: Snapshot, protezione dati, ~4% overhead",
       "ext4": "EXT4: Legacy, niente snapshot, overhead ridotto"
     },
-    "modelSeries": "Serie modello",
     "series": {
       "j": "Serie J (Entry)",
       "value": "Serie Value",
       "plus": "Serie Plus",
       "xs": "XS/XS+ (Enterprise)"
-    },
-    "modelSeriesDesc": {
-      "j": "Serie J: Entry-level, CPU limitata per parità RAID",
-      "value": "Serie Value: Uso casa/piccolo ufficio",
-      "plus": "Serie Plus: PMI con supporto Btrfs",
-      "xs": "Serie XS: Enterprise alte prestazioni"
-    },
-    "ssdCache": "Cache SSD",
-    "cacheMode": "Modalità cache",
-    "readOnly": "Solo lettura",
-    "readWrite": "Lettura/Scrittura",
-    "cacheModeDesc": {
-      "readWrite": "Cache lettura/scrittura: Migliori prestazioni, richiede 2 SSD",
-      "readOnly": "Cache solo lettura: Accelera solo letture"
     },
     "systemPartition": "Dimensione partizione sistema",
     "systemPartitionDesc": "Partizione sistema per disco: {{size}} GB"
