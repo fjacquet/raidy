@@ -76,18 +76,6 @@ export function getMinThroughput(layers: BottleneckLayer[]): number {
 }
 
 /**
- * Get minimum IOPS from layers.
- *
- * Helper function to get the effective IOPS after bottleneck analysis.
- *
- * @param layers - Array of bottleneck layers
- * @returns Minimum IOPS
- */
-export function getMinIOPS(layers: BottleneckLayer[]): number {
-  return Math.min(...layers.map((l) => l.iops))
-}
-
-/**
  * Calculate PCIe bus bandwidth and IOPS limits.
  *
  * @param pcieGen - PCIe generation (gen3, gen4, gen5)
