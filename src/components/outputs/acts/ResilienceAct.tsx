@@ -133,10 +133,13 @@ export function ResilienceAct({
                 {t('resilience.recommendations')}
               </p>
               <ul className="space-y-1 text-xs text-slate-600 dark:text-slate-300">
+                {/* `rec` is an i18n key suffix, not a display string — see #125. Translating
+                    here rather than where the array is built keeps it reactive to a language
+                    switch made after the simulation has already run. */}
                 {result.recommendations.map((rec) => (
                   <li key={rec} className="flex items-start gap-2">
                     <span className="text-primary-400">•</span>
-                    <span>{rec}</span>
+                    <span>{t(`resilience.recommendation.${rec}`)}</span>
                   </li>
                 ))}
               </ul>

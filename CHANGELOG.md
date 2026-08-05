@@ -48,6 +48,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Removed with it: three buttons, six locale keys across all four languages, the barrel re-export,
   and the now-unreachable `controllerOptions` read in `OutputDashboard`. The Take-away export grid
   drops from four columns to two.
+### Fixed
+
+- **Resilience recommendations are translated (#125).** `getRecommendations()` in
+  `useResilience.ts` built its six strings in hardcoded English — "Configuration provides
+  excellent data protection" and friends — so a French, German or Italian user read English
+  recommendations beside a fully translated panel. The #71 sweep routed 15 validators through
+  `i18n.t()` and #72 added key parity, but both missed this one: it lives in a hook, not in
+  `validators.ts` or a component.
+
+  **The translation happens at render, not where the array is built**, and that is the part worth
+  keeping. `recommendations` is produced once when the worker replies and then held in state;
+  calling `i18n.t()` there would freeze the language, so switching FR→DE after running a
+  simulation would keep showing French. `getRecommendations` now returns i18n key suffixes and
+  `ResilienceAct` translates them, which re-runs on language change.
+
+  No `DYNAMIC_PREFIXES` entry was added to the orphan-key test even though the keys are assembled
+  at runtime. The existing leaf-literal fallback already covers them — each suffix is pushed as a
+  bare string literal — and it is the stronger check: a prefix entry would exempt the whole
+  subtree, letting a key outlive its `push`. Verified by renaming one push, which correctly
+  surfaces `resilience.recommendation.excellentProtection` as an orphan.
+
+  The pass the issue asked for turned up three more sites of the same class, all converging on
+  `PerformanceResult.bottleneckDescription`: `identifyBottleneck()` returns
+  `"Bottleneck: Controller (8000 MB/s)"`, and `usePerformanceCalc` sets `'No drive selected'` and
+  `'Performance calculation failed'`. Filed separately — fixing them means turning that field into
+  structured data, which reaches the PDF and PPTX exports too.
 
 ### Changed
 
