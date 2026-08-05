@@ -181,16 +181,6 @@ export interface ZfsOptions {
   dedup: boolean
   /** Record size in bytes */
   recordsize: number
-  /**
-   * Special allocation class enabled (metadata on fast flash).
-   *
-   * Kept informational by decision: a real ZFS pool tunable a pool architect
-   * expects to record (metadata/small-block allocation class on a separate fast
-   * vdev), but its capacity effect depends on the special vdev's own size and the
-   * pool's small-block mix, neither of which this tool models. See the hint text
-   * in `ZfsOptionsPanel.tsx`.
-   */
-  specialVdev: boolean
   /** Maximum recommended occupation before performance degradation (default 80%) */
   maxOccupation: number
 }
@@ -398,15 +388,6 @@ export interface VsanOptions {
   dedup: boolean
   /** Expected deduplication ratio (1.0 = none, 1.2 = 1.2:1) */
   dedupRatio: number
-  /**
-   * Enable encryption (Data-at-Rest Encryption).
-   *
-   * Kept informational by decision: a real vSAN cluster setting an operator expects
-   * to record, but vSAN DARE is applied below the dedup/compression layer with no
-   * published capacity tax in VMware's sizing guidance, so there is no citable
-   * overhead to model. See the hint text in `VsanOptionsPanel.tsx`.
-   */
-  encryption: boolean
   /** Tiering configuration (disk groups with cache + capacity) - OSA only */
   tiering?: TieringConfig
 }
@@ -547,16 +528,6 @@ export interface NetAppOptions {
 
 /** Ceph storage-specific configuration options */
 export interface CephOptions {
-  /**
-   * Storage backend.
-   *
-   * Kept informational by decision: BlueStore vs FileStore is a real architecture
-   * choice (FileStore is legacy/deprecated upstream), but this tool has no
-   * per-backend overhead split to apply — `journalOnSsd` and `walDbOffload` already
-   * carry the placement-tuning half of this decision. See the hint text in
-   * `CephOptionsPanel.tsx`.
-   */
-  backend: 'bluestore' | 'filestore'
   /** Pool type */
   poolType: 'replicated' | 'erasure'
   /** Replication factor (for replicated pools) */
@@ -569,25 +540,6 @@ export interface CephOptions {
   compression: boolean
   /** Compression algorithm */
   compressionAlgorithm: 'none' | 'snappy' | 'zstd' | 'lz4'
-  /**
-   * Enable encryption.
-   *
-   * Kept informational by decision: a real Ceph OSD-level encryption setting an
-   * operator expects to record, but Ceph's dm-crypt layer carries no published
-   * capacity tax, so there is no citable overhead to model. See the hint text in
-   * `CephOptionsPanel.tsx`.
-   */
-  encryption: boolean
-  /**
-   * OSD journal on SSD (legacy FileStore concept).
-   *
-   * Kept informational by decision: for the modern BlueStore backend (the default,
-   * see `backend`), `walDbOffload` below is the field this tool actually models for
-   * WAL/DB tiering — `journalOnSsd` is FileStore's separate journal-partition
-   * concept, superseded by `walDbOffload` for BlueStore and left unmodelled the
-   * same way `backend` is. See the hint text in `CephOptionsPanel.tsx`.
-   */
-  journalOnSsd: boolean
   /** WAL/DB offload to separate NVMe (for HDD OSDs) */
   walDbOffload: boolean
   /** Safe capacity threshold (Ceph nearfull, default 0.85 = 85%) */
@@ -789,7 +741,6 @@ export const DEFAULT_ZFS_OPTIONS: ZfsOptions = {
   compressionType: 'lz4',
   dedup: false,
   recordsize: 131072, // 128K
-  specialVdev: false,
   maxOccupation: 80, // Performance degrades beyond 80%
 }
 
@@ -818,7 +769,6 @@ export const DEFAULT_VSAN_OPTIONS: VsanOptions = {
   compressionRatio: 1.5,
   dedup: false,
   dedupRatio: 1.0,
-  encryption: false,
 }
 
 /** Default ObjectScale options - per SME specs */
@@ -868,15 +818,12 @@ export const DEFAULT_POWERSCALE_OPTIONS: PowerScaleOptions = {
 
 /** Default Ceph options */
 export const DEFAULT_CEPH_OPTIONS: CephOptions = {
-  backend: 'bluestore',
   poolType: 'replicated',
   replicationFactor: 3,
   ecK: 4,
   ecM: 2,
   compression: false,
   compressionAlgorithm: 'none',
-  encryption: false,
-  journalOnSsd: true,
   walDbOffload: false,
   safeCapacityThreshold: 0.85, // Ceph nearfull at 85%
 }

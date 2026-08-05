@@ -132,7 +132,6 @@ describe('URL Storage - Serialization Roundtrip', () => {
         compressionType: 'lz4' as const,
         dedup: false,
         recordsize: 128,
-        specialVdev: false,
         maxOccupation: 80,
       },
     }
@@ -170,7 +169,6 @@ describe('URL Storage - Serialization Roundtrip', () => {
         compressionRatio: 1.5,
         dedup: true,
         dedupRatio: 1.2,
-        encryption: false,
       },
     }
 
@@ -402,7 +400,6 @@ describe('URL Storage - Platform Options Persistence (Task 9)', () => {
         compressionType: 'zstd',
         dedup: true,
         recordsize: 4096,
-        specialVdev: true,
         maxOccupation: 60,
       },
     },
@@ -432,7 +429,6 @@ describe('URL Storage - Platform Options Persistence (Task 9)', () => {
         compressionRatio: 2.0,
         dedup: true,
         dedupRatio: 1.3,
-        encryption: true,
         tiering: {
           enabled: true,
           fastTier: { driveId: 'ssd', driveCount: 2 },
@@ -445,15 +441,12 @@ describe('URL Storage - Platform Options Persistence (Task 9)', () => {
       name: 'Ceph',
       key: 'cephOptions',
       value: {
-        backend: 'filestore',
         poolType: 'erasure',
         replicationFactor: 4,
         ecK: 8,
         ecM: 3,
         compression: true,
         compressionAlgorithm: 'zstd',
-        encryption: true,
-        journalOnSsd: false,
         walDbOffload: true,
         safeCapacityThreshold: 0.9,
         tiering: {
@@ -579,15 +572,12 @@ describe('URL Storage - Platform Options Persistence (Task 9)', () => {
       const config = {
         ...baseConfig(),
         cephOptions: {
-          backend: 'bluestore',
           poolType: 'replicated',
           replicationFactor: 3,
           ecK: 4,
           ecM: 2,
           compression: false,
           compressionAlgorithm: 'none',
-          encryption: false,
-          journalOnSsd: true,
           walDbOffload: 'yes', // wrong type: should be boolean
           safeCapacityThreshold: 0.85,
         },
@@ -634,15 +624,12 @@ describe('URL Storage - Platform Options Persistence (Task 9)', () => {
       const config = {
         ...baseConfig(),
         cephOptions: {
-          backend: 'bluestore',
           poolType: 'replicated',
           replicationFactor: 3,
           ecK: 4,
           ecM: 2,
           compression: false,
           compressionAlgorithm: 'none',
-          encryption: false,
-          journalOnSsd: true,
           walDbOffload: false,
           safeCapacityThreshold: 5, // out of range: schema bounds this to [0, 1]
         },
@@ -913,7 +900,6 @@ describe('URL Storage - Security: Malicious URL Protection (SEC-01, SEC-02, SEC-
         compressionType: 'lz4',
         dedup: false,
         recordsize: 131072,
-        specialVdev: false,
         maxOccupation: 80,
       },
       s2dOptions: {
@@ -1137,7 +1123,6 @@ describe('URL Storage - Security: Malicious URL Protection (SEC-01, SEC-02, SEC-
           compressionType: 'malicious_algorithm',
           dedup: false,
           recordsize: 131072,
-          specialVdev: false,
           maxOccupation: 80,
         },
       })

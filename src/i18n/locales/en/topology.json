@@ -28,7 +28,6 @@
   "common": {
     "enableCompression": "Enable Compression",
     "enableDedup": "Enable Deduplication",
-    "enableEncryption": "Enable Encryption",
     "compressionRatio": "Compression Ratio",
     "dedupRatio": "Deduplication Ratio",
     "systemOverhead": "System Overhead",
@@ -137,8 +136,7 @@
     "recordSize": "Record Size",
     "recordDefault": "128K (default)",
     "compression": "Enable Compression",
-    "dedup": "Enable Deduplication",
-    "specialVdev": "Special VDEV (metadata)"
+    "dedup": "Enable Deduplication"
   },
   "s2d": {
     "title": "S2D Options",
@@ -196,8 +194,7 @@
     },
     "diskGroupConfig": "Disk Group Configuration",
     "enableCompression": "Enable Compression",
-    "enableDedup": "Enable Deduplication",
-    "enableEncryption": "Enable Encryption"
+    "enableDedup": "Enable Deduplication"
   },
   "vsanEsa": {
     "title": "vSAN ESA Options",
@@ -222,8 +219,7 @@
     },
     "nvmeNotice": "vSAN ESA requires NVMe drives only. Each drive serves both cache and capacity.",
     "enableCompression": "Enable Compression",
-    "enableDedup": "Enable Deduplication",
-    "enableEncryption": "Enable Encryption"
+    "enableDedup": "Enable Deduplication"
   },
   "nutanix": {
     "title": "Nutanix AOS Options",
@@ -413,7 +409,6 @@
       "label": "EC 8+4",
       "description": "Erasure coded k=8, m=4, 67% efficiency"
     },
-    "backend": "Storage Backend",
     "storageBackend": "Storage Backend",
     "bluestore": "BlueStore",
     "filestore": "FileStore",
@@ -427,8 +422,6 @@
     "lz4": "LZ4",
     "zstd": "ZSTD",
     "expectedRatio": "Expected ratio: {{ratio}}:1",
-    "enableEncryption": "Enable Encryption",
-    "journalOnSsd": "Journal/WAL on SSD",
     "walDbOffload": "WAL/DB on Separate NVMe",
     "safeCapacity": "Safe Capacity Threshold",
     "safeCapacityDesc": "Ceph nearfull threshold: {{percent}}%"

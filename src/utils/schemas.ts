@@ -148,7 +148,6 @@ const ZfsOptionsSchema = z.object({
   compressionType: z.enum(['lz4', 'zstd', 'gzip', 'off']),
   dedup: z.boolean(),
   recordsize: z.number().int().positive().finite(),
-  specialVdev: z.boolean(),
   maxOccupation: z.number().int().min(1).max(100).finite(),
 })
 
@@ -192,7 +191,6 @@ const VsanOptionsSchema = z.object({
   compressionRatio: z.number().min(1).max(10).finite(),
   dedup: z.boolean(),
   dedupRatio: z.number().min(1).max(10).finite(),
-  encryption: z.boolean(),
   tiering: TieringConfigSchema.optional(),
 })
 
@@ -200,15 +198,12 @@ const VsanOptionsSchema = z.object({
  * Ceph options schema
  */
 const CephOptionsSchema = z.object({
-  backend: z.enum(['bluestore', 'filestore']),
   poolType: z.enum(['replicated', 'erasure']),
   replicationFactor: z.union([z.literal(2), z.literal(3), z.literal(4)]),
   ecK: z.number().int().min(1).max(32).finite(),
   ecM: z.number().int().min(1).max(16).finite(),
   compression: z.boolean(),
   compressionAlgorithm: z.enum(['none', 'snappy', 'zstd', 'lz4']),
-  encryption: z.boolean(),
-  journalOnSsd: z.boolean(),
   walDbOffload: z.boolean(),
   safeCapacityThreshold: z.number().min(0).max(1).finite(),
   tiering: TieringConfigSchema.optional(),

@@ -28,7 +28,6 @@
   "common": {
     "enableCompression": "Komprimierung aktivieren",
     "enableDedup": "Deduplizierung aktivieren",
-    "enableEncryption": "Verschlüsselung aktivieren",
     "compressionRatio": "Komprimierungsverhältnis",
     "dedupRatio": "Deduplizierungsverhältnis",
     "systemOverhead": "System-Overhead",
@@ -137,8 +136,7 @@
     "recordSize": "Record-Grösse",
     "recordDefault": "128K (Standard)",
     "compression": "Kompression aktivieren",
-    "dedup": "Deduplizierung aktivieren",
-    "specialVdev": "Special VDEV (Metadaten)"
+    "dedup": "Deduplizierung aktivieren"
   },
   "s2d": {
     "title": "S2D-Optionen",
@@ -196,8 +194,7 @@
     },
     "diskGroupConfig": "Disk-Gruppen-Konfiguration",
     "enableCompression": "Kompression aktivieren",
-    "enableDedup": "Deduplizierung aktivieren",
-    "enableEncryption": "Verschlüsselung aktivieren"
+    "enableDedup": "Deduplizierung aktivieren"
   },
   "vsanEsa": {
     "title": "vSAN ESA-Optionen",
@@ -222,8 +219,7 @@
     },
     "nvmeNotice": "vSAN ESA erfordert ausschließlich NVMe-Laufwerke.",
     "enableCompression": "Kompression aktivieren",
-    "enableDedup": "Deduplizierung aktivieren",
-    "enableEncryption": "Verschlüsselung aktivieren"
+    "enableDedup": "Deduplizierung aktivieren"
   },
   "nutanix": {
     "title": "Nutanix AOS-Optionen",
@@ -413,7 +409,6 @@
       "label": "EC 8+4",
       "description": "Erasure Coded k=8, m=4, 67% Effizienz"
     },
-    "backend": "Speicher-Backend",
     "storageBackend": "Speicher-Backend",
     "bluestore": "BlueStore",
     "filestore": "FileStore",
@@ -427,8 +422,6 @@
     "lz4": "LZ4",
     "zstd": "ZSTD",
     "expectedRatio": "Erwartetes Verhältnis: {{ratio}}:1",
-    "enableEncryption": "Verschlüsselung aktivieren",
-    "journalOnSsd": "Journal/WAL auf SSD",
     "walDbOffload": "WAL/DB auf separatem NVMe",
     "safeCapacity": "Sichere Kapazitätsschwelle",
     "safeCapacityDesc": "Ceph nearfull Schwelle: {{percent}}%"

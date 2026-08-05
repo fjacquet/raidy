@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Removed
+- **Five more inert controls: Ceph's Backend, Encryption and Journal-on-SSD, vSAN's Encryption,
+  and ZFS's Special vdev.** Each was a real platform feature the tool does not model — dm-crypt
+  and vSAN DARE carry no published capacity tax, BlueStore-vs-FileStore has no per-backend
+  overhead split here, FileStore's journal placement is superseded by the WAL/DB Offload setting
+  that *is* modelled, and a ZFS special vdev's capacity effect depends on its own size and the
+  pool's small-block mix, neither of which this tool knows. All five said as much in their own
+  hint text. **No calculated figure changes.**
 - **Every PowerVault configuration control, and PowerScale's SmartQuotas and SyncIQ toggles.**
   PowerVault rendered five controls — model, controller count, auto-tiering, SSD read cache and
   thin provisioning — and *all five* were inert: ME5 is modelled with one flat metadata overhead

@@ -85,7 +85,6 @@ describe('Config store URL persistence — platform options backward compatibili
       compressionRatio: 1.5,
       dedup: false,
       dedupRatio: 1.0,
-      encryption: false,
     })
     expect(state.longhornOptions).toEqual({
       diskMode: 'dedicated',
@@ -359,15 +358,12 @@ describe('Config store URL persistence — hostile links are rejected at the pro
       driveCount: 12,
       topology: { type: 'ceph', level: 'ceph_ec_4_2' },
       cephOptions: {
-        backend: 'bluestore',
         poolType: 'replicated',
         replicationFactor: 3,
         ecK: 4,
         ecM: 2,
         compression: false,
         compressionAlgorithm: 'none',
-        encryption: false,
-        journalOnSsd: true,
         walDbOffload: false,
         safeCapacityThreshold: 5, // schema bounds this to [0, 1]
       },

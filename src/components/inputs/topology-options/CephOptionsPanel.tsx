@@ -27,24 +27,6 @@ export function CephOptionsPanel() {
         {t('ceph.title')}
       </h4>
 
-      <div className="space-y-2">
-        <Label tooltip={th('ceph.backend')}>{t('ceph.backend')}</Label>
-        <SegmentedControl
-          value={cephOptions.backend}
-          options={[
-            { value: 'bluestore', label: 'BlueStore' },
-            { value: 'filestore', label: 'FileStore' },
-          ]}
-          onChange={(v) => setCephOptions({ backend: v as 'bluestore' | 'filestore' })}
-        />
-        <p className="text-xs text-slate-500">
-          {cephOptions.backend === 'bluestore'
-            ? 'Modern backend with direct disk access, better performance'
-            : 'Legacy backend using filesystem, compatibility mode'}{' '}
-          — for reference only, not used in any calculation.
-        </p>
-      </div>
-
       <Toggle
         id="ceph-compression"
         label={t('common.enableCompression')}
@@ -73,28 +55,6 @@ export function CephOptionsPanel() {
           </p>
         </div>
       )}
-
-      <Toggle
-        id="ceph-encryption"
-        label={t('common.enableEncryption')}
-        checked={cephOptions.encryption}
-        onChange={(v) => setCephOptions({ encryption: v })}
-      />
-      <p className="text-xs text-slate-500">
-        For reference only. Ceph's dm-crypt encryption carries no published capacity tax. Recorded
-        for your sizing sheet, not used in any calculation.
-      </p>
-
-      <Toggle
-        id="ceph-journal-ssd"
-        label={t('ceph.journalOnSsd')}
-        checked={cephOptions.journalOnSsd}
-        onChange={(v) => setCephOptions({ journalOnSsd: v })}
-      />
-      <p className="text-xs text-slate-500">
-        For reference only. Legacy FileStore journal placement — superseded by the WAL/DB Offload
-        setting below for BlueStore. Not used in any calculation.
-      </p>
 
       <Toggle
         id="ceph-wal-db-offload"

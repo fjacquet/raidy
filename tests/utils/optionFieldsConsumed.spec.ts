@@ -53,23 +53,12 @@ import {
 
 /** Every field here has a doc comment on its type explaining the same reason inline. */
 const ALLOWLIST: Record<string, string[]> = {
-  DEFAULT_ZFS_OPTIONS: [
-    'specialVdev', // informational by decision — real ZFS tunable, no citable capacity formula
-  ],
   DEFAULT_CONTROLLER_OPTIONS: [
     'readPolicy', // informational by decision — see RaidControllerOptions.writePolicy doc comment
     'writePolicy', // informational by decision — sustained-IOPS reasoning documented on the field
   ],
-  DEFAULT_VSAN_OPTIONS: [
-    'encryption', // informational by decision — vSAN DARE has no published capacity tax
-  ],
   DEFAULT_POWERSTORE_OPTIONS: [
     'model', // wired indirectly: UI preset writes systemOverheadPercent, which IS engine-read
-  ],
-  DEFAULT_CEPH_OPTIONS: [
-    'backend', // informational by decision — no per-backend overhead split to apply
-    'encryption', // informational by decision — dm-crypt has no published capacity tax
-    'journalOnSsd', // informational by decision — legacy FileStore concept, superseded by walDbOffload
   ],
   DEFAULT_LONGHORN_OPTIONS: [
     'overProvisioningPercent', // informational by decision — echoed to results, not used in any formula
