@@ -43,6 +43,7 @@
     "writeThroughput": "Maximaler sequenzieller Schreibdurchsatz. Bei paritätsbasiertem RAID wird der Schreibdurchsatz durch den Write-Penalty-Faktor reduziert.",
     "readIops": "Maximale zufällige Lese-IOPS. Summe aller Laufwerks-Lese-IOPS, begrenzt durch Controller- und Bus-Obergrenzen.",
     "writeIops": "Maximale zufällige Schreib-IOPS. Bei RAID-5 durch 4 teilen (jeder Schreibvorgang benötigt 4 I/O-Operationen). Bei RAID-6 durch 6 teilen.",
+    "sustainedWrite": "Burst = was die schnelle Ebene absorbiert, bevor sie sättigt. Dauerlast = was das System hält, sobald der Cache voll ist, begrenzt durch die eigene Schreibkapazität der Kapazitätsebene. Verwenden Sie Dauerlast für die Dimensionierung kontinuierlicher Ingestion.",
     "bottleneck": "Die Engpasskette zeigt den Durchsatz auf jeder Ebene. Die Ebene mit dem niedrigsten Durchsatz ist der Engpass. Ein Upgrade einer anderen Ebene verbessert die Leistung nicht.",
     "survivalRate": "Wahrscheinlichkeit, ein Jahr ohne Datenverlust zu überstehen, berechnet mittels Monte-Carlo-Simulation. Berücksichtigt Laufwerksausfallraten (AFR), Rebuild-Zeit, URE-Wahrscheinlichkeit während des Rebuilds und korrelierte Ausfälle.",
     "rebuildTime": "Geschätzte Zeit für den Rebuild eines ausgefallenen Laufwerks. Längere Rebuild-Zeiten erhöhen das Verwundbarkeitsfenster. Abhängig von Laufwerkskapazität, Rebuild-Geschwindigkeit und Array-Auslastung.",

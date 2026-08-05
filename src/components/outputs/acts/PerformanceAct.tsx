@@ -17,6 +17,23 @@ export function PerformanceAct({ performance }: PerformanceActProps) {
   const { t: th } = useTranslation('help')
   const isMobile = useIsMobile()
 
+  // A distinct sustained-write figure only exists where a fast tier's burst absorption diverges
+  // from what the capacity tier can drain (#112) — tiered S2D, tiered vSAN OSA, tiered Nutanix
+  // with a cache drive selected. Everywhere else (untiered, Ceph, BeeGFS, no cache selected) the
+  // two figures are computed to be exactly equal, so showing both would imply a distinction that
+  // doesn't exist for that platform. Comparing the engine's own outputs — rather than adding a
+  // platform allowlist here — keeps this correct automatically if the engine's model changes.
+  const hasDistinctSustainedWrite =
+    performance.sustainedWriteThroughputMBs !== performance.maxWriteThroughputMBs ||
+    performance.sustainedWriteIOPS !== performance.maxWriteIOPS
+
+  const writeMbpsLabel = hasDistinctSustainedWrite
+    ? t('performance.writeBurst')
+    : t('performance.write')
+  const writeIopsLabel = hasDistinctSustainedWrite
+    ? t('performance.writeIopsBurst')
+    : t('performance.writeIops')
+
   return (
     <div className="space-y-6">
       {/* Performance Gauges Card */}
@@ -39,7 +56,7 @@ export function PerformanceAct({ performance }: PerformanceActProps) {
             id="gauge-write-mbps"
             value={performance.maxWriteThroughputMBs}
             max={50000}
-            label={t('performance.write')}
+            label={writeMbpsLabel}
             unit="MB/s"
             size={isMobile ? 100 : 140}
           />
@@ -60,7 +77,7 @@ export function PerformanceAct({ performance }: PerformanceActProps) {
             id="gauge-write-iops"
             value={performance.maxWriteIOPS}
             max={2000000}
-            label={t('performance.writeIops')}
+            label={writeIopsLabel}
             unit="IOPS"
             size={isMobile ? 100 : 140}
             thresholds={[
@@ -69,7 +86,38 @@ export function PerformanceAct({ performance }: PerformanceActProps) {
               { value: 1.0, color: '#a855f7' },
             ]}
           />
+          {hasDistinctSustainedWrite && (
+            <>
+              <Speedometer
+                id="gauge-write-mbps-sustained"
+                value={performance.sustainedWriteThroughputMBs}
+                max={50000}
+                label={t('performance.writeSustained')}
+                unit="MB/s"
+                size={isMobile ? 100 : 140}
+              />
+              <Speedometer
+                id="gauge-write-iops-sustained"
+                value={performance.sustainedWriteIOPS}
+                max={2000000}
+                label={t('performance.writeIopsSustained')}
+                unit="IOPS"
+                size={isMobile ? 100 : 140}
+                thresholds={[
+                  { value: 0.5, color: '#22c55e' },
+                  { value: 0.8, color: '#3b82f6' },
+                  { value: 1.0, color: '#a855f7' },
+                ]}
+              />
+            </>
+          )}
         </div>
+
+        {hasDistinctSustainedWrite && (
+          <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
+            <InfoTooltip content={th('output.sustainedWrite')} /> {t('performance.sustainedHint')}
+          </p>
+        )}
 
         <div className="mt-4 pt-4 border-t border-slate-200 dark:border-surface-700">
           <p className="text-sm text-slate-500 dark:text-slate-400">

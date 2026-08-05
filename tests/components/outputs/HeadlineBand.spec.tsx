@@ -17,8 +17,10 @@ const volumetry: VolumetryResult = {
 const performance: PerformanceResult = {
   maxReadThroughputMBs: 1200,
   maxWriteThroughputMBs: 800,
+  sustainedWriteThroughputMBs: 800,
   maxReadIOPS: 500000,
   maxWriteIOPS: 300000,
+  sustainedWriteIOPS: 300000,
   layers: [],
   bottleneckDescription: '',
 }

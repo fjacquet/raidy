@@ -58,8 +58,10 @@ export function usePerformanceCalc(): PerformanceResult {
       return {
         maxReadThroughputMBs: 0,
         maxWriteThroughputMBs: 0,
+        sustainedWriteThroughputMBs: 0,
         maxReadIOPS: 0,
         maxWriteIOPS: 0,
+        sustainedWriteIOPS: 0,
         layers: [],
         bottleneckDescription: 'No drive selected',
       }
@@ -123,8 +125,10 @@ export function usePerformanceCalc(): PerformanceResult {
       return {
         maxReadThroughputMBs: 0,
         maxWriteThroughputMBs: 0,
+        sustainedWriteThroughputMBs: 0,
         maxReadIOPS: 0,
         maxWriteIOPS: 0,
+        sustainedWriteIOPS: 0,
         layers: [],
         bottleneckDescription: 'Performance calculation failed',
       }

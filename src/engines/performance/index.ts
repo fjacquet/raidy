@@ -231,6 +231,17 @@ export function calculatePerformance(input: PerformanceInput): PerformanceResult
   let writeCapIOPS: number
   let readBW: number
   let writeBW: number
+  // Sustained (steady-state) write ceiling — see #112. `writeCapIOPS`/`writeBW` above model the
+  // BURST figure: what the fast tier absorbs before it saturates. Every byte written through a
+  // write-back cache still has to land on the capacity tier eventually, and no numeric drain/
+  // destage rate is published for S2D, vSAN OSA, or Nutanix's OpLog (see the fast-tier research
+  // doc), so the only defensible sustained bound is the capacity tier's own write capacity —
+  // once the cache is continuously full, throughput can't exceed what the slow tier can absorb.
+  // For platforms/branches with no distinct fast-tier write model, burst already IS the
+  // capacity-tier figure, so sustained is set equal to it (not merely close — identical), which
+  // is what keeps burst and sustained visibly the same number in the UI for those cases.
+  let sustainedWriteCapIOPS: number
+  let sustainedWriteBW: number
 
   if (topology.type === 's2d' && tiering && cacheDrive && capacityDrive) {
     // cacheDrive / capacityDrive are narrowed to Drive by the guard above
@@ -238,6 +249,7 @@ export function calculatePerformance(input: PerformanceInput): PerformanceResult
     const p = capacityDrive
     const cacheCount = tiering.cacheTierDriveCount
     const capCount = tiering.capacityTierDriveCount
+    const capUsableDrivesS2d = Math.max(0, tiering.capacityTierDriveCount - hotSpares)
     const ws = (workingSetPercent ?? 20) / 100
     // Reads blend by working set: hot data served from cache tier, cold from capacity tier.
     // Bounded, not a weighted sum — see `boundedTierThroughput` for why (#111).
@@ -246,7 +258,7 @@ export function calculatePerformance(input: PerformanceInput): PerformanceResult
       cacheCount * c.performance.iops_read,
       capCount * p.performance.iops_read,
     )
-    // Writes are absorbed by the fast cache tier (write-back)
+    // Writes are absorbed by the fast cache tier (write-back) — the BURST figure.
     writeCapIOPS = cacheCount * c.performance.iops_write
     readBW = boundedTierThroughput(
       ws,
@@ -254,6 +266,10 @@ export function calculatePerformance(input: PerformanceInput): PerformanceResult
       capCount * p.performance.bandwidth_read_mb,
     )
     writeBW = cacheCount * c.performance.bandwidth_write_mb
+    // Sustained: bounded by the capacity tier's own write capacity, spares subtracted (the
+    // population that actually serves I/O — same adjustment the media layer uses elsewhere).
+    sustainedWriteCapIOPS = capUsableDrivesS2d * p.performance.iops_write
+    sustainedWriteBW = capUsableDrivesS2d * p.performance.bandwidth_write_mb
   } else if (tiering && capacityDrive) {
     // Every other tiered platform (vSAN OSA disk groups, Ceph WAL/DB offload, Nutanix hybrid,
     // BeeGFS metadata targets): the bulk pool is the capacity tier, so the media layer is at
@@ -289,6 +305,11 @@ export function calculatePerformance(input: PerformanceInput): PerformanceResult
       writeCapIOPS = result.writeCapIOPS
       readBW = result.readBW
       writeBW = result.writeBW
+      // Sustained: bounded by the capacity tier's own write capacity — every write a fast-tier
+      // model (vSAN OSA cache, Nutanix OpLog) absorbs still has to destage here eventually, and
+      // no numeric drain rate is published for either (see the fast-tier research doc).
+      sustainedWriteCapIOPS = capUsableDrives * p.performance.iops_write
+      sustainedWriteBW = capUsableDrives * p.performance.bandwidth_write_mb
     } else {
       // Ceph WAL/DB offload: BlueStore's WAL/DB device holds only the internal write-ahead log
       // and RocksDB metadata — it is never in the data read path, and its write-path effect is
@@ -305,12 +326,20 @@ export function calculatePerformance(input: PerformanceInput): PerformanceResult
       writeCapIOPS = readCapIOPS
       readBW = p.performance.bandwidth_read_mb * capUsableDrives
       writeBW = p.performance.bandwidth_write_mb * capUsableDrives
+      // No fast-tier write model here (Ceph, BeeGFS, or a fast-tier-model platform with no
+      // cache drive selected) — the burst figure is already the capacity-tier baseline, so
+      // sustained is identical to it, not merely close.
+      sustainedWriteCapIOPS = writeCapIOPS
+      sustainedWriteBW = writeBW
     }
   } else {
     readCapIOPS = totalDriveIOPS
     writeCapIOPS = totalDriveIOPS
     readBW = drive.performance.bandwidth_read_mb * usableDrives
     writeBW = drive.performance.bandwidth_write_mb * usableDrives
+    // Untiered: no fast tier exists at all, so burst and sustained are the same number.
+    sustainedWriteCapIOPS = writeCapIOPS
+    sustainedWriteBW = writeBW
   }
 
   // Max Read IOPS = what you'd get with 100% reads (no RAID penalty)
@@ -318,6 +347,11 @@ export function calculatePerformance(input: PerformanceInput): PerformanceResult
 
   // Max Write IOPS = what you'd get with 100% writes (full RAID penalty)
   const maxPureWriteIOPS = writeCapIOPS / effectiveWritePenalty
+
+  // Sustained (steady-state) write IOPS — same RAID-penalty treatment as the burst figure above,
+  // applied to the capacity-tier-bounded `sustainedWriteCapIOPS` instead of the burst
+  // `writeCapIOPS`. See #112.
+  const sustainedMaxPureWriteIOPS = sustainedWriteCapIOPS / effectiveWritePenalty
 
   // Blended IOPS for the actual workload mix using asymmetric harmonic formula.
   // Algebraic proof of reduction: when readCapIOPS === writeCapIOPS === totalDriveIOPS,
@@ -332,6 +366,7 @@ export function calculatePerformance(input: PerformanceInput): PerformanceResult
   const blendedIOPS = maxFrontendIOPS * powerFlexCpuFactor
   const adjustedReadIOPS = maxPureReadIOPS * powerFlexCpuFactor
   const adjustedWriteIOPS = maxPureWriteIOPS * powerFlexCpuFactor
+  const sustainedAdjustedWriteIOPS = sustainedMaxPureWriteIOPS * powerFlexCpuFactor
 
   // Throughput from drives
   const totalReadThroughput = readBW
@@ -340,6 +375,8 @@ export function calculatePerformance(input: PerformanceInput): PerformanceResult
   // Apply write penalty to throughput for write-heavy workloads
   // Sequential throughput is less affected by RAID penalty than random IOPS
   const effectiveWriteThroughput = totalWriteThroughput / sequentialWritePenalty
+  // Sustained counterpart of the line above — see #112.
+  const sustainedEffectiveWriteThroughput = sustainedWriteBW / sequentialWritePenalty
 
   // Blended throughput based on read/write mix
   const blendedThroughput = totalReadThroughput * readRatio + effectiveWriteThroughput * writeRatio
@@ -352,6 +389,22 @@ export function calculatePerformance(input: PerformanceInput): PerformanceResult
     sequentialRatio * totalReadThroughput + randomRatio * iopsLimitedThroughput
   const effectiveThroughput =
     sequentialRatio * blendedThroughput + randomRatio * iopsLimitedThroughput
+
+  // Sustained counterpart of `effectiveThroughput` above — same read/write and random/sequential
+  // blend, with `sustainedWriteCapIOPS`/`sustainedWriteBW` standing in for the burst
+  // `writeCapIOPS`/`writeBW`. This is what the media layer would show under sustained load; it
+  // feeds `sustainedMinThroughput` below the same way `effectiveThroughput` feeds `minThroughput`
+  // for the burst figure — reusing the burst `minThroughput` here would let the (higher, cache-
+  // inflated) burst media ceiling silently uncap the sustained bandwidth figure. See #112.
+  const sustainedDenominator =
+    readRatio / readCapIOPS + (writeRatio * effectiveWritePenalty) / sustainedWriteCapIOPS
+  const sustainedMaxFrontendIOPS = sustainedDenominator > 0 ? 1 / sustainedDenominator : 0
+  const sustainedBlendedIOPS = sustainedMaxFrontendIOPS * powerFlexCpuFactor
+  const sustainedIopsLimitedThroughput = (sustainedBlendedIOPS * blockSizeBytes) / (1024 * 1024)
+  const sustainedBlendedThroughput =
+    totalReadThroughput * readRatio + sustainedEffectiveWriteThroughput * writeRatio
+  const sustainedMediaThroughput =
+    sequentialRatio * sustainedBlendedThroughput + randomRatio * sustainedIopsLimitedThroughput
 
   // --- Controller/CPU Layer ---
   // Use CONTROLLER_LIMITS to get the limits for the selected controller/HBA
@@ -431,6 +484,18 @@ export function calculatePerformance(input: PerformanceInput): PerformanceResult
   // Identify bottleneck and calculate utilization
   const bottleneckDescription = identifyBottleneck(layers)
   const minThroughput = getMinThroughput(layers)
+  // Sustained counterpart of `minThroughput`: the same non-media infra layers (controller/PCIe/
+  // network don't distinguish burst from sustained), but with `sustainedMediaThroughput` standing
+  // in for the burst `mediaLayer.throughputMBs` — otherwise the burst media ceiling (inflated by
+  // the fast tier) would silently uncap the sustained bandwidth figure. See #112.
+  const sustainedMinThroughput = isNvmeDirect
+    ? Math.min(sustainedMediaThroughput, pcieLimits.bandwidth, networkLimits.bandwidth)
+    : Math.min(
+        sustainedMediaThroughput,
+        controllerThroughput,
+        pcieLimits.bandwidth,
+        networkLimits.bandwidth,
+      )
 
   // XFS alignment
   // A filesystem on a tiered pool is laid out on the data-bearing capacity tier — the fast tier
@@ -451,6 +516,12 @@ export function calculatePerformance(input: PerformanceInput): PerformanceResult
   // Calculate max read/write throughput considering bottlenecks
   const maxReadThroughputMBs = Math.min(effectiveReadThroughput, minThroughput)
   const maxWriteThroughputMBs = Math.min(effectiveWriteThroughput, minThroughput)
+  // Sustained write throughput: capped by `sustainedMinThroughput` (its own media-aware infra
+  // ceiling), not `minThroughput` — see the comment at `sustainedMinThroughput`. See #112.
+  const sustainedWriteThroughputMBs = Math.min(
+    sustainedEffectiveWriteThroughput,
+    sustainedMinThroughput,
+  )
 
   // Cap IOPS by controller/appliance limit
   // For integrated appliances (PowerStore, PowerScale, etc.), the controller IS the system limit.
@@ -459,10 +530,13 @@ export function calculatePerformance(input: PerformanceInput): PerformanceResult
   const iopsCeiling = isNvmeDirect ? Math.min(pcieLimits.iops, networkLimits.iops) : controllerIOPS
   const cappedReadIOPS = Math.min(adjustedReadIOPS, iopsCeiling)
   const cappedWriteIOPS = Math.min(adjustedWriteIOPS, iopsCeiling)
+  const sustainedWriteIOPS = Math.min(sustainedAdjustedWriteIOPS, iopsCeiling)
 
   return {
     maxReadThroughputMBs,
     maxWriteThroughputMBs,
+    sustainedWriteThroughputMBs,
+    sustainedWriteIOPS,
     // Max IOPS capped by the lowest limit in the chain (typically controller for appliances)
     maxReadIOPS: cappedReadIOPS,
     maxWriteIOPS: cappedWriteIOPS,

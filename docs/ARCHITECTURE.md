@@ -354,10 +354,34 @@ flowchart LR
   > gets more absurd the faster the cache is (e.g. `ws=0.5`, cache 1,000,000 IOPS, capacity 1,000
   > IOPS: weighted-sum formula gives 500,500; the correct bound gives ~2,000). All three blends
   > share one helper, `boundedTierThroughput` in `fast-tier-models.ts`, so they cannot drift back
-  > into the wrong shape. The write-back absorption itself (`writeCapIOPS = cacheCount ×
-  > cacheWriteIOPS` for S2D/vSAN, unconditional on any split) is a different, still-open question —
-  > it models unbounded write-back with no destage/drain-rate ceiling, tracked separately from
-  > this fix.
+  > into the wrong shape.
+
+  > **Burst vs. sustained write throughput** (issue #112). `writeCapIOPS = cacheCount ×
+  > cacheWriteIOPS` (S2D/vSAN) and the OpLog-absorbed share of Nutanix's write model are the
+  > **burst** figure: what the fast tier's write-back cache/OpLog absorbs before it saturates.
+  > Nothing bounded that by a destage/drain rate, so the burst number was reported as if it were
+  > steady-state — correct for a burst shorter than the cache can hold, wrong for sustained load,
+  > where throughput converges on the **capacity tier's own write capacity** (every byte written
+  > through a fast tier eventually has to land there, and no platform — S2D, vSAN OSA, or Nutanix's
+  > OpLog — publishes a numeric drain rate to model a tighter ceiling against). `PerformanceResult`
+  > now reports both, clearly labelled, rather than replacing the burst figure or dropping it:
+  > `maxWriteThroughputMBs`/`maxWriteIOPS` stay the burst figure (unchanged formula, unchanged
+  > value), and new `sustainedWriteThroughputMBs`/`sustainedWriteIOPS` fields report the
+  > capacity-tier-bounded figure, run through the same `effectiveWritePenalty` and bottleneck-chain
+  > treatment as the burst figure so they're directly comparable. The sustained figure gets its own
+  > infra-only bottleneck ceiling (`sustainedMinThroughput` in `performance/index.ts`) rather than
+  > reusing the burst figure's `minThroughput`, which is partly derived from the burst (cache-
+  > inflated) media layer and would otherwise silently uncap it. Only platforms with a distinct
+  > fast-tier write model and a selected cache drive get a sustained figure that differs from
+  > burst — tiered S2D, tiered vSAN OSA (both disk-group modes), and tiered Nutanix with a cache
+  > drive selected. Everywhere else (untiered configurations, Ceph, BeeGFS, or a fast-tier-model
+  > platform with no cache drive selected), burst and sustained are computed to be **exactly**
+  > equal, not merely close, because the burst figure there is already the capacity-tier-only
+  > baseline. `PerformanceAct` (`src/components/outputs/acts/PerformanceAct.tsx`) shows the second
+  > gauge pair only when the two figures actually differ (`hasDistinctSustainedWrite`), comparing
+  > the engine's own outputs rather than hard-coding a platform allowlist — so the UI stays correct
+  > automatically if the engine's model changes. No new user input is required: the sustained bound
+  > is derived purely from the capacity tier's own drive specs, already collected via `tiering`.
 - RAID write penalty (2x for RAID1, 4x for RAID5, 6x for RAID6); S2D mirror write penalty scales with the copy count (two-way 2×, three-way 3×, MAP = `mirrorCopies + 0.5`), with `s2dOptions` threaded through `PerformanceInput`/`usePerformanceCalc`
 - Controller limits (IOPS and throughput caps) — skipped for NVMe-direct topologies (vSAN ESA)
 - PCIe bandwidth (lanes × generation speed)
