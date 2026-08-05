@@ -40,7 +40,7 @@ import { calculateEstimatedLatency, calculateXfsAlignment, getPowerFlexCpuFactor
 import {
   calculateNetworkLimits,
   calculatePcieLimits,
-  getMinThroughput,
+  chainMinThroughput,
   identifyBottleneck,
   resolveNetworkModel,
 } from './utils/bottleneck-chain'
@@ -483,19 +483,11 @@ export function calculatePerformance(input: PerformanceInput): PerformanceResult
 
   // Identify bottleneck and calculate utilization
   const bottleneckDescription = identifyBottleneck(layers)
-  const minThroughput = getMinThroughput(layers)
-  // Sustained counterpart of `minThroughput`: the same non-media infra layers (controller/PCIe/
-  // network don't distinguish burst from sustained), but with `sustainedMediaThroughput` standing
-  // in for the burst `mediaLayer.throughputMBs` — otherwise the burst media ceiling (inflated by
-  // the fast tier) would silently uncap the sustained bandwidth figure. See #112.
-  const sustainedMinThroughput = isNvmeDirect
-    ? Math.min(sustainedMediaThroughput, pcieLimits.bandwidth, networkLimits.bandwidth)
-    : Math.min(
-        sustainedMediaThroughput,
-        controllerThroughput,
-        pcieLimits.bandwidth,
-        networkLimits.bandwidth,
-      )
+  // Burst and sustained differ in exactly one input — the media figure — so they share one
+  // derivation (#127). `layers` decides which links are in the chain, including vSAN ESA's
+  // missing controller; neither call restates that.
+  const minThroughput = chainMinThroughput(layers, mediaLayer, mediaLayer.throughputMBs)
+  const sustainedMinThroughput = chainMinThroughput(layers, mediaLayer, sustainedMediaThroughput)
 
   // XFS alignment
   // A filesystem on a tiered pool is laid out on the data-bearing capacity tier — the fast tier

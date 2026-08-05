@@ -32,6 +32,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Burst and sustained bottleneck ceilings share one derivation (#127).** `sustainedMinThroughput`
+  was ~15 lines paralleling the burst chain, including its own `isNvmeDirect` ternary — so which
+  links belong to the bottleneck chain was a fact stated in two places. Both now call
+  `chainMinThroughput(layers, mediaLayer, mediaFigure)`: burst passes the media layer's own
+  throughput, sustained passes the capacity tier's, and the layer array decides membership for
+  both. vSAN ESA's absent controller is expressed once, by not being in the array.
+
+  This is the shape that has already cost this engine twice — the S2D read blend copied into vSAN
+  would have propagated a 45× overstatement to a second platform (#111), and two paths computing
+  raw capacity produced a 10× error in the Hardware panel (#121). Fifteen duplicated lines in the
+  bottleneck chain is the same shape, caught earlier.
+
+  **No published number moves.** Verified by characterization before and after across tiered S2D,
+  tiered vSAN OSA, tiered vSAN ESA, tiered Nutanix, untiered RAID6, Ceph, BeeGFS and untiered
+  vSAN ESA — read/write/sustained throughput, read/write/sustained IOPS, media ceiling and
+  bottleneck description, byte-identical on all eight. The exact-equality cases (Ceph, BeeGFS,
+  untiered) stay exactly equal rather than approximately.
+
+  The old `getMinThroughput` is gone, having had exactly one caller and no direct test. Four unit
+  tests now cover the shared helper. One is a contract test rather than a live-bug test, and is
+  labelled as such: every fast-tier model today yields a sustained media figure at or below the
+  burst one, so substituting versus merging agree on real inputs — mutating the helper to merge
+  leaves `sustained-write-throughput.spec.ts` fully green. The membership test does catch it.
+
 - **Eight more platforms rebuild from distributed reserve capacity, so the hot-spare control is
   gone for them.** S2D, Ceph, Nutanix, Longhorn, PowerFlex, PowerStore, PowerScale and
   ObjectScale join vSAN, which was already handled. Each vendor documents rebuild from reserved
