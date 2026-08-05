@@ -74,6 +74,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   XFS 1%). **No calculated figure changes** — only the control's visibility.
 
 ### Removed
+- **Four unused packages: `recharts` (8.5 MB), `js-yaml` (1.0 MB), and the redundant
+  `@types/dompurify` and `@types/js-yaml`.** None was imported anywhere — the app draws its charts
+  as hand-rolled SVG, builds YAML from template literals, and `dompurify` v3 ships its own types.
+  The first two sat in the *production* dependency graph of a project that supply-chain-checks
+  every build, so this removes attack surface, not only weight. Verified by a successful build
+  plus `check:bundle-size` and `check:supply-chain`, not by grep alone. No behaviour changes.
 - **Ten more inert controls, across NetApp, Synology, Longhorn and BeeGFS.** NetApp's Platform,
   ADP version and Zero Detection; Synology's Model Series, SSD Cache and Cache Mode; Longhorn's
   Over-Provisioning; and BeeGFS's Chunk Size, Number of Targets and Network fabric. The BeeGFS
