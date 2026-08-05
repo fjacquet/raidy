@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **The Hardware panel's raw-capacity and hardware-cost summary counted one server's drives, not
+  the cluster's.** The same panel renders a drive-count hint of `driveCount * serverCount`
+  ("Total drives: 120"), then computed both summary figures from `driveCount` alone — so a
+  10-node BeeGFS cluster with 12 drives per node announced 120 drives and priced twelve.
+  Understated raw capacity and cost by the server count, a factor of 10 on that configuration.
+  Reported from the running app; no test covered the panel's summary. Both figures now scale by
+  `effectiveServerCount`, the same clamp the engines use, so a platform whose servers slider is
+  hidden cannot pick up a stale count. **Output-dashboard figures were always correct** — they
+  come from the engines, which multiply properly; only the input panel's own summary was wrong.
+
 ### Documented
 
 - Researched whether BeeGFS's `numTargets` and `chunkSizeKb` (issue #69) could drive a genuine
