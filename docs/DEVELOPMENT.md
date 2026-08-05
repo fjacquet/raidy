@@ -46,6 +46,30 @@ Strict mode throughout, split into three configs (referenced by a solution `tsco
 
 Path aliases are mirrored in `vite.config.ts` and `vitest.config.ts` `resolve.alias`.
 
+## Dead-code gate — Knip
+
+`npm run check:dead` (Knip, `knip.json`) reports **unused exports, unimported files and unused
+dependencies**. That is the class TypeScript's `noUnusedLocals` and Biome's `noUnusedVariables`
+cannot see: both are file-scoped, and neither builds an import graph. The gap is not theoretical —
+it is how 8.5 MB of unused `recharts` sat in production dependencies until 2026-08-05.
+
+It runs at two points:
+
+- **`.githooks/pre-commit`**, armed by `npm install` via the `prepare` script setting
+  `core.hooksPath`. No husky — a hook is nine lines of shell and one config line.
+- **`prebuild`**, alongside `check-supply-chain`. This exists so `git commit --no-verify` *defers*
+  the failure to build time rather than avoiding it.
+
+Two things to know before you silence a finding:
+
+- **A new entry point Knip cannot follow** — a `new Worker(new URL(...))`, a lazy route — goes in
+  `knip.json`'s `entry` array. `resilienceWorker.ts` is there for exactly this reason.
+- **A finding is usually a config fault, not a dead symbol.** Three of the first four were:
+  `tailwindcss` looked unused because `.css` was outside `project`; everything exported for a test
+  looked unused because `tests/**` was; and `*Props` interfaces were reported until
+  `ignoreExportsUsedInFile` encoded the decision to keep them. Fix the config, do not suppress the
+  finding — a suppression there would have deleted a live dependency.
+
 ## Engine architecture
 
 `src/engines/**` are **pure functions** — no React, no DOM, no store. Each platform implements a strategy registered in the engine's `index.ts` (see [ARCHITECTURE.md](./ARCHITECTURE.md)). To add a platform: add a strategy file, register it, add types in `src/types/topology.ts`, add a store slice option, and add a UI options panel.

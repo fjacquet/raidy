@@ -6,7 +6,8 @@
   "description": "Browser-based simulator for modern storage infrastructure (RAID, ZFS, vSAN, S2D, Nutanix, Dell, NetApp, Ceph, Synology, Longhorn). 100% client-side.",
   "scripts": {
     "dev": "vite",
-    "prebuild": "node scripts/check-supply-chain.mjs",
+    "prepare": "git config core.hooksPath .githooks",
+    "prebuild": "node scripts/check-supply-chain.mjs && npm run check:dead",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json",
