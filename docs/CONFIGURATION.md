@@ -1,48 +1,74 @@
 # Configuration: CI, security gates & deployment
 
-The CI/CD pipeline is a single workflow, `.github/workflows/static.yml`, that runs on push and PR to `main`, on `v*` tags, and via manual dispatch. It builds on **Node 24** with all third-party actions **pinned to commit SHAs**. A separate `.github/workflows/codeql.yml` runs CodeQL static analysis.
+CI is **federated**: this repository holds thin caller workflows that delegate to reusable
+workflows in [`fjacquet/ci`](https://github.com/fjacquet/ci), pinned to `@v1`. There is no
+pipeline defined here to read — the steps below live in the central repo, and changing them means
+changing it, not this one.
 
-## Pipeline (build job, in order)
+| Workflow | Triggers | Delegates to |
+|---|---|---|
+| `ci.yml` | push + PR to `main` | `web-ci.yml@v1` (Node 24) |
+| `security.yml` | push + PR to `main`, weekly cron (Mon 04:23) | `web-security.yml@v1` |
+| `deploy.yml` | push to `main`, manual dispatch | `web-deploy.yml@v1` (build-dir `dist`) |
+| `release.yml` | `v*` tags | `web-release.yml@v1` (no npm, no Docker) |
+| `dependabot-automerge.yml` | `pull_request_target` from `dependabot[bot]` | — (inline `gh pr merge --auto --rebase`) |
 
-1. **Supply-chain gate** — `node scripts/check-supply-chain.mjs`, run *before* `npm ci` so a tainted manifest never installs.
-2. `npm ci`
-3. **`npm audit --audit-level=low`** — fails on any LOW+ advisory.
-4. **OSV-Scanner** — scans `package-lock.json`, emits SARIF (uploaded to the Security tab), then a gate fails the build on any LOW+ finding.
-5. **Type check** — `npm run typecheck` (app + test projects).
-6. **Lint** — `npm run lint` (Biome).
-7. **Test** — `npm run test:run` (Vitest).
-8. **Build** — `npm run build`.
-9. **Bundle-size gate** — `npm run check:bundle-size`.
-10. **CycloneDX SBOM** — generated for prod deps, uploaded as an artifact, and attached to the GitHub Release on `v*` tags.
-11. **Deploy** — Pages artifact upload + deploy, gated to `main` non-PR.
+`release.yml` declares `packages: write`, `id-token: write` and `attestations: write` — the first
+because the reusable workflow's npm/Docker jobs validate permissions even when skipped, the other
+two for the OIDC build-provenance attestation.
 
-## Security gates in detail
+## Gates that live in this repository
+
+These are the ones a contributor can run and change locally. Everything else is the central CI's.
+
+| Gate | Command | When |
+|---|---|---|
+| Supply-chain denylist | `npm run check:supply-chain` | `prebuild`, so every `npm run build` |
+| Dead code / unused deps | `npm run check:dead` | `prebuild` **and** `.githooks/pre-commit` |
+| Bundle-size budget | `npm run check:bundle-size` | after a build |
+
+**`prebuild` runs both `check-supply-chain` and `check:dead`.** So `npm run build` fails on a
+tainted manifest or on dead code, not only in CI.
 
 ### Supply-chain denylist — `scripts/check-supply-chain.mjs`
-Raidy is 100% client-side; the only sanctioned egress is the user explicitly sharing a config via the URL hash. A bundled analytics/error-reporting SDK would be a latent exfiltration path, so the gate fails if any telemetry package (Sentry, PostHog, Amplitude, Mixpanel, Datadog, LogRocket, Segment, FullStory, Hotjar, Google Analytics, …) appears in `dependencies` or `devDependencies`. Runs as the `prebuild` hook too.
 
-### Dependency advisories
-Two complementary scanners, both gating at **LOW+**: `npm audit` (npm advisory DB) and **OSV-Scanner** (`osv-scanner.toml`, OSV.dev). There are currently **no waivers**; to add one, append an `[[IgnoredVulns]]` block to `osv-scanner.toml` with a justification and an `ignoreUntil` expiry.
+Scans `package.json` for known telemetry/analytics packages and fails before `npm ci` can install
+anything. See [ADR 0001](./adr/0001-supply-chain-audit-gate.md) for why this runs ahead of
+install rather than after.
+
+### Dead code — `knip`
+
+`knip.json` configures it. Unused exports, unimported files and unused dependencies are invisible
+to TypeScript's `noUnusedLocals` and Biome's `noUnusedVariables` — both are file-scoped, and
+neither builds an import graph. See [DEVELOPMENT.md](./DEVELOPMENT.md#dead-code-gate--knip) for
+how to read a finding (usually a config fault, not a dead symbol).
+
+The pre-commit hook is armed by `npm install`, via the `prepare` script setting
+`core.hooksPath .githooks`. No husky.
 
 ### Bundle-size budgets — `scripts/check-bundle-size.mjs`
-Post-build gzip tripwires (regression detection, not hard limits):
 
-| Chunk | Budget (gz) | Why |
-|---|---|---|
-| `index-<hash>.js` (eager app) | ≤ 420 KiB | First-paint payload; bloat hurts load time. |
-| `vendor-pdf-<hash>.js` (lazy) | ≤ 170 KiB | jspdf + jspdf-autotable; catches e.g. html2canvas creeping back. |
-
-When a change legitimately exceeds a budget, bump the threshold in the script on purpose (and note it here).
+Gz budgets on the eager `index` chunk and the lazy `vendor-pdf` chunk. Run it after `npm run
+build`; the sizes come from `dist/`.
 
 ## Deployment
 
-GitHub Pages, base path `/raidy/` (set in `vite.config.ts`), served at `https://fjacquet.github.io/raidy/`. Deploy runs only on `main` (non-PR) via the Pages artifact mechanism.
+`deploy.yml` publishes to GitHub Pages on every push to `main`. The base path is `/raidy/`
+(`vite.config.ts`), matching `https://fjacquet.github.io/raidy/`.
+
+Releases are cut by pushing a `vX.Y.Z` tag, which triggers `release.yml` — tarball, zip,
+`sbom.cyclonedx.json`, `SHA256SUMS` and a provenance attestation. The GitHub release is created
+with GitHub's *auto-generated* notes, not the CHANGELOG body; enrich it afterwards with
+`gh release edit vX.Y.Z --notes-file <file>`.
 
 ## Local equivalents
 
 ```bash
+npm run typecheck               # app + test projects
+npm run lint                    # Biome
+npm run test:run                # Vitest, single pass
+npm run check:dead              # knip
 npm run check:supply-chain      # telemetry denylist
-npm audit --audit-level=low     # advisory gate
-npm run typecheck && npm run lint && npm run test:run && npm run build
+npm run build                   # runs both prebuild gates first
 npm run check:bundle-size       # after build
 ```

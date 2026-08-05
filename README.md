@@ -1,7 +1,10 @@
 # Raidy
 
 [![CI](https://github.com/fjacquet/raidy/actions/workflows/ci.yml/badge.svg)](https://github.com/fjacquet/raidy/actions/workflows/ci.yml)
+[![Security](https://github.com/fjacquet/raidy/actions/workflows/security.yml/badge.svg)](https://github.com/fjacquet/raidy/actions/workflows/security.yml)
+[![Deploy](https://github.com/fjacquet/raidy/actions/workflows/deploy.yml/badge.svg)](https://github.com/fjacquet/raidy/actions/workflows/deploy.yml)
 [![Release](https://img.shields.io/github/v/release/fjacquet/raidy?sort=semver)](https://github.com/fjacquet/raidy/releases/latest)
+[![Live demo](https://img.shields.io/badge/demo-fjacquet.github.io%2Fraidy-2ea44f)](https://fjacquet.github.io/raidy/)
 
 Browser-based storage infrastructure simulator for enterprise storage platforms.
 
@@ -16,7 +19,8 @@ Browser-based storage infrastructure simulator for enterprise storage platforms.
 - **vSAN**: OSA and ESA with RAID-1/5/6 policies
 - **NetApp**: RAID-DP, RAID-TEC with ADP, WAFL overhead, and data reduction
 - **Synology**: SHR, SHR-2, RAID F1 with Btrfs/ext4
-- **Dell**: PowerStore, PowerScale, ObjectScale topologies
+- **Nutanix**: RF2/RF3 and EC-X, all-flash or hybrid clusters
+- **Dell**: PowerStore, PowerScale, ObjectScale, and PowerVault ME5 (RAID 1/5/6/10 and ADAPT)
 - **Standard RAID**: 0, 1, 5, 6, 10, 50, 60
 
 ## Features
@@ -33,6 +37,10 @@ Browser-based storage infrastructure simulator for enterprise storage platforms.
 - **Backup Engine**: Estimate backup storage requirements based on change rate and retention
 - **Unit System Toggle**: Display capacity in binary (TiB/GiB) or decimal (TB/GB) units
 - **Multi-Server Support**: Scale calculations across multiple servers/nodes
+- **Built-in guide**: In-app explanations of what each figure means, per platform, plus a tooltip
+  on every non-obvious control
+- **Four languages**: EN, FR, DE, IT, with Swiss number formatting
+- **Exports**: PDF report and PowerPoint one-pager, both theme- and locale-aware
 
 ## Quick Start
 
@@ -53,10 +61,14 @@ npm run build
 - TypeScript (strict mode)
 - Zustand (URL hash state persistence)
 - Tailwind CSS v4 (dark mode)
-- Recharts + D3-sankey (visualizations)
+- D3-sankey (capacity waterfall) + hand-rolled SVG gauges and charts
 - Web Workers (Monte Carlo simulations)
 
-See [`docs/`](./docs/) for [architecture](./docs/ARCHITECTURE.md), [development](./docs/DEVELOPMENT.md), [testing](./docs/TESTING.md), [configuration & CI](./docs/CONFIGURATION.md), and [getting started](./docs/GETTING-STARTED.md).
+See [`docs/`](./docs/) for [architecture](./docs/ARCHITECTURE.md),
+[development](./docs/DEVELOPMENT.md), [testing](./docs/TESTING.md),
+[configuration & CI](./docs/CONFIGURATION.md), [security](./docs/SECURITY.md),
+[getting started](./docs/GETTING-STARTED.md), [decisions](./docs/adr/) and the
+[vendor specifications](./docs/vendor-specs/) the engines were built from.
 
 ## Development
 

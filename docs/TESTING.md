@@ -60,10 +60,30 @@ Component tests mock `react-i18next`'s `useTranslation`, so they assert structur
 
 `tests/i18n/parity.spec.ts` guards the four locales (`en`, `fr`, `de`, `it`) under `src/i18n/locales/` against drift from the `en` reference. It discovers the locale and namespace lists from disk (no hand-listed file pairs) and, for every namespace, recursively flattens nested keys to dotted paths, then asserts both directions per locale: no `en` key is missing from the translation, and no translation key is an orphan absent from `en`. Failures name the exact locale, namespace, and missing/orphan key path. This is what catches raw i18n keys rendering on screen (missing translation) and dead/typo'd keys (orphan translation) before they ship.
 
+## i18n orphan keys
+
+`tests/i18n/orphanKeys.spec.ts` is the other direction, and the subtler one: parity checks the
+four locales against `en`, this checks `en` against the **source**. A key nobody renders is dead
+weight that survives every parity run, because all four locales agree on it.
+
+The scan is literal, so keys assembled at runtime need a `DYNAMIC_PREFIXES` entry naming the call
+site that builds them. Prefer writing the full key out at the call site instead — an entry exempts
+the whole subtree, while a literal keeps the guarantee that deleting a usage surfaces the key.
+`topologyConstants.ts` and `PowerVaultOptionsPanel.tsx` both spell their keys out for this reason.
+
+A leaf-literal fallback also lets `t('title')` match `capacity.title`. It is convenient but can
+pass a key by coincidence, so do not rely on it deliberately.
+
+## Dead code
+
+`npm run check:dead` (knip) is a gate, not a test, but it runs in the same reflex: pre-commit hook
+and `prebuild`. See [CONFIGURATION.md](./CONFIGURATION.md) and
+[DEVELOPMENT.md](./DEVELOPMENT.md#dead-code-gate--knip).
+
 ## Before pushing
 
 ```bash
-npm run typecheck && npm run lint && npm run test:run && npm run build
+npm run typecheck && npm run lint && npm run test:run && npm run check:dead && npm run build
 ```
 
 The same gates (plus supply-chain, audit, OSV, and bundle-size) run in CI — see [CONFIGURATION.md](./CONFIGURATION.md).

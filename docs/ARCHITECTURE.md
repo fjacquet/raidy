@@ -14,9 +14,9 @@ Raidy is a browser-based Single Page Application (SPA) / Progressive Web App (PW
 | TypeScript | 5.x | Type safety (Strict Mode) |
 | Zustand | 5.x | State management with URL persistence |
 | Tailwind CSS | 4.x | Responsive styling (dark mode native) |
-| Vite | 7.x | Build tool |
+| Vite | 8.x | Build tool |
 | D3-Sankey | - | Capacity waterfall visualization |
-| Recharts | - | Charts and graphs |
+| jspdf-autotable / pptxgenjs | - | PDF and PowerPoint export |
 | jsPDF | - | PDF report generation |
 | LZ-String | - | URL state compression |
 
@@ -31,7 +31,7 @@ Raidy is a browser-based Single Page Application (SPA) / Progressive Web App (PW
 │   │   ├── Cockpit.tsx     # Split-screen container
 │   │   ├── Header.tsx      # Navigation bar
 │   │   ├── InputSidebar.tsx # Left panel (config)
-│   │   └── OutputDashboard.tsx # Right panel — thin orchestrator (~249 lines)
+│   │   └── OutputDashboard.tsx # Right panel — thin orchestrator (~200 lines)
 │   ├── inputs/             # Configuration panels
 │   │   ├── TopologyPanel.tsx
 │   │   ├── HardwarePanel.tsx
@@ -52,12 +52,14 @@ Raidy is a browser-based Single Page Application (SPA) / Progressive Web App (PW
 │   │   ├── Speedometer.tsx
 │   │   ├── DonutChart.tsx
 │   │   └── AnimatedCounter.tsx
-│   └── common/             # Shared UI components
+│   ├── guide/              # In-app explanatory guide (GuideView + per-topic sections)
+│   └── common/             # Shared UI components (FormControls, InfoTooltip, …)
 ├── engines/                # Calculation modules (pure functions)
 │   ├── volumetry/          # Capacity calculations
 │   ├── performance/        # IOPS/throughput analysis
 │   ├── sustainability/     # Power/CO2/TCO
-│   ├── resilience/         # Monte Carlo (Web Worker)
+│   ├── backup/             # Backup sizing from change rate + retention
+│   ├── shared/             # Cross-engine helpers (tiering resolution)
 │   ├── capabilities.ts     # Per-platform input-relevance map
 │   └── outputRelevance.ts  # Per-platform output-relevance predicates (shouldShowKpi/shouldShowSection)
 ├── hooks/                  # React hooks
@@ -130,6 +132,22 @@ flowchart TB
     Store -->|"Run Simulation"| Resil
     Resil -->|"resilienceResult"| Res
 ```
+
+## In-app guidance
+
+Two layers, both often missed because neither shows up in the engines.
+
+**`src/components/guide/`** — a full explanatory view (`GuideView` plus per-topic sections:
+platform, resilience, sustainability) that answers "what does this figure mean", which the
+dashboard deliberately does not stop to explain. Its copy lives in the `guide` i18n namespace,
+the largest after `topology`.
+
+**`InfoTooltip`** — a tooltip on every non-obvious control and output, sourced from the `help`
+namespace and used by 17 components. It renders a `<button>` rather than plain text so it works on
+touch, which is why `Toggle` wraps its label and its switch in two separate `<label>` elements: a
+tooltip nested inside the switch's label would flip the setting when tapped to read it.
+
+Both are why the locale files carry **10** namespaces, not the 8 the calculation path needs.
 
 ---
 
