@@ -379,7 +379,10 @@ flowchart LR
   > treatment as the burst figure so they're directly comparable. The sustained figure gets its own
   > infra-only bottleneck ceiling (`sustainedMinThroughput` in `performance/index.ts`) rather than
   > reusing the burst figure's `minThroughput`, which is partly derived from the burst (cache-
-  > inflated) media layer and would otherwise silently uncap it. Only platforms with a distinct
+  > inflated) media layer and would otherwise silently uncap it. Both ceilings come from one
+  > helper, `chainMinThroughput` (#127) — burst passes the media layer's own figure, sustained
+  > passes the capacity tier's, and the layer array decides membership for both, so vSAN ESA's
+  > absent controller is expressed once rather than restated per derivation. Only platforms with a distinct
   > fast-tier write model and a selected cache drive get a sustained figure that differs from
   > burst — tiered S2D, tiered vSAN OSA (both disk-group modes), and tiered Nutanix with a cache
   > drive selected. Everywhere else (untiered configurations, Ceph, BeeGFS, or a fast-tier-model

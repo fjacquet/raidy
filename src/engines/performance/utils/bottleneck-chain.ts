@@ -64,15 +64,34 @@ export function identifyBottleneck(layers: BottleneckLayer[]): string {
 }
 
 /**
- * Get minimum throughput from layers.
+ * Minimum throughput of the bottleneck chain, with `mediaThroughputMBs` standing in for the
+ * media layer's own figure.
  *
- * Helper function to get the effective throughput after bottleneck analysis.
+ * Two callers need this: the burst derivation passes the media layer's throughput unchanged,
+ * and the sustained derivation passes the capacity tier's steady-state figure instead (#112) —
+ * because the burst media ceiling is inflated by the fast tier and would silently uncap the
+ * sustained bandwidth. The media figure is the ONLY thing that differs; controller, PCIe and
+ * network do not distinguish burst from sustained.
  *
- * @param layers - Array of bottleneck layers
+ * The sustained path used to spell the chain out as its own `Math.min(...)` with its own
+ * `isNvmeDirect` ternary (#127). That made chain membership a fact stated in two places, and
+ * this engine has already paid for that shape twice — the S2D read blend copied into vSAN
+ * (#111) and the duplicated raw-capacity derivation (#121). Here `layers` is the single source
+ * of truth for which links exist: vSAN ESA is NVMe-direct and has no controller layer, so its
+ * absence from the array is the whole of that decision.
+ *
+ * @param layers - The chain, media layer included
+ * @param mediaLayer - Which entry of `layers` is the media layer (identity comparison)
+ * @param mediaThroughputMBs - The media figure to use in its place
  * @returns Minimum throughput in MB/s
  */
-export function getMinThroughput(layers: BottleneckLayer[]): number {
-  return Math.min(...layers.map((l) => l.throughputMBs))
+export function chainMinThroughput(
+  layers: BottleneckLayer[],
+  mediaLayer: BottleneckLayer,
+  mediaThroughputMBs: number,
+): number {
+  const infra = layers.filter((l) => l !== mediaLayer).map((l) => l.throughputMBs)
+  return Math.min(mediaThroughputMBs, ...infra)
 }
 
 /**

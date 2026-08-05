@@ -9,10 +9,12 @@
 import { describe, expect, it } from 'vitest'
 import {
   calculateNetworkLimits,
+  chainMinThroughput,
   getVsanNetworkTrafficFraction,
   NETWORK_MODEL_BY_TOPOLOGY,
   resolveNetworkModel,
 } from '@/engines/performance/utils/bottleneck-chain'
+import type { BottleneckLayer } from '@/types/results'
 import { DEFAULT_BEEGFS_OPTIONS } from '@/types/topology'
 
 const BLOCK_64K = 64 * 1024
@@ -150,5 +152,68 @@ describe('resolveNetworkModel', () => {
       expect(Math.min(...fractions)).toBe(1)
       expect(Math.max(...fractions)).toBe(2) // 100% writes with buddy mirroring
     })
+  })
+})
+
+/**
+ * `chainMinThroughput` is the shared derivation behind BOTH the burst and sustained bottleneck
+ * figures (#127). Before it existed, the sustained path spelled the chain out again with its own
+ * `isNvmeDirect` ternary — so which links belong to the chain was a fact stated in two places.
+ *
+ * These tests pin the two properties that make sharing safe: the media figure is substituted
+ * (not merged with the layer's own), and chain membership comes from the array alone.
+ */
+describe('chainMinThroughput (#127)', () => {
+  const layer = (name: string, throughputMBs: number): BottleneckLayer => ({
+    name,
+    throughputMBs,
+    iops: 0,
+    isBottleneck: false,
+    utilization: 0,
+  })
+
+  it('reproduces a plain min over the array when passed the media layer’s own figure', () => {
+    const media = layer('Media (Drives)', 15000)
+    const layers = [media, layer('Controller', 9000), layer('PCIe', 63008), layer('Network', 50000)]
+    expect(chainMinThroughput(layers, media, media.throughputMBs)).toBe(
+      Math.min(...layers.map((l) => l.throughputMBs)),
+    )
+  })
+
+  /**
+   * Substitution, not merging — a contract test rather than a live-bug test, and worth being
+   * precise about which.
+   *
+   * Every fast-tier model in the engine today yields a sustained media figure at or below the
+   * burst one, so `Math.min(sustained, ...allLayers)` and `Math.min(sustained, ...infraLayers)`
+   * agree on real inputs: mutating the helper to merge leaves `sustained-write-throughput.spec.ts`
+   * entirely green (verified). What the merge form would break is a model whose sustained figure
+   * exceeds the burst media layer — the media layer would then clamp a figure it has no business
+   * bounding. Pinning it here costs four lines and means the next fast-tier model does not have
+   * to rediscover the rule.
+   */
+  it('replaces the media figure rather than taking the lower of the two', () => {
+    const media = layer('Media (Drives)', 15000)
+    const layers = [media, layer('Controller', 9000)]
+    // A sustained figure BELOW the burst one must win...
+    expect(chainMinThroughput(layers, media, 105)).toBe(105)
+    // ...and one ABOVE it must not be dragged back down to 15000 by the media layer itself;
+    // the controller, a real chain link, is what binds.
+    expect(chainMinThroughput(layers, media, 40000)).toBe(9000)
+  })
+
+  it('takes chain membership from the array, so a missing controller (vSAN ESA) simply is not there', () => {
+    const media = layer('Media (Drives)', 15000)
+    const controller = layer('Controller', 9000)
+    const withController = [media, controller, layer('PCIe', 63008)]
+    const nvmeDirect = [media, layer('PCIe', 63008)]
+
+    expect(chainMinThroughput(withController, media, 40000)).toBe(9000)
+    expect(chainMinThroughput(nvmeDirect, media, 40000)).toBe(40000)
+  })
+
+  it('handles a chain with no infra layers at all — the media figure passes through', () => {
+    const media = layer('Media (Drives)', 15000)
+    expect(chainMinThroughput([media], media, 105)).toBe(105)
   })
 })
