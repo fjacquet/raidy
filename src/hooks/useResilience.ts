@@ -269,6 +269,10 @@ function getRiskLevel(survivalRate: number): 'low' | 'medium' | 'high' | 'critic
 
 /**
  * Generate recommendations based on simulation results.
+ *
+ * Returns i18n key suffixes within `output:resilience.recommendation.*`, not display strings —
+ * `ResilienceAct` translates them at render. See the note on `ResilienceResult.recommendations`
+ * for why translating here would be wrong (#125).
  */
 function getRecommendations(
   result: SimulationOutput,
@@ -279,34 +283,32 @@ function getRecommendations(
 
   // URE risk
   if (result.ureProbability > 0.01) {
-    recommendations.push('Consider using enterprise drives with lower URE rates (10^-17)')
+    recommendations.push('enterpriseDrives')
   }
 
   // Dual failure risk
   if (result.dualFailureProbability > 0.001) {
     if (topology.type === 'standard' && topology.level === 'RAID5') {
-      recommendations.push('Upgrade to RAID6 for dual parity protection')
+      recommendations.push('upgradeRaid6')
     }
     if (topology.type === 'zfs' && topology.level === 'raidz1') {
-      recommendations.push('Upgrade to RAIDZ2 for dual parity protection')
+      recommendations.push('upgradeRaidz2')
     }
   }
 
   // Rebuild time
   if (result.averageRebuildTimeHours > 24) {
-    recommendations.push(
-      'Long rebuild times increase failure risk. Consider faster drives or dRAID',
-    )
+    recommendations.push('longRebuild')
   }
 
   // Add hot spare if not present
   if (result.dualFailureProbability > 0.0001) {
-    recommendations.push('Add hot spare drives to reduce rebuild initiation time')
+    recommendations.push('addHotSpare')
   }
 
   // If survival is very high, acknowledge it
   if (result.survivalRate >= 0.9999 && recommendations.length === 0) {
-    recommendations.push('Configuration provides excellent data protection')
+    recommendations.push('excellentProtection')
   }
 
   return recommendations

@@ -100,7 +100,14 @@
     "dualFailure": "Double panne",
     "riskLevel": "Niveau de risque",
     "recommendations": "Recommandations",
-    "recommendation": "Recommandation",
+    "recommendation": {
+      "enterpriseDrives": "Envisagez des disques entreprise à taux d’URE plus faible (10^-17)",
+      "upgradeRaid6": "Passez en RAID 6 pour une protection à double parité",
+      "upgradeRaidz2": "Passez en RAIDZ2 pour une protection à double parité",
+      "longRebuild": "Les reconstructions longues élargissent la fenêtre d’exposition. Envisagez des disques plus rapides ou dRAID",
+      "addHotSpare": "Ajoutez des disques de spare pour réduire le délai avant le démarrage de la reconstruction",
+      "excellentProtection": "Cette configuration offre une excellente protection des données"
+    },
     "clickToRun": "Cliquez sur \"Lancer la simulation\" pour calculer",
     "iterations": "itérations Monte Carlo",
     "includesCorrelated": "Inclut les pannes corrélées et stress de reconstruction",

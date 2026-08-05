@@ -100,7 +100,14 @@
     "dualFailure": "Dual Failure",
     "riskLevel": "Risk Level",
     "recommendations": "Recommendations",
-    "recommendation": "Recommendation",
+    "recommendation": {
+      "enterpriseDrives": "Consider enterprise drives with a lower URE rate (10^-17)",
+      "upgradeRaid6": "Upgrade to RAID 6 for dual-parity protection",
+      "upgradeRaidz2": "Upgrade to RAIDZ2 for dual-parity protection",
+      "longRebuild": "Long rebuilds widen the exposure window. Consider faster drives or dRAID",
+      "addHotSpare": "Add hot spare drives to shorten the time before a rebuild starts",
+      "excellentProtection": "This configuration provides excellent data protection"
+    },
     "clickToRun": "Click \"Run Simulation\" to calculate",
     "iterations": "Monte Carlo iterations",
     "includesCorrelated": "Includes correlated failures & rebuild stress",

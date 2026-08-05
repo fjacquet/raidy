@@ -100,7 +100,14 @@
     "dualFailure": "Doppelausfall",
     "riskLevel": "Risikoniveau",
     "recommendations": "Empfehlungen",
-    "recommendation": "Empfehlung",
+    "recommendation": {
+      "enterpriseDrives": "Erwägen Sie Enterprise-Laufwerke mit niedrigerer URE-Rate (10^-17)",
+      "upgradeRaid6": "Wechseln Sie zu RAID 6 für Schutz mit doppelter Parität",
+      "upgradeRaidz2": "Wechseln Sie zu RAIDZ2 für Schutz mit doppelter Parität",
+      "longRebuild": "Lange Rebuilds vergrößern das Risikofenster. Erwägen Sie schnellere Laufwerke oder dRAID",
+      "addHotSpare": "Fügen Sie Hot-Spare-Laufwerke hinzu, um die Zeit bis zum Rebuild-Start zu verkürzen",
+      "excellentProtection": "Diese Konfiguration bietet einen ausgezeichneten Datenschutz"
+    },
     "clickToRun": "Klicken Sie auf \"Simulation starten\" zum Berechnen",
     "iterations": "Monte-Carlo-Iterationen",
     "includesCorrelated": "Inkl. korrelierter Ausfälle & Rebuild-Stress",

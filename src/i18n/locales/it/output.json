@@ -100,7 +100,14 @@
     "dualFailure": "Doppio guasto",
     "riskLevel": "Livello rischio",
     "recommendations": "Raccomandazioni",
-    "recommendation": "Raccomandazione",
+    "recommendation": {
+      "enterpriseDrives": "Valutare dischi enterprise con tasso di URE inferiore (10^-17)",
+      "upgradeRaid6": "Passare a RAID 6 per la protezione a doppia parità",
+      "upgradeRaidz2": "Passare a RAIDZ2 per la protezione a doppia parità",
+      "longRebuild": "Le ricostruzioni lunghe ampliano la finestra di esposizione. Valutare dischi più veloci o dRAID",
+      "addHotSpare": "Aggiungere dischi hot spare per ridurre il tempo prima dell’avvio della ricostruzione",
+      "excellentProtection": "Questa configurazione offre un’eccellente protezione dei dati"
+    },
     "clickToRun": "Clicca \"Avvia simulazione\" per calcolare",
     "iterations": "iterazioni Monte Carlo",
     "includesCorrelated": "Include guasti correlati e stress di rebuild",

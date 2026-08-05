@@ -188,7 +188,15 @@ export interface ResilienceResult {
   dualFailureProbability: number
   /** Risk assessment level */
   riskLevel: 'low' | 'medium' | 'high' | 'critical'
-  /** Recommended actions */
+  /**
+   * Recommended actions, as i18n key suffixes within the `output` namespace
+   * (`resilience.recommendation.*`) — NOT display strings.
+   *
+   * They stay untranslated here on purpose. This array is produced once, when the worker
+   * replies, and then held in state; translating at that moment would freeze the language, so
+   * a user switching FR→DE after running a simulation would keep reading French. `ResilienceAct`
+   * translates at render instead, which re-runs on language change.
+   */
   recommendations: string[]
   /**
    * True when this simulation used a BeeGFS group topology (beegfs_raid6,

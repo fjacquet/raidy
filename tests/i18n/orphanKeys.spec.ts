@@ -25,6 +25,12 @@ const LOCALES_DIR = join(REPO_ROOT, 'src', 'i18n', 'locales')
 /**
  * Key prefixes assembled at runtime. A key under one of these is exempt from the literal scan
  * because the scan structurally cannot see it — not because nobody checked.
+ *
+ * Add an entry only when the leaf fallback below cannot cover the case. `resilience.recommendation.*`
+ * (#125) is built dynamically in ResilienceAct but deliberately has NO entry here: `getRecommendations`
+ * pushes each suffix as a bare string literal, so the leaf match already sees them — and that is the
+ * stronger check. A prefix entry would exempt the whole subtree, letting a key survive after its
+ * `push` was deleted; the leaf match fails in exactly that case, which is what we want.
  */
 const DYNAMIC_PREFIXES: Record<string, string> = {
   'connectivity.': 'HardwarePanel.tsx — t(`connectivity.<value>`) over CONNECTIVITY_VALUES',
