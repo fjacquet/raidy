@@ -113,10 +113,8 @@ export function DellOptionsPanel({ topology }: DellOptionsPanelProps) {
             min={10}
             max={15}
             onChange={(v) => setObjectScaleOptions({ systemOverheadPercent: v })}
+            formatValue={(v) => `${v}%`}
           />
-          <p className="text-xs text-slate-500">
-            Metadata, indexes, S3 protocol: {objectscaleOptions.systemOverheadPercent}%
-          </p>
         </div>
 
         <Toggle
@@ -136,10 +134,8 @@ export function DellOptionsPanel({ topology }: DellOptionsPanelProps) {
               max={3}
               step={0.1}
               onChange={(v) => setObjectScaleOptions({ compressionRatio: v })}
+              formatValue={(v) => `${v.toFixed(1)}:1`}
             />
-            <p className="text-xs text-slate-500">
-              Expected ratio: {objectscaleOptions.compressionRatio.toFixed(1)}:1
-            </p>
           </div>
         )}
       </div>
@@ -204,10 +200,8 @@ export function DellOptionsPanel({ topology }: DellOptionsPanelProps) {
               max={3}
               step={0.1}
               onChange={(v) => setPowerStoreOptions({ compressionRatio: v })}
+              formatValue={(v) => `${v.toFixed(1)}:1`}
             />
-            <p className="text-xs text-slate-500">
-              Expected ratio: {powerstoreOptions.compressionRatio.toFixed(1)}:1
-            </p>
           </div>
         )}
 
@@ -228,10 +222,8 @@ export function DellOptionsPanel({ topology }: DellOptionsPanelProps) {
               max={3}
               step={0.1}
               onChange={(v) => setPowerStoreOptions({ dedupRatio: v })}
+              formatValue={(v) => `${v.toFixed(1)}:1`}
             />
-            <p className="text-xs text-slate-500">
-              Expected ratio: {powerstoreOptions.dedupRatio.toFixed(1)}:1
-            </p>
           </div>
         )}
 
@@ -243,10 +235,8 @@ export function DellOptionsPanel({ topology }: DellOptionsPanelProps) {
             min={0}
             max={30}
             onChange={(v) => setPowerStoreOptions({ snapshotReservePercent: v })}
+            formatValue={(v) => `${v}%`}
           />
-          <p className="text-xs text-slate-500">
-            Snapshot reserve: {powerstoreOptions.snapshotReservePercent}%
-          </p>
         </div>
 
         {powerstoreOptions.model === 'custom' && (
@@ -258,10 +248,8 @@ export function DellOptionsPanel({ topology }: DellOptionsPanelProps) {
               min={1}
               max={15}
               onChange={(v) => setPowerStoreOptions({ systemOverheadPercent: v })}
+              formatValue={(v) => `${v}%`}
             />
-            <p className="text-xs text-slate-500">
-              System overhead: {powerstoreOptions.systemOverheadPercent}%
-            </p>
           </div>
         )}
       </div>
@@ -293,10 +281,8 @@ export function DellOptionsPanel({ topology }: DellOptionsPanelProps) {
               max={3}
               step={0.1}
               onChange={(v) => setPowerScaleOptions({ compressionRatio: v })}
+              formatValue={(v) => `${v.toFixed(1)}:1`}
             />
-            <p className="text-xs text-slate-500">
-              Expected ratio: {powerscaleOptions.compressionRatio.toFixed(1)}:1
-            </p>
           </div>
         )}
 
@@ -317,10 +303,8 @@ export function DellOptionsPanel({ topology }: DellOptionsPanelProps) {
               max={3}
               step={0.1}
               onChange={(v) => setPowerScaleOptions({ dedupRatio: v })}
+              formatValue={(v) => `${v.toFixed(1)}:1`}
             />
-            <p className="text-xs text-slate-500">
-              Expected ratio: {powerscaleOptions.dedupRatio.toFixed(1)}:1
-            </p>
           </div>
         )}
 
@@ -332,10 +316,8 @@ export function DellOptionsPanel({ topology }: DellOptionsPanelProps) {
             min={0}
             max={30}
             onChange={(v) => setPowerScaleOptions({ snapshotReservePercent: v })}
+            formatValue={(v) => `${v}%`}
           />
-          <p className="text-xs text-slate-500">
-            Snapshot reserve: {powerscaleOptions.snapshotReservePercent}%
-          </p>
         </div>
       </div>
     )
@@ -392,10 +374,8 @@ export function DellOptionsPanel({ topology }: DellOptionsPanelProps) {
               max={4}
               step={0.5}
               onChange={(v) => setPowerFlexOptions({ compressionRatio: v })}
+              formatValue={(v) => `${v.toFixed(1)}:1`}
             />
-            <p className="text-xs text-slate-500">
-              Expected ratio: {powerFlexOptions.compressionRatio}:1
-            </p>
           </div>
         )}
 
@@ -411,10 +391,8 @@ export function DellOptionsPanel({ topology }: DellOptionsPanelProps) {
               min={10}
               max={18}
               onChange={(v) => setPowerFlexOptions({ fgOverhead: v / 100 })}
+              formatValue={(v) => `${Math.round(v)}%`}
             />
-            <p className="text-xs text-slate-500">
-              Fine granularity overhead: {Math.round(powerFlexOptions.fgOverhead * 100)}%
-            </p>
           </div>
         )}
       </div>

@@ -91,10 +91,8 @@ export function CephOptionsPanel() {
           min={70}
           max={95}
           onChange={(v) => setCephOptions({ safeCapacityThreshold: v / 100 })}
+          formatValue={(v) => `${Math.round(v)}%`}
         />
-        <p className="text-xs text-slate-500">
-          Ceph nearfull threshold: {Math.round(cephOptions.safeCapacityThreshold * 100)}%
-        </p>
       </div>
     </div>
   )

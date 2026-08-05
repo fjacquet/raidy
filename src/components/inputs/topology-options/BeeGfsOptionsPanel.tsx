@@ -27,6 +27,7 @@
 
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
+import { InfoTooltip } from '@/components/common'
 import { Label, Slider, Toggle } from '@/components/common/FormControls'
 import { TieringPanel } from '@/components/inputs/TieringPanel'
 import { deriveBeeGfsStorageTargets } from '@/components/inputs/topology-options/beegfsPanelHelpers'
@@ -53,7 +54,9 @@ export function BeeGfsOptionsPanel() {
       </h4>
 
       <div className="space-y-2">
-        <Label htmlFor="beegfs-drives-per-target">{t('beegfs.drivesPerTarget')}</Label>
+        <Label htmlFor="beegfs-drives-per-target" tooltip={t('beegfs.drivesPerTargetHint')}>
+          {t('beegfs.drivesPerTarget')}
+        </Label>
         <Slider
           id="beegfs-drives-per-target"
           value={beeGfsOptions.drivesPerTarget}
@@ -67,7 +70,6 @@ export function BeeGfsOptionsPanel() {
             stranded: strandedDrives,
           })}
         </p>
-        <p className="text-xs text-slate-500">{t('beegfs.drivesPerTargetHint')}</p>
       </div>
 
       <Toggle
@@ -75,19 +77,22 @@ export function BeeGfsOptionsPanel() {
         label={t('beegfs.storageBuddyMirror')}
         checked={beeGfsOptions.storageBuddyMirror}
         onChange={(v) => setBeeGfsOptions({ storageBuddyMirror: v })}
+        tooltip={t('beegfs.storageBuddyMirrorHint')}
       />
-      <p className="text-xs text-slate-500 -mt-2">{t('beegfs.storageBuddyMirrorHint')}</p>
 
       <Toggle
         id="beegfs-metadata-buddy-mirror"
         label={t('beegfs.metadataBuddyMirror')}
         checked={beeGfsOptions.metadataBuddyMirror}
         onChange={(v) => setBeeGfsOptions({ metadataBuddyMirror: v })}
+        tooltip={t('beegfs.metadataBuddyMirrorHint')}
       />
-      <p className="text-xs text-slate-500 -mt-2">{t('beegfs.metadataBuddyMirrorHint')}</p>
 
       <div className="space-y-2">
-        <Label htmlFor="beegfs-fs-overhead" tooltip={t('beegfs.fsOverheadTooltip')}>
+        <Label
+          htmlFor="beegfs-fs-overhead"
+          tooltip={`${t('beegfs.fsOverheadTooltip')} ${t('beegfs.fsOverheadHint')}`}
+        >
           {t('beegfs.fsOverhead')}
         </Label>
         {/*
@@ -103,7 +108,6 @@ export function BeeGfsOptionsPanel() {
           onChange={(v) => setBeeGfsOptions({ fsOverheadPercent: v })}
           formatValue={(v) => `${v.toFixed(1)}%`}
         />
-        <p className="text-xs text-slate-500">{t('beegfs.fsOverheadHint')}</p>
       </div>
 
       <Toggle
@@ -111,15 +115,15 @@ export function BeeGfsOptionsPanel() {
         label={t('beegfs.metadataTargetsToggle')}
         checked={beeGfsOptions.metadataTargets}
         onChange={(v) => setBeeGfsOptions({ metadataTargets: v })}
+        tooltip={t('beegfs.metadataTargetsToggleHint')}
       />
-      <p className="text-xs text-slate-500 -mt-2">{t('beegfs.metadataTargetsToggleHint')}</p>
 
       {beeGfsOptions.metadataTargets && (
         <div className="space-y-2 pt-2">
-          <h5 className="text-sm font-medium text-slate-700 dark:text-slate-200">
+          <h5 className="flex items-center gap-1.5 text-sm font-medium text-slate-700 dark:text-slate-200">
             {t('beegfs.metadataTargets')}
+            <InfoTooltip content={t('beegfs.metadataTargetsHint')} />
           </h5>
-          <p className="text-xs text-slate-500">{t('beegfs.metadataTargetsHint')}</p>
           <TieringPanel
             config={beeGfsOptions.tiering ?? DEFAULT_TIERING_CONFIG}
             onChange={(next) =>
