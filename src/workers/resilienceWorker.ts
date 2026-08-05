@@ -670,6 +670,20 @@ function runSingleSimulation(
     //
     // `activeDrives` bounds the loop, so a blast radius larger than the surviving population
     // simply fails everything left, which is the correct outcome rather than an overflow.
+    //
+    // KNOWN CONSERVATISM — this model is node-blind. The forced failures are assigned by the same
+    // weighted-random logic as ordinary ones, so they can land on two replicas of the SAME mirror
+    // pair. Real placement forbids that: vSAN's default fault domain is the host and Ceph's
+    // default CRUSH failure domain is the host, so one cache/DB device failing can take at most
+    // one copy of any given object. `assignNodesRoundRobin` already computes exactly the node
+    // identity needed to enforce it (#113 built it for this), and `mirrorGroupNodes` is threaded
+    // into the model — but nothing reads it yet, here included.
+    //
+    // The error therefore runs in the SAFE direction: it destroys arrangements a real cluster
+    // would not build, so it overstates harm. That satisfies the worker's superset invariant
+    // (may understate resilience, never overstate it), but it does mean the dual-failure figures
+    // for mirrored levels are an upper bound rather than a calibrated estimate. Consuming
+    // `mirrorGroupNodes` here is the refinement that would tighten them.
     let forcedFailuresToday = 0
     if (hasSharedFastTier) {
       for (let device = 0; device < fastTierDeviceCount; device++) {

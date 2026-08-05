@@ -767,6 +767,15 @@ Counter-intuitive result worth keeping: at the same per-device AFR, *more and sm
 domains are worse than fewer and larger ones (16 devices × 3 drives gives 0.78 survival, 2 × 24
 gives 0.82, at identical expected drives lost). Device count does not map monotonically to harm.
 
+**Known conservatism: the cascade is node-blind.** Forced failures take the same weighted-random
+assignment as ordinary ones, so they can land on two replicas of the same mirror pair. Real
+placement forbids it — vSAN's default fault domain is the host, Ceph's default CRUSH failure domain
+is the host — so one device failing takes at most one copy of any object. `assignNodesRoundRobin`
+computes exactly the node identity needed (#113 added it for this purpose) and `mirrorGroupNodes`
+is threaded into the model, but nothing reads it yet. The error runs in the safe direction, so the
+superset invariant holds; the practical consequence is that dual-failure figures for mirrored
+levels are an **upper bound**, not a calibrated estimate.
+
 Deliberately still not modelled: rebuild behaviour after a whole group is lost, and vSAN's
 deduplication amplification, where *any* device failure fails the disk group.
 

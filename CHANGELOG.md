@@ -42,6 +42,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   The dual-failure column is the mechanism: six drives dying *together* is a far worse event than
   six dying independently across a year.
 
+  **The cascade is node-blind, and that is a stated conservatism rather than an oversight.**
+  Forced failures take the same assignment as ordinary ones, so they can land on two replicas of
+  the same mirror pair — which real placement forbids, since vSAN's default fault domain is the
+  host and Ceph's default CRUSH failure domain is the host. `assignNodesRoundRobin` already
+  computes the node identity that would prevent it (#113 added it for exactly this) but nothing
+  reads it yet. The error runs in the safe direction, so the worker's superset invariant holds;
+  the consequence is that the dual-failure figures above are an **upper bound**, not a calibrated
+  estimate.
+
   **Everything else is bit-for-bit unchanged** — S2D, Nutanix, untiered and BeeGFS verified
   identical, and a zero-AFR fast tier reproduces the pre-#88 result exactly rather than closely.
   The forced failures run through the *same* failure body as ordinary ones, so the mirror
