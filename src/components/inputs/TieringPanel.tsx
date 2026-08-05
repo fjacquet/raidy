@@ -23,8 +23,6 @@ export interface TieringPanelProps {
   serverCount: number
   /** Platform name for contextual labels */
   platform: 's2d' | 'vsan' | 'ceph' | 'beegfs'
-  /** Whether to show cache mode selector */
-  showCacheMode?: boolean
   /** Whether to show working set slider */
   showWorkingSet?: boolean
   /** vSAN mode: hybrid (HDD capacity) or all-flash (SSD capacity) */
@@ -58,7 +56,6 @@ export function TieringPanel({
   onChange,
   serverCount,
   platform,
-  showCacheMode = true,
   showWorkingSet = true,
   vsanMode = 'hybrid',
   onVsanModeChange,
@@ -231,27 +228,6 @@ export function TieringPanel({
           </div>
         )}
       </div>
-
-      {/* Cache Mode */}
-      {showCacheMode && (
-        <div className="space-y-2">
-          <Label>{t('tiering.cacheMode')}</Label>
-          <SegmentedControl
-            value={config.cacheMode}
-            options={[
-              { value: 'write-back', label: t('tiering.writeBack') },
-              { value: 'write-through', label: t('tiering.writeThrough') },
-              { value: 'read-only', label: t('tiering.readOnly') },
-            ]}
-            onChange={(cacheMode) =>
-              onChange({ cacheMode: cacheMode as TieringConfig['cacheMode'] })
-            }
-          />
-          <p className="text-xs text-slate-500">
-            {t(`tiering.cacheModeDesc.${config.cacheMode.replace('-', '')}`)}
-          </p>
-        </div>
-      )}
 
       {/* Working Set */}
       {showWorkingSet && (

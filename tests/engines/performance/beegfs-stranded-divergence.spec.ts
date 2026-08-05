@@ -44,7 +44,6 @@ function beeGfsOptions(): BeeGfsOptions {
     metadataTargets: true,
     tiering: {
       enabled: true,
-      cacheMode: 'write-back',
       workingSetPercent: 20,
       fastTier: { driveId: FAST_DRIVE_ID, driveCount: 2 },
       capacityTier: { driveId: CAPACITY_DRIVE_ID, driveCount: CAPACITY_TIER_DRIVE_COUNT },

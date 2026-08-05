@@ -2742,7 +2742,6 @@ describe('Volumetry Engine - Error Handling', () => {
           storageTiers: true,
           tieringConfig: {
             enabled: true,
-            cacheMode: 'write-back',
             workingSetPercent: 20,
             fastTier: {
               driveId: 'ent-nvme-pcie4-960gb-m2-ri', // Enterprise NVMe M.2 Read-Intensive (960GB)
@@ -2799,7 +2798,6 @@ describe('Volumetry Engine - Error Handling', () => {
           storageTiers: true,
           tieringConfig: {
             enabled: true,
-            cacheMode: 'write-back',
             workingSetPercent: 20,
             fastTier: {
               driveId: 'invalid-drive-id', // Invalid drive
@@ -2852,7 +2850,6 @@ describe('Volumetry Engine - Error Handling', () => {
           storageTiers: true,
           tieringConfig: {
             enabled: true,
-            cacheMode: 'write-back',
             workingSetPercent: 20,
             fastTier: {
               driveId: 'ent-ssd-sata-3840gb-mu', // Enterprise SSD SATA Mixed-Use (3.84TB)
@@ -2911,7 +2908,6 @@ describe('Volumetry Engine - Error Handling', () => {
           systemOverhead: 0.1,
           tiering: {
             enabled: true,
-            cacheMode: 'write-back',
             workingSetPercent: 20,
             fastTier: {
               driveId: 'ent-ssd-sata-1920gb-mu', // Enterprise SSD SATA Mixed-Use (1.92TB)
@@ -3012,7 +3008,6 @@ describe('Volumetry Engine - Error Handling', () => {
           systemOverhead: 0.1,
           tiering: {
             enabled: true,
-            cacheMode: 'write-back',
             workingSetPercent: 20,
             fastTier: {
               driveId: 'ent-ssd-sata-3840gb-mu', // Enterprise SSD SATA Mixed-Use (3.84TB)
@@ -3071,7 +3066,6 @@ describe('Volumetry Engine - Error Handling', () => {
           walDbOffload: true, // Enable WAL/DB offload
           tiering: {
             enabled: true,
-            cacheMode: 'write-back',
             workingSetPercent: 20,
             fastTier: {
               driveId: 'ent-nvme-pcie4-960gb-m2-ri', // NVMe for WAL/DB (960GB)
@@ -3174,7 +3168,6 @@ describe('Volumetry Engine - Error Handling', () => {
           walDbOffload: true,
           tiering: {
             enabled: true,
-            cacheMode: 'write-back',
             workingSetPercent: 20,
             fastTier: {
               driveId: 'ent-nvme-pcie4-960gb-m2-ri', // Enterprise NVMe M.2 WAL/DB (960GB)

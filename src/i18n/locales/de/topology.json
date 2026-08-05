@@ -38,30 +38,93 @@
   },
   "level": {
     "label": "RAID-Level",
-    "raid0": { "label": "RAID 0", "description": "Striping, keine Redundanz" },
-    "raid1": { "label": "RAID 1", "description": "Spiegelung (2-Wege), 50% Kapazität" },
-    "raid1e": { "label": "RAID 1E", "description": "Gespiegelte Stripes, 50% Kapazität" },
-    "raid1_3way": { "label": "3-Wege Spiegel", "description": "Dreifach-Spiegel, 33% Kapazität" },
-    "raid3": { "label": "RAID 3", "description": "Byte-Striping + dedizierte Parität" },
-    "raid4": { "label": "RAID 4", "description": "Block-Striping + dedizierte Parität" },
-    "raid5": { "label": "RAID 5", "description": "Einfache verteilte Parität, n-1 Kapazität" },
-    "raid5e": { "label": "RAID 5E", "description": "RAID 5 + integriertes Hot Spare" },
-    "raid5ee": { "label": "RAID 5EE", "description": "RAID 5E Enhanced, aktives Spare" },
-    "raid6": { "label": "RAID 6", "description": "Doppelte verteilte Parität, n-2 Kapazität" },
-    "raid10": { "label": "RAID 10", "description": "Gespiegelte Stripes, 50% Kapazität" },
-    "raid50": { "label": "RAID 50", "description": "Gestripte RAID 5 Gruppen" },
-    "raid60": { "label": "RAID 60", "description": "Gestripte RAID 6 Gruppen" }
+    "raid0": {
+      "label": "RAID 0",
+      "description": "Striping, keine Redundanz"
+    },
+    "raid1": {
+      "label": "RAID 1",
+      "description": "Spiegelung (2-Wege), 50% Kapazität"
+    },
+    "raid1e": {
+      "label": "RAID 1E",
+      "description": "Gespiegelte Stripes, 50% Kapazität"
+    },
+    "raid1_3way": {
+      "label": "3-Wege Spiegel",
+      "description": "Dreifach-Spiegel, 33% Kapazität"
+    },
+    "raid3": {
+      "label": "RAID 3",
+      "description": "Byte-Striping + dedizierte Parität"
+    },
+    "raid4": {
+      "label": "RAID 4",
+      "description": "Block-Striping + dedizierte Parität"
+    },
+    "raid5": {
+      "label": "RAID 5",
+      "description": "Einfache verteilte Parität, n-1 Kapazität"
+    },
+    "raid5e": {
+      "label": "RAID 5E",
+      "description": "RAID 5 + integriertes Hot Spare"
+    },
+    "raid5ee": {
+      "label": "RAID 5EE",
+      "description": "RAID 5E Enhanced, aktives Spare"
+    },
+    "raid6": {
+      "label": "RAID 6",
+      "description": "Doppelte verteilte Parität, n-2 Kapazität"
+    },
+    "raid10": {
+      "label": "RAID 10",
+      "description": "Gespiegelte Stripes, 50% Kapazität"
+    },
+    "raid50": {
+      "label": "RAID 50",
+      "description": "Gestripte RAID 5 Gruppen"
+    },
+    "raid60": {
+      "label": "RAID 60",
+      "description": "Gestripte RAID 6 Gruppen"
+    }
   },
   "zfs": {
     "title": "ZFS-Optionen",
-    "stripe": { "label": "Stripe", "description": "Keine Redundanz, max. Kapazität" },
-    "mirror": { "label": "Spiegel", "description": "2-Wege Spiegel, 50% Kapazität" },
-    "raidz1": { "label": "RAID-Z1", "description": "Einfache Parität, n-1 Kapazität" },
-    "raidz2": { "label": "RAID-Z2", "description": "Doppelte Parität, n-2 Kapazität" },
-    "raidz3": { "label": "RAID-Z3", "description": "Dreifache Parität, n-3 Kapazität" },
-    "draid1": { "label": "dRAID1", "description": "Verteiltes RAID-Z1" },
-    "draid2": { "label": "dRAID2", "description": "Verteiltes RAID-Z2" },
-    "draid3": { "label": "dRAID3", "description": "Verteiltes RAID-Z3" },
+    "stripe": {
+      "label": "Stripe",
+      "description": "Keine Redundanz, max. Kapazität"
+    },
+    "mirror": {
+      "label": "Spiegel",
+      "description": "2-Wege Spiegel, 50% Kapazität"
+    },
+    "raidz1": {
+      "label": "RAID-Z1",
+      "description": "Einfache Parität, n-1 Kapazität"
+    },
+    "raidz2": {
+      "label": "RAID-Z2",
+      "description": "Doppelte Parität, n-2 Kapazität"
+    },
+    "raidz3": {
+      "label": "RAID-Z3",
+      "description": "Dreifache Parität, n-3 Kapazität"
+    },
+    "draid1": {
+      "label": "dRAID1",
+      "description": "Verteiltes RAID-Z1"
+    },
+    "draid2": {
+      "label": "dRAID2",
+      "description": "Verteiltes RAID-Z2"
+    },
+    "draid3": {
+      "label": "dRAID3",
+      "description": "Verteiltes RAID-Z3"
+    },
     "ashift": "Sektorgrösse (ashift)",
     "ashift512": "512B (ashift=9)",
     "ashift4k": "4K (ashift=12)",
@@ -80,11 +143,26 @@
   },
   "s2d": {
     "title": "S2D-Optionen",
-    "simple": { "label": "Einfach", "description": "Keine Redundanz" },
-    "mirror": { "label": "Spiegel", "description": "2-Wege oder 3-Wege Spiegel" },
-    "parity": { "label": "Parität", "description": "Einfache Parität" },
-    "dual_parity": { "label": "Doppelte Parität", "description": "Erasure Coding" },
-    "map": { "label": "MAP", "description": "Spiegel-beschleunigte Parität" },
+    "simple": {
+      "label": "Einfach",
+      "description": "Keine Redundanz"
+    },
+    "mirror": {
+      "label": "Spiegel",
+      "description": "2-Wege oder 3-Wege Spiegel"
+    },
+    "parity": {
+      "label": "Parität",
+      "description": "Einfache Parität"
+    },
+    "dual_parity": {
+      "label": "Doppelte Parität",
+      "description": "Erasure Coding"
+    },
+    "map": {
+      "label": "MAP",
+      "description": "Spiegel-beschleunigte Parität"
+    },
     "faultDomains": "Fehlerdomänen (Knoten)",
     "mirrorCopies": "Spiegelkopien",
     "2way": "2-Wege",
@@ -94,8 +172,14 @@
   },
   "vsanOsa": {
     "title": "vSAN OSA-Optionen",
-    "raid1": { "label": "RAID-1 (Spiegel)", "description": "FTT=1, min 3 Hosts, 50% Effizienz" },
-    "raid1_ftt2": { "label": "RAID-1 FTT=2", "description": "FTT=2, min 5 Hosts, 33% Effizienz" },
+    "raid1": {
+      "label": "RAID-1 (Spiegel)",
+      "description": "FTT=1, min 3 Hosts, 50% Effizienz"
+    },
+    "raid1_ftt2": {
+      "label": "RAID-1 FTT=2",
+      "description": "FTT=2, min 5 Hosts, 33% Effizienz"
+    },
     "raid5": {
       "label": "RAID-5 Erasure Coding",
       "description": "FTT=1, min 4 Hosts, 75% Effizienz"
@@ -126,7 +210,10 @@
       "label": "RAID-6 Erasure Coding",
       "description": "FTT=2, min 6 Hosts, 67% Effizienz"
     },
-    "raid1": { "label": "RAID-1 (Spiegel)", "description": "Nur empfohlen für 2-Knoten-Cluster" },
+    "raid1": {
+      "label": "RAID-1 (Spiegel)",
+      "description": "Nur empfohlen für 2-Knoten-Cluster"
+    },
     "info": {
       "raid5": "Adaptives RAID-5: Verwendet 2+1 für 3-5 Hosts oder 4+1 für 6+ Hosts.",
       "raid5Recommended": "Empfohlen für die meisten ESA-Bereitstellungen.",
@@ -141,8 +228,14 @@
   },
   "nutanix": {
     "title": "Nutanix AOS-Optionen",
-    "rf2": { "label": "RF2", "description": "Replikationsfaktor 2, 50% Effizienz" },
-    "rf3": { "label": "RF3", "description": "Replikationsfaktor 3, 33% Effizienz" },
+    "rf2": {
+      "label": "RF2",
+      "description": "Replikationsfaktor 2, 50% Effizienz"
+    },
+    "rf3": {
+      "label": "RF3",
+      "description": "Replikationsfaktor 3, 33% Effizienz"
+    },
     "ec_rf2": {
       "label": "EC-X (RF2)",
       "description": "Erasure Coding 4:1 mit RF2 Basis, ~75% Effizienz"
@@ -180,10 +273,22 @@
   },
   "powervault": {
     "title": "PowerVault ME5-Optionen",
-    "raid1": { "label": "RAID 1", "description": "2-Wege Spiegel, 50% Effizienz" },
-    "raid5": { "label": "RAID 5", "description": "Einfache Parität, 4x Schreibstrafe" },
-    "raid6": { "label": "RAID 6", "description": "Doppelte Parität, 2-Laufwerk Fehlertoleranz" },
-    "raid10": { "label": "RAID 10", "description": "Gespiegelte Stripes, beste zufällige IOPS" },
+    "raid1": {
+      "label": "RAID 1",
+      "description": "2-Wege Spiegel, 50% Effizienz"
+    },
+    "raid5": {
+      "label": "RAID 5",
+      "description": "Einfache Parität, 4x Schreibstrafe"
+    },
+    "raid6": {
+      "label": "RAID 6",
+      "description": "Doppelte Parität, 2-Laufwerk Fehlertoleranz"
+    },
+    "raid10": {
+      "label": "RAID 10",
+      "description": "Gespiegelte Stripes, beste zufällige IOPS"
+    },
     "adapt": {
       "label": "ADAPT (Empfohlen)",
       "description": "Verteiltes RAID, ~87% Effizienz, 12-128 Laufwerke"
@@ -218,10 +323,22 @@
   },
   "objectscale": {
     "title": "ObjectScale-Optionen",
-    "ec_12_4": { "label": "EC 12+4 (Standard)", "description": "75% Effizienz, min 5 Knoten" },
-    "ec_10_2": { "label": "EC 10+2 (Kalt/Archiv)", "description": "83% Effizienz, min 7 Knoten" },
-    "ec_24_4": { "label": "EC 24+4 (Vorschau)", "description": "86% Effizienz, min 8 Knoten" },
-    "mirror_3": { "label": "Dreifach-Spiegel", "description": "33% Effizienz, für Metadaten" },
+    "ec_12_4": {
+      "label": "EC 12+4 (Standard)",
+      "description": "75% Effizienz, min 5 Knoten"
+    },
+    "ec_10_2": {
+      "label": "EC 10+2 (Kalt/Archiv)",
+      "description": "83% Effizienz, min 7 Knoten"
+    },
+    "ec_24_4": {
+      "label": "EC 24+4 (Vorschau)",
+      "description": "86% Effizienz, min 8 Knoten"
+    },
+    "mirror_3": {
+      "label": "Dreifach-Spiegel",
+      "description": "33% Effizienz, für Metadaten"
+    },
     "systemOverhead": "System-Overhead",
     "systemOverheadDesc": "Metadaten, Indizes, S3-Protokoll: {{percent}}%",
     "enableCompression": "Kompression aktivieren",
@@ -230,9 +347,18 @@
   },
   "powerstore": {
     "title": "PowerStore-Optionen",
-    "raid5": { "label": "RAID-5", "description": "Einfache Parität, ~80% Effizienz" },
-    "raid6": { "label": "RAID-6", "description": "Doppelte Parität, ~75% Effizienz" },
-    "raid10": { "label": "RAID-10", "description": "Gespiegelte Stripes, 50% Effizienz" },
+    "raid5": {
+      "label": "RAID-5",
+      "description": "Einfache Parität, ~80% Effizienz"
+    },
+    "raid6": {
+      "label": "RAID-6",
+      "description": "Doppelte Parität, ~75% Effizienz"
+    },
+    "raid10": {
+      "label": "RAID-10",
+      "description": "Gespiegelte Stripes, 50% Effizienz"
+    },
     "enableCompression": "Kompression aktivieren",
     "compressionRatio": "Kompressionsverhältnis",
     "expectedRatio": "Erwartetes Verhältnis: {{ratio}}:1",
@@ -245,13 +371,34 @@
   },
   "powerscale": {
     "title": "PowerScale-Optionen",
-    "n1": { "label": "N+1", "description": "Einfacher Paritätsschutz" },
-    "n2": { "label": "N+2", "description": "Doppelter Paritätsschutz" },
-    "n2_1": { "label": "N+2:1", "description": "N+2 mit Stripe-Fehlertoleranz" },
-    "n3": { "label": "N+3", "description": "Dreifacher Paritätsschutz" },
-    "n4": { "label": "N+4", "description": "Vierfacher Paritätsschutz" },
-    "mirror_2x": { "label": "Spiegel 2x", "description": "2-Wege gespiegelt, 50% Effizienz" },
-    "mirror_3x": { "label": "Spiegel 3x", "description": "3-Wege gespiegelt, 33% Effizienz" },
+    "n1": {
+      "label": "N+1",
+      "description": "Einfacher Paritätsschutz"
+    },
+    "n2": {
+      "label": "N+2",
+      "description": "Doppelter Paritätsschutz"
+    },
+    "n2_1": {
+      "label": "N+2:1",
+      "description": "N+2 mit Stripe-Fehlertoleranz"
+    },
+    "n3": {
+      "label": "N+3",
+      "description": "Dreifacher Paritätsschutz"
+    },
+    "n4": {
+      "label": "N+4",
+      "description": "Vierfacher Paritätsschutz"
+    },
+    "mirror_2x": {
+      "label": "Spiegel 2x",
+      "description": "2-Wege gespiegelt, 50% Effizienz"
+    },
+    "mirror_3x": {
+      "label": "Spiegel 3x",
+      "description": "3-Wege gespiegelt, 33% Effizienz"
+    },
     "enableCompression": "Kompression aktivieren",
     "compressionRatio": "Kompressionsverhältnis",
     "expectedRatio": "Erwartetes Verhältnis: {{ratio}}:1",
@@ -272,10 +419,22 @@
       "label": "Repliziert 3x",
       "description": "3-Wege Replikation, 33% Effizienz"
     },
-    "ec_2_1": { "label": "EC 2+1", "description": "Erasure Coded k=2, m=1, 67% Effizienz" },
-    "ec_4_2": { "label": "EC 4+2", "description": "Erasure Coded k=4, m=2, 67% Effizienz" },
-    "ec_8_3": { "label": "EC 8+3", "description": "Erasure Coded k=8, m=3, 73% Effizienz" },
-    "ec_8_4": { "label": "EC 8+4", "description": "Erasure Coded k=8, m=4, 67% Effizienz" },
+    "ec_2_1": {
+      "label": "EC 2+1",
+      "description": "Erasure Coded k=2, m=1, 67% Effizienz"
+    },
+    "ec_4_2": {
+      "label": "EC 4+2",
+      "description": "Erasure Coded k=4, m=2, 67% Effizienz"
+    },
+    "ec_8_3": {
+      "label": "EC 8+3",
+      "description": "Erasure Coded k=8, m=3, 73% Effizienz"
+    },
+    "ec_8_4": {
+      "label": "EC 8+4",
+      "description": "Erasure Coded k=8, m=4, 67% Effizienz"
+    },
     "backend": "Speicher-Backend",
     "storageBackend": "Speicher-Backend",
     "bluestore": "BlueStore",
@@ -352,9 +511,18 @@
       "label": "Fine 2-Wege",
       "description": "Feine Granularität (8KB), nur 2-Wege Spiegel"
     },
-    "ec_4_1": { "label": "EC 4+1", "description": "Erasure Coding 4+1, 80% Effizienz, -30% IOPS" },
-    "ec_4_2": { "label": "EC 4+2", "description": "Erasure Coding 4+2, 67% Effizienz, -30% IOPS" },
-    "ec_8_2": { "label": "EC 8+2", "description": "Erasure Coding 8+2, 80% Effizienz, -30% IOPS" },
+    "ec_4_1": {
+      "label": "EC 4+1",
+      "description": "Erasure Coding 4+1, 80% Effizienz, -30% IOPS"
+    },
+    "ec_4_2": {
+      "label": "EC 4+2",
+      "description": "Erasure Coding 4+2, 67% Effizienz, -30% IOPS"
+    },
+    "ec_8_2": {
+      "label": "EC 8+2",
+      "description": "Erasure Coding 8+2, 80% Effizienz, -30% IOPS"
+    },
     "ec_12_4": {
       "label": "EC 12+4",
       "description": "Erasure Coding 12+4, 75% Effizienz, -30% IOPS"
@@ -416,8 +584,14 @@
   },
   "synology": {
     "title": "Synology-Optionen",
-    "shr": { "label": "Synology SHR", "description": "Hybrid RAID, 1-Laufwerk Fehlertoleranz" },
-    "shr2": { "label": "Synology SHR-2", "description": "Hybrid RAID, 2-Laufwerk Fehlertoleranz" },
+    "shr": {
+      "label": "Synology SHR",
+      "description": "Hybrid RAID, 1-Laufwerk Fehlertoleranz"
+    },
+    "shr2": {
+      "label": "Synology SHR-2",
+      "description": "Hybrid RAID, 2-Laufwerk Fehlertoleranz"
+    },
     "raid_f1": {
       "label": "Synology RAID F1",
       "description": "Flash-optimiert, ungleiche Paritätsrotation"
@@ -464,15 +638,6 @@
     "totalDrives": "Gesamt: {{count}} Laufwerke",
     "fastTierCapacity": "Schnell-Tier-Kapazität",
     "capacityTier": "Kapazitäts-Tier",
-    "cacheMode": "Cache-Modus",
-    "writeBack": "Write-Back",
-    "writeThrough": "Write-Through",
-    "readOnly": "Nur Lesen",
-    "cacheModeDesc": {
-      "writeback": "Beste Leistung, erfordert Batterie-Backup",
-      "writethrough": "Sicherere Schreibvorgänge, geringere Leistung",
-      "readonly": "Nur Lese-Cache, Schreibvorgänge direkt zum Kapazitäts-Tier"
-    },
     "workingSetSize": "Working-Set-Größe",
     "workingSetDesc": "Prozentsatz häufig abgerufener Daten (heiße Daten)",
     "totalDrivesLabel": "Laufwerke gesamt",

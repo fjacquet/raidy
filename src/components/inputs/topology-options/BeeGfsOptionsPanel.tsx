@@ -185,7 +185,6 @@ export function BeeGfsOptionsPanel() {
             }
             serverCount={serverCount}
             platform="beegfs"
-            showCacheMode={false}
             showWorkingSet={false}
           />
         </div>

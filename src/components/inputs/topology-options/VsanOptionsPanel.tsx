@@ -176,7 +176,6 @@ export function VsanOptionsPanel({ topology }: VsanOptionsPanelProps) {
             }
             serverCount={serverCount}
             platform="vsan"
-            showCacheMode={false}
             vsanMode={vsanOptions.diskGroupMode}
             onVsanModeChange={(diskGroupMode) => setVsanOptions({ diskGroupMode })}
           />

@@ -211,8 +211,6 @@ export interface TieringConfig {
   fastTier: StorageTier
   /** Capacity tier (bulk storage) - typically HDD or slower SSD */
   capacityTier: StorageTier
-  /** Cache mode */
-  cacheMode: 'write-back' | 'write-through' | 'read-only'
   /** Working set percentage (for cache hit rate calculation) */
   workingSetPercent: number
 }
@@ -958,7 +956,6 @@ export const DEFAULT_TIERING_CONFIG: TieringConfig = {
   enabled: false,
   fastTier: { driveId: '', driveCount: 2 },
   capacityTier: { driveId: '', driveCount: 4 },
-  cacheMode: 'write-back',
   workingSetPercent: 20,
 }
 

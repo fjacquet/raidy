@@ -117,7 +117,6 @@ export function CephOptionsPanel() {
           }
           serverCount={serverCount}
           platform="ceph"
-          showCacheMode={false}
           showWorkingSet={false}
         />
       )}

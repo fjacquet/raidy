@@ -31,7 +31,6 @@
     "hint1m": "1M - Séquentiel, sauvegarde"
   },
   "capacity": {
-    "datasetSize": "Taille totale des données",
     "dailyWriteVolume": "Volume d'écriture journalier",
     "hint": "Utilisé pour le calcul d'endurance SSD"
   }

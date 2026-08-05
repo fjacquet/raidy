@@ -638,15 +638,6 @@
     "totalDrives": "Total: {{count}} drives",
     "fastTierCapacity": "Fast Tier Capacity",
     "capacityTier": "Capacity Tier",
-    "cacheMode": "Cache Mode",
-    "writeBack": "Write-Back",
-    "writeThrough": "Write-Through",
-    "readOnly": "Read-Only",
-    "cacheModeDesc": {
-      "writeback": "Best performance, requires battery backup or power protection",
-      "writethrough": "Safer writes, lower write performance",
-      "readonly": "Cache reads only, writes go directly to capacity tier"
-    },
     "workingSetSize": "Working Set Size",
     "workingSetDesc": "Percentage of data that is frequently accessed (hot data)",
     "totalDrivesLabel": "Total Drives",

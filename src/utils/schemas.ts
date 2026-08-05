@@ -167,7 +167,6 @@ const TieringConfigSchema = z.object({
   enabled: z.boolean(),
   fastTier: StorageTierSchema,
   capacityTier: StorageTierSchema,
-  cacheMode: z.enum(['write-back', 'write-through', 'read-only']),
   workingSetPercent: z.number().min(0).max(100).finite(),
 })
 
@@ -403,7 +402,6 @@ export const ConfigStateSchema = z.object({
   readPercent: z.number().min(0).max(100).finite().optional(),
   blockSize: z.enum(BLOCK_SIZES).optional(),
   randomPercent: z.number().min(0).max(100).finite().optional(),
-  datasetSize: z.number().positive().finite().optional(),
   dailyWriteVolume: z.number().nonnegative().finite().optional(),
 
   // Advanced

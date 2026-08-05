@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+- **Two configuration controls that changed no number: the Workload panel's "Total Dataset Size"
+  slider and the tiering "Cache Mode" selector.** Both were stored, serialized into every shared
+  URL and echoed back onto their own control, but neither was read by any engine, worker,
+  validator or hook. They escaped the #104 and #110 sweeps because neither lives in a
+  `DEFAULT_*_OPTIONS` object, which is the only place the guard test looks. Cache Mode was the
+  more misleading of the two: it rendered for S2D alone, directly above the Working Set slider,
+  which is live. **No calculated figure changes** — this removes controls that fed nothing.
+  Shared links created before this release still load: the nested option schemas strip unknown
+  keys rather than rejecting them, which the new `tests/store/removedDeadFields.spec.ts` asserts
+  rather than assumes.
+
 ### Fixed
 - **The Hardware panel's raw-capacity and hardware-cost summary counted one server's drives, not
   the cluster's.** The same panel renders a drive-count hint of `driveCount * serverCount`

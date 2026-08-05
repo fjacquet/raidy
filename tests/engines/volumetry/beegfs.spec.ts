@@ -150,7 +150,6 @@ describe('BeeGFS volumetry — MDT via tiering', () => {
       metadataTargets: true,
       tiering: {
         enabled: true,
-        cacheMode: 'write-back',
         workingSetPercent: 20,
         fastTier: { driveId: MDT_DRIVE_ID, driveCount: 2 },
         capacityTier: { driveId: ST_DRIVE_ID, driveCount: 12 },
@@ -221,7 +220,6 @@ describe('BeeGFS volumetry — MDT via tiering', () => {
           metadataTargets: true,
           tiering: {
             enabled: true,
-            cacheMode: 'write-back',
             workingSetPercent: 20,
             fastTier: { driveId: MDT_DRIVE_ID, driveCount: 1 }, // too small
             capacityTier: { driveId: ST_DRIVE_ID, driveCount: 12 },
@@ -255,7 +253,6 @@ describe('BeeGFS volumetry — metadataTargets gate', () => {
           metadataTargets: false, // both tier drives filled below, but the gate is off
           tiering: {
             enabled: true,
-            cacheMode: 'write-back',
             workingSetPercent: 20,
             fastTier: { driveId: MDT_DRIVE_ID, driveCount: 2 },
             capacityTier: { driveId: ST_DRIVE_ID, driveCount: 12 },
@@ -279,7 +276,6 @@ describe('BeeGFS volumetry — metadataTargets gate', () => {
           metadataTargets: false,
           tiering: {
             enabled: true,
-            cacheMode: 'write-back',
             workingSetPercent: 20,
             fastTier: { driveId: MDT_DRIVE_ID, driveCount: 2 },
             capacityTier: { driveId: ST_DRIVE_ID, driveCount: 12 },
@@ -300,7 +296,6 @@ describe('BeeGFS volumetry — metadataTargets gate', () => {
           metadataTargets: true,
           tiering: {
             enabled: true,
-            cacheMode: 'write-back',
             workingSetPercent: 20,
             fastTier: { driveId: MDT_DRIVE_ID, driveCount: 2 },
             capacityTier: { driveId: ST_DRIVE_ID, driveCount: 12 },

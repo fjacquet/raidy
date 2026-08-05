@@ -17,7 +17,6 @@
     "readWrite": "Il rapporto lettura/scrittura influisce significativamente sugli IOPS effettivi. Le scritture RAID 5/6 comportano una penalità (4x per RAID-5, 6x per RAID-6) poiché ogni scrittura richiede la lettura dei dati precedenti, della parità precedente, la scrittura dei nuovi dati e della nuova parità.",
     "randomSequential": "L'I/O casuale si misura in IOPS; l'I/O sequenziale si misura in throughput (MB/s). I database sono tipicamente oltre l'80% casuali; lo streaming video è quasi al 100% sequenziale.",
     "blockSize": "La dimensione del blocco di I/O influisce sia sulle prestazioni che sull'allineamento. Blocchi più piccoli (4K-8K) massimizzano gli IOPS per i database. Blocchi più grandi (128K-1M) massimizzano il throughput per i carichi sequenziali.",
-    "datasetSize": "Quantità totale di dati da archiviare. Utilizzata per calcolare se lo storage configurato fornisce sufficiente capacità utilizzabile dopo tutti gli overhead.",
     "dailyWriteVolume": "Il volume di scrittura giornaliero determina i requisiti di resistenza degli SSD (DWPD). Volumi di scrittura elevati sugli SSD possono superare la resistenza nominale del disco, causando guasti prematuri."
   },
   "advanced": {

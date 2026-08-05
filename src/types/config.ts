@@ -136,8 +136,6 @@ export interface WorkloadState {
   blockSize: BlockSize
   /** Random I/O percentage (0-100), sequential = 100 - random */
   randomPercent: number
-  /** Total dataset size in bytes */
-  datasetSize: number
   /** Daily write volume in bytes (for SSD endurance) */
   dailyWriteVolume: number
 }
@@ -220,7 +218,6 @@ export interface ConfigActions {
   setReadPercent: (percent: number) => void
   setBlockSize: (size: BlockSize) => void
   setRandomPercent: (percent: number) => void
-  setDatasetSize: (bytes: number) => void
   setDailyWriteVolume: (bytes: number) => void
 
   // Advanced actions
