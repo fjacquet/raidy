@@ -16,7 +16,8 @@
     "powerscale": "PowerScale",
     "objectscale": "ObjectScale",
     "powervault": "PowerVault ME5",
-    "proprietary": "Autre"
+    "proprietary": "Autre",
+    "beegfs": "BeeGFS"
   },
   "configuration": {
     "label": "Configuration"
@@ -438,7 +439,15 @@
     "snapshotHeadroom": "Marge snapshots",
     "snapshotHeadroomValue": "+{{pct}}% réservé pour les chaînes de snapshots",
     "growthHeadroom": "Marge de croissance (indicatif)",
-    "growthHeadroomValue": "+{{pct}}% de croissance (non déduit de l'utilisable)"
+    "growthHeadroomValue": "+{{pct}}% de croissance (non déduit de l'utilisable)",
+    "r2": {
+      "label": "Réplica 2",
+      "description": "2 réplicas, 50 % d'efficacité (orienté capacité)"
+    },
+    "r3": {
+      "label": "Réplica 3",
+      "description": "3 réplicas, 33 % d'efficacité (défaut, nécessite ≥ 3 nœuds)"
+    }
   },
   "beegfs": {
     "title": "Options BeeGFS",
@@ -455,7 +464,23 @@
     "metadataTargetsToggle": "Configurer les cibles de métadonnées",
     "metadataTargetsToggleHint": "Une fois activé, la configuration des disques des cibles de stockage passe du panneau Matériel aux sélecteurs de cibles de métadonnées ci-dessous.",
     "metadataTargets": "Cibles de métadonnées (MDT)",
-    "metadataTargetsHint": "BeeGFS recommande 0,3 à 0,5% de la capacité totale pour les métadonnées — environ 150 millions de fichiers par 500 Go de capacité de métadonnées ext4."
+    "metadataTargetsHint": "BeeGFS recommande 0,3 à 0,5% de la capacité totale pour les métadonnées — environ 150 millions de fichiers par 500 Go de capacité de métadonnées ext4.",
+    "raid6": {
+      "label": "RAID 6",
+      "description": "Cible de stockage = RAID6 local (défaut), 10 à 12 disques recommandés"
+    },
+    "raid10": {
+      "label": "RAID 10",
+      "description": "Cible de stockage = RAID10 local, agrégats en miroir"
+    },
+    "raidz2": {
+      "label": "RAID-Z2",
+      "description": "Cible de stockage = ZFS RAIDz2, double parité"
+    },
+    "single": {
+      "label": "Disque unique",
+      "description": "Un disque = une cible de stockage, sans RAID local"
+    }
   },
   "powerflex": {
     "title": "Options PowerFlex",

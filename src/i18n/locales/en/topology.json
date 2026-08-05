@@ -16,7 +16,8 @@
     "powerscale": "PowerScale",
     "objectscale": "ObjectScale",
     "powervault": "PowerVault ME5",
-    "proprietary": "Other"
+    "proprietary": "Other",
+    "beegfs": "BeeGFS"
   },
   "configuration": {
     "label": "Configuration"
@@ -438,7 +439,15 @@
     "snapshotHeadroom": "Snapshot Headroom",
     "snapshotHeadroomValue": "+{{pct}}% reserved for snapshot chains",
     "growthHeadroom": "Growth Headroom (advisory)",
-    "growthHeadroomValue": "+{{pct}}% growth allowance (not subtracted from usable)"
+    "growthHeadroomValue": "+{{pct}}% growth allowance (not subtracted from usable)",
+    "r2": {
+      "label": "Replica 2",
+      "description": "2 replicas, 50% efficiency (efficiency-oriented)"
+    },
+    "r3": {
+      "label": "Replica 3",
+      "description": "3 replicas, 33% efficiency (default, needs ≥3 nodes)"
+    }
   },
   "beegfs": {
     "title": "BeeGFS Options",
@@ -455,7 +464,23 @@
     "metadataTargetsToggle": "Configure Metadata Targets",
     "metadataTargetsToggleHint": "When enabled, storage-target drive configuration moves from the Hardware panel into the metadata target pickers below.",
     "metadataTargets": "Metadata Targets (MDT)",
-    "metadataTargetsHint": "BeeGFS recommends 0.3-0.5% of total capacity for metadata — roughly 150 million files per 500 GB of ext4 metadata capacity."
+    "metadataTargetsHint": "BeeGFS recommends 0.3-0.5% of total capacity for metadata — roughly 150 million files per 500 GB of ext4 metadata capacity.",
+    "raid6": {
+      "label": "RAID 6",
+      "description": "Storage target = local RAID6 (default), 10-12 drives recommended"
+    },
+    "raid10": {
+      "label": "RAID 10",
+      "description": "Storage target = local RAID10, mirrored stripes"
+    },
+    "raidz2": {
+      "label": "RAID-Z2",
+      "description": "Storage target = ZFS RAIDz2, double parity"
+    },
+    "single": {
+      "label": "Single Disk",
+      "description": "One drive = one storage target, no local RAID"
+    }
   },
   "powerflex": {
     "title": "PowerFlex Options",

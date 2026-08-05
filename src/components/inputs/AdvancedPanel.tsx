@@ -18,20 +18,21 @@ import {
   PCIE_LANES,
 } from '@/types'
 
-/** Exhaustive over NetworkSpeed — adding a value to NETWORK_SPEEDS fails to compile until a label is added here. */
-const NETWORK_SPEED_LABELS: Record<NetworkSpeed, string> = {
-  '1GbE': '1 GbE',
-  '10GbE': '10 GbE',
-  '25GbE': '25 GbE',
-  '40GbE': '40 GbE',
-  '100GbE': '100 GbE',
-  '200GbE': '200 GbE',
-  '400GbE': '400 GbE',
+/**
+ * Exhaustive over NetworkSpeed — adding a value to NETWORK_SPEEDS fails to compile until a key
+ * is added here. The values are i18n key suffixes, not text: this table held hardcoded English
+ * until 2026-08-05, shadowing the `network.speeds.*` entries that already existed in all four
+ * locale files.
+ */
+const NETWORK_SPEED_KEYS: Record<NetworkSpeed, string> = {
+  '1GbE': 'network.speeds.1gbe',
+  '10GbE': 'network.speeds.10gbe',
+  '25GbE': 'network.speeds.25gbe',
+  '40GbE': 'network.speeds.40gbe',
+  '100GbE': 'network.speeds.100gbe',
+  '200GbE': 'network.speeds.200gbe',
+  '400GbE': 'network.speeds.400gbe',
 }
-const NETWORK_SPEED_OPTIONS = NETWORK_SPEEDS.map((value) => ({
-  value,
-  label: NETWORK_SPEED_LABELS[value],
-}))
 
 /** Exhaustive over PCIeGen — adding a value to PCIE_GENS fails to compile until a label is added here. */
 const PCIE_GEN_LABELS: Record<PCIeGen, string> = {
@@ -106,6 +107,11 @@ export function AdvancedPanel() {
   // every other platform ignores them (its own strategy either has no data-reduction
   // step, or reduces via platform-specific options in TopologyPanel). See
   // src/engines/capabilities.ts for the probe-enforced source of truth.
+  const networkSpeedOptions = useMemo(
+    () => NETWORK_SPEEDS.map((value) => ({ value, label: t(NETWORK_SPEED_KEYS[value]) })),
+    [t],
+  )
+
   const showCompression = shouldShowControl('compression', topology.type)
   const showDedup = shouldShowControl('dedup', topology.type)
 
@@ -187,7 +193,7 @@ export function AdvancedPanel() {
           <Select
             id="network-speed"
             value={networkSpeed}
-            options={NETWORK_SPEED_OPTIONS}
+            options={networkSpeedOptions}
             onChange={(v) => setNetworkSpeed(v as NetworkSpeed)}
           />
         </div>

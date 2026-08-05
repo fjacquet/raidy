@@ -16,7 +16,8 @@
     "powerscale": "PowerScale",
     "objectscale": "ObjectScale",
     "powervault": "PowerVault ME5",
-    "proprietary": "Andere"
+    "proprietary": "Andere",
+    "beegfs": "BeeGFS"
   },
   "configuration": {
     "label": "Konfiguration"
@@ -438,7 +439,15 @@
     "snapshotHeadroom": "Snapshot-Reserve",
     "snapshotHeadroomValue": "+{{pct}}% für Snapshot-Ketten reserviert",
     "growthHeadroom": "Wachstumsreserve (Hinweis)",
-    "growthHeadroomValue": "+{{pct}}% Wachstum (nicht vom Nutzbaren abgezogen)"
+    "growthHeadroomValue": "+{{pct}}% Wachstum (nicht vom Nutzbaren abgezogen)",
+    "r2": {
+      "label": "Replika 2",
+      "description": "2 Repliken, 50 % Effizienz (kapazitätsorientiert)"
+    },
+    "r3": {
+      "label": "Replika 3",
+      "description": "3 Repliken, 33 % Effizienz (Standard, benötigt ≥ 3 Knoten)"
+    }
   },
   "beegfs": {
     "title": "BeeGFS-Optionen",
@@ -455,7 +464,23 @@
     "metadataTargetsToggle": "Metadata-Targets konfigurieren",
     "metadataTargetsToggleHint": "Bei Aktivierung wechselt die Laufwerkskonfiguration der Storage-Targets vom Hardware-Panel zu den Metadata-Target-Auswahlfeldern unten.",
     "metadataTargets": "Metadata-Targets (MDT)",
-    "metadataTargetsHint": "BeeGFS empfiehlt 0,3-0,5% der Gesamtkapazität für Metadaten — etwa 150 Millionen Dateien pro 500 GB ext4-Metadatenkapazität."
+    "metadataTargetsHint": "BeeGFS empfiehlt 0,3-0,5% der Gesamtkapazität für Metadaten — etwa 150 Millionen Dateien pro 500 GB ext4-Metadatenkapazität.",
+    "raid6": {
+      "label": "RAID 6",
+      "description": "Storage-Target = lokales RAID6 (Standard), 10–12 Laufwerke empfohlen"
+    },
+    "raid10": {
+      "label": "RAID 10",
+      "description": "Storage-Target = lokales RAID10, gespiegelte Stripes"
+    },
+    "raidz2": {
+      "label": "RAID-Z2",
+      "description": "Storage-Target = ZFS RAIDz2, doppelte Parität"
+    },
+    "single": {
+      "label": "Einzellaufwerk",
+      "description": "Ein Laufwerk = ein Storage-Target, kein lokales RAID"
+    }
   },
   "powerflex": {
     "title": "PowerFlex-Optionen",

@@ -16,7 +16,8 @@
     "powerscale": "PowerScale",
     "objectscale": "ObjectScale",
     "powervault": "PowerVault ME5",
-    "proprietary": "Altro"
+    "proprietary": "Altro",
+    "beegfs": "BeeGFS"
   },
   "configuration": {
     "label": "Configurazione"
@@ -438,7 +439,15 @@
     "snapshotHeadroom": "Margine snapshot",
     "snapshotHeadroomValue": "+{{pct}}% riservato per le catene di snapshot",
     "growthHeadroom": "Margine di crescita (indicativo)",
-    "growthHeadroomValue": "+{{pct}}% di crescita (non sottratto dall'utilizzabile)"
+    "growthHeadroomValue": "+{{pct}}% di crescita (non sottratto dall'utilizzabile)",
+    "r2": {
+      "label": "Replica 2",
+      "description": "2 repliche, 50% di efficienza (orientato alla capacità)"
+    },
+    "r3": {
+      "label": "Replica 3",
+      "description": "3 repliche, 33% di efficienza (predefinito, richiede ≥ 3 nodi)"
+    }
   },
   "beegfs": {
     "title": "Opzioni BeeGFS",
@@ -455,7 +464,23 @@
     "metadataTargetsToggle": "Configura target di metadati",
     "metadataTargetsToggleHint": "Se attivato, la configurazione dei dischi dei target di storage passa dal pannello Hardware ai selettori dei target di metadati sottostanti.",
     "metadataTargets": "Target di metadati (MDT)",
-    "metadataTargetsHint": "BeeGFS consiglia lo 0,3-0,5% della capacità totale per i metadati — circa 150 milioni di file ogni 500 GB di capacità di metadati ext4."
+    "metadataTargetsHint": "BeeGFS consiglia lo 0,3-0,5% della capacità totale per i metadati — circa 150 milioni di file ogni 500 GB di capacità di metadati ext4.",
+    "raid6": {
+      "label": "RAID 6",
+      "description": "Target di storage = RAID6 locale (predefinito), 10-12 dischi consigliati"
+    },
+    "raid10": {
+      "label": "RAID 10",
+      "description": "Target di storage = RAID10 locale, stripe con mirroring"
+    },
+    "raidz2": {
+      "label": "RAID-Z2",
+      "description": "Target di storage = ZFS RAIDz2, doppia parità"
+    },
+    "single": {
+      "label": "Disco singolo",
+      "description": "Un disco = un target di storage, senza RAID locale"
+    }
   },
   "powerflex": {
     "title": "Opzioni PowerFlex",
