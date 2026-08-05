@@ -21,6 +21,19 @@ export interface PlatformCapabilities {
    * establishes it, and what will catch this flag drifting from the switch.
    */
   honoursFsType: boolean
+  /**
+   * True when the bottleneck chain includes a Controller layer built from
+   * `CONTROLLER_LIMITS[controller]`, so the controller selector can change a result.
+   *
+   * False only for vSAN ESA, which is NVMe-direct: `isNvmeDirect` drops the Controller
+   * layer from `layers` and derives `iopsCeiling` from PCIe and network alone.
+   *
+   * The probe (tests/engines/performance/controllerRelevance.spec.ts) runs at a
+   * deliberately high drive count. At realistic counts the media layer binds first on most
+   * platforms, so a small fixture would have shown eight topologies as "inert" — measuring
+   * which layer happens to bind rather than whether the controller is read at all.
+   */
+  honoursController: boolean
 }
 
 // Bootstrapped empirically (Step 3 of the task-15 brief): every flag was set to
@@ -68,6 +81,7 @@ export const PLATFORM_CAPABILITIES: Record<TopologyType, PlatformCapabilities> =
     hasServerCount: false,
     // Explicit `case 'standard'` in getFilesystemOverheadPercent.
     honoursFsType: true,
+    honoursController: true,
   },
   zfs: {
     supportsCompression: true,
@@ -75,6 +89,7 @@ export const PLATFORM_CAPABILITIES: Record<TopologyType, PlatformCapabilities> =
     supportsHotSpares: true,
     hasServerCount: false,
     honoursFsType: false,
+    honoursController: true,
   },
   s2d: {
     supportsCompression: false,
@@ -82,6 +97,7 @@ export const PLATFORM_CAPABILITIES: Record<TopologyType, PlatformCapabilities> =
     supportsHotSpares: true,
     hasServerCount: true,
     honoursFsType: false,
+    honoursController: true,
   },
   proprietary: {
     supportsCompression: false,
@@ -89,6 +105,7 @@ export const PLATFORM_CAPABILITIES: Record<TopologyType, PlatformCapabilities> =
     supportsHotSpares: true,
     hasServerCount: false,
     honoursFsType: false,
+    honoursController: true,
   },
   vsan_osa: {
     supportsCompression: false,
@@ -96,6 +113,7 @@ export const PLATFORM_CAPABILITIES: Record<TopologyType, PlatformCapabilities> =
     supportsHotSpares: true,
     hasServerCount: true,
     honoursFsType: false,
+    honoursController: true,
   },
   vsan_esa: {
     supportsCompression: false,
@@ -103,6 +121,10 @@ export const PLATFORM_CAPABILITIES: Record<TopologyType, PlatformCapabilities> =
     supportsHotSpares: true,
     hasServerCount: true,
     honoursFsType: false,
+    // NVMe-direct: `isNvmeDirect` drops the Controller layer from the bottleneck chain and
+    // computes iopsCeiling from PCIe and network alone. The only type where this is false.
+    // Flipping it to true fails the probe with "expected 4032512 to be greater than 4032512".
+    honoursController: false,
   },
   ceph: {
     supportsCompression: false,
@@ -110,6 +132,7 @@ export const PLATFORM_CAPABILITIES: Record<TopologyType, PlatformCapabilities> =
     supportsHotSpares: true,
     hasServerCount: true,
     honoursFsType: false,
+    honoursController: true,
   },
   powerflex: {
     supportsCompression: false,
@@ -117,6 +140,7 @@ export const PLATFORM_CAPABILITIES: Record<TopologyType, PlatformCapabilities> =
     supportsHotSpares: true,
     hasServerCount: true,
     honoursFsType: false,
+    honoursController: true,
   },
   powerstore: {
     supportsCompression: false,
@@ -124,6 +148,7 @@ export const PLATFORM_CAPABILITIES: Record<TopologyType, PlatformCapabilities> =
     supportsHotSpares: true,
     hasServerCount: true,
     honoursFsType: false,
+    honoursController: true,
   },
   powerscale: {
     supportsCompression: false,
@@ -131,6 +156,7 @@ export const PLATFORM_CAPABILITIES: Record<TopologyType, PlatformCapabilities> =
     supportsHotSpares: true,
     hasServerCount: true,
     honoursFsType: false,
+    honoursController: true,
   },
   objectscale: {
     supportsCompression: false,
@@ -138,6 +164,7 @@ export const PLATFORM_CAPABILITIES: Record<TopologyType, PlatformCapabilities> =
     supportsHotSpares: true,
     hasServerCount: true,
     honoursFsType: false,
+    honoursController: true,
   },
   nutanix: {
     supportsCompression: false,
@@ -145,6 +172,7 @@ export const PLATFORM_CAPABILITIES: Record<TopologyType, PlatformCapabilities> =
     supportsHotSpares: true,
     hasServerCount: true,
     honoursFsType: false,
+    honoursController: true,
   },
   powervault: {
     supportsCompression: false,
@@ -152,6 +180,7 @@ export const PLATFORM_CAPABILITIES: Record<TopologyType, PlatformCapabilities> =
     supportsHotSpares: true,
     hasServerCount: false,
     honoursFsType: false,
+    honoursController: true,
   },
   longhorn: {
     supportsCompression: false,
@@ -162,6 +191,7 @@ export const PLATFORM_CAPABILITIES: Record<TopologyType, PlatformCapabilities> =
     // branch, which reads the user's fsType exactly like standard RAID does. Flipping
     // this to false makes the probe fail with 2.85 TB vs 2.97 TB (ext4 5% vs xfs 1%).
     honoursFsType: true,
+    honoursController: true,
   },
   beegfs: {
     supportsCompression: false,
@@ -169,6 +199,7 @@ export const PLATFORM_CAPABILITIES: Record<TopologyType, PlatformCapabilities> =
     supportsHotSpares: true,
     hasServerCount: true,
     honoursFsType: false,
+    honoursController: true,
   },
 } as const
 
@@ -177,7 +208,7 @@ export function getCapabilities(type: TopologyType): PlatformCapabilities {
 }
 
 export function shouldShowControl(
-  control: 'compression' | 'dedup' | 'hotSpares' | 'serverCount' | 'fsType',
+  control: 'compression' | 'dedup' | 'hotSpares' | 'serverCount' | 'fsType' | 'controller',
   type: TopologyType,
 ): boolean {
   const caps = getCapabilities(type)
@@ -192,6 +223,8 @@ export function shouldShowControl(
       return caps.hasServerCount
     case 'fsType':
       return caps.honoursFsType
+    case 'controller':
+      return caps.honoursController
   }
 }
 

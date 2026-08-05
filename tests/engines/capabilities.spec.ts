@@ -145,6 +145,7 @@ describe('shouldShowControl', () => {
       expect(shouldShowControl('dedup', type)).toBe(caps.supportsDedup)
       expect(shouldShowControl('hotSpares', type)).toBe(caps.supportsHotSpares)
       expect(shouldShowControl('fsType', type)).toBe(caps.honoursFsType)
+      expect(shouldShowControl('controller', type)).toBe(caps.honoursController)
       expect(shouldShowControl('serverCount', type)).toBe(caps.hasServerCount)
     }
   })

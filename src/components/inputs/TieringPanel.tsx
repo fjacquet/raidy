@@ -229,8 +229,14 @@ export function TieringPanel({
         )}
       </div>
 
-      {/* Working Set */}
-      {showWorkingSet && (
+      {/*
+        Working Set — hidden for vSAN OSA in all-flash mode. `vsanFastTierModel` blends the two
+        tiers by working set only on the hybrid branch; the all-flash branch never reads it, so
+        the slider is inert there even though vSAN OSA honours it in hybrid. A sub-mode gate, not
+        a platform one, which is why it lives here rather than in PLATFORM_CAPABILITIES.
+        Pinned by tests/engines/performance/vsanWorkingSetSubMode.spec.ts.
+      */}
+      {showWorkingSet && !(platform === 'vsan' && vsanMode === 'all-flash') && (
         <div className="space-y-2">
           <Label hint={`${config.workingSetPercent}%`}>{t('tiering.workingSetSize')}</Label>
           <Slider

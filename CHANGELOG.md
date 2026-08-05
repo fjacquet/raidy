@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- **The controller selector is hidden for vSAN ESA, and the working-set slider for vSAN OSA in
+  all-flash mode.** vSAN ESA is NVMe-direct: the engine drops the Controller layer from the
+  bottleneck chain and bounds IOPS by PCIe and network alone, so the selector could not change
+  a result. vSAN OSA's `vsanFastTierModel` blends the two tiers by working set only on its
+  hybrid branch, so the slider is inert in all-flash mode — a sub-mode gate rather than a
+  platform one. The PCIe controls, which *do* bind on ESA, are unaffected. **No calculated
+  figure changes.**
 - **The Advanced panel's Filesystem selector is now shown only where the engine reads it.**
   `getFilesystemOverheadPercent` returns a platform constant for thirteen of the fifteen
   topology types; only standard RAID and Longhorn consult the user's choice — Longhorn via the

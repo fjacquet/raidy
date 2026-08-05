@@ -116,6 +116,10 @@ export function AdvancedPanel() {
   // holds this flag to the engine.
   const showFsType = shouldShowControl('fsType', topology.type)
 
+  // vSAN ESA is NVMe-direct — no Controller layer in the bottleneck chain, so the selector
+  // cannot change a result. Probed in tests/engines/performance/controllerRelevance.spec.ts.
+  const showController = shouldShowControl('controller', topology.type)
+
   return (
     <div className="space-y-6">
       {/* Data Efficiency Section - only shown when the global sliders actually affect capacity */}
@@ -214,55 +218,62 @@ export function AdvancedPanel() {
         </div>
       </div>
 
-      {/* Controller / HBA Section */}
-      <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-surface-700">
-        <h4 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-          {controllerRequirement === 'hba'
-            ? t('pcie.title')
-            : controllerRequirement === 'either'
-              ? t('controller.eitherTitle')
-              : t('controller.title')}
-        </h4>
+      {/*
+        Controller / HBA Section — hidden for vSAN ESA, which is NVMe-direct: the engine drops
+        the Controller layer from the bottleneck chain entirely and bounds IOPS by PCIe and
+        network alone, so the selector cannot move a result there. The PCIe controls that DO
+        bind on ESA live in the section above and are unaffected.
+      */}
+      {showController && (
+        <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-surface-700">
+          <h4 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+            {controllerRequirement === 'hba'
+              ? t('pcie.title')
+              : controllerRequirement === 'either'
+                ? t('controller.eitherTitle')
+                : t('controller.title')}
+          </h4>
 
-        <div className="space-y-2">
-          <Label htmlFor="controller" tooltip={th('advanced.controller')}>
-            {controllerRequirement === 'hba'
-              ? t('controller.hbaModel')
-              : controllerRequirement === 'either'
-                ? t('controller.eitherModel')
-                : t('controller.model')}
-          </Label>
-          <Select
-            id="controller"
-            value={controllerOptions.controller}
-            options={availableControllers}
-            onChange={(v) => setControllerOptions({ controller: v as ControllerType })}
-          />
-          {selectedController && (
-            <div className="grid grid-cols-2 gap-2 mt-2 text-xs text-slate-500 dark:text-slate-400">
-              <div>
-                {t('controller.maxIops')}:{' '}
-                <span className="text-slate-600 dark:text-slate-300">
-                  {selectedController.iops.toLocaleString()}
-                </span>
+          <div className="space-y-2">
+            <Label htmlFor="controller" tooltip={th('advanced.controller')}>
+              {controllerRequirement === 'hba'
+                ? t('controller.hbaModel')
+                : controllerRequirement === 'either'
+                  ? t('controller.eitherModel')
+                  : t('controller.model')}
+            </Label>
+            <Select
+              id="controller"
+              value={controllerOptions.controller}
+              options={availableControllers}
+              onChange={(v) => setControllerOptions({ controller: v as ControllerType })}
+            />
+            {selectedController && (
+              <div className="grid grid-cols-2 gap-2 mt-2 text-xs text-slate-500 dark:text-slate-400">
+                <div>
+                  {t('controller.maxIops')}:{' '}
+                  <span className="text-slate-600 dark:text-slate-300">
+                    {selectedController.iops.toLocaleString()}
+                  </span>
+                </div>
+                <div>
+                  {t('controller.maxThroughput')}:{' '}
+                  <span className="text-slate-600 dark:text-slate-300">
+                    {selectedController.throughputMBs.toLocaleString()} MB/s
+                  </span>
+                </div>
               </div>
-              <div>
-                {t('controller.maxThroughput')}:{' '}
-                <span className="text-slate-600 dark:text-slate-300">
-                  {selectedController.throughputMBs.toLocaleString()} MB/s
-                </span>
-              </div>
-            </div>
-          )}
-          <p className="text-xs text-slate-500">
-            {controllerRequirement === 'hba'
-              ? t('controller.hbaHint')
-              : controllerRequirement === 'either'
-                ? t('controller.eitherHint')
-                : t('controller.raidHint')}
-          </p>
+            )}
+            <p className="text-xs text-slate-500">
+              {controllerRequirement === 'hba'
+                ? t('controller.hbaHint')
+                : controllerRequirement === 'either'
+                  ? t('controller.eitherHint')
+                  : t('controller.raidHint')}
+            </p>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Power & Sustainability Section */}
       <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-surface-700">
