@@ -64,7 +64,8 @@ npm run build
 - D3-sankey (capacity waterfall) + hand-rolled SVG gauges and charts
 - Web Workers (Monte Carlo simulations)
 
-See [`docs/`](./docs/) for [architecture](./docs/ARCHITECTURE.md),
+See [`docs/`](./docs/) for the [user guide](./docs/USER-GUIDE.md),
+[architecture](./docs/ARCHITECTURE.md), the [engine reference](./docs/ENGINES.md),
 [development](./docs/DEVELOPMENT.md), [testing](./docs/TESTING.md),
 [configuration & CI](./docs/CONFIGURATION.md), [security](./docs/SECURITY.md),
 [getting started](./docs/GETTING-STARTED.md), [decisions](./docs/adr/) and the

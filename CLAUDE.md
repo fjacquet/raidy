@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-> **See Also**: [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) for system architecture and data flow. Also in `docs/`: [DEVELOPMENT.md](./docs/DEVELOPMENT.md), [TESTING.md](./docs/TESTING.md), [CONFIGURATION.md](./docs/CONFIGURATION.md) (CI & security gates), [GETTING-STARTED.md](./docs/GETTING-STARTED.md), [SECURITY.md](./docs/SECURITY.md), [adr/](./docs/adr/) (architecture decisions), and [vendor-specs/](./docs/vendor-specs/) (the source material the engines were built from).
+> **See Also**: [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) for system architecture and data flow. Also in `docs/`: [ENGINES.md](./docs/ENGINES.md) (per-platform formulas and their sources), [USER-GUIDE.md](./docs/USER-GUIDE.md), [DEVELOPMENT.md](./docs/DEVELOPMENT.md), [TESTING.md](./docs/TESTING.md), [CONFIGURATION.md](./docs/CONFIGURATION.md) (CI & security gates), [GETTING-STARTED.md](./docs/GETTING-STARTED.md), [SECURITY.md](./docs/SECURITY.md), [adr/](./docs/adr/) (architecture decisions), and [vendor-specs/](./docs/vendor-specs/) (the source material the engines were built from).
 >
 > **Docs stay in sync with code.** Any change to config, CI, dependencies, or behavior must update the matching doc in `docs/` (and `README.md`/`CHANGELOG.md` where relevant) in the *same commit*. Stale docs are treated as a defect, not a follow-up.
 
