@@ -82,6 +82,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     The affected Zod schemas in `src/utils/schemas.ts` are plain `z.object()` (strip unknown keys
     rather than reject), confirmed for each schema touched here, so existing shared links
     carrying a since-removed field continue to validate and simply drop that key.
+### Changed
+- **The resilience worker now tracks which node each simulated component sits on** (#113).
+  Fault groups previously had no node identity, so mirror-pair membership was assigned without
+  reference to placement. That is a fine approximation while failures are independent, and wrong
+  the moment they are correlated: injecting group-kill logic into the old worker produced
+  spurious survival collapses 41–62% of the time, because both copies of a pair could land in a
+  group that then died together — an arrangement a real system would never create.
+
+  **No published figure changes.** The node arrays are recorded and threaded through, and nothing
+  reads them for any failure decision, so this release is provably behaviour-neutral rather than
+  statistically indistinguishable. It is infrastructure: it unblocks #88 (modelling the fast tier
+  as a shared failure domain) and any future rack or chassis fault-domain work, neither of which
+  could be built correctly without it.
 
 ## [1.16.0] - 2026-08-04
 

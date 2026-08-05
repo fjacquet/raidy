@@ -50,6 +50,18 @@ export interface GroupPairState {
   groupPairStart: number[]
   /** Number of pair slots (real pairs + at most one solo slot) in each group. */
   groupPairCount: number[]
+  /**
+   * Node (physical host/server) holding the first copy of each flattened pair
+   * slot (issue #113). For solo slots this is the slot's only copy.
+   */
+  pairNodeA: number[]
+  /**
+   * Node holding the second copy of each flattened pair slot. Equal to
+   * `pairNodeA` at the same index for solo slots (capacity 1, no partner) —
+   * see `buildGroupPairState`'s doc comment for why real pairs are also
+   * same-node here.
+   */
+  pairNodeB: number[]
 }
 
 /**
@@ -59,8 +71,22 @@ export interface GroupPairState {
  * odd. Flattened rather than an array-of-arrays so this — run once per Monte
  * Carlo iteration, up to 100K times — stays a handful of O(driveCount)
  * allocations instead of one allocation per group.
+ *
+ * Node identity (issue #113): `groupNodeIndex[g]` is the physical node the
+ * whole group lives on (defaults to `g`, i.e. "one group == one node", which
+ * holds for every caller today — the only caller is unmerged beegfs_raid10,
+ * whose groups are individual, unbuddied storage targets). Both copies of a
+ * mirror pair built here get the SAME node, deliberately: a BeeGFS storage
+ * target's internal RAID10 mirroring is a LOCAL disk-level RAID array on one
+ * server, not cross-server replication — buddy mirroring (a different layer,
+ * modelled separately via `mirrorCopies`) is what BeeGFS does across nodes.
+ * Placing a local pair's two copies on two different simulated nodes would
+ * be modelling a topology BeeGFS does not have.
  */
-export function buildGroupPairState(groupWidths: number[]): GroupPairState {
+export function buildGroupPairState(
+  groupWidths: number[],
+  groupNodeIndex: number[] = [],
+): GroupPairState {
   const numGroups = groupWidths.length
   const groupPairStart: number[] = new Array(numGroups)
   const groupPairCount: number[] = new Array(numGroups)
@@ -74,21 +100,70 @@ export function buildGroupPairState(groupWidths: number[]): GroupPairState {
   }
   const pairCapacity: number[] = new Array(offset)
   const pairGroupIndex: number[] = new Array(offset)
+  const pairNodeA: number[] = new Array(offset)
+  const pairNodeB: number[] = new Array(offset)
   for (let g = 0; g < numGroups; g++) {
     const width = groupWidths[g] ?? 0
     const fullPairs = Math.floor(width / 2)
     const hasSolo = width % 2 === 1
     const start = groupPairStart[g] ?? 0
+    const node = groupNodeIndex[g] ?? g
     for (let p = 0; p < fullPairs; p++) {
       pairCapacity[start + p] = 2
       pairGroupIndex[start + p] = g
+      pairNodeA[start + p] = node
+      pairNodeB[start + p] = node
     }
     if (hasSolo) {
       pairCapacity[start + fullPairs] = 1 // unpaired drive: no mirror partner, tolerance 0
       pairGroupIndex[start + fullPairs] = g
+      pairNodeA[start + fullPairs] = node
+      pairNodeB[start + fullPairs] = node
     }
   }
-  return { pairCapacity, pairGroupIndex, groupPairStart, groupPairCount }
+  return { pairCapacity, pairGroupIndex, groupPairStart, groupPairCount, pairNodeA, pairNodeB }
+}
+
+/**
+ * Assign a physical node (host/server/chassis) to each of `copiesPerGroup`
+ * replica slots in each of `numGroups` fault groups (issue #113). Computed
+ * once in the setup phase (`computeTopologyModel`), not per Monte Carlo
+ * iteration — node identity does not depend on any random draw.
+ *
+ * This is pure bookkeeping for now: nothing in `runSingleSimulation` reads
+ * the result yet, so it cannot move any survival figure (the #113 regression
+ * gate). It exists so a future correlated-failure model (#88 — e.g. a vSAN
+ * disk-group kill) can ask "which node does this replica live on" and, by
+ * construction, never build an arrangement a real system would not: two
+ * replicas of the same pair on the same node.
+ *
+ * Placement rule: deterministic round-robin, offset by `group *
+ * copiesPerGroup` so consecutive groups don't all start on node 0. When
+ * `nodeCount >= copiesPerGroup` — true by construction for every platform in
+ * scope (vSAN: default fault domain is the host; Ceph: default CRUSH failure
+ * domain is the host; S2D/Nutanix: resiliency is at least server-level, one
+ * copy per server) — this guarantees every replica slot within one group
+ * lands on a DISTINCT node. When `nodeCount < copiesPerGroup` (more mirror
+ * copies than nodes — a configuration these platforms' own placement rules
+ * would not allow) the formula wraps rather than throwing: it is the
+ * conservative choice of "degrade gracefully" over "assert a guarantee the
+ * input cannot support".
+ */
+export function assignNodesRoundRobin(
+  numGroups: number,
+  copiesPerGroup: number,
+  nodeCount: number,
+): number[][] {
+  const safeNodeCount = Math.max(1, nodeCount)
+  const assignments: number[][] = new Array(numGroups)
+  for (let g = 0; g < numGroups; g++) {
+    const nodes: number[] = new Array(copiesPerGroup)
+    for (let c = 0; c < copiesPerGroup; c++) {
+      nodes[c] = (g * copiesPerGroup + c) % safeNodeCount
+    }
+    assignments[g] = nodes
+  }
+  return assignments
 }
 
 /**
@@ -164,7 +239,7 @@ export function getParityDrives(raidLevel: string): number {
   return 1 // Default to single parity
 }
 
-interface TopologyModel {
+export interface TopologyModel {
   parityDrives: number
   isGroup: boolean
   isMirror: boolean
@@ -179,11 +254,32 @@ interface TopologyModel {
   pairGroupIndex: number[]
   groupPairStart: number[]
   groupPairCount: number[]
+  /** Node holding each pair slot's first copy (issue #113). See `GroupPairState.pairNodeA`. */
+  pairNodeA: number[]
+  /** Node holding each pair slot's second copy (issue #113). See `GroupPairState.pairNodeB`. */
+  pairNodeB: number[]
   rebuildTimeHours: number
   ureRatePerBit: number
   bitsRead: number
   ureProbability: number
   groupUreProbability: number[]
+  /**
+   * Node(s) each group lives on (issue #113). Length 1 for every ordinary
+   * group ("one group == one node"); length 2 for a buddy-mirrored BeeGFS
+   * group, which really is two storage targets on two different servers
+   * merged into one simulated group. Empty when `isGroup` is false.
+   */
+  groupNodeIndices: number[][]
+  /**
+   * Node assigned to each replica slot of each flat mirror group (issue
+   * #113) — the drive-pair model used by plain RAID1/10, and by every
+   * tiered platform's mirror level (vSAN OSA RAID1, Ceph replicated,
+   * Nutanix RF2/RF3, S2D mirror, PowerScale mirror, PowerVault RAID1/10,
+   * PowerFlex mirror). `mirrorGroupNodes[g][c]` is the node for copy `c` of
+   * mirror group `g`. Empty when `isMirror` is false. See
+   * `assignNodesRoundRobin` for the placement rule and its degenerate case.
+   */
+  mirrorGroupNodes: number[][]
 }
 
 /**
@@ -196,7 +292,7 @@ interface TopologyModel {
  * #67, #70 added several new arrays here — keeping this out of the hot loop
  * keeps per-pair state from turning into allocation-heavy-per-iteration work).
  */
-function computeTopologyModel(input: SimulationInput): TopologyModel {
+export function computeTopologyModel(input: SimulationInput): TopologyModel {
   const {
     driveCount,
     raidLevel,
@@ -232,6 +328,18 @@ function computeTopologyModel(input: SimulationInput): TopologyModel {
   // Mirror topology: N-way mirror groups (e.g., 2-way pairs, 3-way triplets)
   const numMirrorGroups = isMirror ? Math.floor(driveCount / effectiveMirrorCopies) : 0
   const mirrorParityPerGroup = effectiveMirrorCopies - 1 // Can lose N-1 copies per group
+
+  // Node identity for the flat mirror model (issue #113). This path is used
+  // both by single-node standard RAID1/RAID10 (`serverCount` defaults to 1,
+  // so every copy lands on node 0 — today's behaviour, unchanged) and by
+  // every tiered platform's mirror level (vSAN OSA RAID1, Ceph replicated,
+  // Nutanix RF2/RF3, S2D mirror/MAP, PowerScale mirror, PowerVault RAID1/10,
+  // PowerFlex mirror), where `serverCount` is the real host count and real
+  // placement puts each copy on a different host. See
+  // `assignNodesRoundRobin` for the rule.
+  const mirrorGroupNodes: number[][] = isMirror
+    ? assignNodesRoundRobin(numMirrorGroups, effectiveMirrorCopies, serverCount)
+    : []
 
   // Group topology: RAID 50/60 (and BeeGFS RAID6/RAIDZ2/RAID10 storage targets)
   // stripe across independent RAID groups.
@@ -301,6 +409,17 @@ function computeTopologyModel(input: SimulationInput): TopologyModel {
   const groupWidths: number[] = isGroup ? distributeAcrossGroups(driveCount, numGroups) : []
   const parityPerGroup = isBuddyMirroredGroup ? parityDrives * 2 + 1 : parityDrives // 1 for RAID 50, 2 for RAID 60
 
+  // Node identity for group topologies (issue #113): an ordinary group is one
+  // storage target/RAID group on one physical server, so it lives on exactly
+  // one node — its own group index. A buddy-mirrored group is two BeeGFS
+  // storage targets on two different servers merged into one simulated
+  // group (see the buddy-mirroring comment above), so it spans two nodes.
+  // `serverCount` is the input's real node count either way (it is what
+  // `numGroups` was derived from, a few lines up).
+  const groupNodeIndices: number[][] = isGroup
+    ? Array.from({ length: numGroups }, (_, g) => (isBuddyMirroredGroup ? [2 * g, 2 * g + 1] : [g]))
+    : []
+
   // A RAID10-mirror storage target rebuilds by reading only the surviving
   // mirror partner — one drive's worth — never the rest of the target, unlike
   // a parity group rebuild (RAID50/60, beegfs_raid6/raidz2) which reads every
@@ -322,9 +441,20 @@ function computeTopologyModel(input: SimulationInput): TopologyModel {
   // about the pessimistic *unmerged* tolerance — and keep the flat model above.
   const usesPerPairGroupModel = isMirroredGroupLayout && !isBuddyMirroredGroup
 
-  const { pairCapacity, pairGroupIndex, groupPairStart, groupPairCount } = usesPerPairGroupModel
-    ? buildGroupPairState(groupWidths)
-    : { pairCapacity: [], pairGroupIndex: [], groupPairStart: [], groupPairCount: [] }
+  const { pairCapacity, pairGroupIndex, groupPairStart, groupPairCount, pairNodeA, pairNodeB } =
+    usesPerPairGroupModel
+      ? buildGroupPairState(
+          groupWidths,
+          groupNodeIndices.map((nodes) => nodes[0] ?? 0),
+        )
+      : {
+          pairCapacity: [],
+          pairGroupIndex: [],
+          groupPairStart: [],
+          groupPairCount: [],
+          pairNodeA: [],
+          pairNodeB: [],
+        }
 
   // URE probability during rebuild
   const ureRatePerBit = 10 ** -ureRate
@@ -376,11 +506,15 @@ function computeTopologyModel(input: SimulationInput): TopologyModel {
     pairGroupIndex,
     groupPairStart,
     groupPairCount,
+    pairNodeA,
+    pairNodeB,
     rebuildTimeHours,
     ureRatePerBit,
     bitsRead,
     ureProbability,
     groupUreProbability,
+    groupNodeIndices,
+    mirrorGroupNodes,
   }
 }
 

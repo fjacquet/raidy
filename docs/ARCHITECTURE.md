@@ -393,6 +393,15 @@ Monte Carlo simulation for data loss probability.
 - Correlated batch failures
 - Stress-induced failures during rebuild
 
+**Node placement (#113):** every pair slot records the node holding each of its two copies
+(`pairNodeA` / `pairNodeB` in `buildGroupPairState`), defaulting to one group per node. Nothing
+reads these arrays for a failure decision yet, so they are behaviour-neutral by construction —
+they exist because correlated-failure models cannot be built without them. Injecting group-kill
+logic into a worker with no node identity produces spurious survival collapses 41-62% of the
+time: both copies of a pair can sit in the group that dies, an arrangement real placement rules
+(vSAN fault domains, Ceph CRUSH by host, Nutanix distinct-node replicas) never create. See
+`docs/superpowers/specs/2026-08-04-fast-tier-failure-domain-design.md`.
+
 **Group topology (RAID 50/60, every BeeGFS group level):** drives are partitioned into
 `numGroups` independent fault groups via `distributeAcrossGroups()`, which spreads the
 `driveCount % numGroups` remainder one-per-group across the first groups rather than dropping it
