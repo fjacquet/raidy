@@ -86,7 +86,11 @@
     "sustainedHint": "Soutenue = ce que le système tient une fois le cache saturé. Dimensionnez l'ingestion continue sur Soutenue, pas sur Rafale.",
     "bottleneck": {
       "title": "Analyse des goulots",
-      "controller": "Limite contrôleur"
+      "controller": "Limite contrôleur",
+      "layer": "Goulet d’étranglement : {{layer}} ({{throughput}} Mo/s)",
+      "none": "Aucun goulet d’étranglement détecté",
+      "noDrive": "Aucun disque sélectionné",
+      "error": "Échec du calcul de performance"
     }
   },
   "resilience": {

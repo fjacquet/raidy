@@ -20,13 +20,15 @@ const MODEL_OPTIONS = [
 ]
 
 /**
- * Hint under the model selector. `custom` has no entry — its hint interpolates the user's own
- * overhead value, so it is built at render rather than looked up.
+ * i18n key suffix for the hint under the model selector (#142). `custom` has no entry — its hint
+ * interpolates the user's own overhead value, so it goes through i18next interpolation at render
+ * rather than a lookup. Concatenating it would leave a translator unable to reorder the number,
+ * which German and Italian need.
  */
-const MODEL_HINTS: Record<string, string> = {
-  powerstore_3200: '3200: Entry-level, 5% system overhead',
-  powerstore_5200t: '5200T: All-flash T-Series, 7% system overhead',
-  powerstore_5200q: '5200Q: Quad-controller, 5% system overhead (Dell Sizer reference)',
+const MODEL_HINT_KEYS: Record<string, string> = {
+  powerstore_3200: 'model3200',
+  powerstore_5200t: 'model5200t',
+  powerstore_5200q: 'model5200q',
 }
 
 export function PowerStoreOptionsPanel() {
@@ -53,8 +55,9 @@ export function PowerStoreOptionsPanel() {
           }}
         />
         <p className="text-xs text-slate-500">
-          {MODEL_HINTS[powerstoreOptions.model] ??
-            `Custom: ${powerstoreOptions.systemOverheadPercent}% user-specified`}
+          {MODEL_HINT_KEYS[powerstoreOptions.model]
+            ? t(`powerstore.hint.${MODEL_HINT_KEYS[powerstoreOptions.model]}`)
+            : t('powerstore.hint.custom', { percent: powerstoreOptions.systemOverheadPercent })}
         </p>
       </div>
 

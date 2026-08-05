@@ -23,26 +23,30 @@ export function PowerFlexOptionsPanel({
 
   return (
     <OptionsSection title={t('powerflex.title')}>
-      {/* Mode description for the selected topology level */}
+      {/* Mode description for the selected topology level. Keys, not prose (#142). */}
       <div className="p-3 bg-white dark:bg-surface-800 rounded-lg text-xs text-slate-500 dark:text-slate-400">
         {topology.level.includes('medium') && (
           <p>
             <strong className="text-slate-600 dark:text-slate-300">
-              Medium Granularity (1MB):
+              {t('powerflex.mode.medium.title')}
             </strong>{' '}
-            Standard mode with lower metadata overhead. Supports 2-way and 3-way mirroring.
+            {t('powerflex.mode.medium.body')}
           </p>
         )}
         {isFineGranularity && (
           <p>
-            <strong className="text-slate-600 dark:text-slate-300">Fine Granularity (8KB):</strong>{' '}
-            Better for small random I/O. Only supports 2-way mirroring. 12-15% metadata overhead.
+            <strong className="text-slate-600 dark:text-slate-300">
+              {t('powerflex.mode.fine.title')}
+            </strong>{' '}
+            {t('powerflex.mode.fine.body')}
           </p>
         )}
         {topology.level.includes('ec_') && (
           <p>
-            <strong className="text-slate-600 dark:text-slate-300">Erasure Coding:</strong> Higher
-            capacity efficiency but ~30% lower IOPS due to CPU overhead. Requires PowerFlex 4.5+.
+            <strong className="text-slate-600 dark:text-slate-300">
+              {t('powerflex.mode.ec.title')}
+            </strong>{' '}
+            {t('powerflex.mode.ec.body')}
           </p>
         )}
       </div>

@@ -7,11 +7,11 @@
  * 3. Bus limit (PCIe interface bandwidth)
  * 4. Network limit (storage network throughput)
  *
- * Returns the bottleneck name and marks layers accordingly.
+ * Reports which layer binds and marks layers accordingly.
  */
 
 import type { NetworkSpeed, PCIeGen, PCIeLanes } from '@/types/config'
-import type { BottleneckLayer } from '@/types/results'
+import type { BottleneckLayer, BottleneckStatus } from '@/types/results'
 import type {
   BeeGfsOptions,
   TopologyType,
@@ -31,8 +31,13 @@ type VsanLevel = VsanOsaTopology | VsanEsaTopology
  *
  * Mutates the layers array by setting isBottleneck and utilization.
  *
+ * Returns DATA, not a sentence (#139). It used to build
+ * `"Bottleneck: Controller (8000 MB/s)"` in English and hand it straight to the dashboard and the
+ * PDF. An engine cannot translate — `src/engines/**` is pure functions with no i18n — so it now
+ * says what it found and each render site writes the prose.
+ *
  * @param layers - Array of bottleneck layers (media, controller, bus, network)
- * @returns Bottleneck description string
+ * @returns Which layer binds and at what figure, or `{ kind: 'none' }`
  *
  * @example
  * const layers = [
@@ -40,11 +45,11 @@ type VsanLevel = VsanOsaTopology | VsanEsaTopology
  *   { name: 'Controller', throughputMBs: 8000, iops: 80000, isBottleneck: false, utilization: 0 },
  *   { name: 'PCIe', throughputMBs: 10000, iops: 120000, isBottleneck: false, utilization: 0 },
  * ]
- * const description = identifyBottleneck(layers)
- * // Returns: "Bottleneck: Controller (8000 MB/s)"
+ * const status = identifyBottleneck(layers)
+ * // { kind: 'layer', layerName: 'Controller', throughputMBs: 8000 }
  * // layers[1].isBottleneck === true
  */
-export function identifyBottleneck(layers: BottleneckLayer[]): string {
+export function identifyBottleneck(layers: BottleneckLayer[]): BottleneckStatus {
   // Find the bottleneck (lowest throughput)
   const minThroughput = Math.min(...layers.map((l) => l.throughputMBs))
   const minIOPS = Math.min(...layers.map((l) => l.iops))
@@ -59,8 +64,8 @@ export function identifyBottleneck(layers: BottleneckLayer[]): string {
 
   const bottleneck = layers.find((l) => l.isBottleneck)
   return bottleneck
-    ? `Bottleneck: ${bottleneck.name} (${Math.round(minThroughput)} MB/s)`
-    : 'No bottleneck detected'
+    ? { kind: 'layer', layerName: bottleneck.name, throughputMBs: Math.round(minThroughput) }
+    : { kind: 'none' }
 }
 
 /**

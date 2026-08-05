@@ -265,6 +265,32 @@
       "raid5": "RAID 5: parité distribuée simple avec efficacité (n-1)/n. Pénalité d'écriture 4x. Non recommandé pour les charges de travail à forte écriture.",
       "raid6": "RAID 6: double parité distribuée avec efficacité (n-2)/n. Pénalité d'écriture 6x. Meilleure protection des données pour les disques grande capacité.",
       "raid10": "RAID 10: agrégats en miroir avec 50% d'efficacité. Meilleures performances IOPS aléatoires. Idéal pour les bases de données."
+    },
+    "level": {
+      "raid1": {
+        "title": "RAID 1 :",
+        "body": "Miroir à 2 voies, 50 % d’efficacité de stockage. Simple, reconstructions rapides. Idéal pour les volumes de démarrage et les petits déploiements."
+      },
+      "raid5": {
+        "title": "RAID 5 :",
+        "body": "Parité unique distribuée, efficacité (n-1)/n. Pénalité d’écriture ×4. Déconseillé pour les charges à forte écriture."
+      },
+      "raid6": {
+        "title": "RAID 6 :",
+        "body": "Double parité distribuée, efficacité (n-2)/n. Pénalité d’écriture ×6. Meilleure protection pour les disques de grande capacité."
+      },
+      "raid10": {
+        "title": "RAID 10 :",
+        "body": "Agrégats en miroir, 50 % d’efficacité. Meilleures IOPS aléatoires. Idéal pour les bases de données."
+      },
+      "adapt": {
+        "title": "ADAPT :",
+        "body": "RAID distribué, ~87 % d’efficacité. Capacité de spare répartie sur tous les disques. Reconstructions les plus rapides (8 à 10× plus vite). Nécessite 12 à 128 disques."
+      }
+    },
+    "noDataReduction": {
+      "label": "Remarque :",
+      "body": "PowerVault ME5 ne prend en charge ni la compression ni la déduplication en ligne. Pour la réduction de données, envisagez PowerStore ou PowerScale."
     }
   },
   "objectscale": {
@@ -301,7 +327,13 @@
       "description": "Agrégats miroir, 50% efficacité"
     },
     "model": "Modèle",
-    "systemOverhead": "Surcharge système"
+    "systemOverhead": "Surcharge système",
+    "hint": {
+      "model3200": "3200 : entrée de gamme, 5 % de surcoût système",
+      "model5200t": "5200T : full-flash série T, 7 % de surcoût système",
+      "model5200q": "5200Q : quadri-contrôleur, 5 % de surcoût système (référence Dell Sizer)",
+      "custom": "Personnalisé : {{percent}} % défini par l’utilisateur"
+    }
   },
   "powerscale": {
     "title": "Options PowerScale",
@@ -457,7 +489,21 @@
       "medium": "Medium Granularity (1MB): mode standard avec un overhead de métadonnées plus faible. Prend en charge le mirroring 2 et 3 voies.",
       "fine": "Fine Granularity (8KB): meilleur pour les petites I/O aléatoires. Ne prend en charge que le mirroring 2 voies. 12-15% d'overhead de métadonnées."
     },
-    "fgOverhead": "Overhead métadonnées FG"
+    "fgOverhead": "Overhead métadonnées FG",
+    "mode": {
+      "medium": {
+        "title": "Granularité moyenne (1 Mo) :",
+        "body": "Mode standard, surcoût de métadonnées plus faible. Prend en charge le miroir à 2 et 3 voies."
+      },
+      "fine": {
+        "title": "Granularité fine (8 Ko) :",
+        "body": "Meilleur pour les petites E/S aléatoires. Miroir à 2 voies uniquement. 12 à 15 % de surcoût de métadonnées."
+      },
+      "ec": {
+        "title": "Codage à effacement :",
+        "body": "Meilleure efficacité de capacité mais IOPS inférieures d’environ 30 % à cause du surcoût CPU. Nécessite PowerFlex 4.5+."
+      }
+    }
   },
   "netapp": {
     "title": "Options NetApp ONTAP",

@@ -9,6 +9,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **The bottleneck sentence is translated, in the dashboard and the PDF (#139).**
+  `identifyBottleneck()` returned a pre-rendered English string —
+  `"Bottleneck: Controller (8000 MB/s)"` — and `usePerformanceCalc` set `'No drive selected'` and
+  `'Performance calculation failed'` the same way. All three reached the UI and the PDF export, so
+  French, German and Italian users read English there.
+
+  The engine could not fix it itself: `src/engines/**` is pure functions with no i18n, and
+  translating on the PDF path would freeze whatever language was active when the calculation ran
+  rather than when the document is produced. So `PerformanceResult.bottleneckDescription: string`
+  became `bottleneck: BottleneckStatus`, a four-case union the engine fills with what it found —
+  which layer binds and at what figure, or why no figure exists — and each render site writes the
+  sentence. `formatBottleneck` is shared between the two so the wording cannot drift, and the
+  keys live once in the `output` namespace rather than being duplicated into `pdf:`.
+
+  Layer names (`Media (Drives)`, a controller model, `PCIe gen5 x16`, `Network (100GbE)`) stay
+  untranslated per the project convention for technical identifiers, and are interpolated rather
+  than concatenated so a translator can reorder them.
+
+- **The Dell panel descriptions are translated (#142).** PowerVault's five level descriptions and
+  its no-data-reduction note, PowerFlex's three granularity-mode descriptions, and PowerStore's
+  four model hints were all hardcoded English sitting beside headings that used `t()`. The
+  PowerStore `custom` hint interpolates the user's overhead percentage through i18next rather than
+  string concatenation, which a translator cannot reorder.
+
+  PowerVault's keys are written out in **full** rather than assembled from the level name. A
+  template like `` t(`powervault.level.${key}.body`) `` is invisible to the orphan-key scan — the
+  first attempt did exactly that, and the test caught the five `.body` keys while the `.title`
+  keys passed only by the accidental leaf-literal fallback. Spelling the paths out restores the
+  guarantee, verified by mutation: mistyping one key surfaces it as an orphan.
+
+
 - **The fast tier is now a shared failure domain for vSAN OSA and Ceph (#88).** This was the one
   modelled behaviour that erred in the **optimistic** direction: #82 made the simulation size its
   population from the capacity tier, which fixed *which* drives are simulated without modelling

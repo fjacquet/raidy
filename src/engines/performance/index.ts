@@ -482,7 +482,7 @@ export function calculatePerformance(input: PerformanceInput): PerformanceResult
   ]
 
   // Identify bottleneck and calculate utilization
-  const bottleneckDescription = identifyBottleneck(layers)
+  const bottleneck = identifyBottleneck(layers)
   // Burst and sustained differ in exactly one input — the media figure — so they share one
   // derivation (#127). `layers` decides which links are in the chain, including vSAN ESA's
   // missing controller; neither call restates that.
@@ -541,7 +541,7 @@ export function calculatePerformance(input: PerformanceInput): PerformanceResult
     mediaCeilingIOPS: mediaLayer.iops,
     // Blended IOPS for the actual workload is shown in the media layer
     layers,
-    bottleneckDescription,
+    bottleneck,
     xfsAlignment,
     estimatedLatencyUs,
     cpuFactor: powerFlexCpuFactor,

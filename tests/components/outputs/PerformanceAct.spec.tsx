@@ -29,12 +29,21 @@ const performance: PerformanceResult = {
   layers: [
     { name: 'Media', throughputMBs: 1200, iops: 500000, isBottleneck: true, utilization: 100 },
   ],
-  bottleneckDescription: 'Media bound',
+  bottleneck: { kind: 'layer' as const, layerName: 'Media (Drives)', throughputMBs: 1000 },
 }
 
 describe('PerformanceAct', () => {
-  it('renders performance heading and bottleneck description', () => {
+  /**
+   * The bottleneck sentence is composed at render since #139 — the engine reports the layer, the
+   * component writes the prose through i18n. This asserts the layer name survives into the
+   * output, which is the part that carries information; the surrounding wording belongs to the
+   * locale files and is covered by the i18n parity and orphan-key tests.
+   *
+   * It replaces an assertion on the literal `'Media bound'`, which only ever matched because the
+   * fixture put that exact English string in the field the component printed verbatim.
+   */
+  it('renders the bottleneck layer in the composed sentence', () => {
     render(<PerformanceAct performance={performance} />)
-    expect(screen.getByText('Media bound')).toBeInTheDocument()
+    expect(screen.getByText(/Media \(Drives\)/)).toBeInTheDocument()
   })
 })

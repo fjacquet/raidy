@@ -18,7 +18,7 @@ describe('TakeawayAct', () => {
           mediaCeilingMBs: 0,
           mediaCeilingIOPS: 0,
           layers: [],
-          bottleneckDescription: '',
+          bottleneck: { kind: 'none' as const },
         }}
         selectedDrive={null}
         exportError={false}

@@ -86,7 +86,11 @@
     "sustainedHint": "Sustained = what the system holds once the cache fills. Size continuous ingest against Sustained, not Burst.",
     "bottleneck": {
       "title": "Bottleneck Analysis",
-      "controller": "Controller Limit"
+      "controller": "Controller Limit",
+      "layer": "Bottleneck: {{layer}} ({{throughput}} MB/s)",
+      "none": "No bottleneck detected",
+      "noDrive": "No drive selected",
+      "error": "Performance calculation failed"
     }
   },
   "resilience": {

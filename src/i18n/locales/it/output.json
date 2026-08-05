@@ -86,7 +86,11 @@
     "sustainedHint": "Sostenuta = ciò che il sistema regge una volta saturata la cache. Dimensionare l'ingestione continua sulla Sostenuta, non sul Burst.",
     "bottleneck": {
       "title": "Analisi colli di bottiglia",
-      "controller": "Limite controller"
+      "controller": "Limite controller",
+      "layer": "Collo di bottiglia: {{layer}} ({{throughput}} MB/s)",
+      "none": "Nessun collo di bottiglia rilevato",
+      "noDrive": "Nessun disco selezionato",
+      "error": "Calcolo delle prestazioni non riuscito"
     }
   },
   "resilience": {

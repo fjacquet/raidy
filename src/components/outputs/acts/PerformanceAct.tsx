@@ -7,6 +7,7 @@ import { InfoTooltip } from '@/components/common'
 import { Speedometer } from '@/components/outputs'
 import { formatNumber, useIsMobile } from '@/hooks'
 import type { PerformanceResult } from '@/types/results'
+import { formatBottleneck } from '@/utils/formatBottleneck'
 
 export interface PerformanceActProps {
   performance: PerformanceResult
@@ -135,7 +136,7 @@ export function PerformanceAct({ performance }: PerformanceActProps) {
 
         <div className="mt-4 pt-4 border-t border-slate-200 dark:border-surface-700">
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            {performance.bottleneckDescription}
+            {formatBottleneck(performance.bottleneck, t)}
           </p>
         </div>
       </div>

@@ -33,7 +33,7 @@ const config: ExportConfig = {
       maxReadThroughputMBs: 1600,
       maxWriteThroughputMBs: 1000,
       layers: [],
-      bottleneckDescription: '',
+      bottleneck: { kind: 'none' as const },
     },
     sustainability: {
       powerBreakdown: { total: 120, drives: 80, servers: 30, cooling: 10 },
