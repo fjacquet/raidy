@@ -14,7 +14,6 @@ import type {
   PowerFlexOptions,
   PowerScaleOptions,
   PowerStoreOptions,
-  PowerVaultOptions,
   RaidControllerOptions,
   S2DOptions,
   SynologyOptions,
@@ -123,7 +122,6 @@ export interface TopologyState {
   /** Nutanix-specific options */
   nutanixOptions: NutanixOptions
   /** PowerVault ME5-specific options */
-  powervaultOptions: PowerVaultOptions
   /** RAID controller options */
   controllerOptions: RaidControllerOptions
 }
@@ -211,7 +209,6 @@ export interface ConfigActions {
   setNetAppOptions: (options: Partial<NetAppOptions>) => void
   setSynologyOptions: (options: Partial<SynologyOptions>) => void
   setNutanixOptions: (options: Partial<NutanixOptions>) => void
-  setPowerVaultOptions: (options: Partial<PowerVaultOptions>) => void
   setControllerOptions: (options: Partial<RaidControllerOptions>) => void
 
   // Workload actions

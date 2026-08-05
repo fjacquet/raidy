@@ -13,7 +13,6 @@ import type {
   PowerFlexOptions,
   PowerScaleOptions,
   PowerStoreOptions,
-  PowerVaultOptions,
   RaidControllerOptions,
   S2DOptions,
   SynologyOptions,
@@ -34,7 +33,6 @@ import {
   DEFAULT_POWERFLEX_OPTIONS,
   DEFAULT_POWERSCALE_OPTIONS,
   DEFAULT_POWERSTORE_OPTIONS,
-  DEFAULT_POWERVAULT_OPTIONS,
   DEFAULT_S2D_OPTIONS,
   DEFAULT_SYNOLOGY_OPTIONS,
   DEFAULT_VSAN_OPTIONS,
@@ -59,7 +57,6 @@ export interface TopologySlice extends TopologyState {
   setNetAppOptions: (options: Partial<NetAppOptions>) => void
   setSynologyOptions: (options: Partial<SynologyOptions>) => void
   setNutanixOptions: (options: Partial<NutanixOptions>) => void
-  setPowerVaultOptions: (options: Partial<PowerVaultOptions>) => void
   setControllerOptions: (options: Partial<RaidControllerOptions>) => void
 }
 
@@ -80,7 +77,6 @@ export const createTopologySlice: StateCreator<TopologySlice> = (set) => ({
   netAppOptions: { ...DEFAULT_NETAPP_OPTIONS },
   synologyOptions: { ...DEFAULT_SYNOLOGY_OPTIONS },
   nutanixOptions: { ...DEFAULT_NUTANIX_OPTIONS },
-  powervaultOptions: { ...DEFAULT_POWERVAULT_OPTIONS },
   controllerOptions: { ...DEFAULT_CONTROLLER_OPTIONS },
 
   // Actions
@@ -146,8 +142,6 @@ export const createTopologySlice: StateCreator<TopologySlice> = (set) => ({
     set((state) => ({ synologyOptions: { ...state.synologyOptions, ...options } })),
   setNutanixOptions: (options) =>
     set((state) => ({ nutanixOptions: { ...state.nutanixOptions, ...options } })),
-  setPowerVaultOptions: (options) =>
-    set((state) => ({ powervaultOptions: { ...state.powervaultOptions, ...options } })),
   setControllerOptions: (options) =>
     set((state) => ({ controllerOptions: { ...state.controllerOptions, ...options } })),
 })

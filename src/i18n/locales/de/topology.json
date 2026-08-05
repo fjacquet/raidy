@@ -33,7 +33,6 @@
     "dedupRatio": "Deduplizierungsverhältnis",
     "systemOverhead": "System-Overhead",
     "snapshotReserve": "Snapshot-Reserve",
-    "thinProvisioning": "Thin Provisioning",
     "expectedRatio": "Erwartetes Verhältnis: {{ratio}}:1"
   },
   "level": {
@@ -300,25 +299,6 @@
       "raid10": "RAID 10: Gespiegelte Stripes mit 50% Effizienz. Beste zufällige IOPS-Performance. Ideal für Datenbanken.",
       "adapt": "ADAPT: Verteiltes RAID mit ~87% Effizienz. Reservekapazität über alle Laufwerke verteilt. Schnellste Wiederherstellung (8-10x schneller). Erfordert 12-128 Laufwerke."
     },
-    "model": "Modell",
-    "modelDesc": {
-      "ME5212": "ME5212: 2U, 12 Laufwerke (nur 3.5\")",
-      "ME5224": "ME5224: 2U, 24 Laufwerke (2.5\")",
-      "ME5284": "ME5284: 5U, 84 Laufwerke (3.5\"), max. Dichte"
-    },
-    "controllers": "Controller",
-    "single": "Einzeln",
-    "dualActive": "Dual Aktiv",
-    "controllerDesc": {
-      "single": "Einzeln: 420K IOPS, 7 GB/s max",
-      "dual": "Dual Aktiv: 840K IOPS, 14 GB/s max, Failover-Support"
-    },
-    "enableTiering": "Auto-Tiering aktivieren",
-    "tieringDesc": "Verschiebt Daten automatisch zwischen Ebenen",
-    "ssdReadCache": "SSD-Lese-Cache",
-    "ssdCacheDesc": "Verwendet SSDs als Lese-Cache für HDD-Pools",
-    "thinProvisioning": "Thin Provisioning",
-    "thinDesc": "4MB Seitengrösse Thin Provisioning. Keine Kompression/Deduplizierung.",
     "noCompressionNote": "Hinweis: PowerVault ME5 unterstützt keine Inline-Kompression oder Deduplizierung."
   },
   "objectscale": {
@@ -405,9 +385,7 @@
     "enableDedup": "Deduplizierung aktivieren",
     "dedupRatio": "Deduplizierungsverhältnis",
     "snapshotReserve": "Snapshot-Reserve",
-    "snapshotReserveDesc": "Snapshot-Reserve: {{percent}}%",
-    "smartQuotas": "SmartQuotas",
-    "syncIQ": "SyncIQ (Replikation)"
+    "snapshotReserveDesc": "Snapshot-Reserve: {{percent}}%"
   },
   "ceph": {
     "title": "Ceph-Optionen",

@@ -8,6 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Removed
+- **Every PowerVault configuration control, and PowerScale's SmartQuotas and SyncIQ toggles.**
+  PowerVault rendered five controls — model, controller count, auto-tiering, SSD read cache and
+  thin provisioning — and *all five* were inert: ME5 is modelled with one flat metadata overhead
+  regardless, and each control's own hint text said "for reference only, not used in any
+  calculation". With the last field gone the whole `PowerVaultOptions` object went too; it had
+  been threaded through `VolumetryInput` without ever being read. PowerScale's SmartQuotas
+  (access control, not a capacity multiplier) and SyncIQ (this tool sizes a single site) go for
+  the same reason. **No calculated figure changes.** PowerVault still shows its RAID-level
+  descriptions and the note that ME5 supports no inline compression or deduplication.
 - **Two configuration controls that changed no number: the Workload panel's "Total Dataset Size"
   slider and the tiering "Cache Mode" selector.** Both were stored, serialized into every shared
   URL and echoed back onto their own control, but neither was read by any engine, worker,

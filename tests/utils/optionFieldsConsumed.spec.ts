@@ -45,7 +45,6 @@ import {
   DEFAULT_POWERFLEX_OPTIONS,
   DEFAULT_POWERSCALE_OPTIONS,
   DEFAULT_POWERSTORE_OPTIONS,
-  DEFAULT_POWERVAULT_OPTIONS,
   DEFAULT_S2D_OPTIONS,
   DEFAULT_SYNOLOGY_OPTIONS,
   DEFAULT_VSAN_OPTIONS,
@@ -67,10 +66,6 @@ const ALLOWLIST: Record<string, string[]> = {
   DEFAULT_POWERSTORE_OPTIONS: [
     'model', // wired indirectly: UI preset writes systemOverheadPercent, which IS engine-read
   ],
-  DEFAULT_POWERSCALE_OPTIONS: [
-    'smartQuotas', // informational by decision — access control, not a capacity multiplier
-    'syncIQ', // informational by decision — DR-target capacity is out of scope (single-site tool)
-  ],
   DEFAULT_CEPH_OPTIONS: [
     'backend', // informational by decision — no per-backend overhead split to apply
     'encryption', // informational by decision — dm-crypt has no published capacity tax
@@ -78,13 +73,6 @@ const ALLOWLIST: Record<string, string[]> = {
   ],
   DEFAULT_LONGHORN_OPTIONS: [
     'overProvisioningPercent', // informational by decision — echoed to results, not used in any formula
-  ],
-  DEFAULT_POWERVAULT_OPTIONS: [
-    'model', // informational by decision — ME5 is modelled with one flat overhead regardless
-    'controllers', // informational by decision — same flat-overhead reasoning
-    'tiering', // informational by decision — same flat-overhead reasoning
-    'ssdReadCache', // informational by decision — same flat-overhead reasoning
-    'thinProvisioning', // informational by decision — same flat-overhead reasoning
   ],
   DEFAULT_SYNOLOGY_OPTIONS: [
     'modelSeries', // informational by decision — same filesystem/parity math applies to every series
@@ -182,7 +170,6 @@ const OPTION_SETS: Array<{ name: string; options: Record<string, unknown> }> = [
   opt('DEFAULT_BEEGFS_OPTIONS', DEFAULT_BEEGFS_OPTIONS),
   opt('DEFAULT_POWERFLEX_OPTIONS', DEFAULT_POWERFLEX_OPTIONS),
   opt('DEFAULT_NUTANIX_OPTIONS', DEFAULT_NUTANIX_OPTIONS),
-  opt('DEFAULT_POWERVAULT_OPTIONS', DEFAULT_POWERVAULT_OPTIONS),
   opt('DEFAULT_SYNOLOGY_OPTIONS', DEFAULT_SYNOLOGY_OPTIONS),
   opt('DEFAULT_NETAPP_OPTIONS', DEFAULT_NETAPP_OPTIONS),
 ]

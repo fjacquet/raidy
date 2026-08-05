@@ -33,7 +33,6 @@
     "dedupRatio": "Taux de déduplication",
     "systemOverhead": "Surcharge système",
     "snapshotReserve": "Réserve instantanés",
-    "thinProvisioning": "Provisionnement fin",
     "expectedRatio": "Taux attendu : {{ratio}}:1"
   },
   "level": {
@@ -300,25 +299,6 @@
       "raid10": "RAID 10: agrégats en miroir avec 50% d'efficacité. Meilleures performances IOPS aléatoires. Idéal pour les bases de données.",
       "adapt": "ADAPT: RAID distribué avec ~87% d'efficacité. Capacité de secours répartie sur tous les disques. Reconstructions les plus rapides (8-10x plus rapide). Nécessite 12-128 disques."
     },
-    "model": "Modèle",
-    "modelDesc": {
-      "ME5212": "ME5212: 2U, 12 disques (3.5\" uniquement)",
-      "ME5224": "ME5224: 2U, 24 disques (2.5\")",
-      "ME5284": "ME5284: 5U, 84 disques (3.5\"), densité max"
-    },
-    "controllers": "Contrôleurs",
-    "single": "Simple",
-    "dualActive": "Double actif",
-    "controllerDesc": {
-      "single": "Simple: 420K IOPS, 7 GB/s max",
-      "dual": "Double actif: 840K IOPS, 14 GB/s max, support basculement"
-    },
-    "enableTiering": "Activer Auto-Tiering",
-    "tieringDesc": "Déplace automatiquement les données entre niveaux",
-    "ssdReadCache": "Cache lecture SSD",
-    "ssdCacheDesc": "Utilise SSDs comme cache lecture pour pools HDD",
-    "thinProvisioning": "Provisionnement léger",
-    "thinDesc": "Provisionnement léger pages 4MB. Pas de compression/déduplication.",
     "noCompressionNote": "Note: PowerVault ME5 ne supporte pas la compression ou déduplication inline."
   },
   "objectscale": {
@@ -405,9 +385,7 @@
     "enableDedup": "Activer la déduplication",
     "dedupRatio": "Ratio de déduplication",
     "snapshotReserve": "Réserve snapshot",
-    "snapshotReserveDesc": "Réserve snapshot: {{percent}}%",
-    "smartQuotas": "SmartQuotas",
-    "syncIQ": "SyncIQ (Réplication)"
+    "snapshotReserveDesc": "Réserve snapshot: {{percent}}%"
   },
   "ceph": {
     "title": "Options Ceph",

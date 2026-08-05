@@ -489,23 +489,6 @@ export interface PowerScaleOptions {
   dedupRatio: number
   /** Snapshot reserve percentage */
   snapshotReservePercent: number
-  /**
-   * SmartQuotas enabled.
-   *
-   * Kept informational by decision: a real PowerScale administrative feature (quota
-   * enforcement policy), but it is an access-control mechanism, not a capacity
-   * multiplier — it does not change how much usable capacity this tool computes.
-   * See the hint text in the PowerScale section of `DellOptionsPanel.tsx`.
-   */
-  smartQuotas: boolean
-  /**
-   * SyncIQ (async replication) enabled.
-   *
-   * Kept informational by decision: this tool sizes a single site/cluster only, so
-   * a DR-target's capacity is out of scope by design — the same reason no other
-   * platform's replication-target sizing is modeled here.
-   */
-  syncIQ: boolean
 }
 
 /** NetApp storage-specific configuration options */
@@ -780,29 +763,6 @@ export interface NutanixOptions {
 }
 
 /** Dell PowerVault ME5 configuration options */
-/**
- * Dell PowerVault ME5 options.
- *
- * Every field below is kept informational by decision: they are real ME5 hardware
- * and licensing choices worth recording on a sizing sheet, but `overheadCalculator.ts`
- * models ME5 with a single flat ~1% metadata overhead (see the "PowerVault ME5:
- * minimal metadata overhead" comment in `filesystem-overhead.ts`) regardless of
- * chassis, controller count, tiering, cache, or provisioning mode — there is no
- * per-option capacity or performance delta published for ME5 to model instead. See
- * the hint text in `DellOptionsPanel.tsx`'s PowerVault section.
- */
-export interface PowerVaultOptions {
-  /** Model: ME5212 (12 drives), ME5224 (24 drives), ME5284 (84 drives) */
-  model: 'ME5212' | 'ME5224' | 'ME5284'
-  /** Number of controllers (1 = single, 2 = dual-active) */
-  controllers: 1 | 2
-  /** Enable auto-tiering (3 tiers: Performance SSD, Standard 10K, Archive NL-SAS) */
-  tiering: boolean
-  /** Enable SSD read cache (uses SSDs as read cache for HDD pools) */
-  ssdReadCache: boolean
-  /** Thin provisioning enabled (4MB page size) */
-  thinProvisioning: boolean
-}
 
 /** Complete topology configuration */
 export interface TopologyConfig {
@@ -904,8 +864,6 @@ export const DEFAULT_POWERSCALE_OPTIONS: PowerScaleOptions = {
   dedup: false,
   dedupRatio: 1.0,
   snapshotReservePercent: 20,
-  smartQuotas: false,
-  syncIQ: false,
 }
 
 /** Default Ceph options */
@@ -988,15 +946,6 @@ export const DEFAULT_NUTANIX_OPTIONS: NutanixOptions = {
   dedupRatio: 1.0,
   systemOverhead: 0.1, // 10% for system/metadata/snapshots
   networkType: '25gbe',
-}
-
-/** Default PowerVault ME5 options */
-export const DEFAULT_POWERVAULT_OPTIONS: PowerVaultOptions = {
-  model: 'ME5224',
-  controllers: 2, // Dual-active (most common configuration)
-  tiering: false,
-  ssdReadCache: false,
-  thinProvisioning: true, // Enabled by default
 }
 
 /** Default Synology options */

@@ -345,21 +345,11 @@ const PowerScaleOptionsSchema = z.object({
   dedup: z.boolean(),
   dedupRatio: z.number().min(1).max(10).finite(),
   snapshotReservePercent: z.number().min(0).max(100).finite(),
-  smartQuotas: z.boolean(),
-  syncIQ: z.boolean(),
 })
 
 /**
  * PowerVault options schema
  */
-const PowerVaultOptionsSchema = z.object({
-  model: z.enum(['ME5212', 'ME5224', 'ME5284']),
-  controllers: z.union([z.literal(1), z.literal(2)]),
-  tiering: z.boolean(),
-  ssdReadCache: z.boolean(),
-  thinProvisioning: z.boolean(),
-})
-
 /**
  * Complete ConfigState schema matching Zustand store
  * Based on partialize function in configStore.ts
@@ -396,7 +386,6 @@ export const ConfigStateSchema = z.object({
   objectscaleOptions: ObjectScaleOptionsSchema.optional(),
   powerstoreOptions: PowerStoreOptionsSchema.optional(),
   powerscaleOptions: PowerScaleOptionsSchema.optional(),
-  powervaultOptions: PowerVaultOptionsSchema.optional(),
 
   // Workload
   readPercent: z.number().min(0).max(100).finite().optional(),

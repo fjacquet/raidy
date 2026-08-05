@@ -33,7 +33,6 @@
     "dedupRatio": "Deduplication Ratio",
     "systemOverhead": "System Overhead",
     "snapshotReserve": "Snapshot Reserve",
-    "thinProvisioning": "Thin Provisioning",
     "expectedRatio": "Expected ratio: {{ratio}}:1"
   },
   "level": {
@@ -300,25 +299,6 @@
       "raid10": "<strong>RAID 10:</strong> Mirrored stripes with 50% efficiency. Best random IOPS performance. Ideal for databases.",
       "adapt": "<strong>ADAPT:</strong> Distributed RAID with ~87% efficiency. Spare capacity distributed across all drives. Fastest rebuilds (8-10x faster). Requires 12-128 drives."
     },
-    "model": "Model",
-    "modelDesc": {
-      "ME5212": "ME5212: 2U, 12 drives (3.5\" only)",
-      "ME5224": "ME5224: 2U, 24 drives (2.5\")",
-      "ME5284": "ME5284: 5U, 84 drives (3.5\"), max density"
-    },
-    "controllers": "Controllers",
-    "single": "Single",
-    "dualActive": "Dual Active",
-    "controllerDesc": {
-      "single": "Single: 420K IOPS, 7 GB/s max",
-      "dual": "Dual Active: 840K IOPS, 14 GB/s max, failover support"
-    },
-    "enableTiering": "Enable Auto-Tiering",
-    "tieringDesc": "Automatically moves data between tiers (Performance SSD, Standard 10K, Archive NL-SAS)",
-    "ssdReadCache": "SSD Read Cache",
-    "ssdCacheDesc": "Uses SSDs as read cache for HDD pools (not available with all-flash)",
-    "thinProvisioning": "Thin Provisioning",
-    "thinDesc": "4MB page size thin provisioning. No compression/deduplication support.",
     "noCompressionNote": "<strong>Note:</strong> PowerVault ME5 does not support inline compression or deduplication. For data reduction features, consider PowerStore or PowerScale."
   },
   "objectscale": {
@@ -405,9 +385,7 @@
     "enableDedup": "Enable Deduplication",
     "dedupRatio": "Deduplication Ratio",
     "snapshotReserve": "Snapshot Reserve",
-    "snapshotReserveDesc": "Snapshot reserve: {{percent}}%",
-    "smartQuotas": "SmartQuotas",
-    "syncIQ": "SyncIQ (Replication)"
+    "snapshotReserveDesc": "Snapshot reserve: {{percent}}%"
   },
   "ceph": {
     "title": "Ceph Options",

@@ -24,7 +24,6 @@ import type {
   PowerFlexOptions,
   PowerScaleOptions,
   PowerStoreOptions,
-  PowerVaultOptions,
   S2DOptions,
   SynologyOptions,
   Topology,
@@ -73,7 +72,6 @@ export interface VolumetryInput {
   netAppOptions: NetAppOptions
   synologyOptions: SynologyOptions
   nutanixOptions: NutanixOptions
-  powervaultOptions: PowerVaultOptions
   compressionRatio: number
   dedupRatio: number
   fsType: FsType
