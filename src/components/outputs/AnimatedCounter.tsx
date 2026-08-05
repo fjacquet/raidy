@@ -32,7 +32,7 @@ function easeOutExpo(t: number): number {
   return t === 1 ? 1 : 1 - 2 ** (-10 * t)
 }
 
-export function AnimatedCounter({
+function AnimatedCounter({
   value,
   duration = 800,
   formatter = defaultFormatter,

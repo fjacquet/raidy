@@ -10,7 +10,7 @@ import { useEffect, useState } from 'react'
  * @param query - CSS media query string (e.g., '(max-width: 767px)')
  * @returns boolean indicating if the query matches
  */
-export function useMediaQuery(query: string): boolean {
+function useMediaQuery(query: string): boolean {
   const [matches, setMatches] = useState(() => {
     // SSR-safe: default to false on server
     if (typeof window === 'undefined') return false
@@ -41,7 +41,7 @@ export function useMediaQuery(query: string): boolean {
  * Tailwind breakpoint values in pixels.
  * Matches Tailwind CSS v4 defaults.
  */
-export const BREAKPOINTS = {
+const BREAKPOINTS = {
   sm: 640,
   md: 768,
   lg: 1024,

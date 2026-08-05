@@ -150,6 +150,3 @@ export interface Drive {
   /** Drive market tier classification */
   tier?: DriveTier
 }
-
-/** Drive database as a record for fast lookup */
-export type DriveDatabase = Record<string, Drive>

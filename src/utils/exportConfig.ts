@@ -22,7 +22,7 @@ interface ExportConfig {
 /**
  * Generate Ansible playbook for storage configuration.
  */
-export function exportToAnsible(config: ExportConfig): string {
+function exportToAnsible(config: ExportConfig): string {
   const {
     drive,
     driveCount,
@@ -163,7 +163,7 @@ export function exportToAnsible(config: ExportConfig): string {
 /**
  * Generate Terraform configuration for cloud storage.
  */
-export function exportToTerraform(config: ExportConfig): string {
+function exportToTerraform(config: ExportConfig): string {
   const { drive, driveCount, topology, results, unitSystem = 'binary' } = config
   const { volumetry } = results
   const formatBytes = (bytes: number) => formatBytesUtil(bytes, unitSystem)
@@ -314,7 +314,7 @@ output "estimated_usable_capacity_gb" {
 /**
  * Generate YAML configuration summary.
  */
-export function exportToYaml(config: ExportConfig): string {
+function exportToYaml(config: ExportConfig): string {
   const {
     drive,
     driveCount,
@@ -392,7 +392,7 @@ power:
 /**
  * Download content as a file.
  */
-export function downloadFile(content: string, filename: string, mimeType: string): void {
+function downloadFile(content: string, filename: string, mimeType: string): void {
   const blob = new Blob([content], { type: mimeType })
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')

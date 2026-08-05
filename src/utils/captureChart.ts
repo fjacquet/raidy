@@ -25,7 +25,7 @@ export function captureSankeyDiagram(): Promise<string | null> {
 }
 
 /** Ids of the four performance gauges, in display order (R/W MB/s, R/W IOPS). */
-export const GAUGE_IDS = [
+const GAUGE_IDS = [
   'gauge-read-mbps',
   'gauge-write-mbps',
   'gauge-read-iops',

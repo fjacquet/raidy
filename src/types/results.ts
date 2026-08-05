@@ -292,15 +292,3 @@ export interface CalculationResults {
   /** Any calculation errors */
   errors: string[]
 }
-
-/** Command generation results */
-export interface CommandResult {
-  /** mkfs command for XFS/ext4 */
-  mkfsCommand?: string
-  /** zpool create command for ZFS */
-  zpoolCommand?: string
-  /** mdadm command for software RAID */
-  mdadmCommand?: string
-  /** PowerShell for S2D */
-  s2dCommand?: string
-}
