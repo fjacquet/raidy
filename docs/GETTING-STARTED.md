@@ -39,4 +39,4 @@ npm run test:run       # full Vitest suite
 npm run build          # tsc -b + vite build (runs the supply-chain and dead-code gates first)
 ```
 
-See [DEVELOPMENT.md](./DEVELOPMENT.md) for the full command reference and conventions, [TESTING.md](./TESTING.md) for the test strategy, and [CONFIGURATION.md](./CONFIGURATION.md) for the CI pipeline and security gates.
+See [USER-GUIDE.md](./USER-GUIDE.md) for what the numbers mean, [DEVELOPMENT.md](./DEVELOPMENT.md) for the full command reference and conventions, [TESTING.md](./TESTING.md) for the test strategy, and [CONFIGURATION.md](./CONFIGURATION.md) for the CI pipeline and security gates.
