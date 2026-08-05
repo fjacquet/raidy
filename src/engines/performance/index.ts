@@ -540,6 +540,13 @@ export function calculatePerformance(input: PerformanceInput): PerformanceResult
     // Max IOPS capped by the lowest limit in the chain (typically controller for appliances)
     maxReadIOPS: cappedReadIOPS,
     maxWriteIOPS: cappedWriteIOPS,
+    // The drives' own ceiling, before the controller/PCIe/network chain caps it. Exposed so the
+    // dashboard gauges can show what fraction of the media survives the chain — a fixed scale
+    // saturates (the PERC13 recalibration in #84 alone raised controller limits 3.4-4.7x), and
+    // scaling to the bottleneck is degenerate, since maxRead/WriteThroughputMBs IS the bottleneck
+    // by construction.
+    mediaCeilingMBs: mediaLayer.throughputMBs,
+    mediaCeilingIOPS: mediaLayer.iops,
     // Blended IOPS for the actual workload is shown in the media layer
     layers,
     bottleneckDescription,

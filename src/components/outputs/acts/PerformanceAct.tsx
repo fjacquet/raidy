@@ -34,6 +34,29 @@ export function PerformanceAct({ performance }: PerformanceActProps) {
     ? t('performance.writeIopsBurst')
     : t('performance.writeIops')
 
+  /*
+    Gauge ceilings are the DRIVES' own capability, not a fixed scale.
+    A fixed scale saturated: 50,000 MB/s and 2,000,000 IOPS were set before the PERC13
+    recalibration (#84) raised controller limits 3.4-4.7x, so a modern NVMe cluster pinned all
+    four needles and the arcs told the user nothing.
+    Scaling to the bottleneck would be worse: maxRead/WriteThroughputMBs IS the bottleneck by
+    construction (`Math.min(effective…, minThroughput)`), so those gauges would read 100% forever.
+    Against the media ceiling the reading means something in both directions — below 100%, the
+    controller/PCIe/network chain is throttling drives you have paid for; at 100%, the drives
+    themselves are the limit, which is the outcome you want.
+    Guard against a zero ceiling: the no-drive-selected state reports 0.
+  */
+  const mbpsCeiling = performance.mediaCeilingMBs || 1
+  const iopsCeiling = performance.mediaCeilingIOPS || 1
+
+  // Full means "nothing wasted", so the scale runs red (throttled) to green (media-bound) —
+  // the inverse of the component's default, where full reads as alarming.
+  const HEADROOM_THRESHOLDS = [
+    { value: 0.5, color: '#ef4444' },
+    { value: 0.85, color: '#eab308' },
+    { value: 1.0, color: '#22c55e' },
+  ]
+
   return (
     <div className="space-y-6">
       {/* Performance Gauges Card */}
@@ -47,7 +70,8 @@ export function PerformanceAct({ performance }: PerformanceActProps) {
           <Speedometer
             id="gauge-read-mbps"
             value={performance.maxReadThroughputMBs}
-            max={50000}
+            max={mbpsCeiling}
+            thresholds={HEADROOM_THRESHOLDS}
             label={t('performance.read')}
             unit="MB/s"
             size={isMobile ? 100 : 140}
@@ -55,7 +79,8 @@ export function PerformanceAct({ performance }: PerformanceActProps) {
           <Speedometer
             id="gauge-write-mbps"
             value={performance.maxWriteThroughputMBs}
-            max={50000}
+            max={mbpsCeiling}
+            thresholds={HEADROOM_THRESHOLDS}
             label={writeMbpsLabel}
             unit="MB/s"
             size={isMobile ? 100 : 140}
@@ -63,35 +88,28 @@ export function PerformanceAct({ performance }: PerformanceActProps) {
           <Speedometer
             id="gauge-read-iops"
             value={performance.maxReadIOPS}
-            max={2000000}
+            max={iopsCeiling}
             label={t('performance.readIops')}
             unit="IOPS"
             size={isMobile ? 100 : 140}
-            thresholds={[
-              { value: 0.5, color: '#22c55e' },
-              { value: 0.8, color: '#3b82f6' },
-              { value: 1.0, color: '#a855f7' },
-            ]}
+            thresholds={HEADROOM_THRESHOLDS}
           />
           <Speedometer
             id="gauge-write-iops"
             value={performance.maxWriteIOPS}
-            max={2000000}
+            max={iopsCeiling}
             label={writeIopsLabel}
             unit="IOPS"
             size={isMobile ? 100 : 140}
-            thresholds={[
-              { value: 0.5, color: '#22c55e' },
-              { value: 0.8, color: '#3b82f6' },
-              { value: 1.0, color: '#a855f7' },
-            ]}
+            thresholds={HEADROOM_THRESHOLDS}
           />
           {hasDistinctSustainedWrite && (
             <>
               <Speedometer
                 id="gauge-write-mbps-sustained"
                 value={performance.sustainedWriteThroughputMBs}
-                max={50000}
+                max={mbpsCeiling}
+                thresholds={HEADROOM_THRESHOLDS}
                 label={t('performance.writeSustained')}
                 unit="MB/s"
                 size={isMobile ? 100 : 140}
@@ -99,15 +117,11 @@ export function PerformanceAct({ performance }: PerformanceActProps) {
               <Speedometer
                 id="gauge-write-iops-sustained"
                 value={performance.sustainedWriteIOPS}
-                max={2000000}
+                max={iopsCeiling}
                 label={t('performance.writeIopsSustained')}
                 unit="IOPS"
                 size={isMobile ? 100 : 140}
-                thresholds={[
-                  { value: 0.5, color: '#22c55e' },
-                  { value: 0.8, color: '#3b82f6' },
-                  { value: 1.0, color: '#a855f7' },
-                ]}
+                thresholds={HEADROOM_THRESHOLDS}
               />
             </>
           )}

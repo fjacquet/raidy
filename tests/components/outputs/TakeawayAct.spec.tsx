@@ -15,6 +15,8 @@ describe('TakeawayAct', () => {
           maxReadIOPS: 0,
           maxWriteIOPS: 0,
           sustainedWriteIOPS: 0,
+          mediaCeilingMBs: 0,
+          mediaCeilingIOPS: 0,
           layers: [],
           bottleneckDescription: '',
         }}
