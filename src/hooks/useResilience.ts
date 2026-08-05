@@ -212,6 +212,39 @@ function getRaidLevel(topology: Topology): string {
 }
 
 /**
+ * BeeGFS levels that route through the worker's group-topology model
+ * (`isGroupTopology` in `resilienceWorker.ts`) — the only levels whose
+ * `serverCount` is a storage-target count that buddy mirroring can pair up.
+ * `beegfs_single` has no local per-target redundancy, so a buddy-mirroring
+ * request for it takes the plain drive-pair mirror path instead and has no
+ * odd/even target-count cliff to warn about.
+ */
+function isBeeGfsGroupLevel(level: string): boolean {
+  const l = level.toLowerCase()
+  return l === 'beegfs_raid6' || l === 'beegfs_raidz2' || l === 'beegfs_raid10'
+}
+
+/**
+ * True when buddy mirroring was requested for a BeeGFS group topology but the
+ * storage-target count is odd, so the worker withholds buddy credit entirely
+ * (issue #68 — see `isBuddyMirroredGroup` in `resilienceWorker.ts`). Mirrors
+ * that same predicate rather than re-deriving it independently, so this stays
+ * correct if the worker's buddy-pairing rule ever changes.
+ */
+export function isOddTargetCountNoBuddyCredit(
+  topology: Topology,
+  mirrorCopies: number,
+  groupCount: number,
+): boolean {
+  return (
+    topology.type === 'beegfs' &&
+    isBeeGfsGroupLevel(topology.level) &&
+    mirrorCopies === 2 &&
+    groupCount % 2 !== 0
+  )
+}
+
+/**
  * Calculate number of "nines" from survival rate.
  * e.g., 0.99999 = 5 nines
  */
@@ -370,6 +403,14 @@ export function useResilience(options: UseResilienceOptions): UseResilienceResul
             dualFailureProbability: simResult.dualFailureProbability,
             riskLevel: getRiskLevel(simResult.survivalRate),
             recommendations: getRecommendations(simResult, topology, driveCount),
+            // groupCount is declared further down in this same synchronous function body
+            // (`const groupCount = ...` below); safe to reference here because this
+            // handler only runs later, asynchronously, once the worker replies.
+            oddTargetCountNoBuddyCredit: isOddTargetCountNoBuddyCredit(
+              topology,
+              mirrorCopies,
+              groupCount,
+            ),
           }
           setResult(resilienceResult)
           setIsRunning(false)

@@ -73,6 +73,7 @@ describe('buildPptxContent', () => {
       dualFailureProbability: 0,
       riskLevel: 'low',
       recommendations: [],
+      oddTargetCountNoBuddyCredit: false,
     }
     const content = buildPptxContent({ ...config, results: { ...config.results, resilience } }, t)
     expect(content.resilienceLine).not.toBeNull()

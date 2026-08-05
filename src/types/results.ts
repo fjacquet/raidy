@@ -187,6 +187,16 @@ export interface ResilienceResult {
   riskLevel: 'low' | 'medium' | 'high' | 'critical'
   /** Recommended actions */
   recommendations: string[]
+  /**
+   * True when this simulation used a BeeGFS group topology (beegfs_raid6,
+   * beegfs_raidz2, beegfs_raid10) with buddy mirroring requested but an ODD
+   * storage-target count, so the worker withheld buddy credit entirely and
+   * fell back to the unmerged per-target model (issue #68). Without this the
+   * survival discontinuity — a 5-target cluster reporting worse survival than
+   * a 4-target one — reads as a bug rather than the deliberately conservative
+   * "no unpaired-target credit" choice it actually is.
+   */
+  oddTargetCountNoBuddyCredit: boolean
 }
 
 /** Simulation progress for UI updates */

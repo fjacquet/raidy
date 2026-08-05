@@ -36,6 +36,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   single gauge, not a false split. Labels and a sizing hint are translated in all four locales
   (`en`/`fr`/`de`/`it`). See `docs/ARCHITECTURE.md`'s "Burst vs. sustained write throughput" note
   for the full derivation.
+- **`tests/workers/resilience.spec.ts` no longer flakes under a loaded full-suite run (#100).**
+  The three heaviest Monte Carlo tests that ran multiple 4000-5000-iteration simulations per test
+  (each with its own `vi.resetModules()` + worker re-import) had no explicit per-test timeout, so
+  they relied on Vitest's 5000ms default. Measured under synthetic CPU contention (parallel
+  full-suite run + background load), "should have much higher survival than 2-way mirror with
+  same drives" reached ~2.6s, "should produce consistent results across multiple runs" ~2.1s, and
+  "an odd storage-target count gets no buddy credit" ~1.6s — all with a thin, and on a
+  more-constrained CI runner potentially insufficient, margin to the 5000ms cutoff. No assertion
+  values were loosened (empirically verified: 0 failures across 100-300 trials per cross-run
+  tolerance check in this file); each of the three now gets an explicit 15000ms timeout, the same
+  treatment already applied to `beegfs_raid10 + buddy: survival does not improve as
+  drivesPerTarget grows` for the analogous `--coverage`-instrumentation case.
+- **Odd BeeGFS storage-target counts no longer read as a resilience bug (#68).** Buddy-mirror
+  credit is correctly withheld when the storage-target count is odd (an unpaired target has no
+  buddy), but that made a 5-target cluster report worse survival than a 4-target one with no
+  explanation. The resilience panel now shows an explanatory note whenever a BeeGFS group
+  topology (`beegfs_raid6`, `beegfs_raidz2`, `beegfs_raid10`) has buddy mirroring on and an odd
+  storage-target count, telling the user an even count is needed for full buddy credit.
+  Translated in `en`/`fr`/`de`/`it`. Per-group heterogeneous state (giving the unpaired target
+  partial credit) was considered but not attempted: it would require the worker's group model to
+  carry a per-group tolerance instead of one scalar `parityPerGroup`, touching the failure-count,
+  URE, and rebuild-time logic the extensive superset-invariant proof comments in
+  `resilienceWorker.ts` depend on — more than a "contained change," so the conservative UI note is
+  the fix per the issue's own ruling.
 
 ### Documented
 

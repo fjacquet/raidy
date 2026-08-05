@@ -114,7 +114,8 @@
     "simulations": "Simulations Run",
     "clickToRun": "Click \"Run Simulation\" to calculate",
     "iterations": "Monte Carlo iterations",
-    "includesCorrelated": "Includes correlated failures & rebuild stress"
+    "includesCorrelated": "Includes correlated failures & rebuild stress",
+    "oddTargetNote": "This cluster has an odd number of storage targets, so one target is left unpaired and gets no buddy-mirroring credit. Use an even storage-target count for full buddy protection."
   },
   "power": {
     "title": "Power & Sustainability",

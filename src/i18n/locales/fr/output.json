@@ -114,7 +114,8 @@
     "simulations": "Simulations effectuées",
     "clickToRun": "Cliquez sur \"Lancer la simulation\" pour calculer",
     "iterations": "itérations Monte Carlo",
-    "includesCorrelated": "Inclut les pannes corrélées et stress de reconstruction"
+    "includesCorrelated": "Inclut les pannes corrélées et stress de reconstruction",
+    "oddTargetNote": "Ce cluster comporte un nombre impair de cibles de stockage : une cible reste donc non appariée et ne bénéficie d'aucun crédit de mise en miroir buddy. Utilisez un nombre pair de cibles de stockage pour une protection buddy complète."
   },
   "power": {
     "title": "Énergie & Durabilité",
