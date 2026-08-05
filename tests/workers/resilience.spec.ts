@@ -453,6 +453,16 @@ describe('Resilience Worker - 3-way Mirror (mirrorCopies=3)', () => {
   })
 
   it('should have much higher survival than 2-way mirror with same drives', async () => {
+    // Two sequential simulationCount: 5000 Monte Carlo runs, each with its own
+    // vi.resetModules() + worker re-import (~0.5-0.9s on a plain, otherwise-idle
+    // `vitest run`). This is the heaviest uncapped test in the file (issue #100):
+    // under a full-suite parallel run competing for CPU it was measured up to
+    // ~2.6s, i.e. roughly half of Vitest's 5000ms default per-test timeout with
+    // no safety margin once real CI contention (fewer cores, other jobs, or
+    // --coverage instrumentation — see the drivesPerTarget test below) is added
+    // on top. Explicit 15000ms gives ample headroom without touching
+    // simulationCount, which the survival/URE assertions below rely on for
+    // signal — see the timeout override precedent a few tests down.
     await importWorker()
     const handler = (self as { onmessage: ((e: MessageEvent) => void) | null }).onmessage
 
@@ -514,7 +524,7 @@ describe('Resilience Worker - 3-way Mirror (mirrorCopies=3)', () => {
     console.log(
       `3-way mirror: ${(result3Way.survivalRate * 100).toFixed(1)}% survival, ${(result3Way.ureProbability * 100).toFixed(1)}% URE`,
     )
-  })
+  }, 15000)
 })
 
 describe('Resilience Worker - Abort Handling', () => {
@@ -1277,6 +1287,13 @@ describe('Resilience Worker - Statistical Accuracy', () => {
      * Run same simulation 5 times, collect survival rates.
      * All results should fall within reasonable variance.
      * Standard deviation should match theoretical prediction.
+     *
+     * Five sequential simulationCount: 5000 runs, each with its own
+     * vi.resetModules() + worker re-import — the second-heaviest uncapped test in
+     * this file (issue #100), measured up to ~2.1s under a full-suite parallel
+     * run competing for CPU (vs. ~0.6s idle). See the explicit-timeout precedent
+     * on "should have much higher survival than 2-way mirror" above and on
+     * "survival does not improve as drivesPerTarget grows" below.
      */
 
     const config = {
@@ -1317,7 +1334,7 @@ describe('Resilience Worker - Statistical Accuracy', () => {
     // Standard deviation should be reasonable (not zero, not huge)
     expect(stdDev).toBeGreaterThan(0)
     expect(stdDev).toBeLessThan(0.1) // Less than 10% variation
-  })
+  }, 15000)
 
   it('should calculate valid confidence intervals for survival rate', async () => {
     await importWorker()
@@ -1742,6 +1759,12 @@ describe('Resilience Worker - BeeGFS', () => {
     // would overstate resilience. The worker therefore withholds buddy credit
     // entirely for odd serverCount, falling back to the unmerged per-target
     // model — i.e. identical to buddy-off, within Monte Carlo noise.
+    //
+    // Two sequential simulationCount: 4000 runs, each with its own
+    // vi.resetModules() + worker re-import — measured up to ~1.6s under a
+    // full-suite parallel run competing for CPU (vs. ~0.5-0.8s idle). See the
+    // explicit-timeout precedent on "should have much higher survival than
+    // 2-way mirror" earlier in this file.
     const sharedPayload = {
       driveCount: 30,
       serverCount: 3, // odd: 3 targets of 10 drives
@@ -1771,7 +1794,7 @@ describe('Resilience Worker - BeeGFS', () => {
     expect(buddyOn).toBeDefined()
     // Same model on both sides: only Monte Carlo noise should separate them.
     expect(Math.abs(buddyOn.survivalRate - buddyOff.survivalRate)).toBeLessThan(0.05)
-  })
+  }, 15000)
 
   it('beegfs_single with buddy mirroring survives single-drive losses (parity 0 + mirrorCopies 2)', async () => {
     // Without any mirror layer, beegfs_single (parity 0) takes the "no redundancy"

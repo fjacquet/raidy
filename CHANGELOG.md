@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **`tests/workers/resilience.spec.ts` no longer flakes under a loaded full-suite run (#100).**
+  The three heaviest Monte Carlo tests that ran multiple 4000-5000-iteration simulations per test
+  (each with its own `vi.resetModules()` + worker re-import) had no explicit per-test timeout, so
+  they relied on Vitest's 5000ms default. Measured under synthetic CPU contention (parallel
+  full-suite run + background load), "should have much higher survival than 2-way mirror with
+  same drives" reached ~2.6s, "should produce consistent results across multiple runs" ~2.1s, and
+  "an odd storage-target count gets no buddy credit" ~1.6s — all with a thin, and on a
+  more-constrained CI runner potentially insufficient, margin to the 5000ms cutoff. No assertion
+  values were loosened (empirically verified: 0 failures across 100-300 trials per cross-run
+  tolerance check in this file); each of the three now gets an explicit 15000ms timeout, the same
+  treatment already applied to `beegfs_raid10 + buddy: survival does not improve as
+  drivesPerTarget grows` for the analogous `--coverage`-instrumentation case.
+
 ### Documented
 
 - Researched whether BeeGFS's `numTargets` and `chunkSizeKb` (issue #69) could drive a genuine
