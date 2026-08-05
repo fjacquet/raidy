@@ -12,7 +12,7 @@ import {
   Slider,
 } from '@/components/common/FormControls'
 import drivesData from '@/data/drives.json'
-import { isRaidGroupMode, shouldShowControl } from '@/engines/capabilities'
+import { effectiveServerCount, isRaidGroupMode, shouldShowControl } from '@/engines/capabilities'
 import { useConnectivityConstraints, useFormatBytes } from '@/hooks'
 import { useConfigStore } from '@/store'
 import type { Drive, DriveConnectivity, FormFactorFilter } from '@/types'
@@ -134,9 +134,15 @@ export function HardwarePanel() {
     }))
   }, [filteredDrives, formatBytes])
 
-  // Calculate totals
-  const totalRawCapacity = selectedDrive ? selectedDrive.capacity_raw * driveCount : 0
-  const totalCost = selectedDrive ? selectedDrive.cost_usd * driveCount : 0
+  // Calculate totals across the whole cluster, not one server. `driveCount` is per-server, so
+  // both figures must scale by the same effective server count the drive-count hint below uses
+  // (`drive.countHint`) — otherwise the panel says "120 drives" and then prices twelve.
+  // `effectiveServerCount` rather than the raw store value, so platforms whose servers slider is
+  // hidden do not pick up a stale count from a previously selected multi-node platform.
+  const effServerCount = effectiveServerCount(serverCount, topology)
+  const totalDrives = driveCount * effServerCount
+  const totalRawCapacity = selectedDrive ? selectedDrive.capacity_raw * totalDrives : 0
+  const totalCost = selectedDrive ? selectedDrive.cost_usd * totalDrives : 0
 
   return (
     <div className="space-y-5">

@@ -73,4 +73,4 @@ temp/
 # Tool artifacts (Playwright MCP, RTK, generated images)
 .playwright-mcp/
 .rtk/
-generated_imgs/
+generated_imgs/.claude/worktrees/
