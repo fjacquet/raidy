@@ -14,7 +14,6 @@ import type {
   PowerFlexOptions,
   PowerScaleOptions,
   PowerStoreOptions,
-  PowerVaultOptions,
   RaidControllerOptions,
   S2DOptions,
   SynologyOptions,
@@ -123,7 +122,6 @@ export interface TopologyState {
   /** Nutanix-specific options */
   nutanixOptions: NutanixOptions
   /** PowerVault ME5-specific options */
-  powervaultOptions: PowerVaultOptions
   /** RAID controller options */
   controllerOptions: RaidControllerOptions
 }
@@ -136,8 +134,6 @@ export interface WorkloadState {
   blockSize: BlockSize
   /** Random I/O percentage (0-100), sequential = 100 - random */
   randomPercent: number
-  /** Total dataset size in bytes */
-  datasetSize: number
   /** Daily write volume in bytes (for SSD endurance) */
   dailyWriteVolume: number
 }
@@ -213,14 +209,12 @@ export interface ConfigActions {
   setNetAppOptions: (options: Partial<NetAppOptions>) => void
   setSynologyOptions: (options: Partial<SynologyOptions>) => void
   setNutanixOptions: (options: Partial<NutanixOptions>) => void
-  setPowerVaultOptions: (options: Partial<PowerVaultOptions>) => void
   setControllerOptions: (options: Partial<RaidControllerOptions>) => void
 
   // Workload actions
   setReadPercent: (percent: number) => void
   setBlockSize: (size: BlockSize) => void
   setRandomPercent: (percent: number) => void
-  setDatasetSize: (bytes: number) => void
   setDailyWriteVolume: (bytes: number) => void
 
   // Advanced actions

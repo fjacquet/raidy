@@ -41,7 +41,6 @@ export function useVolumetryCalc(): VolumetryResult {
     netAppOptions,
     synologyOptions,
     nutanixOptions,
-    powervaultOptions,
     // Advanced (capacity modifiers only)
     compressionRatio,
     dedupRatio,
@@ -99,7 +98,6 @@ export function useVolumetryCalc(): VolumetryResult {
         netAppOptions,
         synologyOptions,
         nutanixOptions,
-        powervaultOptions,
         compressionRatio,
         dedupRatio,
         fsType,
@@ -150,7 +148,6 @@ export function useVolumetryCalc(): VolumetryResult {
     netAppOptions,
     synologyOptions,
     nutanixOptions,
-    powervaultOptions,
     compressionRatio,
     dedupRatio,
     fsType,

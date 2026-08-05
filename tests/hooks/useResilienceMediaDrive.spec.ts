@@ -42,7 +42,6 @@ function tieredOptions(): BeeGfsOptions {
       enabled: false,
       fastTier: { driveId: FAST_DRIVE_ID, driveCount: 2 },
       capacityTier: { driveId: CAPACITY_DRIVE_ID, driveCount: 12 },
-      cacheMode: 'write-back',
       workingSetPercent: 20,
     },
   }

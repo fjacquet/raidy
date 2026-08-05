@@ -13,7 +13,6 @@ import type {
   PowerFlexOptions,
   PowerScaleOptions,
   PowerStoreOptions,
-  PowerVaultOptions,
   RaidControllerOptions,
   S2DOptions,
   SynologyOptions,
@@ -34,7 +33,6 @@ import {
   DEFAULT_POWERFLEX_OPTIONS,
   DEFAULT_POWERSCALE_OPTIONS,
   DEFAULT_POWERSTORE_OPTIONS,
-  DEFAULT_POWERVAULT_OPTIONS,
   DEFAULT_S2D_OPTIONS,
   DEFAULT_SYNOLOGY_OPTIONS,
   DEFAULT_VSAN_OPTIONS,
@@ -59,14 +57,16 @@ export interface TopologySlice extends TopologyState {
   setNetAppOptions: (options: Partial<NetAppOptions>) => void
   setSynologyOptions: (options: Partial<SynologyOptions>) => void
   setNutanixOptions: (options: Partial<NutanixOptions>) => void
-  setPowerVaultOptions: (options: Partial<PowerVaultOptions>) => void
   setControllerOptions: (options: Partial<RaidControllerOptions>) => void
 }
 
 export const createTopologySlice: StateCreator<TopologySlice> = (set) => ({
   // Default state - RAID 6 is the most common enterprise configuration
   topology: { type: 'standard', level: 'RAID6' },
-  hotSpares: 1,
+  // A hot spare is a deliberate design choice, not an assumption a sizing tool should make on
+  // the user's behalf. Defaulting to 1 quietly reduced usable capacity on first load for every
+  // platform that honours spares. Pinned in tests/engines/volumetry/hotSpareDefault.spec.ts.
+  hotSpares: 0,
   zfsOptions: { ...DEFAULT_ZFS_OPTIONS },
   s2dOptions: { ...DEFAULT_S2D_OPTIONS },
   vsanOptions: { ...DEFAULT_VSAN_OPTIONS },
@@ -80,7 +80,6 @@ export const createTopologySlice: StateCreator<TopologySlice> = (set) => ({
   netAppOptions: { ...DEFAULT_NETAPP_OPTIONS },
   synologyOptions: { ...DEFAULT_SYNOLOGY_OPTIONS },
   nutanixOptions: { ...DEFAULT_NUTANIX_OPTIONS },
-  powervaultOptions: { ...DEFAULT_POWERVAULT_OPTIONS },
   controllerOptions: { ...DEFAULT_CONTROLLER_OPTIONS },
 
   // Actions
@@ -146,8 +145,6 @@ export const createTopologySlice: StateCreator<TopologySlice> = (set) => ({
     set((state) => ({ synologyOptions: { ...state.synologyOptions, ...options } })),
   setNutanixOptions: (options) =>
     set((state) => ({ nutanixOptions: { ...state.nutanixOptions, ...options } })),
-  setPowerVaultOptions: (options) =>
-    set((state) => ({ powervaultOptions: { ...state.powervaultOptions, ...options } })),
   setControllerOptions: (options) =>
     set((state) => ({ controllerOptions: { ...state.controllerOptions, ...options } })),
 })

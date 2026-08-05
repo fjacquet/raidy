@@ -181,16 +181,6 @@ export interface ZfsOptions {
   dedup: boolean
   /** Record size in bytes */
   recordsize: number
-  /**
-   * Special allocation class enabled (metadata on fast flash).
-   *
-   * Kept informational by decision: a real ZFS pool tunable a pool architect
-   * expects to record (metadata/small-block allocation class on a separate fast
-   * vdev), but its capacity effect depends on the special vdev's own size and the
-   * pool's small-block mix, neither of which this tool models. See the hint text
-   * in `ZfsOptionsPanel.tsx`.
-   */
-  specialVdev: boolean
   /** Maximum recommended occupation before performance degradation (default 80%) */
   maxOccupation: number
 }
@@ -211,8 +201,6 @@ export interface TieringConfig {
   fastTier: StorageTier
   /** Capacity tier (bulk storage) - typically HDD or slower SSD */
   capacityTier: StorageTier
-  /** Cache mode */
-  cacheMode: 'write-back' | 'write-through' | 'read-only'
   /** Working set percentage (for cache hit rate calculation) */
   workingSetPercent: number
 }
@@ -335,11 +323,55 @@ export function requiresHba(topologyType: TopologyType, level?: string): boolean
 }
 
 /**
- * Topologies that rebuild from distributed slack space instead of dedicated
- * hot-spare drives. vSAN (both OSA and ESA) reserves free capacity across the
- * cluster for rebuilds — it never uses dedicated spare disks.
+ * Topologies that rebuild from distributed reserve capacity instead of dedicated hot-spare
+ * drives, so a "hot spares" input is not something their administrator configures.
+ *
+ * Per vendor documentation:
+ *  - `vsan_osa` / `vsan_esa` — vSAN reserves free capacity across the cluster; never spare disks.
+ *  - `s2d`        — reserve capacity "serves the same function as a hot spare" but is "taken
+ *                   evenly from every drive in the pool" (Microsoft, Storage Pool deep dive).
+ *  - `powerscale` — Virtual Hot Spare: reserved space as a percentage or virtual-drive count,
+ *                   not a physical disk (OneFS Administration Guide).
+ *  - `powerstore` — "Dedicated hot spare drives are not required"; spare space is distributed
+ *                   across each resiliency set (Dell KB 000188491).
+ *  - `powerflex`  — spare capacity spread across all disks (Dell KB 000219120).
+ *  - `nutanix`    — many-to-many rebuild across the cluster, no single hot-spare destination
+ *                   (Definitive Guide to AOS Storage).
+ *  - `ceph`       — no traditional hot spare; recovery backfills into free cluster capacity
+ *                   (Red Hat Ceph Storage Operations Guide).
+ *  - `longhorn`   — replicas rebuild onto any node with free space, governed by the minimum
+ *                   free-space threshold (Longhorn space-consumption guideline).
+ *  - `objectscale` — INFERRED, not sourced: 12+4 erasure coding disperses fragments across
+ *                   nodes and recovery re-creates them on the survivors, which leaves no role
+ *                   for a spare drive. No vendor document states this outright.
+ *
+ * Platforms deliberately NOT here, because their vendors document dedicated spares: standard
+ * RAID (PERC/mdadm global hot spares), ZFS (spare vdevs), PowerVault ME5 (global and dedicated
+ * spares), Synology DSM (Hot Spare in Storage Manager), NetApp ONTAP (two per disk type is the
+ * documented best practice), and BeeGFS — whose storage targets are local hardware RAID
+ * volumes, so spares matter at the controller level even though BeeGFS itself has no such
+ * concept.
+ *
+ * NOTE: this is deliberately separate from `PLATFORM_CAPABILITIES.supportsHotSpares`, which
+ * stays `true` for every type. The engines genuinely subtract hot spares for all fifteen; the
+ * zeroing happens in the hooks (`useVolumetryCalc`, `usePerformanceCalc`, `useResilience`)
+ * before the engine is called. Setting the capability flag false would make the capability
+ * probe fail, correctly — it drives `calculateVolumetry` directly and would still see the
+ * subtraction. Two mechanisms describe hot-spare relevance and only this one drives the UI;
+ * unifying them is issue #130.
  */
-export const DISTRIBUTED_SPARE_TOPOLOGIES: TopologyType[] = ['vsan_osa', 'vsan_esa']
+export const DISTRIBUTED_SPARE_TOPOLOGIES: TopologyType[] = [
+  'vsan_osa',
+  'vsan_esa',
+  's2d',
+  'ceph',
+  'powerflex',
+  'powerstore',
+  'powerscale',
+  'objectscale',
+  'nutanix',
+  'longhorn',
+]
 
 /** Check if topology uses distributed spare capacity (no dedicated hot-spare drives) */
 export function usesDistributedSpares(topologyType: TopologyType): boolean {
@@ -400,15 +432,6 @@ export interface VsanOptions {
   dedup: boolean
   /** Expected deduplication ratio (1.0 = none, 1.2 = 1.2:1) */
   dedupRatio: number
-  /**
-   * Enable encryption (Data-at-Rest Encryption).
-   *
-   * Kept informational by decision: a real vSAN cluster setting an operator expects
-   * to record, but vSAN DARE is applied below the dedup/compression layer with no
-   * published capacity tax in VMware's sizing guidance, so there is no citable
-   * overhead to model. See the hint text in `VsanOptionsPanel.tsx`.
-   */
-  encryption: boolean
   /** Tiering configuration (disk groups with cache + capacity) - OSA only */
   tiering?: TieringConfig
 }
@@ -419,26 +442,7 @@ export interface SynologyOptions {
   filesystem: 'btrfs' | 'ext4'
   /** System partition size per disk in bytes (20-30GB) */
   systemPartitionSize: number
-  /**
-   * NAS model series (J series has CPU limitations).
-   *
-   * Kept informational by decision: a real Synology model choice worth recording
-   * for the sizing sheet, but this tool applies the same `filesystem`/parity math
-   * regardless of series — there is no citable per-series capacity or throughput
-   * delta to apply. See the hint text in `SynologyOptionsPanel.tsx`.
-   */
-  modelSeries: 'j' | 'value' | 'plus' | 'xs'
-  /**
-   * Enable SSD cache.
-   *
-   * Kept informational by decision, together with `cacheMode`: SSD read/write cache
-   * accelerates hot-data access on real DSM but is additive hardware, not a
-   * reduction of the HDD pool's usable capacity, so it does not change any number
-   * this tool computes. See the hint text in `SynologyOptionsPanel.tsx`.
-   */
-  ssdCache: boolean
   /** SSD cache mode — see `ssdCache` */
-  cacheMode: 'read_only' | 'read_write'
 }
 
 /** Dell ObjectScale-specific configuration options (Object Storage S3) - per SME specs */
@@ -491,49 +495,12 @@ export interface PowerScaleOptions {
   dedupRatio: number
   /** Snapshot reserve percentage */
   snapshotReservePercent: number
-  /**
-   * SmartQuotas enabled.
-   *
-   * Kept informational by decision: a real PowerScale administrative feature (quota
-   * enforcement policy), but it is an access-control mechanism, not a capacity
-   * multiplier — it does not change how much usable capacity this tool computes.
-   * See the hint text in the PowerScale section of `DellOptionsPanel.tsx`.
-   */
-  smartQuotas: boolean
-  /**
-   * SyncIQ (async replication) enabled.
-   *
-   * Kept informational by decision: this tool sizes a single site/cluster only, so
-   * a DR-target's capacity is out of scope by design — the same reason no other
-   * platform's replication-target sizing is modeled here.
-   */
-  syncIQ: boolean
 }
 
 /** NetApp storage-specific configuration options */
 export interface NetAppOptions {
-  /**
-   * Storage platform.
-   *
-   * Kept informational by decision: a real ONTAP platform choice worth recording,
-   * but this tool's WAFL overhead and DRR math (`filesystem-overhead.ts`,
-   * `capacityEnhancements.ts`) apply uniformly across platforms — there is no
-   * citable per-platform capacity delta to model. See the hint text in
-   * `NetAppOptionsPanel.tsx`.
-   */
-  platform: 'aff_a' | 'aff_c' | 'fas' | 'asa' | 'e_series'
   /** RAID type — read by `validators.ts` (RAID-TEC recommended above 10TB drives) */
   raidType: 'raid_dp' | 'raid_tec'
-  /**
-   * Advanced Drive Partitioning version.
-   *
-   * Kept informational by decision: real ADP root-data partitioning recovers most
-   * of the capacity a dedicated root aggregate would otherwise cost, but the exact
-   * recovered fraction depends on shelf/node layout this tool does not model, so
-   * `waflOverhead` stays a flat constant regardless of this setting. See the hint
-   * text in `NetAppOptionsPanel.tsx`.
-   */
-  adpVersion: 'none' | 'adpv1' | 'adpv2'
   /**
    * Snapshot reserve as a FRACTION of capacity after parity (0–0.2; default 0.05 = 5%, or 0
    * on AFF). Not a percent: `overheadCalculator.ts` multiplies by this value directly, unlike
@@ -553,29 +520,10 @@ export interface NetAppOptions {
   compression: boolean
   /** Enable inline deduplication — gates `dataReductionRatio`, see its doc comment */
   dedup: boolean
-  /**
-   * Enable zero-block detection.
-   *
-   * Kept informational by decision: a real ONTAP data-reduction feature, but its
-   * contribution is already folded into whatever `dataReductionRatio` the user
-   * enters — there is no separate, citable zero-block fraction to split out and
-   * apply on its own. See the hint text in `NetAppOptionsPanel.tsx`.
-   */
-  zeroDetection: boolean
 }
 
 /** Ceph storage-specific configuration options */
 export interface CephOptions {
-  /**
-   * Storage backend.
-   *
-   * Kept informational by decision: BlueStore vs FileStore is a real architecture
-   * choice (FileStore is legacy/deprecated upstream), but this tool has no
-   * per-backend overhead split to apply — `journalOnSsd` and `walDbOffload` already
-   * carry the placement-tuning half of this decision. See the hint text in
-   * `CephOptionsPanel.tsx`.
-   */
-  backend: 'bluestore' | 'filestore'
   /** Pool type */
   poolType: 'replicated' | 'erasure'
   /** Replication factor (for replicated pools) */
@@ -588,25 +536,6 @@ export interface CephOptions {
   compression: boolean
   /** Compression algorithm */
   compressionAlgorithm: 'none' | 'snappy' | 'zstd' | 'lz4'
-  /**
-   * Enable encryption.
-   *
-   * Kept informational by decision: a real Ceph OSD-level encryption setting an
-   * operator expects to record, but Ceph's dm-crypt layer carries no published
-   * capacity tax, so there is no citable overhead to model. See the hint text in
-   * `CephOptionsPanel.tsx`.
-   */
-  encryption: boolean
-  /**
-   * OSD journal on SSD (legacy FileStore concept).
-   *
-   * Kept informational by decision: for the modern BlueStore backend (the default,
-   * see `backend`), `walDbOffload` below is the field this tool actually models for
-   * WAL/DB tiering — `journalOnSsd` is FileStore's separate journal-partition
-   * concept, superseded by `walDbOffload` for BlueStore and left unmodelled the
-   * same way `backend` is. See the hint text in `CephOptionsPanel.tsx`.
-   */
-  journalOnSsd: boolean
   /** WAL/DB offload to separate NVMe (for HDD OSDs) */
   walDbOffload: boolean
   /** Safe capacity threshold (Ceph nearfull, default 0.85 = 85%) */
@@ -625,16 +554,6 @@ export interface LonghornOptions {
   snapshotHeadroom: number
   /** Growth headroom G ≥ 1.0 — advisory only, never subtracted from usable */
   growthHeadroom: number
-  /**
-   * Storage Over-Provisioning % (Longhorn's thin-provisioning scheduling setting).
-   *
-   * Kept informational by decision: it is read by `src/engines/volumetry/index.ts`
-   * and echoed into `longhornDetails.overProvisioningPercent` for the results panel,
-   * but it does not change any computed usable-capacity number — no formula in this
-   * tool derives a schedulable/provisionable capacity from it. See the hint text in
-   * `LonghornOptionsPanel.tsx`.
-   */
-  overProvisioningPercent: number
 }
 
 /**
@@ -658,70 +577,6 @@ export interface BeeGfsOptions {
   storageBuddyMirror: boolean
   /** Buddy mirroring for metadata targets — doubles the MDT capacity requirement */
   metadataBuddyMirror: boolean
-  /**
-   * Chunk size in KB (BeeGFS default 512K), for display purposes only.
-   *
-   * Chunk size is a real BeeGFS tunable, and per the BeeGFS striping docs it is not purely a
-   * layout knob: too small a chunk relative to the client's write size forces more messages to
-   * the servers, which "may cause performance loss"
-   * (https://doc.beegfs.io/latest/advanced_topics/striping.html). But that effect depends on
-   * the client's own I/O transfer size, which this app does not collect — the workload panel's
-   * `blockSize` describes the *drive-level* I/O the performance engine already models, not the
-   * client-to-server message size a BeeGFS chunk boundary interacts with. It is deliberately
-   * NOT wired into the performance engine: that engine models the bottleneck chain
-   * (Media → Controller → PCIe → Network) in cluster aggregates, and has no per-file layer for
-   * a chunk boundary to interact with. Any factor applied here would be an invented curve with
-   * no reference behind it, which is worse than an honest gap (investigated alongside
-   * `numTargets` for #69 — see that field's doc-comment for the full reasoning and citation).
-   * The BeeGFS options panel labels this control informational (tooltip + hint) so the user is
-   * not misled; it exists so a sizing sheet can record the intended configuration.
-   */
-  chunkSizeKb: 512 | 1024 | 2048
-  /**
-   * Per-file stripe width in targets (BeeGFS `numtargets`, default 4), for display only.
-   *
-   * `numtargets` caps the throughput of a SINGLE file: one file is striped over at most this
-   * many storage targets. Every performance figure this tool reports is a cluster aggregate
-   * over all clients and all files, and that aggregate is bounded by the total storage-target
-   * count, not by any one file's stripe width — the HPC workloads BeeGFS is built for run many
-   * concurrent files precisely so the aggregate is not `numtargets`-bound. Applying this as a
-   * multiplier on the aggregate would understate a real cluster by up to
-   * `storageTargetCount / numTargets`.
-   *
-   * A dedicated single-stream (single-client, single-file) output was investigated (#69) and
-   * deliberately NOT added, for two independent reasons:
-   *
-   * 1. Missing input: a realistic single-stream ceiling is `min(client NIC link,
-   *    numTargets × per-target sequential rate)`, but this app collects neither a client
-   *    count nor a client link speed — `network` here and `networkSpeed` (AdvancedSlice) both
-   *    describe server/cluster-side interconnect, not what one client node has. Inventing a
-   *    default client link would be a fabricated number, not a derived one.
-   * 2. Even with that input, ThinkParQ's own published benchmark shows the relationship is
-   *    not close to linear and not derivable from `numTargets` alone: for a single client
-   *    process reading against 4 individual RAID6 targets, raising `numtargets` from 1→2
-   *    nearly doubles sequential-read throughput, but 2→3→4 gives no further gain and can
-   *    even regress slightly — the ceiling is set by client-side threading/read-ahead
-   *    behaviour this app does not model, not by `numTargets × per-target rate`. See
-   *    "Picking the right number of targets per server for BeeGFS" (Heichler, ThinkParQ,
-   *    March 2015), §5 ("sequential read - 1 worker per disk", numtargets=1..4 series),
-   *    https://www.beegfs.io/docs/whitepapers/Picking_the_right_Number_of_Targets_per_Server_for_BeeGFS_by_ThinkParQ.pdf
-   *
-   * So the control stays labelled informational (tooltip + hint) in the BeeGFS options panel
-   * rather than wired to a fabricated formula.
-   */
-  numTargets: number
-  /**
-   * Cluster interconnect, for display purposes only. The bottleneck chain's network
-   * layer is already driven by the store-level `networkSpeed` (AdvancedSlice), which is
-   * the single source of truth for per-server bandwidth across every platform. This
-   * field uses a BeeGFS-flavoured vocabulary (IB fabrics) that does not map 1:1 onto
-   * `NetworkSpeed`'s Ethernet-speed enum, so it is intentionally not wired into the
-   * bandwidth calculation — introducing a conversion table would create a second source
-   * of truth for the same number. It exists so the BeeGFS options panel can show the
-   * interconnect the user actually has (relevant to `BEEGFS_MIN_DRIVES_PER_TARGET`-style
-   * sizing guidance and future latency-only refinements), without affecting throughput.
-   */
-  network: 'ib-hdr' | 'ib-ndr' | '100gbe' | '25gbe'
   /**
    * Overhead of the ext4/xfs filesystem under each storage target, in percent
    * (e.g. `2` = 2%). User-configurable in the BeeGFS options panel (range 0.5-5%,
@@ -782,29 +637,6 @@ export interface NutanixOptions {
 }
 
 /** Dell PowerVault ME5 configuration options */
-/**
- * Dell PowerVault ME5 options.
- *
- * Every field below is kept informational by decision: they are real ME5 hardware
- * and licensing choices worth recording on a sizing sheet, but `overheadCalculator.ts`
- * models ME5 with a single flat ~1% metadata overhead (see the "PowerVault ME5:
- * minimal metadata overhead" comment in `filesystem-overhead.ts`) regardless of
- * chassis, controller count, tiering, cache, or provisioning mode — there is no
- * per-option capacity or performance delta published for ME5 to model instead. See
- * the hint text in `DellOptionsPanel.tsx`'s PowerVault section.
- */
-export interface PowerVaultOptions {
-  /** Model: ME5212 (12 drives), ME5224 (24 drives), ME5284 (84 drives) */
-  model: 'ME5212' | 'ME5224' | 'ME5284'
-  /** Number of controllers (1 = single, 2 = dual-active) */
-  controllers: 1 | 2
-  /** Enable auto-tiering (3 tiers: Performance SSD, Standard 10K, Archive NL-SAS) */
-  tiering: boolean
-  /** Enable SSD read cache (uses SSDs as read cache for HDD pools) */
-  ssdReadCache: boolean
-  /** Thin provisioning enabled (4MB page size) */
-  thinProvisioning: boolean
-}
 
 /** Complete topology configuration */
 export interface TopologyConfig {
@@ -831,7 +663,6 @@ export const DEFAULT_ZFS_OPTIONS: ZfsOptions = {
   compressionType: 'lz4',
   dedup: false,
   recordsize: 131072, // 128K
-  specialVdev: false,
   maxOccupation: 80, // Performance degrades beyond 80%
 }
 
@@ -860,7 +691,6 @@ export const DEFAULT_VSAN_OPTIONS: VsanOptions = {
   compressionRatio: 1.5,
   dedup: false,
   dedupRatio: 1.0,
-  encryption: false,
 }
 
 /** Default ObjectScale options - per SME specs */
@@ -906,21 +736,16 @@ export const DEFAULT_POWERSCALE_OPTIONS: PowerScaleOptions = {
   dedup: false,
   dedupRatio: 1.0,
   snapshotReservePercent: 20,
-  smartQuotas: false,
-  syncIQ: false,
 }
 
 /** Default Ceph options */
 export const DEFAULT_CEPH_OPTIONS: CephOptions = {
-  backend: 'bluestore',
   poolType: 'replicated',
   replicationFactor: 3,
   ecK: 4,
   ecM: 2,
   compression: false,
   compressionAlgorithm: 'none',
-  encryption: false,
-  journalOnSsd: true,
   walDbOffload: false,
   safeCapacityThreshold: 0.85, // Ceph nearfull at 85%
 }
@@ -931,7 +756,6 @@ export const DEFAULT_LONGHORN_OPTIONS: LonghornOptions = {
   minimalAvailablePercent: 10,
   snapshotHeadroom: 1.2,
   growthHeadroom: 1.2,
-  overProvisioningPercent: 200,
 }
 
 /**
@@ -946,9 +770,6 @@ export const DEFAULT_BEEGFS_OPTIONS: BeeGfsOptions = {
   drivesPerTarget: 12,
   storageBuddyMirror: false,
   metadataBuddyMirror: true,
-  chunkSizeKb: 512,
-  numTargets: 4,
-  network: '100gbe',
   fsOverheadPercent: 2,
   metadataTargets: false,
 }
@@ -958,7 +779,6 @@ export const DEFAULT_TIERING_CONFIG: TieringConfig = {
   enabled: false,
   fastTier: { driveId: '', driveCount: 2 },
   capacityTier: { driveId: '', driveCount: 4 },
-  cacheMode: 'write-back',
   workingSetPercent: 20,
 }
 
@@ -993,35 +813,20 @@ export const DEFAULT_NUTANIX_OPTIONS: NutanixOptions = {
   networkType: '25gbe',
 }
 
-/** Default PowerVault ME5 options */
-export const DEFAULT_POWERVAULT_OPTIONS: PowerVaultOptions = {
-  model: 'ME5224',
-  controllers: 2, // Dual-active (most common configuration)
-  tiering: false,
-  ssdReadCache: false,
-  thinProvisioning: true, // Enabled by default
-}
-
 /** Default Synology options */
 export const DEFAULT_SYNOLOGY_OPTIONS: SynologyOptions = {
   filesystem: 'btrfs',
   systemPartitionSize: 25 * 1024 * 1024 * 1024, // 25GB per disk
-  modelSeries: 'plus',
-  ssdCache: false,
-  cacheMode: 'read_write',
 }
 
 /** Default NetApp options */
 export const DEFAULT_NETAPP_OPTIONS: NetAppOptions = {
-  platform: 'aff_a',
   raidType: 'raid_dp',
-  adpVersion: 'adpv2',
   snapshotReserve: 0.05, // 5% default
   dataReductionRatio: 1.0, // No reduction by default
   waflOverhead: 0.015, // 1.5% WAFL overhead
   compression: true,
   dedup: false,
-  zeroDetection: true,
 }
 
 /** Filesystem overhead constants */

@@ -11,13 +11,12 @@
     "driveCount": "Drives per server. Combined with server count, this determines total raw capacity and aggregate performance. More drives increase rebuild time for parity-based topologies.",
     "serverCount": "Number of servers or nodes. Affects total drive count, power consumption, and for distributed platforms (vSAN, Ceph, S2D, Nutanix), determines fault domain count and minimum host requirements.",
     "serverCountRaidGroups": "Number of RAID groups for striped arrays. RAID 50 stripes across multiple RAID 5 groups (1 parity drive per group). RAID 60 stripes across multiple RAID 6 groups (2 parity drives per group). More groups improve write performance but increase parity overhead.",
-    "serverPower": "Base server power consumption (excluding drives). Used to calculate total energy, annual cost, and CO\u2082 emissions."
+    "serverPower": "Base server power consumption (excluding drives). Used to calculate total energy, annual cost, and CO₂ emissions."
   },
   "workload": {
     "readWrite": "Read/write ratio significantly impacts effective IOPS. RAID 5/6 writes incur a penalty (4x for RAID-5, 6x for RAID-6) because each write requires reading old data, old parity, writing new data, and new parity.",
     "randomSequential": "Random I/O is measured in IOPS; sequential I/O is measured in throughput (MB/s). Databases are typically 80%+ random; video streaming is nearly 100% sequential.",
     "blockSize": "I/O block size affects both performance and alignment. Smaller blocks (4K-8K) maximize IOPS for databases. Larger blocks (128K-1M) maximize throughput for sequential workloads.",
-    "datasetSize": "Total amount of data to store. Used to calculate whether the configured storage provides enough usable capacity after all overheads.",
     "dailyWriteVolume": "Daily write volume determines SSD endurance requirements (DWPD). High write volumes on SSDs can exceed the drive's rated endurance, leading to premature failure."
   },
   "advanced": {
@@ -47,8 +46,8 @@
     "bottleneck": "The bottleneck chain shows throughput at each layer. The layer with the lowest throughput is the bottleneck. Upgrading any other layer won't improve performance.",
     "survivalRate": "Probability of surviving one year without data loss, calculated via Monte Carlo simulation. Considers drive failure rates (AFR), rebuild time, URE probability during rebuild, and correlated failures.",
     "rebuildTime": "Estimated time to rebuild a failed drive. Longer rebuild times increase the window of vulnerability. Depends on drive capacity, rebuild speed, and array utilization.",
-    "totalPower": "Total power consumption including drives, servers, and cooling (PUE factor). Used to calculate annual energy cost and CO\u2082 emissions.",
-    "annualCo2": "Annual CO\u2082 emissions based on total energy consumption and the selected grid carbon intensity. Switzerland (30 g/kWh) is among the cleanest; China (555 g/kWh) among the highest.",
+    "totalPower": "Total power consumption including drives, servers, and cooling (PUE factor). Used to calculate annual energy cost and CO₂ emissions.",
+    "annualCo2": "Annual CO₂ emissions based on total energy consumption and the selected grid carbon intensity. Switzerland (30 g/kWh) is among the cleanest; China (555 g/kWh) among the highest.",
     "backupRequirements": "Estimated storage required for incremental backups based on daily change rate and retention period. This is backup target capacity, separate from primary storage."
   },
   "zfs": {
@@ -75,7 +74,6 @@
   },
   "netapp": {
     "wafl": "NetApp WAFL filesystem has approximately 1.5% overhead for internal metadata. This is subtracted from usable capacity.",
-    "adp": "Advanced Data Partitioning (ADP) shares drives between root and data aggregates, improving capacity utilization on smaller systems.",
     "snapshot": "Snapshot reserve (default 5%) is pre-allocated space for point-in-time copies. Set to 0% for all-flash arrays with inline dedup."
   },
   "synology": {

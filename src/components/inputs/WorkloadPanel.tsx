@@ -21,23 +21,6 @@ const BLOCK_SIZE_LABELS: Record<BlockSize, string> = {
 
 const BLOCK_SIZE_OPTIONS = BLOCK_SIZES.map((value) => ({ value, label: BLOCK_SIZE_LABELS[value] }))
 
-// Convert slider position to bytes (logarithmic scale)
-function sliderToBytes(position: number): number {
-  // Position 0-100 maps to 1GB - 10PB (logarithmic)
-  const minLog = Math.log10(1024 ** 3) // 1 GB
-  const maxLog = Math.log10(10 * 1024 ** 5) // 10 PB
-  const log = minLog + (position / 100) * (maxLog - minLog)
-  return 10 ** log
-}
-
-// Convert bytes to slider position
-function bytesToSlider(bytes: number): number {
-  const minLog = Math.log10(1024 ** 3)
-  const maxLog = Math.log10(10 * 1024 ** 5)
-  const log = Math.log10(bytes)
-  return ((log - minLog) / (maxLog - minLog)) * 100
-}
-
 // Convert slider position to daily write (logarithmic scale)
 function sliderToDailyWrite(position: number): number {
   // Position 0-100 maps to 100MB - 100TB
@@ -63,12 +46,10 @@ export function WorkloadPanel() {
     readPercent,
     blockSize,
     randomPercent,
-    datasetSize,
     dailyWriteVolume,
     setReadPercent,
     setBlockSize,
     setRandomPercent,
-    setDatasetSize,
     setDailyWriteVolume,
   } = useConfigStore()
 
@@ -143,26 +124,6 @@ export function WorkloadPanel() {
           {blockSize === '256K' && t('blockSize.hint256k')}
           {blockSize === '1M' && t('blockSize.hint1m')}
         </p>
-      </div>
-
-      {/* Dataset Size */}
-      <div className="space-y-2">
-        <Label
-          htmlFor="dataset-size"
-          hint={formatBytes(datasetSize)}
-          tooltip={th('workload.datasetSize')}
-        >
-          {t('capacity.datasetSize')}
-        </Label>
-        <Slider
-          id="dataset-size"
-          value={bytesToSlider(datasetSize)}
-          min={0}
-          max={100}
-          step={1}
-          onChange={(v) => setDatasetSize(sliderToBytes(v))}
-          formatValue={() => formatBytes(datasetSize)}
-        />
       </div>
 
       {/* Daily Write Volume */}

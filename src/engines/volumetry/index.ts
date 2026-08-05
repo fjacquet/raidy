@@ -24,7 +24,6 @@ import type {
   PowerFlexOptions,
   PowerScaleOptions,
   PowerStoreOptions,
-  PowerVaultOptions,
   S2DOptions,
   SynologyOptions,
   Topology,
@@ -73,7 +72,6 @@ export interface VolumetryInput {
   netAppOptions: NetAppOptions
   synologyOptions: SynologyOptions
   nutanixOptions: NutanixOptions
-  powervaultOptions: PowerVaultOptions
   compressionRatio: number
   dedupRatio: number
   fsType: FsType
@@ -413,7 +411,6 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
       perNodeUsable: serverCount > 0 ? usableCapacity / serverCount : usableCapacity,
       replicaCount: topology.level === 'longhorn_r3' ? 3 : 2,
       minimalAvailablePercent: longhornOptions.minimalAvailablePercent,
-      overProvisioningPercent: longhornOptions.overProvisioningPercent,
       diskMode: longhornOptions.diskMode,
     }
   }

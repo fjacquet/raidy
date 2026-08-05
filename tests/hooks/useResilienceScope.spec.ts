@@ -74,7 +74,6 @@ describe('resolveBeeGfsSimulationScope', () => {
         enabled: false,
         fastTier: { driveId: 'ent-nvme-pcie4-960gb-m2-ri', driveCount: 2 },
         capacityTier: { driveId: 'ent-hdd-7k2-sata-18tb-cmr', driveCount: 12 },
-        cacheMode: 'write-back',
         workingSetPercent: 20,
       },
     })

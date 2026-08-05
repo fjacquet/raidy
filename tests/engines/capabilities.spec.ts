@@ -89,6 +89,34 @@ describe('capability map matches engine behavior', () => {
         expect(spared.usableCapacity).toBe(base.usableCapacity)
       }
     })
+
+    /**
+     * `getFilesystemOverheadPercent` switches on `topology.type` and returns a platform
+     * constant for thirteen of the fifteen types. Two consult the user's `fsType`:
+     * `standard`, via an explicit case, and `longhorn`, which has NO case and so falls
+     * through to the `default` branch.
+     *
+     * That second one is why this probe exists. An earlier draft of the spec claimed
+     * `standard` only; gating on that would have hidden the control for Longhorn while
+     * the engine kept reading the stored value, silently changing Longhorn's usable
+     * capacity. Two careful readings of the code missed it.
+     *
+     * xfs (1%) vs ext4 (5%) — deliberately chosen because they differ; a pair sharing an
+     * overhead constant would make this assertion vacuous.
+     */
+    it(`${topology.type}: honoursFsType=${caps.honoursFsType}`, () => {
+      const xfs = calculateVolumetry(
+        createVolumetryInput(drives, topology, { serverCount: servers, fsType: 'xfs' }),
+      )
+      const ext4 = calculateVolumetry(
+        createVolumetryInput(drives, topology, { serverCount: servers, fsType: 'ext4' }),
+      )
+      if (caps.honoursFsType) {
+        expect(ext4.usableCapacity).toBeLessThan(xfs.usableCapacity)
+      } else {
+        expect(ext4.usableCapacity).toBe(xfs.usableCapacity)
+      }
+    })
   }
 })
 
@@ -116,6 +144,8 @@ describe('shouldShowControl', () => {
       expect(shouldShowControl('compression', type)).toBe(caps.supportsCompression)
       expect(shouldShowControl('dedup', type)).toBe(caps.supportsDedup)
       expect(shouldShowControl('hotSpares', type)).toBe(caps.supportsHotSpares)
+      expect(shouldShowControl('fsType', type)).toBe(caps.honoursFsType)
+      expect(shouldShowControl('controller', type)).toBe(caps.honoursController)
       expect(shouldShowControl('serverCount', type)).toBe(caps.hasServerCount)
     }
   })

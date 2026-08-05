@@ -23,8 +23,6 @@ export interface TieringPanelProps {
   serverCount: number
   /** Platform name for contextual labels */
   platform: 's2d' | 'vsan' | 'ceph' | 'beegfs'
-  /** Whether to show cache mode selector */
-  showCacheMode?: boolean
   /** Whether to show working set slider */
   showWorkingSet?: boolean
   /** vSAN mode: hybrid (HDD capacity) or all-flash (SSD capacity) */
@@ -58,7 +56,6 @@ export function TieringPanel({
   onChange,
   serverCount,
   platform,
-  showCacheMode = true,
   showWorkingSet = true,
   vsanMode = 'hybrid',
   onVsanModeChange,
@@ -232,29 +229,14 @@ export function TieringPanel({
         )}
       </div>
 
-      {/* Cache Mode */}
-      {showCacheMode && (
-        <div className="space-y-2">
-          <Label>{t('tiering.cacheMode')}</Label>
-          <SegmentedControl
-            value={config.cacheMode}
-            options={[
-              { value: 'write-back', label: t('tiering.writeBack') },
-              { value: 'write-through', label: t('tiering.writeThrough') },
-              { value: 'read-only', label: t('tiering.readOnly') },
-            ]}
-            onChange={(cacheMode) =>
-              onChange({ cacheMode: cacheMode as TieringConfig['cacheMode'] })
-            }
-          />
-          <p className="text-xs text-slate-500">
-            {t(`tiering.cacheModeDesc.${config.cacheMode.replace('-', '')}`)}
-          </p>
-        </div>
-      )}
-
-      {/* Working Set */}
-      {showWorkingSet && (
+      {/*
+        Working Set — hidden for vSAN OSA in all-flash mode. `vsanFastTierModel` blends the two
+        tiers by working set only on the hybrid branch; the all-flash branch never reads it, so
+        the slider is inert there even though vSAN OSA honours it in hybrid. A sub-mode gate, not
+        a platform one, which is why it lives here rather than in PLATFORM_CAPABILITIES.
+        Pinned by tests/engines/performance/vsanWorkingSetSubMode.spec.ts.
+      */}
+      {showWorkingSet && !(platform === 'vsan' && vsanMode === 'all-flash') && (
         <div className="space-y-2">
           <Label hint={`${config.workingSetPercent}%`}>{t('tiering.workingSetSize')}</Label>
           <Slider

@@ -31,7 +31,6 @@
     "hint1m": "1M - Sequential, backup"
   },
   "capacity": {
-    "datasetSize": "Total Dataset Size",
     "dailyWriteVolume": "Daily Write Volume",
     "hint": "Used for SSD endurance calculation"
   }

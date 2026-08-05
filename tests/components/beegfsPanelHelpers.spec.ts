@@ -76,7 +76,6 @@ describe('BeeGFS panel/engine storage-target parity', () => {
       metadataTargets: true,
       tiering: {
         enabled: true,
-        cacheMode: 'write-back',
         workingSetPercent: 20,
         fastTier: { driveId: 'ent-nvme-pcie4-960gb-m2-ri', driveCount: 2 },
         capacityTier: { driveId: 'ent-hdd-7k2-sata-18tb-cmr', driveCount: 15 },
@@ -104,7 +103,6 @@ describe('BeeGFS panel/engine storage-target parity', () => {
       metadataTargets: false,
       tiering: {
         enabled: true,
-        cacheMode: 'write-back',
         workingSetPercent: 20,
         fastTier: { driveId: 'ent-nvme-pcie4-960gb-m2-ri', driveCount: 2 },
         capacityTier: { driveId: 'ent-hdd-7k2-sata-18tb-cmr', driveCount: 15 },

@@ -17,7 +17,6 @@
     "readWrite": "Das Lese-/Schreibverhältnis hat erheblichen Einfluss auf die effektiven IOPS. Schreibvorgänge bei RAID 5/6 verursachen einen Penalty (4x bei RAID-5, 6x bei RAID-6), da jeder Schreibvorgang das Lesen alter Daten, alter Parität sowie das Schreiben neuer Daten und neuer Parität erfordert.",
     "randomSequential": "Zufällige I/O wird in IOPS gemessen; sequenzielle I/O wird als Durchsatz (MB/s) gemessen. Datenbanken sind typischerweise zu über 80 % zufällig; Video-Streaming ist nahezu 100 % sequenziell.",
     "blockSize": "Die I/O-Blockgröße beeinflusst sowohl Leistung als auch Ausrichtung. Kleinere Blöcke (4K-8K) maximieren IOPS für Datenbanken. Größere Blöcke (128K-1M) maximieren den Durchsatz für sequenzielle Workloads.",
-    "datasetSize": "Gesamtmenge der zu speichernden Daten. Wird verwendet, um zu berechnen, ob der konfigurierte Speicher nach Abzug aller Overheads genügend nutzbare Kapazität bietet.",
     "dailyWriteVolume": "Das tägliche Schreibvolumen bestimmt die SSD-Haltbarkeitsanforderungen (DWPD). Hohe Schreibvolumen auf SSD können die angegebene Haltbarkeit des Laufwerks überschreiten und zu vorzeitigem Ausfall führen."
   },
   "advanced": {
@@ -75,7 +74,6 @@
   },
   "netapp": {
     "wafl": "Das NetApp WAFL-Dateisystem hat einen Overhead von etwa 1,5 % für interne Metadaten. Dieser wird von der nutzbaren Kapazität abgezogen.",
-    "adp": "Advanced Data Partitioning (ADP) teilt Laufwerke zwischen Root- und Datenaggregaten und verbessert die Kapazitätsauslastung bei kleineren Systemen.",
     "snapshot": "Die Snapshot-Reserve (Standard 5 %) ist vorab zugewiesener Speicherplatz für Zeitpunktkopien. Auf 0 % setzen bei All-Flash-Arrays mit Inline-Deduplizierung."
   },
   "synology": {

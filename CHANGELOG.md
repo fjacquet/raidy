@@ -7,6 +7,108 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Eight more platforms rebuild from distributed reserve capacity, so the hot-spare control is
+  gone for them.** S2D, Ceph, Nutanix, Longhorn, PowerFlex, PowerStore, PowerScale and
+  ObjectScale join vSAN, which was already handled. Each vendor documents rebuild from reserved
+  or free capacity rather than from dedicated spare drives — Microsoft is explicit that S2D's
+  reserve capacity "serves the same function as a hot spare" but is "taken evenly from every
+  drive in the pool", and Dell states outright that "dedicated hot spare drives are not
+  required" on PowerStore. Where the control was shown, it configured something those platforms
+  do not have.
+
+  **Usable capacity increases on these platforms for anyone who had set a hot spare.** Measured
+  at 12 drives × 4 nodes with 2 spares per node:
+
+  | Platform | Before | After | Change |
+  |---|---|---|---|
+  | S2D (mirror) | 17.4 TB | 21.3 TB | +23% |
+  | Ceph (3× replicated) | 11.1 TB | 13.3 TB | +20% |
+  | Nutanix (RF2) | 17.7 TB | 21.3 TB | +20% |
+  | Longhorn (R3) | 9.90 TB | 11.9 TB | +20% |
+
+  Standard RAID, ZFS, PowerVault ME5, Synology, NetApp and BeeGFS keep the control — all six
+  document dedicated spares, and are unaffected. ObjectScale's inclusion rests on its
+  erasure-coding architecture rather than a vendor statement; that is marked as inference in the
+  code rather than presented as a citation.
+
+- **The default number of hot spares is now 0, was 1.** A hot spare is a deliberate design
+  choice, not an assumption a sizing tool should make for you. The old default quietly reduced
+  usable capacity on first load for every platform that honours spares, so the figure shown
+  before you touched anything was smaller than your hardware gives.
+
+  **Usable capacity increases for any configuration left at the default.** If you sized hardware
+  on a previous release without changing the hot-spare slider, your figure was low:
+
+  | Configuration | Before (1 spare/node) | After (0) | Change |
+  |---|---|---|---|
+  | Standard RAID 6, 8 drives | 4.95 TB | 5.94 TB | +20% |
+  | ZFS raidz2, 8 drives | 4.81 TB | 5.80 TB | +21% |
+  | BeeGFS RAID 6, 48 drives (12 × 4 nodes) | 29.4 TB | 39.2 TB | +33% |
+
+  BeeGFS moves furthest, and not by coincidence: four spares across four nodes leave 44 drives,
+  which does not divide by a 12-drive storage target. Three targets form and **eight drives are
+  stranded**, contributing nothing. On that layout each spare cost far more than itself. The
+  same arithmetic has a sharper edge worth knowing: a single node with 12 drives and one spare
+  leaves 11, which forms *no* complete target — usable capacity zero.
+
+  Pinned with exact-byte vectors rather than relational bounds
+  (`tests/engines/volumetry/hotSpareDefault.spec.ts`); the 45× tiered-cache error in 1.16.0
+  survived 1,391 tests because every assertion used `toBeGreaterThan`.
+
+### Fixed
+- **The controller selector is hidden for vSAN ESA, and the working-set slider for vSAN OSA in
+  all-flash mode.** vSAN ESA is NVMe-direct: the engine drops the Controller layer from the
+  bottleneck chain and bounds IOPS by PCIe and network alone, so the selector could not change
+  a result. vSAN OSA's `vsanFastTierModel` blends the two tiers by working set only on its
+  hybrid branch, so the slider is inert in all-flash mode — a sub-mode gate rather than a
+  platform one. The PCIe controls, which *do* bind on ESA, are unaffected. **No calculated
+  figure changes.**
+- **The Advanced panel's Filesystem selector is now shown only where the engine reads it.**
+  `getFilesystemOverheadPercent` returns a platform constant for thirteen of the fifteen
+  topology types; only standard RAID and Longhorn consult the user's choice — Longhorn via the
+  switch's `default` branch, since it has no case of its own. On every other platform the
+  control could be moved with no effect. Pinned by a new per-topology probe case, verified
+  falsifiable: flipping the Longhorn flag makes it fail with 2.85 TB vs 2.97 TB (ext4 5% vs
+  XFS 1%). **No calculated figure changes** — only the control's visibility.
+
+### Removed
+- **Ten more inert controls, across NetApp, Synology, Longhorn and BeeGFS.** NetApp's Platform,
+  ADP version and Zero Detection; Synology's Model Series, SSD Cache and Cache Mode; Longhorn's
+  Over-Provisioning; and BeeGFS's Chunk Size, Number of Targets and Network fabric. The BeeGFS
+  three are the original #78 precedent this whole sweep follows — real tunables with real
+  hardware effects that this engine, reporting cluster aggregates, has no honest model for.
+  Longhorn's Over-Provisioning was echoed into the Longhorn results card, so **that output row
+  is gone too**: it displayed a number the user can no longer influence. **No calculated figure
+  changes.**
+- **Five more inert controls: Ceph's Backend, Encryption and Journal-on-SSD, vSAN's Encryption,
+  and ZFS's Special vdev.** Each was a real platform feature the tool does not model — dm-crypt
+  and vSAN DARE carry no published capacity tax, BlueStore-vs-FileStore has no per-backend
+  overhead split here, FileStore's journal placement is superseded by the WAL/DB Offload setting
+  that *is* modelled, and a ZFS special vdev's capacity effect depends on its own size and the
+  pool's small-block mix, neither of which this tool knows. All five said as much in their own
+  hint text. **No calculated figure changes.**
+- **Every PowerVault configuration control, and PowerScale's SmartQuotas and SyncIQ toggles.**
+  PowerVault rendered five controls — model, controller count, auto-tiering, SSD read cache and
+  thin provisioning — and *all five* were inert: ME5 is modelled with one flat metadata overhead
+  regardless, and each control's own hint text said "for reference only, not used in any
+  calculation". With the last field gone the whole `PowerVaultOptions` object went too; it had
+  been threaded through `VolumetryInput` without ever being read. PowerScale's SmartQuotas
+  (access control, not a capacity multiplier) and SyncIQ (this tool sizes a single site) go for
+  the same reason. **No calculated figure changes.** PowerVault still shows its RAID-level
+  descriptions and the note that ME5 supports no inline compression or deduplication.
+- **Two configuration controls that changed no number: the Workload panel's "Total Dataset Size"
+  slider and the tiering "Cache Mode" selector.** Both were stored, serialized into every shared
+  URL and echoed back onto their own control, but neither was read by any engine, worker,
+  validator or hook. They escaped the #104 and #110 sweeps because neither lives in a
+  `DEFAULT_*_OPTIONS` object, which is the only place the guard test looks. Cache Mode was the
+  more misleading of the two: it rendered for S2D alone, directly above the Working Set slider,
+  which is live. **No calculated figure changes** — this removes controls that fed nothing.
+  Shared links created before this release still load: the nested option schemas strip unknown
+  keys rather than rejecting them, which the new `tests/store/removedDeadFields.spec.ts` asserts
+  rather than assumes.
+
 ### Fixed
 - **The Hardware panel's raw-capacity and hardware-cost summary counted one server's drives, not
   the cluster's.** The same panel renders a drive-count hint of `driveCount * serverCount`

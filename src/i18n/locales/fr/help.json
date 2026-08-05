@@ -17,7 +17,6 @@
     "readWrite": "Le ratio lecture/écriture impacte significativement les IOPS effectives. Les écritures RAID 5/6 engendrent une pénalité (4x pour RAID-5, 6x pour RAID-6) car chaque écriture nécessite la lecture des anciennes données, de l'ancienne parité, puis l'écriture des nouvelles données et de la nouvelle parité.",
     "randomSequential": "Les E/S aléatoires se mesurent en IOPS ; les E/S séquentielles en débit (Mo/s). Les bases de données sont généralement à 80 %+ d'E/S aléatoires ; le streaming vidéo est quasiment 100 % séquentiel.",
     "blockSize": "La taille de bloc d'E/S affecte les performances et l'alignement. Les blocs plus petits (4K-8K) maximisent les IOPS pour les bases de données. Les blocs plus grands (128K-1M) maximisent le débit pour les charges séquentielles.",
-    "datasetSize": "Volume total de données à stocker. Utilisé pour vérifier si le stockage configuré fournit suffisamment de capacité utilisable après déduction de toutes les surcharges.",
     "dailyWriteVolume": "Le volume d'écriture quotidien détermine les exigences d'endurance des SSD (DWPD). Des volumes d'écriture élevés sur les SSD peuvent dépasser l'endurance nominale du disque, entraînant une défaillance prématurée."
   },
   "advanced": {
@@ -75,7 +74,6 @@
   },
   "netapp": {
     "wafl": "Le système de fichiers WAFL de NetApp a environ 1,5 % de surcharge pour les métadonnées internes. Ce montant est soustrait de la capacité utilisable.",
-    "adp": "Advanced Data Partitioning (ADP) partage les disques entre les agrégats racine et de données, améliorant l'utilisation de la capacité sur les systèmes de petite taille.",
     "snapshot": "La réserve de snapshots (5 % par défaut) est un espace pré-alloué pour les copies instantanées. Définie à 0 % pour les baies tout-flash avec déduplication en ligne."
   },
   "synology": {

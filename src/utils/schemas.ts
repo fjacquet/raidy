@@ -148,7 +148,6 @@ const ZfsOptionsSchema = z.object({
   compressionType: z.enum(['lz4', 'zstd', 'gzip', 'off']),
   dedup: z.boolean(),
   recordsize: z.number().int().positive().finite(),
-  specialVdev: z.boolean(),
   maxOccupation: z.number().int().min(1).max(100).finite(),
 })
 
@@ -167,7 +166,6 @@ const TieringConfigSchema = z.object({
   enabled: z.boolean(),
   fastTier: StorageTierSchema,
   capacityTier: StorageTierSchema,
-  cacheMode: z.enum(['write-back', 'write-through', 'read-only']),
   workingSetPercent: z.number().min(0).max(100).finite(),
 })
 
@@ -193,7 +191,6 @@ const VsanOptionsSchema = z.object({
   compressionRatio: z.number().min(1).max(10).finite(),
   dedup: z.boolean(),
   dedupRatio: z.number().min(1).max(10).finite(),
-  encryption: z.boolean(),
   tiering: TieringConfigSchema.optional(),
 })
 
@@ -201,15 +198,12 @@ const VsanOptionsSchema = z.object({
  * Ceph options schema
  */
 const CephOptionsSchema = z.object({
-  backend: z.enum(['bluestore', 'filestore']),
   poolType: z.enum(['replicated', 'erasure']),
   replicationFactor: z.union([z.literal(2), z.literal(3), z.literal(4)]),
   ecK: z.number().int().min(1).max(32).finite(),
   ecM: z.number().int().min(1).max(16).finite(),
   compression: z.boolean(),
   compressionAlgorithm: z.enum(['none', 'snappy', 'zstd', 'lz4']),
-  encryption: z.boolean(),
-  journalOnSsd: z.boolean(),
   walDbOffload: z.boolean(),
   safeCapacityThreshold: z.number().min(0).max(1).finite(),
   tiering: TieringConfigSchema.optional(),
@@ -223,7 +217,6 @@ const LonghornOptionsSchema = z.object({
   minimalAvailablePercent: z.number().min(0).max(100).finite(),
   snapshotHeadroom: z.number().min(1).max(5).finite(),
   growthHeadroom: z.number().min(1).max(5).finite(),
-  overProvisioningPercent: z.number().min(0).max(1000).finite(),
 })
 
 /**
@@ -233,9 +226,6 @@ const BeeGfsOptionsSchema = z.object({
   drivesPerTarget: z.number().int().min(1).max(64).finite(),
   storageBuddyMirror: z.boolean(),
   metadataBuddyMirror: z.boolean(),
-  chunkSizeKb: z.union([z.literal(512), z.literal(1024), z.literal(2048)]),
-  numTargets: z.number().int().min(1).max(64).finite(),
-  network: z.enum(['ib-hdr', 'ib-ndr', '100gbe', '25gbe']),
   fsOverheadPercent: z.number().min(0.5).max(5).finite(),
   metadataTargets: z.boolean(),
   tiering: TieringConfigSchema.optional(),
@@ -274,9 +264,7 @@ const ControllerOptionsSchema = z.object({
  * NetApp options schema
  */
 const NetAppOptionsSchema = z.object({
-  platform: z.enum(['aff_a', 'aff_c', 'fas', 'asa', 'e_series']),
   raidType: z.enum(['raid_dp', 'raid_tec']),
-  adpVersion: z.enum(['none', 'adpv1', 'adpv2']),
   // FRACTION, not a percent: overheadCalculator.ts multiplies capacityAfterParity by this
   // value directly (unlike powerstore/powerscale `snapshotReservePercent`, which are divided
   // by 100 there). A `.max(100)` bound let a crafted link validate a 100x reserve; the panel
@@ -286,7 +274,6 @@ const NetAppOptionsSchema = z.object({
   waflOverhead: z.number().min(0).max(1).finite(),
   compression: z.boolean(),
   dedup: z.boolean(),
-  zeroDetection: z.boolean(),
 })
 
 /**
@@ -295,9 +282,6 @@ const NetAppOptionsSchema = z.object({
 const SynologyOptionsSchema = z.object({
   filesystem: z.enum(['btrfs', 'ext4']),
   systemPartitionSize: z.number().int().positive().finite(),
-  modelSeries: z.enum(['j', 'value', 'plus', 'xs']),
-  ssdCache: z.boolean(),
-  cacheMode: z.enum(['read_only', 'read_write']),
 })
 
 /**
@@ -346,21 +330,11 @@ const PowerScaleOptionsSchema = z.object({
   dedup: z.boolean(),
   dedupRatio: z.number().min(1).max(10).finite(),
   snapshotReservePercent: z.number().min(0).max(100).finite(),
-  smartQuotas: z.boolean(),
-  syncIQ: z.boolean(),
 })
 
 /**
  * PowerVault options schema
  */
-const PowerVaultOptionsSchema = z.object({
-  model: z.enum(['ME5212', 'ME5224', 'ME5284']),
-  controllers: z.union([z.literal(1), z.literal(2)]),
-  tiering: z.boolean(),
-  ssdReadCache: z.boolean(),
-  thinProvisioning: z.boolean(),
-})
-
 /**
  * Complete ConfigState schema matching Zustand store
  * Based on partialize function in configStore.ts
@@ -397,13 +371,11 @@ export const ConfigStateSchema = z.object({
   objectscaleOptions: ObjectScaleOptionsSchema.optional(),
   powerstoreOptions: PowerStoreOptionsSchema.optional(),
   powerscaleOptions: PowerScaleOptionsSchema.optional(),
-  powervaultOptions: PowerVaultOptionsSchema.optional(),
 
   // Workload
   readPercent: z.number().min(0).max(100).finite().optional(),
   blockSize: z.enum(BLOCK_SIZES).optional(),
   randomPercent: z.number().min(0).max(100).finite().optional(),
-  datasetSize: z.number().positive().finite().optional(),
   dailyWriteVolume: z.number().nonnegative().finite().optional(),
 
   // Advanced

@@ -11,6 +11,29 @@ export interface PlatformCapabilities {
   supportsDedup: boolean
   supportsHotSpares: boolean
   hasServerCount: boolean
+  /**
+   * True when `getFilesystemOverheadPercent` consults the user's `fsType` instead of
+   * returning a platform constant.
+   *
+   * Exactly two types do: `standard`, via an explicit `case`, and `longhorn`, which has
+   * NO case and therefore falls through to the `default` branch. The Longhorn half is
+   * easy to miss by reading — the probe in tests/engines/capabilities.spec.ts is what
+   * establishes it, and what will catch this flag drifting from the switch.
+   */
+  honoursFsType: boolean
+  /**
+   * True when the bottleneck chain includes a Controller layer built from
+   * `CONTROLLER_LIMITS[controller]`, so the controller selector can change a result.
+   *
+   * False only for vSAN ESA, which is NVMe-direct: `isNvmeDirect` drops the Controller
+   * layer from `layers` and derives `iopsCeiling` from PCIe and network alone.
+   *
+   * The probe (tests/engines/performance/controllerRelevance.spec.ts) runs at a
+   * deliberately high drive count. At realistic counts the media layer binds first on most
+   * platforms, so a small fixture would have shown eight topologies as "inert" — measuring
+   * which layer happens to bind rather than whether the controller is read at all.
+   */
+  honoursController: boolean
 }
 
 // Bootstrapped empirically (Step 3 of the task-15 brief): every flag was set to
@@ -56,90 +79,127 @@ export const PLATFORM_CAPABILITIES: Record<TopologyType, PlatformCapabilities> =
     // UI exception: HardwarePanel still shows the slider for RAID50/60 (isRaidGroupMode),
     // where serverCount doubles as the RAID-group count and does affect capacity.
     hasServerCount: false,
+    // Explicit `case 'standard'` in getFilesystemOverheadPercent.
+    honoursFsType: true,
+    honoursController: true,
   },
   zfs: {
     supportsCompression: true,
     supportsDedup: true,
     supportsHotSpares: true,
     hasServerCount: false,
+    honoursFsType: false,
+    honoursController: true,
   },
   s2d: {
     supportsCompression: false,
     supportsDedup: false,
     supportsHotSpares: true,
     hasServerCount: true,
+    honoursFsType: false,
+    honoursController: true,
   },
   proprietary: {
     supportsCompression: false,
     supportsDedup: false,
     supportsHotSpares: true,
     hasServerCount: false,
+    honoursFsType: false,
+    honoursController: true,
   },
   vsan_osa: {
     supportsCompression: false,
     supportsDedup: false,
     supportsHotSpares: true,
     hasServerCount: true,
+    honoursFsType: false,
+    honoursController: true,
   },
   vsan_esa: {
     supportsCompression: false,
     supportsDedup: false,
     supportsHotSpares: true,
     hasServerCount: true,
+    honoursFsType: false,
+    // NVMe-direct: `isNvmeDirect` drops the Controller layer from the bottleneck chain and
+    // computes iopsCeiling from PCIe and network alone. The only type where this is false.
+    // Flipping it to true fails the probe with "expected 4032512 to be greater than 4032512".
+    honoursController: false,
   },
   ceph: {
     supportsCompression: false,
     supportsDedup: false,
     supportsHotSpares: true,
     hasServerCount: true,
+    honoursFsType: false,
+    honoursController: true,
   },
   powerflex: {
     supportsCompression: false,
     supportsDedup: false,
     supportsHotSpares: true,
     hasServerCount: true,
+    honoursFsType: false,
+    honoursController: true,
   },
   powerstore: {
     supportsCompression: false,
     supportsDedup: false,
     supportsHotSpares: true,
     hasServerCount: true,
+    honoursFsType: false,
+    honoursController: true,
   },
   powerscale: {
     supportsCompression: false,
     supportsDedup: false,
     supportsHotSpares: true,
     hasServerCount: true,
+    honoursFsType: false,
+    honoursController: true,
   },
   objectscale: {
     supportsCompression: false,
     supportsDedup: false,
     supportsHotSpares: true,
     hasServerCount: true,
+    honoursFsType: false,
+    honoursController: true,
   },
   nutanix: {
     supportsCompression: false,
     supportsDedup: false,
     supportsHotSpares: true,
     hasServerCount: true,
+    honoursFsType: false,
+    honoursController: true,
   },
   powervault: {
     supportsCompression: false,
     supportsDedup: false,
     supportsHotSpares: true,
     hasServerCount: false,
+    honoursFsType: false,
+    honoursController: true,
   },
   longhorn: {
     supportsCompression: false,
     supportsDedup: false,
     supportsHotSpares: true,
     hasServerCount: true,
+    // No `case 'longhorn'` in getFilesystemOverheadPercent — it reaches the `default`
+    // branch, which reads the user's fsType exactly like standard RAID does. Flipping
+    // this to false makes the probe fail with 2.85 TB vs 2.97 TB (ext4 5% vs xfs 1%).
+    honoursFsType: true,
+    honoursController: true,
   },
   beegfs: {
     supportsCompression: false,
     supportsDedup: false,
     supportsHotSpares: true,
     hasServerCount: true,
+    honoursFsType: false,
+    honoursController: true,
   },
 } as const
 
@@ -148,7 +208,7 @@ export function getCapabilities(type: TopologyType): PlatformCapabilities {
 }
 
 export function shouldShowControl(
-  control: 'compression' | 'dedup' | 'hotSpares' | 'serverCount',
+  control: 'compression' | 'dedup' | 'hotSpares' | 'serverCount' | 'fsType' | 'controller',
   type: TopologyType,
 ): boolean {
   const caps = getCapabilities(type)
@@ -158,9 +218,17 @@ export function shouldShowControl(
     case 'dedup':
       return caps.supportsDedup
     case 'hotSpares':
+      // NOTE: no UI calls this. The hot-spare slider is gated on `usesDistributedSpares`
+      // (src/types/topology.ts) instead, and `supportsHotSpares` is true for all fifteen types
+      // so it carries no information today. The two mechanisms cannot simply be merged — see
+      // issue #130 and the note on DISTRIBUTED_SPARE_TOPOLOGIES.
       return caps.supportsHotSpares
     case 'serverCount':
       return caps.hasServerCount
+    case 'fsType':
+      return caps.honoursFsType
+    case 'controller':
+      return caps.honoursController
   }
 }
 

@@ -10,7 +10,6 @@ import {
   DEFAULT_POWERFLEX_OPTIONS,
   DEFAULT_POWERSCALE_OPTIONS,
   DEFAULT_POWERSTORE_OPTIONS,
-  DEFAULT_POWERVAULT_OPTIONS,
   DEFAULT_S2D_OPTIONS,
   DEFAULT_SYNOLOGY_OPTIONS,
   DEFAULT_VSAN_OPTIONS,
@@ -59,7 +58,6 @@ function createLonghornInput(
     netAppOptions: DEFAULT_NETAPP_OPTIONS,
     synologyOptions: DEFAULT_SYNOLOGY_OPTIONS,
     nutanixOptions: DEFAULT_NUTANIX_OPTIONS,
-    powervaultOptions: DEFAULT_POWERVAULT_OPTIONS,
     longhornOptions,
     compressionRatio,
     dedupRatio: 1.0,
@@ -91,7 +89,6 @@ describe('Volumetry Engine - Longhorn (capacity guardrails)', () => {
     minimalAvailablePercent: 25,
     snapshotHeadroom: 1.2,
     growthHeadroom: 1.2,
-    overProvisioningPercent: 100,
   }
 
   it('applies free-space + snapshot reserves to physical usable', () => {
@@ -107,7 +104,6 @@ describe('Volumetry Engine - Longhorn (capacity guardrails)', () => {
     expect((d?.recommendedCommittedData ?? 0) / 1e12).toBeCloseTo(3.09375, 4)
     expect((d?.perNodeUsable ?? 0) / 1e12).toBeCloseTo(1.2375, 4)
     expect(d?.replicaCount).toBe(3)
-    expect(d?.overProvisioningPercent).toBe(100)
   })
 
   it('R2 usable is exactly 1.5× R3 usable (same inputs)', () => {

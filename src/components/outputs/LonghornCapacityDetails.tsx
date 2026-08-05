@@ -23,7 +23,6 @@ export function LonghornCapacityDetails({ details }: LonghornCapacityDetailsProp
     perNodeUsable,
     replicaCount,
     minimalAvailablePercent,
-    overProvisioningPercent,
     diskMode,
   } = details
 
@@ -70,14 +69,6 @@ export function LonghornCapacityDetails({ details }: LonghornCapacityDetailsProp
             </span>
             <span className="text-slate-800 dark:text-slate-200 ml-2">
               {minimalAvailablePercent}%
-            </span>
-          </div>
-          <div>
-            <span className="text-slate-500 dark:text-slate-500">
-              {t('longhorn.overProvisioning')}:
-            </span>
-            <span className="text-slate-800 dark:text-slate-200 ml-2">
-              {overProvisioningPercent}%
             </span>
           </div>
         </div>

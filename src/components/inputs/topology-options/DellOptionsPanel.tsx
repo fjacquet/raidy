@@ -4,9 +4,14 @@
  * Consolidates configuration controls for all Dell storage topologies:
  * - PowerFlex: compression, fine-granularity overhead
  * - PowerStore: RAID levels, snapshots, inline reduction
- * - PowerScale: Node protection (N+x), snapshots, SmartQuotas, SyncIQ
+ * - PowerScale: Node protection (N+x), snapshots
  * - ObjectScale: Erasure coding, geo-replication, network efficiency
- * - PowerVault: ADAPT/RAID variants, controllers, tiering, SSD cache
+ * - PowerVault: level description only — ME5 is modelled with one flat overhead
+ *
+ * PowerVault has no configurable options left: all five it once rendered (model,
+ * controllers, tiering, SSD read cache, thin provisioning) changed no computed
+ * figure, and each said so in its own hint text. The whole `PowerVaultOptions`
+ * object went with them.
  */
 
 import { useTranslation } from 'react-i18next'
@@ -29,12 +34,10 @@ export function DellOptionsPanel({ topology }: DellOptionsPanelProps) {
     powerstoreOptions,
     powerscaleOptions,
     powerFlexOptions,
-    powervaultOptions,
     setObjectScaleOptions,
     setPowerStoreOptions,
     setPowerScaleOptions,
     setPowerFlexOptions,
-    setPowerVaultOptions,
   } = useConfigStore()
 
   // PowerVault ME5 Options
@@ -82,78 +85,6 @@ export function DellOptionsPanel({ topology }: DellOptionsPanelProps) {
             </p>
           )}
         </div>
-
-        <div className="space-y-2">
-          <Label>{t('powervault.model')}</Label>
-          <SegmentedControl
-            value={powervaultOptions.model}
-            options={[
-              { value: 'ME5212', label: 'ME5212' },
-              { value: 'ME5224', label: 'ME5224' },
-              { value: 'ME5284', label: 'ME5284' },
-            ]}
-            onChange={(v) => setPowerVaultOptions({ model: v as 'ME5212' | 'ME5224' | 'ME5284' })}
-          />
-          <p className="text-xs text-slate-500">
-            {powervaultOptions.model === 'ME5212'
-              ? 'ME5212: 2U, 12 drives (3.5" only)'
-              : powervaultOptions.model === 'ME5224'
-                ? 'ME5224: 2U, 24 drives (2.5")'
-                : 'ME5284: 5U, 84 drives (3.5"), max density'}{' '}
-            — for reference only, not used in any calculation.
-          </p>
-        </div>
-
-        <div className="space-y-2">
-          <Label>{t('powervault.controllers')}</Label>
-          <SegmentedControl
-            value={String(powervaultOptions.controllers)}
-            options={[
-              { value: '1', label: 'Single' },
-              { value: '2', label: 'Dual Active' },
-            ]}
-            onChange={(v) => setPowerVaultOptions({ controllers: Number(v) as 1 | 2 })}
-          />
-          <p className="text-xs text-slate-500">
-            {powervaultOptions.controllers === 1
-              ? 'Single: 420K IOPS, 7 GB/s max'
-              : 'Dual Active: 840K IOPS, 14 GB/s max, failover support'}{' '}
-            — for reference only, not used in any calculation.
-          </p>
-        </div>
-
-        <Toggle
-          id="powervault-tiering"
-          label={t('powervault.enableTiering')}
-          checked={powervaultOptions.tiering}
-          onChange={(v) => setPowerVaultOptions({ tiering: v })}
-        />
-        <p className="text-xs text-slate-500">
-          Automatically moves data between tiers (Performance SSD, Standard 10K, Archive NL-SAS) —
-          for reference only, not used in any calculation.
-        </p>
-
-        <Toggle
-          id="powervault-ssd-cache"
-          label={t('powervault.ssdReadCache')}
-          checked={powervaultOptions.ssdReadCache}
-          onChange={(v) => setPowerVaultOptions({ ssdReadCache: v })}
-        />
-        <p className="text-xs text-slate-500">
-          Uses SSDs as read cache for HDD pools (not available with all-flash) — for reference only,
-          not used in any calculation.
-        </p>
-
-        <Toggle
-          id="powervault-thin"
-          label={t('common.thinProvisioning')}
-          checked={powervaultOptions.thinProvisioning}
-          onChange={(v) => setPowerVaultOptions({ thinProvisioning: v })}
-        />
-        <p className="text-xs text-slate-500">
-          4MB page size thin provisioning. No compression/deduplication support. For reference only,
-          not used in any calculation.
-        </p>
 
         {/* Warning about no compression/dedup */}
         <div className="p-3 bg-amber-900/20 border border-amber-700/30 rounded-lg text-xs text-amber-300">
@@ -406,27 +337,6 @@ export function DellOptionsPanel({ topology }: DellOptionsPanelProps) {
             Snapshot reserve: {powerscaleOptions.snapshotReservePercent}%
           </p>
         </div>
-
-        <Toggle
-          id="powerscale-smartquotas"
-          label={t('powerscale.smartQuotas')}
-          checked={powerscaleOptions.smartQuotas}
-          onChange={(v) => setPowerScaleOptions({ smartQuotas: v })}
-        />
-        <p className="text-xs text-slate-500">
-          Quota enforcement policy — for reference only, not used in any capacity calculation.
-        </p>
-
-        <Toggle
-          id="powerscale-synciq"
-          label={t('powerscale.syncIQ')}
-          checked={powerscaleOptions.syncIQ}
-          onChange={(v) => setPowerScaleOptions({ syncIQ: v })}
-        />
-        <p className="text-xs text-slate-500">
-          Async DR replication — this tool sizes a single site, so the replication target's capacity
-          is out of scope. For reference only, not used in any calculation.
-        </p>
       </div>
     )
   }

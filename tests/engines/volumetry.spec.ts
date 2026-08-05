@@ -20,7 +20,6 @@ import {
   DEFAULT_POWERFLEX_OPTIONS,
   DEFAULT_POWERSCALE_OPTIONS,
   DEFAULT_POWERSTORE_OPTIONS,
-  DEFAULT_POWERVAULT_OPTIONS,
   DEFAULT_S2D_OPTIONS,
   DEFAULT_SYNOLOGY_OPTIONS,
   DEFAULT_VSAN_OPTIONS,
@@ -98,7 +97,6 @@ function createInput(
     netAppOptions: DEFAULT_NETAPP_OPTIONS,
     synologyOptions: DEFAULT_SYNOLOGY_OPTIONS,
     nutanixOptions: DEFAULT_NUTANIX_OPTIONS,
-    powervaultOptions: DEFAULT_POWERVAULT_OPTIONS,
     compressionRatio: 1.0,
     dedupRatio: 1.0,
     // 'ntfs' yields 2% filesystem overhead (FILESYSTEM_OVERHEAD.ntfs = 0.02),
@@ -2733,7 +2731,6 @@ describe('Volumetry Engine - Error Handling', () => {
         netAppOptions: DEFAULT_NETAPP_OPTIONS,
         synologyOptions: DEFAULT_SYNOLOGY_OPTIONS,
         nutanixOptions: DEFAULT_NUTANIX_OPTIONS,
-        powervaultOptions: DEFAULT_POWERVAULT_OPTIONS,
         s2dOptions: {
           faultDomains: 4,
           mirrorCopies: 2,
@@ -2742,7 +2739,6 @@ describe('Volumetry Engine - Error Handling', () => {
           storageTiers: true,
           tieringConfig: {
             enabled: true,
-            cacheMode: 'write-back',
             workingSetPercent: 20,
             fastTier: {
               driveId: 'ent-nvme-pcie4-960gb-m2-ri', // Enterprise NVMe M.2 Read-Intensive (960GB)
@@ -2790,7 +2786,6 @@ describe('Volumetry Engine - Error Handling', () => {
         netAppOptions: DEFAULT_NETAPP_OPTIONS,
         synologyOptions: DEFAULT_SYNOLOGY_OPTIONS,
         nutanixOptions: DEFAULT_NUTANIX_OPTIONS,
-        powervaultOptions: DEFAULT_POWERVAULT_OPTIONS,
         s2dOptions: {
           faultDomains: 4,
           mirrorCopies: 2,
@@ -2799,7 +2794,6 @@ describe('Volumetry Engine - Error Handling', () => {
           storageTiers: true,
           tieringConfig: {
             enabled: true,
-            cacheMode: 'write-back',
             workingSetPercent: 20,
             fastTier: {
               driveId: 'invalid-drive-id', // Invalid drive
@@ -2843,7 +2837,6 @@ describe('Volumetry Engine - Error Handling', () => {
         netAppOptions: DEFAULT_NETAPP_OPTIONS,
         synologyOptions: DEFAULT_SYNOLOGY_OPTIONS,
         nutanixOptions: DEFAULT_NUTANIX_OPTIONS,
-        powervaultOptions: DEFAULT_POWERVAULT_OPTIONS,
         s2dOptions: {
           faultDomains: 6,
           mirrorCopies: 2,
@@ -2852,7 +2845,6 @@ describe('Volumetry Engine - Error Handling', () => {
           storageTiers: true,
           tieringConfig: {
             enabled: true,
-            cacheMode: 'write-back',
             workingSetPercent: 20,
             fastTier: {
               driveId: 'ent-ssd-sata-3840gb-mu', // Enterprise SSD SATA Mixed-Use (3.84TB)
@@ -2900,7 +2892,6 @@ describe('Volumetry Engine - Error Handling', () => {
         powerFlexOptions: DEFAULT_POWERFLEX_OPTIONS,
         netAppOptions: DEFAULT_NETAPP_OPTIONS,
         synologyOptions: DEFAULT_SYNOLOGY_OPTIONS,
-        powervaultOptions: DEFAULT_POWERVAULT_OPTIONS,
         nutanixOptions: {
           ...DEFAULT_NUTANIX_OPTIONS,
           clusterType: 'hybrid',
@@ -2911,7 +2902,6 @@ describe('Volumetry Engine - Error Handling', () => {
           systemOverhead: 0.1,
           tiering: {
             enabled: true,
-            cacheMode: 'write-back',
             workingSetPercent: 20,
             fastTier: {
               driveId: 'ent-ssd-sata-1920gb-mu', // Enterprise SSD SATA Mixed-Use (1.92TB)
@@ -2958,7 +2948,6 @@ describe('Volumetry Engine - Error Handling', () => {
         powerFlexOptions: DEFAULT_POWERFLEX_OPTIONS,
         netAppOptions: DEFAULT_NETAPP_OPTIONS,
         synologyOptions: DEFAULT_SYNOLOGY_OPTIONS,
-        powervaultOptions: DEFAULT_POWERVAULT_OPTIONS,
         nutanixOptions: {
           ...DEFAULT_NUTANIX_OPTIONS,
           clusterType: 'all-flash', // No tiering
@@ -3001,7 +2990,6 @@ describe('Volumetry Engine - Error Handling', () => {
         powerFlexOptions: DEFAULT_POWERFLEX_OPTIONS,
         netAppOptions: DEFAULT_NETAPP_OPTIONS,
         synologyOptions: DEFAULT_SYNOLOGY_OPTIONS,
-        powervaultOptions: DEFAULT_POWERVAULT_OPTIONS,
         nutanixOptions: {
           ...DEFAULT_NUTANIX_OPTIONS,
           clusterType: 'hybrid',
@@ -3012,7 +3000,6 @@ describe('Volumetry Engine - Error Handling', () => {
           systemOverhead: 0.1,
           tiering: {
             enabled: true,
-            cacheMode: 'write-back',
             workingSetPercent: 20,
             fastTier: {
               driveId: 'ent-ssd-sata-3840gb-mu', // Enterprise SSD SATA Mixed-Use (3.84TB)
@@ -3058,7 +3045,6 @@ describe('Volumetry Engine - Error Handling', () => {
         netAppOptions: DEFAULT_NETAPP_OPTIONS,
         synologyOptions: DEFAULT_SYNOLOGY_OPTIONS,
         nutanixOptions: DEFAULT_NUTANIX_OPTIONS,
-        powervaultOptions: DEFAULT_POWERVAULT_OPTIONS,
         longhornOptions: DEFAULT_LONGHORN_OPTIONS,
         beeGfsOptions: DEFAULT_BEEGFS_OPTIONS,
         cephOptions: {
@@ -3071,7 +3057,6 @@ describe('Volumetry Engine - Error Handling', () => {
           walDbOffload: true, // Enable WAL/DB offload
           tiering: {
             enabled: true,
-            cacheMode: 'write-back',
             workingSetPercent: 20,
             fastTier: {
               driveId: 'ent-nvme-pcie4-960gb-m2-ri', // NVMe for WAL/DB (960GB)
@@ -3116,7 +3101,6 @@ describe('Volumetry Engine - Error Handling', () => {
         netAppOptions: DEFAULT_NETAPP_OPTIONS,
         synologyOptions: DEFAULT_SYNOLOGY_OPTIONS,
         nutanixOptions: DEFAULT_NUTANIX_OPTIONS,
-        powervaultOptions: DEFAULT_POWERVAULT_OPTIONS,
         longhornOptions: DEFAULT_LONGHORN_OPTIONS,
         beeGfsOptions: DEFAULT_BEEGFS_OPTIONS,
         cephOptions: {
@@ -3161,7 +3145,6 @@ describe('Volumetry Engine - Error Handling', () => {
         netAppOptions: DEFAULT_NETAPP_OPTIONS,
         synologyOptions: DEFAULT_SYNOLOGY_OPTIONS,
         nutanixOptions: DEFAULT_NUTANIX_OPTIONS,
-        powervaultOptions: DEFAULT_POWERVAULT_OPTIONS,
         longhornOptions: DEFAULT_LONGHORN_OPTIONS,
         beeGfsOptions: DEFAULT_BEEGFS_OPTIONS,
         cephOptions: {
@@ -3174,7 +3157,6 @@ describe('Volumetry Engine - Error Handling', () => {
           walDbOffload: true,
           tiering: {
             enabled: true,
-            cacheMode: 'write-back',
             workingSetPercent: 20,
             fastTier: {
               driveId: 'ent-nvme-pcie4-960gb-m2-ri', // Enterprise NVMe M.2 WAL/DB (960GB)
@@ -3227,7 +3209,6 @@ describe('Volumetry Engine - Error Handling', () => {
         netAppOptions: DEFAULT_NETAPP_OPTIONS,
         synologyOptions: DEFAULT_SYNOLOGY_OPTIONS,
         nutanixOptions: DEFAULT_NUTANIX_OPTIONS,
-        powervaultOptions: DEFAULT_POWERVAULT_OPTIONS,
         zfsOptions: {
           ...DEFAULT_ZFS_OPTIONS,
           ashift: 12, // 4096-byte alignment on 512-byte drives (3 levels above physical)
@@ -3281,7 +3262,6 @@ describe('Volumetry Engine - Error Handling', () => {
         netAppOptions: DEFAULT_NETAPP_OPTIONS,
         synologyOptions: DEFAULT_SYNOLOGY_OPTIONS,
         nutanixOptions: DEFAULT_NUTANIX_OPTIONS,
-        powervaultOptions: DEFAULT_POWERVAULT_OPTIONS,
         zfsOptions: {
           ...DEFAULT_ZFS_OPTIONS,
           ashift: 9, // Matches 512-byte physical sector (2^9 = 512)
@@ -3332,7 +3312,6 @@ describe('Volumetry Engine - Error Handling', () => {
         netAppOptions: DEFAULT_NETAPP_OPTIONS,
         synologyOptions: DEFAULT_SYNOLOGY_OPTIONS,
         nutanixOptions: DEFAULT_NUTANIX_OPTIONS,
-        powervaultOptions: DEFAULT_POWERVAULT_OPTIONS,
         zfsOptions: {
           ...DEFAULT_ZFS_OPTIONS,
           ashift: 13, // 8192-byte alignment on 512-byte drives (4 levels above physical)
@@ -3383,7 +3362,6 @@ describe('Volumetry Engine - Error Handling', () => {
         netAppOptions: DEFAULT_NETAPP_OPTIONS,
         synologyOptions: DEFAULT_SYNOLOGY_OPTIONS,
         nutanixOptions: DEFAULT_NUTANIX_OPTIONS,
-        powervaultOptions: DEFAULT_POWERVAULT_OPTIONS,
         zfsOptions: {
           ...DEFAULT_ZFS_OPTIONS,
           ashift: 12, // Matches 4096-byte physical sector (2^12 = 4096)
@@ -4302,7 +4280,6 @@ describe('Volumetry Engine - Error Handling', () => {
         netAppOptions: DEFAULT_NETAPP_OPTIONS,
         synologyOptions: DEFAULT_SYNOLOGY_OPTIONS,
         nutanixOptions: DEFAULT_NUTANIX_OPTIONS,
-        powervaultOptions: DEFAULT_POWERVAULT_OPTIONS,
         compressionRatio: 1.0,
         dedupRatio: 1.0,
         fsType: 'xfs',
@@ -4341,7 +4318,6 @@ describe('Volumetry Engine - Error Handling', () => {
         netAppOptions: DEFAULT_NETAPP_OPTIONS,
         synologyOptions: DEFAULT_SYNOLOGY_OPTIONS,
         nutanixOptions: DEFAULT_NUTANIX_OPTIONS,
-        powervaultOptions: DEFAULT_POWERVAULT_OPTIONS,
         compressionRatio: 1.0,
         dedupRatio: 1.0,
         fsType: 'xfs',
@@ -4378,7 +4354,6 @@ describe('Volumetry Engine - Error Handling', () => {
         netAppOptions: DEFAULT_NETAPP_OPTIONS,
         synologyOptions: DEFAULT_SYNOLOGY_OPTIONS,
         nutanixOptions: DEFAULT_NUTANIX_OPTIONS,
-        powervaultOptions: DEFAULT_POWERVAULT_OPTIONS,
         compressionRatio: 1.0,
         dedupRatio: 1.0,
         fsType: 'xfs',
@@ -4407,7 +4382,6 @@ describe('Volumetry Engine - Error Handling', () => {
         netAppOptions: DEFAULT_NETAPP_OPTIONS,
         synologyOptions: DEFAULT_SYNOLOGY_OPTIONS,
         nutanixOptions: DEFAULT_NUTANIX_OPTIONS,
-        powervaultOptions: DEFAULT_POWERVAULT_OPTIONS,
         compressionRatio: 1.0,
         dedupRatio: 1.0,
         fsType: 'xfs',

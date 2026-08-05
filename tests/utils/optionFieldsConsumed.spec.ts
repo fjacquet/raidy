@@ -21,14 +21,19 @@
  *      `nutanixOptions.replicationFactor`/`erasureCoding`/`ecStripe` — duplicates of what the
  *      `nutanix_*` topology level already encodes — `powerFlexOptions.ecScheme`/`storagePools`/
  *      `faultSets`, `objectscaleOptions.objectSizeKB`).
- *   3. Kept informational by decision — the #78 BeeGFS precedent (`chunkSizeKb`/`numTargets`/
- *      `network`) — when the field is a genuine platform tunable a user expects to configure or
- *      record, but this tool has no citable formula for its capacity/performance effect. Every
- *      such field's hint text in its options panel says so ("For reference only... not used in
- *      any calculation"), matching `BeeGfsOptionsPanel.tsx`'s wording.
+ *   3. Kept informational by decision, with hint text on the control saying so.
+ *
+ * **Category 3 no longer exists.** The 2026-08-05 input-panel relevance sweep deleted all 22 of
+ * those fields, controls and locale keys together, on the finding that a control followed by a
+ * sentence explaining it does nothing is worse than no control. The ALLOWLIST is down from
+ * twenty entries to two, and both of those are genuinely indirect rather than informational:
+ * the controller read/write policies, and `powerstoreOptions.model`, whose UI preset writes the
+ * engine-read `systemOverheadPercent`.
  *
  * This test enforces the invariant going forward: a field that isn't in ALLOWLIST must have a
- * real reader, so a future field can't silently join the unconsumed pile between audits.
+ * real reader, so a future field can't silently join the unconsumed pile between audits. Read
+ * the KNOWN LIMITS on `isFieldConsumed` before trusting a pass — three of the 22 deleted fields
+ * passed this test right up until they were deleted by hand.
  */
 
 import { readdirSync, readFileSync, statSync } from 'node:fs'
@@ -45,7 +50,6 @@ import {
   DEFAULT_POWERFLEX_OPTIONS,
   DEFAULT_POWERSCALE_OPTIONS,
   DEFAULT_POWERSTORE_OPTIONS,
-  DEFAULT_POWERVAULT_OPTIONS,
   DEFAULT_S2D_OPTIONS,
   DEFAULT_SYNOLOGY_OPTIONS,
   DEFAULT_VSAN_OPTIONS,
@@ -54,58 +58,40 @@ import {
 
 /** Every field here has a doc comment on its type explaining the same reason inline. */
 const ALLOWLIST: Record<string, string[]> = {
-  DEFAULT_ZFS_OPTIONS: [
-    'specialVdev', // informational by decision — real ZFS tunable, no citable capacity formula
-  ],
   DEFAULT_CONTROLLER_OPTIONS: [
     'readPolicy', // informational by decision — see RaidControllerOptions.writePolicy doc comment
     'writePolicy', // informational by decision — sustained-IOPS reasoning documented on the field
   ],
-  DEFAULT_VSAN_OPTIONS: [
-    'encryption', // informational by decision — vSAN DARE has no published capacity tax
-  ],
   DEFAULT_POWERSTORE_OPTIONS: [
     'model', // wired indirectly: UI preset writes systemOverheadPercent, which IS engine-read
   ],
-  DEFAULT_POWERSCALE_OPTIONS: [
-    'smartQuotas', // informational by decision — access control, not a capacity multiplier
-    'syncIQ', // informational by decision — DR-target capacity is out of scope (single-site tool)
-  ],
-  DEFAULT_CEPH_OPTIONS: [
-    'backend', // informational by decision — no per-backend overhead split to apply
-    'encryption', // informational by decision — dm-crypt has no published capacity tax
-    'journalOnSsd', // informational by decision — legacy FileStore concept, superseded by walDbOffload
-  ],
-  DEFAULT_LONGHORN_OPTIONS: [
-    'overProvisioningPercent', // informational by decision — echoed to results, not used in any formula
-  ],
-  DEFAULT_POWERVAULT_OPTIONS: [
-    'model', // informational by decision — ME5 is modelled with one flat overhead regardless
-    'controllers', // informational by decision — same flat-overhead reasoning
-    'tiering', // informational by decision — same flat-overhead reasoning
-    'ssdReadCache', // informational by decision — same flat-overhead reasoning
-    'thinProvisioning', // informational by decision — same flat-overhead reasoning
-  ],
-  DEFAULT_SYNOLOGY_OPTIONS: [
-    'modelSeries', // informational by decision — same filesystem/parity math applies to every series
-    'ssdCache', // informational by decision — additive hardware, not a capacity reduction
-    'cacheMode', // informational by decision — see ssdCache
-  ],
-  DEFAULT_NETAPP_OPTIONS: [
-    'platform', // informational by decision — WAFL/DRR math applies uniformly across platforms
-    'adpVersion', // informational by decision — recovered fraction depends on layout, not modelled
-    'zeroDetection', // informational by decision — folded into the user-entered dataReductionRatio
-  ],
-  DEFAULT_BEEGFS_OPTIONS: [
-    // The original #78 precedent this whole allowlist mirrors: real BeeGFS tunables with real
-    // per-target/per-file effects on hardware, but this engine reports cluster aggregates only
-    // and has no per-file layer for them to act on. See BeeGfsOptionsPanel.tsx's hint text
-    // (chunkSizeHint/numTargetsHint/networkHint) and the doc comments on BeeGfsOptions itself.
-    'chunkSizeKb',
-    'numTargets',
-    'network',
-  ],
 }
+
+/**
+ * Fields that change VISIBLE OUTPUT but no COMPUTED NUMBER.
+ *
+ * These pass the sweep only because `EXTRA_CONSUMER_FILES` treats any read in validators /
+ * exportConfig / TakeawayAct as real. That is a loophole wide enough to admit a genuinely dead
+ * field that happens to be logged somewhere, so the category is named here rather than left to
+ * pass by accident. They are deliberately kept: unlike the fields deleted in the 2026-08-05
+ * relevance sweep, moving these changes something the user can see.
+ *
+ * Each entry is asserted below to have NO reader in src/engines or src/workers — if one gains
+ * a real calculation, it graduates out of this list and the assertion says so.
+ */
+const UI_ONLY_CONSUMERS: Record<string, string> = {
+  compressionType: 'generates the `zfs set compression=` line in the export and Takeaway card',
+  raidType: 'drives a NETAPP_RAID_TEC_RECOMMENDED validation warning, not a capacity figure',
+}
+
+/**
+ * `longhornOptions.diskMode` belongs to this category by behaviour — the engine reads it only
+ * to copy it into `longhornDetails` for a results-card label, and its panel handler writes the
+ * two fields that actually move capacity. It is NOT listed above because this test cannot
+ * honestly assert it: a text sweep cannot tell an echo from a calculation, and `diskMode` does
+ * appear in src/engines/volumetry/index.ts. Claiming it here would assert something the test
+ * does not check. Recorded in prose instead of as a false green.
+ */
 
 /** Files, outside src/engines and src/workers, known to be real (non-UI-setter) consumers. */
 const EXTRA_CONSUMER_FILES = [
@@ -143,18 +129,46 @@ function buildConsumerCorpus(): string {
     ),
     ...EXTRA_CONSUMER_FILES.map((f) => join(REPO_ROOT, f)),
   ]
-  return files.map((f) => readFileSync(f, 'utf-8')).join('\n')
+  return files.map((f) => stripComments(readFileSync(f, 'utf-8'))).join('\n')
+}
+
+/**
+ * Remove block and line comments before matching.
+ *
+ * Without this the sweep counts a comment as a use, which is not a hypothetical: BeeGFS's
+ * `numTargets` passed for months on the strength of a doc comment in
+ * performance/strategies/beegfs.ts stating that it is "deliberately NOT consulted". A comment
+ * explaining that a field is unused was enough to convince the test the field was used.
+ *
+ * Deliberately naive — no string/regex-literal awareness. A field name inside a string literal
+ * still counts, which is the conservative direction: it can only make the test more permissive,
+ * never fail a field that is genuinely read.
+ */
+function stripComments(source: string): string {
+  return source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '')
 }
 
 const CONSUMER_CORPUS = buildConsumerCorpus()
 
+/**
+ * Literal-text sweep: does `.fieldName` appear anywhere in the (comment-stripped) consumer
+ * corpus?
+ *
+ * KNOWN LIMITS — this test is a net, not a proof, and two audits have now caught it passing
+ * fields that nothing consumed:
+ *
+ *  1. **Name collision.** The match is on the bare field name, so `powervaultOptions.model` and
+ *     `.tiering` passed on `drive.model` in validators.ts and `cephOptions.tiering` in
+ *     shared/tiering.ts. Owner-qualified matching would fix this but produces false negatives
+ *     wherever an engine destructures its options object first, which is common here.
+ *  2. **Echo-only reads.** A field copied into a results object counts as consumed even though
+ *     it feeds no calculation — `longhornOptions.overProvisioningPercent` passed that way.
+ *
+ * A field this test passes is therefore *not* proven live; a field it fails IS proven dead.
+ * Treat a pass as "no evidence of death", and confirm by hand before concluding a field earns
+ * its place.
+ */
 function isFieldConsumed(field: string): boolean {
-  // Literal-text sweep: does `.fieldName` appear anywhere in the consumer corpus? Matches the
-  // approach #104's guard test documented and rejected shipping broadly at the time — it is
-  // coarse (a field could coincidentally share a name with an unrelated property), but for this
-  // codebase's field-naming conventions it is accurate enough to gate on, and any false negative
-  // fails loudly (a real field forced into ALLOWLIST with a dishonest reason) rather than
-  // silently passing.
   const pattern = new RegExp(`\\.${field}\\b`)
   return pattern.test(CONSUMER_CORPUS)
 }
@@ -182,7 +196,6 @@ const OPTION_SETS: Array<{ name: string; options: Record<string, unknown> }> = [
   opt('DEFAULT_BEEGFS_OPTIONS', DEFAULT_BEEGFS_OPTIONS),
   opt('DEFAULT_POWERFLEX_OPTIONS', DEFAULT_POWERFLEX_OPTIONS),
   opt('DEFAULT_NUTANIX_OPTIONS', DEFAULT_NUTANIX_OPTIONS),
-  opt('DEFAULT_POWERVAULT_OPTIONS', DEFAULT_POWERVAULT_OPTIONS),
   opt('DEFAULT_SYNOLOGY_OPTIONS', DEFAULT_SYNOLOGY_OPTIONS),
   opt('DEFAULT_NETAPP_OPTIONS', DEFAULT_NETAPP_OPTIONS),
 ]
@@ -218,4 +231,33 @@ describe('every option field is either consumed or explicitly allowlisted (#110)
       expect(knownNames.has(name), `ALLOWLIST references unknown options set '${name}'`).toBe(true)
     }
   })
+})
+
+/**
+ * The UI-only category, asserted rather than left to pass by accident.
+ *
+ * Each field here must be readable ONLY from the extra consumer files — never from an engine
+ * or worker. That is what makes it "changes visible output, changes no number". If one is
+ * wired into a calculation later, this fails and the field graduates out of the list.
+ */
+describe('UI-only consumers change visible output but no computed number', () => {
+  const engineCorpus = [
+    ...collectTsFiles(join(REPO_ROOT, 'src/engines')),
+    ...collectTsFiles(join(REPO_ROOT, 'src/workers')).filter(
+      (f) => !f.endsWith('resilienceWorker.ts'),
+    ),
+  ]
+    .map((f) => stripComments(readFileSync(f, 'utf-8')))
+    .join('\n')
+
+  for (const [field, reason] of Object.entries(UI_ONLY_CONSUMERS)) {
+    it(`${field} — ${reason}`, () => {
+      expect(
+        new RegExp(`\\.${field}\\b`).test(engineCorpus),
+        `${field} is now read by an engine or worker. If it feeds a real calculation it is no ` +
+          `longer UI-only: remove it from UI_ONLY_CONSUMERS. If the read is incidental, rename ` +
+          `to avoid the collision.`,
+      ).toBe(false)
+    })
+  }
 })

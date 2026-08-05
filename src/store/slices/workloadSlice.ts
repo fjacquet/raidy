@@ -9,7 +9,6 @@ export interface WorkloadSlice extends WorkloadState {
   setReadPercent: (percent: number) => void
   setBlockSize: (size: BlockSize) => void
   setRandomPercent: (percent: number) => void
-  setDatasetSize: (bytes: number) => void
   setDailyWriteVolume: (bytes: number) => void
 }
 
@@ -21,7 +20,6 @@ export const createWorkloadSlice: StateCreator<WorkloadSlice> = (set) => ({
   readPercent: 70,
   blockSize: '64K',
   randomPercent: 50,
-  datasetSize: 100 * TB,
   dailyWriteVolume: 1 * TB,
 
   // Actions
@@ -29,7 +27,6 @@ export const createWorkloadSlice: StateCreator<WorkloadSlice> = (set) => ({
   setBlockSize: (blockSize) => set({ blockSize }),
   setRandomPercent: (randomPercent) =>
     set({ randomPercent: Math.min(100, Math.max(0, randomPercent)) }),
-  setDatasetSize: (datasetSize) => set({ datasetSize: Math.max(0, datasetSize) }),
   setDailyWriteVolume: (dailyWriteVolume) =>
     set({ dailyWriteVolume: Math.max(0, dailyWriteVolume) }),
 })

@@ -182,14 +182,22 @@ Calculates storage capacity and efficiency.
 
 > **Platform capability map** (`src/engines/capabilities.ts`) is the single source of truth for
 > which inputs actually move the volumetry output for a given topology type. It exposes
-> `getCapabilities(type)` and `shouldShowControl(control, type)` for the four
+> `getCapabilities(type)` and `shouldShowControl(control, type)` for the six
 > global/cross-cutting controls whose usefulness varies by platform: `compression`, `dedup`,
-> `hotSpares`, `serverCount`. The map is probe-enforced — `tests/engines/capabilities.spec.ts`
-> drives `calculateVolumetry` with each flag toggled and asserts the flag matches actual engine
-> behavior (e.g. the global `compressionRatio`/`dedupRatio` inputs only move
-> `effectiveCapacity` for ZFS; every other platform either has no data-reduction step or reduces
-> through its own platform-specific options panel instead), so the map cannot silently drift
-> from the engines it describes. The UI consumes it directly: `AdvancedPanel.tsx` hides the
+> `hotSpares`, `serverCount`, `fsType`, `controller`. The map is probe-enforced —
+> `tests/engines/capabilities.spec.ts` drives `calculateVolumetry` with each flag toggled and
+> asserts the flag matches actual engine behavior (e.g. the global
+> `compressionRatio`/`dedupRatio` inputs only move `effectiveCapacity` for ZFS; every other
+> platform either has no data-reduction step or reduces through its own platform-specific
+> options panel instead), so the map cannot silently drift from the engines it describes.
+>
+> `honoursFsType` is true for `standard` **and `longhorn`** — the filesystem-overhead switch has
+> no case for Longhorn, so it falls through to the `default` branch that reads the user's choice.
+> `honoursController` is false only for `vsan_esa`, which is NVMe-direct and has no Controller
+> layer in its bottleneck chain; its probe
+> (`tests/engines/performance/controllerRelevance.spec.ts`) runs at a deliberately high drive
+> count, because at realistic counts the media layer binds first and the probe would misreport
+> eight platforms as controller-insensitive. The UI consumes it directly: `AdvancedPanel.tsx` hides the
 > global compression/dedup sliders unless `shouldShowControl('compression'|'dedup', topology.type)`
 > is true, and `HardwarePanel.tsx` hides the servers/nodes slider unless
 > `shouldShowControl('serverCount', topology.type)` is true (with an additional carve-out for
@@ -672,8 +680,16 @@ minus hot spares (#80): `usesDistributedSpares(topology.type) ? 0 : hotSpares * 
 clamped at zero — the identical rule volumetry (`useVolumetryCalc.ts:80`) and performance
 (`usePerformanceCalc.ts:77`) apply, so a spare is never counted as a data-bearing drive in any of
 the three engines. The four tiered platforms (S2D, vSAN OSA, Ceph, Nutanix) apply the same
-subtraction to the capacity tier inside `tieredPlatformScope`; vSAN's distributed spares zero it
-out via `usesDistributedSpares`. BeeGFS applies hot spares inside its own resolver,
+subtraction to the capacity tier inside `tieredPlatformScope` — though as of the 2026-08-05
+relevance sweep all four are in `DISTRIBUTED_SPARE_TOPOLOGIES`, so the subtraction resolves to
+zero for every one of them, and BeeGFS is the platform that now exercises that tiered path with
+a non-zero spare count. Ten platforms rebuild from distributed reserve capacity and zero the
+subtraction via `usesDistributedSpares`; the five that keep dedicated spares are standard RAID,
+ZFS, PowerVault, Synology/NetApp (`proprietary`) and BeeGFS. Note that
+`PLATFORM_CAPABILITIES.supportsHotSpares` stays `true` for all fifteen: the engines really do
+subtract, and the zeroing happens in the hooks before the engine is called, which is why the
+capability probe (driving `calculateVolumetry` directly) would fail if the flag were flipped.
+BeeGFS applies hot spares inside its own resolver,
 `resolveBeeGfsSimulationScope`, so it is excluded from this generic subtraction to avoid
 double-counting. The worker itself does not credit a spare with shortening the rebuild window —
 that residual gap is tracked in `docs/BACKLOG.md`.
