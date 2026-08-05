@@ -15,29 +15,28 @@ which touched enough shared code to expose pre-existing gaps.
 ## Correctness — real defects, non-blocking
 
 
-### [B10](https://github.com/fjacquet/raidy/issues/68). Odd `serverCount` creates a visible survival discontinuity under buddy mirroring
+### [B21](https://github.com/fjacquet/raidy/issues/88). The fast tier is not modelled as a shared failure domain
 
-Buddy credit is withheld when the storage-target count is odd, because an unpaired target has no
-buddy. Correct and deliberately conservative, but a 5-target cluster reports worse survival than
-a 4-target one, which reads as a bug to a user. Needs either heterogeneous per-group state or a
-UI note explaining the cliff.
+The only entry in this file that errs in the **unsafe** direction, so it is called out rather than
+filed with the conservative ones above.
 
-### [B20](https://github.com/fjacquet/raidy/issues/93). Hot spares get no rebuild-window credit in the resilience simulation
+#82 made the Monte Carlo simulation size its population from the *capacity* tier for tiered S2D,
+vSAN OSA, Ceph and Nutanix. It corrected WHICH drives are simulated without modelling WHY a
+fast-tier failure could cascade — and for two of those platforms it does:
 
-Fixing #80 excluded hot spares from the simulated data-bearing population (naive path and
-`tieredPlatformScope`, both clamped at zero; BeeGFS already handled this in its own resolver). The
-population-count side is correct now, but `src/workers/resilienceWorker.ts` still has no concept
-of a standby drive shortening the rebuild exposure window: in the real system a hot spare lets a
-rebuild start immediately on first failure rather than waiting for a replacement to be sourced and
-installed, which shortens the window during which a second failure is catastrophic. A spared and a
-spare-free configuration currently see the same rebuild-time distribution.
+- **vSAN OSA** — "vSAN interprets the failure of a single flash caching device as a failure of the
+  entire disk group", and both cache and capacity devices in that group are marked degraded
+  ([Broadcom techdocs](https://techdocs.broadcom.com/us/en/vmware-cis/vsan/vsan/8-0/vsan-monitoring/handling-failures-and-troubleshooting-virtual-san/handling-failures-in-virtual-san/failure-handling-in-virtual-san/a-flash-caching-device-is-not-accessible.html)).
+  A disk group is one cache device plus one to seven capacity devices.
+- **Ceph** — "a corrupt block.db file will impact all OSDs which are included in that block.db
+  file" ([Red Hat Ceph Storage Operations Guide](https://docs.redhat.com/en/documentation/red_hat_ceph_storage/3/html/operations_guide/handling-a-disk-failure)).
 
-Safe direction (not crediting a spare is conservative, same as every other item in this section),
-so not urgent.
+The simulation reports survival as though the fast tier could not fail at all, which **overstates**
+resilience for those two. S2D and Nutanix are not in this list: their fast tiers are write-back
+cache whose loss is not documented as taking the capacity tier with it — that needs its own
+sourcing before either is included.
 
-*To close:* have the worker start the rebuild timer at zero elapsed time (rather than adding a
-sourcing/replacement delay) when `hotSpares > 0` for the platform in question, with before/after
-vectors showing survival-rate movement for a spared vs. spare-free configuration.
+Design and options: `docs/superpowers/specs/2026-08-05-fast-tier-failure-domain-design.md`.
 
 ---
 
