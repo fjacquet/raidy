@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **The Advanced panel's Filesystem selector is now shown only where the engine reads it.**
+  `getFilesystemOverheadPercent` returns a platform constant for thirteen of the fifteen
+  topology types; only standard RAID and Longhorn consult the user's choice — Longhorn via the
+  switch's `default` branch, since it has no case of its own. On every other platform the
+  control could be moved with no effect. Pinned by a new per-topology probe case, verified
+  falsifiable: flipping the Longhorn flag makes it fail with 2.85 TB vs 2.97 TB (ext4 5% vs
+  XFS 1%). **No calculated figure changes** — only the control's visibility.
+
 ### Removed
 - **Ten more inert controls, across NetApp, Synology, Longhorn and BeeGFS.** NetApp's Platform,
   ADP version and Zero Detection; Synology's Model Series, SSD Cache and Cache Mode; Longhorn's

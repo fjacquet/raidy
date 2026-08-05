@@ -109,6 +109,13 @@ export function AdvancedPanel() {
   const showCompression = shouldShowControl('compression', topology.type)
   const showDedup = shouldShowControl('dedup', topology.type)
 
+  // getFilesystemOverheadPercent returns a platform constant for thirteen of the fifteen
+  // types; only `standard` and `longhorn` read the user's choice. Longhorn gets there via
+  // the switch's `default` branch rather than a case of its own, which is exactly the kind
+  // of thing a reader misses — the probe in tests/engines/capabilities.spec.ts is what
+  // holds this flag to the engine.
+  const showFsType = shouldShowControl('fsType', topology.type)
+
   return (
     <div className="space-y-6">
       {/* Data Efficiency Section - only shown when the global sliders actually affect capacity */}
@@ -315,17 +322,19 @@ export function AdvancedPanel() {
           {t('filesystem.title')}
         </h4>
 
-        <div className="space-y-2">
-          <Label htmlFor="fs-type" tooltip={th('advanced.fsType')}>
-            {t('filesystem.type')}
-          </Label>
-          <Select
-            id="fs-type"
-            value={fsType}
-            options={FS_TYPE_OPTIONS}
-            onChange={(v) => setFsType(v as FsType)}
-          />
-        </div>
+        {showFsType && (
+          <div className="space-y-2">
+            <Label htmlFor="fs-type" tooltip={th('advanced.fsType')}>
+              {t('filesystem.type')}
+            </Label>
+            <Select
+              id="fs-type"
+              value={fsType}
+              options={FS_TYPE_OPTIONS}
+              onChange={(v) => setFsType(v as FsType)}
+            />
+          </div>
+        )}
 
         <div className="space-y-2">
           <Label htmlFor="backup-retention" tooltip={th('advanced.backupRetention')}>

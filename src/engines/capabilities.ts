@@ -11,6 +11,16 @@ export interface PlatformCapabilities {
   supportsDedup: boolean
   supportsHotSpares: boolean
   hasServerCount: boolean
+  /**
+   * True when `getFilesystemOverheadPercent` consults the user's `fsType` instead of
+   * returning a platform constant.
+   *
+   * Exactly two types do: `standard`, via an explicit `case`, and `longhorn`, which has
+   * NO case and therefore falls through to the `default` branch. The Longhorn half is
+   * easy to miss by reading — the probe in tests/engines/capabilities.spec.ts is what
+   * establishes it, and what will catch this flag drifting from the switch.
+   */
+  honoursFsType: boolean
 }
 
 // Bootstrapped empirically (Step 3 of the task-15 brief): every flag was set to
@@ -56,90 +66,109 @@ export const PLATFORM_CAPABILITIES: Record<TopologyType, PlatformCapabilities> =
     // UI exception: HardwarePanel still shows the slider for RAID50/60 (isRaidGroupMode),
     // where serverCount doubles as the RAID-group count and does affect capacity.
     hasServerCount: false,
+    // Explicit `case 'standard'` in getFilesystemOverheadPercent.
+    honoursFsType: true,
   },
   zfs: {
     supportsCompression: true,
     supportsDedup: true,
     supportsHotSpares: true,
     hasServerCount: false,
+    honoursFsType: false,
   },
   s2d: {
     supportsCompression: false,
     supportsDedup: false,
     supportsHotSpares: true,
     hasServerCount: true,
+    honoursFsType: false,
   },
   proprietary: {
     supportsCompression: false,
     supportsDedup: false,
     supportsHotSpares: true,
     hasServerCount: false,
+    honoursFsType: false,
   },
   vsan_osa: {
     supportsCompression: false,
     supportsDedup: false,
     supportsHotSpares: true,
     hasServerCount: true,
+    honoursFsType: false,
   },
   vsan_esa: {
     supportsCompression: false,
     supportsDedup: false,
     supportsHotSpares: true,
     hasServerCount: true,
+    honoursFsType: false,
   },
   ceph: {
     supportsCompression: false,
     supportsDedup: false,
     supportsHotSpares: true,
     hasServerCount: true,
+    honoursFsType: false,
   },
   powerflex: {
     supportsCompression: false,
     supportsDedup: false,
     supportsHotSpares: true,
     hasServerCount: true,
+    honoursFsType: false,
   },
   powerstore: {
     supportsCompression: false,
     supportsDedup: false,
     supportsHotSpares: true,
     hasServerCount: true,
+    honoursFsType: false,
   },
   powerscale: {
     supportsCompression: false,
     supportsDedup: false,
     supportsHotSpares: true,
     hasServerCount: true,
+    honoursFsType: false,
   },
   objectscale: {
     supportsCompression: false,
     supportsDedup: false,
     supportsHotSpares: true,
     hasServerCount: true,
+    honoursFsType: false,
   },
   nutanix: {
     supportsCompression: false,
     supportsDedup: false,
     supportsHotSpares: true,
     hasServerCount: true,
+    honoursFsType: false,
   },
   powervault: {
     supportsCompression: false,
     supportsDedup: false,
     supportsHotSpares: true,
     hasServerCount: false,
+    honoursFsType: false,
   },
   longhorn: {
     supportsCompression: false,
     supportsDedup: false,
     supportsHotSpares: true,
     hasServerCount: true,
+    // No `case 'longhorn'` in getFilesystemOverheadPercent — it reaches the `default`
+    // branch, which reads the user's fsType exactly like standard RAID does. Flipping
+    // this to false makes the probe fail with 2.85 TB vs 2.97 TB (ext4 5% vs xfs 1%).
+    honoursFsType: true,
   },
   beegfs: {
     supportsCompression: false,
     supportsDedup: false,
     supportsHotSpares: true,
     hasServerCount: true,
+    honoursFsType: false,
   },
 } as const
 
@@ -148,7 +177,7 @@ export function getCapabilities(type: TopologyType): PlatformCapabilities {
 }
 
 export function shouldShowControl(
-  control: 'compression' | 'dedup' | 'hotSpares' | 'serverCount',
+  control: 'compression' | 'dedup' | 'hotSpares' | 'serverCount' | 'fsType',
   type: TopologyType,
 ): boolean {
   const caps = getCapabilities(type)
@@ -161,6 +190,8 @@ export function shouldShowControl(
       return caps.supportsHotSpares
     case 'serverCount':
       return caps.hasServerCount
+    case 'fsType':
+      return caps.honoursFsType
   }
 }
 
