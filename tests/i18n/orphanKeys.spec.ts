@@ -27,18 +27,18 @@ const LOCALES_DIR = join(REPO_ROOT, 'src', 'i18n', 'locales')
  * because the scan structurally cannot see it — not because nobody checked.
  */
 const DYNAMIC_PREFIXES: Record<string, string> = {
-  'connectivity.': 'HardwarePanel.tsx — t(`connectivity.${value}`) over CONNECTIVITY_VALUES',
-  'formFactor.': 'HardwarePanel.tsx — t(`formFactor.${value}`) over FORM_FACTOR_VALUES',
-  'tiering.s2d.': 'TieringPanel.tsx — t(`tiering.${platform}.*`)',
-  'tiering.vsan.': 'TieringPanel.tsx — t(`tiering.${platform}.*`)',
-  'tiering.ceph.': 'TieringPanel.tsx — t(`tiering.${platform}.*`)',
-  'tiering.beegfs.': 'TieringPanel.tsx — t(`tiering.${platform}.*`)',
-  'carbon.regions.': 'Header.tsx — t(`carbon.regions.${region}`)',
-  'theme.': 'ThemeToggle.tsx — t(`theme.${pref}`)',
-  'resilience.process.': 'ResilienceGuide.tsx — t(`resilience.process.${step}`)',
+  'connectivity.': 'HardwarePanel.tsx — t(`connectivity.<value>`) over CONNECTIVITY_VALUES',
+  'formFactor.': 'HardwarePanel.tsx — t(`formFactor.<value>`) over FORM_FACTOR_VALUES',
+  'tiering.s2d.': 'TieringPanel.tsx — t(`tiering.<platform>.*`)',
+  'tiering.vsan.': 'TieringPanel.tsx — t(`tiering.<platform>.*`)',
+  'tiering.ceph.': 'TieringPanel.tsx — t(`tiering.<platform>.*`)',
+  'tiering.beegfs.': 'TieringPanel.tsx — t(`tiering.<platform>.*`)',
+  'carbon.regions.': 'Header.tsx — t(`carbon.regions.<region>`)',
+  'theme.': 'ThemeToggle.tsx — t(`theme.<pref>`)',
+  'resilience.process.': 'ResilienceGuide.tsx — t(`resilience.process.<step>`)',
   'capacity.beegfs.statusValue.':
-    'BeeGfsCapacityDetails.tsx — t(`capacity.beegfs.statusValue.${status}`)',
-  'pptx.labels.': 'pptxContent.ts — t(`output:pptx.labels.${key}`)',
+    'BeeGfsCapacityDetails.tsx — t(`capacity.beegfs.statusValue.<status>`)',
+  'pptx.labels.': 'pptxContent.ts — t(`output:pptx.labels.<key>`)',
 }
 
 /**
@@ -47,8 +47,8 @@ const DYNAMIC_PREFIXES: Record<string, string> = {
  * full path ever being written out, so the namespace is exempt as a whole.
  */
 const DYNAMIC_NAMESPACES: Record<string, string> = {
-  validation: 'validators.ts — i18n.t(`validation:${key}`) via the tv() wrapper',
-  pdf: 'exportPdf.ts — i18n.t(`pdf:${key}`) via its t() wrapper',
+  validation: 'validators.ts — i18n.t(`validation:<key>`) via the tv() wrapper',
+  pdf: 'exportPdf.ts — i18n.t(`pdf:<key>`) via its t() wrapper',
 }
 
 function flatten(obj: Record<string, unknown>, prefix = ''): string[] {
