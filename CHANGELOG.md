@@ -5,6 +5,49 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- **The fast tier is now a shared failure domain for vSAN OSA and Ceph (#88).** This was the one
+  modelled behaviour that erred in the **optimistic** direction: #82 made the simulation size its
+  population from the capacity tier, which fixed *which* drives are simulated without modelling
+  *why* a fast-tier failure cascades. Survival was reported as though the cache device could not
+  fail at all.
+
+  Two vendors document the cascade, and the research is what scoped the change:
+
+  - **vSAN OSA** — "vSAN interprets the failure of a single flash caching device as a failure of
+    the entire disk group", cache and capacity devices alike marked degraded ([Broadcom](https://techdocs.broadcom.com/us/en/vmware-cis/vsan/vsan/8-0/vsan-monitoring/handling-failures-and-troubleshooting-virtual-san/handling-failures-in-virtual-san/failure-handling-in-virtual-san/a-flash-caching-device-is-not-accessible.html)).
+  - **Ceph** — "a corrupt block.db file will impact all OSDs which are included in that block.db
+    file" ([Red Hat](https://docs.redhat.com/en/documentation/red_hat_ceph_storage/3/html/operations_guide/handling-a-disk-failure)).
+    Worth recording that the *upstream* Ceph documentation does not state this — it shows
+    provisioning several `db` volumes on one SSD without the failure consequence — so Red Hat is
+    the citable source.
+
+  **S2D and Nutanix are deliberately excluded**, though they tier through the same resolver and
+  #88 named all four together. Their fast tiers are write-back cache and no vendor documents the
+  loss taking the capacity tier down; including them for symmetry would be inventing a failure
+  mode. So this is a two-platform change, not four.
+
+  **Numbers move down, for the affected platforms only.** At 48 capacity drives behind 8 cache
+  devices (6 per disk group), cache AFR 2%, 20K iterations:
+
+  | Configuration | Survival | Dual-failure |
+  |---|---|---|
+  | vSAN OSA RAID-1 | 85.6% → 77.6% | 0.015% → **4.5%** |
+  | vSAN OSA RAID-5 | 10.4% → 9.3% | 0.010% → 0.28% |
+  | Ceph 3× replicated | 99.99% → 98.7% | 0% → 0.38% |
+
+  The dual-failure column is the mechanism: six drives dying *together* is a far worse event than
+  six dying independently across a year.
+
+  **Everything else is bit-for-bit unchanged** — S2D, Nutanix, untiered and BeeGFS verified
+  identical, and a zero-AFR fast tier reproduces the pre-#88 result exactly rather than closely.
+  The forced failures run through the *same* failure body as ordinary ones, so the mirror
+  assignment, URE check, rebuild trigger and correlated window all apply to them; a parallel code
+  path would have silently skipped all four.
+
 ## [2.0.0] - 2026-08-05
 
 > **Read this first if you sized hardware on 1.16.x.** This release removes things, and two of

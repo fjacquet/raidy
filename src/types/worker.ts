@@ -39,6 +39,34 @@ export interface SimulationInput {
    * `usesDistributedSpares` zeroing) signal already used to size the simulated population.
    */
   hasHotSpare?: boolean
+  /**
+   * AFR of the shared fast-tier device (cache / block.db), when the platform has one that takes
+   * capacity devices down with it (issue #88).
+   *
+   * Absent or 0 means "no shared fast tier", which is the default and reproduces the pre-#88
+   * model exactly. Only `useResilience` sets it, and only for the two platforms with a vendor
+   * statement behind the cascade:
+   *
+   * - **vSAN OSA** — "vSAN interprets the failure of a single flash caching device as a failure
+   *   of the entire disk group", capacity devices included (Broadcom, *A Flash Caching Device Is
+   *   Not Accessible in a vSAN Cluster*).
+   * - **Ceph** — "a corrupt block.db file will impact all OSDs which are included in that
+   *   block.db file" (Red Hat Ceph Storage Operations Guide, *Handling a disk failure*).
+   *
+   * S2D and Nutanix tier through the same resolver but are deliberately excluded: their fast
+   * tiers are write-back cache and no vendor documents the loss taking the capacity tier with
+   * it. Including them for symmetry would be inventing a failure mode.
+   */
+  sharedFastTierAfrPercent?: number
+  /**
+   * How many shared fast-tier devices back the whole simulated population. Each one's failure
+   * takes down `driveCount / fastTierDeviceCount` capacity drives at once — for vSAN OSA that is
+   * a disk group, for Ceph the OSDs sharing one block.db device.
+   *
+   * A cluster-wide total rather than a per-group figure, because that is what
+   * `TieredCapacityResult.cacheTierDriveCount` already is.
+   */
+  fastTierDeviceCount?: number
 }
 
 /** Result from Monte Carlo simulation */

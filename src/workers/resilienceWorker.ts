@@ -537,7 +537,13 @@ function runSingleSimulation(
   hadURE: boolean
   hadDualFailure: boolean
 } {
-  const { driveCount, afrPercent, hasHotSpare = true } = input
+  const {
+    driveCount,
+    afrPercent,
+    hasHotSpare = true,
+    sharedFastTierAfrPercent = 0,
+    fastTierDeviceCount = 0,
+  } = input
   const {
     parityDrives,
     isGroup,
@@ -568,6 +574,24 @@ function runSingleSimulation(
 
   // Stress factor: rebuild increases failure rate of remaining drives by 30%
   const rebuildStressFactor = 1.3
+
+  /**
+   * Shared fast-tier failure domain (issue #88). A vSAN OSA cache device takes its whole disk
+   * group down with it, and a Ceph block.db device takes every OSD it serves — see
+   * `SimulationInput.sharedFastTierAfrPercent` for the vendor statements.
+   *
+   * Both figures are zero unless the caller opts in, so every pre-#88 configuration takes the
+   * `hasSharedFastTier === false` path and is bit-for-bit unchanged.
+   *
+   * `drivesPerFastTierDevice` is rounded UP: a device backing 2.5 drives on average cannot take
+   * down half a drive, and rounding down would silently model a smaller blast radius than the
+   * hardware has — the optimistic direction, which is the one this issue exists to remove.
+   */
+  const hasSharedFastTier = sharedFastTierAfrPercent > 0 && fastTierDeviceCount > 0
+  const fastTierDailyFailureRate = sharedFastTierAfrPercent / 100 / 365
+  const drivesPerFastTierDevice = hasSharedFastTier
+    ? Math.ceil(driveCount / fastTierDeviceCount)
+    : 0
 
   // Replacement-sourcing delay (issue #93): without a dedicated hot spare, rebuild cannot
   // start the moment a drive is declared failed — someone has to notice the alert, source a
@@ -635,9 +659,29 @@ function runSingleSimulation(
       correlatedFailureWindow--
     }
 
+    // Roll the shared fast-tier devices before the per-drive pass (#88). Each device that fails
+    // today takes its whole set of capacity drives with it, so those drives are declared failed
+    // regardless of their own dice.
+    //
+    // The count is carried into the loop below rather than handled in a branch of its own,
+    // deliberately: forced failures then run through the SAME body as ordinary ones and pick up
+    // the mirror/pair/group assignment, the URE check, the rebuild trigger and the correlated
+    // window exactly as they should. A parallel code path would have silently skipped all four.
+    //
+    // `activeDrives` bounds the loop, so a blast radius larger than the surviving population
+    // simply fails everything left, which is the correct outcome rather than an overflow.
+    let forcedFailuresToday = 0
+    if (hasSharedFastTier) {
+      for (let device = 0; device < fastTierDeviceCount; device++) {
+        if (random() < fastTierDailyFailureRate) {
+          forcedFailuresToday += drivesPerFastTierDevice
+        }
+      }
+    }
+
     // Check for drive failures
     for (let drive = 0; drive < activeDrives; drive++) {
-      if (random() < effectiveFailureRate) {
+      if (drive < forcedFailuresToday || random() < effectiveFailureRate) {
         failedDrives++
 
         // Check for correlated failure trigger

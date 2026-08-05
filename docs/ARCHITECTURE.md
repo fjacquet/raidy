@@ -748,9 +748,27 @@ population; S2D, vSAN OSA, Ceph and Nutanix share `tieredPlatformScope`, which r
 tier through `resolveTiering` so resilience simulates the same drives volumetry counts. Platforms
 absent from the table use the naive `driveCount × serverCount` population.
 
-**Not modelled:** the fast tier as a shared failure domain. A vSAN OSA cache device failure takes
-down its whole disk group; a Ceph WAL/DB NVMe failure can take out every OSD it serves. The table
-corrects which drives are simulated, not why the fast tier failing could cascade.
+**The fast tier as a shared failure domain (#88)** is modelled for the two platforms with a vendor
+statement behind the cascade: vSAN OSA, where Broadcom documents that a cache device failure is
+treated as a failure of the entire disk group, and Ceph, where Red Hat documents that a corrupt
+`block.db` impacts every OSD included in it. `SHARED_FAST_TIER_TOPOLOGIES` in `useResilience.ts`
+lists them, and the absentees are the point: S2D and Nutanix resolve through the same
+`tieredPlatformScope`, but their fast tiers are write-back cache and no vendor documents the loss
+taking the capacity tier down.
+
+The worker rolls each fast-tier device once per simulated day; a hit forces
+`ceil(driveCount / fastTierDeviceCount)` drives to fail at once, through the *same* failure body as
+ordinary failures so the mirror/group assignment, URE check, rebuild trigger and correlated window
+all apply. Both inputs default to zero, so every other configuration is bit-for-bit unchanged —
+pinned by `tests/workers/sharedFastTierFailureDomain.spec.ts`, which asserts a zero-AFR fast tier
+reproduces the pre-#88 result exactly.
+
+Counter-intuitive result worth keeping: at the same per-device AFR, *more and smaller* fault
+domains are worse than fewer and larger ones (16 devices × 3 drives gives 0.78 survival, 2 × 24
+gives 0.82, at identical expected drives lost). Device count does not map monotonically to harm.
+
+Deliberately still not modelled: rebuild behaviour after a whole group is lost, and vSAN's
+deduplication amplification, where *any* device failure fails the disk group.
 
 The resilience model carries a deliberate invariant: **its simulated failure set must be a
 superset of the physically real one**, so the tool may understate resilience but never overstate
