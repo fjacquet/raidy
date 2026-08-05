@@ -43,6 +43,7 @@
     "writeThroughput": "Throughput massimo in scrittura sequenziale. Per i RAID basati su parità, il throughput in scrittura è ridotto dal fattore di penalità di scrittura.",
     "readIops": "IOPS massimi in lettura casuale. Somma degli IOPS in lettura di tutti i dischi, limitata dai limiti massimi del controller e del bus.",
     "writeIops": "IOPS massimi in scrittura casuale. Per RAID-5, dividere per 4 (ogni scrittura richiede 4 operazioni di I/O). Per RAID-6, dividere per 6.",
+    "sustainedWrite": "Burst = ciò che il livello veloce assorbe prima di saturarsi. Sostenuta = ciò che il sistema regge una volta piena la cache, limitata dalla capacità di scrittura del livello di capacità. Usare Sostenuta per dimensionare l'ingestione continua.",
     "bottleneck": "La catena dei colli di bottiglia mostra il throughput a ogni livello. Il livello con il throughput più basso è il collo di bottiglia. Aggiornare qualsiasi altro livello non migliorerà le prestazioni.",
     "survivalRate": "Probabilità di sopravvivere un anno senza perdita di dati, calcolata tramite simulazione Monte Carlo. Considera i tassi di guasto dei dischi (AFR), il tempo di ricostruzione, la probabilità di URE durante la ricostruzione e i guasti correlati.",
     "rebuildTime": "Tempo stimato per la ricostruzione di un disco guasto. Tempi di ricostruzione più lunghi aumentano la finestra di vulnerabilità. Dipende dalla capacità del disco, dalla velocità di ricostruzione e dall'utilizzo dell'array.",

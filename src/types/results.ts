@@ -134,12 +134,22 @@ export interface BottleneckLayer {
 export interface PerformanceResult {
   /** Maximum system read throughput in MB/s */
   maxReadThroughputMBs: number
-  /** Maximum system write throughput in MB/s */
+  /** Maximum system write throughput in MB/s — the BURST figure: what the fast tier (write-back
+   *  cache/OpLog) absorbs before it saturates. For an untiered configuration, or a tiered
+   *  platform with no fast-tier write model, this equals `sustainedWriteThroughputMBs` exactly. */
   maxWriteThroughputMBs: number
   /** Maximum system read IOPS */
   maxReadIOPS: number
-  /** Maximum system write IOPS */
+  /** Maximum system write IOPS — the BURST figure, same caveat as `maxWriteThroughputMBs`. */
   maxWriteIOPS: number
+  /** Sustained (steady-state) write throughput in MB/s — bounded by the capacity tier's own
+   *  write capacity, since every byte written through a fast tier eventually has to destage
+   *  there and no vendor publishes a numeric drain rate to model a tighter ceiling against
+   *  (see #112). Equal to `maxWriteThroughputMBs` whenever the platform has no distinct
+   *  fast-tier write model (untiered, Ceph, BeeGFS, or no cache drive selected). */
+  sustainedWriteThroughputMBs: number
+  /** Sustained (steady-state) write IOPS — same bound as `sustainedWriteThroughputMBs`, IOPS axis. */
+  sustainedWriteIOPS: number
   /** Bottleneck analysis for each layer */
   layers: BottleneckLayer[]
   /** Overall bottleneck description */

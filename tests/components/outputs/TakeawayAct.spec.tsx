@@ -11,8 +11,10 @@ describe('TakeawayAct', () => {
         performance={{
           maxReadThroughputMBs: 0,
           maxWriteThroughputMBs: 0,
+          sustainedWriteThroughputMBs: 0,
           maxReadIOPS: 0,
           maxWriteIOPS: 0,
+          sustainedWriteIOPS: 0,
           layers: [],
           bottleneckDescription: '',
         }}

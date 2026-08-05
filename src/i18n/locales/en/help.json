@@ -43,6 +43,7 @@
     "writeThroughput": "Maximum sequential write throughput. For parity-based RAID, write throughput is reduced by the write penalty factor.",
     "readIops": "Maximum random read IOPS. Sum of all drive read IOPS, limited by controller and bus ceilings.",
     "writeIops": "Maximum random write IOPS. For RAID-5, divide by 4 (each write needs 4 I/O operations). For RAID-6, divide by 6.",
+    "sustainedWrite": "Burst = what the fast tier absorbs before it saturates. Sustained = what the system holds once the cache fills, bounded by the capacity tier's own write capacity. Use Sustained when sizing for continuous ingest.",
     "bottleneck": "The bottleneck chain shows throughput at each layer. The layer with the lowest throughput is the bottleneck. Upgrading any other layer won't improve performance.",
     "survivalRate": "Probability of surviving one year without data loss, calculated via Monte Carlo simulation. Considers drive failure rates (AFR), rebuild time, URE probability during rebuild, and correlated failures.",
     "rebuildTime": "Estimated time to rebuild a failed drive. Longer rebuild times increase the window of vulnerability. Depends on drive capacity, rebuild speed, and array utilization.",
