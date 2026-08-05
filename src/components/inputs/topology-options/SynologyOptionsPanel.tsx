@@ -50,10 +50,6 @@ export function SynologyOptionsPanel() {
           max={35}
           onChange={(v) => setSynologyOptions({ systemPartitionSize: v * 1024 * 1024 * 1024 })}
         />
-        <p className="text-xs text-slate-500">
-          System partition per disk:{' '}
-          {Math.round(synologyOptions.systemPartitionSize / (1024 * 1024 * 1024))} GB
-        </p>
       </div>
     </div>
   )

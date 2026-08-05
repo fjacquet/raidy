@@ -24,6 +24,8 @@ const performance: PerformanceResult = {
   maxReadIOPS: 500000,
   maxWriteIOPS: 300000,
   sustainedWriteIOPS: 300000,
+  mediaCeilingMBs: 0,
+  mediaCeilingIOPS: 0,
   layers: [
     { name: 'Media', throughputMBs: 1200, iops: 500000, isBottleneck: true, utilization: 100 },
   ],

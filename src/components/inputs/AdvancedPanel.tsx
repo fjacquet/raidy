@@ -140,7 +140,7 @@ export function AdvancedPanel() {
               <Label
                 htmlFor="compression-ratio"
                 hint={`${compressionRatio.toFixed(1)}x`}
-                tooltip={th('advanced.compression')}
+                tooltip={`${th('advanced.compression')} ${t('dataEfficiency.compressionHint')}`}
               >
                 {t('dataEfficiency.compression')}
               </Label>
@@ -153,7 +153,6 @@ export function AdvancedPanel() {
                 onChange={setCompressionRatio}
                 formatValue={(v) => `${v.toFixed(1)}x`}
               />
-              <p className="text-xs text-slate-500">{t('dataEfficiency.compressionHint')}</p>
             </div>
           )}
 
@@ -288,7 +287,11 @@ export function AdvancedPanel() {
         </h4>
 
         <div className="space-y-2">
-          <Label htmlFor="pue" hint={`${pue.toFixed(2)} PUE`} tooltip={th('advanced.pue')}>
+          <Label
+            htmlFor="pue"
+            hint={`${pue.toFixed(2)} PUE`}
+            tooltip={`${th('advanced.pue')} ${t('power.pueHint')}`}
+          >
             {t('power.pue')}
           </Label>
           <Slider
@@ -300,7 +303,6 @@ export function AdvancedPanel() {
             onChange={setPue}
             formatValue={(v) => v.toFixed(2)}
           />
-          <p className="text-xs text-slate-500">{t('power.pueHint')}</p>
         </div>
       </div>
 
@@ -314,7 +316,7 @@ export function AdvancedPanel() {
           <Label
             htmlFor="performance-threshold"
             hint={`${Math.round(performanceThreshold * 100)}%`}
-            tooltip={th('advanced.performanceThreshold')}
+            tooltip={`${th('advanced.performanceThreshold')} ${t('capacityManagement.performanceThresholdHint')}`}
           >
             {t('capacityManagement.performanceThreshold')}
           </Label>
@@ -327,9 +329,6 @@ export function AdvancedPanel() {
             onChange={(v) => setPerformanceThreshold(v / 100)}
             formatValue={(v) => `${v}%`}
           />
-          <p className="text-xs text-slate-500">
-            {t('capacityManagement.performanceThresholdHint')}
-          </p>
         </div>
       </div>
 

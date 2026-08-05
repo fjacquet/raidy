@@ -56,10 +56,8 @@ export function NetAppOptionsPanel() {
           min={0}
           max={20}
           onChange={(v) => setNetAppOptions({ snapshotReserve: v / 100 })}
+          formatValue={(v) => `${v}%`}
         />
-        <p className="text-xs text-slate-500">
-          Snapshot reserve: {Math.round(netAppOptions.snapshotReserve * 100)}%
-        </p>
       </div>
 
       <Toggle
@@ -86,10 +84,8 @@ export function NetAppOptionsPanel() {
             max={5}
             step={0.5}
             onChange={(v) => setNetAppOptions({ dataReductionRatio: v })}
+            formatValue={(v) => `${v}:1`}
           />
-          <p className="text-xs text-slate-500">
-            Expected DRR: {netAppOptions.dataReductionRatio}:1 (compression + dedup)
-          </p>
         </div>
       )}
 
@@ -104,10 +100,8 @@ export function NetAppOptionsPanel() {
           max={3}
           step={0.1}
           onChange={(v) => setNetAppOptions({ waflOverhead: v / 100 })}
+          formatValue={(v) => `${v.toFixed(1)}%`}
         />
-        <p className="text-xs text-slate-500">
-          WAFL filesystem overhead: {(netAppOptions.waflOverhead * 100).toFixed(1)}%
-        </p>
       </div>
     </div>
   )

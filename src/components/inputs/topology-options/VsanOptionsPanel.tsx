@@ -113,10 +113,8 @@ export function VsanOptionsPanel({ topology }: VsanOptionsPanelProps) {
             max={3}
             step={0.1}
             onChange={(v) => setVsanOptions({ compressionRatio: v })}
+            formatValue={(v) => `${v.toFixed(1)}:1`}
           />
-          <p className="text-xs text-slate-500">
-            Expected ratio: {vsanOptions.compressionRatio.toFixed(1)}:1
-          </p>
         </div>
       )}
 
@@ -137,10 +135,8 @@ export function VsanOptionsPanel({ topology }: VsanOptionsPanelProps) {
             max={3}
             step={0.1}
             onChange={(v) => setVsanOptions({ dedupRatio: v })}
+            formatValue={(v) => `${v.toFixed(1)}:1`}
           />
-          <p className="text-xs text-slate-500">
-            Expected ratio: {vsanOptions.dedupRatio.toFixed(1)}:1
-          </p>
         </div>
       )}
 

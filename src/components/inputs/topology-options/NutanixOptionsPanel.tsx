@@ -90,10 +90,8 @@ export function NutanixOptionsPanel({ topology }: NutanixOptionsPanelProps) {
             max={3}
             step={0.1}
             onChange={(v) => setNutanixOptions({ compressionRatio: v })}
+            formatValue={(v) => `${v.toFixed(1)}:1`}
           />
-          <p className="text-xs text-slate-500">
-            Expected ratio: {nutanixOptions.compressionRatio.toFixed(1)}:1
-          </p>
         </div>
       )}
 
@@ -114,10 +112,8 @@ export function NutanixOptionsPanel({ topology }: NutanixOptionsPanelProps) {
             max={3}
             step={0.1}
             onChange={(v) => setNutanixOptions({ dedupRatio: v })}
+            formatValue={(v) => `${v.toFixed(1)}:1`}
           />
-          <p className="text-xs text-slate-500">
-            Expected ratio: {nutanixOptions.dedupRatio.toFixed(1)}:1
-          </p>
         </div>
       )}
 
@@ -151,10 +147,8 @@ export function NutanixOptionsPanel({ topology }: NutanixOptionsPanelProps) {
           min={5}
           max={15}
           onChange={(v) => setNutanixOptions({ systemOverhead: v / 100 })}
+          formatValue={(v) => `${Math.round(v)}%`}
         />
-        <p className="text-xs text-slate-500">
-          CVM, metadata, snapshots: {Math.round(nutanixOptions.systemOverhead * 100)}%
-        </p>
       </div>
     </div>
   )
