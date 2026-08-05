@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **The default number of hot spares is now 0, was 1.** A hot spare is a deliberate design
+  choice, not an assumption a sizing tool should make for you. The old default quietly reduced
+  usable capacity on first load for every platform that honours spares, so the figure shown
+  before you touched anything was smaller than your hardware gives.
+
+  **Usable capacity increases for any configuration left at the default.** If you sized hardware
+  on a previous release without changing the hot-spare slider, your figure was low:
+
+  | Configuration | Before (1 spare/node) | After (0) | Change |
+  |---|---|---|---|
+  | Standard RAID 6, 8 drives | 4.95 TB | 5.94 TB | +20% |
+  | ZFS raidz2, 8 drives | 4.81 TB | 5.80 TB | +21% |
+  | BeeGFS RAID 6, 48 drives (12 × 4 nodes) | 29.4 TB | 39.2 TB | +33% |
+
+  BeeGFS moves furthest, and not by coincidence: four spares across four nodes leave 44 drives,
+  which does not divide by a 12-drive storage target. Three targets form and **eight drives are
+  stranded**, contributing nothing. On that layout each spare cost far more than itself. The
+  same arithmetic has a sharper edge worth knowing: a single node with 12 drives and one spare
+  leaves 11, which forms *no* complete target — usable capacity zero.
+
+  Pinned with exact-byte vectors rather than relational bounds
+  (`tests/engines/volumetry/hotSpareDefault.spec.ts`); the 45× tiered-cache error in 1.16.0
+  survived 1,391 tests because every assertion used `toBeGreaterThan`.
+
 ### Fixed
 - **The controller selector is hidden for vSAN ESA, and the working-set slider for vSAN OSA in
   all-flash mode.** vSAN ESA is NVMe-direct: the engine drops the Controller layer from the

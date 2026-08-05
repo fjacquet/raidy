@@ -182,14 +182,22 @@ Calculates storage capacity and efficiency.
 
 > **Platform capability map** (`src/engines/capabilities.ts`) is the single source of truth for
 > which inputs actually move the volumetry output for a given topology type. It exposes
-> `getCapabilities(type)` and `shouldShowControl(control, type)` for the four
+> `getCapabilities(type)` and `shouldShowControl(control, type)` for the six
 > global/cross-cutting controls whose usefulness varies by platform: `compression`, `dedup`,
-> `hotSpares`, `serverCount`. The map is probe-enforced — `tests/engines/capabilities.spec.ts`
-> drives `calculateVolumetry` with each flag toggled and asserts the flag matches actual engine
-> behavior (e.g. the global `compressionRatio`/`dedupRatio` inputs only move
-> `effectiveCapacity` for ZFS; every other platform either has no data-reduction step or reduces
-> through its own platform-specific options panel instead), so the map cannot silently drift
-> from the engines it describes. The UI consumes it directly: `AdvancedPanel.tsx` hides the
+> `hotSpares`, `serverCount`, `fsType`, `controller`. The map is probe-enforced —
+> `tests/engines/capabilities.spec.ts` drives `calculateVolumetry` with each flag toggled and
+> asserts the flag matches actual engine behavior (e.g. the global
+> `compressionRatio`/`dedupRatio` inputs only move `effectiveCapacity` for ZFS; every other
+> platform either has no data-reduction step or reduces through its own platform-specific
+> options panel instead), so the map cannot silently drift from the engines it describes.
+>
+> `honoursFsType` is true for `standard` **and `longhorn`** — the filesystem-overhead switch has
+> no case for Longhorn, so it falls through to the `default` branch that reads the user's choice.
+> `honoursController` is false only for `vsan_esa`, which is NVMe-direct and has no Controller
+> layer in its bottleneck chain; its probe
+> (`tests/engines/performance/controllerRelevance.spec.ts`) runs at a deliberately high drive
+> count, because at realistic counts the media layer binds first and the probe would misreport
+> eight platforms as controller-insensitive. The UI consumes it directly: `AdvancedPanel.tsx` hides the
 > global compression/dedup sliders unless `shouldShowControl('compression'|'dedup', topology.type)`
 > is true, and `HardwarePanel.tsx` hides the servers/nodes slider unless
 > `shouldShowControl('serverCount', topology.type)` is true (with an additional carve-out for

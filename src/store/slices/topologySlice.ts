@@ -63,7 +63,10 @@ export interface TopologySlice extends TopologyState {
 export const createTopologySlice: StateCreator<TopologySlice> = (set) => ({
   // Default state - RAID 6 is the most common enterprise configuration
   topology: { type: 'standard', level: 'RAID6' },
-  hotSpares: 1,
+  // A hot spare is a deliberate design choice, not an assumption a sizing tool should make on
+  // the user's behalf. Defaulting to 1 quietly reduced usable capacity on first load for every
+  // platform that honours spares. Pinned in tests/engines/volumetry/hotSpareDefault.spec.ts.
+  hotSpares: 0,
   zfsOptions: { ...DEFAULT_ZFS_OPTIONS },
   s2dOptions: { ...DEFAULT_S2D_OPTIONS },
   vsanOptions: { ...DEFAULT_VSAN_OPTIONS },
