@@ -230,6 +230,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   a first load of any platform lands on it. That is the intended pairing — a tool that assumes a
   spare nobody configured was overstating both usable capacity and survival at once. Users who do
   configure a spare get exactly the numbers they got before this change.
+  **Gated by `tests/workers/resilienceReplacementDelay.spec.ts`.** The vectors below were
+  measured outside the test harness and are evidence, not a gate — nothing in CI would have
+  noticed the mechanism silently ceasing to work. Three seeded-PRNG tests now pin it: that
+  omitting `hasHotSpare` is *exactly* the pre-#93 path (every caller predating this change omits
+  it), that spare-free survives strictly less often than spared, and that the delay does not
+  collapse into a short rebuild. The last is the one worth having: chaining the two countdowns
+  with independent `if`s instead of `else if` makes a 1-day delay followed by a ≤1-day rebuild
+  finish on the same simulated day as the triggering failure, reproducing the immediate-rebuild
+  timeline exactly. Verified by mutation — under that rewrite both timelines return an identical
+  0.9992, and the fix would sit in the source fully commented and do nothing.
   **Before/after vectors** (100K iterations, `Math.random` stubbed with a seeded mulberry32 PRNG
   for reproducibility; AFR stressed to 20% purely to make the mechanism observable within a
   feasible iteration count — see `tests/engines/resilience-analytic.spec.ts` for the project's
