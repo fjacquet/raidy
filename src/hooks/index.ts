@@ -11,11 +11,8 @@ export {
   BREAKPOINTS,
   useIsDesktop,
   useIsMobile,
-  useIsTablet,
   useIsTouchDevice,
-  useIsWideScreen,
   useMediaQuery,
-  usePrefersReducedMotion,
 } from './useMediaQuery'
 export { usePerformanceCalc } from './usePerformanceCalc'
 export { useResilience } from './useResilience'

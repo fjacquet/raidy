@@ -101,37 +101,6 @@ export function AnimatedBytes({
 }
 
 /**
- * Animated currency counter.
- */
-export function AnimatedCurrency({
-  value,
-  duration = 800,
-  className = '',
-}: {
-  value: number
-  duration?: number
-  className?: string
-}) {
-  const formatter = (v: number): string => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(v)
-  }
-
-  return (
-    <AnimatedCounter
-      value={value}
-      duration={duration}
-      formatter={formatter}
-      className={className}
-    />
-  )
-}
-
-/**
  * Animated percentage counter.
  */
 export function AnimatedPercent({

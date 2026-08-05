@@ -1,7 +1,6 @@
 export {
   AnimatedBytes,
   AnimatedCounter,
-  AnimatedCurrency,
   AnimatedPercent,
 } from './AnimatedCounter'
 export { CapacityAct } from './acts/CapacityAct'
