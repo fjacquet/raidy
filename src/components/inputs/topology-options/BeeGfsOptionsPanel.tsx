@@ -90,6 +90,10 @@ export function BeeGfsOptionsPanel() {
         <Label htmlFor="beegfs-fs-overhead" tooltip={t('beegfs.fsOverheadTooltip')}>
           {t('beegfs.fsOverhead')}
         </Label>
+        {/*
+          The slider carries the number and its unit, so the hint below no longer repeats
+          either — it says only what the value alone cannot.
+        */}
         <Slider
           id="beegfs-fs-overhead"
           value={beeGfsOptions.fsOverheadPercent}
@@ -97,10 +101,9 @@ export function BeeGfsOptionsPanel() {
           max={5}
           step={0.1}
           onChange={(v) => setBeeGfsOptions({ fsOverheadPercent: v })}
+          formatValue={(v) => `${v.toFixed(1)}%`}
         />
-        <p className="text-xs text-slate-500">
-          {t('beegfs.fsOverheadHint', { percent: beeGfsOptions.fsOverheadPercent.toFixed(1) })}
-        </p>
+        <p className="text-xs text-slate-500">{t('beegfs.fsOverheadHint')}</p>
       </div>
 
       <Toggle

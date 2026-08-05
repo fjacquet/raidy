@@ -451,7 +451,7 @@
     "metadataBuddyMirrorHint": "Replica sincrona tra coppie di target di metadati. Nessun effetto sulla capacità dei dati.",
     "fsOverhead": "Overhead del filesystem",
     "fsOverheadTooltip": "Overhead dei metadati del filesystem ext4/xfs formattato su ciascun target di storage.",
-    "fsOverheadHint": "Overhead del filesystem: {{percent}}%. Riduce la capacità utilizzabile — varia in base al rapporto di inode e alle opzioni di formattazione dei target di storage ext4/XFS.",
+    "fsOverheadHint": "Varia in base al rapporto di inode e alle opzioni di formattazione dei target di storage ext4/XFS.",
     "metadataTargetsToggle": "Configura target di metadati",
     "metadataTargetsToggleHint": "Se attivato, la configurazione dei dischi dei target di storage passa dal pannello Hardware ai selettori dei target di metadati sottostanti.",
     "metadataTargets": "Target di metadati (MDT)",

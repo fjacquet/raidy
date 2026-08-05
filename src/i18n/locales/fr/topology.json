@@ -451,7 +451,7 @@
     "metadataBuddyMirrorHint": "Réplication synchrone entre paires de cibles de métadonnées. Sans effet sur la capacité de données.",
     "fsOverhead": "Surcharge du système de fichiers",
     "fsOverheadTooltip": "Surcharge de métadonnées du système de fichiers ext4/xfs formaté sur chaque cible de stockage.",
-    "fsOverheadHint": "Surcharge du système de fichiers : {{percent}}%. Réduit la capacité utilisable — varie selon le ratio d'inodes et les options de formatage des cibles de stockage ext4/XFS.",
+    "fsOverheadHint": "Varie selon le ratio d'inodes et les options de formatage des cibles de stockage ext4/XFS.",
     "metadataTargetsToggle": "Configurer les cibles de métadonnées",
     "metadataTargetsToggleHint": "Une fois activé, la configuration des disques des cibles de stockage passe du panneau Matériel aux sélecteurs de cibles de métadonnées ci-dessous.",
     "metadataTargets": "Cibles de métadonnées (MDT)",
