@@ -17,6 +17,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `effectiveServerCount`, the same clamp the engines use, so a platform whose servers slider is
   hidden cannot pick up a stale count. **Output-dashboard figures were always correct** — they
   come from the engines, which multiply properly; only the input panel's own summary was wrong.
+### Added
+
+- **Sustained (steady-state) write throughput, reported alongside the existing burst figure**
+  (issue #112). Every write absorbed by a write-back fast tier (S2D's cache mirror, vSAN OSA's
+  cache device, Nutanix's OpLog) eventually has to destage to the capacity tier, and none of those
+  platforms publishes a numeric drain rate — so under sustained load, throughput converges on the
+  capacity tier's own write capacity, not the cache's ingest rate. The tool previously reported
+  only the burst number, unlabelled, as if it were steady-state. **No existing number changes**:
+  `maxWriteThroughputMBs`/`maxWriteIOPS` keep their exact pre-#112 formula and values (labelled
+  "Write (Burst)" in the UI when a distinct sustained figure exists). New
+  `sustainedWriteThroughputMBs`/`sustainedWriteIOPS` fields on `PerformanceResult` report the
+  capacity-tier-bounded figure ("Write (Sustained)"), shown as a second gauge pair only for
+  configurations where it actually differs from burst — tiered S2D, tiered vSAN OSA (both
+  disk-group modes), and tiered Nutanix with a cache drive selected. Untiered configurations,
+  Ceph, BeeGFS, and any fast-tier-model platform with no cache drive selected report the same
+  number for both (burst was already the capacity-tier-only figure there), so the UI shows a
+  single gauge, not a false split. Labels and a sizing hint are translated in all four locales
+  (`en`/`fr`/`de`/`it`). See `docs/ARCHITECTURE.md`'s "Burst vs. sustained write throughput" note
+  for the full derivation.
 
 ### Documented
 

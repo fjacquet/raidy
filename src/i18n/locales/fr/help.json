@@ -43,6 +43,7 @@
     "writeThroughput": "Débit maximal en écriture séquentielle. Pour le RAID à parité, le débit en écriture est réduit par le facteur de pénalité d'écriture.",
     "readIops": "IOPS maximales en lecture aléatoire. Somme des IOPS en lecture de tous les disques, limitée par les plafonds du contrôleur et du bus.",
     "writeIops": "IOPS maximales en écriture aléatoire. Pour RAID-5, diviser par 4 (chaque écriture nécessite 4 opérations d'E/S). Pour RAID-6, diviser par 6.",
+    "sustainedWrite": "Rafale = ce que le cache rapide absorbe avant saturation. Soutenue = ce que le système tient une fois le cache plein, borné par la capacité d'écriture du niveau de capacité. Utilisez Soutenue pour dimensionner une ingestion continue.",
     "bottleneck": "La chaîne de goulots d'étranglement affiche le débit à chaque couche. La couche avec le débit le plus faible est le goulot d'étranglement. Améliorer toute autre couche n'améliorera pas les performances.",
     "survivalRate": "Probabilité de survivre un an sans perte de données, calculée par simulation Monte Carlo. Prend en compte le taux de défaillance des disques (AFR), le temps de reconstruction, la probabilité d'URE pendant la reconstruction et les défaillances corrélées.",
     "rebuildTime": "Temps estimé de reconstruction d'un disque défaillant. Des temps de reconstruction plus longs augmentent la fenêtre de vulnérabilité. Dépend de la capacité du disque, de la vitesse de reconstruction et de l'utilisation de la baie.",

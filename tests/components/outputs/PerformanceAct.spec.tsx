@@ -20,8 +20,10 @@ beforeAll(() => {
 const performance: PerformanceResult = {
   maxReadThroughputMBs: 1200,
   maxWriteThroughputMBs: 800,
+  sustainedWriteThroughputMBs: 800,
   maxReadIOPS: 500000,
   maxWriteIOPS: 300000,
+  sustainedWriteIOPS: 300000,
   layers: [
     { name: 'Media', throughputMBs: 1200, iops: 500000, isBottleneck: true, utilization: 100 },
   ],
