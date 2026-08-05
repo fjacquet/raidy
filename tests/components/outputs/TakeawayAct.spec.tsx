@@ -24,9 +24,6 @@ describe('TakeawayAct', () => {
         exportError={false}
         onExportPdf={vi.fn()}
         onExportPptx={vi.fn()}
-        onExportYaml={vi.fn()}
-        onExportAnsible={vi.fn()}
-        onExportTerraform={vi.fn()}
       />,
     )
     const buttons = screen.getAllByRole('button')

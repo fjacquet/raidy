@@ -17,7 +17,7 @@ import { useCalculations, useIsMobile, useResilience } from '@/hooks'
 import { useTieringOptions } from '@/hooks/useTieringOptions'
 import { useConfigStore } from '@/store'
 import type { Drive } from '@/types'
-import { downloadAnsible, downloadTerraform, downloadYaml, exportToPdf } from '@/utils'
+import { exportToPdf } from '@/utils'
 import { exportToPptx } from '@/utils/exportPptx'
 
 // Type assertion for the imported JSON
@@ -31,7 +31,6 @@ export function OutputDashboard() {
     driveCount,
     serverCount,
     hotSpares,
-    controllerOptions,
     unitSystem,
     performanceThreshold,
     s2dOptions,
@@ -158,57 +157,6 @@ export function OutputDashboard() {
     }).catch(() => setExportError(true))
   }
 
-  const handleExportAnsible = () => {
-    if (!selectedDrive) return
-    downloadAnsible({
-      drive: selectedDrive,
-      driveCount,
-      hotSpares,
-      topology,
-      zfsOptions: topology.type === 'zfs' ? zfsOptions : undefined,
-      controllerOptions,
-      results: {
-        ...results,
-        resilience: resilienceResult,
-      },
-      unitSystem,
-    })
-  }
-
-  const handleExportTerraform = () => {
-    if (!selectedDrive) return
-    downloadTerraform({
-      drive: selectedDrive,
-      driveCount,
-      hotSpares,
-      topology,
-      zfsOptions: topology.type === 'zfs' ? zfsOptions : undefined,
-      controllerOptions,
-      results: {
-        ...results,
-        resilience: resilienceResult,
-      },
-      unitSystem,
-    })
-  }
-
-  const handleExportYaml = () => {
-    if (!selectedDrive) return
-    downloadYaml({
-      drive: selectedDrive,
-      driveCount,
-      hotSpares,
-      topology,
-      zfsOptions: topology.type === 'zfs' ? zfsOptions : undefined,
-      controllerOptions,
-      results: {
-        ...results,
-        resilience: resilienceResult,
-      },
-      unitSystem,
-    })
-  }
-
   return (
     <main className="flex-1 overflow-y-auto p-6 space-y-6">
       <HeadlineBand
@@ -249,9 +197,6 @@ export function OutputDashboard() {
         exportError={exportError}
         onExportPdf={handleExportPdf}
         onExportPptx={handleExportPptx}
-        onExportYaml={handleExportYaml}
-        onExportAnsible={handleExportAnsible}
-        onExportTerraform={handleExportTerraform}
       />
     </main>
   )

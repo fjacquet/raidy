@@ -675,7 +675,7 @@ Not-applicable is omitted; applicable-but-zero is still shown.
 | `acts/PerformanceAct.tsx` | Speedometer gauges + bottleneck chain |
 | `acts/ResilienceAct.tsx` | Monte Carlo survival probability, run/progress controls |
 | `acts/CostAct.tsx` | Power, annual energy, CO2, flash endurance |
-| `acts/TakeawayAct.tsx` | Export buttons (PDF/PPTX/YAML/Ansible/Terraform) as closing CTA, plus provisioning commands in a collapsible `<details>` |
+| `acts/TakeawayAct.tsx` | Export buttons (PDF/PPTX) as closing CTA, plus provisioning commands in a collapsible `<details>` |
 | `SankeyDiagram.tsx` | volumetry.breakdown (used inside `CapacityAct`) |
 | `Speedometer.tsx` | performance.layers (used inside `PerformanceAct`) |
 | `DonutChart.tsx` | volumetry.efficiency (used inside `CapacityAct`) |
@@ -797,9 +797,12 @@ formatBytes(bytes, 'decimal') // "1.6 TB"
 - `exportToPdf()` - Generate PDF report
 - `exportToPptx()` (`exportPptx.ts`) - Generate the PowerPoint one-pager (Sankey + 2×2 gauges +
   stat lines), theme-aware (light/dark) and locale-aware
-- `downloadYaml()` - Export YAML config
-- `downloadAnsible()` - Ansible playbook
-- `downloadTerraform()` - Terraform config
+
+The YAML/Ansible/Terraform export (`exportConfig.ts`) was removed in the 2026-08-05 sweep — it
+only ever knew ZFS, and a Terraform fragment derived from a capacity estimate has no hosts,
+network or credentials, so it was not deployable. Raidy is a sizing tool; the deliverables are
+the PDF and PPTX. The ZFS provisioning commands users actually copied still exist, in
+`TakeawayAct.tsx`'s collapsible `<details>`.
 
 `src/utils/pptxContent.ts` is a pure content builder — `buildPptxContent()` takes calculation
 results, locale, and unit system and returns a plain-data slide description with no side effects
