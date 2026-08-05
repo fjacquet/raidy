@@ -73,4 +73,9 @@ temp/
 # Tool artifacts (Playwright MCP, RTK, generated images)
 .playwright-mcp/
 .rtk/
-generated_imgs/.claude/worktrees/
+generated_imgs/
+
+# Agent worktrees — real git repos; committing them as gitlinks breaks actions/checkout
+# with "No url found for submodule path" since there is no .gitmodules.
+.claude/
+
