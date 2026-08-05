@@ -5,75 +5,86 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.0.0] - 2026-08-05
 
-### Removed
+> **Read this first if you sized hardware on 1.16.x.** This release removes things, and two of
+> the removals move numbers you may have quoted.
+>
+> | What | Impact | Why |
+> |---|---|---|
+> | Default hot spares | **1 → 0** | A spare is a design choice, not an assumption. Usable capacity on first load is now what your hardware actually gives. |
+> | Hot spares on 8 platforms | **+20-23% usable** | S2D, Ceph, Nutanix, Longhorn, PowerFlex, PowerStore, PowerScale and ObjectScale rebuild from distributed reserve. The control was configuring something they do not have. |
+> | Spare-free survival rates | **slightly lower** | Rebuild now waits out a replacement-sourcing delay when there is no dedicated spare. Only observable at elevated AFR. |
+> | YAML / Ansible / Terraform export | **gone** | ZFS-only, three lines of output, not deployable. |
+>
+> **Shared links from 1.x still load, but one class of them now shows a different number.** The
+> URL only carries values that differ from the defaults (`omitDefaults` in `configStore.ts`), so a
+> link created on 1.16.x with the *then-default* one spare per server did not record `hotSpares`
+> at all — and now resolves to the new default of zero. Such a link reports one drive per server
+> more usable capacity than it did when it was shared. Links where the spare count was changed
+> from the default are unaffected: that value was written into the URL and still is.
+>
+> Removed option fields are the harmless case — the schemas strip unknown keys rather than
+> rejecting them, so a link carrying a deleted control still loads.
+>
+> **Why 2.0.0.** Twenty-four configuration controls and one export feature left the UI — ten
+> across NetApp/Synology/Longhorn/BeeGFS, five across Ceph and vSAN, all five of PowerVault's
+> plus two of PowerScale's, and two in the Workload panel — while the hot-spare control also
+> disappeared from eight platforms that never had one. The capacity figure shown on first load
+> changed for every platform that honours spares. None of that breaks a shared link, but it does
+> change what the tool tells you before you touch anything, which is the contract this app
+> actually has with its users.
 
-- **`PLATFORM_CAPABILITIES.supportsHotSpares`, which was `true` for all fifteen platforms and so
-  carried no information (#130).** Its only reader was `shouldShowControl('hotSpares', …)`, which
-  no UI ever called — the hot-spare slider is gated on `DISTRIBUTED_SPARE_TOPOLOGIES`, and that
-  list is now the single source of truth. Two mechanisms described hot-spare relevance; the
-  vestigial one is gone.
+### Added
 
-  The two could not simply be merged, and the reason is now recorded at the surviving site rather
-  than left for the next reader to rediscover: the engines genuinely subtract hot spares for
-  every platform, and the zeroing happens in the calculation hooks *before* the engine is called.
-  A capability flag asserting "this platform ignores hot spares" would be refuted by the
-  capability probe, which drives `calculateVolumetry` directly and would still see the
-  subtraction. The capability map answers "does the engine read this input"; the topology list
-  answers the different question "does this platform have a spare drive to configure" — a
-  vendor-architecture fact, which is why it is sourced rather than probed.
+- **Sustained (steady-state) write throughput, reported alongside the existing burst figure**
+  (issue #112). Every write absorbed by a write-back fast tier (S2D's cache mirror, vSAN OSA's
+  cache device, Nutanix's OpLog) eventually has to destage to the capacity tier, and none of those
+  platforms publishes a numeric drain rate — so under sustained load, throughput converges on the
+  capacity tier's own write capacity, not the cache's ingest rate. The tool previously reported
+  only the burst number, unlabelled, as if it were steady-state. **No existing number changes**:
+  `maxWriteThroughputMBs`/`maxWriteIOPS` keep their exact pre-#112 formula and values (labelled
+  "Write (Burst)" in the UI when a distinct sustained figure exists). New
+  `sustainedWriteThroughputMBs`/`sustainedWriteIOPS` fields on `PerformanceResult` report the
+  capacity-tier-bounded figure ("Write (Sustained)"), shown as a second gauge pair only for
+  configurations where it actually differs from burst — tiered S2D, tiered vSAN OSA (both
+  disk-group modes), and tiered Nutanix with a cache drive selected. Untiered configurations,
+  Ceph, BeeGFS, and any fast-tier-model platform with no cache drive selected report the same
+  number for both (burst was already the capacity-tier-only figure there), so the UI shows a
+  single gauge, not a false split. Labels and a sizing hint are translated in all four locales
+  (`en`/`fr`/`de`/`it`). See `docs/ARCHITECTURE.md`'s "Burst vs. sustained write throughput" note
+  for the full derivation.
 
-  The probe that covered the flag is kept and strengthened. It was wrapped in
-  `if (caps.supportsHotSpares)` against a flag that was never false, so its `else` branch had
-  never executed while implying a platform could opt out. It now asserts unconditionally that all
-  fifteen types subtract — which is precisely the invariant that forces the UI decision to live
-  outside the capability map.
-- **The YAML / Ansible / Terraform export (#124).** 429 lines, no dedicated test, and it only
-  ever knew **ZFS** — one platform of fifteen. What the ZFS path emitted was three lines:
-  `zfs_ashift`, `zfs_recordsize`, and a device glob.
+- **`tests/workers/resilience.spec.ts` no longer flakes under a loaded full-suite run (#100).**
+  The three heaviest Monte Carlo tests that ran multiple 4000-5000-iteration simulations per test
+  (each with its own `vi.resetModules()` + worker re-import) had no explicit per-test timeout, so
+  they relied on Vitest's 5000ms default. Measured under synthetic CPU contention (parallel
+  full-suite run + background load), "should have much higher survival than 2-way mirror with
+  same drives" reached ~2.6s, "should produce consistent results across multiple runs" ~2.1s, and
+  "an odd storage-target count gets no buddy credit" ~1.6s — all with a thin, and on a
+  more-constrained CI runner potentially insufficient, margin to the 5000ms cutoff. No assertion
+  values were loosened (empirically verified: 0 failures across 100-300 trials per cross-run
+  tolerance check in this file); each of the three now gets an explicit 15000ms timeout, the same
+  treatment already applied to `beegfs_raid10 + buddy: survival does not improve as
+  drivesPerTarget grows` for the analogous `--coverage`-instrumentation case.
 
-  The question the issue asked was whether it earned its keep, and the answer is no. Raidy sizes
-  storage; it does not provision it. A Terraform fragment derived from a capacity estimate has no
-  hosts, no network and no credentials, so it is not deployable — which left the feature costing
-  maintenance and test surface, and standing as a place every new platform "should" be wired into.
-  Expanding it was proposed during the input-panel relevance design and rejected there for the
-  same reason.
+- **Odd BeeGFS storage-target counts no longer read as a resilience bug (#68).** Buddy-mirror
+  credit is correctly withheld when the storage-target count is odd (an unpaired target has no
+  buddy), but that made a 5-target cluster report worse survival than a 4-target one with no
+  explanation. The resilience panel now shows an explanatory note whenever a BeeGFS group
+  topology (`beegfs_raid6`, `beegfs_raidz2`, `beegfs_raid10`) has buddy mirroring on and an odd
+  storage-target count, telling the user an even count is needed for full buddy credit.
+  Translated in `en`/`fr`/`de`/`it`. Per-group heterogeneous state (giving the unpaired target
+  partial credit) was considered but not attempted: it would require the worker's group model to
+  carry a per-group tolerance instead of one scalar `parityPerGroup`, touching the failure-count,
+  URE, and rebuild-time logic the extensive superset-invariant proof comments in
+  `resilienceWorker.ts` depend on — more than a "contained change," so the conservative UI note is
+  the fix per the issue's own ruling.
 
-  **What users keep.** The PDF and PPTX exports are untouched — a presales deliverable has an
-  obvious consumer. So are the ZFS provisioning commands in the Take-away card's collapsible
-  section, which are the copy-paste-able output people actually used. `zfsOptions.compressionType`
-  is still live for exactly that reason.
-
-  Removed with it: three buttons, six locale keys across all four languages, the barrel re-export,
-  and the now-unreachable `controllerOptions` read in `OutputDashboard`. The Take-away export grid
-  drops from four columns to two.
-### Fixed
-
-- **Resilience recommendations are translated (#125).** `getRecommendations()` in
-  `useResilience.ts` built its six strings in hardcoded English — "Configuration provides
-  excellent data protection" and friends — so a French, German or Italian user read English
-  recommendations beside a fully translated panel. The #71 sweep routed 15 validators through
-  `i18n.t()` and #72 added key parity, but both missed this one: it lives in a hook, not in
-  `validators.ts` or a component.
-
-  **The translation happens at render, not where the array is built**, and that is the part worth
-  keeping. `recommendations` is produced once when the worker replies and then held in state;
-  calling `i18n.t()` there would freeze the language, so switching FR→DE after running a
-  simulation would keep showing French. `getRecommendations` now returns i18n key suffixes and
-  `ResilienceAct` translates them, which re-runs on language change.
-
-  No `DYNAMIC_PREFIXES` entry was added to the orphan-key test even though the keys are assembled
-  at runtime. The existing leaf-literal fallback already covers them — each suffix is pushed as a
-  bare string literal — and it is the stronger check: a prefix entry would exempt the whole
-  subtree, letting a key outlive its `push`. Verified by renaming one push, which correctly
-  surfaces `resilience.recommendation.excellentProtection` as an orphan.
-
-  The pass the issue asked for turned up three more sites of the same class, all converging on
-  `PerformanceResult.bottleneckDescription`: `identifyBottleneck()` returns
-  `"Bottleneck: Controller (8000 MB/s)"`, and `usePerformanceCalc` sets `'No drive selected'` and
-  `'Performance calculation failed'`. Filed separately — fixing them means turning that field into
-  structured data, which reaches the PDF and PPTX exports too.
+- **i18n parity test now asserts placeholder preservation.** `tests/i18n/parity.spec.ts` gained a
+  case per locale/namespace asserting every `{{placeholder}}` present in an `en` string is also
+  present in the same key's translation, so an accent/copy pass can't silently mangle a runtime
+  interpolation token the way the existing key-presence check would miss. (#86)
 
 ### Changed
 
@@ -100,6 +111,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   labelled as such: every fast-tier model today yields a sustained media figure at or below the
   burst one, so substituting versus merging agree on real inputs — mutating the helper to merge
   leaves `sustained-write-throughput.spec.ts` fully green. The membership test does catch it.
+
 - **The five-platform Dell options panel is five panels (#126).** `DellOptionsPanel.tsx` carried
   PowerFlex, PowerStore, PowerScale, ObjectScale and PowerVault in one component, when every other
   platform has its own file. It is now `PowerFlexOptionsPanel`, `PowerStoreOptionsPanel`,
@@ -172,54 +184,76 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`tests/engines/volumetry/hotSpareDefault.spec.ts`); the 45× tiered-cache error in 1.16.0
   survived 1,391 tests because every assertion used `toBeGreaterThan`.
 
-### Fixed
-- **The controller selector is hidden for vSAN ESA, and the working-set slider for vSAN OSA in
-  all-flash mode.** vSAN ESA is NVMe-direct: the engine drops the Controller layer from the
-  bottleneck chain and bounds IOPS by PCIe and network alone, so the selector could not change
-  a result. vSAN OSA's `vsanFastTierModel` blends the two tiers by working set only on its
-  hybrid branch, so the slider is inert in all-flash mode — a sub-mode gate rather than a
-  platform one. The PCIe controls, which *do* bind on ESA, are unaffected. **No calculated
-  figure changes.**
-- **The Advanced panel's Filesystem selector is now shown only where the engine reads it.**
-  `getFilesystemOverheadPercent` returns a platform constant for thirteen of the fifteen
-  topology types; only standard RAID and Longhorn consult the user's choice — Longhorn via the
-  switch's `default` branch, since it has no case of its own. On every other platform the
-  control could be moved with no effect. Pinned by a new per-topology probe case, verified
-  falsifiable: flipping the Longhorn flag makes it fail with 2.85 TB vs 2.97 TB (ext4 5% vs
-  XFS 1%). **No calculated figure changes** — only the control's visibility.
+- **The resilience worker now tracks which node each simulated component sits on** (#113).
+  Fault groups previously had no node identity, so mirror-pair membership was assigned without
+  reference to placement. That is a fine approximation while failures are independent, and wrong
+  the moment they are correlated: injecting group-kill logic into the old worker produced
+  spurious survival collapses 41–62% of the time, because both copies of a pair could land in a
+  group that then died together — an arrangement a real system would never create.
 
-### Fixed
-- **The performance gauges were pinned at full on any modern configuration.** Their scales were
-  hardcoded at 50,000 MB/s and 2,000,000 IOPS — set before the PERC13 controller recalibration
-  raised limits 3.4–4.7× in 1.16.0. An 8-node NVMe cluster reports 225,600 MB/s and 38.4M IOPS,
-  so all four needles sat in the stop and every arc read as full red. The gauges now scale to
-  the **drives' own ceiling**, before the controller/PCIe/network chain caps it: below full, the
-  chain is throttling drives you paid for; at full, the drives themselves are the limit. Colours
-  run red-to-green accordingly, the inverse of before — a full gauge is now the good outcome.
-  Scaling to the bottleneck was considered and rejected: throughput *is* the bottleneck by
-  construction, so those gauges would have read 100% permanently.
-- **Topology names, RAID level descriptions and network-speed labels are translated again.**
-  Three lookup tables held English string literals while fully translated keys sat unused in
-  every locale file — a French user picking RAID 0 read *"Stripe, no redundancy"* although
-  `fr/topology.json` already said *"Agrégat, sans redondance"*. 80 level entries, 15 platform
-  names and 7 link speeds now resolve through i18n. Six level entries had never been translated
-  at all (Longhorn R2/R3 and the four BeeGFS levels, both platforms added after the level tree
-  was built) and were written for all four languages, along with a missing `type.beegfs` and the
-  ZFS `128K (default)` record size.
+  **No published figure changes.** The node arrays are recorded and threaded through, and nothing
+  reads them for any failure decision, so this release is provably behaviour-neutral rather than
+  statistically indistinguishable. It is infrastructure: it unblocks #88 (modelling the fast tier
+  as a shared failure domain) and any future rack or chassis fault-domain work, neither of which
+  could be built correctly without it.
 
 ### Removed
+
+- **`PLATFORM_CAPABILITIES.supportsHotSpares`, which was `true` for all fifteen platforms and so
+  carried no information (#130).** Its only reader was `shouldShowControl('hotSpares', …)`, which
+  no UI ever called — the hot-spare slider is gated on `DISTRIBUTED_SPARE_TOPOLOGIES`, and that
+  list is now the single source of truth. Two mechanisms described hot-spare relevance; the
+  vestigial one is gone.
+
+  The two could not simply be merged, and the reason is now recorded at the surviving site rather
+  than left for the next reader to rediscover: the engines genuinely subtract hot spares for
+  every platform, and the zeroing happens in the calculation hooks *before* the engine is called.
+  A capability flag asserting "this platform ignores hot spares" would be refuted by the
+  capability probe, which drives `calculateVolumetry` directly and would still see the
+  subtraction. The capability map answers "does the engine read this input"; the topology list
+  answers the different question "does this platform have a spare drive to configure" — a
+  vendor-architecture fact, which is why it is sourced rather than probed.
+
+  The probe that covered the flag is kept and strengthened. It was wrapped in
+  `if (caps.supportsHotSpares)` against a flag that was never false, so its `else` branch had
+  never executed while implying a platform could opt out. It now asserts unconditionally that all
+  fifteen types subtract — which is precisely the invariant that forces the UI decision to live
+  outside the capability map.
+
+- **The YAML / Ansible / Terraform export (#124).** 429 lines, no dedicated test, and it only
+  ever knew **ZFS** — one platform of fifteen. What the ZFS path emitted was three lines:
+  `zfs_ashift`, `zfs_recordsize`, and a device glob.
+
+  The question the issue asked was whether it earned its keep, and the answer is no. Raidy sizes
+  storage; it does not provision it. A Terraform fragment derived from a capacity estimate has no
+  hosts, no network and no credentials, so it is not deployable — which left the feature costing
+  maintenance and test surface, and standing as a place every new platform "should" be wired into.
+  Expanding it was proposed during the input-panel relevance design and rejected there for the
+  same reason.
+
+  **What users keep.** The PDF and PPTX exports are untouched — a presales deliverable has an
+  obvious consumer. So are the ZFS provisioning commands in the Take-away card's collapsible
+  section, which are the copy-paste-able output people actually used. `zfsOptions.compressionType`
+  is still live for exactly that reason.
+
+  Removed with it: three buttons, six locale keys across all four languages, the barrel re-export,
+  and the now-unreachable `controllerOptions` read in `OutputDashboard`. The Take-away export grid
+  drops from four columns to two.
+
 - **133 orphaned translation keys per locale**, left behind by removed features and by controls
   deleted earlier in this release. A new test (`tests/i18n/orphanKeys.spec.ts`) now fails on any
   key the source cannot reach, with a documented allowlist for the sixteen call sites that
   assemble keys at runtime. **This is deliberately narrower than what the raw scan reported**:
   of 284 candidates, 151 turned out to be translations shadowed by hardcoded English — deleting
   those would have erased real translations instead of fixing the bug above.
+
 - **Four unused packages: `recharts` (8.5 MB), `js-yaml` (1.0 MB), and the redundant
   `@types/dompurify` and `@types/js-yaml`.** None was imported anywhere — the app draws its charts
   as hand-rolled SVG, builds YAML from template literals, and `dompurify` v3 ships its own types.
   The first two sat in the *production* dependency graph of a project that supply-chain-checks
   every build, so this removes attack surface, not only weight. Verified by a successful build
   plus `check:bundle-size` and `check:supply-chain`, not by grep alone. No behaviour changes.
+
 - **Ten more inert controls, across NetApp, Synology, Longhorn and BeeGFS.** NetApp's Platform,
   ADP version and Zero Detection; Synology's Model Series, SSD Cache and Cache Mode; Longhorn's
   Over-Provisioning; and BeeGFS's Chunk Size, Number of Targets and Network fabric. The BeeGFS
@@ -228,6 +262,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Longhorn's Over-Provisioning was echoed into the Longhorn results card, so **that output row
   is gone too**: it displayed a number the user can no longer influence. **No calculated figure
   changes.**
+
 - **Five more inert controls: Ceph's Backend, Encryption and Journal-on-SSD, vSAN's Encryption,
   and ZFS's Special vdev.** Each was a real platform feature the tool does not model — dm-crypt
   and vSAN DARE carry no published capacity tax, BlueStore-vs-FileStore has no per-backend
@@ -235,6 +270,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   that *is* modelled, and a ZFS special vdev's capacity effect depends on its own size and the
   pool's small-block mix, neither of which this tool knows. All five said as much in their own
   hint text. **No calculated figure changes.**
+
 - **Every PowerVault configuration control, and PowerScale's SmartQuotas and SyncIQ toggles.**
   PowerVault rendered five controls — model, controller count, auto-tiering, SSD read cache and
   thin provisioning — and *all five* were inert: ME5 is modelled with one flat metadata overhead
@@ -244,6 +280,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (access control, not a capacity multiplier) and SyncIQ (this tool sizes a single site) go for
   the same reason. **No calculated figure changes.** PowerVault still shows its RAID-level
   descriptions and the note that ME5 supports no inline compression or deduplication.
+
 - **Two configuration controls that changed no number: the Workload panel's "Total Dataset Size"
   slider and the tiering "Cache Mode" selector.** Both were stored, serialized into every shared
   URL and echoed back onto their own control, but neither was read by any engine, worker,
@@ -256,6 +293,67 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   rather than assumes.
 
 ### Fixed
+
+- **Resilience recommendations are translated (#125).** `getRecommendations()` in
+  `useResilience.ts` built its six strings in hardcoded English — "Configuration provides
+  excellent data protection" and friends — so a French, German or Italian user read English
+  recommendations beside a fully translated panel. The #71 sweep routed 15 validators through
+  `i18n.t()` and #72 added key parity, but both missed this one: it lives in a hook, not in
+  `validators.ts` or a component.
+
+  **The translation happens at render, not where the array is built**, and that is the part worth
+  keeping. `recommendations` is produced once when the worker replies and then held in state;
+  calling `i18n.t()` there would freeze the language, so switching FR→DE after running a
+  simulation would keep showing French. `getRecommendations` now returns i18n key suffixes and
+  `ResilienceAct` translates them, which re-runs on language change.
+
+  No `DYNAMIC_PREFIXES` entry was added to the orphan-key test even though the keys are assembled
+  at runtime. The existing leaf-literal fallback already covers them — each suffix is pushed as a
+  bare string literal — and it is the stronger check: a prefix entry would exempt the whole
+  subtree, letting a key outlive its `push`. Verified by renaming one push, which correctly
+  surfaces `resilience.recommendation.excellentProtection` as an orphan.
+
+  The pass the issue asked for turned up three more sites of the same class, all converging on
+  `PerformanceResult.bottleneckDescription`: `identifyBottleneck()` returns
+  `"Bottleneck: Controller (8000 MB/s)"`, and `usePerformanceCalc` sets `'No drive selected'` and
+  `'Performance calculation failed'`. Filed separately — fixing them means turning that field into
+  structured data, which reaches the PDF and PPTX exports too.
+
+- **The controller selector is hidden for vSAN ESA, and the working-set slider for vSAN OSA in
+  all-flash mode.** vSAN ESA is NVMe-direct: the engine drops the Controller layer from the
+  bottleneck chain and bounds IOPS by PCIe and network alone, so the selector could not change
+  a result. vSAN OSA's `vsanFastTierModel` blends the two tiers by working set only on its
+  hybrid branch, so the slider is inert in all-flash mode — a sub-mode gate rather than a
+  platform one. The PCIe controls, which *do* bind on ESA, are unaffected. **No calculated
+  figure changes.**
+
+- **The Advanced panel's Filesystem selector is now shown only where the engine reads it.**
+  `getFilesystemOverheadPercent` returns a platform constant for thirteen of the fifteen
+  topology types; only standard RAID and Longhorn consult the user's choice — Longhorn via the
+  switch's `default` branch, since it has no case of its own. On every other platform the
+  control could be moved with no effect. Pinned by a new per-topology probe case, verified
+  falsifiable: flipping the Longhorn flag makes it fail with 2.85 TB vs 2.97 TB (ext4 5% vs
+  XFS 1%). **No calculated figure changes** — only the control's visibility.
+
+- **The performance gauges were pinned at full on any modern configuration.** Their scales were
+  hardcoded at 50,000 MB/s and 2,000,000 IOPS — set before the PERC13 controller recalibration
+  raised limits 3.4–4.7× in 1.16.0. An 8-node NVMe cluster reports 225,600 MB/s and 38.4M IOPS,
+  so all four needles sat in the stop and every arc read as full red. The gauges now scale to
+  the **drives' own ceiling**, before the controller/PCIe/network chain caps it: below full, the
+  chain is throttling drives you paid for; at full, the drives themselves are the limit. Colours
+  run red-to-green accordingly, the inverse of before — a full gauge is now the good outcome.
+  Scaling to the bottleneck was considered and rejected: throughput *is* the bottleneck by
+  construction, so those gauges would have read 100% permanently.
+
+- **Topology names, RAID level descriptions and network-speed labels are translated again.**
+  Three lookup tables held English string literals while fully translated keys sat unused in
+  every locale file — a French user picking RAID 0 read *"Stripe, no redundancy"* although
+  `fr/topology.json` already said *"Agrégat, sans redondance"*. 80 level entries, 15 platform
+  names and 7 link speeds now resolve through i18n. Six level entries had never been translated
+  at all (Longhorn R2/R3 and the four BeeGFS levels, both platforms added after the level tree
+  was built) and were written for all four languages, along with a missing `type.beegfs` and the
+  ZFS `128K (default)` record size.
+
 - **The Hardware panel's raw-capacity and hardware-cost summary counted one server's drives, not
   the cluster's.** The same panel renders a drive-count hint of `driveCount * serverCount`
   ("Total drives: 120"), then computed both summary figures from `driveCount` alone — so a
@@ -265,51 +363,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `effectiveServerCount`, the same clamp the engines use, so a platform whose servers slider is
   hidden cannot pick up a stale count. **Output-dashboard figures were always correct** — they
   come from the engines, which multiply properly; only the input panel's own summary was wrong.
-### Added
-
-- **Sustained (steady-state) write throughput, reported alongside the existing burst figure**
-  (issue #112). Every write absorbed by a write-back fast tier (S2D's cache mirror, vSAN OSA's
-  cache device, Nutanix's OpLog) eventually has to destage to the capacity tier, and none of those
-  platforms publishes a numeric drain rate — so under sustained load, throughput converges on the
-  capacity tier's own write capacity, not the cache's ingest rate. The tool previously reported
-  only the burst number, unlabelled, as if it were steady-state. **No existing number changes**:
-  `maxWriteThroughputMBs`/`maxWriteIOPS` keep their exact pre-#112 formula and values (labelled
-  "Write (Burst)" in the UI when a distinct sustained figure exists). New
-  `sustainedWriteThroughputMBs`/`sustainedWriteIOPS` fields on `PerformanceResult` report the
-  capacity-tier-bounded figure ("Write (Sustained)"), shown as a second gauge pair only for
-  configurations where it actually differs from burst — tiered S2D, tiered vSAN OSA (both
-  disk-group modes), and tiered Nutanix with a cache drive selected. Untiered configurations,
-  Ceph, BeeGFS, and any fast-tier-model platform with no cache drive selected report the same
-  number for both (burst was already the capacity-tier-only figure there), so the UI shows a
-  single gauge, not a false split. Labels and a sizing hint are translated in all four locales
-  (`en`/`fr`/`de`/`it`). See `docs/ARCHITECTURE.md`'s "Burst vs. sustained write throughput" note
-  for the full derivation.
-- **`tests/workers/resilience.spec.ts` no longer flakes under a loaded full-suite run (#100).**
-  The three heaviest Monte Carlo tests that ran multiple 4000-5000-iteration simulations per test
-  (each with its own `vi.resetModules()` + worker re-import) had no explicit per-test timeout, so
-  they relied on Vitest's 5000ms default. Measured under synthetic CPU contention (parallel
-  full-suite run + background load), "should have much higher survival than 2-way mirror with
-  same drives" reached ~2.6s, "should produce consistent results across multiple runs" ~2.1s, and
-  "an odd storage-target count gets no buddy credit" ~1.6s — all with a thin, and on a
-  more-constrained CI runner potentially insufficient, margin to the 5000ms cutoff. No assertion
-  values were loosened (empirically verified: 0 failures across 100-300 trials per cross-run
-  tolerance check in this file); each of the three now gets an explicit 15000ms timeout, the same
-  treatment already applied to `beegfs_raid10 + buddy: survival does not improve as
-  drivesPerTarget grows` for the analogous `--coverage`-instrumentation case.
-- **Odd BeeGFS storage-target counts no longer read as a resilience bug (#68).** Buddy-mirror
-  credit is correctly withheld when the storage-target count is odd (an unpaired target has no
-  buddy), but that made a 5-target cluster report worse survival than a 4-target one with no
-  explanation. The resilience panel now shows an explanatory note whenever a BeeGFS group
-  topology (`beegfs_raid6`, `beegfs_raidz2`, `beegfs_raid10`) has buddy mirroring on and an odd
-  storage-target count, telling the user an even count is needed for full buddy credit.
-  Translated in `en`/`fr`/`de`/`it`. Per-group heterogeneous state (giving the unpaired target
-  partial credit) was considered but not attempted: it would require the worker's group model to
-  carry a per-group tolerance instead of one scalar `parityPerGroup`, touching the failure-count,
-  URE, and rebuild-time logic the extensive superset-invariant proof comments in
-  `resilienceWorker.ts` depend on — more than a "contained change," so the conservative UI note is
-  the fix per the issue's own ruling.
-
-### Fixed
 
 - **Resilience now models a replacement-sourcing delay for spare-free configurations, closing
   #93.** #80 excluded hot spares from the simulated failure population (a spare holds no data,
@@ -386,16 +439,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `replacementDelayDaysRemaining`) added are within this measurement's run-to-run noise floor
   (single-process JIT/GC variance was ±15–20% run over run even on unmodified code).
 
-### Documented
-
-- Researched whether BeeGFS's `numTargets` and `chunkSizeKb` (issue #69) could drive a genuine
-  single-stream (single-client, single-file) throughput output. Concluded no: a realistic
-  single-stream ceiling needs a client link speed this app does not collect, and ThinkParQ's own
-  published benchmark ("Picking the right number of targets per server for BeeGFS", March 2015)
-  shows single-stream throughput does not scale linearly with `numTargets` even given that input
-  — it nearly doubles from 1→2 targets, then plateaus or regresses from 2→4. Both fields stay
-  labelled informational; their doc-comments in `src/types/topology.ts` now cite the research.
-### Fixed
 - **`fr` and `de` locale strings are now consistently accented.** What looked like a deliberate
   "unaccented" convention was actually per-file drift: e.g. `fr/topology.json` carried ~420
   accented characters while `fr/common.json` had 1, and several files (`advanced`, `hardware`,
@@ -406,12 +449,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   retranslated, no JSON keys changed, and interpolation placeholders (`{{count}}`, etc.) were
   left byte-identical. (#86)
 
-### Added
-- **i18n parity test now asserts placeholder preservation.** `tests/i18n/parity.spec.ts` gained a
-  case per locale/namespace asserting every `{{placeholder}}` present in an `en` string is also
-  present in the same key's translation, so an accent/copy pass can't silently mangle a runtime
-  interpolation token the way the existing key-presence check would miss. (#86)
-### Fixed
 - **Completed the #104 unconsumed-option-fields sweep (#110).** #104 removed four option fields
   that were collected from the UI and never reached any engine; building its guard test showed
   the pattern was broader. Walked every `DEFAULT_*_OPTIONS` object in `src/types/topology.ts` and
@@ -461,19 +498,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     The affected Zod schemas in `src/utils/schemas.ts` are plain `z.object()` (strip unknown keys
     rather than reject), confirmed for each schema touched here, so existing shared links
     carrying a since-removed field continue to validate and simply drop that key.
-### Changed
-- **The resilience worker now tracks which node each simulated component sits on** (#113).
-  Fault groups previously had no node identity, so mirror-pair membership was assigned without
-  reference to placement. That is a fine approximation while failures are independent, and wrong
-  the moment they are correlated: injecting group-kill logic into the old worker produced
-  spurious survival collapses 41–62% of the time, because both copies of a pair could land in a
-  group that then died together — an arrangement a real system would never create.
 
-  **No published figure changes.** The node arrays are recorded and threaded through, and nothing
-  reads them for any failure decision, so this release is provably behaviour-neutral rather than
-  statistically indistinguishable. It is infrastructure: it unblocks #88 (modelling the fast tier
-  as a shared failure domain) and any future rack or chassis fault-domain work, neither of which
-  could be built correctly without it.
+### Documented
+
+- Researched whether BeeGFS's `numTargets` and `chunkSizeKb` (issue #69) could drive a genuine
+  single-stream (single-client, single-file) throughput output. Concluded no: a realistic
+  single-stream ceiling needs a client link speed this app does not collect, and ThinkParQ's own
+  published benchmark ("Picking the right number of targets per server for BeeGFS", March 2015)
+  shows single-stream throughput does not scale linearly with `numTargets` even given that input
+  — it nearly doubles from 1→2 targets, then plateaus or regresses from 2→4. Both fields stay
+  labelled informational; their doc-comments in `src/types/topology.ts` now cite the research.
 
 ## [1.16.0] - 2026-08-04
 
