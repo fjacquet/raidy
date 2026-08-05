@@ -132,7 +132,30 @@ interface SimulationScopeContext {
 interface PlatformSimulationScope extends SimulationScope {
   /** Media whose capacity/AFR the simulation uses; null keeps the Hardware panel's drive. */
   mediaDrive: Drive | null
+  /**
+   * The shared fast-tier failure domain (#88), or null when the platform has none. Non-null only
+   * for the two platforms with a vendor statement that losing the fast device takes capacity
+   * devices with it — see `SHARED_FAST_TIER_TOPOLOGIES`.
+   */
+  sharedFastTier?: { afrPercent: number; deviceCount: number } | null
 }
+
+/**
+ * Platforms where a fast-tier device failure cascades to the capacity devices it serves (#88).
+ *
+ * Both entries are sourced, and the two absentees are the point of the list:
+ *
+ * - `vsan_osa` — Broadcom: "vSAN interprets the failure of a single flash caching device as a
+ *   failure of the entire disk group", cache and capacity devices alike marked degraded.
+ * - `ceph` — Red Hat: "a corrupt block.db file will impact all OSDs which are included in that
+ *   block.db file".
+ *
+ * `s2d` and `nutanix` tier through the very same `tieredPlatformScope` and were named alongside
+ * these two in #82, but their fast tiers are write-back cache and no vendor documents the loss
+ * taking the capacity tier down. Adding them for symmetry would be inventing a failure mode, so
+ * the list is explicit rather than derived from "is this platform tiered".
+ */
+const SHARED_FAST_TIER_TOPOLOGIES: readonly Topology['type'][] = ['vsan_osa', 'ceph']
 
 type SimulationScopeResolver = (ctx: SimulationScopeContext) => PlatformSimulationScope | null
 
@@ -148,11 +171,10 @@ type SimulationScopeResolver = (ctx: SimulationScopeContext) => PlatformSimulati
  * Returns null when the platform's tiering toggle is off, which leaves the naive
  * `driveCount * serverCount` path untouched for every currently-correct configuration.
  *
- * Not modelled: the fast tier as a shared failure domain. A vSAN OSA cache device failure takes
- * down its entire disk group, and a Ceph WAL/DB NVMe failure can take out every OSD it serves.
- * This resolver corrects WHICH drives are simulated, not WHY the fast tier failing could cascade
- * — that needs per-platform failure-domain work. The same limitation Ceph's WAL/DB tier already
- * had before this change.
+ * The fast tier as a shared failure domain IS now modelled, for the two platforms with a vendor
+ * statement behind the cascade — see `SHARED_FAST_TIER_TOPOLOGIES` and issue #88. S2D and Nutanix
+ * resolve through here too but get no cascade: their fast tiers are write-back cache and no vendor
+ * documents the loss taking the capacity tier with it.
  *
  * Hot spares come off the capacity tier, clamped at zero, mirroring
  * `src/engines/volumetry/index.ts:178`, which clamps the identical quantity the identical way.
@@ -168,10 +190,22 @@ function tieredPlatformScope({
   const tiering = resolveTiering(topology, serverCount, tieringOptions ?? {})
   if (!tiering) return null
   const totalHotSpares = usesDistributedSpares(topology.type) ? 0 : hotSpares * serverCount
+  const cacheDrive = tiering.cacheTierDrive
   return {
     driveCount: Math.max(0, tiering.capacityTierDriveCount - totalHotSpares),
     groupCount: serverCount,
     mediaDrive: tiering.capacityTierDrive,
+    // The fast tier stops being merely "excluded from the population" for the two platforms that
+    // document the cascade (#88). `cacheTierDriveCount` is already a cluster-wide device count —
+    // `TieringConfig.fastTier.driveCount` is per-server and `calculateTieredCapacity` multiplies
+    // it by `serverCount` — so it needs no further scaling to mean "how many devices back this
+    // population".
+    sharedFastTier:
+      SHARED_FAST_TIER_TOPOLOGIES.includes(topology.type) &&
+      cacheDrive &&
+      tiering.cacheTierDriveCount > 0
+        ? { afrPercent: cacheDrive.reliability.afr, deviceCount: tiering.cacheTierDriveCount }
+        : null,
   }
 }
 
@@ -487,6 +521,11 @@ export function useResilience(options: UseResilienceOptions): UseResilienceResul
       // for `usesDistributedSpares` platforms above), so vSAN — which has no dedicated spare
       // drive to credit — gets no credit here either, without a platform-specific branch.
       hasHotSpare: totalHotSpares > 0,
+      // Shared fast-tier failure domain (#88). Absent for every platform outside
+      // SHARED_FAST_TIER_TOPOLOGIES, and for those two when tiering is off — the worker's
+      // defaults then reproduce the pre-#88 model exactly.
+      sharedFastTierAfrPercent: scope?.sharedFastTier?.afrPercent,
+      fastTierDeviceCount: scope?.sharedFastTier?.deviceCount,
     }
 
     worker.postMessage({ type: 'START', payload: input })

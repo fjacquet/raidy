@@ -1,6 +1,11 @@
 # Modelling the fast tier as a shared failure domain (#88)
 
-**Status:** design, awaiting review. No code written.
+**Status:** design, revised 2026-08-05 after reading the worker. No code written.
+
+> **The first draft's central proposal was wrong.** It is kept below, struck through with the
+> reason, because the reason is the useful part: `serverCount` is overloaded as both fault-group
+> count and replica-placement host count, so regrouping by disk group would have introduced an
+> optimistic bias while removing one.
 
 **Direction of the change:** survival rates go **down** for tiered vSAN OSA and tiered Ceph. This
 is the one open item that currently errs on the unsafe side, so the fix makes published numbers
@@ -67,46 +72,63 @@ That is the gap. It needs a new concept, as #88 predicted.
 
 ## 3. Proposed model
 
-### The fault group becomes the disk group, not the node
+### CORRECTION (2026-08-05, after reading the worker): the fault group must NOT become the disk group
 
-For vSAN OSA the natural fault group is already documented: the disk group. The inputs to derive
-it are present, no new UI required:
+The first draft of this spec proposed making the simulated fault group the *disk group* rather
+than the node, deriving `groupCount = tiering.cacheTierDriveCount`. **That is wrong, and it would
+introduce a new optimistic bias while fixing an existing one.**
+
+`useResilience.ts:483` passes the scope's `groupCount` to the worker as `serverCount`, and the
+worker overloads that single field three ways: fault-group count, BeeGFS storage-target count,
+and — the problem — **real host count for replica placement**. From `resilienceWorker.ts:337`:
+
+> "`serverCount` is the real host count and real placement puts each copy on a different host"
+
+`assignNodesRoundRobin(numMirrorGroups, effectiveMirrorCopies, serverCount)` spreads mirror
+copies across that many hosts. Feeding it a disk-group count — always ≥ the host count — would
+model replicas that in reality share a host as sitting on different hosts. That **overstates**
+resilience, which is the exact error class #88 exists to remove. Every mirror level of both
+target platforms goes through that path (`vsan_osa_raid1`, `ceph_replicated_*`).
+
+So the regrouping is not separable-but-optional; it is **incorrect** unless `serverCount` is first
+split into distinct fault-group and host-count inputs. That is its own change, with its own risk,
+and it should not ride along here.
+
+### Revised model: keep the groups, add the event
+
+`groupCount` stays `serverCount`. Each simulated group (a node) holds
+`fastTierDevicesPerGroup = cacheTierDriveCount / serverCount` cache devices — for vSAN OSA that is
+disk groups per host, for Ceph it is shared block.db devices per host. Both are already per-server
+values in `TieringConfig.fastTier.driveCount` before `calculateTieredCapacity` multiplies by
+`serverCount`, so the quotient is exact rather than inferred. (This also answers open question 3
+from the first draft: `cacheTierDriveCount` really is a device count, not a capacity proxy.)
+
+A cache failure inside a group takes down that group's share of capacity drives:
 
 ```
-groupCount        = tiering.cacheTierDriveCount        // one cache device per disk group
-drivesPerGroup    = capacityTierDriveCount / cacheTierDriveCount
+drivesPerFastTierDevice = groupWidth / fastTierDevicesPerGroup
 ```
 
-For Ceph the same arithmetic applies with `cacheTierDriveCount` reading as "shared block.db
-devices" and the quotient as OSDs per DB device.
+New optional worker inputs, both absent by default so every existing caller is untouched:
 
-**This alone changes numbers**, before any cache-failure event is added: today `groupCount` is
-`serverCount`, and a node with two disk groups is currently simulated as one fault domain instead
-of two. Whether that is a separate, earlier fix or part of this one is a review question — it is
-arguably a bug in its own right, and it moves survival in the *optimistic* direction when split
-(more, smaller groups tolerate more scattered failures), which is the opposite direction from the
-cache-failure event. The two effects partly cancel, and the release note must not present the net
-as if it were one mechanism.
-
-### A cache-device failure event per group
-
-Each simulated group gains one cache device with its own AFR, taken from
-`tiering.cacheTierDrive` — the fast-tier drive is already resolved, only never used for
-reliability. On any day the cache device fails, the entire group is lost at once, regardless of
-`parityPerGroup`.
-
-Sketch, in the worker's existing per-day loop shape:
-
-```
-// Per group, once per simulated day, before the per-drive failure pass:
-if (hasSharedFastTier && random() < cacheDailyFailureProbability) {
-  // The whole group is gone: capacity devices included, per the vendor statement.
-  groupFailures[g] = groupWidths[g]
-}
+```ts
+/** AFR of the shared fast-tier device. Absent or 0 = no shared fast tier (default). */
+sharedFastTierAfrPercent?: number
+/** Cache/DB devices per simulated fault group; their blast radius is groupWidth / this. */
+fastTierDevicesPerGroup?: number
 ```
 
-The daily probability comes from the cache drive's AFR by the same conversion the worker already
-applies to data drives — reusing it rather than introducing a second formula.
+Per simulated day, per group, before the per-drive pass: roll `fastTierDevicesPerGroup` times at
+`sharedFastTierAfrPercent / 100 / 365`; each hit injects `drivesPerFastTierDevice` simultaneous
+drive failures into that group, through the **existing** failure-assignment logic rather than a
+parallel path — otherwise the URE, rebuild and correlated-window mechanics would silently not
+apply to them.
+
+That last point is the main implementation cost: the per-drive failure body is currently inline in
+the day loop, so injecting forced failures means extracting it into a closure the loop and the
+cache event both call. It is a contained refactor, but it touches the most safety-critical function
+in the codebase, whose invariants are held together by long proof comments. It needs its own
+careful review, and an equivalence gate showing the extraction alone moves nothing.
 
 ### What is NOT proposed
 
@@ -147,6 +169,11 @@ Because this moves published numbers, the same discipline the recent engine work
 1. **Is the regrouping (`groupCount` = disk groups, not nodes) in scope here, or its own fix
    first?** It is separable, it moves numbers on its own, and it moves them the other way.
 2. **Should a group loss be recoverable at all in v1**, or simply fatal to that group?
-3. **Ceph's shared-device count** is derived from `cacheTierDriveCount`. Is that what users
-   actually enter there, or do they treat it as total WAL/DB capacity? If the latter, the quotient
-   is meaningless and the model needs an explicit "OSDs per DB device" input.
+3. ~~**Ceph's shared-device count**~~ — **answered.** `TieringConfig.fastTier.driveCount` is a
+   per-server *device* count that `calculateTieredCapacity` multiplies by `serverCount`, so
+   `cacheTierDriveCount / serverCount` is exactly "cache devices per host". No new input needed.
+
+4. **New, and the one that matters:** should `serverCount` be split into separate fault-group and
+   host-count worker inputs first? Until it is, the disk-group-level fault domain cannot be
+   modelled without corrupting replica placement. Doing it first makes #88 smaller; doing it never
+   caps how faithful #88 can get.
