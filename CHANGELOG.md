@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+
+- **`PLATFORM_CAPABILITIES.supportsHotSpares`, which was `true` for all fifteen platforms and so
+  carried no information (#130).** Its only reader was `shouldShowControl('hotSpares', …)`, which
+  no UI ever called — the hot-spare slider is gated on `DISTRIBUTED_SPARE_TOPOLOGIES`, and that
+  list is now the single source of truth. Two mechanisms described hot-spare relevance; the
+  vestigial one is gone.
+
+  The two could not simply be merged, and the reason is now recorded at the surviving site rather
+  than left for the next reader to rediscover: the engines genuinely subtract hot spares for
+  every platform, and the zeroing happens in the calculation hooks *before* the engine is called.
+  A capability flag asserting "this platform ignores hot spares" would be refuted by the
+  capability probe, which drives `calculateVolumetry` directly and would still see the
+  subtraction. The capability map answers "does the engine read this input"; the topology list
+  answers the different question "does this platform have a spare drive to configure" — a
+  vendor-architecture fact, which is why it is sourced rather than probed.
+
+  The probe that covered the flag is kept and strengthened. It was wrapped in
+  `if (caps.supportsHotSpares)` against a flag that was never false, so its `else` branch had
+  never executed while implying a platform could opt out. It now asserts unconditionally that all
+  fifteen types subtract — which is precisely the invariant that forces the UI decision to live
+  outside the capability map.
+
 ### Changed
 
 - **Eight more platforms rebuild from distributed reserve capacity, so the hot-spare control is

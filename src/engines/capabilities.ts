@@ -9,7 +9,6 @@ import type { Topology, TopologyType } from '@/types/topology'
 export interface PlatformCapabilities {
   supportsCompression: boolean
   supportsDedup: boolean
-  supportsHotSpares: boolean
   hasServerCount: boolean
   /**
    * True when `getFilesystemOverheadPercent` consults the user's `fsType` instead of
@@ -36,46 +35,49 @@ export interface PlatformCapabilities {
   honoursController: boolean
 }
 
-// Bootstrapped empirically (Step 3 of the task-15 brief): every flag was set to
-// `true`, the probe suite run, and flags the probe refuted were flipped. See
-// `applyCompressionDedup` in src/engines/volumetry/postProcessing/capacityEnhancements.ts —
-// it is the sole source of truth this map must track.
+// WHY THIS TABLE EXISTS
 //
-// IMPORTANT: `supportsCompression`/`supportsDedup` here describe whether the
-// *global* compressionRatio/dedupRatio inputs (VolumetryInput.compressionRatio /
-// .dedupRatio) move effectiveCapacity for that platform — this is what the
-// probe exercises via createVolumetryInput's top-level overrides.
+// A control that cannot change any number is worse than no control: it invites the user to tune
+// something, then ignores them. `AdvancedPanel` consults this map to hide those controls.
 //
-// ZFS is the ONLY platform whose engine strategy multiplies usableCapacity by
-// the global compressionRatio/dedupRatio directly (see applyCompressionDedup:
-// `if (topology.type === 'zfs') return usableCapacity * compressionRatio * dedupRatio`).
+// `supportsCompression`/`supportsDedup` answer one narrow question — does the *global*
+// `VolumetryInput.compressionRatio`/`.dedupRatio` move `effectiveCapacity` for this platform.
+// Not "does this platform do compression" (most do). The distinction is the whole point, and the
+// per-platform breakdown below is where it is settled.
 //
-// standard: RAID has no compression/dedup step at all — effectiveCapacity ===
-// usableCapacity unconditionally (see the "Standard RAID has no
-// compression/deduplication" comment in applyCompressionDedup).
+// The values were bootstrapped empirically rather than reasoned out: every flag was set to
+// `true`, the probe suite run, and each flag the probe refuted was flipped. That is also how the
+// table stays honest — `tests/engines/capabilities.spec.ts` asserts every flag against real
+// engine behaviour, so a strategy change that alters what an input does fails the probe rather
+// than silently desynchronising the UI. `applyCompressionDedup`
+// (src/engines/volumetry/postProcessing/capacityEnhancements.ts) is the source of truth being
+// tracked.
 //
-// s2d, proprietary (Synology levels — netapp_* levels have their own DRR
-// path, but this representative uses synology_shr), powervault: no
-// compression/dedup branch in applyCompressionDedup at all — falls through to
-// the final `return usableCapacity` no-op.
+// Hot spares are deliberately NOT a flag here — see `DISTRIBUTED_SPARE_TOPOLOGIES` in
+// src/types/topology.ts for why they cannot be (#130).
 //
-// vsan_osa, vsan_esa, ceph, powerflex, powerstore, powerscale, objectscale,
-// nutanix: each DOES support compression/dedup, but exclusively through its
-// own platform-specific options object (e.g. powerFlexOptions.compression /
-// .compressionRatio, nutanixOptions.compression / .compressionRatio,
-// cephOptions.compression, vsanOptions.compression / .dedup, etc.) — NOT the
-// global compressionRatio/dedupRatio fields the probe drives. With
-// createVolumetryInput's DEFAULT_*_OPTIONS (compression/dedup toggles off, or
-// gated by their own ratio field untouched by the probe), the global knob is
-// a no-op for these platforms. This is a real UI finding for Task 16: any
-// generic compression/dedup slider tied to the global store fields is a
-// no-op for every platform except zfs — these platforms need their
-// platform-specific options panels instead, not the shared slider.
+// Per platform:
+//
+// zfs: the ONLY platform whose strategy multiplies usableCapacity by the global ratios directly
+// (`if (topology.type === 'zfs') return usableCapacity * compressionRatio * dedupRatio`).
+//
+// standard: RAID has no compression/dedup step at all — effectiveCapacity === usableCapacity
+// unconditionally.
+//
+// s2d, proprietary (Synology levels — netapp_* levels have their own DRR path, but this
+// representative uses synology_shr), powervault: no compression/dedup branch in
+// applyCompressionDedup at all — falls through to the final `return usableCapacity` no-op.
+//
+// vsan_osa, vsan_esa, ceph, powerflex, powerstore, powerscale, objectscale, nutanix: each DOES
+// support compression/dedup, but exclusively through its own platform-specific options object
+// (powerFlexOptions.compression/.compressionRatio, nutanixOptions.compression/.compressionRatio,
+// cephOptions.compression, vsanOptions.compression/.dedup, …) — NOT the global fields. So the
+// shared slider is a no-op for them and is hidden; their own options panels carry the real
+// controls.
 export const PLATFORM_CAPABILITIES: Record<TopologyType, PlatformCapabilities> = {
   standard: {
     supportsCompression: false,
     supportsDedup: false,
-    supportsHotSpares: true,
     // UI exception: HardwarePanel still shows the slider for RAID50/60 (isRaidGroupMode),
     // where serverCount doubles as the RAID-group count and does affect capacity.
     hasServerCount: false,
@@ -86,7 +88,6 @@ export const PLATFORM_CAPABILITIES: Record<TopologyType, PlatformCapabilities> =
   zfs: {
     supportsCompression: true,
     supportsDedup: true,
-    supportsHotSpares: true,
     hasServerCount: false,
     honoursFsType: false,
     honoursController: true,
@@ -94,7 +95,6 @@ export const PLATFORM_CAPABILITIES: Record<TopologyType, PlatformCapabilities> =
   s2d: {
     supportsCompression: false,
     supportsDedup: false,
-    supportsHotSpares: true,
     hasServerCount: true,
     honoursFsType: false,
     honoursController: true,
@@ -102,7 +102,6 @@ export const PLATFORM_CAPABILITIES: Record<TopologyType, PlatformCapabilities> =
   proprietary: {
     supportsCompression: false,
     supportsDedup: false,
-    supportsHotSpares: true,
     hasServerCount: false,
     honoursFsType: false,
     honoursController: true,
@@ -110,7 +109,6 @@ export const PLATFORM_CAPABILITIES: Record<TopologyType, PlatformCapabilities> =
   vsan_osa: {
     supportsCompression: false,
     supportsDedup: false,
-    supportsHotSpares: true,
     hasServerCount: true,
     honoursFsType: false,
     honoursController: true,
@@ -118,7 +116,6 @@ export const PLATFORM_CAPABILITIES: Record<TopologyType, PlatformCapabilities> =
   vsan_esa: {
     supportsCompression: false,
     supportsDedup: false,
-    supportsHotSpares: true,
     hasServerCount: true,
     honoursFsType: false,
     // NVMe-direct: `isNvmeDirect` drops the Controller layer from the bottleneck chain and
@@ -129,7 +126,6 @@ export const PLATFORM_CAPABILITIES: Record<TopologyType, PlatformCapabilities> =
   ceph: {
     supportsCompression: false,
     supportsDedup: false,
-    supportsHotSpares: true,
     hasServerCount: true,
     honoursFsType: false,
     honoursController: true,
@@ -137,7 +133,6 @@ export const PLATFORM_CAPABILITIES: Record<TopologyType, PlatformCapabilities> =
   powerflex: {
     supportsCompression: false,
     supportsDedup: false,
-    supportsHotSpares: true,
     hasServerCount: true,
     honoursFsType: false,
     honoursController: true,
@@ -145,7 +140,6 @@ export const PLATFORM_CAPABILITIES: Record<TopologyType, PlatformCapabilities> =
   powerstore: {
     supportsCompression: false,
     supportsDedup: false,
-    supportsHotSpares: true,
     hasServerCount: true,
     honoursFsType: false,
     honoursController: true,
@@ -153,7 +147,6 @@ export const PLATFORM_CAPABILITIES: Record<TopologyType, PlatformCapabilities> =
   powerscale: {
     supportsCompression: false,
     supportsDedup: false,
-    supportsHotSpares: true,
     hasServerCount: true,
     honoursFsType: false,
     honoursController: true,
@@ -161,7 +154,6 @@ export const PLATFORM_CAPABILITIES: Record<TopologyType, PlatformCapabilities> =
   objectscale: {
     supportsCompression: false,
     supportsDedup: false,
-    supportsHotSpares: true,
     hasServerCount: true,
     honoursFsType: false,
     honoursController: true,
@@ -169,7 +161,6 @@ export const PLATFORM_CAPABILITIES: Record<TopologyType, PlatformCapabilities> =
   nutanix: {
     supportsCompression: false,
     supportsDedup: false,
-    supportsHotSpares: true,
     hasServerCount: true,
     honoursFsType: false,
     honoursController: true,
@@ -177,7 +168,6 @@ export const PLATFORM_CAPABILITIES: Record<TopologyType, PlatformCapabilities> =
   powervault: {
     supportsCompression: false,
     supportsDedup: false,
-    supportsHotSpares: true,
     hasServerCount: false,
     honoursFsType: false,
     honoursController: true,
@@ -185,7 +175,6 @@ export const PLATFORM_CAPABILITIES: Record<TopologyType, PlatformCapabilities> =
   longhorn: {
     supportsCompression: false,
     supportsDedup: false,
-    supportsHotSpares: true,
     hasServerCount: true,
     // No `case 'longhorn'` in getFilesystemOverheadPercent — it reaches the `default`
     // branch, which reads the user's fsType exactly like standard RAID does. Flipping
@@ -196,7 +185,6 @@ export const PLATFORM_CAPABILITIES: Record<TopologyType, PlatformCapabilities> =
   beegfs: {
     supportsCompression: false,
     supportsDedup: false,
-    supportsHotSpares: true,
     hasServerCount: true,
     honoursFsType: false,
     honoursController: true,
@@ -208,7 +196,7 @@ export function getCapabilities(type: TopologyType): PlatformCapabilities {
 }
 
 export function shouldShowControl(
-  control: 'compression' | 'dedup' | 'hotSpares' | 'serverCount' | 'fsType' | 'controller',
+  control: 'compression' | 'dedup' | 'serverCount' | 'fsType' | 'controller',
   type: TopologyType,
 ): boolean {
   const caps = getCapabilities(type)
@@ -217,12 +205,6 @@ export function shouldShowControl(
       return caps.supportsCompression
     case 'dedup':
       return caps.supportsDedup
-    case 'hotSpares':
-      // NOTE: no UI calls this. The hot-spare slider is gated on `usesDistributedSpares`
-      // (src/types/topology.ts) instead, and `supportsHotSpares` is true for all fifteen types
-      // so it carries no information today. The two mechanisms cannot simply be merged — see
-      // issue #130 and the note on DISTRIBUTED_SPARE_TOPOLOGIES.
-      return caps.supportsHotSpares
     case 'serverCount':
       return caps.hasServerCount
     case 'fsType':
