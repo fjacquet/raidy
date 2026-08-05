@@ -73,7 +73,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   falsifiable: flipping the Longhorn flag makes it fail with 2.85 TB vs 2.97 TB (ext4 5% vs
   XFS 1%). **No calculated figure changes** — only the control's visibility.
 
+### Fixed
+- **Topology names, RAID level descriptions and network-speed labels are translated again.**
+  Three lookup tables held English string literals while fully translated keys sat unused in
+  every locale file — a French user picking RAID 0 read *"Stripe, no redundancy"* although
+  `fr/topology.json` already said *"Agrégat, sans redondance"*. 80 level entries, 15 platform
+  names and 7 link speeds now resolve through i18n. Six level entries had never been translated
+  at all (Longhorn R2/R3 and the four BeeGFS levels, both platforms added after the level tree
+  was built) and were written for all four languages, along with a missing `type.beegfs` and the
+  ZFS `128K (default)` record size.
+
 ### Removed
+- **133 orphaned translation keys per locale**, left behind by removed features and by controls
+  deleted earlier in this release. A new test (`tests/i18n/orphanKeys.spec.ts`) now fails on any
+  key the source cannot reach, with a documented allowlist for the sixteen call sites that
+  assemble keys at runtime. **This is deliberately narrower than what the raw scan reported**:
+  of 284 candidates, 151 turned out to be translations shadowed by hardcoded English — deleting
+  those would have erased real translations instead of fixing the bug above.
+- **Four unused packages: `recharts` (8.5 MB), `js-yaml` (1.0 MB), and the redundant
+  `@types/dompurify` and `@types/js-yaml`.** None was imported anywhere — the app draws its charts
+  as hand-rolled SVG, builds YAML from template literals, and `dompurify` v3 ships its own types.
+  The first two sat in the *production* dependency graph of a project that supply-chain-checks
+  every build, so this removes attack surface, not only weight. Verified by a successful build
+  plus `check:bundle-size` and `check:supply-chain`, not by grep alone. No behaviour changes.
 - **Ten more inert controls, across NetApp, Synology, Longhorn and BeeGFS.** NetApp's Platform,
   ADP version and Zero Detection; Synology's Model Series, SSD Cache and Cache Mode; Longhorn's
   Over-Provisioning; and BeeGFS's Chunk Size, Number of Targets and Network fabric. The BeeGFS

@@ -10,13 +10,13 @@
     "longhorn": "Longhorn",
     "nutanix": "Nutanix",
     "netapp": "NetApp ONTAP",
-    "synology": "Synology",
     "powerflex": "PowerFlex",
     "powerstore": "PowerStore",
     "powerscale": "PowerScale",
     "objectscale": "ObjectScale",
     "powervault": "PowerVault ME5",
-    "proprietary": "Autre"
+    "proprietary": "Autre",
+    "beegfs": "BeeGFS"
   },
   "configuration": {
     "label": "Configuration"
@@ -31,8 +31,7 @@
     "compressionRatio": "Taux de compression",
     "dedupRatio": "Taux de déduplication",
     "systemOverhead": "Surcharge système",
-    "snapshotReserve": "Réserve instantanés",
-    "expectedRatio": "Taux attendu : {{ratio}}:1"
+    "snapshotReserve": "Réserve instantanés"
   },
   "level": {
     "label": "Niveau RAID",
@@ -124,9 +123,6 @@
       "description": "RAID-Z3 distribué"
     },
     "ashift": "Taille secteur (ashift)",
-    "ashift512": "512B (ashift=9)",
-    "ashift4k": "4K (ashift=12)",
-    "ashift8k": "8K (ashift=13)",
     "enableCompression": "Activer la compression",
     "compressionAlgorithm": "Algorithme de compression",
     "lz4": "LZ4 (rapide)",
@@ -187,14 +183,10 @@
     },
     "info": {
       "raid1": "RAID-1 FTT=1: Miroir 2 voies, minimum 3 hôtes requis. 50% efficacité.",
-      "raid1_ftt2": "RAID-1 FTT=2: Miroir 3 voies, minimum 5 hôtes requis. 33% efficacité.",
       "raid5": "RAID-5 (3+1): Parité simple, minimum 4 hôtes requis. 75% efficacité.",
-      "raid6": "RAID-6 (4+2): Double parité, minimum 6 hôtes requis. 67% efficacité.",
-      "diskGroups": "OSA utilise des groupes de disques avec niveau cache (NVMe/SSD) + niveau capacité (SSD/HDD)."
+      "raid6": "RAID-6 (4+2): Double parité, minimum 6 hôtes requis. 67% efficacité."
     },
-    "diskGroupConfig": "Configuration groupe de disques",
-    "enableCompression": "Activer la compression",
-    "enableDedup": "Activer la déduplication"
+    "diskGroupConfig": "Configuration groupe de disques"
   },
   "vsanEsa": {
     "title": "Options vSAN ESA",
@@ -212,14 +204,9 @@
     },
     "info": {
       "raid5": "RAID-5 Adaptatif: Utilise 2+1 pour 3-5 hôtes (67% efficacité) ou 4+1 pour 6+ hôtes (80% efficacité).",
-      "raid5Recommended": "Recommandé pour la plupart des déploiements ESA.",
       "raid6": "RAID-6 (4+2): FTT=2, minimum 6 hôtes requis. 67% efficacité.",
-      "raid1": "RAID-1 (Miroir): Recommandé uniquement pour clusters étendus 2 nœuds. 50% efficacité.",
-      "singleTier": "ESA est une architecture mono-niveau. Disques NVMe uniquement, pas de groupes de disques."
-    },
-    "nvmeNotice": "vSAN ESA nécessite des disques NVMe uniquement. Chaque disque sert de cache et capacité.",
-    "enableCompression": "Activer la compression",
-    "enableDedup": "Activer la déduplication"
+      "raid1": "RAID-1 (Miroir): Recommandé uniquement pour clusters étendus 2 nœuds. 50% efficacité."
+    }
   },
   "nutanix": {
     "title": "Options Nutanix AOS",
@@ -239,32 +226,17 @@
       "label": "EC-X (RF3)",
       "description": "Erasure Coding 6:2 base RF3, ~75% efficacité"
     },
-    "info": {
-      "rf2": "RF2: 2 copies des données, 50% efficacité.",
-      "rf3": "RF3: 3 copies des données, 33% efficacité.",
-      "ec_rf2": "EC-X (RF2): Erasure coding 4:1 pour données froides, ~75% efficacité.",
-      "ec_rf3": "EC-X (RF3): Erasure coding 6:2 pour données froides, ~75% efficacité."
-    },
     "clusterType": "Type de cluster",
-    "allFlash": "Tout Flash",
     "hybrid": "Hybride",
     "clusterTypeDesc": {
-      "allFlash": "Tout Flash: NVMe/SSD uniquement, performance maximale",
       "hybrid": "Hybride: Cache SSD + niveau capacité HDD"
     },
-    "enableCompression": "Activer la compression",
-    "compressionRatio": "Ratio de compression",
-    "expectedRatio": "Ratio attendu: {{ratio}}:1",
-    "enableDedup": "Activer la déduplication",
-    "dedupRatio": "Ratio de déduplication",
     "networkType": "Type réseau",
     "networkTypeDesc": {
       "rdma": "RDMA (RoCE): Latence minimale (+0.1ms)",
       "25gbe": "25 GbE: HCI standard (+0.25ms latence)",
       "10gbe": "10 GbE: Legacy (+0.5ms latence)"
-    },
-    "systemOverhead": "Overhead système",
-    "systemOverheadDesc": "CVM, métadonnées, snapshots: {{percent}}%"
+    }
   },
   "powervault": {
     "title": "Options PowerVault ME5",
@@ -292,10 +264,8 @@
       "raid1": "RAID 1: miroir 2 voies avec 50% d'efficacité de stockage. Simple, reconstructions rapides. Idéal pour les volumes de boot et les petits déploiements.",
       "raid5": "RAID 5: parité distribuée simple avec efficacité (n-1)/n. Pénalité d'écriture 4x. Non recommandé pour les charges de travail à forte écriture.",
       "raid6": "RAID 6: double parité distribuée avec efficacité (n-2)/n. Pénalité d'écriture 6x. Meilleure protection des données pour les disques grande capacité.",
-      "raid10": "RAID 10: agrégats en miroir avec 50% d'efficacité. Meilleures performances IOPS aléatoires. Idéal pour les bases de données.",
-      "adapt": "ADAPT: RAID distribué avec ~87% d'efficacité. Capacité de secours répartie sur tous les disques. Reconstructions les plus rapides (8-10x plus rapide). Nécessite 12-128 disques."
-    },
-    "noCompressionNote": "Note: PowerVault ME5 ne supporte pas la compression ou déduplication inline."
+      "raid10": "RAID 10: agrégats en miroir avec 50% d'efficacité. Meilleures performances IOPS aléatoires. Idéal pour les bases de données."
+    }
   },
   "objectscale": {
     "title": "Options ObjectScale",
@@ -314,12 +284,7 @@
     "mirror_3": {
       "label": "Triple miroir",
       "description": "33% efficacité, pour métadonnées"
-    },
-    "systemOverhead": "Overhead système",
-    "systemOverheadDesc": "Métadonnées, index, protocole S3: {{percent}}%",
-    "enableCompression": "Activer la compression",
-    "compressionRatio": "Ratio de compression",
-    "expectedRatio": "Ratio attendu: {{ratio}}:1"
+    }
   },
   "powerstore": {
     "title": "Options PowerStore",
@@ -335,13 +300,6 @@
       "label": "RAID-10",
       "description": "Agrégats miroir, 50% efficacité"
     },
-    "enableCompression": "Activer la compression",
-    "compressionRatio": "Ratio de compression",
-    "expectedRatio": "Ratio attendu: {{ratio}}:1",
-    "enableDedup": "Activer la déduplication",
-    "dedupRatio": "Ratio de déduplication",
-    "snapshotReserve": "Réserve snapshot",
-    "snapshotReserveDesc": "Réserve snapshot: {{percent}}%",
     "model": "Modèle",
     "systemOverhead": "Surcharge système"
   },
@@ -374,14 +332,7 @@
     "mirror_3x": {
       "label": "Miroir 3x",
       "description": "Miroir 3 voies, 33% efficacité"
-    },
-    "enableCompression": "Activer la compression",
-    "compressionRatio": "Ratio de compression",
-    "expectedRatio": "Ratio attendu: {{ratio}}:1",
-    "enableDedup": "Activer la déduplication",
-    "dedupRatio": "Ratio de déduplication",
-    "snapshotReserve": "Réserve snapshot",
-    "snapshotReserveDesc": "Réserve snapshot: {{percent}}%"
+    }
   },
   "ceph": {
     "title": "Options Ceph",
@@ -409,22 +360,13 @@
       "label": "EC 8+4",
       "description": "Erasure coded k=8, m=4, 67% efficacité"
     },
-    "storageBackend": "Backend stockage",
-    "bluestore": "BlueStore",
-    "filestore": "FileStore",
-    "backendDesc": {
-      "bluestore": "Backend moderne avec accès disque direct",
-      "filestore": "Backend legacy utilisant système fichiers"
-    },
-    "enableCompression": "Activer la compression",
     "compressionAlgorithm": "Algorithme de compression",
     "snappy": "Snappy",
     "lz4": "LZ4",
     "zstd": "ZSTD",
     "expectedRatio": "Taux attendu : {{ratio}}:1",
     "walDbOffload": "WAL/DB sur NVMe séparé",
-    "safeCapacity": "Seuil capacité sûre",
-    "safeCapacityDesc": "Seuil nearfull Ceph: {{percent}}%"
+    "safeCapacity": "Seuil capacité sûre"
   },
   "longhorn": {
     "title": "Options Longhorn",
@@ -438,7 +380,15 @@
     "snapshotHeadroom": "Marge snapshots",
     "snapshotHeadroomValue": "+{{pct}}% réservé pour les chaînes de snapshots",
     "growthHeadroom": "Marge de croissance (indicatif)",
-    "growthHeadroomValue": "+{{pct}}% de croissance (non déduit de l'utilisable)"
+    "growthHeadroomValue": "+{{pct}}% de croissance (non déduit de l'utilisable)",
+    "r2": {
+      "label": "Réplica 2",
+      "description": "2 réplicas, 50 % d'efficacité (orienté capacité)"
+    },
+    "r3": {
+      "label": "Réplica 3",
+      "description": "3 réplicas, 33 % d'efficacité (défaut, nécessite ≥ 3 nœuds)"
+    }
   },
   "beegfs": {
     "title": "Options BeeGFS",
@@ -455,7 +405,23 @@
     "metadataTargetsToggle": "Configurer les cibles de métadonnées",
     "metadataTargetsToggleHint": "Une fois activé, la configuration des disques des cibles de stockage passe du panneau Matériel aux sélecteurs de cibles de métadonnées ci-dessous.",
     "metadataTargets": "Cibles de métadonnées (MDT)",
-    "metadataTargetsHint": "BeeGFS recommande 0,3 à 0,5% de la capacité totale pour les métadonnées — environ 150 millions de fichiers par 500 Go de capacité de métadonnées ext4."
+    "metadataTargetsHint": "BeeGFS recommande 0,3 à 0,5% de la capacité totale pour les métadonnées — environ 150 millions de fichiers par 500 Go de capacité de métadonnées ext4.",
+    "raid6": {
+      "label": "RAID 6",
+      "description": "Cible de stockage = RAID6 local (défaut), 10 à 12 disques recommandés"
+    },
+    "raid10": {
+      "label": "RAID 10",
+      "description": "Cible de stockage = RAID10 local, agrégats en miroir"
+    },
+    "raidz2": {
+      "label": "RAID-Z2",
+      "description": "Cible de stockage = ZFS RAIDz2, double parité"
+    },
+    "single": {
+      "label": "Disque unique",
+      "description": "Un disque = une cible de stockage, sans RAID local"
+    }
   },
   "powerflex": {
     "title": "Options PowerFlex",
@@ -489,24 +455,12 @@
     },
     "info": {
       "medium": "Medium Granularity (1MB): mode standard avec un overhead de métadonnées plus faible. Prend en charge le mirroring 2 et 3 voies.",
-      "fine": "Fine Granularity (8KB): meilleur pour les petites I/O aléatoires. Ne prend en charge que le mirroring 2 voies. 12-15% d'overhead de métadonnées.",
-      "ec": "Erasure Coding: meilleure efficacité de capacité mais ~30% d'IOPS en moins à cause de l'overhead CPU. Nécessite PowerFlex 4.5+."
+      "fine": "Fine Granularity (8KB): meilleur pour les petites I/O aléatoires. Ne prend en charge que le mirroring 2 voies. 12-15% d'overhead de métadonnées."
     },
-    "enableCompression": "Activer la compression",
-    "compressionRatio": "Ratio de compression",
-    "expectedRatio": "Ratio attendu: {{ratio}}:1",
-    "fgOverhead": "Overhead métadonnées FG",
-    "fgOverheadDesc": "Overhead granularité fine: {{percent}}%"
+    "fgOverhead": "Overhead métadonnées FG"
   },
   "netapp": {
     "title": "Options NetApp ONTAP",
-    "platformDesc": {
-      "aff_a": "All-Flash FAS A-Series: Haute performance",
-      "aff_c": "All-Flash FAS C-Series: Optimisé capacité",
-      "fas": "Fabric-Attached Storage: Hybride HDD/SSD",
-      "asa": "All-Flash SAN Array: SAN bloc uniquement",
-      "e_series": "E-Series: Stockage bloc haute performance"
-    },
     "raidType": "Type RAID",
     "raid_dp": "RAID-DP",
     "raid_tec": "RAID-TEC",
@@ -514,23 +468,13 @@
       "raid_tec": "Triple parité: Recommandé pour disques > 10TB",
       "raid_dp": "Double parité: Protection standard"
     },
-    "adpNone": "Aucun",
-    "adpV1": "ADP v1",
-    "adpV2": "ADP v2 (Root-Data)",
     "adpDesc": {
-      "adpv2": "ADP v2: Partitionnement root-data, meilleure utilisation capacité",
-      "adpv1": "ADP v1: Partitionnement root basique",
       "none": "Pas de partitionnement: Disques root dédiés traditionnels"
     },
-    "snapshotReserve": "Réserve snapshot",
-    "snapshotReserveDesc": "Réserve snapshot: {{percent}}%",
-    "snapshotAffNote": " (typique pour AFF)",
     "inlineCompression": "Compression inline",
     "inlineDedup": "Déduplication inline",
     "dataReductionRatio": "Ratio réduction données",
-    "dataReductionDesc": "DRR attendu: {{ratio}}:1 (compression + dédup)",
-    "waflOverhead": "Overhead WAFL",
-    "waflOverheadDesc": "Overhead système fichiers WAFL: {{percent}}%"
+    "waflOverhead": "Overhead WAFL"
   },
   "synology": {
     "title": "Options Synology",
@@ -553,14 +497,7 @@
       "btrfs": "Btrfs: Snapshots, protection données, ~4% overhead",
       "ext4": "EXT4: Legacy, pas de snapshots, overhead réduit"
     },
-    "series": {
-      "j": "Série J (Entrée)",
-      "value": "Série Value",
-      "plus": "Série Plus",
-      "xs": "XS/XS+ (Entreprise)"
-    },
-    "systemPartition": "Taille partition système",
-    "systemPartitionDesc": "Partition système par disque: {{size}} Go"
+    "systemPartition": "Taille partition système"
   },
   "tiering": {
     "vsanConfig": "Configuration vSAN",

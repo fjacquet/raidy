@@ -6,7 +6,8 @@
   "description": "Browser-based simulator for modern storage infrastructure (RAID, ZFS, vSAN, S2D, Nutanix, Dell, NetApp, Ceph, Synology, Longhorn). 100% client-side.",
   "scripts": {
     "dev": "vite",
-    "prebuild": "node scripts/check-supply-chain.mjs",
+    "prepare": "git config core.hooksPath .githooks",
+    "prebuild": "node scripts/check-supply-chain.mjs && npm run check:dead",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json",
@@ -18,7 +19,8 @@
     "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage",
     "check:supply-chain": "node scripts/check-supply-chain.mjs",
-    "check:bundle-size": "node scripts/check-bundle-size.mjs"
+    "check:bundle-size": "node scripts/check-bundle-size.mjs",
+    "check:dead": "knip"
   },
   "dependencies": {
     "d3-sankey": "^0.12.3",
@@ -26,7 +28,6 @@
     "html-to-image": "^1.11.13",
     "i18next": "^26.2.0",
     "i18next-browser-languagedetector": "^8.2.1",
-    "js-yaml": "^4.3.0",
     "jspdf": "^4.1.0",
     "jspdf-autotable": "^5.0.7",
     "lz-string": "^1.5.0",
@@ -35,7 +36,6 @@
     "react-dom": "^19.2.6",
     "react-error-boundary": "^6.1.1",
     "react-i18next": "^17.0.8",
-    "recharts": "^3.8.1",
     "sonner": "^2.0.7",
     "zod": "^4.4.3",
     "zustand": "^5.0.13"
@@ -47,8 +47,6 @@
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
     "@types/d3-sankey": "^0.12.5",
-    "@types/dompurify": "^3.0.5",
-    "@types/js-yaml": "^4.0.9",
     "@types/node": "^25.9.1",
     "@types/react": "^19.2.15",
     "@types/react-dom": "^19.2.3",
@@ -57,6 +55,7 @@
     "@vitest/ui": "^4.1.7",
     "fast-check": "^4.6.0",
     "jsdom": "^29.1.1",
+    "knip": "^6.31.0",
     "tailwindcss": "^4.3.0",
     "typescript": "~5.9.3",
     "vite": "^8.0.16",

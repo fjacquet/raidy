@@ -32,7 +32,7 @@ function easeOutExpo(t: number): number {
   return t === 1 ? 1 : 1 - 2 ** (-10 * t)
 }
 
-export function AnimatedCounter({
+function AnimatedCounter({
   value,
   duration = 800,
   formatter = defaultFormatter,
@@ -89,37 +89,6 @@ export function AnimatedBytes({
 }) {
   const unitSystem = useConfigStore((state) => state.unitSystem)
   const formatter = (v: number): string => formatBytes(v, unitSystem)
-
-  return (
-    <AnimatedCounter
-      value={value}
-      duration={duration}
-      formatter={formatter}
-      className={className}
-    />
-  )
-}
-
-/**
- * Animated currency counter.
- */
-export function AnimatedCurrency({
-  value,
-  duration = 800,
-  className = '',
-}: {
-  value: number
-  duration?: number
-  className?: string
-}) {
-  const formatter = (v: number): string => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(v)
-  }
 
   return (
     <AnimatedCounter

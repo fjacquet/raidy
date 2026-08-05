@@ -60,7 +60,7 @@ const VALID_TOPOLOGY_TYPES: readonly TopologyType[] = [
  * @param topologyType - Topology type
  * @returns Strategy for the topology type
  */
-export function getStrategy(topologyType: TopologyType): VolumetryStrategy {
+function getStrategy(topologyType: TopologyType): VolumetryStrategy {
   switch (topologyType) {
     case 'standard':
       return raidStrategy

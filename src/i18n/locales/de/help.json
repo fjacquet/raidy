@@ -33,33 +33,22 @@
     "performanceThreshold": "Die Leistungsschwelle begrenzt, wie voll der Speicher werden darf, bevor die Leistung abnimmt. Die meisten Speichersysteme werden langsamer, wenn sie sich der Kapazitätsgrenze nähern. Eine Einstellung von 85% bedeutet, dass nur 85% der nutzbaren Kapazität als Betriebsgrenze angezeigt werden. Standard 100% (keine Begrenzung)."
   },
   "output": {
-    "rawCapacity": "Gesamte physische Kapazität aller Laufwerke vor jeglichem Overhead. Berechnung: Laufwerkskapazität x Laufwerksanzahl x Serveranzahl.",
-    "usableCapacity": "Verfügbare Kapazität nach Abzug von Parität/Redundanz, Hot Spares, Dateisystem-Overhead und Systemreserven. Dies ist der tatsächlich beschreibbare Speicherplatz.",
-    "effectiveCapacity": "Nutzbare Kapazität multipliziert mit Komprimierungs- und Deduplizierungsverhältnissen. Stellt das logische Datenvolumen dar, das das System speichern kann.",
     "efficiency": "Verhältnis von nutzbarer Kapazität zu Rohkapazität, ausgedrückt in Prozent. Höher ist besser, aber höhere Effizienz bedeutet in der Regel weniger Redundanz.",
     "sankeyDiagram": "Das Sankey-Diagramm zeigt den Kapazitätsverlauf: wie die Rohkapazität durch verschiedene Overhead-Abzüge zur nutzbaren Kapazität wird. Breitere Flüsse stellen größere Mengen dar.",
-    "readThroughput": "Maximaler sequenzieller Lesedurchsatz, begrenzt durch das schwächste Glied der Kette: Medien-Aggregat, Controller/HBA, PCIe-Bus oder Netzwerk.",
-    "writeThroughput": "Maximaler sequenzieller Schreibdurchsatz. Bei paritätsbasiertem RAID wird der Schreibdurchsatz durch den Write-Penalty-Faktor reduziert.",
-    "readIops": "Maximale zufällige Lese-IOPS. Summe aller Laufwerks-Lese-IOPS, begrenzt durch Controller- und Bus-Obergrenzen.",
-    "writeIops": "Maximale zufällige Schreib-IOPS. Bei RAID-5 durch 4 teilen (jeder Schreibvorgang benötigt 4 I/O-Operationen). Bei RAID-6 durch 6 teilen.",
     "sustainedWrite": "Burst = was die schnelle Ebene absorbiert, bevor sie sättigt. Dauerlast = was das System hält, sobald der Cache voll ist, begrenzt durch die eigene Schreibkapazität der Kapazitätsebene. Verwenden Sie Dauerlast für die Dimensionierung kontinuierlicher Ingestion.",
     "bottleneck": "Die Engpasskette zeigt den Durchsatz auf jeder Ebene. Die Ebene mit dem niedrigsten Durchsatz ist der Engpass. Ein Upgrade einer anderen Ebene verbessert die Leistung nicht.",
     "survivalRate": "Wahrscheinlichkeit, ein Jahr ohne Datenverlust zu überstehen, berechnet mittels Monte-Carlo-Simulation. Berücksichtigt Laufwerksausfallraten (AFR), Rebuild-Zeit, URE-Wahrscheinlichkeit während des Rebuilds und korrelierte Ausfälle.",
-    "rebuildTime": "Geschätzte Zeit für den Rebuild eines ausgefallenen Laufwerks. Längere Rebuild-Zeiten erhöhen das Verwundbarkeitsfenster. Abhängig von Laufwerkskapazität, Rebuild-Geschwindigkeit und Array-Auslastung.",
     "totalPower": "Gesamtstromverbrauch einschließlich Laufwerke, Server und Kühlung (PUE-Faktor). Wird zur Berechnung der jährlichen Energiekosten und CO₂-Emissionen verwendet.",
-    "annualCo2": "Jährliche CO₂-Emissionen basierend auf dem Gesamtenergieverbrauch und der gewählten Netz-Kohlenstoffintensität. Die Schweiz (30 g/kWh) gehört zu den saubersten; China (555 g/kWh) zu den höchsten.",
     "backupRequirements": "Geschätzter Speicherbedarf für inkrementelle Backups basierend auf der täglichen Änderungsrate und dem Aufbewahrungszeitraum. Dies ist Backup-Zielkapazität, getrennt vom Primärspeicher."
   },
   "zfs": {
     "ashift": "Der ashift-Wert muss der physischen Sektorgröße des Laufwerks entsprechen. Die Verwendung von ashift=9 (512B) auf einem Laufwerk mit 4K-Sektoren verursacht Write Amplification. Verwenden Sie ashift=12 für moderne Laufwerke.",
     "compression": "ZFS-Komprimierungsalgorithmus. LZ4 wird für die meisten Workloads empfohlen (schnell, geringe CPU-Last). ZSTD bietet bessere Verhältnisse bei höherem CPU-Aufwand.",
     "recordsize": "Maximale Datensatzgröße für Datasets. An den Workload anpassen: 128K für allgemeine Dateien, 16K-64K für Datenbanken, 1M für große sequenzielle Workloads.",
-    "dedup": "ZFS-Deduplizierung benötigt etwa 5 GB RAM pro TB deduplizierter Daten. Nur aktivieren, wenn genügend RAM vorhanden ist und eine schreibintensive Arbeitslast mit vielen Duplikaten vorliegt.",
-    "specialVdev": "Ein Special vdev (NVMe) speichert Metadaten und kleine Blöcke und verbessert die zufällige I/O-Leistung für HDD-basierte Pools erheblich."
+    "dedup": "ZFS-Deduplizierung benötigt etwa 5 GB RAM pro TB deduplizierter Daten. Nur aktivieren, wenn genügend RAM vorhanden ist und eine schreibintensive Arbeitslast mit vielen Duplikaten vorliegt."
   },
   "ceph": {
-    "nearfull": "Der Standard-Nearfull-Schwellenwert von Ceph liegt bei 85 %. OSDs akzeptieren oberhalb dieses Schwellenwerts keine Schreibvorgänge mehr. Die nutzbare Kapazität wird bei diesem Schwellenwert berechnet, nicht bei 100 %.",
-    "backend": "BlueStore ist das empfohlene Backend. Es umgeht das lokale Dateisystem für direkten Plattenzugriff und verbessert die Leistung gegenüber dem älteren FileStore."
+    "nearfull": "Der Standard-Nearfull-Schwellenwert von Ceph liegt bei 85 %. OSDs akzeptieren oberhalb dieses Schwellenwerts keine Schreibvorgänge mehr. Die nutzbare Kapazität wird bei diesem Schwellenwert berechnet, nicht bei 100 %."
   },
   "vsan": {
     "adaptive": "vSAN ESA nutzt adaptives RAID-5: 2+1 Streifenbreite für 3-5 Hosts (67 % Effizienz) oder 4+1 für 6+ Hosts (80 % Effizienz). Das System passt sich automatisch an die Clustergröße an."
@@ -82,8 +71,6 @@
   },
   "dell": {
     "powerFlex": "PowerFlex unterstützt 2-Wege- und 3-Wege-Spiegelung mit Fine Granularity (8KB) oder Medium Granularity (1MB). Fine Granularity fügt ca. 12-15 % Metadaten-Overhead hinzu, ermöglicht aber schnellere Rebuilds.",
-    "powerStore": "PowerStore ist eine All-Flash-Appliance mit integrierter Deduplizierung und Komprimierung. Controller-Limits bestimmen den maximalen Durchsatz.",
-    "powerScale": "PowerScale (Isilon) ist ein Scale-Out-NAS. Die Effizienz hängt von der Schutzstufe und der Knotenanzahl ab.",
     "objectScale": "ObjectScale bietet S3-kompatiblen Objektspeicher. Multi-Site-Georeplikation kann erheblichen Kapazitäts-Overhead verursachen (bis zu 2,67x bei 2-Site EC 12+4)."
   }
 }

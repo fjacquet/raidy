@@ -2,17 +2,12 @@
   "presets": {
     "label": "Profil de charge",
     "database": "Base de données (OLTP)",
-    "olap": "Analytique (OLAP)",
     "fileServer": "Serveur de fichiers",
-    "webServer": "Serveur web",
     "videoStreaming": "Streaming vidéo",
-    "virtualDesktop": "Bureau virtuel (VDI)",
     "backup": "Cible de sauvegarde",
-    "archive": "Archive",
     "custom": "Personnalisé"
   },
   "ioPattern": {
-    "label": "Modèle d'E/S",
     "readWrite": "Ratio lecture / écriture",
     "readPercent": "Lecture %",
     "writePercent": "Écriture %",

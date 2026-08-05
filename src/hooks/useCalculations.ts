@@ -129,12 +129,6 @@ export function useCalculations(): CalculationResults {
 }
 
 /**
- * Format bytes to human-readable string using the store's unit system setting.
- * Re-exports the centralized formatBytes utility for backward compatibility.
- */
-export { formatBytes } from '@/utils'
-
-/**
  * Format bytes using the unit system from store (for use in React components).
  * Use this hook when you need the formatted value to update when unitSystem changes.
  */

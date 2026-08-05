@@ -10,7 +10,7 @@ import { useEffect, useState } from 'react'
  * @param query - CSS media query string (e.g., '(max-width: 767px)')
  * @returns boolean indicating if the query matches
  */
-export function useMediaQuery(query: string): boolean {
+function useMediaQuery(query: string): boolean {
   const [matches, setMatches] = useState(() => {
     // SSR-safe: default to false on server
     if (typeof window === 'undefined') return false
@@ -41,7 +41,7 @@ export function useMediaQuery(query: string): boolean {
  * Tailwind breakpoint values in pixels.
  * Matches Tailwind CSS v4 defaults.
  */
-export const BREAKPOINTS = {
+const BREAKPOINTS = {
   sm: 640,
   md: 768,
   lg: 1024,
@@ -58,14 +58,6 @@ export function useIsMobile(): boolean {
 }
 
 /**
- * Hook to detect tablet devices (768px - 1023px).
- * Between Tailwind's `md:` and `lg:` breakpoints.
- */
-export function useIsTablet(): boolean {
-  return useMediaQuery(`(min-width: ${BREAKPOINTS.md}px) and (max-width: ${BREAKPOINTS.lg - 1}px)`)
-}
-
-/**
  * Hook to detect desktop devices (>= 1024px).
  * Corresponds to Tailwind's `lg:` breakpoint and above.
  */
@@ -74,25 +66,9 @@ export function useIsDesktop(): boolean {
 }
 
 /**
- * Hook to detect wide screens (>= 1280px).
- * Corresponds to Tailwind's `xl:` breakpoint and above.
- */
-export function useIsWideScreen(): boolean {
-  return useMediaQuery(`(min-width: ${BREAKPOINTS.xl}px)`)
-}
-
-/**
  * Hook to detect touch devices.
  * Uses pointer: coarse media query for reliable touch detection.
  */
 export function useIsTouchDevice(): boolean {
   return useMediaQuery('(pointer: coarse)')
-}
-
-/**
- * Hook to detect reduced motion preference.
- * Useful for disabling animations for accessibility.
- */
-export function usePrefersReducedMotion(): boolean {
-  return useMediaQuery('(prefers-reduced-motion: reduce)')
 }

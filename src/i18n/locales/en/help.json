@@ -33,33 +33,22 @@
     "performanceThreshold": "Performance threshold limits how full the storage can be before degradation. Most storage systems slow down as they approach capacity. Setting 85% means only 85% of usable capacity is shown as the operational limit. Default 100% (no limit)."
   },
   "output": {
-    "rawCapacity": "Total physical capacity of all drives before any overhead. Calculated as: drive capacity x drive count x server count.",
-    "usableCapacity": "Capacity available after subtracting parity/redundancy, hot spares, filesystem overhead, and system reserves. This is what you can actually write to.",
-    "effectiveCapacity": "Usable capacity multiplied by compression and deduplication ratios. Represents the logical data volume the system can store.",
     "efficiency": "Ratio of usable capacity to raw capacity, expressed as a percentage. Higher is better, but higher efficiency usually means less redundancy.",
     "sankeyDiagram": "The Sankey diagram shows the capacity waterfall: how raw capacity flows through various overhead deductions to arrive at usable capacity. Wider flows represent larger quantities.",
-    "readThroughput": "Maximum sequential read throughput, limited by the weakest link in the chain: media aggregate, controller/HBA, PCIe bus, or network.",
-    "writeThroughput": "Maximum sequential write throughput. For parity-based RAID, write throughput is reduced by the write penalty factor.",
-    "readIops": "Maximum random read IOPS. Sum of all drive read IOPS, limited by controller and bus ceilings.",
-    "writeIops": "Maximum random write IOPS. For RAID-5, divide by 4 (each write needs 4 I/O operations). For RAID-6, divide by 6.",
     "sustainedWrite": "Burst = what the fast tier absorbs before it saturates. Sustained = what the system holds once the cache fills, bounded by the capacity tier's own write capacity. Use Sustained when sizing for continuous ingest.",
     "bottleneck": "The bottleneck chain shows throughput at each layer. The layer with the lowest throughput is the bottleneck. Upgrading any other layer won't improve performance.",
     "survivalRate": "Probability of surviving one year without data loss, calculated via Monte Carlo simulation. Considers drive failure rates (AFR), rebuild time, URE probability during rebuild, and correlated failures.",
-    "rebuildTime": "Estimated time to rebuild a failed drive. Longer rebuild times increase the window of vulnerability. Depends on drive capacity, rebuild speed, and array utilization.",
     "totalPower": "Total power consumption including drives, servers, and cooling (PUE factor). Used to calculate annual energy cost and CO₂ emissions.",
-    "annualCo2": "Annual CO₂ emissions based on total energy consumption and the selected grid carbon intensity. Switzerland (30 g/kWh) is among the cleanest; China (555 g/kWh) among the highest.",
     "backupRequirements": "Estimated storage required for incremental backups based on daily change rate and retention period. This is backup target capacity, separate from primary storage."
   },
   "zfs": {
     "ashift": "The ashift value must match the drive's physical sector size. Using ashift=9 (512B) on a 4K-sector drive causes write amplification. Use ashift=12 for modern drives.",
     "compression": "ZFS compression algorithm. LZ4 is recommended for most workloads (fast, low CPU). ZSTD provides better ratios at higher CPU cost.",
     "recordsize": "Maximum record size for datasets. Match to workload: 128K for general files, 16K-64K for databases, 1M for large sequential workloads.",
-    "dedup": "ZFS deduplication requires approximately 5 GB of RAM per TB of deduplicated data. Only enable if you have sufficient RAM and a write-heavy duplicate workload.",
-    "specialVdev": "A special vdev (NVMe) stores metadata and small blocks, dramatically improving random I/O performance for HDD-based pools."
+    "dedup": "ZFS deduplication requires approximately 5 GB of RAM per TB of deduplicated data. Only enable if you have sufficient RAM and a write-heavy duplicate workload."
   },
   "ceph": {
-    "nearfull": "Ceph's default nearfull threshold is 85%. OSDs will stop accepting writes above this threshold. Usable capacity is calculated at this threshold, not 100%.",
-    "backend": "BlueStore is the recommended backend. It bypasses the local filesystem for direct disk access, improving performance over legacy FileStore."
+    "nearfull": "Ceph's default nearfull threshold is 85%. OSDs will stop accepting writes above this threshold. Usable capacity is calculated at this threshold, not 100%."
   },
   "vsan": {
     "adaptive": "vSAN ESA uses adaptive RAID-5: 2+1 stripe width for 3-5 hosts (67% efficiency) or 4+1 for 6+ hosts (80% efficiency). The system automatically adjusts based on cluster size."
@@ -82,8 +71,6 @@
   },
   "dell": {
     "powerFlex": "PowerFlex supports 2-way and 3-way mirrors with Fine Granularity (8KB) or Medium Granularity (1MB). Fine Granularity adds ~12-15% metadata overhead but enables faster rebuilds.",
-    "powerStore": "PowerStore is an all-flash appliance with integrated deduplication and compression. Controller limits determine maximum throughput.",
-    "powerScale": "PowerScale (Isilon) is a scale-out NAS. Efficiency depends on protection level and node count.",
     "objectScale": "ObjectScale provides S3-compatible object storage. Multi-site geo-replication can add significant capacity overhead (up to 2.67x for 2-site EC 12+4)."
   }
 }

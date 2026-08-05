@@ -1,0 +1,9 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": ["src/workers/resilienceWorker.ts", "scripts/*.mjs", "tests/**/*.spec.{ts,tsx}"],
+  "project": ["src/**/*.{ts,tsx,css}", "scripts/**/*.mjs", "tests/**/*.{ts,tsx}"],
+  "ignoreExportsUsedInFile": {
+    "interface": true,
+    "type": true
+  }
+}

@@ -10,13 +10,13 @@
     "longhorn": "Longhorn",
     "nutanix": "Nutanix",
     "netapp": "NetApp ONTAP",
-    "synology": "Synology",
     "powerflex": "PowerFlex",
     "powerstore": "PowerStore",
     "powerscale": "PowerScale",
     "objectscale": "ObjectScale",
     "powervault": "PowerVault ME5",
-    "proprietary": "Altro"
+    "proprietary": "Altro",
+    "beegfs": "BeeGFS"
   },
   "configuration": {
     "label": "Configurazione"
@@ -31,8 +31,7 @@
     "compressionRatio": "Rapporto di compressione",
     "dedupRatio": "Rapporto di deduplica",
     "systemOverhead": "Overhead sistema",
-    "snapshotReserve": "Riserva snapshot",
-    "expectedRatio": "Rapporto previsto: {{ratio}}:1"
+    "snapshotReserve": "Riserva snapshot"
   },
   "level": {
     "label": "Livello RAID",
@@ -124,9 +123,6 @@
       "description": "RAID-Z3 distribuito"
     },
     "ashift": "Dimensione settore (ashift)",
-    "ashift512": "512B (ashift=9)",
-    "ashift4k": "4K (ashift=12)",
-    "ashift8k": "8K (ashift=13)",
     "enableCompression": "Abilita compressione",
     "compressionAlgorithm": "Algoritmo di compressione",
     "lz4": "LZ4 (veloce)",
@@ -187,14 +183,10 @@
     },
     "info": {
       "raid1": "RAID-1 FTT=1: Mirror 2 vie, minimo 3 host richiesti.",
-      "raid1_ftt2": "RAID-1 FTT=2: Mirror 3 vie, minimo 5 host richiesti.",
       "raid5": "RAID-5 (3+1): Parità singola, minimo 4 host richiesti.",
-      "raid6": "RAID-6 (4+2): Doppia parità, minimo 6 host richiesti.",
-      "diskGroups": "OSA usa gruppi disco con livello cache (NVMe/SSD) + livello capacità (SSD/HDD)."
+      "raid6": "RAID-6 (4+2): Doppia parità, minimo 6 host richiesti."
     },
-    "diskGroupConfig": "Configurazione gruppo disco",
-    "enableCompression": "Abilita compressione",
-    "enableDedup": "Abilita deduplicazione"
+    "diskGroupConfig": "Configurazione gruppo disco"
   },
   "vsanEsa": {
     "title": "Opzioni vSAN ESA",
@@ -212,14 +204,9 @@
     },
     "info": {
       "raid5": "RAID-5 Adattivo: Usa 2+1 per 3-5 host o 4+1 per 6+ host.",
-      "raid5Recommended": "Raccomandato per la maggior parte dei deployment ESA.",
       "raid6": "RAID-6 (4+2): FTT=2, minimo 6 host richiesti.",
-      "raid1": "RAID-1 (Mirror): Raccomandato solo per cluster stretched 2 nodi.",
-      "singleTier": "ESA è un'architettura a singolo livello. Solo dischi NVMe, niente gruppi disco."
-    },
-    "nvmeNotice": "vSAN ESA richiede solo dischi NVMe.",
-    "enableCompression": "Abilita compressione",
-    "enableDedup": "Abilita deduplicazione"
+      "raid1": "RAID-1 (Mirror): Raccomandato solo per cluster stretched 2 nodi."
+    }
   },
   "nutanix": {
     "title": "Opzioni Nutanix AOS",
@@ -239,32 +226,17 @@
       "label": "EC-X (RF3)",
       "description": "Erasure Coding 6:2 base RF3, ~75% efficienza"
     },
-    "info": {
-      "rf2": "RF2: 2 copie dei dati, 50% di efficienza di storage. Tollera il guasto di un singolo nodo.",
-      "rf3": "RF3: 3 copie dei dati, 33% di efficienza di storage. Tollera il guasto di due nodi.",
-      "ec_rf2": "EC-X (RF2): Erasure coding 4:1 per dati freddi, ~75% di efficienza. I dati caldi restano RF2.",
-      "ec_rf3": "EC-X (RF3): Erasure coding 6:2 per dati freddi, ~75% di efficienza. I dati caldi restano RF3."
-    },
     "clusterType": "Tipo cluster",
-    "allFlash": "All-Flash",
     "hybrid": "Ibrido",
     "clusterTypeDesc": {
-      "allFlash": "All-Flash: Solo NVMe/SSD, massime prestazioni",
       "hybrid": "Ibrido: Cache SSD + livello capacità HDD"
     },
-    "enableCompression": "Abilita compressione",
-    "compressionRatio": "Rapporto compressione",
-    "expectedRatio": "Rapporto previsto: {{ratio}}:1",
-    "enableDedup": "Abilita deduplicazione",
-    "dedupRatio": "Rapporto deduplicazione",
     "networkType": "Tipo rete",
     "networkTypeDesc": {
       "rdma": "RDMA (RoCE): Latenza minima (+0.1ms)",
       "25gbe": "25 GbE: HCI standard (+0.25ms latenza)",
       "10gbe": "10 GbE: Legacy (+0.5ms latenza)"
-    },
-    "systemOverhead": "Overhead sistema",
-    "systemOverheadDesc": "CVM, metadati, snapshot: {{percent}}%"
+    }
   },
   "powervault": {
     "title": "Opzioni PowerVault ME5",
@@ -292,10 +264,8 @@
       "raid1": "RAID 1: mirror a 2 vie con 50% di efficienza di storage. Semplice, ricostruzioni rapide. Ideale per volumi di boot e piccoli deployment.",
       "raid5": "RAID 5: parità distribuita singola con efficienza (n-1)/n. Penalità di scrittura 4x. Non raccomandato per workload a scrittura intensiva.",
       "raid6": "RAID 6: parità distribuita doppia con efficienza (n-2)/n. Penalità di scrittura 6x. Migliore protezione dati per dischi ad alta capacità.",
-      "raid10": "RAID 10: stripe con mirror, efficienza 50%. Migliori prestazioni IOPS casuali. Ideale per database.",
-      "adapt": "ADAPT: RAID distribuito con ~87% di efficienza. Capacità di riserva distribuita su tutti i dischi. Ricostruzioni più rapide (8-10x più veloci). Richiede 12-128 dischi."
-    },
-    "noCompressionNote": "Nota: PowerVault ME5 non supporta compressione o deduplicazione inline."
+      "raid10": "RAID 10: stripe con mirror, efficienza 50%. Migliori prestazioni IOPS casuali. Ideale per database."
+    }
   },
   "objectscale": {
     "title": "Opzioni ObjectScale",
@@ -314,12 +284,7 @@
     "mirror_3": {
       "label": "Triplo mirror",
       "description": "33% efficienza, per metadati"
-    },
-    "systemOverhead": "Overhead sistema",
-    "systemOverheadDesc": "Metadati, indici, protocollo S3: {{percent}}%",
-    "enableCompression": "Abilita compressione",
-    "compressionRatio": "Rapporto compressione",
-    "expectedRatio": "Rapporto previsto: {{ratio}}:1"
+    }
   },
   "powerstore": {
     "title": "Opzioni PowerStore",
@@ -335,13 +300,6 @@
       "label": "RAID-10",
       "description": "Stripe mirror, 50% efficienza"
     },
-    "enableCompression": "Abilita compressione",
-    "compressionRatio": "Rapporto compressione",
-    "expectedRatio": "Rapporto previsto: {{ratio}}:1",
-    "enableDedup": "Abilita deduplicazione",
-    "dedupRatio": "Rapporto deduplicazione",
-    "snapshotReserve": "Riserva snapshot",
-    "snapshotReserveDesc": "Riserva snapshot: {{percent}}%",
     "model": "Modello",
     "systemOverhead": "Overhead di sistema"
   },
@@ -374,14 +332,7 @@
     "mirror_3x": {
       "label": "Mirror 3x",
       "description": "Mirror 3 vie, 33% efficienza"
-    },
-    "enableCompression": "Abilita compressione",
-    "compressionRatio": "Rapporto compressione",
-    "expectedRatio": "Rapporto previsto: {{ratio}}:1",
-    "enableDedup": "Abilita deduplicazione",
-    "dedupRatio": "Rapporto deduplicazione",
-    "snapshotReserve": "Riserva snapshot",
-    "snapshotReserveDesc": "Riserva snapshot: {{percent}}%"
+    }
   },
   "ceph": {
     "title": "Opzioni Ceph",
@@ -409,22 +360,13 @@
       "label": "EC 8+4",
       "description": "Erasure coded k=8, m=4, 67% efficienza"
     },
-    "storageBackend": "Backend storage",
-    "bluestore": "BlueStore",
-    "filestore": "FileStore",
-    "backendDesc": {
-      "bluestore": "Backend moderno con accesso disco diretto",
-      "filestore": "Backend legacy con filesystem"
-    },
-    "enableCompression": "Abilita compressione",
     "compressionAlgorithm": "Algoritmo compressione",
     "snappy": "Snappy",
     "lz4": "LZ4",
     "zstd": "ZSTD",
     "expectedRatio": "Rapporto previsto: {{ratio}}:1",
     "walDbOffload": "WAL/DB su NVMe separato",
-    "safeCapacity": "Soglia capacità sicura",
-    "safeCapacityDesc": "Soglia nearfull Ceph: {{percent}}%"
+    "safeCapacity": "Soglia capacità sicura"
   },
   "longhorn": {
     "title": "Opzioni Longhorn",
@@ -438,7 +380,15 @@
     "snapshotHeadroom": "Margine snapshot",
     "snapshotHeadroomValue": "+{{pct}}% riservato per le catene di snapshot",
     "growthHeadroom": "Margine di crescita (indicativo)",
-    "growthHeadroomValue": "+{{pct}}% di crescita (non sottratto dall'utilizzabile)"
+    "growthHeadroomValue": "+{{pct}}% di crescita (non sottratto dall'utilizzabile)",
+    "r2": {
+      "label": "Replica 2",
+      "description": "2 repliche, 50% di efficienza (orientato alla capacità)"
+    },
+    "r3": {
+      "label": "Replica 3",
+      "description": "3 repliche, 33% di efficienza (predefinito, richiede ≥ 3 nodi)"
+    }
   },
   "beegfs": {
     "title": "Opzioni BeeGFS",
@@ -455,7 +405,23 @@
     "metadataTargetsToggle": "Configura target di metadati",
     "metadataTargetsToggleHint": "Se attivato, la configurazione dei dischi dei target di storage passa dal pannello Hardware ai selettori dei target di metadati sottostanti.",
     "metadataTargets": "Target di metadati (MDT)",
-    "metadataTargetsHint": "BeeGFS consiglia lo 0,3-0,5% della capacità totale per i metadati — circa 150 milioni di file ogni 500 GB di capacità di metadati ext4."
+    "metadataTargetsHint": "BeeGFS consiglia lo 0,3-0,5% della capacità totale per i metadati — circa 150 milioni di file ogni 500 GB di capacità di metadati ext4.",
+    "raid6": {
+      "label": "RAID 6",
+      "description": "Target di storage = RAID6 locale (predefinito), 10-12 dischi consigliati"
+    },
+    "raid10": {
+      "label": "RAID 10",
+      "description": "Target di storage = RAID10 locale, stripe con mirroring"
+    },
+    "raidz2": {
+      "label": "RAID-Z2",
+      "description": "Target di storage = ZFS RAIDz2, doppia parità"
+    },
+    "single": {
+      "label": "Disco singolo",
+      "description": "Un disco = un target di storage, senza RAID locale"
+    }
   },
   "powerflex": {
     "title": "Opzioni PowerFlex",
@@ -489,24 +455,12 @@
     },
     "info": {
       "medium": "Medium Granularity (1MB): modalità standard con minore overhead di metadati. Supporta mirroring a 2 e 3 vie.",
-      "fine": "Fine Granularity (8KB): migliore per I/O casuale di piccole dimensioni. Supporta solo mirroring a 2 vie. 12-15% di overhead metadati.",
-      "ec": "Erasure Coding: maggiore efficienza di capacità ma ~30% IOPS inferiori a causa dell'overhead CPU. Richiede PowerFlex 4.5+."
+      "fine": "Fine Granularity (8KB): migliore per I/O casuale di piccole dimensioni. Supporta solo mirroring a 2 vie. 12-15% di overhead metadati."
     },
-    "enableCompression": "Abilita compressione",
-    "compressionRatio": "Rapporto compressione",
-    "expectedRatio": "Rapporto previsto: {{ratio}}:1",
-    "fgOverhead": "Overhead metadati FG",
-    "fgOverheadDesc": "Overhead granularità fine: {{percent}}%"
+    "fgOverhead": "Overhead metadati FG"
   },
   "netapp": {
     "title": "Opzioni NetApp ONTAP",
-    "platformDesc": {
-      "aff_a": "All-Flash FAS A-Series: Alte prestazioni",
-      "aff_c": "All-Flash FAS C-Series: Ottimizzato capacità",
-      "fas": "Fabric-Attached Storage: Ibrido HDD/SSD",
-      "asa": "All-Flash SAN Array: Solo SAN a blocchi",
-      "e_series": "E-Series: Storage a blocchi alte prestazioni"
-    },
     "raidType": "Tipo RAID",
     "raid_dp": "RAID-DP",
     "raid_tec": "RAID-TEC",
@@ -514,23 +468,13 @@
       "raid_tec": "Tripla parità: Raccomandato per dischi > 10TB",
       "raid_dp": "Doppia parità: Protezione standard"
     },
-    "adpNone": "Nessuno",
-    "adpV1": "ADP v1",
-    "adpV2": "ADP v2 (Root-Data)",
     "adpDesc": {
-      "adpv2": "ADP v2: Partizionamento root-data, migliore utilizzo capacità",
-      "adpv1": "ADP v1: Partizionamento root base",
       "none": "Nessun partizionamento: Dischi root dedicati tradizionali"
     },
-    "snapshotReserve": "Riserva snapshot",
-    "snapshotReserveDesc": "Riserva snapshot: {{percent}}%",
-    "snapshotAffNote": " (tipico per AFF)",
     "inlineCompression": "Compressione inline",
     "inlineDedup": "Deduplicazione inline",
     "dataReductionRatio": "Rapporto riduzione dati",
-    "dataReductionDesc": "DRR previsto: {{ratio}}:1 (compressione + deduplica)",
-    "waflOverhead": "Overhead WAFL",
-    "waflOverheadDesc": "Overhead filesystem WAFL: {{percent}}%"
+    "waflOverhead": "Overhead WAFL"
   },
   "synology": {
     "title": "Opzioni Synology",
@@ -553,14 +497,7 @@
       "btrfs": "Btrfs: Snapshot, protezione dati, ~4% overhead",
       "ext4": "EXT4: Legacy, niente snapshot, overhead ridotto"
     },
-    "series": {
-      "j": "Serie J (Entry)",
-      "value": "Serie Value",
-      "plus": "Serie Plus",
-      "xs": "XS/XS+ (Enterprise)"
-    },
-    "systemPartition": "Dimensione partizione sistema",
-    "systemPartitionDesc": "Partizione sistema per disco: {{size}} GB"
+    "systemPartition": "Dimensione partizione sistema"
   },
   "tiering": {
     "vsanConfig": "Configurazione vSAN",

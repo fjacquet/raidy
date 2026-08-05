@@ -42,7 +42,7 @@ export const BEEGFS_MIN_DRIVES_PER_TARGET: Record<string, number> = {
  * @param drivesPerTarget - Local RAID group width
  * @returns Fraction of the target's raw capacity holding data (0-1)
  */
-export function getLocalRaidFraction(level: string, drivesPerTarget: number): number {
+function getLocalRaidFraction(level: string, drivesPerTarget: number): number {
   const minDrives = BEEGFS_MIN_DRIVES_PER_TARGET[level] ?? 4
   const width = Math.max(minDrives, Math.floor(drivesPerTarget))
 

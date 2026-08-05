@@ -37,7 +37,7 @@ export interface ExportConfig {
 const FONT = 'Arial'
 
 /** Brand color palette (6-char hex, no '#', required by pptxgenjs). */
-export const BRAND = {
+const BRAND = {
   bg: '1A1B2E', // surface-900 — slide background
   panel: '1E2035', // surface-800 — card/panel fills
   border: '272A3D', // surface-700 — subtle borders

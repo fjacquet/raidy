@@ -51,7 +51,7 @@ export interface TieredCapacityResult {
  *
  * @returns null when the config is missing or either tier has no drive selected.
  */
-export function calculateTieredCapacity(
+function calculateTieredCapacity(
   tieringConfig: TieringConfig | undefined,
   serverCount: number,
 ): TieredCapacityResult | null {

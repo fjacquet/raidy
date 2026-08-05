@@ -318,17 +318,3 @@ export const performanceVectors: PerformanceVector[] = [
     source: 'ZFS Stripe behaves like RAID 0',
   },
 ]
-
-/**
- * Get test drive by type
- */
-export function getTestDrive(type: 'HDD' | 'SSD_SATA' | 'SSD_NVMe'): Drive {
-  switch (type) {
-    case 'HDD':
-      return testHdd7200
-    case 'SSD_SATA':
-      return testSsdSata
-    case 'SSD_NVMe':
-      return testSsdNvme
-  }
-}

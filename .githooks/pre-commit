@@ -1,0 +1,14 @@
+#!/bin/sh
+# Dead-code gate. See docs/superpowers/specs/2026-08-05-dead-code-sweep-design.md
+#
+# Unused exports, unimported files and dead dependencies are invisible to
+# TypeScript's noUnusedLocals and Biome's noUnusedVariables: both are file-scoped,
+# and neither builds an import graph. This is the only check that does.
+#
+# That gap is not theoretical — it is how 8.5 MB of unused `recharts` sat in
+# production dependencies until 2026-08-05.
+#
+# Bypass with `git commit --no-verify` when you must. `prebuild` runs the same
+# check, so a bypassed commit defers the failure to build time rather than
+# avoiding it.
+npm run check:dead

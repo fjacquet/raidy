@@ -179,7 +179,7 @@ function nutanixFastTierModel(ctx: FastTierModelContext): FastTierResult {
  * fast-tier contribution — see the capacity-only fallback at the `calculatePerformance` call
  * site for why each of those is a deliberate, permanent "no model", not a gap to fill in later.
  */
-export const FAST_TIER_MODEL_BY_TOPOLOGY: Partial<Record<TopologyType, FastTierModelResolver>> = {
+const FAST_TIER_MODEL_BY_TOPOLOGY: Partial<Record<TopologyType, FastTierModelResolver>> = {
   vsan_osa: vsanFastTierModel,
   nutanix: nutanixFastTierModel,
 }

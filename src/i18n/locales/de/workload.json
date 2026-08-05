@@ -2,17 +2,12 @@
   "presets": {
     "label": "Arbeitslast-Profil",
     "database": "Datenbank (OLTP)",
-    "olap": "Analytik (OLAP)",
     "fileServer": "Dateiserver",
-    "webServer": "Webserver",
     "videoStreaming": "Video-Streaming",
-    "virtualDesktop": "Virtueller Desktop (VDI)",
     "backup": "Backup-Ziel",
-    "archive": "Archiv",
     "custom": "Benutzerdefiniert"
   },
   "ioPattern": {
-    "label": "I/O-Muster",
     "readWrite": "Lese-/Schreibverhältnis",
     "readPercent": "Lesen %",
     "writePercent": "Schreiben %",

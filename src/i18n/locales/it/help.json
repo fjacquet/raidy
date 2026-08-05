@@ -33,33 +33,22 @@
     "performanceThreshold": "La soglia di prestazioni limita quanto può essere pieno lo storage prima del degrado. La maggior parte dei sistemi di storage rallenta man mano che si avvicina alla capacità massima. Impostando l'85% significa che solo l'85% della capacità utilizzabile viene mostrato come limite operativo. Default 100% (nessun limite)."
   },
   "output": {
-    "rawCapacity": "Capacità fisica totale di tutti i dischi prima di qualsiasi overhead. Calcolata come: capacità del disco x numero di dischi x numero di server.",
-    "usableCapacity": "Capacità disponibile dopo la sottrazione di parità/ridondanza, hot spare, overhead del filesystem e riserve di sistema. Questa è la capacità su cui è effettivamente possibile scrivere.",
-    "effectiveCapacity": "Capacità utilizzabile moltiplicata per i rapporti di compressione e deduplicazione. Rappresenta il volume logico di dati che il sistema può archiviare.",
     "efficiency": "Rapporto tra capacità utilizzabile e capacità grezza, espresso in percentuale. Valori più alti sono migliori, ma un'efficienza maggiore di solito implica una ridondanza inferiore.",
     "sankeyDiagram": "Il diagramma Sankey mostra la cascata di capacità: come la capacità grezza fluisce attraverso le varie deduzioni di overhead fino alla capacità utilizzabile. Flussi più larghi rappresentano quantità maggiori.",
-    "readThroughput": "Throughput massimo in lettura sequenziale, limitato dall'anello più debole della catena: aggregato dei supporti, controller/HBA, bus PCIe o rete.",
-    "writeThroughput": "Throughput massimo in scrittura sequenziale. Per i RAID basati su parità, il throughput in scrittura è ridotto dal fattore di penalità di scrittura.",
-    "readIops": "IOPS massimi in lettura casuale. Somma degli IOPS in lettura di tutti i dischi, limitata dai limiti massimi del controller e del bus.",
-    "writeIops": "IOPS massimi in scrittura casuale. Per RAID-5, dividere per 4 (ogni scrittura richiede 4 operazioni di I/O). Per RAID-6, dividere per 6.",
     "sustainedWrite": "Burst = ciò che il livello veloce assorbe prima di saturarsi. Sostenuta = ciò che il sistema regge una volta piena la cache, limitata dalla capacità di scrittura del livello di capacità. Usare Sostenuta per dimensionare l'ingestione continua.",
     "bottleneck": "La catena dei colli di bottiglia mostra il throughput a ogni livello. Il livello con il throughput più basso è il collo di bottiglia. Aggiornare qualsiasi altro livello non migliorerà le prestazioni.",
     "survivalRate": "Probabilità di sopravvivere un anno senza perdita di dati, calcolata tramite simulazione Monte Carlo. Considera i tassi di guasto dei dischi (AFR), il tempo di ricostruzione, la probabilità di URE durante la ricostruzione e i guasti correlati.",
-    "rebuildTime": "Tempo stimato per la ricostruzione di un disco guasto. Tempi di ricostruzione più lunghi aumentano la finestra di vulnerabilità. Dipende dalla capacità del disco, dalla velocità di ricostruzione e dall'utilizzo dell'array.",
     "totalPower": "Consumo energetico totale inclusi dischi, server e raffreddamento (fattore PUE). Utilizzato per calcolare il costo energetico annuale e le emissioni di CO₂.",
-    "annualCo2": "Emissioni annuali di CO₂ basate sul consumo energetico totale e sull'intensità carbonica della rete elettrica selezionata. La Svizzera (30 g/kWh) è tra le più pulite; la Cina (555 g/kWh) tra le più alte.",
     "backupRequirements": "Spazio di archiviazione stimato necessario per i backup incrementali basato sul tasso di variazione giornaliero e sul periodo di conservazione. Questa è la capacità di destinazione del backup, separata dallo storage primario."
   },
   "zfs": {
     "ashift": "Il valore ashift deve corrispondere alla dimensione del settore fisico del disco. Usare ashift=9 (512B) su un disco con settori da 4K causa amplificazione delle scritture. Usare ashift=12 per i dischi moderni.",
     "compression": "Algoritmo di compressione ZFS. LZ4 è consigliato per la maggior parte dei carichi di lavoro (veloce, basso utilizzo CPU). ZSTD offre rapporti migliori con un costo CPU più elevato.",
     "recordsize": "Dimensione massima del record per i dataset. Adattare al carico di lavoro: 128K per file generici, 16K-64K per database, 1M per carichi sequenziali di grandi dimensioni.",
-    "dedup": "La deduplicazione ZFS richiede circa 5 GB di RAM per TB di dati deduplicati. Abilitare solo se si dispone di RAM sufficiente e di un carico di lavoro con molte scritture duplicate.",
-    "specialVdev": "Un vdev speciale (NVMe) archivia i metadati e i blocchi piccoli, migliorando notevolmente le prestazioni di I/O casuale per i pool basati su HDD."
+    "dedup": "La deduplicazione ZFS richiede circa 5 GB di RAM per TB di dati deduplicati. Abilitare solo se si dispone di RAM sufficiente e di un carico di lavoro con molte scritture duplicate."
   },
   "ceph": {
-    "nearfull": "La soglia predefinita di nearfull di Ceph è l'85%. Gli OSD cesseranno di accettare scritture oltre questa soglia. La capacità utilizzabile viene calcolata in base a questa soglia, non al 100%.",
-    "backend": "BlueStore è il backend consigliato. Bypassa il filesystem locale per l'accesso diretto al disco, migliorando le prestazioni rispetto al legacy FileStore."
+    "nearfull": "La soglia predefinita di nearfull di Ceph è l'85%. Gli OSD cesseranno di accettare scritture oltre questa soglia. La capacità utilizzabile viene calcolata in base a questa soglia, non al 100%."
   },
   "vsan": {
     "adaptive": "vSAN ESA utilizza RAID-5 adattivo: larghezza di stripe 2+1 per 3-5 host (efficienza del 67%) o 4+1 per 6+ host (efficienza dell'80%). Il sistema si regola automaticamente in base alla dimensione del cluster."
@@ -82,8 +71,6 @@
   },
   "dell": {
     "powerFlex": "PowerFlex supporta mirror a 2 e 3 vie con Fine Granularity (8KB) o Medium Granularity (1MB). Fine Granularity aggiunge un overhead di metadati del ~12-15% ma consente ricostruzioni più rapide.",
-    "powerStore": "PowerStore è un'appliance all-flash con deduplicazione e compressione integrate. I limiti del controller determinano il throughput massimo.",
-    "powerScale": "PowerScale (Isilon) è un NAS scale-out. L'efficienza dipende dal livello di protezione e dal numero di nodi.",
     "objectScale": "ObjectScale fornisce storage a oggetti compatibile con S3. La geo-replica multi-sito può aggiungere un overhead di capacità significativo (fino a 2,67x per EC 12+4 su 2 siti)."
   }
 }

@@ -290,8 +290,3 @@ export const vsanEsaVectors: VsanTestVector[] = [
     url: 'https://core.vmware.com/resource/vmware-vsan-express-storage-architecture',
   },
 ]
-
-/**
- * Combined vSAN test vectors (OSA + ESA).
- */
-export const vsanVectors: VsanTestVector[] = [...vsanOsaVectors, ...vsanEsaVectors]

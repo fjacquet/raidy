@@ -2,6 +2,7 @@
  * Topology configuration panel - RAID/ZFS/S2D/vSAN/Dell selection.
  */
 
+import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Label, Select, Slider } from '@/components/common/FormControls'
 import { BeeGfsOptionsPanel } from '@/components/inputs/topology-options/BeeGfsOptionsPanel'
@@ -37,7 +38,24 @@ export function TopologyPanel() {
     setTopology({ type: topology.type, level } as Topology)
   }
 
-  const levelOptions = TOPOLOGY_LEVELS[topology.type] || []
+  const typeOptions = useMemo(
+    () => TOPOLOGY_TYPES.map((type) => ({ value: type.value, label: t(type.labelKey) })),
+    [t],
+  )
+
+  // TOPOLOGY_LEVELS carries i18n key paths, not English text. It held hardcoded English
+  // until 2026-08-05, which meant French, German and Italian users read "Stripe, no
+  // redundancy" while a translated `level.raid0.description` sat unused in every locale
+  // file. The orphan-key test (tests/i18n/orphanKeys.spec.ts) is what surfaced it.
+  const levelOptions = useMemo(
+    () =>
+      (TOPOLOGY_LEVELS[topology.type] || []).map((level) => ({
+        value: level.value,
+        label: t(level.labelKey),
+        description: t(level.descriptionKey),
+      })),
+    [topology.type, t],
+  )
 
   return (
     <div className="space-y-5">
@@ -49,7 +67,7 @@ export function TopologyPanel() {
         <Select
           id="storage-type"
           value={topology.type}
-          options={TOPOLOGY_TYPES}
+          options={typeOptions}
           onChange={handleTypeChange}
         />
       </div>

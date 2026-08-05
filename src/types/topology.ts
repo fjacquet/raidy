@@ -222,7 +222,7 @@ export interface S2DOptions {
 }
 
 /** HBA types for direct disk passthrough (required for ZFS, vSAN, S2D, etc.) */
-export const HBA_TYPES = [
+const HBA_TYPES = [
   'hba_sas', // Generic SAS HBA (IT mode)
   'hba_nvme', // NVMe HBA / direct attach
   'lsi_9500', // Broadcom/LSI 9500 series (24G SAS)
@@ -233,7 +233,7 @@ export const HBA_TYPES = [
 export type HbaType = (typeof HBA_TYPES)[number]
 
 /** RAID controller types including Dell PERC */
-export const RAID_CONTROLLER_TYPES = [
+const RAID_CONTROLLER_TYPES = [
   'software',
   'hardware',
   'gpu',
@@ -379,7 +379,7 @@ export function usesDistributedSpares(topologyType: TopologyType): boolean {
 }
 
 /** VMware vSAN topology family (OSA + ESA) */
-export const VSAN_TOPOLOGIES: TopologyType[] = ['vsan_osa', 'vsan_esa']
+const VSAN_TOPOLOGIES: TopologyType[] = ['vsan_osa', 'vsan_esa']
 
 /** Check if topology is a vSAN architecture (OSA or ESA) */
 export function isVsanTopology(topologyType: TopologyType): boolean {
@@ -637,24 +637,6 @@ export interface NutanixOptions {
 }
 
 /** Dell PowerVault ME5 configuration options */
-
-/** Complete topology configuration */
-export interface TopologyConfig {
-  /** Selected topology */
-  topology: Topology
-  /** Number of drives */
-  driveCount: number
-  /** Number of data drives per RAID group (for RAID 50/60) */
-  drivesPerGroup?: number
-  /** Hot spare count */
-  hotSpares: number
-  /** ZFS options (if type is 'zfs') */
-  zfsOptions?: ZfsOptions
-  /** S2D options (if type is 's2d') */
-  s2dOptions?: S2DOptions
-  /** RAID controller options */
-  controllerOptions?: RaidControllerOptions
-}
 
 /** Default ZFS options */
 export const DEFAULT_ZFS_OPTIONS: ZfsOptions = {
