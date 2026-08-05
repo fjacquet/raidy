@@ -2,17 +2,12 @@
   "presets": {
     "label": "Workload Preset",
     "database": "Database (OLTP)",
-    "olap": "Analytics (OLAP)",
     "fileServer": "File Server",
-    "webServer": "Web Server",
     "videoStreaming": "Video Streaming",
-    "virtualDesktop": "Virtual Desktop (VDI)",
     "backup": "Backup Target",
-    "archive": "Archive",
     "custom": "Custom"
   },
   "ioPattern": {
-    "label": "I/O Pattern",
     "readWrite": "Read / Write Mix",
     "readPercent": "Read %",
     "writePercent": "Write %",

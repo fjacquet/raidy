@@ -9,6 +9,7 @@
  * - Special vdevs
  */
 
+import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Label, Select, Toggle } from '@/components/common/FormControls'
 import { useConfigStore } from '@/store'
@@ -26,19 +27,35 @@ const COMPRESSION_OPTIONS = [
   { value: 'off', label: 'Disabled' },
 ]
 
-const RECORDSIZE_OPTIONS = [
-  { value: '4096', label: '4K' },
-  { value: '8192', label: '8K' },
-  { value: '16384', label: '16K' },
-  { value: '65536', label: '64K' },
-  { value: '131072', label: '128K (default)' },
-  { value: '1048576', label: '1M' },
-]
+/**
+ * Record sizes are technical labels and stay untranslated (the project convention for RAID,
+ * NVMe, IOPS and the like) — except the 128K entry, whose "(default)" IS translated in all
+ * four locales as `zfs.recordDefault`. Building it here rather than hardcoding the English
+ * kept "128K (default)" from shadowing "128K (défaut)".
+ */
+const RECORDSIZE_VALUES = ['4096', '8192', '16384', '65536', '131072', '1048576'] as const
+const RECORDSIZE_LABELS: Record<(typeof RECORDSIZE_VALUES)[number], string> = {
+  '4096': '4K',
+  '8192': '8K',
+  '16384': '16K',
+  '65536': '64K',
+  '131072': '128K',
+  '1048576': '1M',
+}
 
 export function ZfsOptionsPanel() {
   const { t } = useTranslation('topology')
   const { t: th } = useTranslation('help')
   const { zfsOptions, setZfsOptions } = useConfigStore()
+
+  const recordsizeOptions = useMemo(
+    () =>
+      RECORDSIZE_VALUES.map((value) => ({
+        value,
+        label: value === '131072' ? t('zfs.recordDefault') : RECORDSIZE_LABELS[value],
+      })),
+    [t],
+  )
 
   return (
     <div className="space-y-4 pt-3 border-t border-slate-200 dark:border-surface-700">
@@ -88,7 +105,7 @@ export function ZfsOptionsPanel() {
         <Select
           id="recordsize"
           value={String(zfsOptions.recordsize)}
-          options={RECORDSIZE_OPTIONS}
+          options={recordsizeOptions}
           onChange={(v) => setZfsOptions({ recordsize: Number(v) })}
         />
       </div>

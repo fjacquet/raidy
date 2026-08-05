@@ -39,7 +39,6 @@
   },
   "summary": {
     "rawCapacity": "Raw Capacity",
-    "totalDrives": "Total Drives",
     "hardwareCost": "Hardware Cost"
   },
   "properties": {
@@ -58,7 +57,6 @@
     "writeBandwidth": "Write BW",
     "readLatency": "Read Latency",
     "writeLatency": "Write Latency",
-    "latency": "Latency",
     "reliability": "Reliability",
     "ureRate": "URE Rate",
     "afr": "AFR",

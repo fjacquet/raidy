@@ -3,8 +3,7 @@
     "title": "Efficacité des données",
     "compression": "Ratio de compression",
     "compressionHint": "1.0 = pas de compression, 2.0 = réduction de 50%",
-    "dedup": "Ratio de déduplication",
-    "dedupHint": "1.0 = pas de dédup, 2.0 = réduction de 50%"
+    "dedup": "Ratio de déduplication"
   },
   "network": {
     "title": "Réseau & Bus",
@@ -14,7 +13,6 @@
       "10gbe": "10 GbE",
       "25gbe": "25 GbE",
       "40gbe": "40 GbE",
-      "50gbe": "50 GbE",
       "100gbe": "100 GbE",
       "200gbe": "200 GbE",
       "400gbe": "400 GbE"
@@ -40,9 +38,7 @@
   "power": {
     "title": "Énergie & Durabilité",
     "pue": "PUE (Power Usage Effectiveness)",
-    "pueHint": "1.0 = parfait, 1.2 = excellent, 1.4 = moyen, 2.0 = faible",
-    "projectYears": "Durée du projet (Années)",
-    "electricityCost": "Coût électricité ($/kWh)"
+    "pueHint": "1.0 = parfait, 1.2 = excellent, 1.4 = moyen, 2.0 = faible"
   },
   "filesystem": {
     "title": "Système de fichiers & Sauvegarde",
@@ -55,8 +51,6 @@
       "refs": "ReFS",
       "ntfs": "NTFS"
     },
-    "reflink": "Supporte Reflink",
-    "reflinkHint": "Clones copy-on-write pour sauvegardes efficaces",
     "backupRetention": "Rétention sauvegarde (Jours)",
     "dailyChangeRate": "Taux de changement journalier (%)"
   },

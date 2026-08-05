@@ -33,33 +33,22 @@
     "performanceThreshold": "Le seuil de performance limite le taux de remplissage du stockage avant dégradation. La plupart des systèmes de stockage ralentissent à mesure qu'ils approchent de leur capacité. Fixer 85% signifie que seuls 85% de la capacité utilisable sont affichés comme limite opérationnelle. Par défaut 100% (pas de limite)."
   },
   "output": {
-    "rawCapacity": "Capacité physique totale de tous les disques avant toute surcharge. Calculée comme suit : capacité du disque x nombre de disques x nombre de serveurs.",
-    "usableCapacity": "Capacité disponible après soustraction de la parité/redondance, des disques de secours, de la surcharge du système de fichiers et des réserves système. C'est ce que vous pouvez réellement écrire.",
-    "effectiveCapacity": "Capacité utilisable multipliée par les ratios de compression et de déduplication. Représente le volume logique de données que le système peut stocker.",
     "efficiency": "Ratio entre la capacité utilisable et la capacité brute, exprimé en pourcentage. Plus c'est élevé, mieux c'est, mais une efficacité plus élevée signifie généralement moins de redondance.",
     "sankeyDiagram": "Le diagramme de Sankey illustre la cascade de capacité : comment la capacité brute est réduite par les différentes surcharges pour aboutir à la capacité utilisable. Les flux plus larges représentent des quantités plus importantes.",
-    "readThroughput": "Débit maximal en lecture séquentielle, limité par le maillon le plus faible de la chaîne : agrégat des médias, contrôleur/HBA, bus PCIe ou réseau.",
-    "writeThroughput": "Débit maximal en écriture séquentielle. Pour le RAID à parité, le débit en écriture est réduit par le facteur de pénalité d'écriture.",
-    "readIops": "IOPS maximales en lecture aléatoire. Somme des IOPS en lecture de tous les disques, limitée par les plafonds du contrôleur et du bus.",
-    "writeIops": "IOPS maximales en écriture aléatoire. Pour RAID-5, diviser par 4 (chaque écriture nécessite 4 opérations d'E/S). Pour RAID-6, diviser par 6.",
     "sustainedWrite": "Rafale = ce que le cache rapide absorbe avant saturation. Soutenue = ce que le système tient une fois le cache plein, borné par la capacité d'écriture du niveau de capacité. Utilisez Soutenue pour dimensionner une ingestion continue.",
     "bottleneck": "La chaîne de goulots d'étranglement affiche le débit à chaque couche. La couche avec le débit le plus faible est le goulot d'étranglement. Améliorer toute autre couche n'améliorera pas les performances.",
     "survivalRate": "Probabilité de survivre un an sans perte de données, calculée par simulation Monte Carlo. Prend en compte le taux de défaillance des disques (AFR), le temps de reconstruction, la probabilité d'URE pendant la reconstruction et les défaillances corrélées.",
-    "rebuildTime": "Temps estimé de reconstruction d'un disque défaillant. Des temps de reconstruction plus longs augmentent la fenêtre de vulnérabilité. Dépend de la capacité du disque, de la vitesse de reconstruction et de l'utilisation de la baie.",
     "totalPower": "Consommation électrique totale incluant les disques, les serveurs et le refroidissement (facteur PUE). Utilisée pour calculer le coût énergétique annuel et les émissions de CO₂.",
-    "annualCo2": "Émissions annuelles de CO₂ basées sur la consommation énergétique totale et l'intensité carbone du réseau électrique sélectionné. La Suisse (30 g/kWh) est parmi les plus propres ; la Chine (555 g/kWh) parmi les plus élevées.",
     "backupRequirements": "Stockage estimé requis pour les sauvegardes incrémentielles basé sur le taux de changement quotidien et la période de rétention. Il s'agit de la capacité cible de sauvegarde, séparée du stockage principal."
   },
   "zfs": {
     "ashift": "La valeur ashift doit correspondre à la taille du secteur physique du disque. Utiliser ashift=9 (512 octets) sur un disque à secteurs de 4K provoque une amplification des écritures. Utilisez ashift=12 pour les disques modernes.",
     "compression": "Algorithme de compression ZFS. LZ4 est recommandé pour la plupart des charges de travail (rapide, faible utilisation processeur). ZSTD offre de meilleurs ratios mais avec un coût processeur plus élevé.",
     "recordsize": "Taille maximale des enregistrements pour les datasets. Adapter à la charge de travail : 128K pour les fichiers généraux, 16K-64K pour les bases de données, 1M pour les charges séquentielles volumineuses.",
-    "dedup": "La déduplication ZFS nécessite environ 5 Go de RAM par To de données dédupliquées. À n'activer que si vous disposez de suffisamment de RAM et d'une charge de travail en écriture avec beaucoup de doublons.",
-    "specialVdev": "Un vdev spécial (NVMe) stocke les métadonnées et les petits blocs, améliorant considérablement les performances d'E/S aléatoires pour les pools basés sur des HDD."
+    "dedup": "La déduplication ZFS nécessite environ 5 Go de RAM par To de données dédupliquées. À n'activer que si vous disposez de suffisamment de RAM et d'une charge de travail en écriture avec beaucoup de doublons."
   },
   "ceph": {
-    "nearfull": "Le seuil par défaut nearfull de Ceph est de 85 %. Les OSD cessent d'accepter les écritures au-delà de ce seuil. La capacité utilisable est calculée à ce seuil, et non à 100 %.",
-    "backend": "BlueStore est le backend recommandé. Il contourne le système de fichiers local pour un accès direct au disque, améliorant les performances par rapport à l'ancien FileStore."
+    "nearfull": "Le seuil par défaut nearfull de Ceph est de 85 %. Les OSD cessent d'accepter les écritures au-delà de ce seuil. La capacité utilisable est calculée à ce seuil, et non à 100 %."
   },
   "vsan": {
     "adaptive": "vSAN ESA utilise un RAID-5 adaptatif : largeur de bande de 2+1 pour 3 à 5 hôtes (67 % d'efficacité) ou 4+1 pour 6 hôtes et plus (80 % d'efficacité). Le système s'ajuste automatiquement en fonction de la taille du cluster."
@@ -82,8 +71,6 @@
   },
   "dell": {
     "powerFlex": "PowerFlex prend en charge les miroirs 2 voies et 3 voies avec une granularité Fine (8 Ko) ou Medium (1 Mo). La granularité Fine ajoute environ 12-15 % de surcharge de métadonnées mais permet des reconstructions plus rapides.",
-    "powerStore": "PowerStore est une appliance tout-flash avec déduplication et compression intégrées. Les limites du contrôleur déterminent le débit maximal.",
-    "powerScale": "PowerScale (Isilon) est un NAS scale-out. L'efficacité dépend du niveau de protection et du nombre de nœuds.",
     "objectScale": "ObjectScale fournit un stockage objet compatible S3. La géo-réplication multi-site peut ajouter une surcharge de capacité significative (jusqu'à 2,67x pour un EC 12+4 sur 2 sites)."
   }
 }

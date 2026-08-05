@@ -21,7 +21,7 @@
     "decimal": "TB"
   },
   "carbon": {
-    "label": "CO\u2082",
+    "label": "CO₂",
     "regions": {
       "switzerland": "Schweiz (30)",
       "norway": "Norwegen (26)",
@@ -44,13 +44,5 @@
     "auto": "Auto",
     "light": "Hell",
     "dark": "Dunkel"
-  },
-  "buttons": {
-    "export": "Exportieren",
-    "reset": "Zurücksetzen",
-    "apply": "Anwenden",
-    "cancel": "Abbrechen",
-    "close": "Schließen",
-    "save": "Speichern"
   }
 }

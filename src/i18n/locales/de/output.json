@@ -43,10 +43,8 @@
       "hotSpares": "Hot Spares",
       "zfsSlop": "ZFS Slop-Speicher",
       "filesystemOverhead": "Dateisystem-Overhead",
-      "systemReserve": "Systemreserve",
       "usableCapacity": "Nutzbare Kapazität",
       "compressionGain": "Komprimierungsgewinn",
-      "dedupGain": "Deduplizierungsgewinn",
       "effectiveCapacity": "Effektive Endkapazität",
       "ofRaw": "der Bruttokapazität"
     },
@@ -86,16 +84,9 @@
     "writeIopsBurst": "Schreib-IOPS (Burst)",
     "writeIopsSustained": "Schreib-IOPS (Dauerlast)",
     "sustainedHint": "Dauerlast = was das System hält, sobald der Cache voll ist. Dimensionieren Sie kontinuierliche Ingestion anhand von Dauerlast, nicht Burst.",
-    "readThroughput": "Lesedurchsatz",
-    "writeThroughput": "Schreibdurchsatz",
-    "latency": "Latenz",
     "bottleneck": {
       "title": "Engpassanalyse",
-      "media": "Medienlimit",
-      "controller": "Controller-Limit",
-      "pcie": "PCIe-Bus-Limit",
-      "network": "Netzwerklimit",
-      "actual": "Effektives Limit"
+      "controller": "Controller-Limit"
     }
   },
   "resilience": {
@@ -104,14 +95,12 @@
     "simulating": "Simuliere...",
     "monteCarloSimulation": "Monte-Carlo-Simulation",
     "annualSurvivalRate": "Jährliche Überlebensrate ({{nines}} Neunen)",
-    "survivalProbability": "Überlebenswahrscheinlichkeit",
     "rebuildTime": "Rebuild-Zeit",
     "ureRisk": "URE-Risiko",
     "dualFailure": "Doppelausfall",
     "riskLevel": "Risikoniveau",
     "recommendations": "Empfehlungen",
     "recommendation": "Empfehlung",
-    "simulations": "Durchgeführte Simulationen",
     "clickToRun": "Klicken Sie auf \"Simulation starten\" zum Berechnen",
     "iterations": "Monte-Carlo-Iterationen",
     "includesCorrelated": "Inkl. korrelierter Ausfälle & Rebuild-Stress",
@@ -126,11 +115,7 @@
     "cooling": "Kühlung (PUE)",
     "annualCo2": "Jährliches CO₂:",
     "drivePower": "Laufwerksleistung",
-    "serverPower": "Serverleistung",
-    "totalPowerPue": "Gesamtleistung (mit PUE)",
-    "annualCost": "Jährliche Kosten",
-    "co2Emissions": "CO₂-Emissionen",
-    "projectCost": "{{years}}-Jahres-Energiekosten"
+    "serverPower": "Serverleistung"
   },
   "ssd": {
     "title": "SSD-Endurance",
@@ -138,10 +123,7 @@
     "atRisk": "Gefährdet",
     "dwpdUsage": "DWPD-Nutzung ({{required}} / {{rated}})",
     "dwpd": "Laufwerks-DWPD",
-    "requiredDwpd": "Erforderliche DWPD",
-    "enduranceYears": "Geschätzte Lebensdauer",
-    "warning": "Warnung: Arbeitslast überschreitet Laufwerks-Endurance",
-    "sufficient": "Endurance ausreichend für Arbeitslast"
+    "warning": "Warnung: Arbeitslast überschreitet Laufwerks-Endurance"
   },
   "commands": {
     "title": "Konfigurationsbefehle",
@@ -185,18 +167,15 @@
     "ansibleDesc": "Playbook",
     "terraform": "Terraform",
     "terraformDesc": "GCP-Konfiguration",
-    "json": "JSON-Export",
     "footer": "Exportieren Sie Ihre Speicherkonfiguration für Dokumentation oder Infrastrukturautomatisierung."
   },
   "pptx": {
-    "executiveSummary": "Zusammenfassung",
     "volumetry": "Volumetrie",
     "performance": "Leistung",
     "resilience": "Ausfallsicherheit",
     "sustainability": "Nachhaltigkeit",
     "backup": "Backup",
     "bottleneck": "Engpässe",
-    "bom": "Stückliste",
     "labels": {
       "drives": "Laufwerke",
       "servers": "Server",
