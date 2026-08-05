@@ -96,13 +96,32 @@ interface ToggleProps {
   checked: boolean
   onChange: (checked: boolean) => void
   label: string
+  /**
+   * Explanatory text, shown on hover/tap rather than as a permanent paragraph.
+   *
+   * Toggles had no tooltip until 2026-08-05, which is why every toggle that needed explaining
+   * grew a `<p>` beneath it — three of the four text blocks on the BeeGFS panel were that.
+   * Computed feedback still belongs on screen; only static prose belongs here.
+   */
+  tooltip?: string
 }
 
-export function Toggle({ id, checked, onChange, label }: ToggleProps) {
+export function Toggle({ id, checked, onChange, label, tooltip }: ToggleProps) {
   return (
-    <label htmlFor={id} className="flex items-center justify-between cursor-pointer">
-      <span className="text-sm text-slate-600 dark:text-slate-300">{label}</span>
-      <div className="relative">
+    /*
+      Two <label>s for one checkbox, deliberately: the text and the switch are each clickable,
+      while the tooltip sits BETWEEN them, outside both. InfoTooltip renders a <button> with an
+      onClick on touch devices — nested inside a label, tapping it to read the explanation would
+      also flip the setting.
+    */
+    <div className="flex items-center justify-between">
+      <span className="flex items-center gap-1.5">
+        <label htmlFor={id} className="text-sm text-slate-600 dark:text-slate-300 cursor-pointer">
+          {label}
+        </label>
+        {tooltip && <InfoTooltip content={tooltip} />}
+      </span>
+      <label htmlFor={id} className="relative cursor-pointer">
         <input
           type="checkbox"
           id={id}
@@ -112,8 +131,8 @@ export function Toggle({ id, checked, onChange, label }: ToggleProps) {
         />
         <div className="w-10 h-5 bg-slate-200 dark:bg-surface-600 rounded-full peer peer-checked:bg-primary-600 transition-colors" />
         <div className="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5" />
-      </div>
-    </label>
+      </label>
+    </div>
   )
 }
 

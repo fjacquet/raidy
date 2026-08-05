@@ -131,7 +131,7 @@ export function WorkloadPanel() {
         <Label
           htmlFor="daily-write"
           hint={`${formatBytes(dailyWriteVolume)}/day`}
-          tooltip={th('workload.dailyWriteVolume')}
+          tooltip={`${th('workload.dailyWriteVolume')} ${t('capacity.hint')}`}
         >
           {t('capacity.dailyWriteVolume')}
         </Label>
@@ -144,7 +144,6 @@ export function WorkloadPanel() {
           onChange={(v) => setDailyWriteVolume(sliderToDailyWrite(v))}
           formatValue={() => formatBytes(dailyWriteVolume)}
         />
-        <p className="text-xs text-slate-500">{t('capacity.hint')}</p>
       </div>
 
       {/* Workload Presets */}

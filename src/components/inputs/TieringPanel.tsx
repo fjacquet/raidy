@@ -5,6 +5,7 @@
 
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
+import { InfoTooltip } from '@/components/common'
 import { Label, SegmentedControl, Select, Slider } from '@/components/common/FormControls'
 import drivesData from '@/data/drives.json'
 import { useFormatBytes } from '@/hooks/useCalculations'
@@ -147,8 +148,10 @@ export function TieringPanel({
 
       {/* Fast Tier Section */}
       <div className="space-y-3 p-3 bg-white dark:bg-surface-800 rounded-lg">
-        <h5 className="text-sm font-medium text-blue-400">{labels.fastTier}</h5>
-        <p className="text-xs text-slate-500">{labels.fastTierHint}</p>
+        <h5 className="flex items-center gap-1.5 text-sm font-medium text-blue-400">
+          {labels.fastTier}
+          <InfoTooltip content={labels.fastTierHint} />
+        </h5>
 
         <div className="space-y-2">
           <Label htmlFor="fast-tier-drive">{t('tiering.driveModel')}</Label>
@@ -188,8 +191,10 @@ export function TieringPanel({
 
       {/* Capacity Tier Section */}
       <div className="space-y-3 p-3 bg-white dark:bg-surface-800 rounded-lg">
-        <h5 className="text-sm font-medium text-emerald-400">{labels.capacityTier}</h5>
-        <p className="text-xs text-slate-500">{labels.capacityTierHint}</p>
+        <h5 className="flex items-center gap-1.5 text-sm font-medium text-emerald-400">
+          {labels.capacityTier}
+          <InfoTooltip content={labels.capacityTierHint} />
+        </h5>
 
         <div className="space-y-2">
           <Label htmlFor="capacity-tier-drive">{t('tiering.driveModel')}</Label>
@@ -238,7 +243,9 @@ export function TieringPanel({
       */}
       {showWorkingSet && !(platform === 'vsan' && vsanMode === 'all-flash') && (
         <div className="space-y-2">
-          <Label hint={`${config.workingSetPercent}%`}>{t('tiering.workingSetSize')}</Label>
+          <Label hint={`${config.workingSetPercent}%`} tooltip={t('tiering.workingSetDesc')}>
+            {t('tiering.workingSetSize')}
+          </Label>
           <Slider
             id="working-set"
             value={config.workingSetPercent}
@@ -246,7 +253,6 @@ export function TieringPanel({
             max={50}
             onChange={(workingSetPercent) => onChange({ workingSetPercent })}
           />
-          <p className="text-xs text-slate-500">{t('tiering.workingSetDesc')}</p>
         </div>
       )}
 
