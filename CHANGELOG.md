@@ -5,7 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.1.0] - 2026-08-05
+
+> **One published figure moves, and only for two platforms.** Tiered vSAN OSA and tiered Ceph now
+> model the fast tier as a shared failure domain, so their survival rates drop. Nothing else in
+> the resilience model changed — S2D, Nutanix, untiered configurations and BeeGFS are bit-for-bit
+> identical, and a zero-AFR cache device reproduces the 2.0.0 result exactly.
+>
+> | Configuration | Survival | Dual-failure |
+> |---|---|---|
+> | vSAN OSA RAID-1, tiered | 85.6% → 77.6% | 0.015% → 4.5% |
+> | vSAN OSA RAID-5, tiered | 10.4% → 9.3% | 0.010% → 0.28% |
+> | Ceph 3× replicated, tiered | 99.99% → 98.7% | 0% → 0.38% |
+>
+> This is the correction of the one behaviour that erred on the **unsafe** side — the simulation
+> previously reported survival as though the cache or `block.db` device could not fail at all. The
+> new figures are a conservative bound, not a calibrated estimate; see the entry for why.
+>
+> The rest of the release is translation work: after this, no user-facing prose is built outside
+> i18n. A French, German or Italian user no longer meets English in the bottleneck line, the PDF
+> export, or the Dell configuration panels.
 
 ### Fixed
 
