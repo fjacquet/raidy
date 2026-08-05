@@ -172,7 +172,7 @@ Calculates storage capacity and efficiency.
 
 - Raw capacity = drive capacity × drive count
 - Parity overhead (varies by topology)
-- Hot spare capacity reservation (vSAN OSA/ESA use distributed slack space, so no dedicated spares are reserved)
+- Hot spare capacity reservation (the ten `DISTRIBUTED_SPARE_TOPOLOGIES` platforms rebuild from distributed slack space, so no dedicated spares are reserved)
 - S2D rebuild reserve: the default `drive_failure` strategy reserves 1 capacity drive per server, capped at 4 drives cluster-wide (`capacity_raw × min(faultDomains, 4)`), per Microsoft's rule; an opt-in `node_failure` strategy reserves a whole node instead. The reserve is unallocated **raw** pool space, so it is removed from raw capacity **before** the resiliency efficiency multiplier (matching Microsoft / Azure Local) — reserving N raw drives costs N × efficiency of usable capacity
 - S2D infrastructure reserve: a fixed ~277 GB cluster-wide reserve for Azure Local infrastructure volumes (Arc Resource Bridge + AKS images, ClusterPerformanceHistory, system), subtracted from post-efficiency usable capacity
 - Filesystem overhead (per filesystem type)
@@ -424,6 +424,31 @@ Monte Carlo simulation for data loss probability.
 - URE (Unrecoverable Read Error) probability
 - Correlated batch failures
 - Stress-induced failures during rebuild
+- Replacement-sourcing delay for spare-free configurations (#93 — see below)
+
+**Rebuild-start timing / hot-spare credit (#93):** every configuration starts rebuilding the
+instant a drive is declared failed — there is no "someone has to notice and replace the drive"
+delay by default (`hasHotSpare` defaults to `true` when a `SimulationInput` omits it, e.g. the
+worker's own unit tests and the analytic MTTDL cross-check in
+`tests/engines/resilience-analytic.spec.ts`, which pins the pre-#93 model exactly). `useResilience.ts`
+sets `hasHotSpare` explicitly from `hotSpares > 0` (the same signal, after `usesDistributedSpares`
+zeroing, already used to size the simulated population per #80) — when the calling configuration
+has no dedicated hot spare, the worker inserts a 1-day replacement-sourcing delay
+(`REPLACEMENT_DELAY_DAYS` in `resilienceWorker.ts`, sourced from a next-business-day
+advance-parts-replacement SLA) before the rebuild clock starts, tracked via `repairPending` /
+`replacementDelayDaysRemaining` state parallel to `isRebuilding` / `rebuildDaysRemaining`. The two
+state machines are mutually exclusive per iteration (`else if` at the day-progress site) so a
+delay that elapses on the same day it started can't also consume a rebuild day in the same pass —
+that collapse would silently reproduce the immediate-rebuild timeline and erase the delay. URE
+checks stayed unconditional on `isRebuilding` (not gated on rebuild state): they are a one-shot
+check evaluated at the failure event that exhausts a group's redundancy, and gating them on
+rebuild state was tried and rejected during development — it suppressed URE risk for spare-free
+configurations instead of adding exposure, moving survival the wrong direction. `hasHotSpare` is
+never set for the ten `usesDistributedSpares` platforms (no dedicated spare drive exists to
+credit), so they always take the spare-free delayed-rebuild path; this falls out of reusing the
+existing population-sizing signal rather than a platform-specific branch. Since the hot-spare
+default is 0, the remaining five platforms also start on that path until the user configures a
+spare. See CHANGELOG.md "Unreleased" for before/after survival vectors.
 
 **Node placement (#113):** every pair slot records the node holding each of its two copies
 (`pairNodeA` / `pairNodeB` in `buildGroupPairState`), defaulting to one group per node. Nothing

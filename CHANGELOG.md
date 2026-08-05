@@ -194,6 +194,83 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `resilienceWorker.ts` depend on — more than a "contained change," so the conservative UI note is
   the fix per the issue's own ruling.
 
+### Fixed
+
+- **Resilience now models a replacement-sourcing delay for spare-free configurations, closing
+  #93.** #80 excluded hot spares from the simulated failure population (a spare holds no data,
+  so its own failure isn't a data-loss event) but left the rebuild-timing model untouched.
+  Investigating #93's suggested fix — "start the rebuild timer at zero elapsed time when
+  `hotSpares > 0`" — found the premise backwards: `resilienceWorker.ts` **already** starts
+  rebuild the instant a drive is declared failed, unconditionally, for every configuration; there
+  was never a sourcing/replacement delay to skip in the first place. So a spared configuration's
+  numbers do not move at all — crediting a spare that already got instant rebuild credit is a
+  no-op. What #93 actually needed was the opposite: a spare-FREE configuration is not realistic
+  either, because in the real system someone has to notice the failure alert, source a
+  replacement drive, and physically install it before rebuild can start — the worker had no
+  concept of that wait. `resilienceWorker.ts` now adds a 1-day replacement-sourcing delay (before
+  the rebuild clock starts) whenever the simulated group/pool has no dedicated hot spare
+  (`hasHotSpare: false`), computed in `useResilience.ts` from the same `hotSpares > 0` signal
+  (post `usesDistributedSpares` zeroing) already used to size the simulated population. The 1-day
+  figure represents a next-business-day advance-parts-replacement SLA (Dell ProSupport NBD, HPE
+  Foundation Care NBD are common examples) — the middle of three non-hot-spare MTTR scenarios
+  published in ServeTheHome's MTTR guide (10 min notification + immediate / NBD / 7-day RMA +
+  install; the NBD scenario totals ~24h45m, rounded to 1 whole day since the simulation advances
+  one day per loop iteration).
+  **Direction:** every spared configuration (`hasHotSpare: true`, the same as every configuration
+  before this change) is numerically unchanged. Every spare-free configuration
+  (`hasHotSpare: false`) now survives less often than before, because it carries a real exposure
+  window that did not exist in the model previously. All ten `usesDistributedSpares` platforms
+  (vSAN OSA/ESA, S2D, Ceph, Nutanix, Longhorn, PowerFlex, PowerStore, PowerScale, ObjectScale —
+  none of which has a dedicated spare drive to credit) always resolve to `hasHotSpare: false` and
+  therefore sit on the same, lower survival curve as any other spare-free configuration — this
+  falls out of reusing the existing population-sizing signal, no platform-specific branch was
+  needed.
+  **Interaction with the new zero-spare default.** The hot-spare default changed from 1 to 0 in
+  this same release, so the spare-free curve is now the *default* curve rather than an opt-in one:
+  a first load of any platform lands on it. That is the intended pairing — a tool that assumes a
+  spare nobody configured was overstating both usable capacity and survival at once. Users who do
+  configure a spare get exactly the numbers they got before this change.
+  **Gated by `tests/workers/resilienceReplacementDelay.spec.ts`.** The vectors below were
+  measured outside the test harness and are evidence, not a gate — nothing in CI would have
+  noticed the mechanism silently ceasing to work. Three seeded-PRNG tests now pin it: that
+  omitting `hasHotSpare` is *exactly* the pre-#93 path (every caller predating this change omits
+  it), that spare-free survives strictly less often than spared, and that the delay does not
+  collapse into a short rebuild. The last is the one worth having: chaining the two countdowns
+  with independent `if`s instead of `else if` makes a 1-day delay followed by a ≤1-day rebuild
+  finish on the same simulated day as the triggering failure, reproducing the immediate-rebuild
+  timeline exactly. Verified by mutation — under that rewrite both timelines return an identical
+  0.9992, and the fix would sit in the source fully commented and do nothing.
+  **Before/after vectors** (100K iterations, `Math.random` stubbed with a seeded mulberry32 PRNG
+  for reproducibility; AFR stressed to 20% purely to make the mechanism observable within a
+  feasible iteration count — see `tests/engines/resilience-analytic.spec.ts` for the project's
+  existing precedent of stressing AFR to observe rare dual/triple-failure mechanics; noise floor
+  at N=100K is roughly ±0.3 percentage points for survival rates near the middle of the range,
+  tighter near the extremes):
+  - Standard RAID6, 8×1TB drives: spared 99.965% → unchanged 99.965%; spare-free 99.965% →
+    99.89% (down ~0.08pp).
+  - ZFS raidz2, 10×1TB drives: spared 99.939% → unchanged 99.939%; spare-free 99.939% → 99.77%
+    (down ~0.17pp).
+  - BeeGFS `beegfs_raid6` (tiered group topology, 8 storage targets × 12 drives): spared 95.0% →
+    unchanged 95.0%; spare-free 95.0% → 81.9% (down ~13.1pp — group topologies have many more
+    independent fault domains than a single RAID6/raidz2 array, so the extra exposure day compounds
+    across all 8 targets).
+  - vSAN OSA RAID1 (distributed spares, 24 drives): always resolves `hasHotSpare: false` — 95.7%
+    (hypothetical `hasHotSpare: true`, to show the credit it is correctly denied) vs. 94.6% (what
+    it actually gets), confirming vSAN sits on the spare-free curve as required.
+  - Real-world AFR (~1%) configurations are unaffected in any *observable* way at 100K
+    iterations: the 1-day exposure extension is real but the baseline dual-failure probability is
+    already far below the simulation's noise floor at that AFR, so before/after numbers are
+    identical to the precision the tool reports (this matches the existing behavior of every
+    other rare-event mechanic in this worker).
+  Coverage on `src/workers/resilienceWorker.ts` after this change: 95.3% statements / 84.2%
+  branches / 100% functions / 95.5% lines (threshold: 75%). Benchmark (`beegfs_raid10` unmerged,
+  100K iterations, the worker's most expensive configuration, measured with `tsx` outside the
+  test harness, 6 trials across 2 sessions): before ranged 9.7–14.0s, after (`hasHotSpare: false`)
+  ranged 10.2–13.3s across the same trials — no consistent, statistically meaningful regression;
+  the two extra branches and two extra per-iteration state variables (`repairPending`,
+  `replacementDelayDaysRemaining`) added are within this measurement's run-to-run noise floor
+  (single-process JIT/GC variance was ±15–20% run over run even on unmodified code).
+
 ### Documented
 
 - Researched whether BeeGFS's `numTargets` and `chunkSizeKb` (issue #69) could drive a genuine

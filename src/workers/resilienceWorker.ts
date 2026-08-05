@@ -537,7 +537,7 @@ function runSingleSimulation(
   hadURE: boolean
   hadDualFailure: boolean
 } {
-  const { driveCount, afrPercent } = input
+  const { driveCount, afrPercent, hasHotSpare = true } = input
   const {
     parityDrives,
     isGroup,
@@ -569,6 +569,20 @@ function runSingleSimulation(
   // Stress factor: rebuild increases failure rate of remaining drives by 30%
   const rebuildStressFactor = 1.3
 
+  // Replacement-sourcing delay (issue #93): without a dedicated hot spare, rebuild cannot
+  // start the moment a drive is declared failed — someone has to notice the alert, source a
+  // replacement, and physically install it first. 1 day models a next-business-day advance
+  // parts replacement SLA (the common enterprise support contract — e.g. Dell ProSupport NBD,
+  // HPE Foundation Care NBD), which is also the middle of the three non-hot-spare MTTR
+  // scenarios (10 min notification + immediate/NBD/7-day RMA + install) published in
+  // ServeTheHome's MTTR guide
+  // (https://www.servethehome.com/excess-capacity-whs-vail-aurora-hot-spares-raid-time-recover-mttr-guide/),
+  // whose "24-Hour Supported System / Advanced Replacement" scenario totals ~24h45m
+  // (600s notification + 8,640s technician arrival + 300s install). Rounded to 1 whole day
+  // because this loop advances one day at a time. With a hot spare present, rebuild still
+  // starts immediately (`hasHotSpare` defaults to `true`, unchanged from before #93).
+  const REPLACEMENT_DELAY_DAYS = 1
+
   // No redundancy and no mirror layer = any failure is data loss
   if (parityDrives === 0 && !isMirror) {
     for (let day = 0; day < 365; day++) {
@@ -593,6 +607,13 @@ function runSingleSimulation(
   const groupFailures = isGroup ? (new Array(numGroups).fill(0) as number[]) : []
   let isRebuilding = false
   let rebuildDaysRemaining = 0
+  // Replacement-sourcing delay state (issue #93). `repairPending` and `isRebuilding` are
+  // mutually exclusive: a triggering failure enters `repairPending` (spare-free) XOR
+  // `isRebuilding` (spare present) directly, never both. Single global flag, matching the
+  // pre-existing single-active-rebuild granularity of `isRebuilding` above — this model has
+  // never tracked more than one concurrent repair operation, groups included.
+  let repairPending = false
+  let replacementDelayDaysRemaining = 0
   let correlatedFailureWindow = 0
   let hadURE = false
   let hadDualFailure = false
@@ -650,13 +671,26 @@ function runSingleSimulation(
             return { survived: false, rebuildTimeHours, hadURE, hadDualFailure }
           }
 
-          // Start or extend rebuild
-          if (!isRebuilding) {
-            isRebuilding = true
-            rebuildDaysRemaining = Math.ceil(rebuildTimeHours / 24)
+          // Start rebuild immediately (hot spare present) or begin the replacement-sourcing
+          // delay first (#93) — see REPLACEMENT_DELAY_DAYS.
+          if (!isRebuilding && !repairPending) {
+            if (hasHotSpare) {
+              isRebuilding = true
+              rebuildDaysRemaining = Math.ceil(rebuildTimeHours / 24)
+            } else {
+              repairPending = true
+              replacementDelayDaysRemaining = REPLACEMENT_DELAY_DAYS
+            }
           }
 
-          // URE only fatal when mirror group is at its parity limit (last copy being rebuilt)
+          // URE only fatal when mirror group is at its parity limit (last copy being rebuilt).
+          // Unconditional on `isRebuilding`/`repairPending` (#93): this is a one-shot check
+          // evaluated at the failure event that exhausts the group's redundancy, exactly as
+          // before #93 — the replacement-sourcing delay changes how long `failedDrives`/group
+          // failure counts stay elevated (extending exposure to a second failure), not this
+          // mechanic. Gating it on `isRebuilding` was tried and rejected: it silently dropped
+          // URE risk for spare-free configs instead of adding exposure, moving survival the
+          // wrong direction (see CHANGELOG).
           if (
             (mirrorGroupFailures[hitGroup] ?? 0) >= mirrorParityPerGroup &&
             random() < ureProbability
@@ -724,14 +758,19 @@ function runSingleSimulation(
               return { survived: false, rebuildTimeHours, hadURE, hadDualFailure }
             }
 
-            if (!isRebuilding) {
-              isRebuilding = true
-              rebuildDaysRemaining = Math.ceil(rebuildTimeHours / 24)
+            if (!isRebuilding && !repairPending) {
+              if (hasHotSpare) {
+                isRebuilding = true
+                rebuildDaysRemaining = Math.ceil(rebuildTimeHours / 24)
+              } else {
+                repairPending = true
+                replacementDelayDaysRemaining = REPLACEMENT_DELAY_DAYS
+              }
             }
 
-            // URE only fatal when this specific pair is down to its last
-            // surviving copy (mirrors the isMirror branch's "at parity limit"
-            // condition, scoped per-pair instead of per-group).
+            // URE only fatal when this specific pair is down to its last surviving copy
+            // (mirrors the isMirror branch's "at parity limit" condition, scoped per-pair).
+            // Unconditional on rebuild state — see the isMirror branch's comment (#93).
             if ((pairFailures[hitPair] ?? 0) >= capacity - 1 && random() < groupUre) {
               hadURE = true
               return { survived: false, rebuildTimeHours, hadURE, hadDualFailure }
@@ -743,21 +782,23 @@ function runSingleSimulation(
               return { survived: false, rebuildTimeHours, hadURE, hadDualFailure }
             }
 
-            // Start or extend rebuild
-            if (!isRebuilding) {
-              isRebuilding = true
-              rebuildDaysRemaining = Math.ceil(rebuildTimeHours / 24)
+            // Start rebuild immediately (hot spare present) or begin the replacement-sourcing
+            // delay first (#93) — see REPLACEMENT_DELAY_DAYS.
+            if (!isRebuilding && !repairPending) {
+              if (hasHotSpare) {
+                isRebuilding = true
+                rebuildDaysRemaining = Math.ceil(rebuildTimeHours / 24)
+              } else {
+                repairPending = true
+                replacementDelayDaysRemaining = REPLACEMENT_DELAY_DAYS
+              }
+            }
 
-              // URE fatal only when the hit group is at its parity limit
-              if ((groupFailures[hitGroup] ?? 0) >= parityPerGroup && random() < groupUre) {
-                hadURE = true
-                return { survived: false, rebuildTimeHours, hadURE, hadDualFailure }
-              }
-            } else {
-              if ((groupFailures[hitGroup] ?? 0) >= parityPerGroup && random() < groupUre) {
-                hadURE = true
-                return { survived: false, rebuildTimeHours, hadURE, hadDualFailure }
-              }
+            // URE fatal only when the hit group is at its parity limit. Unconditional on
+            // rebuild state — see the isMirror branch's comment (#93).
+            if ((groupFailures[hitGroup] ?? 0) >= parityPerGroup && random() < groupUre) {
+              hadURE = true
+              return { survived: false, rebuildTimeHours, hadURE, hadDualFailure }
             }
           }
         } else {
@@ -767,26 +808,44 @@ function runSingleSimulation(
             return { survived: false, rebuildTimeHours, hadURE, hadDualFailure }
           }
 
-          if (!isRebuilding) {
-            isRebuilding = true
-            rebuildDaysRemaining = Math.ceil(rebuildTimeHours / 24)
+          // Start rebuild immediately (hot spare present) or begin the replacement-sourcing
+          // delay first (#93) — see REPLACEMENT_DELAY_DAYS.
+          if (!isRebuilding && !repairPending) {
+            if (hasHotSpare) {
+              isRebuilding = true
+              rebuildDaysRemaining = Math.ceil(rebuildTimeHours / 24)
+            } else {
+              repairPending = true
+              replacementDelayDaysRemaining = REPLACEMENT_DELAY_DAYS
+            }
+          }
 
-            if (failedDrives >= parityDrives && random() < ureProbability) {
-              hadURE = true
-              return { survived: false, rebuildTimeHours, hadURE, hadDualFailure }
-            }
-          } else {
-            if (failedDrives >= parityDrives && random() < ureProbability) {
-              hadURE = true
-              return { survived: false, rebuildTimeHours, hadURE, hadDualFailure }
-            }
+          // URE fatal once the array is at its parity limit. Unconditional on rebuild
+          // state — see the isMirror branch's comment (#93).
+          if (failedDrives >= parityDrives && random() < ureProbability) {
+            hadURE = true
+            return { survived: false, rebuildTimeHours, hadURE, hadDualFailure }
           }
         }
       }
     }
 
-    // Progress rebuild
-    if (isRebuilding) {
+    // Advance the replacement-sourcing delay (#93): once it elapses, the pending repair
+    // becomes an active rebuild, exactly as if a hot spare had just kicked one off.
+    // `else if`, not two independent `if`s: a pending-delay-to-rebuild transition that happens
+    // on THIS day must not also consume a rebuild day on the same pass — otherwise a 1-day
+    // delay plus a <=1-day rebuild collapse to zero net delay (both counters would hit zero on
+    // the same iteration as the triggering failure, exactly reproducing the immediate-rebuild
+    // timeline and silently erasing the #93 fix). The rebuild countdown for a delay that ends
+    // today starts ticking tomorrow instead.
+    if (repairPending) {
+      replacementDelayDaysRemaining--
+      if (replacementDelayDaysRemaining <= 0) {
+        repairPending = false
+        isRebuilding = true
+        rebuildDaysRemaining = Math.ceil(rebuildTimeHours / 24)
+      }
+    } else if (isRebuilding) {
       rebuildDaysRemaining--
       if (rebuildDaysRemaining <= 0) {
         isRebuilding = false
