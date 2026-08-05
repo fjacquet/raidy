@@ -55,6 +55,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   labelled as such: every fast-tier model today yields a sustained media figure at or below the
   burst one, so substituting versus merging agree on real inputs — mutating the helper to merge
   leaves `sustained-write-throughput.spec.ts` fully green. The membership test does catch it.
+- **The five-platform Dell options panel is five panels (#126).** `DellOptionsPanel.tsx` carried
+  PowerFlex, PowerStore, PowerScale, ObjectScale and PowerVault in one component, when every other
+  platform has its own file. It is now `PowerFlexOptionsPanel`, `PowerStoreOptionsPanel`,
+  `PowerScaleOptionsPanel`, `ObjectScaleOptionsPanel` and `PowerVaultOptionsPanel` — largest 113
+  lines, all under the ~200 the other platform panels sit at.
+
+  **The naive split was the trap, and the issue said so.** Four of the five panels render the same
+  compression control (a toggle plus a ratio slider that appears only when it is on), two render
+  the same dedup control, and two the same snapshot-reserve slider. Five files each re-typing that
+  markup would be the worse problem — the #110 sweep found four *false* hint texts in this very
+  file, and duplicated markup is how a claim gets fixed in one copy and left standing in three.
+  Those blocks live in `dellShared.tsx` as `DataReductionControl`, `SnapshotReserveSlider` and
+  `OptionsSection`.
+
+  **Verified by rendered-DOM equivalence, not by "the tests still pass"** — no test rendered these
+  panels, so a green suite proved nothing. A temporary gate compared the old component's HTML
+  against the new panels across 12 topology levels × 6 store states (compression/dedup on and off,
+  each PowerStore model), 72 comparisons, all byte-identical. Confirmed falsifiable by changing one
+  slider's `max`, which failed 7 of them. The gate was deleted with the old component once it had
+  served its purpose.
+
+  `TopologyPanel` also loses an `as` cast: narrowing on `topology.type` per platform lets the two
+  level-dependent panels take an exact topology type instead of a widened union.
 
 - **Eight more platforms rebuild from distributed reserve capacity, so the hot-spare control is
   gone for them.** S2D, Ceph, Nutanix, Longhorn, PowerFlex, PowerStore, PowerScale and

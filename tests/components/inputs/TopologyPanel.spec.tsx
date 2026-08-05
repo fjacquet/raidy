@@ -75,8 +75,20 @@ vi.mock('@/components/inputs/topology-options/NetAppOptionsPanel', () => ({
 vi.mock('@/components/inputs/topology-options/SynologyOptionsPanel', () => ({
   SynologyOptionsPanel: () => null,
 }))
-vi.mock('@/components/inputs/topology-options/DellOptionsPanel', () => ({
-  DellOptionsPanel: () => null,
+vi.mock('@/components/inputs/topology-options/PowerVaultOptionsPanel', () => ({
+  PowerVaultOptionsPanel: () => null,
+}))
+vi.mock('@/components/inputs/topology-options/ObjectScaleOptionsPanel', () => ({
+  ObjectScaleOptionsPanel: () => null,
+}))
+vi.mock('@/components/inputs/topology-options/PowerStoreOptionsPanel', () => ({
+  PowerStoreOptionsPanel: () => null,
+}))
+vi.mock('@/components/inputs/topology-options/PowerScaleOptionsPanel', () => ({
+  PowerScaleOptionsPanel: () => null,
+}))
+vi.mock('@/components/inputs/topology-options/PowerFlexOptionsPanel', () => ({
+  PowerFlexOptionsPanel: () => null,
 }))
 
 const mockUseConfigStore = useConfigStore as unknown as Mock

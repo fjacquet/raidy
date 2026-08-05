@@ -7,10 +7,14 @@ import { useTranslation } from 'react-i18next'
 import { Label, Select, Slider } from '@/components/common/FormControls'
 import { BeeGfsOptionsPanel } from '@/components/inputs/topology-options/BeeGfsOptionsPanel'
 import { CephOptionsPanel } from '@/components/inputs/topology-options/CephOptionsPanel'
-import { DellOptionsPanel } from '@/components/inputs/topology-options/DellOptionsPanel'
 import { LonghornOptionsPanel } from '@/components/inputs/topology-options/LonghornOptionsPanel'
 import { NetAppOptionsPanel } from '@/components/inputs/topology-options/NetAppOptionsPanel'
 import { NutanixOptionsPanel } from '@/components/inputs/topology-options/NutanixOptionsPanel'
+import { ObjectScaleOptionsPanel } from '@/components/inputs/topology-options/ObjectScaleOptionsPanel'
+import { PowerFlexOptionsPanel } from '@/components/inputs/topology-options/PowerFlexOptionsPanel'
+import { PowerScaleOptionsPanel } from '@/components/inputs/topology-options/PowerScaleOptionsPanel'
+import { PowerStoreOptionsPanel } from '@/components/inputs/topology-options/PowerStoreOptionsPanel'
+import { PowerVaultOptionsPanel } from '@/components/inputs/topology-options/PowerVaultOptionsPanel'
 import { S2dOptionsPanel } from '@/components/inputs/topology-options/S2dOptionsPanel'
 import { SynologyOptionsPanel } from '@/components/inputs/topology-options/SynologyOptionsPanel'
 import {
@@ -115,18 +119,14 @@ export function TopologyPanel() {
       {/* Nutanix Options */}
       {topology.type === 'nutanix' && <NutanixOptionsPanel topology={topology} />}
 
-      {/* Dell Vendor Options - PowerVault, ObjectScale, PowerStore, PowerScale, PowerFlex */}
-      {['powervault', 'objectscale', 'powerstore', 'powerscale', 'powerflex'].includes(
-        topology.type,
-      ) && (
-        <DellOptionsPanel
-          topology={
-            topology as Topology & {
-              type: 'powervault' | 'objectscale' | 'powerstore' | 'powerscale' | 'powerflex'
-            }
-          }
-        />
-      )}
+      {/* Dell platforms — one panel each, like every other vendor (#126). Narrowing on
+          `topology.type` here is what lets the two level-dependent panels take an exact
+          topology type instead of the `as` cast the combined panel needed. */}
+      {topology.type === 'powervault' && <PowerVaultOptionsPanel topology={topology} />}
+      {topology.type === 'objectscale' && <ObjectScaleOptionsPanel />}
+      {topology.type === 'powerstore' && <PowerStoreOptionsPanel />}
+      {topology.type === 'powerscale' && <PowerScaleOptionsPanel />}
+      {topology.type === 'powerflex' && <PowerFlexOptionsPanel topology={topology} />}
 
       {/* Ceph Options */}
       {topology.type === 'ceph' && <CephOptionsPanel />}
