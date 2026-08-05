@@ -99,17 +99,26 @@ Everything above is inert-control removal and cannot change a result. These two 
 | Nutanix | Many-to-many rebuild across the cluster; no single hot-spare destination |
 | Ceph | No traditional hot spare; recovery backfills into free cluster capacity |
 | Longhorn | Replicas rebuild onto any node with available space, governed by the minimum-free-space threshold |
+| ObjectScale | Erasure-coded fragments re-created across surviving nodes; no spare drive (inferred from architecture, see below) |
 
 Sources: Microsoft "Deep Dive: The Storage Pool in Storage Spaces Direct"; Dell PowerScale OneFS Administration Guide (Virtual Hot Spare); Dell KB 000188491 (PowerStore capacity); Dell KB 000219120 (PowerFlex spare capacity); Nutanix *Definitive Guide to AOS Storage*; Red Hat Ceph Storage Operations Guide (handling a disk failure); Longhorn space-consumption guideline.
 
-**Platforms that keep the control**, with dedicated spares documented: standard RAID (PERC/mdadm global hot spares), ZFS (spare vdevs), PowerVault ME5 (global *and* dedicated spares, per the ME5 Administrator's Guide), and BeeGFS — whose storage targets are local hardware RAID6 volumes, so spares are meaningful at the controller level even though BeeGFS itself has no such concept.
+**ObjectScale joins the distributed list.** Its 12+4 erasure coding disperses fragments across nodes and recovery re-creates them on the surviving nodes; there is no spare-drive concept. No vendor source states this in so many words, so this rests on architecture rather than a citation — recorded as such, and ruled in deliberately.
 
-**Three cases are not settled and must be resolved before implementation, not during it:**
+**Platforms that keep the control**, with dedicated spares documented:
 
-- **ObjectScale** — 12+4 erasure coding with fragments dispersed across nodes implies no spare drive, but no vendor source says so directly. This is inference, not evidence.
-- **NetApp ONTAP** and **Synology DSM** — not researched. They stay in the keep-the-control list by default, which is the conservative choice, but that default is an assumption and not a finding.
+| Platform | Vendor statement |
+|---|---|
+| Standard RAID | PERC and mdadm global hot spares |
+| ZFS | Dedicated spare vdevs |
+| PowerVault ME5 | Global *and* dedicated spares (ME5 Administrator's Guide) |
+| NetApp ONTAP | Spares are a core concept; best practice is **two** per disk type, with a `min_spare_count` RAID option, and two spares enable the Disk Maintenance Center |
+| Synology DSM | Explicit Hot Spare feature in Storage Manager, assignable globally, supported on SHR of two drives or more |
+| BeeGFS | Storage targets are local hardware RAID6 volumes, so spares are meaningful at the controller level even though BeeGFS itself has no such concept |
 
-**A gate that the current design cannot express:** PowerVault ME5 supports spares for standard disk groups but **ADAPT disk groups use neither global nor dynamic spares**. Relevance there depends on the level, not the type, while `usesDistributedSpares(type)` takes only a type. Either ADAPT is handled by extending the predicate to accept the level, or PowerVault keeps the control unconditionally and the discrepancy is documented. Decide before implementing; do not let the existing signature make the decision by default.
+NetApp and Synology were initially marked for removal alongside ObjectScale, on the grounds that all three were unresearched. Research contradicted that for two of the three: both vendors expose hot spares as a first-class, user-configurable feature, so removing the control would delete a setting the user genuinely has to size. Kept, with sources.
+
+**PowerVault ADAPT — resolved by not building a mechanism.** ME5 supports spares for standard disk groups but ADAPT disk groups use neither global nor dynamic spares, which makes relevance depend on the *level* while `usesDistributedSpares(type)` takes only a type. Rather than widen the predicate for one sub-case, PowerVault keeps the control unconditionally; the new default of 0 means an ADAPT configuration is correct unless the user deliberately raises it. The signature stays as it is.
 
 **Release note.** Both changes move published figures. They belong in the CHANGELOG with before/after numbers, in the form used for the four figures that moved in 1.16.0 — anyone who sized hardware on the current release needs to know whether it applied to them.
 
