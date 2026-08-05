@@ -36,7 +36,7 @@ The app serves at `http://localhost:5173/raidy/` — note the `/raidy/` base pat
 npm run typecheck      # app + test type-check, 0 errors
 npm run lint           # Biome, 0 errors
 npm run test:run       # full Vitest suite
-npm run build          # tsc -b + vite build (runs the supply-chain gate first)
+npm run build          # tsc -b + vite build (runs the supply-chain and dead-code gates first)
 ```
 
 See [DEVELOPMENT.md](./DEVELOPMENT.md) for the full command reference and conventions, [TESTING.md](./TESTING.md) for the test strategy, and [CONFIGURATION.md](./CONFIGURATION.md) for the CI pipeline and security gates.

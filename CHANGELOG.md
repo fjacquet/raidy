@@ -5,6 +5,45 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Documented
+
+- **Documentation sync pass.** `CONFIGURATION.md` described a CI that does not exist: it opened
+  with "the CI/CD pipeline is a single workflow, `.github/workflows/static.yml`" and detailed an
+  eleven-step build job plus a separate `codeql.yml`. **Neither file exists** — CI was federated to
+  reusable workflows in `fjacquet/ci@v1`, and the local repository holds five thin callers.
+  Rewritten to describe the delegation and enumerate only the gates that actually live here.
+  `CLAUDE.md` carried the same dead reference.
+
+  **The dead-code gate was undocumented in four of the five places a contributor would look.**
+  `prebuild` runs it and `.githooks/pre-commit` runs it, but only `DEVELOPMENT.md` said so — so a
+  failing commit or build could come from a gate mentioned nowhere the reader had been.
+
+  Stale facts corrected: Recharts still listed in the tech stack (removed, 8.5 MB), Vite 7 (is 8),
+  an `engines/resilience/` directory that does not exist while `engines/backup/` and
+  `engines/shared/` went unlisted, `topology.ts` at ~730 lines (~1000), 8 i18n namespaces (10),
+  and **Nutanix and PowerVault missing from the README's platform list** — two of fifteen platforms
+  invisible to anyone reading the front page.
+
+  `src/components/guide/` and the `InfoTooltip`/`help` layer used by 17 components were documented
+  for the first time. Asked whether the project has a user guide, the honest answer is yes, inside
+  the app — and no document said so.
+
+  `doc/spec/` — 13 vendor specification documents in a top-level directory one letter from `docs/`,
+  referenced from nowhere and last touched in January — moved to `docs/vendor-specs/` with a README
+  stating what they are and what they are not: historical inputs that predate BeeGFS, Longhorn and
+  the vSAN ESA recalibration, superseded by the code and its validation vectors wherever they
+  disagree.
+
+  README badges gained Security, Deploy and a live-demo link. A coverage badge was deliberately not
+  added: nothing publishes coverage, so it could not be honest without new infrastructure.
+
+  Findings left as open decisions rather than acted on — no LICENSE file, an `adr/` directory whose
+  two entries record no product architecture decision, a 951-line `ARCHITECTURE.md` absorbing what
+  ADRs are for, and `CLAUDE.md` duplicating content that has already drifted — are written up in
+  `docs/superpowers/specs/2026-08-05-documentation-review.md`.
+
 ## [2.1.0] - 2026-08-05
 
 > **One published figure moves, and only for two platforms.** Tiered vSAN OSA and tiered Ceph now
