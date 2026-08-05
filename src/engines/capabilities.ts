@@ -9,7 +9,6 @@ import type { Topology, TopologyType } from '@/types/topology'
 export interface PlatformCapabilities {
   supportsCompression: boolean
   supportsDedup: boolean
-  supportsHotSpares: boolean
   hasServerCount: boolean
   /**
    * True when `getFilesystemOverheadPercent` consults the user's `fsType` instead of
@@ -75,7 +74,6 @@ export const PLATFORM_CAPABILITIES: Record<TopologyType, PlatformCapabilities> =
   standard: {
     supportsCompression: false,
     supportsDedup: false,
-    supportsHotSpares: true,
     // UI exception: HardwarePanel still shows the slider for RAID50/60 (isRaidGroupMode),
     // where serverCount doubles as the RAID-group count and does affect capacity.
     hasServerCount: false,
@@ -86,7 +84,6 @@ export const PLATFORM_CAPABILITIES: Record<TopologyType, PlatformCapabilities> =
   zfs: {
     supportsCompression: true,
     supportsDedup: true,
-    supportsHotSpares: true,
     hasServerCount: false,
     honoursFsType: false,
     honoursController: true,
@@ -94,7 +91,6 @@ export const PLATFORM_CAPABILITIES: Record<TopologyType, PlatformCapabilities> =
   s2d: {
     supportsCompression: false,
     supportsDedup: false,
-    supportsHotSpares: true,
     hasServerCount: true,
     honoursFsType: false,
     honoursController: true,
@@ -102,7 +98,6 @@ export const PLATFORM_CAPABILITIES: Record<TopologyType, PlatformCapabilities> =
   proprietary: {
     supportsCompression: false,
     supportsDedup: false,
-    supportsHotSpares: true,
     hasServerCount: false,
     honoursFsType: false,
     honoursController: true,
@@ -110,7 +105,6 @@ export const PLATFORM_CAPABILITIES: Record<TopologyType, PlatformCapabilities> =
   vsan_osa: {
     supportsCompression: false,
     supportsDedup: false,
-    supportsHotSpares: true,
     hasServerCount: true,
     honoursFsType: false,
     honoursController: true,
@@ -118,7 +112,6 @@ export const PLATFORM_CAPABILITIES: Record<TopologyType, PlatformCapabilities> =
   vsan_esa: {
     supportsCompression: false,
     supportsDedup: false,
-    supportsHotSpares: true,
     hasServerCount: true,
     honoursFsType: false,
     // NVMe-direct: `isNvmeDirect` drops the Controller layer from the bottleneck chain and
@@ -129,7 +122,6 @@ export const PLATFORM_CAPABILITIES: Record<TopologyType, PlatformCapabilities> =
   ceph: {
     supportsCompression: false,
     supportsDedup: false,
-    supportsHotSpares: true,
     hasServerCount: true,
     honoursFsType: false,
     honoursController: true,
@@ -137,7 +129,6 @@ export const PLATFORM_CAPABILITIES: Record<TopologyType, PlatformCapabilities> =
   powerflex: {
     supportsCompression: false,
     supportsDedup: false,
-    supportsHotSpares: true,
     hasServerCount: true,
     honoursFsType: false,
     honoursController: true,
@@ -145,7 +136,6 @@ export const PLATFORM_CAPABILITIES: Record<TopologyType, PlatformCapabilities> =
   powerstore: {
     supportsCompression: false,
     supportsDedup: false,
-    supportsHotSpares: true,
     hasServerCount: true,
     honoursFsType: false,
     honoursController: true,
@@ -153,7 +143,6 @@ export const PLATFORM_CAPABILITIES: Record<TopologyType, PlatformCapabilities> =
   powerscale: {
     supportsCompression: false,
     supportsDedup: false,
-    supportsHotSpares: true,
     hasServerCount: true,
     honoursFsType: false,
     honoursController: true,
@@ -161,7 +150,6 @@ export const PLATFORM_CAPABILITIES: Record<TopologyType, PlatformCapabilities> =
   objectscale: {
     supportsCompression: false,
     supportsDedup: false,
-    supportsHotSpares: true,
     hasServerCount: true,
     honoursFsType: false,
     honoursController: true,
@@ -169,7 +157,6 @@ export const PLATFORM_CAPABILITIES: Record<TopologyType, PlatformCapabilities> =
   nutanix: {
     supportsCompression: false,
     supportsDedup: false,
-    supportsHotSpares: true,
     hasServerCount: true,
     honoursFsType: false,
     honoursController: true,
@@ -177,7 +164,6 @@ export const PLATFORM_CAPABILITIES: Record<TopologyType, PlatformCapabilities> =
   powervault: {
     supportsCompression: false,
     supportsDedup: false,
-    supportsHotSpares: true,
     hasServerCount: false,
     honoursFsType: false,
     honoursController: true,
@@ -185,7 +171,6 @@ export const PLATFORM_CAPABILITIES: Record<TopologyType, PlatformCapabilities> =
   longhorn: {
     supportsCompression: false,
     supportsDedup: false,
-    supportsHotSpares: true,
     hasServerCount: true,
     // No `case 'longhorn'` in getFilesystemOverheadPercent — it reaches the `default`
     // branch, which reads the user's fsType exactly like standard RAID does. Flipping
@@ -196,7 +181,6 @@ export const PLATFORM_CAPABILITIES: Record<TopologyType, PlatformCapabilities> =
   beegfs: {
     supportsCompression: false,
     supportsDedup: false,
-    supportsHotSpares: true,
     hasServerCount: true,
     honoursFsType: false,
     honoursController: true,
@@ -208,7 +192,7 @@ export function getCapabilities(type: TopologyType): PlatformCapabilities {
 }
 
 export function shouldShowControl(
-  control: 'compression' | 'dedup' | 'hotSpares' | 'serverCount' | 'fsType' | 'controller',
+  control: 'compression' | 'dedup' | 'serverCount' | 'fsType' | 'controller',
   type: TopologyType,
 ): boolean {
   const caps = getCapabilities(type)
@@ -217,12 +201,6 @@ export function shouldShowControl(
       return caps.supportsCompression
     case 'dedup':
       return caps.supportsDedup
-    case 'hotSpares':
-      // NOTE: no UI calls this. The hot-spare slider is gated on `usesDistributedSpares`
-      // (src/types/topology.ts) instead, and `supportsHotSpares` is true for all fifteen types
-      // so it carries no information today. The two mechanisms cannot simply be merged — see
-      // issue #130 and the note on DISTRIBUTED_SPARE_TOPOLOGIES.
-      return caps.supportsHotSpares
     case 'serverCount':
       return caps.hasServerCount
     case 'fsType':

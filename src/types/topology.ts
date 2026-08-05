@@ -352,13 +352,19 @@ export function requiresHba(topologyType: TopologyType, level?: string): boolean
  * volumes, so spares matter at the controller level even though BeeGFS itself has no such
  * concept.
  *
- * NOTE: this is deliberately separate from `PLATFORM_CAPABILITIES.supportsHotSpares`, which
- * stays `true` for every type. The engines genuinely subtract hot spares for all fifteen; the
- * zeroing happens in the hooks (`useVolumetryCalc`, `usePerformanceCalc`, `useResilience`)
- * before the engine is called. Setting the capability flag false would make the capability
- * probe fail, correctly — it drives `calculateVolumetry` directly and would still see the
- * subtraction. Two mechanisms describe hot-spare relevance and only this one drives the UI;
- * unifying them is issue #130.
+ * This list is the SINGLE source of truth for hot-spare relevance (issue #130). It cannot live
+ * in `PLATFORM_CAPABILITIES` alongside the other control flags, and the reason is worth stating
+ * because it looks like an inconsistency: the engines genuinely subtract hot spares for all
+ * fifteen types, and the zeroing happens in the hooks (`useVolumetryCalc`, `usePerformanceCalc`,
+ * `useResilience`) *before* the engine is called. A capability flag saying "this platform
+ * ignores hot spares" would therefore be refuted by the capability probe, which drives
+ * `calculateVolumetry` directly and would still observe the subtraction — correctly, since the
+ * engine really does subtract. The flag would be describing the hooks while claiming to describe
+ * the engine.
+ *
+ * So the question this list answers is not "does the engine read hotSpares" (yes, always) but
+ * "does this platform have a dedicated spare drive for the user to configure". That is a
+ * vendor-architecture fact, which is why it is sourced above rather than probed.
  */
 export const DISTRIBUTED_SPARE_TOPOLOGIES: TopologyType[] = [
   'vsan_osa',

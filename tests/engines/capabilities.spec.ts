@@ -76,18 +76,25 @@ describe('capability map matches engine behavior', () => {
       }
     })
 
-    it(`${topology.type}: supportsHotSpares=${caps.supportsHotSpares}`, () => {
+    /**
+     * Every one of the fifteen types subtracts hot spares in the engine — unconditionally, with
+     * no per-platform exception. This is the invariant that forces hot-spare UI relevance to be
+     * decided OUTSIDE the capability map (issue #130): `DISTRIBUTED_SPARE_TOPOLOGIES` gates the
+     * slider and the three calculation hooks zero `hotSpares` before calling the engine, so a
+     * capability flag claiming a platform ignores spares would be refuted right here.
+     *
+     * Until #130 this assertion was wrapped in `if (caps.supportsHotSpares)`, a flag that was
+     * `true` for all fifteen — so the `else` branch had never executed and the test read as
+     * though a platform were free to opt out. It is not.
+     */
+    it(`${topology.type}: the engine subtracts hot spares`, () => {
       const base = calculateVolumetry(
         createVolumetryInput(drives, topology, { serverCount: servers }),
       )
       const spared = calculateVolumetry(
         createVolumetryInput(drives, topology, { serverCount: servers, hotSpares: 1 }),
       )
-      if (caps.supportsHotSpares) {
-        expect(spared.usableCapacity).toBeLessThan(base.usableCapacity)
-      } else {
-        expect(spared.usableCapacity).toBe(base.usableCapacity)
-      }
+      expect(spared.usableCapacity).toBeLessThan(base.usableCapacity)
     })
 
     /**
@@ -143,7 +150,6 @@ describe('shouldShowControl', () => {
       const caps = getCapabilities(type)
       expect(shouldShowControl('compression', type)).toBe(caps.supportsCompression)
       expect(shouldShowControl('dedup', type)).toBe(caps.supportsDedup)
-      expect(shouldShowControl('hotSpares', type)).toBe(caps.supportsHotSpares)
       expect(shouldShowControl('fsType', type)).toBe(caps.honoursFsType)
       expect(shouldShowControl('controller', type)).toBe(caps.honoursController)
       expect(shouldShowControl('serverCount', type)).toBe(caps.hasServerCount)

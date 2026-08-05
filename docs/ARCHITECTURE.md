@@ -685,10 +685,13 @@ relevance sweep all four are in `DISTRIBUTED_SPARE_TOPOLOGIES`, so the subtracti
 zero for every one of them, and BeeGFS is the platform that now exercises that tiered path with
 a non-zero spare count. Ten platforms rebuild from distributed reserve capacity and zero the
 subtraction via `usesDistributedSpares`; the five that keep dedicated spares are standard RAID,
-ZFS, PowerVault, Synology/NetApp (`proprietary`) and BeeGFS. Note that
-`PLATFORM_CAPABILITIES.supportsHotSpares` stays `true` for all fifteen: the engines really do
-subtract, and the zeroing happens in the hooks before the engine is called, which is why the
-capability probe (driving `calculateVolumetry` directly) would fail if the flag were flipped.
+ZFS, PowerVault, Synology/NetApp (`proprietary`) and BeeGFS. That list is the single source of
+truth for hot-spare relevance (#130): there is deliberately no `PLATFORM_CAPABILITIES` flag for
+it, because the engines really do subtract for all fifteen types and the zeroing happens in the
+hooks before the engine is called — a capability flag would be refuted by the probe, which drives
+`calculateVolumetry` directly. The capability map answers "does the engine read this input";
+`DISTRIBUTED_SPARE_TOPOLOGIES` answers the different question "does this platform have a spare
+drive to configure".
 BeeGFS applies hot spares inside its own resolver,
 `resolveBeeGfsSimulationScope`, so it is excluded from this generic subtraction to avoid
 double-counting. The worker itself does not credit a spare with shortening the rebuild window —
