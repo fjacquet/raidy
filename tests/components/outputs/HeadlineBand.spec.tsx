@@ -21,6 +21,8 @@ const performance: PerformanceResult = {
   maxReadIOPS: 500000,
   maxWriteIOPS: 300000,
   sustainedWriteIOPS: 300000,
+  mediaCeilingMBs: 0,
+  mediaCeilingIOPS: 0,
   layers: [],
   bottleneckDescription: '',
 }

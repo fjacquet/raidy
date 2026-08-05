@@ -74,6 +74,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   XFS 1%). **No calculated figure changes** — only the control's visibility.
 
 ### Fixed
+- **The performance gauges were pinned at full on any modern configuration.** Their scales were
+  hardcoded at 50,000 MB/s and 2,000,000 IOPS — set before the PERC13 controller recalibration
+  raised limits 3.4–4.7× in 1.16.0. An 8-node NVMe cluster reports 225,600 MB/s and 38.4M IOPS,
+  so all four needles sat in the stop and every arc read as full red. The gauges now scale to
+  the **drives' own ceiling**, before the controller/PCIe/network chain caps it: below full, the
+  chain is throttling drives you paid for; at full, the drives themselves are the limit. Colours
+  run red-to-green accordingly, the inverse of before — a full gauge is now the good outcome.
+  Scaling to the bottleneck was considered and rejected: throughput *is* the bottleneck by
+  construction, so those gauges would have read 100% permanently.
 - **Topology names, RAID level descriptions and network-speed labels are translated again.**
   Three lookup tables held English string literals while fully translated keys sat unused in
   every locale file — a French user picking RAID 0 read *"Stripe, no redundancy"* although

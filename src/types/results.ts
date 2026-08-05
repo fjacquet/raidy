@@ -149,6 +149,10 @@ export interface PerformanceResult {
   sustainedWriteThroughputMBs: number
   /** Sustained (steady-state) write IOPS — same bound as `sustainedWriteThroughputMBs`, IOPS axis. */
   sustainedWriteIOPS: number
+  /** The drives' own throughput ceiling, before the controller/PCIe/network chain caps it. */
+  mediaCeilingMBs: number
+  /** The drives' own IOPS ceiling, before the controller/PCIe/network chain caps it. */
+  mediaCeilingIOPS: number
   /** Bottleneck analysis for each layer */
   layers: BottleneckLayer[]
   /** Overall bottleneck description */
