@@ -133,8 +133,12 @@ export const WORKLOAD_PROFILES: readonly WorkloadProfile[] = [
  * Which profile classes each platform serves. Exhaustive over TopologyType — a new platform
  * fails to compile until someone decides which audience it is for.
  *
- * Only BeeGFS is HPC today. Ceph and Longhorn appear in HPC deployments too; making either
- * `['hpc', 'general']` is a one-line change when there is a reason to make it.
+ * Only BeeGFS is HPC today. Ceph and Longhorn appear in HPC deployments too, but classing either
+ * as `['hpc', 'general']` is not a one-line change: `WorkloadPanel.tsx` keys both the "HPC / AI
+ * Workload Profile" heading and the guidance paragraph off `isHpcTopology()`, and the guidance
+ * string behind the `presets.hpcGuidance` key is BeeGFS-specific ("BeeGFS is generally optimized
+ * for…"). A second HPC platform needs its own per-topology guidance key — and the panel wired to
+ * pick it — before its class can change; the key name alone hides that this copy isn't generic.
  */
 export const TOPOLOGY_PROFILE_CLASSES: Record<TopologyType, readonly ProfileClass[]> = {
   standard: ['general'],

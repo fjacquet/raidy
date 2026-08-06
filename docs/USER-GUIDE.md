@@ -129,8 +129,10 @@ stored on a server.
 One caveat worth knowing: the link records only what you *changed* from the defaults. If a default
 changes in a later version, an old link inherits the new one. Version 2.0.0 did exactly this — the
 default hot-spare count went from 1 to 0, so links made earlier that never touched it now show
-slightly more usable capacity than when they were shared. Links where you set the value yourself
-are unaffected. When a release does this, its notes say so at the top.
+slightly more usable capacity than when they were shared. Version 3.0.0 moved the neutral workload
+defaults (read mix, random mix, and block size), which shifts the headline IOPS and throughput
+figures a link displays — a larger effect than the hot-spare change. Links where you set the value
+yourself are unaffected. When a release does this, its notes say so at the top.
 
 **PDF** for a written report, **PowerPoint** for a one-page summary. Both follow your current
 theme and language. The Take-away card also carries copy-pasteable ZFS provisioning commands.
