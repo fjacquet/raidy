@@ -19,8 +19,11 @@ as a URL.
    than sitting there inert.
 2. **Hardware** — drive model, drives per server, servers. The drive database carries real
    published specs: capacity, IOPS, throughput, power, endurance, AFR and URE rate.
-3. **Workload** — read/write mix, random/sequential mix, block size, daily writes. Performance
-   and endurance both depend on this; capacity does not.
+3. **Workload** — read/write mix, random/sequential mix, block size, daily writes. The profile
+   buttons underneath set the first three in one click, and which profiles you see depends on the
+   platform: BeeGFS offers HPC and AI profiles (training data, checkpointing, scratch, genomics,
+   EDA/CAE, inference), everything else offers the general-purpose four (database, file server,
+   video streaming, backup). Performance and endurance both depend on this; capacity does not.
 4. **Advanced** — network, PCIe, compression assumptions, energy price and carbon region.
 5. Read the right-hand panel, then **Copy URL to Share**.
 

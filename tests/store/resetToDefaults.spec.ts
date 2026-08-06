@@ -38,7 +38,7 @@ describe('resetToDefaults', () => {
 
     const after = useConfigStore.getState()
     expect(after.driveCount).toBe(12)
-    expect(after.readPercent).toBe(70)
+    expect(after.readPercent).toBe(60)
   })
 
   it('installs fresh option objects rather than sharing one reference', () => {

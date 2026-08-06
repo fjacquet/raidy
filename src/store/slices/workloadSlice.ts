@@ -16,10 +16,11 @@ export interface WorkloadSlice extends WorkloadState {
 const TB = 1024 * 1024 * 1024 * 1024
 
 export const createWorkloadSlice: StateCreator<WorkloadSlice> = (set) => ({
-  // Default state
-  readPercent: 70,
-  blockSize: '64K',
-  randomPercent: 50,
+  // Default state — neutral for parallel/HPC workloads, which is what most platforms in the
+  // catalogue serve. Changing any of these rewrites shared URLs; see tests/store/workloadDefaults.spec.ts.
+  readPercent: 60,
+  blockSize: '512K',
+  randomPercent: 25,
   dailyWriteVolume: 1 * TB,
 
   // Actions
