@@ -23,6 +23,7 @@
     "hint64k": "64K - Allgemein",
     "hint128k": "128K - Dateiserver, Virtualisierung",
     "hint256k": "256K - Videoschnitt, große Dateien",
+    "hint512k": "512K - HPC-Scratch, KI-Trainingsdaten",
     "hint1m": "1M - Sequentiell, Backup"
   },
   "capacity": {

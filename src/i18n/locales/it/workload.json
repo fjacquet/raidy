@@ -23,6 +23,7 @@
     "hint64k": "64K - Uso generale",
     "hint128k": "128K - File server, virtualizzazione",
     "hint256k": "256K - Editing video, file grandi",
+    "hint512k": "512K - Scratch HPC, dati di training IA",
     "hint1m": "1M - Sequenziale, backup"
   },
   "capacity": {

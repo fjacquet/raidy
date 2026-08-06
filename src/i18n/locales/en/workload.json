@@ -23,6 +23,7 @@
     "hint64k": "64K - General purpose",
     "hint128k": "128K - File server, virtualization",
     "hint256k": "256K - Video editing, large file transfers",
+    "hint512k": "512K - HPC scratch, AI training data",
     "hint1m": "1M - Sequential, backup"
   },
   "capacity": {

@@ -77,6 +77,7 @@ const BLOCK_SIZE_BYTES: Record<BlockSize, number> = {
   '64K': 65536,
   '128K': 131072,
   '256K': 262144,
+  '512K': 524288,
   '1M': 1048576,
 }
 

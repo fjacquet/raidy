@@ -16,6 +16,7 @@ const BLOCK_SIZE_LABELS: Record<BlockSize, string> = {
   '64K': '64K',
   '128K': '128K',
   '256K': '256K',
+  '512K': '512K',
   '1M': '1M',
 }
 
@@ -122,6 +123,7 @@ export function WorkloadPanel() {
           {blockSize === '64K' && t('blockSize.hint64k')}
           {blockSize === '128K' && t('blockSize.hint128k')}
           {blockSize === '256K' && t('blockSize.hint256k')}
+          {blockSize === '512K' && t('blockSize.hint512k')}
           {blockSize === '1M' && t('blockSize.hint1m')}
         </p>
       </div>
