@@ -23,7 +23,7 @@ import type {
 } from './topology'
 
 /** Workload block size options */
-export const BLOCK_SIZES = ['4K', '8K', '16K', '64K', '128K', '256K', '1M'] as const
+export const BLOCK_SIZES = ['4K', '8K', '16K', '64K', '128K', '256K', '512K', '1M'] as const
 export type BlockSize = (typeof BLOCK_SIZES)[number]
 
 /** Network speed options */

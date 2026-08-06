@@ -4,6 +4,7 @@
 
 import { useTranslation } from 'react-i18next'
 import { Label, Select, Slider } from '@/components/common/FormControls'
+import { isHpcTopology, profilesForTopology, type WorkloadProfile } from '@/data/workloadProfiles'
 import { useFormatBytes } from '@/hooks/useCalculations'
 import { useConfigStore } from '@/store'
 import { BLOCK_SIZES, type BlockSize } from '@/types'
@@ -16,6 +17,7 @@ const BLOCK_SIZE_LABELS: Record<BlockSize, string> = {
   '64K': '64K',
   '128K': '128K',
   '256K': '256K',
+  '512K': '512K',
   '1M': '1M',
 }
 
@@ -43,6 +45,7 @@ export function WorkloadPanel() {
   const { t: th } = useTranslation('help')
   const formatBytes = useFormatBytes()
   const {
+    topology,
     readPercent,
     blockSize,
     randomPercent,
@@ -55,6 +58,15 @@ export function WorkloadPanel() {
 
   const writePercent = 100 - readPercent
   const sequentialPercent = 100 - randomPercent
+
+  const profiles = profilesForTopology(topology.type)
+  const isHpc = isHpcTopology(topology.type)
+
+  const applyProfile = (profile: WorkloadProfile) => {
+    setReadPercent(profile.readPercent)
+    setRandomPercent(profile.randomPercent)
+    setBlockSize(profile.blockSize)
+  }
 
   return (
     <div className="space-y-5">
@@ -122,6 +134,7 @@ export function WorkloadPanel() {
           {blockSize === '64K' && t('blockSize.hint64k')}
           {blockSize === '128K' && t('blockSize.hint128k')}
           {blockSize === '256K' && t('blockSize.hint256k')}
+          {blockSize === '512K' && t('blockSize.hint512k')}
           {blockSize === '1M' && t('blockSize.hint1m')}
         </p>
       </div>
@@ -146,55 +159,26 @@ export function WorkloadPanel() {
         />
       </div>
 
-      {/* Workload Presets */}
+      {/* Workload Profiles — data-driven, filtered by platform. See src/data/workloadProfiles.ts */}
       <div className="pt-3 border-t border-slate-200 dark:border-surface-700">
-        <Label>{t('presets.label')}</Label>
+        <Label>{isHpc ? t('presets.labelHpc') : t('presets.label')}</Label>
         <div className="grid grid-cols-2 gap-2 mt-2">
-          <button
-            type="button"
-            onClick={() => {
-              setReadPercent(70)
-              setRandomPercent(80)
-              setBlockSize('8K')
-            }}
-            className="px-3 py-2 text-xs bg-slate-100 dark:bg-surface-700 hover:bg-slate-200 dark:hover:bg-surface-600 rounded-lg text-slate-600 dark:text-slate-300 transition-colors"
-          >
-            {t('presets.database')}
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setReadPercent(90)
-              setRandomPercent(20)
-              setBlockSize('128K')
-            }}
-            className="px-3 py-2 text-xs bg-slate-100 dark:bg-surface-700 hover:bg-slate-200 dark:hover:bg-surface-600 rounded-lg text-slate-600 dark:text-slate-300 transition-colors"
-          >
-            {t('presets.fileServer')}
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setReadPercent(95)
-              setRandomPercent(10)
-              setBlockSize('1M')
-            }}
-            className="px-3 py-2 text-xs bg-slate-100 dark:bg-surface-700 hover:bg-slate-200 dark:hover:bg-surface-600 rounded-lg text-slate-600 dark:text-slate-300 transition-colors"
-          >
-            {t('presets.videoStreaming')}
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setReadPercent(20)
-              setRandomPercent(5)
-              setBlockSize('1M')
-            }}
-            className="px-3 py-2 text-xs bg-slate-100 dark:bg-surface-700 hover:bg-slate-200 dark:hover:bg-surface-600 rounded-lg text-slate-600 dark:text-slate-300 transition-colors"
-          >
-            {t('presets.backup')}
-          </button>
+          {profiles.map((profile) => (
+            <button
+              key={profile.id}
+              type="button"
+              onClick={() => applyProfile(profile)}
+              className="px-3 py-2 text-xs bg-slate-100 dark:bg-surface-700 hover:bg-slate-200 dark:hover:bg-surface-600 rounded-lg text-slate-600 dark:text-slate-300 transition-colors"
+            >
+              {t(profile.labelKey)}
+            </button>
+          ))}
         </div>
+        {isHpc && (
+          <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
+            {t('presets.hpcGuidance')}
+          </p>
+        )}
       </div>
     </div>
   )

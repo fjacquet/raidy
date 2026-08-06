@@ -1,11 +1,19 @@
 {
   "presets": {
     "label": "Arbeitslast-Profil",
+    "labelHpc": "HPC-/KI-Arbeitslast-Profil",
     "database": "Datenbank (OLTP)",
     "fileServer": "Dateiserver",
     "videoStreaming": "Video-Streaming",
     "backup": "Backup-Ziel",
-    "custom": "Benutzerdefiniert"
+    "aiTraining": "KI-Trainingsdaten",
+    "aiCheckpointing": "KI-Checkpointing",
+    "hpcScratch": "HPC-Scratch / Simulation",
+    "genomics": "Genomik / Life Sciences",
+    "edaCae": "EDA / CAE",
+    "aiInference": "KI-Inferenz-Repository",
+    "custom": "Benutzerdefiniert",
+    "hpcGuidance": "BeeGFS ist in der Regel für parallele HPC- und KI-Arbeitslasten optimiert: Scratch-Speicher, Zugriff auf Trainingsdaten und Checkpointing. Für transaktionale Datenbanken, allgemeine Dateidienste oder klassisches Video-Streaming ist es üblicherweise nicht die bevorzugte Wahl."
   },
   "ioPattern": {
     "readWrite": "Lese-/Schreibverhältnis",
@@ -23,6 +31,7 @@
     "hint64k": "64K - Allgemein",
     "hint128k": "128K - Dateiserver, Virtualisierung",
     "hint256k": "256K - Videoschnitt, große Dateien",
+    "hint512k": "512K - HPC-Scratch, KI-Trainingsdaten",
     "hint1m": "1M - Sequentiell, Backup"
   },
   "capacity": {

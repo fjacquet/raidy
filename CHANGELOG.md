@@ -5,7 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [3.0.0] - 2026-08-06
+
+### Added
+
+- **HPC / AI workload profiles.** The workload panel's presets are now a catalogue
+  (`src/data/workloadProfiles.ts`) classed per platform rather than four inline handlers. BeeGFS
+  offers six profiles drawn from how parallel filesystems are actually deployed — AI Training
+  Data, AI Checkpointing, HPC Scratch / Simulation, Genomics / Life Sciences, EDA / CAE, AI
+  Inference Repository — under an "HPC / AI Workload Profile" heading with a note on what BeeGFS
+  is and is not a good fit for. Every other platform keeps the same four presets, unchanged.
+- **`512K` block size**, between `256K` and `1M`. Four of the HPC profiles need it, and it was
+  the gap in the enum for large-block sequential work.
+
+### Changed
+
+- **The neutral workload defaults moved: 70 % read → 60 %, 50 % random → 25 %, `64K` → `512K`.**
+  Daily write volume is unchanged at 1 TB.
+
+  **This changes what previously shared URLs display.** The hash omits any field sitting at its
+  default (`omitDefaults` in `src/store/configStore.ts`), so a link created before this release
+  that never touched the read mix, random mix, or block size will now render at the new values
+  rather than the old ones. The numbers it shows will differ from the numbers its author saw.
+  This is the same class of change as `hotSpares` 1 → 0 in v2.0.0, and it is why this release is
+  a major bump. Links that explicitly set those fields are unaffected.
 
 ### Documented
 
