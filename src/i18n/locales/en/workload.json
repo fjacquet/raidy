@@ -1,11 +1,19 @@
 {
   "presets": {
     "label": "Workload Preset",
+    "labelHpc": "HPC / AI Workload Profile",
     "database": "Database (OLTP)",
     "fileServer": "File Server",
     "videoStreaming": "Video Streaming",
     "backup": "Backup Target",
-    "custom": "Custom"
+    "aiTraining": "AI Training Data",
+    "aiCheckpointing": "AI Checkpointing",
+    "hpcScratch": "HPC Scratch / Simulation",
+    "genomics": "Genomics / Life Sciences",
+    "edaCae": "EDA / CAE",
+    "aiInference": "AI Inference Repository",
+    "custom": "Custom",
+    "hpcGuidance": "BeeGFS is generally optimized for parallel HPC and AI workloads such as scratch space, training data access, and checkpointing. It is not typically the preferred choice for transactional databases, general-purpose file serving, or standard video streaming workloads."
   },
   "ioPattern": {
     "readWrite": "Read / Write Mix",

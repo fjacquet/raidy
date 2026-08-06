@@ -1,11 +1,19 @@
 {
   "presets": {
     "label": "Profil de charge",
+    "labelHpc": "Profil de charge HPC / IA",
     "database": "Base de données (OLTP)",
     "fileServer": "Serveur de fichiers",
     "videoStreaming": "Streaming vidéo",
     "backup": "Cible de sauvegarde",
-    "custom": "Personnalisé"
+    "aiTraining": "Données d'entraînement IA",
+    "aiCheckpointing": "Checkpointing IA",
+    "hpcScratch": "Scratch HPC / Simulation",
+    "genomics": "Génomique / Sciences du vivant",
+    "edaCae": "EDA / CAE",
+    "aiInference": "Référentiel d'inférence IA",
+    "custom": "Personnalisé",
+    "hpcGuidance": "BeeGFS est généralement optimisé pour les charges parallèles HPC et IA : espace scratch, accès aux données d'entraînement et checkpointing. Ce n'est habituellement pas le choix privilégié pour les bases de données transactionnelles, le partage de fichiers généraliste ou le streaming vidéo classique."
   },
   "ioPattern": {
     "readWrite": "Ratio lecture / écriture",
