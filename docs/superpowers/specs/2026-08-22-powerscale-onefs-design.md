@@ -270,18 +270,16 @@ rather than silently modelling a heterogeneous cluster as homogeneous. Recorded 
 
 ## 6. Types, store, schema — and the URL break
 
-The level enum changes from seven invented values to the nine real ones:
+`topology.level` collapses to the single value `'powerscale_onefs'`. It no longer carries
+protection, because a cluster has one protection level *per node pool*, not one per cluster —
+the nine real levels live in `PowerScaleProtection` on the tier. The seven invented levels
+(`powerscale_n1/n2/n2_1/n3/n4/mirror_2x/mirror_3x`) are deleted.
 
-| Old | New |
-| --- | --- |
-| `powerscale_n1` | `powerscale_1n` |
-| `powerscale_n2` | `powerscale_2n` |
-| `powerscale_n2_1` | `powerscale_2d_1n` |
-| `powerscale_n3` | `powerscale_3n` |
-| `powerscale_n4` | `powerscale_4n` |
-| `powerscale_mirror_2x` | *(removed — mirroring is a fallback, not a selectable level in PowerSizer)* |
-| `powerscale_mirror_3x` | *(removed)* |
-| — | `powerscale_3d_1n`, `powerscale_3d_1n1d`, `powerscale_4d_1n`, `powerscale_4d_2n` |
+```ts
+export type PowerScaleProtection =
+  | '+1n' | '+2n' | '+3n' | '+4n'
+  | '+2d:1n' | '+3d:1n' | '+3d:1n1d' | '+4d:1n' | '+4d:2n'
+```
 
 `PowerScaleOptions` is replaced wholesale by a tier list:
 
@@ -312,11 +310,17 @@ platform's identity in the topology selector; the nine real levels live in
 `PowerScaleProtection`. This is why the level-enum rename below is a display concern rather
 than a calculation one.
 
-**Old shared links carrying `powerscale_*` will not parse.** Two options, and I recommend the
-first: map the five old levels to their new equivalents in `urlStorage.ts` on read, drop the
-two mirror levels to the model default, and delete the shim after one release. The alternative
-— accepting the break — is cheaper but silently changes what an existing link shows, which is
-exactly the failure mode documented in the `partialize`/`omitDefaults` gotcha.
+**Old shared links carrying `powerscale_*` will not parse.** A migration shim in
+`urlStorage.ts` runs on read: it rewrites `topology.level` to `powerscale_onefs`, and seeds a
+single tier from the old state — node count from `serverCount`, protection mapped
+`n1→+1n, n2→+2n, n2_1→+2d:1n, n3→+3n, n4→+4n`, with the two mirror levels falling back to
+PowerSizer's *Suggested* level for the resolved model. The old drive-based state cannot name a
+node model, so the shim picks the catalog model whose `drivesPerNode` and drive size best match
+the old `driveId`/`driveCount`, and surfaces a toast saying the link was migrated and should be
+re-checked. Deleted after one release.
+
+Accepting the break instead would be cheaper, but it silently changes what an existing link
+shows — exactly the failure mode documented in the `partialize`/`omitDefaults` gotcha.
 
 ## 7. UI
 
