@@ -1,6 +1,7 @@
 /**
  * Calculation result interfaces for all engine modules.
  */
+import type { PowerScaleProtection } from './topology'
 
 /** Volumetry calculation results (Module A) */
 export interface VolumetryResult {
@@ -33,6 +34,8 @@ export interface VolumetryResult {
   longhornDetails?: LonghornCapacityDetails
   /** BeeGFS-specific metadata-target advisory (only present when topology is BeeGFS) */
   beeGfsDetails?: BeeGfsCapacityDetails
+  /** PowerScale-specific per-tier capacity breakdown (only present when topology is PowerScale) */
+  powerScaleDetails?: PowerScaleCapacityDetails
 }
 
 /**
@@ -114,6 +117,45 @@ export interface LonghornCapacityDetails {
   /** Storage Over-Provisioning % (advisory display) */
   /** Disk deployment model */
   diskMode: 'dedicated' | 'root'
+}
+
+/** Sizing result for one PowerScale node pool (tier) */
+export interface PowerScaleTierResult {
+  nodeModel: string
+  driveSizeTb: number
+  nodeCount: number
+  protection: PowerScaleProtection
+  drivesPerNode: number
+  /** Raw capacity of the pool, in bytes */
+  rawCapacity: number
+  /** Usable capacity after efficiency and usableFactor, before VHS, in bytes */
+  usableCapacity: number
+  /** Virtual Hot Spare reserve applied (the larger of the two vendor formulas), in bytes */
+  vhsReserve: number
+  /** Which VHS reserve won, as the workbook highlights */
+  vhsSource: 'driveCount' | 'percent'
+  /** Usable capacity after the VHS reserve, in bytes */
+  usableLessVhs: number
+  /** Capacity after the per-model data reduction ratio, in bytes */
+  effectiveCapacity: number
+  /** Storage efficiency for this pool, 0-1 */
+  efficiency: number
+  /** Data reduction ratio for this node model (1.0, 1.6 or 2.0) */
+  drr: number
+  generation: 'Gen6' | 'Gen6.5' | 'Gen7'
+  tier: 'All Flash' | 'Hybrid' | 'Archive'
+  /** ISO date, when the model is end-of-life */
+  endOfLife?: string
+}
+
+/** PowerScale-specific capacity breakdown: one row per tier plus cluster totals */
+export interface PowerScaleCapacityDetails {
+  tiers: PowerScaleTierResult[]
+  clusterRaw: number
+  clusterUsable: number
+  clusterEffective: number
+  /** Cluster-wide efficiency: Σ usable / Σ raw */
+  clusterEfficiency: number
 }
 
 /** Performance bottleneck analysis (Module B) */
