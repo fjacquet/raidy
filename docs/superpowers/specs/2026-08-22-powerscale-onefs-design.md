@@ -146,7 +146,9 @@ on its own.
 - `rawPerDriveTB` is nominal drive size except two catalog quirks: F210 @ 15.36 → 15.00,
   F710 @ 61.44 → 61.00.
 - `usableFactor` is 0.9775–0.9917, varying by `(model, driveSize)` — per-drive OneFS
-  journal/metadata loss. 107 combos, a catalog field, not a formula.
+  journal/metadata loss. 107 combos, a catalog field, not a formula. It is fitted by least
+  squares over every row for that combo rather than taken from one row, because the workbook's
+  2-decimal usable values make any single row a noisy estimate (see §8).
 - **DRR is per node model**, from the workbook: 1.0 for A200, A2000, F800, H400, H500, H600;
   1.6 for A310, A3100, H710, H7100; 2.0 for the other twelve. raidy's current PowerScale
   default (`compression: true, compressionRatio: 1.5`) is invented and gets replaced.
@@ -196,7 +198,7 @@ fit that chain — there is no single drive, no single count, and no single effi
 
 ```ts
 if (topology.type === 'powerscale') {
-  return calculatePowerScaleVolumetry({ topology, powerscaleOptions })
+  return calculatePowerScaleVolumetry(powerscaleOptions)
 }
 ```
 
@@ -357,11 +359,30 @@ untranslated as technical terms.
 ## 8. Validation
 
 A new `tests/engines/powerscale-powersizer.spec.ts` walks all 122,828 fixture rows as
-**single-tier clusters with VHS disabled** — the configuration the workbook itself sizes — and
-asserts the engine matches `usableTB` and `efficiency` exactly (to the table's 4-decimal
-precision), not within 1 %. Multi-tier is covered separately by summation tests: a two-tier
-cluster must equal the sum of the two single-tier results, which is the model's whole claim. Because the table ships, exact match is achievable and any drift is a real
-regression. Runtime is bounded by decompressing 5.3 MB and 122,828 pure-function calls.
+**single-tier clusters with VHS disabled** — the configuration the workbook itself sizes.
+
+The gate is precision-matched to what the source can actually assert:
+
+| Quantity | Gate | Why |
+|---|---|---|
+| Storage efficiency | **exact**, integer basis points | We ship the vendor's own value; any drift is a regression, not rounding. |
+| Raw capacity | ±0.005 TB | The workbook prints raw to 2 decimals. |
+| Usable capacity | ±0.06 % relative | See below. |
+
+Usable cannot be matched bit-exactly, and claiming otherwise would be false. The workbook
+prints usable to 2 decimal places of TB and efficiency to 4 decimals, so reconstructing
+`usable = raw × efficiency × usableFactor` inherits both roundings. With `usableFactor` fitted
+per `(model, driveSize)` by least squares, the reconstruction lands at **max 0.053 % error,
+p99 0.008 %** across all 122,828 rows — *inside the vendor's own printing precision*, since the
+2-decimal rounding of usable TB alone can account for up to 0.088 %. The spec therefore also
+asserts the p99 stays under 0.01 %, which is the real regression tripwire; the 0.06 % bound
+only catches catastrophes.
+
+For scale: raidy's existing PowerScale model is wrong by 12–60 % on the same rows, and its
+house tolerance elsewhere is 1 %.
+
+Multi-tier is covered separately by summation tests: a two-tier cluster must equal the sum of
+the two single-tier results, which is the model's whole claim.
 
 A second, small spec asserts the §3.1 closed form still agrees with the shipped table on every
 drive-level protection and on node-level protection below the split threshold. That is the
