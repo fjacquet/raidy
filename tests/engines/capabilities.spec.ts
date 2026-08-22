@@ -22,7 +22,7 @@ const REPRESENTATIVE: { topology: Topology; drives: number; servers: number }[] 
   // NOTE: brief placeholder 'powerstore_drr' does not exist in PowerStoreTopology;
   // replaced with the real union member 'powerstore_raid5'.
   { topology: { type: 'powerstore', level: 'powerstore_raid5' }, drives: 12, servers: 2 },
-  { topology: { type: 'powerscale', level: 'powerscale_n2_1' }, drives: 12, servers: 4 },
+  { topology: { type: 'powerscale', level: 'powerscale_onefs' }, drives: 12, servers: 4 },
   { topology: { type: 'objectscale', level: 'objectscale_ec_12_4' }, drives: 16, servers: 4 },
   { topology: { type: 'nutanix', level: 'nutanix_rf2' }, drives: 12, servers: 4 },
   { topology: { type: 'powervault', level: 'powervault_raid6' }, drives: 12, servers: 1 },
@@ -78,14 +78,24 @@ describe('capability map matches engine behavior', () => {
 
     /**
      * Every one of the fifteen types subtracts hot spares in the engine — unconditionally, with
-     * no per-platform exception. This is the invariant that forces hot-spare UI relevance to be
-     * decided OUTSIDE the capability map (issue #130): `DISTRIBUTED_SPARE_TOPOLOGIES` gates the
-     * slider and the three calculation hooks zero `hotSpares` before calling the engine, so a
-     * capability flag claiming a platform ignores spares would be refuted right here.
+     * no per-platform exception in the *UI-relevance* sense. This is the invariant that forces
+     * hot-spare UI relevance to be decided OUTSIDE the capability map (issue #130):
+     * `DISTRIBUTED_SPARE_TOPOLOGIES` gates the slider and the three calculation hooks zero
+     * `hotSpares` before calling the engine, so a capability flag claiming a platform ignores
+     * spares would be refuted right here.
      *
      * Until #130 this assertion was wrapped in `if (caps.supportsHotSpares)`, a flag that was
      * `true` for all fifteen — so the `else` branch had never executed and the test read as
-     * though a platform were free to opt out. It is not.
+     * though a platform were free to opt out. It is not — with one STRUCTURAL exception added by
+     * the PowerScale multi-tier restructuring (2026-08): PowerScale has no single cluster-wide
+     * drive count for the generic `VolumetryInput.hotSpares` field to apply to any more. A
+     * cluster is 1-8 independently-sized node pools (tiers), each carrying its own Virtual Hot
+     * Spare reserve (`PowerScaleTier.vhsDriveCount`/`.vhsPercent` — see `sizeTier`), and
+     * `calculatePowerScaleVolumetry` never reads the generic field at all. That is unlike every
+     * other exception in this file, which is a UI-visibility decision layered on top of an
+     * engine that still honours the input; here the engine itself has nothing to honour. Asserted
+     * explicitly below (not skipped), so a future change that wires the generic field back up for
+     * PowerScale would be caught either way.
      */
     it(`${topology.type}: the engine subtracts hot spares`, () => {
       const base = calculateVolumetry(
@@ -94,6 +104,10 @@ describe('capability map matches engine behavior', () => {
       const spared = calculateVolumetry(
         createVolumetryInput(drives, topology, { serverCount: servers, hotSpares: 1 }),
       )
+      if (topology.type === 'powerscale') {
+        expect(spared.usableCapacity).toBe(base.usableCapacity)
+        return
+      }
       expect(spared.usableCapacity).toBeLessThan(base.usableCapacity)
     })
 

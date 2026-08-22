@@ -38,6 +38,8 @@ import { getDataFraction } from './helpers/calculationHelpers'
 import { calculateOverheads } from './overhead/overheadCalculator'
 // Post-processing (compression, dedup, ZFS details)
 import { applyCompressionDedup, buildZfsDetails } from './postProcessing/capacityEnhancements'
+// PowerScale cluster sub-engine (multi-tier, node-pool-centric — not the generic chain below)
+import { calculatePowerScaleVolumetry } from './powerscale'
 // BeeGFS storage-target derivation (shared with the UI panel)
 import { calculateStorageTargets } from './strategies/beegfs'
 // Validation module
@@ -114,6 +116,17 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
   // Validate topology
   const topologyValidation = validateTopology(topology, drive, driveCount)
   if (topologyValidation) return topologyValidation
+
+  // PowerScale is node-pool-centric and multi-tier: it has no single drive,
+  // drive count or efficiency, so it does not fit the generic chain below.
+  // This MUST run before any other PowerScale-shaped code path — dell.ts's
+  // `level.startsWith('powerscale_')` guard still matches the new
+  // 'powerscale_onefs' level and, unguarded, falls through to its `default:`
+  // case, silently returning the wrong (N+2) efficiency for every
+  // configuration. See dell.ts's PowerScale branch (removed in a later task).
+  if (topology.type === 'powerscale') {
+    return calculatePowerScaleVolumetry(powerscaleOptions)
+  }
 
   // Longhorn requires serverCount >= replica count for replica placement
   const replicaValidation = validateReplicaPlacement(topology, drive, driveCount, serverCount)
