@@ -86,16 +86,23 @@ else:         width = min(u·N, Wmax)          # Wmax = 18 for M ∈ {2,3}, 20 f
 F800, F810, F900, F910) and only up to 15 nodes, where it is still on the `(N−1)/N` ramp at
 0.9333. The table covers what PowerSizer allows, so the cap never has to be guessed.
 
-This is exact for every drive-level protection at every node count **except where a
-drive-size-dependent exception applies**, and for node-level protection below the split
-threshold.
+This is exact for every drive-level protection **below the neighborhood region**, and for
+node-level protection below the split threshold. It is NOT exact for drive-level protections
+everywhere, which an earlier draft of this document wrongly claimed.
 
 That exception carve-out is not a detail. 378 of the exception entries are on drive-level
 levels — all of them `+3d:1n` or `+3d:1n1d` — and they carry values the formula structurally
 cannot produce: `A200` at 8 TB with `+3d:1n` on 38 nodes is 0.8421, i.e. 16/19, while the
 formula's width cap of 18 yields 15/18 = 0.8333. Others (0.8377, 0.8363, 0.8355) look like
-neighborhood-weighted averages. So even the drive-level levels, which appear flat and
-well-behaved in aggregate, are drive-size sensitive in places. This is further evidence for
+neighborhood-weighted averages.
+
+The divergence is not confined to the exceptions map either. `A200`'s `+3d:1n1d` curve —
+which applies to every drive size — reads 0.8363 at exactly 78 nodes against the formula's
+0.8333, with no exception entry, and returns to 0.8333 at 80. That is a neighborhood boundary
+showing through on a level that looks perfectly flat everywhere else.
+
+So even the drive-level levels, which appear flat and well-behaved in aggregate, are both
+drive-size sensitive and neighborhood sensitive in places. This is further evidence for
 §3.2's conclusion rather than a wrinkle in it: the closed form explains the shape of the data,
 and the shipped table is what the engine actually reads. It reproduces the mirror fallbacks (`+4n` on 5–7 nodes =
 0.20 = 5-way mirror, on 4 nodes = 0.25, on 3 nodes = 0.333) and the caps (`+2d:1n` → 16/18,
