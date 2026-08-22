@@ -82,6 +82,22 @@ export type PowerScaleTopology =
   | 'powerscale_mirror_2x' // 2x mirrored
   | 'powerscale_mirror_3x' // 3x mirrored
 
+/**
+ * OneFS protection levels as Dell's PowerSizer names them.
+ * `+Nn` tolerates N node failures; `+Nd:1n` tolerates N drive failures or 1 node;
+ * `+3d:1n1d` tolerates 3 drives, or 1 node plus 1 drive.
+ */
+export type PowerScaleProtection =
+  | '+1n'
+  | '+2n'
+  | '+3n'
+  | '+4n'
+  | '+2d:1n'
+  | '+3d:1n'
+  | '+3d:1n1d'
+  | '+4d:1n'
+  | '+4d:2n'
+
 /** Ceph storage topologies */
 export type CephTopology =
   | 'ceph_replicated_2' // 2-way replication
