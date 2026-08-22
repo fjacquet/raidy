@@ -264,11 +264,26 @@ servers slider must not appear.
 
 ### Performance / resilience / sustainability
 
-Out of scope for this change beyond keeping them compiling and correct-by-construction.
-`performance/strategies/dell.ts` and `resilienceWorker.ts` reference PowerScale levels and must
-be updated for the renamed level enum (§6); they size the *first* tier only, and must say so
-rather than silently modelling a heterogeneous cluster as homogeneous. Recorded in
-`docs/BACKLOG.md` as follow-up work, with the node catalog now available to it.
+These three engines derive their drive and node populations from the shared Hardware panel,
+which PowerScale hides. Left alone they would read stale defaults and report confident numbers
+for a cluster nobody configured, so each is rewired — with deliberately different scope:
+
+- **Performance and resilience** model the **first node pool only**. Both are per-pool physical
+  phenomena, and raidy has no way to express a workload spread across heterogeneous pools;
+  treating a mixed cluster as one homogeneous pool would invent a result. The dashboard says so
+  whenever more than one tier is configured.
+- **Sustainability** sums **every tier**, because power, cooling and TCO are additive across the
+  cluster.
+
+The performance write penalty moves from the deleted level strings onto the tier's protection,
+derived from the shared stripe geometry as `FEC units + 1.5` — the rule the pre-existing
+`+1n..+4n` values (2.5, 3.5, 4.5, 5.5) already encoded, extended to the drive-level levels by
+their FEC count. Resilience keeps the Hardware panel's drive for reliability: the vendor catalog
+carries capacities but no AFR, URE or MTBF, and synthesising those would fabricate the very
+numbers the simulation reports.
+
+Re-modelling a heterogeneous cluster's performance and resilience per pool is recorded in
+`docs/BACKLOG.md`.
 
 ## 6. Types, store, schema — and the URL break
 

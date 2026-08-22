@@ -36,6 +36,7 @@
 - `src/engines/volumetry/powerscale/tier.ts` — sizes one node pool.
 - `src/engines/volumetry/powerscale/efficiency.ts` — table lookup.
 - `src/engines/volumetry/powerscale/onefsFormula.ts` — §3.1 closed form, reference implementation used by tests only.
+- `src/engines/volumetry/powerscale/stripeShape.ts` — per-protection stripe geometry, shared by the reference formula and the performance write-penalty model.
 - `tests/fixtures/powerscale-powersizer.csv.gz` — all 122,828 vendor rows.
 - `tests/engines/volumetry/powerscale/*.spec.ts` — unit + fixture-gate specs.
 - `src/components/inputs/topology-options/PowerScaleTierRow.tsx` — one tier's four-field chain.
@@ -55,7 +56,12 @@
 - `src/engines/volumetry/postProcessing/capacityEnhancements.ts` — drop the PowerScale branch.
 - `src/engines/volumetry/breakdown/buildBreakdown.ts` — drop `powerscaleSnapshotReserve`.
 - `src/engines/capabilities.ts` — `hasServerCount: false` for PowerScale.
-- `src/engines/performance/strategies/dell.ts`, `src/workers/resilienceWorker.ts` — first-tier sizing under the new shape.
+- `src/engines/performance/strategies/dell.ts` — protection-driven write penalty.
+- `src/engines/performance/index.ts` — `powerscaleOptions` on `PerformanceInput`.
+- `src/workers/resilienceWorker.ts` — compile under the new level shape.
+- `src/hooks/useResilience.ts` — PowerScale simulation-scope resolver (first node pool).
+- `src/hooks/usePerformanceCalc.ts` — first-node-pool population.
+- `src/hooks/useSustainabilityCalc.ts` — cluster-wide population.
 - `src/components/inputs/topology-options/PowerScaleOptionsPanel.tsx` — tier list.
 - `src/components/inputs/topology-options/topologyConstants.ts` — single level entry.
 - `src/components/layout/OutputDashboard.tsx` — mount the tier table.
@@ -235,6 +241,18 @@ if (rows.length !== 122828) {
   process.exit(1)
 }
 
+// Efficiency must be a fraction. openpyxl returns the underlying float rather
+// than the displayed percentage, so this should always hold — but a silent
+// x100 would corrupt every basis-point value in the shipped table, so assert
+// rather than trust.
+for (const r of rows) {
+  const eff = Number(r[C.eff])
+  if (!(eff >= 0 && eff <= 1)) {
+    console.error(`efficiency out of range: ${r[C.model]}/${r[C.protection]}/${r[C.nodes]} = ${eff}`)
+    process.exit(1)
+  }
+}
+
 const models = {}
 const curves = {}
 const exceptions = {}
@@ -259,9 +277,13 @@ for (const r of rows) {
     minNodes: Number(r[C.minNodes]),
     maxNodes: Number(r[C.maxNodes]),
     nodeIncrement: Number(r[C.increment]),
-    drr: Number((Number(r[C.effective]) / usable).toFixed(2)),
+    // drr is filled in after the scan, from the modal ratio across every row
+    // for this model — a single row is 2-decimal-rounded and can be off.
+    drr: 0,
+    _drr: [],
     driveSizes: {},
   })
+  if (usable > 0) m._drr.push(Number((Number(r[C.effective]) / usable).toFixed(2)))
   // rawPerDriveTb is the *actual* capacity the sizer used, which differs from the
   // nominal drive size for two catalog entries (F210 @ 15.36 -> 15, F710 @ 61.44 -> 61).
   m.driveSizes[ds] ??= {
@@ -278,7 +300,14 @@ for (const r of rows) {
   slot._num = (slot._num ?? 0) + raw * eff * usable
   slot._den = (slot._den ?? 0) + (raw * eff) ** 2
 }
+// Data reduction ratio is a fixed vendor constant per model (1.0, 1.6 or 2.0).
+// Take the mode, not the first row: the workbook's 2-decimal rounding makes
+// small configurations noisy.
 for (const m of Object.values(models)) {
+  const counts = new Map()
+  for (const v of m._drr) counts.set(v, (counts.get(v) ?? 0) + 1)
+  m.drr = [...counts.entries()].sort((a, b) => b[1] - a[1])[0][0]
+  delete m._drr
   for (const ds of Object.values(m.driveSizes)) {
     ds.usableFactor = Number((ds._num / ds._den).toFixed(6))
     delete ds._num
@@ -1120,7 +1149,9 @@ In `src/utils/schemas.ts`, replace the PowerScale topology branch and add the op
 const PowerScaleTierSchema = z.object({
   nodeModel: z.string().min(1).max(16),
   driveSizeTb: z.number().positive().finite(),
-  nodeCount: z.number().int().min(1).max(252),
+  // 3 is the smallest node count any catalog model supports; a crafted link
+  // with fewer would find no efficiency curve and silently size to zero.
+  nodeCount: z.number().int().min(3).max(252),
   protection: z.enum([
     '+1n',
     '+2n',
@@ -1250,7 +1281,7 @@ Call it in `getItem`, between envelope parsing and `validateUrlState`:
 - [ ] **Step 7: Run tests to verify they pass**
 
 Run: `npm test -- tests/store/powerscaleMigration.spec.ts tests/utils && npm run typecheck`
-Expected: migration spec PASS. Typecheck will now report errors in `dell.ts`, `overheadCalculator.ts`, `capacityEnhancements.ts`, `PowerScaleOptionsPanel.tsx`, `performance/strategies/dell.ts` and `resilienceWorker.ts` — those are Tasks 6–9. **Record the exact list**; it is the checklist for the remaining work.
+Expected: migration spec PASS. Typecheck will now report errors in `dell.ts`, `overheadCalculator.ts`, `capacityEnhancements.ts`, `PowerScaleOptionsPanel.tsx`, `performance/strategies/dell.ts` and `resilienceWorker.ts` — those are Tasks 6–10. **Record the exact list**; it is the checklist for the remaining work.
 
 - [ ] **Step 8: Commit**
 
@@ -1321,6 +1352,14 @@ describe('sizeTier', () => {
     expect(r?.effectiveCapacity).toBeCloseTo(r?.usableLessVhs ?? 0, -6)
   })
 
+  it('reserves virtual hot spare drives at the vendor 2.2 multiplier', () => {
+    // Workbook: VHS by drives = vhsDriveCount x driveSizeTb x 2.2, on the
+    // NOMINAL drive size - not scaled by efficiency or usableFactor.
+    const r = sizeTier({ ...base, nodeCount: 10, vhsDriveCount: 2, vhsPercent: 0 })
+    expect(r?.vhsReserve).toBeCloseTo(2 * 1.92 * 2.2 * 1e12, -6)
+    expect(r?.vhsSource).toBe('driveCount')
+  })
+
   it('applies the larger of the two virtual hot spare reserves', () => {
     const byDrives = sizeTier({ ...base, nodeCount: 10, vhsDriveCount: 2, vhsPercent: 1 })
     expect(byDrives?.vhsSource).toBe('driveCount')
@@ -1368,6 +1407,9 @@ import type { PowerScaleTierResult } from '@/types/results'
 import type { PowerScaleTier } from '@/types/topology'
 import { storageEfficiency } from './efficiency'
 
+/** Decimal TB, the unit the vendor catalog uses. */
+const TB = 1_000_000_000_000
+
 export function sizeTier(tier: PowerScaleTier): PowerScaleTierResult | null {
   const model = getModel(tier.nodeModel)
   if (!model) return null
@@ -1386,8 +1428,17 @@ export function sizeTier(tier: PowerScaleTier): PowerScaleTierResult | null {
   const rawCapacity = tier.nodeCount * model.drivesPerNode * perDrive
   const usableCapacity = rawCapacity * efficiency * usableFactor(tier.nodeModel, tier.driveSizeTb)
 
-  // The workbook applies whichever reserve is larger, and highlights which one won.
-  const vhsByDrives = tier.vhsDriveCount * perDrive * efficiency
+  // Virtual Hot Spare, taken verbatim from the workbook (PowerScale Calculator L7/N7/Q7):
+  //
+  //   VHS by drives  = vhsDriveCount x driveSizeTb x 2.2
+  //   VHS by percent = usable x vhsPercent
+  //   usable less VHS = usable - (whichever reserve is larger)
+  //
+  // The 2.2 is a flat vendor constant applied to the NOMINAL drive size. It is
+  // deliberately not multiplied by efficiency or usableFactor - the workbook
+  // does neither, and "correcting" it to align units would diverge from the
+  // source of truth.
+  const vhsByDrives = tier.vhsDriveCount * tier.driveSizeTb * 2.2 * TB
   const vhsByPercent = usableCapacity * (tier.vhsPercent / 100)
   const vhsSource: PowerScaleTierResult['vhsSource'] =
     vhsByDrives >= vhsByPercent ? 'driveCount' : 'percent'
@@ -1682,15 +1733,21 @@ Expected: FAIL — `expected true to be false` on `hasServerCount`.
 6. `src/engines/volumetry/index.ts`: remove the now-unused destructured `powerscaleSnapshotReserve` and the `powerscaleOptions` arguments passed to `calculateOverheads` / `applyCompressionDedup`.
 7. `src/engines/capabilities.ts`: set `powerscale.hasServerCount` to `false`, and update the comment block above `PLATFORM_CAPABILITIES` to say PowerScale's node counts are per tier.
 
-- [ ] **Step 4: Fix performance and resilience for the new shape**
+- [ ] **Step 4: Make performance and resilience compile**
 
-`src/engines/performance/strategies/dell.ts` and `src/workers/resilienceWorker.ts` reference the deleted level strings. Both size the **first tier only**. Replace the level lookups with the first tier's protection, and add the comment at each site:
+`src/engines/performance/strategies/dell.ts` and `src/workers/resilienceWorker.ts` reference
+the deleted level strings. Get them compiling here — delete the dead `powerscale_n*` cases and
+have `getWritePenalty` return its existing `3.0` default for `powerscale_onefs` — and leave a
+marker:
 
 ```ts
-// PowerScale performance/resilience models the FIRST node pool only. A
-// heterogeneous cluster's per-pool behaviour is follow-up work (docs/BACKLOG.md);
-// modelling it as one homogeneous pool would be wrong, so we are explicit.
+// TODO(Task 8): PowerScale protection moved to the tier. Until this reads the
+// tier's protection, every level prices at the default penalty.
 ```
+
+**Do not stop here.** A default penalty for all nine protection levels is wrong, and the
+populations these engines read are stale the moment Task 7 hides the Hardware panel. Task 8
+fixes both; this step only keeps the tree green between commits.
 
 - [ ] **Step 5: Run the full gates**
 
@@ -1706,7 +1763,357 @@ git commit -m "refactor(powerscale): retire the generic drive-centric PowerScale
 
 ---
 
-### Task 8: The PowerSizer conformance gate
+### Task 8: Wire performance, resilience and sustainability to the tier model
+
+**Why this is not optional.** Task 7 hides the shared Hardware panel for PowerScale
+(`hasServerCount: false`), but three other engines still derive their populations from
+`driveCount * effServerCount` — the very inputs the panel no longer sets. Left alone they read
+stale or default values and silently produce numbers for a cluster nobody configured. This is
+worse than being wrong: it is confidently wrong on a dashboard that looks correct.
+
+Scope differs per engine, deliberately:
+
+- **Performance and resilience** model the **first node pool only**. Both are per-pool
+  physical phenomena and raidy has no concept of a workload spread across heterogeneous pools;
+  modelling a mixed cluster as one homogeneous pool would invent a result. Say so in the UI.
+- **Sustainability** sums **every tier**. Power, cooling and TCO are additive across the whole
+  cluster, so first-tier-only would understate a multi-tier cluster's footprint by design.
+
+**Files:**
+- Modify: `src/hooks/useResilience.ts`
+- Modify: `src/hooks/usePerformanceCalc.ts`
+- Modify: `src/hooks/useSustainabilityCalc.ts`
+- Modify: `src/engines/performance/index.ts`
+- Modify: `src/engines/performance/strategies/dell.ts`
+- Create: `src/engines/volumetry/powerscale/stripeShape.ts`
+- Test: `tests/hooks/powerscaleScopes.spec.ts`, `tests/engines/performance.spec.ts` (extend)
+
+**Interfaces:**
+- Consumes: `getModel` (Task 2), `PowerScaleOptions` / `PowerScaleTier` (Task 4).
+- Produces:
+
+```ts
+// stripeShape.ts — shared by the closed-form reference AND the performance engine
+export interface StripeShape { u: number; M: number; nf: number }
+export const STRIPE_SHAPES: Record<PowerScaleProtection, StripeShape>
+
+// powerscale/index.ts
+export function powerScaleDriveTotals(options: PowerScaleOptions): {
+  firstTierDrives: number
+  firstTierNodes: number
+  firstTierSpareDrives: number
+  clusterDrives: number
+  clusterNodes: number
+}
+```
+
+- [ ] **Step 1: Write the failing test**
+
+`tests/hooks/powerscaleScopes.spec.ts`:
+
+```ts
+import { describe, expect, it } from 'vitest'
+import { powerScaleDriveTotals } from '@/engines/volumetry/powerscale'
+import type { PowerScaleOptions } from '@/types/topology'
+
+// F200 has 4 drives/node, A200 has 15.
+const twoTier: PowerScaleOptions = {
+  tiers: [
+    {
+      nodeModel: 'F200',
+      driveSizeTb: 1.92,
+      nodeCount: 6,
+      protection: '+2d:1n',
+      vhsDriveCount: 2,
+      vhsPercent: 0,
+    },
+    {
+      nodeModel: 'A200',
+      driveSizeTb: 8,
+      nodeCount: 12,
+      protection: '+2n',
+      vhsDriveCount: 0,
+      vhsPercent: 0,
+    },
+  ],
+}
+
+describe('powerScaleDriveTotals', () => {
+  it('reports the first tier for per-pool engines', () => {
+    const t = powerScaleDriveTotals(twoTier)
+    expect(t.firstTierNodes).toBe(6)
+    expect(t.firstTierDrives).toBe(24) // 6 nodes x 4 drives
+    expect(t.firstTierSpareDrives).toBe(2)
+  })
+
+  it('sums every tier for cluster-wide engines', () => {
+    const t = powerScaleDriveTotals(twoTier)
+    expect(t.clusterNodes).toBe(18) // 6 + 12
+    expect(t.clusterDrives).toBe(204) // 24 + 180
+  })
+
+  it('ignores tiers naming an unknown model rather than counting them as zero-drive nodes', () => {
+    const t = powerScaleDriveTotals({
+      tiers: [twoTier.tiers[0], { ...twoTier.tiers[1], nodeModel: 'NOPE' }],
+    })
+    expect(t.clusterNodes).toBe(6)
+    expect(t.clusterDrives).toBe(24)
+  })
+
+  it('returns zeroes for an empty tier list rather than throwing', () => {
+    const t = powerScaleDriveTotals({ tiers: [] })
+    expect(t).toEqual({
+      firstTierDrives: 0,
+      firstTierNodes: 0,
+      firstTierSpareDrives: 0,
+      clusterDrives: 0,
+      clusterNodes: 0,
+    })
+  })
+})
+```
+
+Extend `tests/engines/performance.spec.ts`:
+
+```ts
+  it('derives the PowerScale write penalty from the protection stripe shape', () => {
+    // penalty = FEC units + 1.5, the rule the pre-existing +1n..+4n values follow
+    expect(dellPerformanceStrategy.getWritePenalty('powerscale_onefs', { protection: '+1n' })).toBe(2.5)
+    expect(dellPerformanceStrategy.getWritePenalty('powerscale_onefs', { protection: '+2n' })).toBe(3.5)
+    expect(dellPerformanceStrategy.getWritePenalty('powerscale_onefs', { protection: '+4n' })).toBe(5.5)
+    // drive-level levels carry the same FEC count as their node-level peers
+    expect(dellPerformanceStrategy.getWritePenalty('powerscale_onefs', { protection: '+2d:1n' })).toBe(3.5)
+    expect(dellPerformanceStrategy.getWritePenalty('powerscale_onefs', { protection: '+4d:2n' })).toBe(5.5)
+  })
+
+  it('falls back to a neutral penalty when no protection is supplied', () => {
+    expect(dellPerformanceStrategy.getWritePenalty('powerscale_onefs')).toBe(3.0)
+  })
+```
+
+- [ ] **Step 2: Run tests to verify they fail**
+
+Run: `npm test -- tests/hooks/powerscaleScopes.spec.ts tests/engines/performance.spec.ts`
+Expected: FAIL — `powerScaleDriveTotals` is not exported; `getWritePenalty` ignores its second argument.
+
+- [ ] **Step 3: Extract the shared stripe shape**
+
+Move the `SHAPES` map out of `onefsFormula.ts` into
+`src/engines/volumetry/powerscale/stripeShape.ts` so the performance engine and the reference
+formula cannot drift apart:
+
+```ts
+/**
+ * OneFS stripe geometry per protection level.
+ *
+ * u  = stripe units placed per node
+ * M  = FEC (protection) units in the stripe
+ * nf = node failures tolerated
+ *
+ * Shared by the capacity reference formula and the performance write-penalty
+ * model, so the two can never disagree about what '+3d:1n1d' means.
+ */
+import type { PowerScaleProtection } from '@/types/topology'
+
+export interface StripeShape {
+  u: number
+  M: number
+  nf: number
+}
+
+export const STRIPE_SHAPES: Record<PowerScaleProtection, StripeShape> = {
+  '+1n': { u: 1, M: 1, nf: 1 },
+  '+2n': { u: 1, M: 2, nf: 2 },
+  '+3n': { u: 1, M: 3, nf: 3 },
+  '+4n': { u: 1, M: 4, nf: 4 },
+  '+2d:1n': { u: 2, M: 2, nf: 1 },
+  '+3d:1n': { u: 3, M: 3, nf: 1 },
+  '+3d:1n1d': { u: 2, M: 3, nf: 1 },
+  '+4d:1n': { u: 4, M: 4, nf: 1 },
+  '+4d:2n': { u: 2, M: 4, nf: 2 },
+}
+```
+
+`onefsFormula.ts` imports `STRIPE_SHAPES` instead of declaring its own.
+
+- [ ] **Step 4: Add the totals helper**
+
+Append to `src/engines/volumetry/powerscale/index.ts`:
+
+```ts
+/**
+ * Drive and node populations for the engines that do not compute capacity.
+ *
+ * Performance and resilience use the FIRST tier: both are per-node-pool
+ * physical phenomena, and raidy cannot express a workload spread across
+ * heterogeneous pools. Sustainability uses the cluster totals: power and TCO
+ * are additive.
+ */
+export function powerScaleDriveTotals(options: PowerScaleOptions) {
+  let clusterDrives = 0
+  let clusterNodes = 0
+  let firstTierDrives = 0
+  let firstTierNodes = 0
+  let firstTierSpareDrives = 0
+  let seenFirst = false
+
+  for (const tier of options.tiers) {
+    const model = getModel(tier.nodeModel)
+    // A tier naming an unknown model contributes nothing; counting its nodes
+    // with zero drives would understate density everywhere downstream.
+    if (!model) continue
+    const drives = tier.nodeCount * model.drivesPerNode
+    clusterDrives += drives
+    clusterNodes += tier.nodeCount
+    if (!seenFirst) {
+      firstTierDrives = drives
+      firstTierNodes = tier.nodeCount
+      firstTierSpareDrives = tier.vhsDriveCount
+      seenFirst = true
+    }
+  }
+
+  return { firstTierDrives, firstTierNodes, firstTierSpareDrives, clusterDrives, clusterNodes }
+}
+```
+
+- [ ] **Step 5: Wire the resilience scope resolver**
+
+`src/hooks/useResilience.ts` already dispatches per platform through
+`SIMULATION_SCOPE_BY_TOPOLOGY` (a `Partial<Record<Topology['type'], SimulationScopeResolver>>`
+at line 223). Add `powerscaleOptions` to `SimulationScopeContext` and register a resolver.
+
+A resolver returns a `PlatformSimulationScope`, which requires `mediaDrive`. Return **`null`**
+for it — that is the contract's "keep the Hardware panel's drive", and it is the right answer
+here: the vendor catalog carries capacities but no AFR, URE or MTBF, so the Hardware panel's
+drive remains the only source of reliability characteristics. Do not synthesise a drive with
+invented reliability numbers.
+
+```ts
+  /**
+   * PowerScale: the population comes from the FIRST node pool's catalog geometry,
+   * never from the Hardware panel — that panel is hidden for PowerScale, so its
+   * driveCount/serverCount are stale defaults.
+   *
+   * `mediaDrive: null` keeps the Hardware panel's drive for reliability: the
+   * vendor catalog gives capacities, not AFR/URE/MTBF, and inventing those
+   * would fabricate the very numbers the simulation reports.
+   *
+   * Nodes are the failure-isolation groups: OneFS protection is per node pool
+   * and `+Nn` tolerates whole-node loss.
+   */
+  powerscale: ({ powerscaleOptions }) => {
+    if (!powerscaleOptions) return null
+    const { firstTierDrives, firstTierNodes, firstTierSpareDrives } =
+      powerScaleDriveTotals(powerscaleOptions)
+    if (firstTierDrives === 0) return { driveCount: 0, groupCount: 1, mediaDrive: null }
+    return {
+      driveCount: Math.max(0, firstTierDrives - firstTierSpareDrives),
+      groupCount: firstTierNodes,
+      mediaDrive: null,
+    }
+  },
+```
+
+Thread `powerscaleOptions` into the context at the call site (line ~495) the same way
+`tieringOptions` is threaded today. Do **not** call `useConfigStore.getState()` inside the
+resolver: these resolvers are pure functions of their context, and reaching into the store
+would break that and make them untestable.
+
+- [ ] **Step 6: Wire the performance hook and write penalty**
+
+In `src/hooks/usePerformanceCalc.ts`, after `effServerCount` is computed, override for
+PowerScale:
+
+```ts
+    // PowerScale sizes from the first node pool's catalog geometry: the shared
+    // Hardware panel is hidden for this platform, so driveCount/serverCount are
+    // stale. Performance for a heterogeneous cluster is not modelled — see
+    // docs/BACKLOG.md.
+    const psTotals =
+      topology.type === 'powerscale' ? powerScaleDriveTotals(powerscaleOptions) : null
+
+    const totalDriveCount = psTotals ? psTotals.firstTierDrives : driveCount * effServerCount
+    const totalHotSpares = psTotals
+      ? psTotals.firstTierSpareDrives
+      : usesDistributedSpares(topology.type)
+        ? 0
+        : hotSpares * effServerCount
+    const nodeCount = psTotals ? psTotals.firstTierNodes : effServerCount
+```
+
+Use `nodeCount` wherever `effServerCount` was passed as the server count, add
+`powerscaleOptions` to the hook's store destructuring and to its `useMemo` dependency array,
+and add `powerscaleOptions?: PowerScaleOptions` to `PerformanceInput` in
+`src/engines/performance/index.ts`, passing it through `getRaidWritePenalty` as `options`.
+
+In `src/engines/performance/strategies/dell.ts`, replace the five deleted `powerscale_*` cases
+with a single protection-driven branch:
+
+```ts
+  getWritePenalty(level: string, options?: unknown): number {
+    // PowerScale protection now lives on the tier, not the level. The penalty
+    // follows the FEC unit count the pre-existing +1n..+4n values already
+    // encoded: 2.5, 3.5, 4.5, 5.5 for M = 1..4, i.e. M + 1.5. Drive-level
+    // levels carry the same FEC count as their node-level peers, so +2d:1n
+    // prices like +2n — which is also what the old powerscale_n2_1 case did.
+    if (level === 'powerscale_onefs') {
+      const protection = (options as { protection?: PowerScaleProtection } | undefined)?.protection
+      if (!protection) return 3.0
+      return STRIPE_SHAPES[protection].M + 1.5
+    }
+    switch (level) {
+      // ... PowerStore, ObjectScale, PowerFlex, PowerVault cases unchanged
+    }
+  },
+```
+
+`calculateIOPS` in the same file calls `this.getWritePenalty(level)` with no options — pass its
+`_options` through (and rename it to `options`), or PowerScale silently falls back to 3.0.
+
+- [ ] **Step 7: Wire the sustainability hook**
+
+In `src/hooks/useSustainabilityCalc.ts`, override with **cluster** totals:
+
+```ts
+    // Power, cooling and TCO are additive across node pools, so sustainability
+    // counts EVERY tier — unlike performance and resilience, which model the
+    // first pool only.
+    const psTotals =
+      topology.type === 'powerscale' ? powerScaleDriveTotals(powerscaleOptions) : null
+
+    const totalDriveCount = psTotals ? psTotals.clusterDrives : driveCount * effServerCount
+    const nodeCount = psTotals ? psTotals.clusterNodes : effServerCount
+```
+
+Use `nodeCount` where `effServerCount` fed the server count, and add `powerscaleOptions` to the
+destructuring and the `useMemo` dependencies.
+
+- [ ] **Step 8: Surface the first-tier limitation in the UI**
+
+The dashboard must not present first-pool performance and resilience as cluster-wide. Add a
+note beneath the tier table when `tiers.length > 1`, keyed
+`t('powerscale.firstTierOnly')` in `output.json`:
+
+> "Performance and resilience figures model the first node pool only. Capacity, power and cost
+> cover the whole cluster."
+
+- [ ] **Step 9: Run the gates**
+
+Run: `npm test -- tests/hooks tests/engines/performance.spec.ts && npm run typecheck && npm run lint`
+Expected: PASS. Confirm no remaining reference to a deleted `powerscale_n*` level:
+`grep -rn "powerscale_n1\|powerscale_n2\|powerscale_n3\|powerscale_n4\|powerscale_mirror" src/ tests/` returns nothing.
+
+- [ ] **Step 10: Commit**
+
+```bash
+git add src/hooks src/engines tests/hooks/powerscaleScopes.spec.ts tests/engines/performance.spec.ts
+git commit -m "fix(powerscale): drive performance, resilience and sustainability from the tier model"
+```
+
+---
+
+### Task 9: The PowerSizer conformance gate
 
 The proof. 122,828 vendor rows, at the precision the source can actually support.
 
@@ -1931,7 +2338,7 @@ git commit -m "test(powerscale): conformance gate against all 122,828 PowerSizer
 
 ---
 
-### Task 9: UI — tier list, output table, i18n
+### Task 10: UI — tier list, output table, i18n
 
 **Files:**
 - Create: `src/components/inputs/topology-options/PowerScaleTierRow.tsx`
@@ -2091,6 +2498,7 @@ export function PowerScaleTierRow({ tier, index, canRemove }: Props) {
   }
 
   const selectDriveSize = (driveSizeTb: number) => {
+    if (!Number.isFinite(driveSizeTb) || driveSizeTb <= 0) return
     const allowed = availableProtections(tier.nodeModel, driveSizeTb, tier.nodeCount)
     const protection = allowed.includes(tier.protection)
       ? tier.protection
@@ -2101,6 +2509,9 @@ export function PowerScaleTierRow({ tier, index, canRemove }: Props) {
   }
 
   const selectNodeCount = (requested: number) => {
+    // Clearing the field yields NaN; storing it would cascade NaN through
+    // sizeTier into every dashboard number.
+    if (!Number.isFinite(requested) || requested <= 0) return
     const nodeCount = clampNodes(tier.nodeModel, requested)
     const allowed = availableProtections(tier.nodeModel, tier.driveSizeTb, nodeCount)
     const protection = allowed.includes(tier.protection)
@@ -2190,7 +2601,9 @@ export function PowerScaleTierRow({ tier, index, canRemove }: Props) {
         max={64}
         value={tier.vhsDriveCount}
         onChange={(e) =>
-          updatePowerScaleTier(index, { vhsDriveCount: Math.max(0, Number(e.target.value)) })
+          updatePowerScaleTier(index, {
+            vhsDriveCount: Math.max(0, Number(e.target.value) || 0),
+          })
         }
       />
 
@@ -2203,7 +2616,7 @@ export function PowerScaleTierRow({ tier, index, canRemove }: Props) {
         value={tier.vhsPercent}
         onChange={(e) =>
           updatePowerScaleTier(index, {
-            vhsPercent: Math.min(50, Math.max(0, Number(e.target.value))),
+            vhsPercent: Math.min(50, Math.max(0, Number(e.target.value) || 0)),
           })
         }
       />
@@ -2433,7 +2846,7 @@ git commit -m "feat(powerscale): node-pool tier list and per-tier output table"
 
 ---
 
-### Task 10: Documentation and ADR
+### Task 11: Documentation and ADR
 
 **Files:**
 - Create: `docs/adr/0014-vendor-lookup-tables.md`
