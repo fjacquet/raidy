@@ -32,7 +32,7 @@ the table exactly.
 with seven invented levels (`powerscale_n1/n2/n2_1/n3/n4/mirror_2x/mirror_3x`).
 
 | Config | raidy today | PowerSizer | Error |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | A200, 9 nodes, `+2d:1n` | 0.778 (via `n2_1`) | 0.8889 | −12.5 % |
 | A200, 20 nodes, `+2n` | 0.900 | 0.8000 | +12.5 % |
 | F200, 20 nodes, `+2n` | 0.900 | 0.8889 | +1.2 % |
@@ -49,6 +49,11 @@ Three separate structural faults:
 3. **No neighborhood split.** Above ~20 nodes a chassis-based node pool splits, and efficiency
    *drops*. raidy shows a monotonic climb where the truth is a sawtooth.
 
+4. **A cluster is one homogeneous pool.** Real PowerScale clusters are heterogeneous node
+   pools — all-flash over hybrid over archive under one OneFS namespace — each with its own
+   protection level and its own neighborhood behaviour. raidy models a single pool, which is
+   not how the platform is sold or sized.
+
 Also missing: node-model catalog, per-model DRR, VHS, protection availability gating,
 node-count bounds and increments.
 
@@ -60,7 +65,7 @@ Reverse-engineering the 122,828 rows produced a genuine closed form for the sing
 Each level has stripe units per node `u`, FEC units `M`, node fault tolerance `nf`:
 
 | Level | u | M | nf |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `+1n` | 1 | 1 | 1 |
 | `+2n` | 1 | 2 | 2 |
 | `+3n` | 1 | 3 | 3 |
@@ -117,12 +122,26 @@ exceptions map keyed by `(model, driveSize, protection, nodeCount)`.
 
 ### 3.4 Capacity chain
 
+A PowerScale cluster is a set of **node pools (tiers)** — heterogeneous by design, typically
+all-flash for hot data over hybrid over archive, under one OneFS filesystem. Protection,
+stripe width and neighborhood splitting are all **per node pool**, so the table applies per
+tier with that tier's own node count, and the cluster is the sum. The workbook sizes up to
+eight tiers for exactly this reason.
+
+Per tier `t`:
+
 ```
-rawTB      = nodeCount × drivesPerNode × rawPerDriveTB(model, driveSize)
-usableTB   = rawTB × efficiency(model, protection, nodeCount) × usableFactor(model, driveSize)
-lessVHS    = usableTB − max(vhsByDriveCount, vhsByPercent)
-effectiveTB= lessVHS × drr(model)
+rawTB(t)      = nodeCount(t) × drivesPerNode(model) × rawPerDriveTB(model, driveSize)
+usableTB(t)   = rawTB(t) × efficiency(model, protection, nodeCount(t)) × usableFactor(model, driveSize)
+lessVHS(t)    = usableTB(t) − max(vhsByDriveCount(t), vhsByPercent(t))
+effectiveTB(t)= lessVHS(t) × drr(model)
 ```
+
+Cluster totals are the sums of the per-tier values. Cluster efficiency is
+`Σ usable / Σ raw`, not an average of the per-tier efficiencies.
+
+Tiers are independent: nothing in the model couples them. A tier is sizeable or it is not,
+on its own.
 
 - `rawPerDriveTB` is nominal drive size except two catalog quirks: F210 @ 15.36 → 15.00,
   F710 @ 61.44 → 61.00.
@@ -140,10 +159,12 @@ Two generated files, plus one test fixture. All produced by a committed extracti
 the derivation is reproducible when the partner sends a newer workbook.
 
 ### `scripts/build-powerscale-catalog.mjs`
+
 Input: the `.xlsm` path (not committed — it is not redistributable material). Output: the two data
 files below and the fixture. Documented in `docs/DEVELOPMENT.md`; run manually, not in CI.
 
 ### `src/data/powerscaleNodes.json` (~25 KB, few KB gz)
+
 Per node model: generation, tier, `drivesPerNode`, `minNodes`, `maxNodes`, `nodeIncrement`,
 `drr`, and per drive size `rawPerDriveTB` + `usableFactor`. Plus run-length encoded protection
 availability and PowerSizer's *Suggested* protection, both as functions of node count (1,153
@@ -151,6 +172,7 @@ availability runs and 729 suggested runs across the 107 `(model, driveSize)` com
 distinct availability sets).
 
 ### `src/data/powerscaleEfficiency.json` (~2 KB gz)
+
 The efficiency table (§3.3) plus the 230-entry exceptions map.
 
 Both are imported by the PowerScale strategy only. If the eager-chunk budget in
@@ -158,36 +180,100 @@ Both are imported by the PowerScale strategy only. If the eager-chunk budget in
 at present they are small enough not to need it.
 
 ### `tests/fixtures/powerscale-powersizer.csv.gz` (564 KB gz, 5.3 MB raw)
+
 All 122,828 rows: `model, driveSize, nodes, protection, rawTB, usableTB, efficiency`.
 Decompressed in the test with `node:zlib`. Not bundled — `tests/` is outside the app build.
 
 ## 5. Engine changes
 
-### `src/engines/volumetry/strategies/powerscale.ts` (new)
-PowerScale moves out of `dell.ts` into its own strategy, matching ADR-0003. `dell.ts` keeps
-PowerFlex, PowerStore and ObjectScale and loses ~50 lines. The new strategy needs node model,
-drive size, protection and node count — more than `calculateDataFraction(level, driveCount,
-options)` carries today, so PowerScale threads them through its options object the way
-`calculationHelpers.ts` already threads `serverCount`.
+### PowerScale gets its own sub-engine
 
-### `src/engines/volumetry/overhead/` and `postProcessing/`
-VHS becomes a PowerScale overhead entry (`max` of two reserves, and which one won is reported
-so the UI can show it, as the workbook does). Per-model DRR replaces the generic
-compression/dedup path in `capacityEnhancements.ts`; `capabilities.ts` flips PowerScale's
-`supportsCompression`/`supportsDedup` accordingly.
+Every other raidy platform is *drive-centric*: `rawCapacity = drive.capacity_raw × driveCount`,
+then a single `dataFraction`. PowerScale is *node-pool-centric* and multi-tier, so it does not
+fit that chain — there is no single drive, no single count, and no single efficiency.
+
+`calculateVolumetry` therefore branches once, immediately after topology validation:
+
+```ts
+if (topology.type === 'powerscale') {
+  return calculatePowerScaleVolumetry({ topology, powerscaleOptions })
+}
+```
+
+The generic path is left completely untouched — no synthetic `Drive` objects, no
+`driveId`/`driveCount` plumbing, no changes to any other platform's behaviour.
+
+New module `src/engines/volumetry/powerscale/`:
+
+- `index.ts` — orchestrator. Sizes each tier, sums, builds the breakdown and the details block.
+- `efficiency.ts` — the shipped table lookup, plus the §3.1 closed form kept as a reference
+  implementation used only by tests.
+- `tier.ts` — sizes one tier: raw → efficiency → usableFactor → VHS → DRR.
+
+Results follow the existing per-platform details pattern (`zfsDetails`, `beeGfsDetails`,
+`longhornDetails`): a new `PowerScaleCapacityDetails` on `VolumetryResult` carrying one row per
+tier plus the cluster totals.
+
+```ts
+export interface PowerScaleTierResult {
+  nodeModel: string
+  driveSizeTb: number
+  nodeCount: number
+  protection: PowerScaleProtection
+  drivesPerNode: number
+  rawCapacity: number
+  usableCapacity: number      // after efficiency and usableFactor, before VHS
+  vhsReserve: number
+  vhsSource: 'driveCount' | 'percent'   // which reserve won, as the workbook highlights
+  usableLessVhs: number
+  effectiveCapacity: number
+  efficiency: number          // storage efficiency for this pool, 0-1
+  drr: number
+  generation: 'Gen6' | 'Gen6.5' | 'Gen7'
+  tier: 'All Flash' | 'Hybrid' | 'Archive'
+  endOfLife?: string          // ISO date, when the model is EOL
+}
+
+export interface PowerScaleCapacityDetails {
+  tiers: PowerScaleTierResult[]
+  clusterRaw: number
+  clusterUsable: number
+  clusterEffective: number
+  clusterEfficiency: number   // Σ usable / Σ raw
+}
+```
+
+### Breakdown
+
+The Sankey/breakdown is built from cluster totals with one `parity` segment per tier, so a
+heterogeneous cluster visibly shows where capacity sits. `buildBreakdown` gains a PowerScale
+branch; no other platform's segments move.
+
+### Overheads
+
+PowerScale no longer routes through `overheadCalculator.ts` or `capacityEnhancements.ts` —
+both lose their `powerscale` branches, and `snapshotReservePercent` goes away with them (see
+§6). VHS and per-model DRR are applied inside the sub-engine, per tier, because both are
+per-pool quantities that the shared post-processing chain cannot express.
+
+`capabilities.ts` sets PowerScale's `supportsCompression` / `supportsDedup` to `false` (already
+false) and `hasServerCount` to `false` — node counts are per tier now, so the shared
+servers slider must not appear.
 
 ### Performance / resilience / sustainability
-Out of scope for this change beyond keeping them compiling. `performance/strategies/dell.ts`
-and `resilienceWorker.ts` reference PowerScale levels and must be updated for the renamed
-level enum (§6), but their formulas are not revisited here. Flagged in `docs/BACKLOG.md`:
-the node catalog now carries per-model data that a future performance pass should use.
+
+Out of scope for this change beyond keeping them compiling and correct-by-construction.
+`performance/strategies/dell.ts` and `resilienceWorker.ts` reference PowerScale levels and must
+be updated for the renamed level enum (§6); they size the *first* tier only, and must say so
+rather than silently modelling a heterogeneous cluster as homogeneous. Recorded in
+`docs/BACKLOG.md` as follow-up work, with the node catalog now available to it.
 
 ## 6. Types, store, schema — and the URL break
 
 The level enum changes from seven invented values to the nine real ones:
 
 | Old | New |
-|---|---|
+| --- | --- |
 | `powerscale_n1` | `powerscale_1n` |
 | `powerscale_n2` | `powerscale_2n` |
 | `powerscale_n2_1` | `powerscale_2d_1n` |
@@ -197,10 +283,34 @@ The level enum changes from seven invented values to the nine real ones:
 | `powerscale_mirror_3x` | *(removed)* |
 | — | `powerscale_3d_1n`, `powerscale_3d_1n1d`, `powerscale_4d_1n`, `powerscale_4d_2n` |
 
-`PowerScaleOptions` gains `nodeModel` and `driveSize`, and loses `compression`,
-`compressionRatio`, `dedup`, `dedupRatio` (DRR is now per model). Per the CLAUDE.md gotcha,
-the removed fields must come out of `src/utils/schemas.ts` in the same change or URL parsing
-breaks.
+`PowerScaleOptions` is replaced wholesale by a tier list:
+
+```ts
+export interface PowerScaleTier {
+  nodeModel: string          // e.g. 'F710'
+  driveSizeTb: number        // e.g. 15.36
+  nodeCount: number
+  protection: PowerScaleProtection   // '+2d:1n' etc., the nine real levels
+  vhsDriveCount: number      // 0 = disabled
+  vhsPercent: number         // 0 = disabled; the larger of the two reserves applies
+}
+
+export interface PowerScaleOptions {
+  tiers: PowerScaleTier[]    // 1-8 entries
+}
+```
+
+Everything the old shape carried goes: `compression`, `compressionRatio`, `dedup`,
+`dedupRatio` (DRR is per node model now) and `snapshotReservePercent` (PowerSizer does not
+reserve for snapshots, and keeping a 20 % default would put every raidy answer 20 % below the
+source of truth). Per the CLAUDE.md gotcha, all five must come out of `src/utils/schemas.ts`
+in the same change or URL parsing breaks.
+
+Protection moves from `topology.level` into the tier, because a cluster has one protection
+level *per pool*. `topology.level` keeps a single value used only for display and for the
+platform's identity in the topology selector; the nine real levels live in
+`PowerScaleProtection`. This is why the level-enum rename below is a display concern rather
+than a calculation one.
 
 **Old shared links carrying `powerscale_*` will not parse.** Two options, and I recommend the
 first: map the five old levels to their new equivalents in `urlStorage.ts` on read, drop the
@@ -210,8 +320,8 @@ exactly the failure mode documented in the `partialize`/`omitDefaults` gotcha.
 
 ## 7. UI
 
-`PowerScaleOptionsPanel.tsx` becomes node-model-first, and the ordering is a dependency chain
-mirroring the workbook's own left-to-right rule:
+`PowerScaleOptionsPanel.tsx` becomes a tier list: up to eight rows, add/remove, one row per
+node pool. Each row is a dependency chain mirroring the workbook's own left-to-right rule:
 
 1. **Node model** (22, grouped by tier) → fixes `drivesPerNode`, generation, DRR, node bounds.
 2. **Drive size** — only sizes valid for that model.
@@ -220,14 +330,21 @@ mirroring the workbook's own left-to-right rule:
    to PowerSizer's *Suggested*. An unavailable combination is not offered rather than silently
    mis-computed.
 5. **VHS** — drive-count and percentage inputs, showing which reserve applies.
-6. Snapshot reserve stays.
 
-`hardwareSlice`'s `driveId`/`driveCount` are derived, not user-set, while topology is
-PowerScale; the shared Hardware panel hides its drive picker for this platform the way other
-platform-specific panels already override shared inputs.
+A single tier is the default, so the common case stays a four-field form; the second tier is
+one click away.
 
-EOL: `Hardware EOL` / `Software EOL` sheets become a warning badge on end-of-life node models.
-Read-only, no calculation impact.
+The shared Hardware panel's drive picker, drive count and servers slider are hidden for
+PowerScale (`hasServerCount: false`), because all of it now lives per tier. Existing panels
+already override shared inputs this way.
+
+`OutputDashboard` gains a PowerScale tier table — model, drive size, nodes, protection, raw,
+usable, effective, efficiency — with a totals row, driven by `PowerScaleCapacityDetails`.
+The Sankey, gauges and breakdown run on cluster totals. This mirrors the workbook's own
+per-tier table and running total.
+
+EOL: `Hardware EOL` / `Software EOL` sheets become a warning badge on end-of-life node models,
+shown on the offending tier row. Read-only, no calculation impact.
 
 New i18n keys across all four locales (EN/FR/DE/IT), full key paths at call sites per the
 orphan-key test's literal scan. Node model names, protection levels and generation labels stay
@@ -235,9 +352,11 @@ untranslated as technical terms.
 
 ## 8. Validation
 
-A new `tests/engines/powerscale-powersizer.spec.ts` walks all 122,828 fixture rows and asserts
-the engine matches `usableTB` and `efficiency` exactly (to the table's 4-decimal precision),
-not within 1 %. Because the table ships, exact match is achievable and any drift is a real
+A new `tests/engines/powerscale-powersizer.spec.ts` walks all 122,828 fixture rows as
+**single-tier clusters with VHS disabled** — the configuration the workbook itself sizes — and
+asserts the engine matches `usableTB` and `efficiency` exactly (to the table's 4-decimal
+precision), not within 1 %. Multi-tier is covered separately by summation tests: a two-tier
+cluster must equal the sum of the two single-tier results, which is the model's whole claim. Because the table ships, exact match is achievable and any drift is a real
 regression. Runtime is bounded by decompressing 5.3 MB and 122,828 pure-function calls.
 
 A second, small spec asserts the §3.1 closed form still agrees with the shipped table on every
@@ -276,5 +395,6 @@ functions" spirit and deserves its own record.
 
 ## 11. Out of scope
 
-Performance and resilience re-modelling for PowerScale; pricing and margin; multi-tier clusters
-(the workbook sizes up to 8 tiers, raidy models one); OneFS SmartPools/tiering policy.
+Performance and resilience re-modelling for a heterogeneous cluster — both size the first tier
+and say so; pricing and margin; OneFS SmartPools/tiering policy (which data lands on which
+pool); global namespace and SmartConnect; cross-tier data movement.
