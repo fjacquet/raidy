@@ -274,8 +274,10 @@ export interface TopologyModel {
    * Node assigned to each replica slot of each flat mirror group (issue
    * #113) — the drive-pair model used by plain RAID1/10, and by every
    * tiered platform's mirror level (vSAN OSA RAID1, Ceph replicated,
-   * Nutanix RF2/RF3, S2D mirror, PowerScale mirror, PowerVault RAID1/10,
-   * PowerFlex mirror). `mirrorGroupNodes[g][c]` is the node for copy `c` of
+   * Nutanix RF2/RF3, S2D mirror, PowerVault RAID1/10, PowerFlex mirror).
+   * PowerScale is not in this family — its `+Nn` protection is node-level
+   * FEC, not a drive-pair mirror, and `powerscale_mirror_2x`/`_3x` are no
+   * longer valid levels. `mirrorGroupNodes[g][c]` is the node for copy `c` of
    * mirror group `g`. Empty when `isMirror` is false. See
    * `assignNodesRoundRobin` for the placement rule and its degenerate case.
    */
@@ -333,10 +335,11 @@ export function computeTopologyModel(input: SimulationInput): TopologyModel {
   // both by single-node standard RAID1/RAID10 (`serverCount` defaults to 1,
   // so every copy lands on node 0 — today's behaviour, unchanged) and by
   // every tiered platform's mirror level (vSAN OSA RAID1, Ceph replicated,
-  // Nutanix RF2/RF3, S2D mirror/MAP, PowerScale mirror, PowerVault RAID1/10,
-  // PowerFlex mirror), where `serverCount` is the real host count and real
-  // placement puts each copy on a different host. See
-  // `assignNodesRoundRobin` for the rule.
+  // Nutanix RF2/RF3, S2D mirror/MAP, PowerVault RAID1/10, PowerFlex mirror),
+  // where `serverCount` is the real host count and real placement puts each
+  // copy on a different host. PowerScale is not in this family — see the
+  // note on `mirrorGroupNodes` above. See `assignNodesRoundRobin` for the
+  // rule.
   const mirrorGroupNodes: number[][] = isMirror
     ? assignNodesRoundRobin(numMirrorGroups, effectiveMirrorCopies, serverCount)
     : []

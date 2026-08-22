@@ -5,9 +5,8 @@
  * M  = FEC (protection) units in the stripe
  * nf = node failures tolerated
  *
- * Shared by the capacity reference formula and (later) the performance
- * write-penalty model, so the two can never disagree about what
- * '+3d:1n1d' means.
+ * Shared by the capacity reference formula and the performance write-penalty
+ * model, so the two can never disagree about what '+3d:1n1d' means.
  */
 import type { PowerScaleProtection } from '@/types/topology'
 

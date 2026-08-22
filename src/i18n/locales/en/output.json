@@ -206,5 +206,8 @@
       "risk": "Risk",
       "chartUnavailable": "Capacity chart unavailable"
     }
+  },
+  "powerscale": {
+    "firstTierOnly": "Performance and resilience figures model the first node pool only. Capacity, power and cost cover the whole cluster."
   }
 }

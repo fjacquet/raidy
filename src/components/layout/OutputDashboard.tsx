@@ -3,6 +3,7 @@
  */
 
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   CapacityAct,
   CostAct,
@@ -24,6 +25,7 @@ import { exportToPptx } from '@/utils/exportPptx'
 const drives = drivesData as Record<string, Drive>
 
 export function OutputDashboard() {
+  const { t } = useTranslation('output')
   const {
     topology,
     zfsOptions,
@@ -36,6 +38,7 @@ export function OutputDashboard() {
     s2dOptions,
     powerFlexOptions,
     beeGfsOptions,
+    powerscaleOptions,
   } = useConfigStore()
   const tieringOptions = useTieringOptions()
   const results = useCalculations()
@@ -113,6 +116,7 @@ export function OutputDashboard() {
     autoRun: false,
     mirrorCopies,
     tieringOptions,
+    powerscaleOptions,
   })
 
   // Export handlers
@@ -175,6 +179,17 @@ export function OutputDashboard() {
         operationalLimit={operationalLimit}
         performanceThreshold={performanceThreshold}
       />
+
+      {/* PowerScale performance/resilience model the FIRST node pool only (a client's IOPS and
+          a rebuild's exposure window are properties of the pool serving the data, not an
+          average across heterogeneous pools) — unlike capacity, power and cost, which sum
+          every tier. Only worth saying when there is more than one tier to be misread as. */}
+      {topology.type === 'powerscale' && powerscaleOptions.tiers.length > 1 && (
+        <p className="text-xs text-amber-600 dark:text-amber-400 flex items-start gap-2">
+          <span aria-hidden="true">⚠</span>
+          <span>{t('powerscale.firstTierOnly')}</span>
+        </p>
+      )}
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <PerformanceAct performance={performance} />

@@ -17,6 +17,7 @@ import type {
   CephOptions,
   NutanixOptions,
   PowerFlexOptions,
+  PowerScaleOptions,
   RaidControllerOptions,
   S2DOptions,
   Topology,
@@ -65,6 +66,7 @@ export interface PerformanceInput {
   vsanOptions?: VsanOptions
   s2dOptions?: S2DOptions
   beeGfsOptions?: BeeGfsOptions
+  powerscaleOptions?: PowerScaleOptions
   tiering?: TieredCapacityResult | null
   workingSetPercent?: number
 }
@@ -130,11 +132,14 @@ function getRaidWritePenalty(
   serverCount: number,
   s2dOptions?: S2DOptions,
   beeGfsOptions?: BeeGfsOptions,
+  powerscaleOptions?: PowerScaleOptions,
 ): number {
   const strategy = getStrategy(topology.type)
   // Each strategy interprets `options` differently: standard RAID needs the RAID-group
   // count for RAID 50/60, S2D needs its mirrorCopies, BeeGFS needs storageBuddyMirror,
-  // others read from the topology.
+  // PowerScale needs the FIRST tier's protection (performance models the first node pool
+  // only — see the scope-split comment in usePerformanceCalc.ts), others read from the
+  // topology.
   let options: unknown = topology
   if (topology.type === 'standard') {
     options = { serverCount }
@@ -142,6 +147,8 @@ function getRaidWritePenalty(
     options = s2dOptions
   } else if (topology.type === 'beegfs') {
     options = beeGfsOptions
+  } else if (topology.type === 'powerscale') {
+    options = powerscaleOptions?.tiers[0]
   }
   return strategy.getWritePenalty(topology.level, options)
 }
@@ -177,6 +184,7 @@ export function calculatePerformance(input: PerformanceInput): PerformanceResult
     vsanOptions,
     s2dOptions,
     beeGfsOptions,
+    powerscaleOptions,
     tiering,
     workingSetPercent,
   } = input
@@ -187,7 +195,13 @@ export function calculatePerformance(input: PerformanceInput): PerformanceResult
   const blockSizeBytes = BLOCK_SIZE_BYTES[blockSize]
 
   // Calculate write penalty for random I/O
-  const randomWritePenalty = getRaidWritePenalty(topology, serverCount, s2dOptions, beeGfsOptions)
+  const randomWritePenalty = getRaidWritePenalty(
+    topology,
+    serverCount,
+    s2dOptions,
+    beeGfsOptions,
+    powerscaleOptions,
+  )
 
   // Sequential write penalty is reduced (full-stripe writes avoid read-modify-write)
   // For RAID 5/6, sequential penalty ≈ 1 + parity_drives/data_drives

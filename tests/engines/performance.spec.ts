@@ -7,6 +7,7 @@
 
 import { describe, expect, it } from 'vitest'
 import { calculatePerformance, type PerformanceInput } from '@/engines/performance'
+import { dellPerformanceStrategy } from '@/engines/performance/strategies/dell'
 import {
   DEFAULT_BEEGFS_OPTIONS,
   DEFAULT_CEPH_OPTIONS,
@@ -1419,12 +1420,12 @@ describe('Performance Engine - Write Penalty Edge Cases', () => {
     }
   })
 
-  it('should use the default write penalty for PowerScale until Task 8 reads the tier protection', () => {
+  it('falls back to the default write penalty when no PowerScale tier is supplied', () => {
     // PowerScaleTopology now has a single collapsed level, 'powerscale_onefs' — the old
     // per-N+x levels tested here ('powerscale_n1'..'powerscale_n4', 'powerscale_n2_1') no
-    // longer exist (Task 7). dell.ts's getWritePenalty falls through to its 3.0 default for
-    // every PowerScale config until Task 8 wires the tier's protection through
-    // PerformanceInput — see the TODO(Task 8) marker in performance/strategies/dell.ts.
+    // longer exist (Task 7). Task 8 wires the tier's protection through PerformanceInput, but
+    // this call site (via createInput) supplies no `powerscaleOptions`, so getRaidWritePenalty
+    // has no tier to read from and dell.ts's getWritePenalty falls back to its neutral default.
     const input = createInput(
       12,
       { type: 'powerscale', level: 'powerscale_onefs' },
@@ -1433,6 +1434,30 @@ describe('Performance Engine - Write Penalty Edge Cases', () => {
     )
     const result = calculatePerformance(input)
     expect(result.writePenalty).toBeCloseTo(3.0, 1)
+  })
+
+  it('derives the PowerScale write penalty from the protection stripe shape', () => {
+    // penalty = FEC units + 1.5, the rule the pre-existing +1n..+4n values follow
+    expect(dellPerformanceStrategy.getWritePenalty('powerscale_onefs', { protection: '+1n' })).toBe(
+      2.5,
+    )
+    expect(dellPerformanceStrategy.getWritePenalty('powerscale_onefs', { protection: '+2n' })).toBe(
+      3.5,
+    )
+    expect(dellPerformanceStrategy.getWritePenalty('powerscale_onefs', { protection: '+4n' })).toBe(
+      5.5,
+    )
+    // drive-level levels carry the same FEC count as their node-level peers
+    expect(
+      dellPerformanceStrategy.getWritePenalty('powerscale_onefs', { protection: '+2d:1n' }),
+    ).toBe(3.5)
+    expect(
+      dellPerformanceStrategy.getWritePenalty('powerscale_onefs', { protection: '+4d:2n' }),
+    ).toBe(5.5)
+  })
+
+  it('falls back to a neutral penalty when no protection is supplied', () => {
+    expect(dellPerformanceStrategy.getWritePenalty('powerscale_onefs')).toBe(3.0)
   })
 
   it('should calculate write penalty for vSAN ESA RAID variations', () => {

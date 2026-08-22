@@ -206,5 +206,8 @@
       "risk": "Rischio",
       "chartUnavailable": "Grafico capacità non disponibile"
     }
+  },
+  "powerscale": {
+    "firstTierOnly": "I valori di prestazioni e resilienza modellano solo il primo pool di nodi. Capacità, consumo energetico e costi coprono l'intero cluster."
   }
 }

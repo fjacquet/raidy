@@ -206,5 +206,8 @@
       "risk": "Risiko",
       "chartUnavailable": "Kapazitätsdiagramm nicht verfügbar"
     }
+  },
+  "powerscale": {
+    "firstTierOnly": "Performance- und Resilienzwerte bilden nur den ersten Knotenpool ab. Kapazität, Stromverbrauch und Kosten decken den gesamten Cluster ab."
   }
 }

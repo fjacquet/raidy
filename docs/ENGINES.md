@@ -142,6 +142,26 @@ Calculates storage capacity and efficiency.
 > snapshots — so a non-zero default would have put every raidy answer below the source of
 > truth. `PowerScaleOptions` is now `{ tiers }` alone; see
 > [adr/0014](./adr/0014-powerscale-onefs-vendor-table.md).
+>
+> **Performance, resilience and sustainability read the tier model, not the Hardware panel**
+> (PowerScale has `hasServerCount: false`, so the shared drive-count/server-count sliders are
+> stale for it). `powerScaleDriveTotals` (`src/engines/volumetry/powerscale/index.ts`) is the one
+> place both populations are derived: `firstTierDrives`/`firstTierNodes`/`firstTierSpareDrives`
+> for the FIRST node pool only, and `clusterDrives`/`clusterNodes` summed across every tier.
+> **Performance and resilience use the first-tier fields** — a client's IOPS and a rebuild's
+> exposure window are properties of the pool serving the data, not an average across
+> heterogeneous pools, so `usePerformanceCalc`/`useResilience`'s `powerscale` scope resolver
+> read `tiers[0]` only. **Sustainability sums the cluster fields** — power, cooling and TCO are
+> physically additive across the whole rack, so `useSustainabilityCalc` reads every tier. The
+> dashboard surfaces this split with a note (`output:powerscale.firstTierOnly`) whenever a
+> cluster has more than one tier. The performance write penalty is also tier-driven now:
+> `dellPerformanceStrategy.getWritePenalty('powerscale_onefs', { protection })` returns
+> `STRIPE_SHAPES[protection].M + 1.5` (the FEC-unit-count rule the old `+1n..+4n` levels already
+> encoded), falling back to a neutral 3.0 when no tier is configured. Resilience's `mediaDrive` is
+> deliberately left `null` for PowerScale (keeping the Hardware panel's drive) because the vendor
+> catalog carries capacities but no AFR/URE/MTBF — inventing those would fabricate the very
+> numbers the simulation reports. An empty or unsized tier list degrades every one of these
+> figures to a defined zero state rather than throwing.
 
 ## Performance (`/src/engines/performance/`)
 

@@ -17,6 +17,7 @@
  * `Σ usable / Σ raw`, never an average of per-tier efficiencies, which would
  * be wrong whenever pools differ in size.
  */
+import { getModel } from '@/data/powerscaleCatalog'
 import type { PowerScaleTierResult, VolumetryResult } from '@/types/results'
 import type { PowerScaleOptions } from '@/types/topology'
 import { buildPowerScaleBreakdown } from '../breakdown/buildBreakdown'
@@ -63,4 +64,39 @@ export function calculatePowerScaleVolumetry(options: PowerScaleOptions): Volume
       clusterEfficiency: rawCapacity > 0 ? usableCapacity / rawCapacity : 0,
     },
   }
+}
+
+/**
+ * Drive and node populations for the engines that do not compute capacity.
+ *
+ * Performance and resilience use the FIRST tier: both are per-node-pool
+ * physical phenomena, and raidy cannot express a workload spread across
+ * heterogeneous pools. Sustainability uses the cluster totals: power and TCO
+ * are additive.
+ */
+export function powerScaleDriveTotals(options: PowerScaleOptions) {
+  let clusterDrives = 0
+  let clusterNodes = 0
+  let firstTierDrives = 0
+  let firstTierNodes = 0
+  let firstTierSpareDrives = 0
+  let seenFirst = false
+
+  for (const tier of options.tiers) {
+    const model = getModel(tier.nodeModel)
+    // A tier naming an unknown model contributes nothing; counting its nodes
+    // with zero drives would understate density everywhere downstream.
+    if (!model) continue
+    const drives = tier.nodeCount * model.drivesPerNode
+    clusterDrives += drives
+    clusterNodes += tier.nodeCount
+    if (!seenFirst) {
+      firstTierDrives = drives
+      firstTierNodes = tier.nodeCount
+      firstTierSpareDrives = tier.vhsDriveCount
+      seenFirst = true
+    }
+  }
+
+  return { firstTierDrives, firstTierNodes, firstTierSpareDrives, clusterDrives, clusterNodes }
 }

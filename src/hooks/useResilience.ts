@@ -5,6 +5,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { effectiveServerCount } from '@/engines/capabilities'
 import { resolveTiering, type TieringResolverOptions } from '@/engines/shared/tiering'
+import { powerScaleDriveTotals } from '@/engines/volumetry/powerscale'
 import {
   calculateStorageTargets,
   resolveBeeGfsUsableDrives,
@@ -12,7 +13,7 @@ import {
 import { usesDistributedSpares } from '@/types'
 import type { Drive } from '@/types/drive'
 import type { ResilienceResult, SimulationProgress } from '@/types/results'
-import type { BeeGfsOptions, Topology } from '@/types/topology'
+import type { BeeGfsOptions, PowerScaleOptions, Topology } from '@/types/topology'
 import type { SimulationInput, SimulationOutput, WorkerOutputMessage } from '@/types/worker'
 
 interface UseResilienceOptions {
@@ -41,6 +42,13 @@ interface UseResilienceOptions {
    * for the storage-target fault group) — see `SIMULATION_SCOPE_BY_TOPOLOGY`.
    */
   tieringOptions?: TieringResolverOptions
+  /**
+   * PowerScale's tier bag — kept separate from `tieringOptions` (which is the S2D/vSAN/Ceph/
+   * Nutanix/BeeGFS tiering-resolver bag and has no PowerScale field) because PowerScale's
+   * "tiers" are independent node pools, not a cache/capacity split. See the `powerscale`
+   * resolver in `SIMULATION_SCOPE_BY_TOPOLOGY`.
+   */
+  powerscaleOptions?: PowerScaleOptions
 }
 
 interface UseResilienceResult {
@@ -126,6 +134,8 @@ interface SimulationScopeContext {
   topology: Topology
   /** Complete per-platform tiering option bag — see `UseResilienceOptions.tieringOptions`. */
   tieringOptions?: TieringResolverOptions
+  /** PowerScale's tier bag — see `UseResilienceOptions.powerscaleOptions`. */
+  powerscaleOptions?: PowerScaleOptions
 }
 
 /** How a platform overrides the naive `driveCount * serverCount` population, if at all. */
@@ -236,6 +246,29 @@ const SIMULATION_SCOPE_BY_TOPOLOGY: Partial<Record<Topology['type'], SimulationS
   vsan_osa: tieredPlatformScope,
   ceph: tieredPlatformScope,
   nutanix: tieredPlatformScope,
+  /**
+   * PowerScale: the population comes from the FIRST node pool's catalog geometry,
+   * never from the Hardware panel — that panel is hidden for PowerScale, so its
+   * driveCount/serverCount are stale defaults.
+   *
+   * `mediaDrive: null` keeps the Hardware panel's drive for reliability: the
+   * vendor catalog gives capacities, not AFR/URE/MTBF, and inventing those
+   * would fabricate the very numbers the simulation reports.
+   *
+   * Nodes are the failure-isolation groups: OneFS protection is per node pool
+   * and `+Nn` tolerates whole-node loss.
+   */
+  powerscale: ({ powerscaleOptions }) => {
+    if (!powerscaleOptions) return null
+    const { firstTierDrives, firstTierNodes, firstTierSpareDrives } =
+      powerScaleDriveTotals(powerscaleOptions)
+    if (firstTierDrives === 0) return { driveCount: 0, groupCount: 1, mediaDrive: null }
+    return {
+      driveCount: Math.max(0, firstTierDrives - firstTierSpareDrives),
+      groupCount: firstTierNodes,
+      mediaDrive: null,
+    }
+  },
 }
 
 /**
@@ -363,6 +396,7 @@ export function useResilience(options: UseResilienceOptions): UseResilienceResul
     autoRun = false,
     mirrorCopies = 0,
     tieringOptions,
+    powerscaleOptions,
   } = options
 
   const [result, setResult] = useState<ResilienceResult | null>(null)
@@ -498,6 +532,7 @@ export function useResilience(options: UseResilienceOptions): UseResilienceResul
       hotSpares,
       topology,
       tieringOptions,
+      powerscaleOptions,
     })
 
     const mediaDrive = scope?.mediaDrive ?? drive
@@ -539,6 +574,7 @@ export function useResilience(options: UseResilienceOptions): UseResilienceResul
     simulationCount,
     mirrorCopies,
     tieringOptions,
+    powerscaleOptions,
   ])
 
   // Abort simulation

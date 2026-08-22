@@ -206,5 +206,8 @@
       "risk": "Risque",
       "chartUnavailable": "Graphique de capacité indisponible"
     }
+  },
+  "powerscale": {
+    "firstTierOnly": "Les indicateurs de performance et de résilience modélisent uniquement le premier pool de nœuds. La capacité, la consommation électrique et le coût couvrent l'ensemble du cluster."
   }
 }

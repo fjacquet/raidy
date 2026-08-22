@@ -1,12 +1,14 @@
+import { STRIPE_SHAPES } from '@/engines/volumetry/powerscale/stripeShape'
+import type { PowerScaleProtection } from '@/types/topology'
 import type { PerformanceStrategy } from './PerformanceStrategy'
 
 /**
  * Dell storage systems performance strategy.
  *
- * Handles PowerStore, ObjectScale, and PowerVault.
+ * Handles PowerStore, ObjectScale, PowerVault, and PowerScale.
  *
- * PowerScale (scale-out NAS) levels fall through to the 3.0 default below —
- * see the TODO(Task 8) comment on `getWritePenalty`.
+ * PowerScale (scale-out NAS) protection lives on the tier, not the level —
+ * see the protection-driven branch at the top of `getWritePenalty`.
  *
  * PowerStore (block storage):
  * - powerstore_raid5: 3x (optimized RAID-5 with NVMe)
@@ -27,7 +29,16 @@ import type { PerformanceStrategy } from './PerformanceStrategy'
  * - powervault_adapt: 2.5x (distributed parity)
  */
 export const dellPerformanceStrategy: PerformanceStrategy = {
-  getWritePenalty(level: string): number {
+  getWritePenalty(level: string, options?: unknown): number {
+    // PowerScale protection now lives on the tier, not the level. The penalty follows the FEC
+    // unit count the pre-existing +1n..+4n values already encoded: 2.5, 3.5, 4.5, 5.5 for
+    // M = 1..4, i.e. M + 1.5. Drive-level levels carry the same FEC count as their node-level
+    // peers, so +2d:1n prices like +2n — which is also what the old powerscale_n2_1 case did.
+    if (level === 'powerscale_onefs') {
+      const protection = (options as { protection?: PowerScaleProtection } | undefined)?.protection
+      if (!protection) return 3.0
+      return STRIPE_SHAPES[protection].M + 1.5
+    }
     switch (level) {
       // PowerStore
       case 'powerstore_raid5':
@@ -68,8 +79,6 @@ export const dellPerformanceStrategy: PerformanceStrategy = {
       case 'powervault_adapt':
         return 2.5 // Distributed parity reduces penalty
 
-      // TODO(Task 8): PowerScale protection moved to the tier. Until this reads the
-      // tier's protection, every level prices at the default penalty.
       default:
         return 3.0
     }
@@ -80,9 +89,9 @@ export const dellPerformanceStrategy: PerformanceStrategy = {
     driveCount: number,
     driveIOPS: number,
     readPercent: number,
-    _options?: unknown,
+    options?: unknown,
   ): number {
-    const writePenalty = this.getWritePenalty(level)
+    const writePenalty = this.getWritePenalty(level, options)
     const readFraction = readPercent / 100
     const writeFraction = 1 - readFraction
 
