@@ -17,9 +17,8 @@
  * `Σ usable / Σ raw`, never an average of per-tier efficiencies, which would
  * be wrong whenever pools differ in size.
  */
-import { getModel } from '@/data/powerscaleCatalog'
 import type { PowerScaleTierResult, VolumetryResult } from '@/types/results'
-import type { PowerScaleOptions } from '@/types/topology'
+import type { PowerScaleOptions, PowerScaleTier } from '@/types/topology'
 import { buildPowerScaleBreakdown } from '../breakdown/buildBreakdown'
 import { sizeTier } from './tier'
 
@@ -66,6 +65,26 @@ export function calculatePowerScaleVolumetry(options: PowerScaleOptions): Volume
   }
 }
 
+/** Return shape of {@link powerScaleDriveTotals} — the contract three engines depend on. */
+export interface PowerScaleDriveTotals {
+  firstTierDrives: number
+  firstTierNodes: number
+  firstTierSpareDrives: number
+  /**
+   * The tier `firstTier*`/`firstTierDrives` etc. were derived from — the first tier that
+   * `sizeTier` can actually size, which is not necessarily the literal `options.tiers[0]` (a
+   * leading tier naming an unknown model, or an unpublished protection/node-count combination,
+   * is skipped). `undefined` when no tier in the list is sizeable.
+   *
+   * Read this for anything that needs the SAME tier's own fields (protection, model, node
+   * count) — indexing `options.tiers[0]` independently can silently point at a DIFFERENT tier
+   * than the one these totals describe when an earlier tier is unsizeable.
+   */
+  firstTier: PowerScaleTier | undefined
+  clusterDrives: number
+  clusterNodes: number
+}
+
 /**
  * Drive and node populations for the engines that do not compute capacity.
  *
@@ -73,30 +92,50 @@ export function calculatePowerScaleVolumetry(options: PowerScaleOptions): Volume
  * physical phenomena, and raidy cannot express a workload spread across
  * heterogeneous pools. Sustainability uses the cluster totals: power and TCO
  * are additive.
+ *
+ * A tier is included here under EXACTLY the same rule `calculatePowerScaleVolumetry` uses to
+ * include it in capacity — `sizeTier(tier) !== null` — not merely "the model name resolves".
+ * `sizeTier` also rejects an unpublished protection/node-count combination and a zero per-drive
+ * capacity; checking `getModel` alone let such a tier contribute its full drive count to power,
+ * CO2 and TCO while contributing 0 TB to capacity (and let it become the "first tier" for
+ * performance/resilience), the exact "confidently wrong on a dashboard that looks correct"
+ * failure this module exists to prevent. Reusing `sizeTier`'s own result also means
+ * `drivesPerNode` comes from the SAME lookup as the rest of the tier's numbers, not a second,
+ * independent `getModel` call that could in principle disagree.
  */
-export function powerScaleDriveTotals(options: PowerScaleOptions) {
+export function powerScaleDriveTotals(options: PowerScaleOptions): PowerScaleDriveTotals {
   let clusterDrives = 0
   let clusterNodes = 0
   let firstTierDrives = 0
   let firstTierNodes = 0
   let firstTierSpareDrives = 0
+  let firstTier: PowerScaleTier | undefined
   let seenFirst = false
 
   for (const tier of options.tiers) {
-    const model = getModel(tier.nodeModel)
-    // A tier naming an unknown model contributes nothing; counting its nodes
-    // with zero drives would understate density everywhere downstream.
-    if (!model) continue
-    const drives = tier.nodeCount * model.drivesPerNode
+    const sized = sizeTier(tier)
+    // A tier `sizeTier` cannot size (unknown model, unpublished protection/node-count
+    // combination, zero per-drive capacity) contributes nothing; counting its nodes with a
+    // fabricated drive count would understate density everywhere downstream.
+    if (!sized) continue
+    const drives = tier.nodeCount * sized.drivesPerNode
     clusterDrives += drives
     clusterNodes += tier.nodeCount
     if (!seenFirst) {
       firstTierDrives = drives
       firstTierNodes = tier.nodeCount
       firstTierSpareDrives = tier.vhsDriveCount
+      firstTier = tier
       seenFirst = true
     }
   }
 
-  return { firstTierDrives, firstTierNodes, firstTierSpareDrives, clusterDrives, clusterNodes }
+  return {
+    firstTierDrives,
+    firstTierNodes,
+    firstTierSpareDrives,
+    firstTier,
+    clusterDrives,
+    clusterNodes,
+  }
 }

@@ -16,7 +16,7 @@
  * what a protection level means.
  */
 import type { PowerScaleProtection } from '@/types/topology'
-import { STRIPE_SHAPES } from './stripeShape'
+import { isPowerScaleMirrorRegion, powerScaleMirrorCopies, STRIPE_SHAPES } from './stripeShape'
 
 /** Maximum protection-group width, by FEC unit count. */
 const WIDTH_CAP: Record<number, number> = { 1: 18, 2: 18, 3: 18, 4: 20 }
@@ -33,8 +33,10 @@ export function onefsClosedForm(protection: PowerScaleProtection, nodeCount: num
   const shape = STRIPE_SHAPES[protection]
   if (!shape || nodeCount <= 0) return 0
   const { u, M, nf } = shape
-  // Too few nodes for FEC: OneFS mirrors instead, capped by the nodes available.
-  if (nodeCount < 2 * nf) return 1 / Math.min(nf + 1, nodeCount)
+  // Too few nodes for FEC: OneFS mirrors instead, capped by the nodes available. Boundary and
+  // copy count come from stripeShape.ts so this can never disagree with the resilience worker's
+  // PowerScale model about where the mirror region starts.
+  if (isPowerScaleMirrorRegion(nf, nodeCount)) return 1 / powerScaleMirrorCopies(nf, nodeCount)
   const width = Math.min(u * nodeCount, WIDTH_CAP[M] ?? 20)
   return (width - M) / width
 }

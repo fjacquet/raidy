@@ -3,6 +3,11 @@
  * Runs 10,000+ simulations to calculate array survival probability.
  */
 
+import {
+  isPowerScaleMirrorRegion,
+  powerScaleMirrorCopies,
+  STRIPE_SHAPES,
+} from '@/engines/volumetry/powerscale/stripeShape'
 import type { SimulationInput, WorkerInputMessage, WorkerOutputMessage } from '@/types/worker'
 
 // Post typed message to main thread
@@ -275,13 +280,34 @@ export interface TopologyModel {
    * #113) — the drive-pair model used by plain RAID1/10, and by every
    * tiered platform's mirror level (vSAN OSA RAID1, Ceph replicated,
    * Nutanix RF2/RF3, S2D mirror, PowerVault RAID1/10, PowerFlex mirror).
-   * PowerScale is not in this family — its `+Nn` protection is node-level
-   * FEC, not a drive-pair mirror, and `powerscale_mirror_2x`/`_3x` are no
-   * longer valid levels. `mirrorGroupNodes[g][c]` is the node for copy `c` of
-   * mirror group `g`. Empty when `isMirror` is false. See
+   * `powerscale_mirror_2x`/`_3x` are no longer valid levels, but PowerScale
+   * DOES join this family conditionally: when a pool has too few nodes for
+   * its protection's node-failure tolerance (`nodeCount < 2*nf`), OneFS
+   * mirrors instead of striping FEC — see `isPowerScaleMirrorRegion` and the
+   * PowerScale block in `computeTopologyModel` below. Outside that region
+   * PowerScale uses the dedicated node-erasure-coding model instead
+   * (`isPowerScaleFec`), not this one. `mirrorGroupNodes[g][c]` is the node
+   * for copy `c` of mirror group `g`. Empty when `isMirror` is false. See
    * `assignNodesRoundRobin` for the placement rule and its degenerate case.
    */
   mirrorGroupNodes: number[][]
+  /**
+   * PowerScale node-erasure-coding region (`nodeCount >= 2*nf` for the tier's protection) — a
+   * single flat domain spanning the WHOLE pool, unlike `isGroup` (independent parallel groups,
+   * any one lost = total loss) and unlike the plain parity model (node-blind drive counting).
+   * False for every non-PowerScale level, and false for PowerScale when no protection was
+   * supplied or the pool is small enough to fall into the mirror region instead (`isMirror`
+   * handles that case). See the dedicated branch in `runSingleSimulation`.
+   *
+   * NOT vendor-attested — see `SimulationInput.powerScaleProtection`'s doc comment.
+   */
+  isPowerScaleFec: boolean
+  /** `nf` from `STRIPE_SHAPES` — whole NODE failures the pool tolerates. 0 when `isPowerScaleFec` is false. */
+  powerScaleNodeTolerance: number
+  /** `M` from `STRIPE_SHAPES` — drive failures tolerated WITHIN one node before that node's own budget is exceeded. 0 when `isPowerScaleFec` is false. */
+  powerScaleDriveWithinNodeTolerance: number
+  /** Per-node drive counts (`distributeAcrossGroups(driveCount, nodeCount)`). Empty when `isPowerScaleFec` is false. */
+  powerScaleNodeWidths: number[]
 }
 
 /**
@@ -303,9 +329,29 @@ export function computeTopologyModel(input: SimulationInput): TopologyModel {
     ureRate,
     serverCount = 1,
     mirrorCopies = 0,
+    powerScaleProtection,
   } = input
 
   const parityDrives = getParityDrives(raidLevel)
+
+  // PowerScale (#1, fix round 1): OneFS protection is per NODE, not per drive, and
+  // `getParityDrives` above has no case for `'powerscale_onefs'` — it falls to the generic
+  // single-parity default, which is the correct fallback ONLY when no protection is known
+  // (empty tier list). When a protection IS known, `STRIPE_SHAPES` decides everything below.
+  //
+  // NOT vendor-attested — see `SimulationInput.powerScaleProtection`'s doc comment. Dell's
+  // PowerSizer export carries no AFR/URE/MTBF; this model is derived from published OneFS
+  // protection semantics, not sourced from the workbook the rest of this branch validates
+  // capacity against.
+  const powerScaleShape =
+    raidLevel === 'powerscale_onefs' && powerScaleProtection
+      ? STRIPE_SHAPES[powerScaleProtection]
+      : undefined
+  // Too few nodes for the protection's node-failure tolerance to be worth striping: OneFS
+  // mirrors instead (same boundary the capacity closed form uses — see `isPowerScaleMirrorRegion`).
+  const powerScaleMirrorRegionFlag = powerScaleShape
+    ? isPowerScaleMirrorRegion(powerScaleShape.nf, serverCount)
+    : false
 
   // Topology classification. A caller can pass mirrorCopies (e.g. BeeGFS buddy
   // mirroring) even for a level whose local redundancy is zero (beegfs_single),
@@ -318,10 +364,20 @@ export function computeTopologyModel(input: SimulationInput): TopologyModel {
   // redundancy — see the buddy-pair handling below). Only when the level has
   // no native group shape does mirrorCopies switch on the drive-pair mirror
   // model directly (e.g. plain 'mirror' / 'raid1', or beegfs_single which has
-  // no local redundancy of its own).
+  // no local redundancy of its own). PowerScale joins the mirror family only
+  // inside its own mirror region (`powerScaleMirrorRegionFlag`) — see above.
   const isGroup = isGroupTopology(raidLevel)
-  const isMirror = !isGroup && (mirrorCopies >= 2 || isMirrorTopology(raidLevel))
-  const effectiveMirrorCopies = mirrorCopies >= 2 ? mirrorCopies : 2
+  const isMirror =
+    !isGroup &&
+    (mirrorCopies >= 2 ||
+      isMirrorTopology(raidLevel) ||
+      (powerScaleShape !== undefined && powerScaleMirrorRegionFlag))
+  const effectiveMirrorCopies =
+    powerScaleShape !== undefined && powerScaleMirrorRegionFlag
+      ? powerScaleMirrorCopies(powerScaleShape.nf, serverCount)
+      : mirrorCopies >= 2
+        ? mirrorCopies
+        : 2
 
   // Calculate rebuild time in hours
   const driveCapacityMB = driveCapacityBytes / (1024 * 1024)
@@ -337,11 +393,27 @@ export function computeTopologyModel(input: SimulationInput): TopologyModel {
   // every tiered platform's mirror level (vSAN OSA RAID1, Ceph replicated,
   // Nutanix RF2/RF3, S2D mirror/MAP, PowerVault RAID1/10, PowerFlex mirror),
   // where `serverCount` is the real host count and real placement puts each
-  // copy on a different host. PowerScale is not in this family — see the
-  // note on `mirrorGroupNodes` above. See `assignNodesRoundRobin` for the
-  // rule.
+  // copy on a different host. PowerScale reuses this exact machinery inside
+  // its mirror region — see the note on `mirrorGroupNodes` above. See
+  // `assignNodesRoundRobin` for the rule.
   const mirrorGroupNodes: number[][] = isMirror
     ? assignNodesRoundRobin(numMirrorGroups, effectiveMirrorCopies, serverCount)
+    : []
+
+  // PowerScale node-erasure-coding region (`!powerScaleMirrorRegionFlag`, protection known): a
+  // single flat domain spanning the WHOLE pool, not multiple independent stripe groups
+  // (`isGroup` below) and not node-blind drive counting (the plain parity model at the bottom
+  // of `runSingleSimulation`). Node widths reuse `distributeAcrossGroups` — the same
+  // "spread the remainder instead of dropping it" utility the RAID50/60 group model uses below,
+  // just applied to physical nodes instead of RAID groups. See the dedicated branch in
+  // `runSingleSimulation` for the tolerance rule (nf node failures, or M drive failures
+  // concentrated in one node) and why it needs its own branch rather than reusing `isGroup` or
+  // the flat parity count: neither expresses "one flat domain, but counted per-node".
+  const isPowerScaleFec = powerScaleShape !== undefined && !powerScaleMirrorRegionFlag
+  const powerScaleNodeTolerance = powerScaleShape?.nf ?? 0
+  const powerScaleDriveWithinNodeTolerance = powerScaleShape?.M ?? 0
+  const powerScaleNodeWidths: number[] = isPowerScaleFec
+    ? distributeAcrossGroups(driveCount, Math.max(1, serverCount))
     : []
 
   // Group topology: RAID 50/60 (and BeeGFS RAID6/RAIDZ2/RAID10 storage targets)
@@ -518,6 +590,10 @@ export function computeTopologyModel(input: SimulationInput): TopologyModel {
     groupUreProbability,
     groupNodeIndices,
     mirrorGroupNodes,
+    isPowerScaleFec,
+    powerScaleNodeTolerance,
+    powerScaleDriveWithinNodeTolerance,
+    powerScaleNodeWidths,
   }
 }
 
@@ -565,6 +641,10 @@ function runSingleSimulation(
     rebuildTimeHours,
     ureProbability,
     groupUreProbability,
+    isPowerScaleFec,
+    powerScaleNodeTolerance,
+    powerScaleDriveWithinNodeTolerance,
+    powerScaleNodeWidths,
   } = topo
 
   // Base daily failure rate per drive
@@ -632,6 +712,12 @@ function runSingleSimulation(
   // Mirror: per-group failure tracking (supports 2-way, 3-way, N-way mirrors)
   const mirrorGroupFailures = isMirror ? (new Array(numMirrorGroups).fill(0) as number[]) : []
   const groupFailures = isGroup ? (new Array(numGroups).fill(0) as number[]) : []
+  // PowerScale FEC region: per-node failure counts, plus a running count of DISTINCT nodes
+  // touched by any failure (cheaper than re-deriving it from powerScaleNodeFailures every day).
+  const powerScaleNodeFailures = isPowerScaleFec
+    ? (new Array(powerScaleNodeWidths.length).fill(0) as number[])
+    : []
+  let powerScaleNodesTouched = 0
   let isRebuilding = false
   let rebuildDaysRemaining = 0
   // Replacement-sourcing delay state (issue #93). `repairPending` and `isRebuilding` are
@@ -862,6 +948,65 @@ function runSingleSimulation(
               return { survived: false, rebuildTimeHours, hadURE, hadDualFailure }
             }
           }
+        } else if (isPowerScaleFec) {
+          // PowerScale node-erasure-coding region (#1, fix round 1). NOT vendor-attested — see
+          // `SimulationInput.powerScaleProtection`'s doc comment. Two independent tolerances,
+          // per the published OneFS semantics `STRIPE_SHAPES` encodes (no vendor placement doc
+          // exists to derive a single combined budget, so this deliberately does not invent
+          // one): more than `nf` DISTINCT nodes touched by any failure is data loss, and more
+          // than `M` failures concentrated in a single node is ALSO data loss, independently.
+          //
+          // Failure assignment is weighted by surviving drives per node — identical idiom to
+          // the isGroup branch above, applied to physical nodes instead of RAID groups.
+          const survivingPerNode = powerScaleNodeWidths.map(
+            (width, n) => width - (powerScaleNodeFailures[n] ?? 0),
+          )
+          const totalSurviving = survivingPerNode.reduce((a, b) => a + b, 0)
+
+          let r = random() * totalSurviving
+          let hitNode = 0
+          for (let n = 0; n < powerScaleNodeWidths.length; n++) {
+            r -= survivingPerNode[n] ?? 0
+            if (r <= 0) {
+              hitNode = n
+              break
+            }
+          }
+
+          const nodeWasUntouched = (powerScaleNodeFailures[hitNode] ?? 0) === 0
+          powerScaleNodeFailures[hitNode] = (powerScaleNodeFailures[hitNode] ?? 0) + 1
+          if (nodeWasUntouched) powerScaleNodesTouched++
+
+          if (
+            powerScaleNodesTouched > powerScaleNodeTolerance ||
+            (powerScaleNodeFailures[hitNode] ?? 0) > powerScaleDriveWithinNodeTolerance
+          ) {
+            hadDualFailure = true
+            return { survived: false, rebuildTimeHours, hadURE, hadDualFailure }
+          }
+
+          // Start rebuild immediately (hot spare present) or begin the replacement-sourcing
+          // delay first (#93) — see REPLACEMENT_DELAY_DAYS.
+          if (!isRebuilding && !repairPending) {
+            if (hasHotSpare) {
+              isRebuilding = true
+              rebuildDaysRemaining = Math.ceil(rebuildTimeHours / 24)
+            } else {
+              repairPending = true
+              replacementDelayDaysRemaining = REPLACEMENT_DELAY_DAYS
+            }
+          }
+
+          // URE fatal once EITHER tolerance is at its limit (mirrors the group/mirror
+          // branches' "at parity limit" condition). Unconditional on rebuild state — see the
+          // isMirror branch's comment (#93).
+          const atNodeLimit = powerScaleNodesTouched >= powerScaleNodeTolerance
+          const atDriveLimit =
+            (powerScaleNodeFailures[hitNode] ?? 0) >= powerScaleDriveWithinNodeTolerance
+          if ((atNodeLimit || atDriveLimit) && random() < ureProbability) {
+            hadURE = true
+            return { survived: false, rebuildTimeHours, hadURE, hadDualFailure }
+          }
         } else {
           // Standard parity topology: global failure count determines data loss
           if (failedDrives > parityDrives) {
@@ -945,6 +1090,20 @@ function runSingleSimulation(
             }
             const cur = groupFailures[maxIdx] ?? 0
             if (cur > 0) groupFailures[maxIdx] = cur - 1
+          }
+        }
+        if (isPowerScaleFec) {
+          // Repair the most degraded node first (mirrors the group/mirror repair logic above).
+          let maxIdx = 0
+          for (let n = 1; n < powerScaleNodeWidths.length; n++) {
+            if ((powerScaleNodeFailures[n] ?? 0) > (powerScaleNodeFailures[maxIdx] ?? 0)) maxIdx = n
+          }
+          const cur = powerScaleNodeFailures[maxIdx] ?? 0
+          if (cur > 0) {
+            powerScaleNodeFailures[maxIdx] = cur - 1
+            if (powerScaleNodeFailures[maxIdx] === 0) {
+              powerScaleNodesTouched = Math.max(0, powerScaleNodesTouched - 1)
+            }
           }
         }
         if (failedDrives === 0) {

@@ -1460,6 +1460,49 @@ describe('Performance Engine - Write Penalty Edge Cases', () => {
     expect(dellPerformanceStrategy.getWritePenalty('powerscale_onefs')).toBe(3.0)
   })
 
+  it('mirror region: a pool too small for its protection to stripe FEC prices at the mirror copy count, not M + 1.5 (fix round 1, item 4)', () => {
+    // +4n: nf=4, M=4. 2*nf=8, so a 3-node pool is comfortably in the mirror region.
+    // Pre-fix this returned M + 1.5 = 5.5 unconditionally, silently reintroducing the defect
+    // the retired powerscale_mirror_2x/_3x table (2.0/3.0) existed to avoid.
+    expect(
+      dellPerformanceStrategy.getWritePenalty('powerscale_onefs', {
+        protection: '+4n',
+        nodeCount: 3,
+      }),
+    ).toBe(3) // min(nf+1, nodeCount) = min(5, 3) = 3
+
+    // The SAME protection at enough nodes to stripe FEC prices at M + 1.5 as normal.
+    expect(
+      dellPerformanceStrategy.getWritePenalty('powerscale_onefs', {
+        protection: '+4n',
+        nodeCount: 10,
+      }),
+    ).toBe(5.5)
+  })
+
+  it('calculatePerformance reads the write penalty from the SAME tier the population came from, through the full input path (fix round 1, item 6)', () => {
+    // This is the test the reviewer specifically asked for: nothing before this pinned that
+    // `PerformanceInput.powerscaleTier` actually reaches `getRaidWritePenalty`. Passing the
+    // whole `{ tiers }` bag instead of the resolved tier would silently fall back to the
+    // neutral 3.0 default with no test failing — this asserts a NON-3.0 value that can only
+    // come from the tier's own protection.
+    const inputWithProtection: PerformanceInput = {
+      ...createInput(40, { type: 'powerscale', level: 'powerscale_onefs' }, testHddDrive, 100),
+      serverCount: 10,
+      powerscaleTier: {
+        nodeModel: 'F200',
+        driveSizeTb: 1.92,
+        nodeCount: 10,
+        protection: '+2n', // M=2 -> penalty 3.5, distinct from the 3.0 no-protection default
+        vhsDriveCount: 0,
+        vhsPercent: 0,
+      },
+    }
+    const result = calculatePerformance(inputWithProtection)
+    expect(result.writePenalty).toBeCloseTo(3.5, 1)
+    expect(result.writePenalty).not.toBeCloseTo(3.0, 1)
+  })
+
   it('should calculate write penalty for vSAN ESA RAID variations', () => {
     // Test vSAN ESA levels to cover lines 230-235
     const input5 = createInput(20, { type: 'vsan_esa', level: 'vsan_esa_raid5' }, testSsdNvme, 100)

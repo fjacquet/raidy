@@ -1,4 +1,8 @@
-import { STRIPE_SHAPES } from '@/engines/volumetry/powerscale/stripeShape'
+import {
+  isPowerScaleMirrorRegion,
+  powerScaleMirrorCopies,
+  STRIPE_SHAPES,
+} from '@/engines/volumetry/powerscale/stripeShape'
 import type { PowerScaleProtection } from '@/types/topology'
 import type { PerformanceStrategy } from './PerformanceStrategy'
 
@@ -30,14 +34,30 @@ import type { PerformanceStrategy } from './PerformanceStrategy'
  */
 export const dellPerformanceStrategy: PerformanceStrategy = {
   getWritePenalty(level: string, options?: unknown): number {
-    // PowerScale protection now lives on the tier, not the level. The penalty follows the FEC
-    // unit count the pre-existing +1n..+4n values already encoded: 2.5, 3.5, 4.5, 5.5 for
-    // M = 1..4, i.e. M + 1.5. Drive-level levels carry the same FEC count as their node-level
-    // peers, so +2d:1n prices like +2n — which is also what the old powerscale_n2_1 case did.
+    // PowerScale protection now lives on the tier, not the level. The FEC-region penalty
+    // follows the FEC unit count the pre-existing +1n..+4n values already encoded: 2.5, 3.5,
+    // 4.5, 5.5 for M = 1..4, i.e. M + 1.5. Drive-level levels carry the same FEC count as their
+    // node-level peers, so +2d:1n prices like +2n — which is also what the old
+    // powerscale_n2_1 case did.
+    //
+    // Fix round 1, item 4: a pool too small for its protection's node-failure tolerance
+    // (`nodeCount < 2*nf`) doesn't stripe FEC at all — OneFS mirrors instead (same boundary the
+    // capacity and resilience models use, from `stripeShape.ts`). The retired table priced that
+    // case at the mirror copy count (`powerscale_mirror_2x` -> 2.0, `_3x` -> 3.0); pricing it at
+    // `M + 1.5` instead (5.5 for a 3-node +4n pool) silently reintroduced the exact defect that
+    // table's removal was supposed to be neutral on. `nodeCount` is read from the tier when
+    // present; callers that pass only `{ protection }` (no tier, e.g. unit tests exercising the
+    // FEC-region formula directly) skip the mirror check entirely and always get the FEC-region
+    // price, which is what every pre-existing caller of this shape already expected.
     if (level === 'powerscale_onefs') {
-      const protection = (options as { protection?: PowerScaleProtection } | undefined)?.protection
+      const tier = options as { protection?: PowerScaleProtection; nodeCount?: number } | undefined
+      const protection = tier?.protection
       if (!protection) return 3.0
-      return STRIPE_SHAPES[protection].M + 1.5
+      const shape = STRIPE_SHAPES[protection]
+      if (tier?.nodeCount !== undefined && isPowerScaleMirrorRegion(shape.nf, tier.nodeCount)) {
+        return powerScaleMirrorCopies(shape.nf, tier.nodeCount)
+      }
+      return shape.M + 1.5
     }
     switch (level) {
       // PowerStore

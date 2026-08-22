@@ -68,13 +68,17 @@ describe('useResilience PowerScale scope', () => {
     uninstall()
   })
 
-  function runWith(powerscaleOptions: PowerScaleOptions): SimulationInput {
+  function runWith(powerscaleOptions: PowerScaleOptions, hotSpares = 0): SimulationInput {
+    // Reset before each call, not just once per test: a test that calls `runWith` more than
+    // once (e.g. to compare two configurations) must read each call's OWN posted input, not
+    // `posted[0]` left over from an earlier call in the same test.
+    posted.length = 0
     const { result } = renderHook(() =>
       useResilience({
         drive: hardwarePanelDrive,
         driveCount: 999, // Hardware-panel value the scope resolver must ignore entirely.
         serverCount: 999,
-        hotSpares: 0,
+        hotSpares,
         topology,
         simulationCount: 10,
         autoRun: false,
@@ -107,6 +111,28 @@ describe('useResilience PowerScale scope', () => {
     expect(input.driveCount).toBe(0)
     expect(input.serverCount).toBe(1)
     expect(input.hasHotSpare).toBe(false)
+  })
+
+  it("threads the first tier's protection to the worker (fix round 1, item 1)", () => {
+    // Pre-fix, `SimulationInput.powerScaleProtection` did not exist at all: the resilience
+    // panel simulated every PowerScale pool tolerating exactly one drive failure regardless of
+    // its real protection.
+    const input = runWith(twoTier)
+    expect(input.powerScaleProtection).toBe(flashTier.protection) // '+2d:1n' — the FIRST tier's
+  })
+
+  it("hasHotSpare comes from the tier's own VHS count, not the generic hot-spares slider (fix round 1, item 5)", () => {
+    // flashTier.vhsDriveCount = 2 -> credit, regardless of what the generic slider says.
+    const withVhs = runWith(twoTier, /* hotSpares */ 0)
+    expect(withVhs.hasHotSpare).toBe(true)
+
+    // A first tier with NO VHS configured must get NO credit, even when a leftover non-zero
+    // hotSpares value from a previously selected platform is still sitting in the store — the
+    // generic slider is meaningless for PowerScale (the Hardware panel is hidden) and must be
+    // ignored entirely, not merely deprioritized.
+    const noVhsTier: PowerScaleTier = { ...flashTier, vhsDriveCount: 0 }
+    const withoutVhs = runWith({ tiers: [noVhsTier, archiveTier] }, /* hotSpares */ 5)
+    expect(withoutVhs.hasHotSpare).toBe(false)
   })
 })
 

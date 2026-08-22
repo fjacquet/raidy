@@ -17,7 +17,7 @@ import type {
   CephOptions,
   NutanixOptions,
   PowerFlexOptions,
-  PowerScaleOptions,
+  PowerScaleTier,
   RaidControllerOptions,
   S2DOptions,
   Topology,
@@ -66,7 +66,14 @@ export interface PerformanceInput {
   vsanOptions?: VsanOptions
   s2dOptions?: S2DOptions
   beeGfsOptions?: BeeGfsOptions
-  powerscaleOptions?: PowerScaleOptions
+  /**
+   * The SAME tier `powerScaleDriveTotals` selected as the first sizeable tier — not
+   * `powerscaleOptions.tiers[0]` re-indexed independently, which can point at a different tier
+   * than the one the caller's population came from when an earlier tier is unsizeable. The
+   * caller (`usePerformanceCalc`) computes `powerScaleDriveTotals` once and passes its
+   * `.firstTier` straight through, so the population and the write penalty can never diverge.
+   */
+  powerscaleTier?: PowerScaleTier
   tiering?: TieredCapacityResult | null
   workingSetPercent?: number
 }
@@ -132,7 +139,7 @@ function getRaidWritePenalty(
   serverCount: number,
   s2dOptions?: S2DOptions,
   beeGfsOptions?: BeeGfsOptions,
-  powerscaleOptions?: PowerScaleOptions,
+  powerscaleTier?: PowerScaleTier,
 ): number {
   const strategy = getStrategy(topology.type)
   // Each strategy interprets `options` differently: standard RAID needs the RAID-group
@@ -148,7 +155,7 @@ function getRaidWritePenalty(
   } else if (topology.type === 'beegfs') {
     options = beeGfsOptions
   } else if (topology.type === 'powerscale') {
-    options = powerscaleOptions?.tiers[0]
+    options = powerscaleTier
   }
   return strategy.getWritePenalty(topology.level, options)
 }
@@ -184,7 +191,7 @@ export function calculatePerformance(input: PerformanceInput): PerformanceResult
     vsanOptions,
     s2dOptions,
     beeGfsOptions,
-    powerscaleOptions,
+    powerscaleTier,
     tiering,
     workingSetPercent,
   } = input
@@ -200,7 +207,7 @@ export function calculatePerformance(input: PerformanceInput): PerformanceResult
     serverCount,
     s2dOptions,
     beeGfsOptions,
-    powerscaleOptions,
+    powerscaleTier,
   )
 
   // Sequential write penalty is reduced (full-stripe writes avoid read-modify-write)

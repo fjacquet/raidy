@@ -147,21 +147,67 @@ Calculates storage capacity and efficiency.
 > (PowerScale has `hasServerCount: false`, so the shared drive-count/server-count sliders are
 > stale for it). `powerScaleDriveTotals` (`src/engines/volumetry/powerscale/index.ts`) is the one
 > place both populations are derived: `firstTierDrives`/`firstTierNodes`/`firstTierSpareDrives`
-> for the FIRST node pool only, and `clusterDrives`/`clusterNodes` summed across every tier.
+> for the FIRST node pool only, and `clusterDrives`/`clusterNodes` summed across every tier — plus
+> `firstTier`, the actual `PowerScaleTier` object those first-tier numbers came from (not
+> `options.tiers[0]` re-indexed independently, which can silently point at a DIFFERENT tier when
+> an earlier one is unsizeable). A tier is included here under the EXACT same rule
+> `calculatePowerScaleVolumetry` uses — `sizeTier(tier) !== null` — not merely "the model name
+> resolves": a tier with a real model but an unpublished protection/node-count combination
+> contributes nothing, the same "confidently wrong on a dashboard that looks correct" failure the
+> unknown-model case already guarded against.
+>
 > **Performance and resilience use the first-tier fields** — a client's IOPS and a rebuild's
 > exposure window are properties of the pool serving the data, not an average across
-> heterogeneous pools, so `usePerformanceCalc`/`useResilience`'s `powerscale` scope resolver
-> read `tiers[0]` only. **Sustainability sums the cluster fields** — power, cooling and TCO are
-> physically additive across the whole rack, so `useSustainabilityCalc` reads every tier. The
-> dashboard surfaces this split with a note (`output:powerscale.firstTierOnly`) whenever a
-> cluster has more than one tier. The performance write penalty is also tier-driven now:
-> `dellPerformanceStrategy.getWritePenalty('powerscale_onefs', { protection })` returns
-> `STRIPE_SHAPES[protection].M + 1.5` (the FEC-unit-count rule the old `+1n..+4n` levels already
-> encoded), falling back to a neutral 3.0 when no tier is configured. Resilience's `mediaDrive` is
-> deliberately left `null` for PowerScale (keeping the Hardware panel's drive) because the vendor
-> catalog carries capacities but no AFR/URE/MTBF — inventing those would fabricate the very
-> numbers the simulation reports. An empty or unsized tier list degrades every one of these
-> figures to a defined zero state rather than throwing.
+> heterogeneous pools, so `usePerformanceCalc`/`useResilience`'s `powerscale` scope resolver read
+> `tiers[0]` only (in practice, `powerScaleDriveTotals`'s `firstTier`). **Sustainability sums the
+> cluster fields** — power, cooling and TCO are physically additive across the whole rack, so
+> `useSustainabilityCalc` reads every tier. The dashboard surfaces this split with a note
+> (`output:powerscale.firstTierOnly`) whenever a cluster has more than one tier.
+>
+> **Write penalty** (`dellPerformanceStrategy.getWritePenalty('powerscale_onefs', tier)`, tier ==
+> `powerScaleDriveTotals(...).firstTier` — never a second, independent `tiers[0]` lookup, so the
+> penalty can't describe a different tier than the one the population came from) is protection-
+> and node-count-aware: `STRIPE_SHAPES[protection].M + 1.5` when the pool has enough nodes to
+> stripe FEC (the FEC-unit-count rule the old `+1n..+4n` levels already encoded), or the mirror
+> copy count (`powerScaleMirrorCopies`, e.g. 2.0/3.0) when it doesn't — see the resilience
+> paragraph below for that boundary. Falls back to a neutral 3.0 when no tier is configured.
+>
+> **Resilience's node-failure model is NOT vendor-attested**, unlike everything else on this
+> branch: Dell's PowerSizer export is a capacity calculator and carries no AFR, URE or MTBF, so
+> there is no source of truth to validate a reliability model against. `SimulationInput.
+> powerScaleProtection` (threaded from `firstTier.protection`) drives a dedicated model in
+> `resilienceWorker.ts`'s `computeTopologyModel`/`runSingleSimulation`, split into the two
+> regimes OneFS itself uses:
+>
+> - **Mirror region** (`nodeCount < 2*nf`, too few nodes to stripe FEC): OneFS mirrors instead,
+>   `min(nf+1, nodeCount)`-way. This reuses the EXISTING drive-pair mirror machinery
+>   (`isMirror`, `assignNodesRoundRobin`) verbatim rather than inventing a parallel one — a
+>   PowerScale pool in this region and a native `mirrorCopies`-driven mirror input with the same
+>   derived copy count produce bit-identical survival rates under the same random stream.
+> - **FEC region** (`nodeCount >= 2*nf`): a dedicated branch — neither `isGroup` (independent
+>   parallel groups, any one lost = total loss) nor the flat node-blind parity count fits "one
+>   flat domain, counted per node" — tracks per-node failure counts and declares loss when more
+>   than `nf` DISTINCT nodes are touched by any failure, OR more than `M` failures land in one
+>   node. Both thresholds come straight from `STRIPE_SHAPES`; no second table.
+>
+> `isPowerScaleMirrorRegion`/`powerScaleMirrorCopies` (`stripeShape.ts`) are the single place the
+> mirror-vs-FEC boundary lives, shared by the capacity closed form (`onefsFormula.ts`, test-only),
+> the write penalty, and the resilience worker, so none of the three can disagree about where it
+> sits. Before this model existed, every PowerScale pool was silently simulated tolerating exactly
+> one drive failure (the `getParityDrives` catch-all default), regardless of its real protection —
+> a `+3n` 20-node pool that tolerates three whole nodes was simulated as dying on the second drive
+> failure anywhere in the pool.
+>
+> `hasHotSpare` for PowerScale comes from the tier's own Virtual Hot Spare count
+> (`firstTierSpareDrives > 0`), not the generic Hardware-panel hot-spares slider — that slider is
+> meaningless for PowerScale (the panel is hidden), so reading it would either strand a
+> configured VHS with no immediate-rebuild credit or grant credit from a leftover value a
+> previously selected platform left in the store.
+>
+> Resilience's `mediaDrive` is deliberately left `null` for PowerScale (keeping the Hardware
+> panel's drive) because the vendor catalog carries capacities but no AFR/URE/MTBF — inventing
+> those would fabricate the very numbers the simulation reports. An empty or unsized tier list
+> degrades every one of these figures to a defined zero state rather than throwing.
 
 ## Performance (`/src/engines/performance/`)
 

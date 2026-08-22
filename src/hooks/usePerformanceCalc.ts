@@ -126,7 +126,10 @@ export function usePerformanceCalc(): PerformanceResult {
         vsanOptions,
         s2dOptions,
         beeGfsOptions,
-        powerscaleOptions,
+        // The SAME tier `psTotals` was derived from — never `powerscaleOptions.tiers[0]`
+        // re-indexed independently, which can point at a different tier than the one the
+        // population above came from when an earlier tier is unsizeable.
+        powerscaleTier: psTotals?.firstTier,
         tiering,
         workingSetPercent: s2dOptions?.tieringConfig?.workingSetPercent ?? 20,
       })
