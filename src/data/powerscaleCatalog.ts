@@ -2,8 +2,8 @@
  * Typed accessors over the generated PowerScale vendor data.
  *
  * This is the ONLY module that knows the on-disk shape of
- * `powerscaleNodes.json` / `powerscaleEfficiency.json`, and the only place
- * TB (the vendor's unit) becomes bytes (raidy's unit).
+ * `powerscaleNodes.json`, and the only place TB (the vendor's unit) becomes
+ * bytes (raidy's unit).
  *
  * Data is derived from Dell's PowerSizer via
  * `scripts/build-powerscale-catalog.mjs`. See
@@ -85,12 +85,26 @@ export function listDriveSizes(modelId: string): number[] {
   return BY_ID.get(modelId)?.driveSizesTb ?? []
 }
 
-function driveSizeEntry(modelId: string, driveSizeTb: number): RawDriveSize | undefined {
+/**
+ * Resolves `driveSizeTb` to the on-disk decimal-string key for `modelId`'s
+ * drive sizes ('15.36', '2', ...), matching numerically rather than by
+ * string identity — the workbook's formatting is not a contract callers
+ * should have to replicate.
+ */
+function resolveDriveSizeKey(modelId: string, driveSizeTb: number): string | undefined {
   const model = catalog.models[modelId]
   if (!model) return undefined
-  // Keys are the workbook's own decimal strings ('15.36', '2'), so match numerically.
-  const key = Object.keys(model.driveSizes).find((k) => Number(k) === driveSizeTb)
-  return key === undefined ? undefined : model.driveSizes[key]
+  return Object.keys(model.driveSizes).find((k) => Number(k) === driveSizeTb)
+}
+
+function driveSizeEntry(modelId: string, driveSizeTb: number): RawDriveSize | undefined {
+  const key = resolveDriveSizeKey(modelId, driveSizeTb)
+  return key === undefined ? undefined : catalog.models[modelId]?.driveSizes[key]
+}
+
+function availabilityEntry(modelId: string, driveSizeTb: number) {
+  const key = resolveDriveSizeKey(modelId, driveSizeTb)
+  return key === undefined ? undefined : catalog.availability[`${modelId}|${key}`]
 }
 
 export function rawPerDriveBytes(modelId: string, driveSizeTb: number): number {
@@ -117,7 +131,7 @@ export function availableProtections(
   driveSizeTb: number,
   nodeCount: number,
 ): PowerScaleProtection[] {
-  const entry = catalog.availability[`${modelId}|${driveSizeTb}`]
+  const entry = availabilityEntry(modelId, driveSizeTb)
   if (!entry) return []
   const idx = rleAt(entry.a, nodeCount)
   if (idx === undefined) return []
@@ -129,7 +143,7 @@ export function suggestedProtection(
   driveSizeTb: number,
   nodeCount: number,
 ): PowerScaleProtection | undefined {
-  const entry = catalog.availability[`${modelId}|${driveSizeTb}`]
+  const entry = availabilityEntry(modelId, driveSizeTb)
   if (!entry) return undefined
   return rleAt(entry.s, nodeCount) as PowerScaleProtection | undefined
 }

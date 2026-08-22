@@ -57,4 +57,23 @@ describe('powerscaleCatalog', () => {
   it('returns an empty protection list for an unknown combination', () => {
     expect(availableProtections('F200', 999, 3)).toEqual([])
   })
+
+  it('matches availability by numeric drive size, not string identity', () => {
+    const canonical = availableProtections('A200', 2, 10)
+    const alternateFormatting = availableProtections('A200', 2.0, 10)
+    expect(canonical.length).toBeGreaterThan(0)
+    expect(alternateFormatting).toEqual(canonical)
+    // A genuinely absent size still reports empty, not a false match.
+    expect(availableProtections('A200', 2.5, 10)).toEqual([])
+  })
+
+  it('rawPerDriveBytes falls back to 0 for unknown model or drive size', () => {
+    expect(rawPerDriveBytes('NOPE', 15.36)).toBe(0)
+    expect(rawPerDriveBytes('F710', 999)).toBe(0)
+  })
+
+  it('usableFactor falls back to 1 for unknown model or drive size', () => {
+    expect(usableFactor('NOPE', 15.36)).toBe(1)
+    expect(usableFactor('F710', 999)).toBe(1)
+  })
 })
