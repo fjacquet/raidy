@@ -3453,9 +3453,8 @@ describe('Volumetry Engine - Error Handling', () => {
   // `calculatePowerScaleVolumetry` sub-engine (see `src/engines/volumetry/index.ts`) before any
   // drive/node data-fraction arithmetic can run. PowerScale also has no snapshot reserve field
   // by design — see `PowerScaleOptions`'s doc comment in topology.ts. `dellStrategy`'s N+x
-  // formulas still exist in dell.ts (removed in a later task) so its direct unit test below is
-  // kept, but nothing in this file exercises it through `calculateVolumetry` any more — that
-  // path is provably unreachable for `type: 'powerscale'` now.
+  // formulas have since been deleted from dell.ts entirely (Task 7) — that path is not just
+  // unreachable, it no longer exists.
   //
   // Full multi-tier coverage (single tier, heterogeneous sums, dropped/unsizeable tiers, cluster
   // efficiency as Σusable/Σraw) lives in tests/engines/volumetry/powerscale/cluster.spec.ts and
@@ -3463,12 +3462,6 @@ describe('Volumetry Engine - Error Handling', () => {
   // that `calculateVolumetry` itself reaches the sub-engine for the new topology shape.
 
   describe('Volumetry Engine - PowerScale OneFS (multi-tier cluster)', () => {
-    it("dell.ts's legacy N+x data-fraction formula still exists but is no longer reachable via calculateVolumetry", () => {
-      // Direct unit test of dell.ts, unaffected by the engine branch above it.
-      const result = dellStrategy.calculateDataFraction('powerscale_n2', 360, { serverCount: 10 })
-      expect(result).toBeCloseTo(8 / 10, 3)
-    })
-
     it('routes a single-tier cluster through the sub-engine and matches sizeTier exactly', () => {
       const tier: PowerScaleTier = {
         nodeModel: 'F200',

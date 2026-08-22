@@ -1419,21 +1419,20 @@ describe('Performance Engine - Write Penalty Edge Cases', () => {
     }
   })
 
-  it('should calculate write penalty for PowerScale N+x variations', () => {
-    // Test different PowerScale protection levels to cover lines 270-283
-    const levels = [
-      { level: 'powerscale_n1' as const, drives: 12, expectedPenalty: 2.5 },
-      { level: 'powerscale_n2' as const, drives: 12, expectedPenalty: 3.5 },
-      { level: 'powerscale_n2_1' as const, drives: 12, expectedPenalty: 3.5 },
-      { level: 'powerscale_n3' as const, drives: 15, expectedPenalty: 4.5 },
-      { level: 'powerscale_n4' as const, drives: 16, expectedPenalty: 5.5 },
-    ]
-
-    for (const { level, drives, expectedPenalty } of levels) {
-      const input = createInput(drives, { type: 'powerscale', level }, testHddDrive, 100)
-      const result = calculatePerformance(input)
-      expect(result.writePenalty).toBeCloseTo(expectedPenalty, 1)
-    }
+  it('should use the default write penalty for PowerScale until Task 8 reads the tier protection', () => {
+    // PowerScaleTopology now has a single collapsed level, 'powerscale_onefs' — the old
+    // per-N+x levels tested here ('powerscale_n1'..'powerscale_n4', 'powerscale_n2_1') no
+    // longer exist (Task 7). dell.ts's getWritePenalty falls through to its 3.0 default for
+    // every PowerScale config until Task 8 wires the tier's protection through
+    // PerformanceInput — see the TODO(Task 8) marker in performance/strategies/dell.ts.
+    const input = createInput(
+      12,
+      { type: 'powerscale', level: 'powerscale_onefs' },
+      testHddDrive,
+      100,
+    )
+    const result = calculatePerformance(input)
+    expect(result.writePenalty).toBeCloseTo(3.0, 1)
   })
 
   it('should calculate write penalty for vSAN ESA RAID variations', () => {
@@ -1822,7 +1821,12 @@ describe('Performance Engine - Dell PowerScale Performance', () => {
 
   it('should calculate PowerScale latency with 1.5x multiplier and network overhead', () => {
     // PowerScale scale-out NAS with parity writes
-    const input = createInput(36, { type: 'powerscale', level: 'powerscale_n2' }, testHddDrive, 100)
+    const input = createInput(
+      36,
+      { type: 'powerscale', level: 'powerscale_onefs' },
+      testHddDrive,
+      100,
+    )
     const result = calculatePerformance(input)
 
     // Should have latency estimation
@@ -1839,7 +1843,12 @@ describe('Performance Engine - Dell PowerScale Performance', () => {
 
   it('should apply replication CPU overhead', () => {
     // PowerScale uses replication CPU overhead (20μs)
-    const input = createInput(36, { type: 'powerscale', level: 'powerscale_n2' }, testSsdSata, 100)
+    const input = createInput(
+      36,
+      { type: 'powerscale', level: 'powerscale_onefs' },
+      testSsdSata,
+      100,
+    )
     const result = calculatePerformance(input)
 
     // SSD base latency = 150μs
@@ -1850,7 +1859,12 @@ describe('Performance Engine - Dell PowerScale Performance', () => {
 
   it('should handle PowerScale scale-out NAS configuration', () => {
     // PowerScale with 36 HDDs in scale-out NAS
-    const input = createInput(36, { type: 'powerscale', level: 'powerscale_n2' }, testHddDrive, 100)
+    const input = createInput(
+      36,
+      { type: 'powerscale', level: 'powerscale_onefs' },
+      testHddDrive,
+      100,
+    )
     const result = calculatePerformance(input)
 
     // Should have positive IOPS
@@ -1864,11 +1878,11 @@ describe('Performance Engine - Dell PowerScale Performance', () => {
   it('should include network latency impact for NAS protocol', () => {
     // Test network latency impact on PowerScale
     const input1GbE = {
-      ...createInput(36, { type: 'powerscale', level: 'powerscale_n2' }, testSsdSata, 100),
+      ...createInput(36, { type: 'powerscale', level: 'powerscale_onefs' }, testSsdSata, 100),
       networkSpeed: '1GbE' as const,
     }
     const input100GbE = {
-      ...createInput(36, { type: 'powerscale', level: 'powerscale_n2' }, testSsdSata, 100),
+      ...createInput(36, { type: 'powerscale', level: 'powerscale_onefs' }, testSsdSata, 100),
       networkSpeed: '100GbE' as const,
     }
 
@@ -1886,7 +1900,12 @@ describe('Performance Engine - Dell PowerScale Performance', () => {
 
   it('should validate PowerScale parity write performance (1.5x multiplier)', () => {
     // PowerScale with parity writes has 1.5x media latency
-    const input = createInput(36, { type: 'powerscale', level: 'powerscale_n2' }, testSsdSata, 100)
+    const input = createInput(
+      36,
+      { type: 'powerscale', level: 'powerscale_onefs' },
+      testSsdSata,
+      100,
+    )
     const result = calculatePerformance(input)
 
     // Should have latency reflecting parity overhead
@@ -1898,7 +1917,7 @@ describe('Performance Engine - Dell PowerScale Performance', () => {
     // PowerScale (NAS) should have higher latency than PowerStore (block)
     const inputPowerScale = createInput(
       36,
-      { type: 'powerscale', level: 'powerscale_n2' },
+      { type: 'powerscale', level: 'powerscale_onefs' },
       testSsdSata,
       100,
     )

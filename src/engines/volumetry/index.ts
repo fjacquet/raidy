@@ -119,11 +119,11 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
 
   // PowerScale is node-pool-centric and multi-tier: it has no single drive,
   // drive count or efficiency, so it does not fit the generic chain below.
-  // This MUST run before any other PowerScale-shaped code path — dell.ts's
-  // `level.startsWith('powerscale_')` guard still matches the new
-  // 'powerscale_onefs' level and, unguarded, falls through to its `default:`
-  // case, silently returning the wrong (N+2) efficiency for every
-  // configuration. See dell.ts's PowerScale branch (removed in a later task).
+  // This MUST run before the generic chain — dell.ts's old
+  // `level.startsWith('powerscale_')` prefix guard used to match the
+  // 'powerscale_onefs' level and, unguarded, would have fallen through to its
+  // `default:` case, silently returning the wrong (N+2) efficiency for every
+  // configuration. That branch has since been deleted from dell.ts entirely.
   if (topology.type === 'powerscale') {
     return calculatePowerScaleVolumetry(powerscaleOptions)
   }
@@ -274,7 +274,6 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
     nutanixOptions,
     objectscaleOptions,
     powerstoreOptions,
-    powerscaleOptions,
     cephOptions,
     beeGfsOptions,
     fsType,
@@ -292,7 +291,6 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
     objectscaleGeoOverhead,
     powerstoreSnapshotReserve,
     powerstoreSystemOverhead,
-    powerscaleSnapshotReserve,
     filesystemOverhead,
   } = overheads
 
@@ -309,8 +307,7 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
     objectscaleSystemOverhead -
     objectscaleGeoOverhead -
     powerstoreSnapshotReserve -
-    powerstoreSystemOverhead -
-    powerscaleSnapshotReserve
+    powerstoreSystemOverhead
   let usableCapacity = capacityForFs - filesystemOverhead
 
   // Ceph safe capacity factor (nearfull threshold, default 85%)
@@ -355,7 +352,6 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
       nutanixOptions,
       objectscaleOptions,
       powerstoreOptions,
-      powerscaleOptions,
       cephOptions,
       vsanOptions,
     },
@@ -388,7 +384,6 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
     objectscaleGeoOverhead,
     powerstoreSnapshotReserve,
     powerstoreSystemOverhead,
-    powerscaleSnapshotReserve,
     cephSafeCapacityReduction,
     filesystemOverhead,
     topology,

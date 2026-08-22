@@ -3,20 +3,15 @@ import type { PerformanceStrategy } from './PerformanceStrategy'
 /**
  * Dell storage systems performance strategy.
  *
- * Handles PowerStore, PowerScale, ObjectScale, and PowerVault.
+ * Handles PowerStore, ObjectScale, and PowerVault.
+ *
+ * PowerScale (scale-out NAS) levels fall through to the 3.0 default below —
+ * see the TODO(Task 8) comment on `getWritePenalty`.
  *
  * PowerStore (block storage):
  * - powerstore_raid5: 3x (optimized RAID-5 with NVMe)
  * - powerstore_raid6: 4x
  * - powerstore_raid10: 2x
- *
- * PowerScale (scale-out NAS):
- * - powerscale_n1: 2.5x (N+1 with inline writes)
- * - powerscale_n2: 3.5x (N+2)
- * - powerscale_n3: 4.5x (N+3)
- * - powerscale_n4: 5.5x (N+4)
- * - powerscale_mirror_2x: 2x
- * - powerscale_mirror_3x: 3x
  *
  * ObjectScale (S3 object storage):
  * - objectscale_ec_12_4: 1.33x (EC 12+4: 16/12, default min 5 nodes)
@@ -43,26 +38,6 @@ export const dellPerformanceStrategy: PerformanceStrategy = {
 
       case 'powerstore_raid10':
         return 2.0
-
-      // PowerScale
-      case 'powerscale_n1':
-        return 2.5 // N+1 with inline writes
-
-      case 'powerscale_n2':
-      case 'powerscale_n2_1':
-        return 3.5 // N+2
-
-      case 'powerscale_n3':
-        return 4.5 // N+3
-
-      case 'powerscale_n4':
-        return 5.5 // N+4
-
-      case 'powerscale_mirror_2x':
-        return 2.0
-
-      case 'powerscale_mirror_3x':
-        return 3.0
 
       // ObjectScale
       case 'objectscale_ec_12_4':
@@ -93,6 +68,8 @@ export const dellPerformanceStrategy: PerformanceStrategy = {
       case 'powervault_adapt':
         return 2.5 // Distributed parity reduces penalty
 
+      // TODO(Task 8): PowerScale protection moved to the tier. Until this reads the
+      // tier's protection, every level prices at the default penalty.
       default:
         return 3.0
     }

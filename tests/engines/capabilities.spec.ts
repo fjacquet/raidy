@@ -37,7 +37,6 @@ const MULTI_NODE_TYPES: TopologyType[] = [
   'ceph',
   'powerflex',
   'powerstore',
-  'powerscale',
   'objectscale',
   'nutanix',
   'longhorn',
@@ -155,6 +154,15 @@ describe('hasServerCount is structural (not probed)', () => {
     for (const type of ['standard', 'zfs', 'proprietary', 'powervault'] as TopologyType[]) {
       expect(getCapabilities(type).hasServerCount).toBe(false)
     }
+  })
+
+  it('hides the shared servers slider for PowerScale, whose nodes are per tier', () => {
+    expect(PLATFORM_CAPABILITIES.powerscale.hasServerCount).toBe(false)
+  })
+
+  it('keeps compression and dedup off for PowerScale — DRR is a node-model property', () => {
+    expect(PLATFORM_CAPABILITIES.powerscale.supportsCompression).toBe(false)
+    expect(PLATFORM_CAPABILITIES.powerscale.supportsDedup).toBe(false)
   })
 })
 

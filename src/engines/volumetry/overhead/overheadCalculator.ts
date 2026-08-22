@@ -9,7 +9,6 @@
  * - Nutanix system overhead
  * - ObjectScale system and geo-overhead
  * - PowerStore snapshot reserve
- * - PowerScale snapshot reserve
  * - Ceph safe capacity reduction
  * - Filesystem overhead
  */
@@ -23,7 +22,6 @@ import type {
   NutanixOptions,
   ObjectScaleOptions,
   PowerFlexOptions,
-  PowerScaleOptions,
   PowerStoreOptions,
   S2DOptions,
   SynologyOptions,
@@ -55,7 +53,6 @@ export interface OverheadResult {
   objectscaleGeoOverhead: number
   powerstoreSnapshotReserve: number
   powerstoreSystemOverhead: number
-  powerscaleSnapshotReserve: number
   cephSafeCapacityReduction: number
   filesystemOverhead: number
 
@@ -80,7 +77,6 @@ export interface OverheadInput {
   nutanixOptions: NutanixOptions
   objectscaleOptions: ObjectScaleOptions
   powerstoreOptions: PowerStoreOptions
-  powerscaleOptions: PowerScaleOptions
   cephOptions: CephOptions
   beeGfsOptions: BeeGfsOptions
   fsType: FsType
@@ -106,7 +102,6 @@ export function calculateOverheads(input: OverheadInput): OverheadResult {
     nutanixOptions,
     objectscaleOptions,
     powerstoreOptions,
-    powerscaleOptions,
     cephOptions,
     beeGfsOptions,
     fsType,
@@ -183,13 +178,6 @@ export function calculateOverheads(input: OverheadInput): OverheadResult {
     powerstoreSystemOverhead = capacityAfterParity * (powerstoreOptions.systemOverheadPercent / 100)
   }
 
-  // PowerScale snapshot reserve
-  let powerscaleSnapshotReserve = 0
-  if (topology.type === 'powerscale') {
-    powerscaleSnapshotReserve =
-      capacityAfterParity * (powerscaleOptions.snapshotReservePercent / 100)
-  }
-
   // Filesystem overhead
   const fsOverheadPercent = getFilesystemOverheadPercent(
     topology,
@@ -209,8 +197,7 @@ export function calculateOverheads(input: OverheadInput): OverheadResult {
       objectscaleSystemOverhead -
       objectscaleGeoOverhead -
       powerstoreSnapshotReserve -
-      powerstoreSystemOverhead -
-      powerscaleSnapshotReserve,
+      powerstoreSystemOverhead,
   )
   const filesystemOverhead = capacityForFs * fsOverheadPercent
 
@@ -233,7 +220,6 @@ export function calculateOverheads(input: OverheadInput): OverheadResult {
     objectscaleGeoOverhead +
     powerstoreSnapshotReserve +
     powerstoreSystemOverhead +
-    powerscaleSnapshotReserve +
     cephSafeCapacityReduction +
     filesystemOverhead
 
@@ -249,7 +235,6 @@ export function calculateOverheads(input: OverheadInput): OverheadResult {
     objectscaleGeoOverhead,
     powerstoreSnapshotReserve,
     powerstoreSystemOverhead,
-    powerscaleSnapshotReserve,
     cephSafeCapacityReduction,
     filesystemOverhead,
     totalOverhead,

@@ -56,6 +56,10 @@ export interface PlatformCapabilities {
 // Hot spares are deliberately NOT a flag here — see `DISTRIBUTED_SPARE_TOPOLOGIES` in
 // src/types/topology.ts for why they cannot be (#130).
 //
+// powerscale.hasServerCount is false: PowerScale is a cluster of node pools/tiers, each with
+// its own node count set in PowerScaleOptionsPanel, so the single shared servers slider in
+// HardwarePanel is meaningless for it and stays hidden.
+//
 // Per platform:
 //
 // zfs: the ONLY platform whose strategy multiplies usableCapacity by the global ratios directly
@@ -147,7 +151,9 @@ export const PLATFORM_CAPABILITIES: Record<TopologyType, PlatformCapabilities> =
   powerscale: {
     supportsCompression: false,
     supportsDedup: false,
-    hasServerCount: true,
+    // PowerScale is a cluster of node pools: node counts are per tier, set in
+    // PowerScaleOptionsPanel, not the shared HardwarePanel servers slider.
+    hasServerCount: false,
     honoursFsType: false,
     honoursController: true,
   },
