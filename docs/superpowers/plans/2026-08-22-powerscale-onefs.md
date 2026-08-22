@@ -22,6 +22,7 @@
 - Path aliases: `@/*`, `@engines/*`, `@components/*`, `@store/*`, `@types/*`, `@utils/*`, `@data/*`, `@hooks/*`.
 - Capacities are **bytes** (decimal) throughout raidy's engines. The vendor table is in **TB (decimal, 1e12)**. Convert at the boundary, once, in the catalog loader.
 - Run `npm run check:dead` on the main checkout, never inside `.claude/worktrees/*` (it fails spuriously there).
+- **`npm test` is `vitest` in WATCH mode and will hang a non-interactive session.** Always use `npm run test:run -- <path>` for a single pass. Never run bare `npm test`.
 
 ---
 
@@ -173,7 +174,7 @@ describe('PowerScale generated data', () => {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `npm test -- tests/data/powerscaleData.spec.ts`
+Run: `npm run test:run -- tests/data/powerscaleData.spec.ts`
 Expected: FAIL — `Cannot find module '@/data/powerscaleNodes.json'`
 
 - [ ] **Step 3: Write the extraction script**
@@ -456,7 +457,7 @@ Expected: `wrote catalog (22 models), efficiency (... curves), fixture (122828 r
 
 - [ ] **Step 6: Run test to verify it passes**
 
-Run: `npm test -- tests/data/powerscaleData.spec.ts`
+Run: `npm run test:run -- tests/data/powerscaleData.spec.ts`
 Expected: PASS, 6 tests.
 
 - [ ] **Step 7: Verify the .xlsm cannot be committed**
@@ -581,7 +582,7 @@ describe('powerscaleCatalog', () => {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `npm test -- tests/data/powerscaleCatalog.spec.ts`
+Run: `npm run test:run -- tests/data/powerscaleCatalog.spec.ts`
 Expected: FAIL — `Cannot find module '@/data/powerscaleCatalog'`
 
 - [ ] **Step 3: Write the implementation**
@@ -725,7 +726,7 @@ export function suggestedProtection(
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `npm test -- tests/data/powerscaleCatalog.spec.ts && npm run typecheck`
+Run: `npm run test:run -- tests/data/powerscaleCatalog.spec.ts && npm run typecheck`
 Expected: PASS, 9 tests. Typecheck clean. (`PowerScaleProtection` is added in Task 4 — if typecheck fails on that import, add the type union to `src/types/topology.ts` now; it is a three-line addition and Task 4 will build on it.)
 
 - [ ] **Step 5: Commit**
@@ -821,7 +822,7 @@ describe('onefsClosedForm (reference implementation)', () => {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `npm test -- tests/engines/volumetry/powerscale/efficiency.spec.ts`
+Run: `npm run test:run -- tests/engines/volumetry/powerscale/efficiency.spec.ts`
 Expected: FAIL — `Cannot find module '@/engines/volumetry/powerscale/efficiency'`
 
 - [ ] **Step 3: Write the implementation**
@@ -931,7 +932,7 @@ export function storageEfficiency(
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `npm test -- tests/engines/volumetry/powerscale/efficiency.spec.ts`
+Run: `npm run test:run -- tests/engines/volumetry/powerscale/efficiency.spec.ts`
 Expected: PASS, 7 tests.
 
 - [ ] **Step 5: Commit**
@@ -1054,7 +1055,7 @@ describe('migratePowerScaleState', () => {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `npm test -- tests/store/powerscaleMigration.spec.ts`
+Run: `npm run test:run -- tests/store/powerscaleMigration.spec.ts`
 Expected: FAIL — `migratePowerScaleState is not exported`
 
 - [ ] **Step 3: Update the types**
@@ -1280,7 +1281,7 @@ Call it in `getItem`, between envelope parsing and `validateUrlState`:
 
 - [ ] **Step 7: Run tests to verify they pass**
 
-Run: `npm test -- tests/store/powerscaleMigration.spec.ts tests/utils && npm run typecheck`
+Run: `npm run test:run -- tests/store/powerscaleMigration.spec.ts tests/utils && npm run typecheck`
 Expected: migration spec PASS. Typecheck will now report errors in `dell.ts`, `overheadCalculator.ts`, `capacityEnhancements.ts`, `PowerScaleOptionsPanel.tsx`, `performance/strategies/dell.ts` and `resilienceWorker.ts` — those are Tasks 6–10. **Record the exact list**; it is the checklist for the remaining work.
 
 - [ ] **Step 8: Commit**
@@ -1384,7 +1385,7 @@ describe('sizeTier', () => {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `npm test -- tests/engines/volumetry/powerscale/tier.spec.ts`
+Run: `npm run test:run -- tests/engines/volumetry/powerscale/tier.spec.ts`
 Expected: FAIL — `Cannot find module '@/engines/volumetry/powerscale/tier'`
 
 - [ ] **Step 3: Write the implementation**
@@ -1471,7 +1472,7 @@ Add `PowerScaleTierResult` and `PowerScaleCapacityDetails` to `src/types/results
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `npm test -- tests/engines/volumetry/powerscale/tier.spec.ts`
+Run: `npm run test:run -- tests/engines/volumetry/powerscale/tier.spec.ts`
 Expected: PASS, 6 tests.
 
 - [ ] **Step 5: Commit**
@@ -1583,7 +1584,7 @@ describe('calculatePowerScaleVolumetry', () => {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `npm test -- tests/engines/volumetry/powerscale/cluster.spec.ts`
+Run: `npm run test:run -- tests/engines/volumetry/powerscale/cluster.spec.ts`
 Expected: FAIL — `Cannot find module '@/engines/volumetry/powerscale'`
 
 - [ ] **Step 3: Write the orchestrator**
@@ -1672,7 +1673,7 @@ In `src/engines/volumetry/index.ts`, immediately after `validateTopology`:
 
 - [ ] **Step 5: Run tests to verify they pass**
 
-Run: `npm test -- tests/engines/volumetry && npm run typecheck`
+Run: `npm run test:run -- tests/engines/volumetry && npm run typecheck`
 Expected: cluster spec PASS, 7 tests. Existing volumetry specs still pass except any that assert the old PowerScale behaviour — update those to the new shape (they should now construct tiers).
 
 - [ ] **Step 6: Commit**
@@ -1720,7 +1721,7 @@ Extend `tests/engines/capabilities.spec.ts`:
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `npm test -- tests/engines/capabilities.spec.ts`
+Run: `npm run test:run -- tests/engines/capabilities.spec.ts`
 Expected: FAIL — `expected true to be false` on `hasServerCount`.
 
 - [ ] **Step 3: Remove the dead branches**
@@ -1893,7 +1894,7 @@ Extend `tests/engines/performance.spec.ts`:
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run: `npm test -- tests/hooks/powerscaleScopes.spec.ts tests/engines/performance.spec.ts`
+Run: `npm run test:run -- tests/hooks/powerscaleScopes.spec.ts tests/engines/performance.spec.ts`
 Expected: FAIL — `powerScaleDriveTotals` is not exported; `getWritePenalty` ignores its second argument.
 
 - [ ] **Step 3: Extract the shared stripe shape**
@@ -2100,7 +2101,7 @@ note beneath the tier table when `tiers.length > 1`, keyed
 
 - [ ] **Step 9: Run the gates**
 
-Run: `npm test -- tests/hooks tests/engines/performance.spec.ts && npm run typecheck && npm run lint`
+Run: `npm run test:run -- tests/hooks tests/engines/performance.spec.ts && npm run typecheck && npm run lint`
 Expected: PASS. Confirm no remaining reference to a deleted `powerscale_n*` level:
 `grep -rn "powerscale_n1\|powerscale_n2\|powerscale_n3\|powerscale_n4\|powerscale_mirror" src/ tests/` returns nothing.
 
@@ -2295,7 +2296,7 @@ describe('PowerSizer conformance', () => {
 
 - [ ] **Step 2: Run the gate**
 
-Run: `npm test -- tests/engines/volumetry/powerscale/powersizer.spec.ts`
+Run: `npm run test:run -- tests/engines/volumetry/powerscale/powersizer.spec.ts`
 Expected: PASS, 6 tests. Failures name the exact `(model, driveSize, nodes, protection)`.
 **Fix the engine or the extraction — never loosen a tolerance to get green.** If the p99
 assertion fails, the `usableFactor` fit regressed (check that Task 1 uses least squares, not a
@@ -2432,7 +2433,7 @@ describe('PowerScaleOptionsPanel', () => {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `npm test -- tests/components/PowerScaleOptionsPanel.spec.tsx`
+Run: `npm run test:run -- tests/components/PowerScaleOptionsPanel.spec.tsx`
 Expected: FAIL — no "add node pool" button exists.
 
 - [ ] **Step 3: Build the tier row**
@@ -2834,7 +2835,7 @@ Write every key at its call site as a full literal string — `t('powerscale.tie
 
 - [ ] **Step 7: Run the tests**
 
-Run: `npm test -- tests/components tests/i18n && npm run typecheck && npm run lint`
+Run: `npm run test:run -- tests/components tests/i18n && npm run typecheck && npm run lint`
 Expected: PASS. The orphan-key spec must find no unused or missing keys in any of the four locales.
 
 - [ ] **Step 8: Commit**
