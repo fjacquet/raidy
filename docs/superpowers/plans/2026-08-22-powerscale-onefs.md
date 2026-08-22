@@ -29,6 +29,7 @@
 ## File Structure
 
 **Created:**
+
 - `scripts/build-powerscale-catalog.mjs` — one-off extraction from the `.xlsm` into the three artifacts below. Not run in CI.
 - `src/data/powerscaleNodes.json` — generated node catalog (models, drive sizes, bounds, DRR, usableFactor, protection availability RLE).
 - `src/data/powerscaleEfficiency.json` — generated efficiency table + drive-size exceptions.
@@ -45,6 +46,7 @@
 - `docs/adr/0014-vendor-lookup-tables.md` — ADR for shipping a vendor table instead of a formula.
 
 **Modified:**
+
 - `src/types/topology.ts` — `PowerScaleProtection`, `PowerScaleTier`, `PowerScaleOptions`, level collapse, defaults.
 - `src/types/results.ts` — `PowerScaleTierResult`, `PowerScaleCapacityDetails`, `VolumetryResult.powerScaleDetails`.
 - `src/utils/schemas.ts` — PowerScale topology + options schemas.
@@ -77,6 +79,7 @@
 Produces the vendor data raidy will ship. Nothing else can start without it.
 
 **Files:**
+
 - Create: `scripts/build-powerscale-catalog.mjs`
 - Create: `src/data/powerscaleNodes.json` (generated)
 - Create: `src/data/powerscaleEfficiency.json` (generated)
@@ -85,6 +88,7 @@ Produces the vendor data raidy will ship. Nothing else can start without it.
 - Test: `tests/data/powerscaleData.spec.ts`
 
 **Interfaces:**
+
 - Consumes: nothing.
 - Produces: the two JSON files, whose exact shapes are:
 
@@ -120,8 +124,9 @@ Produces the vendor data raidy will ship. Nothing else can start without it.
 {
   // basis points (efficiency x 10000), one entry per node count from `from`
   "curves": { "F710|+2d:1n": { "from": 3, "bp": [6667, 7500, 8000] } },
-  // the 230 keys where efficiency depends on drive size too
-  "exceptions": { "H710|15.36|+3n|22": 7250 }
+  // 1045 entries: the 230 (model, protection, nodeCount) keys where efficiency
+  // also depends on drive size, expanded across each model's drive sizes
+  "exceptions": { "H710|2|+3n|22": 7250 }
 }
 ```
 
@@ -479,10 +484,12 @@ git commit -m "feat(powerscale): derive node catalog and efficiency table from P
 Wraps the generated JSON so no other module knows its on-disk shape, and converts TB → bytes once.
 
 **Files:**
+
 - Create: `src/data/powerscaleCatalog.ts`
 - Test: `tests/data/powerscaleCatalog.spec.ts`
 
 **Interfaces:**
+
 - Consumes: `src/data/powerscaleNodes.json`, `src/data/powerscaleEfficiency.json` (Task 1).
 - Produces:
 
@@ -741,11 +748,13 @@ git commit -m "feat(powerscale): typed accessors over the generated node catalog
 ### Task 3: Efficiency lookup and the OneFS reference formula
 
 **Files:**
+
 - Create: `src/engines/volumetry/powerscale/efficiency.ts`
 - Create: `src/engines/volumetry/powerscale/onefsFormula.ts`
 - Test: `tests/engines/volumetry/powerscale/efficiency.spec.ts`
 
 **Interfaces:**
+
 - Consumes: `src/data/powerscaleEfficiency.json` (Task 1), `PowerScaleProtection` (Task 2/4).
 - Produces:
 
@@ -779,16 +788,26 @@ describe('storageEfficiency', () => {
   })
 
   it('applies mirror fallback values below the FEC threshold', () => {
-    // +4n on 5 nodes is 5-way mirroring, not (5-4)/5
-    expect(storageEfficiency('A200', 8, '+4n', 5)).toBeCloseTo(0.2, 4)
+    // +4n on 5 nodes is 5-way mirroring, not (5-4)/5. Verified vendor rows for
+    // F710 +4n: N=3 -> 0.3333, N=4 -> 0.25, N=5..7 -> 0.20, N=8 -> 0.50.
+    // Use an F-series model: it starts at 3 nodes, so the vendor actually
+    // publishes the mirror-fallback region. A200 starts at 4 nodes and has no
+    // +4n rows below 8 at all.
+    expect(storageEfficiency('F710', 15.36, '+4n', 5)).toBeCloseTo(0.2, 4)
+    expect(storageEfficiency('F710', 15.36, '+4n', 3)).toBeCloseTo(0.3333, 4)
   })
 
   it('honours drive-size-dependent exceptions', () => {
-    expect(storageEfficiency('H710', 15.36, '+3n', 22)).toBeCloseTo(0.725, 4)
+    // H710 drive sizes are 2/4/8/12/16/20/24 TB - it has no 15.36 TB option.
+    expect(storageEfficiency('H710', 2, '+3n', 22)).toBeCloseTo(0.725, 4)
   })
 
   it('returns undefined for a combination the vendor table does not cover', () => {
+    // A200 offers no +1n at any node count, and its minimum is 4 nodes.
     expect(storageEfficiency('A200', 8, '+1n', 3)).toBeUndefined()
+    // Below the vendor's first row for the pair: not sizeable, never guessed.
+    // A200 publishes no +4n below 8 nodes (spec §10).
+    expect(storageEfficiency('A200', 8, '+4n', 5)).toBeUndefined()
     expect(storageEfficiency('NOPE', 8, '+2n', 10)).toBeUndefined()
   })
 })
@@ -949,6 +968,7 @@ git commit -m "feat(powerscale): PowerSizer efficiency lookup with OneFS referen
 The breaking change. Everything that names the old PowerScale shape moves in one commit so the repo never sits in a half-migrated state.
 
 **Files:**
+
 - Modify: `src/types/topology.ts`
 - Modify: `src/types/results.ts`
 - Modify: `src/utils/schemas.ts`
@@ -957,6 +977,7 @@ The breaking change. Everything that names the old PowerScale shape moves in one
 - Test: `tests/store/powerscaleMigration.spec.ts`, `tests/utils/schemas.spec.ts` (extend)
 
 **Interfaces:**
+
 - Consumes: `listModels`, `suggestedProtection` (Task 2).
 - Produces:
 
@@ -1301,10 +1322,12 @@ moves into PowerScaleOptions.tiers[]. Pre-3.1 links are migrated on read."
 One node pool, end to end. Pure function, no store, no React.
 
 **Files:**
+
 - Create: `src/engines/volumetry/powerscale/tier.ts`
 - Test: `tests/engines/volumetry/powerscale/tier.spec.ts`
 
 **Interfaces:**
+
 - Consumes: `rawPerDriveBytes`, `usableFactor`, `getModel` (Task 2); `storageEfficiency` (Task 3); `PowerScaleTier` (Task 4).
 - Produces:
 
@@ -1487,12 +1510,14 @@ git commit -m "feat(powerscale): size one node pool from the vendor catalog"
 ### Task 6: Cluster orchestrator and engine branch
 
 **Files:**
+
 - Create: `src/engines/volumetry/powerscale/index.ts`
 - Modify: `src/engines/volumetry/index.ts`
 - Modify: `src/engines/volumetry/breakdown/buildBreakdown.ts`
 - Test: `tests/engines/volumetry/powerscale/cluster.spec.ts`
 
 **Interfaces:**
+
 - Consumes: `sizeTier` (Task 5).
 - Produces:
 
@@ -1690,6 +1715,7 @@ git commit -m "feat(powerscale): multi-tier cluster orchestrator with per-tier b
 The old branches are now unreachable. `check:dead` will fail until they are gone.
 
 **Files:**
+
 - Modify: `src/engines/volumetry/strategies/dell.ts`
 - Modify: `src/engines/volumetry/helpers/calculationHelpers.ts`
 - Modify: `src/engines/volumetry/overhead/overheadCalculator.ts`
@@ -1701,6 +1727,7 @@ The old branches are now unreachable. `check:dead` will fail until they are gone
 - Test: `tests/engines/capabilities.spec.ts` (extend)
 
 **Interfaces:**
+
 - Consumes: everything from Tasks 4–6.
 - Produces: no new exports; removes `powerscaleSnapshotReserve` from `OverheadResult`.
 
@@ -1781,6 +1808,7 @@ Scope differs per engine, deliberately:
   cluster, so first-tier-only would understate a multi-tier cluster's footprint by design.
 
 **Files:**
+
 - Modify: `src/hooks/useResilience.ts`
 - Modify: `src/hooks/usePerformanceCalc.ts`
 - Modify: `src/hooks/useSustainabilityCalc.ts`
@@ -1790,6 +1818,7 @@ Scope differs per engine, deliberately:
 - Test: `tests/hooks/powerscaleScopes.spec.ts`, `tests/engines/performance.spec.ts` (extend)
 
 **Interfaces:**
+
 - Consumes: `getModel` (Task 2), `PowerScaleOptions` / `PowerScaleTier` (Task 4).
 - Produces:
 
@@ -2119,10 +2148,12 @@ git commit -m "fix(powerscale): drive performance, resilience and sustainability
 The proof. 122,828 vendor rows, at the precision the source can actually support.
 
 **Files:**
+
 - Test: `tests/engines/volumetry/powerscale/powersizer.spec.ts`
 - Modify: `docs/TESTING.md`
 
 **Interfaces:**
+
 - Consumes: `sizeTier` (Task 5), `calculatePowerScaleVolumetry` (Task 6), the fixture (Task 1).
 - Produces: nothing.
 
@@ -2342,6 +2373,7 @@ git commit -m "test(powerscale): conformance gate against all 122,828 PowerSizer
 ### Task 10: UI — tier list, output table, i18n
 
 **Files:**
+
 - Create: `src/components/inputs/topology-options/PowerScaleTierRow.tsx`
 - Create: `src/components/output/PowerScaleTierTable.tsx`
 - Modify: `src/components/inputs/topology-options/PowerScaleOptionsPanel.tsx`
@@ -2351,6 +2383,7 @@ git commit -m "test(powerscale): conformance gate against all 122,828 PowerSizer
 - Test: `tests/components/PowerScaleOptionsPanel.spec.tsx`
 
 **Interfaces:**
+
 - Consumes: catalog accessors (Task 2), store actions (Task 4), `PowerScaleCapacityDetails` (Task 5).
 - Produces: no exported logic.
 
@@ -2850,10 +2883,12 @@ git commit -m "feat(powerscale): node-pool tier list and per-tier output table"
 ### Task 11: Documentation and ADR
 
 **Files:**
+
 - Create: `docs/adr/0014-vendor-lookup-tables.md`
 - Modify: `docs/ENGINES.md`, `docs/ARCHITECTURE.md`, `docs/DEVELOPMENT.md`, `docs/BACKLOG.md`, `docs/adr/README.md`, `CHANGELOG.md`, `CLAUDE.md`
 
 **Interfaces:**
+
 - Consumes: everything.
 - Produces: nothing.
 
