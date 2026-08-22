@@ -186,9 +186,21 @@ Calculates storage capacity and efficiency.
 >   derived copy count produce bit-identical survival rates under the same random stream.
 > - **FEC region** (`nodeCount >= 2*nf`): a dedicated branch — neither `isGroup` (independent
 >   parallel groups, any one lost = total loss) nor the flat node-blind parity count fits "one
->   flat domain, counted per node" — tracks per-node failure counts and declares loss when more
->   than `nf` DISTINCT nodes are touched by any failure, OR more than `M` failures land in one
->   node. Both thresholds come straight from `STRIPE_SHAPES`; no second table.
+>   flat domain, counted per node" — spends a single UNIT BUDGET (`M`): a drive failure debits 1
+>   unit; a whole-node failure debits `u` units, realized (`applyPowerScaleNodeFailure`) as `u`
+>   accumulated 1-unit drive debits landing on the SAME node followed by a sweep that removes the
+>   rest of that node's drives as one event — not as a side effect of the first drive on it
+>   dying. Loss when consumed units exceed `M`. `nf` stays in `STRIPE_SHAPES` as a
+>   vendor-published cross-check (`nf == floor(M / u)` holds for all nine entries — `+3d:1n1d`'s
+>   own name is the clearest instance: `u=2, M=3`, i.e. "1 node + 1 drive") but is NOT read by
+>   the loss decision directly. An earlier version of this model used `nf` and `M` as two
+>   independent thresholds ("more than `nf` nodes touched, OR more than `M` drives in one node")
+>   and was vacuously wrong for every `+Nn` protection: with `u=1` a node's own budget is
+>   exhausted by its first failed drive regardless of how many more it has, so a 15-drive-per-
+>   node A200 under `+2n` was declared dead on the THIRD drive failure concentrated in one node —
+>   contradicting "+Nn tolerates whole-node loss" one paragraph up. The unit budget fixes this:
+>   the same A200 pool now survives losing 30 drives across its first two whole nodes and dies on
+>   the third node's first drive, exactly matching the claim.
 >
 > `isPowerScaleMirrorRegion`/`powerScaleMirrorCopies` (`stripeShape.ts`) are the single place the
 > mirror-vs-FEC boundary lives, shared by the capacity closed form (`onefsFormula.ts`, test-only),

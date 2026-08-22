@@ -277,12 +277,16 @@ const SIMULATION_SCOPE_BY_TOPOLOGY: Partial<Record<Topology['type'], SimulationS
    * vendor catalog gives capacities, not AFR/URE/MTBF, and inventing those
    * would fabricate the very numbers the simulation reports.
    *
-   * Nodes are the failure-isolation groups: OneFS protection is per node pool and `+Nn`
-   * tolerates whole-node loss — realized by `powerScaleProtection` below, which the worker
-   * (`computeTopologyModel`'s PowerScale block) turns into the actual node-failure-tolerance
-   * model. That model is NOT vendor-attested (see `SimulationInput.powerScaleProtection`'s doc
-   * comment) — Dell's PowerSizer export has no AFR/URE/MTBF to validate a reliability model
-   * against, unlike every capacity number on this branch.
+   * Nodes are the failure-isolation groups: OneFS protection spends a single stripe-unit
+   * budget (`M`) across the pool — a drive failure debits 1 unit, a whole-node failure debits
+   * `u` units, loss when consumed units exceed `M` — realized by `powerScaleProtection` below,
+   * which the worker (`computeTopologyModel`'s PowerScale block, `applyPowerScaleNodeFailure`)
+   * turns into the actual node-failure-tolerance model. `nf` (node-failure count) is a
+   * vendor-published cross-check derivable from the same table (`nf == floor(M / u)`), not a
+   * second, independent tolerance the loss decision reads directly. That model is NOT
+   * vendor-attested (see `SimulationInput.powerScaleProtection`'s doc comment) — Dell's
+   * PowerSizer export has no AFR/URE/MTBF to validate a reliability model against, unlike every
+   * capacity number on this branch.
    *
    * `firstTier` — not `powerscaleOptions.tiers[0]` re-indexed independently — is read from the
    * SAME `powerScaleDriveTotals` call the population comes from, so the protection driving the
