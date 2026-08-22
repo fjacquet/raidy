@@ -46,9 +46,13 @@ interface RawModel {
   endOfLife?: string
   driveSizes: Record<string, RawDriveSize>
 }
+interface AvailabilityEntry {
+  a: [number, number][]
+  s: [number, string][]
+}
 interface RawCatalog {
   models: Record<string, RawModel>
-  availability: Record<string, { a: [number, number][]; s: [number, string][] }>
+  availability: Record<string, AvailabilityEntry>
   protectionSets: string[][]
 }
 
@@ -86,24 +90,31 @@ export function listDriveSizes(modelId: string): number[] {
 }
 
 /**
- * Resolves `driveSizeTb` to the on-disk decimal-string key for `modelId`'s
- * drive sizes ('15.36', '2', ...), matching numerically rather than by
- * string identity — the workbook's formatting is not a contract callers
- * should have to replicate.
+ * Resolve a numeric drive size to its on-disk key.
+ *
+ * The generated catalog writes drive sizes as the workbook formats them
+ * ('2', '15.36'). Matching numerically rather than by string identity means a
+ * regenerated catalog that wrote '2.0' would still resolve, instead of making
+ * a valid configuration silently report as not sizeable.
  */
-function resolveDriveSizeKey(modelId: string, driveSizeTb: number): string | undefined {
-  const model = catalog.models[modelId]
-  if (!model) return undefined
-  return Object.keys(model.driveSizes).find((k) => Number(k) === driveSizeTb)
+export function resolveDriveSizeKey(
+  driveSizes: Record<string, unknown>,
+  driveSizeTb: number,
+): string | undefined {
+  return Object.keys(driveSizes).find((k) => Number(k) === driveSizeTb)
 }
 
 function driveSizeEntry(modelId: string, driveSizeTb: number): RawDriveSize | undefined {
-  const key = resolveDriveSizeKey(modelId, driveSizeTb)
-  return key === undefined ? undefined : catalog.models[modelId]?.driveSizes[key]
+  const model = catalog.models[modelId]
+  if (!model) return undefined
+  const key = resolveDriveSizeKey(model.driveSizes, driveSizeTb)
+  return key === undefined ? undefined : model.driveSizes[key]
 }
 
-function availabilityEntry(modelId: string, driveSizeTb: number) {
-  const key = resolveDriveSizeKey(modelId, driveSizeTb)
+function availabilityEntry(modelId: string, driveSizeTb: number): AvailabilityEntry | undefined {
+  const model = catalog.models[modelId]
+  if (!model) return undefined
+  const key = resolveDriveSizeKey(model.driveSizes, driveSizeTb)
   return key === undefined ? undefined : catalog.availability[`${modelId}|${key}`]
 }
 

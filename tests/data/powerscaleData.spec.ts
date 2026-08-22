@@ -72,4 +72,15 @@ describe('PowerScale generated data', () => {
     // 'Isilon A200' in the Hardware EOL sheet maps to catalog id 'A200'
     expect(nodes.models.A200.endOfLife).toMatch(/^\d{4}-\d{2}-\d{2}$/)
   })
+
+  it('writes canonical numeric drive-size keys', () => {
+    // src/data/powerscaleCatalog.ts matches drive sizes numerically as a defensive
+    // measure against non-canonical keys (e.g. a future regeneration writing '2.0').
+    // This pins down that the current catalog never actually needs that fallback.
+    for (const [modelId, model] of Object.entries(nodes.models)) {
+      for (const key of Object.keys(model.driveSizes)) {
+        expect(`${Number(key)}`, `${modelId} drive-size key`).toBe(key)
+      }
+    }
+  })
 })

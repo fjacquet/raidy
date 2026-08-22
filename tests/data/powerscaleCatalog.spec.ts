@@ -5,6 +5,7 @@ import {
   listDriveSizes,
   listModels,
   rawPerDriveBytes,
+  resolveDriveSizeKey,
   suggestedProtection,
   usableFactor,
 } from '@/data/powerscaleCatalog'
@@ -58,12 +59,16 @@ describe('powerscaleCatalog', () => {
     expect(availableProtections('F200', 999, 3)).toEqual([])
   })
 
-  it('matches availability by numeric drive size, not string identity', () => {
-    const canonical = availableProtections('A200', 2, 10)
-    const alternateFormatting = availableProtections('A200', 2.0, 10)
-    expect(canonical.length).toBeGreaterThan(0)
-    expect(alternateFormatting).toEqual(canonical)
-    // A genuinely absent size still reports empty, not a false match.
+  it('resolves a drive size whose on-disk key is formatted differently', () => {
+    // A regenerated catalog could write '2.0'; string-identity lookup would miss it.
+    expect(resolveDriveSizeKey({ '2.0': {} }, 2)).toBe('2.0')
+    expect(resolveDriveSizeKey({ '15.360': {} }, 15.36)).toBe('15.360')
+    expect(resolveDriveSizeKey({ '2': {} }, 2)).toBe('2')
+    expect(resolveDriveSizeKey({ '2': {} }, 2.5)).toBeUndefined()
+    expect(resolveDriveSizeKey({}, 2)).toBeUndefined()
+  })
+
+  it('reports a genuinely absent drive size as empty, not a false match', () => {
     expect(availableProtections('A200', 2.5, 10)).toEqual([])
   })
 
