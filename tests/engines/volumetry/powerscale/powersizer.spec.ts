@@ -40,13 +40,37 @@ function loadFixture(): VendorRow[] {
   return csv
     .split('\n')
     .filter(Boolean)
-    .map((line) => {
+    .map((line, i) => {
       // `noUncheckedIndexedAccess` makes a plain destructure of `.split(',')` widen every
-      // field to `T | undefined`; the fixture's shape is fixed (7 comma-separated columns,
-      // verified by the row-count assertion below), so a tuple cast is honest here.
-      const [model, driveSizeTb, nodes, protection, rawTb, usableTb, efficiency] = line.split(
-        ',',
-      ) as [string, string, string, PowerScaleProtection, string, string, string]
+      // field to `T | undefined`. A tuple cast alone would be unsafe here in a way that is
+      // specifically dangerous for a conformance gate: a short row yields `undefined`, which
+      // `Number()` turns into `NaN`, and every comparison below is `Math.abs(NaN - x) > tol`
+      // — which is `false`. A malformed fixture would pass the gate silently rather than
+      // failing it. So the shape is checked per row, not asserted.
+      const fields = line.split(',')
+      if (fields.length !== 7) {
+        throw new Error(`Malformed fixture row ${i + 1}: expected 7 columns, got ${fields.length}`)
+      }
+      const [model, driveSizeTb, nodes, protection, rawTb, usableTb, efficiency] = fields as [
+        string,
+        string,
+        string,
+        PowerScaleProtection,
+        string,
+        string,
+        string,
+      ]
+      for (const [name, raw] of [
+        ['driveSizeTb', driveSizeTb],
+        ['nodes', nodes],
+        ['rawTb', rawTb],
+        ['usableTb', usableTb],
+        ['efficiency', efficiency],
+      ] as const) {
+        if (!Number.isFinite(Number(raw))) {
+          throw new Error(`Malformed fixture row ${i + 1}: ${name} is not a finite number (${raw})`)
+        }
+      }
       return {
         model,
         driveSizeTb: Number(driveSizeTb),
