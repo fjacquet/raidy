@@ -108,7 +108,6 @@ Calculates storage capacity and efficiency.
 > | `netAppOptions.snapshotReserve` | multiplies directly (fraction) | `0..1` | panel divides by 100 on write, multiplies by 100 on display |
 > | `powerstoreOptions.snapshotReservePercent` | divided by 100 (percent) | `0..100` | panel writes raw percent |
 > | `powerstoreOptions.systemOverheadPercent` | divided by 100 (percent) | `0..100` | panel writes raw percent |
-> | `powerscaleOptions.snapshotReservePercent` | divided by 100 (percent) | `0..100` | panel writes raw percent |
 > | `objectscaleOptions.systemOverheadPercent` | divided by 100 (percent) | `0..100` | panel writes raw percent |
 > | `netAppOptions.waflOverhead` | multiplies directly (fraction) | `0..1` | panel divides by 100 on write, multiplies by 100 on display |
 > | `netAppOptions.dataReductionRatio` | multiplies directly (true ratio, not a proportion) | `1..20` | panel writes raw ratio |
@@ -119,7 +118,7 @@ Calculates storage capacity and efficiency.
 > | `longhornOptions.overProvisioningPercent` | not multiplied against capacity (advisory display only) | `0..1000` | panel writes raw percent |
 > | `beeGfsOptions.fsOverheadPercent` | divided by 100 (percent) | `0.5..5` | panel writes raw percent |
 > | `TieringConfig.workingSetPercent` | divided by 100 (percent) | `0..100` | panel writes raw percent |
-> | `*.compressionRatio` / `*.dedupRatio` (vSAN, PowerFlex, Nutanix, PowerStore, PowerScale, ObjectScale, global) | multiply directly (true ratios, e.g. 1.5 = 1.5:1, not proportions of 1) | `1..10` | panels write the raw ratio value; no /100 or ×100 anywhere in this family |
+> | `*.compressionRatio` / `*.dedupRatio` (vSAN, PowerFlex, Nutanix, PowerStore, ObjectScale, global) | multiply directly (true ratios, e.g. 1.5 = 1.5:1, not proportions of 1) | `1..10` | panels write the raw ratio value; no /100 or ×100 anywhere in this family |
 >
 > Every live (engine-consumed) field's three facts agree, so no code changed. This table
 > originally also listed four fields with no engine consumer at all — `synologyOptions.btrfsOverhead`,
@@ -134,6 +133,15 @@ Calculates storage capacity and efficiency.
 > size are already set explicitly by the user via the tiering picker (`resolveTiering` /
 > `TieringConfig`), so deriving them from a ratio would mean silently overriding that explicit
 > choice rather than modeling anything real.
+>
+> A fifth field left this table later, for a third reason again: PowerScale's
+> `snapshotReservePercent`, `compressionRatio` and `dedupRatio` were live and correctly
+> wired, but the OneFS rebuild retired the generic drive-centric PowerScale path they
+> belonged to. Data reduction is a published property of each node model in Dell's
+> catalog (1.0, 1.6 or 2.0), not a user-set slider, and PowerSizer reserves nothing for
+> snapshots — so a non-zero default would have put every raidy answer below the source of
+> truth. `PowerScaleOptions` is now `{ tiers }` alone; see
+> [adr/0014](./adr/0014-powerscale-onefs-vendor-table.md).
 
 ## Performance (`/src/engines/performance/`)
 
