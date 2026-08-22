@@ -42,6 +42,28 @@ docs.ceph.com (Ceph), the Synology RAID Calculator (Synology), and longhorn.io (
 phase-18 vector records its own source URL inline and in
 `.planning/phases/18-quality-audit/18-AUDIT.md`.
 
+### PowerScale PowerSizer conformance
+
+`tests/engines/volumetry/powerscale/powersizer.spec.ts` walks all 122,828 rows
+of Dell's PowerSizer export (`tests/fixtures/powerscale-powersizer.csv.gz`,
+528 KB gzipped). Each row is treated as a single-tier cluster with VHS disabled
+- the configuration the source workbook sizes.
+
+Precision differs per quantity, deliberately:
+
+| Quantity | Gate | Why |
+|---|---|---|
+| Storage efficiency | exact (basis points) | Shipped verbatim from the vendor. |
+| Raw capacity | +/- 0.005 TB, or 6 significant figures for larger clusters | The vendor's own cached "Raw TB" cell holds 2 decimals up to 4 integer digits, then degrades to ~6 significant figures - confirmed by `raw.toPrecision(6)` matching the vendor value exactly on every one of the 1,534 rows (of 122,828) where raw >= 10,000 TB. Not an extraction artifact: openpyxl reads that cell's cached value verbatim, untouched by `build-powerscale-catalog.mjs`. |
+| Usable capacity | +/- 0.06 % relative, p99 < 0.01 % | Reconstructed from a 4-decimal efficiency; the workbook's own 2-decimal usable rounding is worth up to 0.088 %. Measured at authoring time: max 0.053 %, p99 0.008 %. |
+
+Regenerate the fixture with:
+
+    node scripts/build-powerscale-catalog.mjs <path-to.xlsm>
+
+The source workbook is not redistributable and is never committed; `.gitignore`
+blocks `*.xlsm`. Only the derived data and this fixture live in the repo.
+
 ## Property-based testing
 
 [`fast-check`](https://fast-check.dev) drives exhaustive input validation on the engines — invariants (e.g. usable ≤ raw, monotonic parity overhead) hold across generated inputs, not just hand-picked cases.

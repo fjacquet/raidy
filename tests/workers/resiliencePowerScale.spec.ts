@@ -387,3 +387,83 @@ describe('resilienceWorker PowerScale survival (statistical, seeded)', () => {
     expect(driveLevel).toBeGreaterThan(nodeLevel)
   }, 30000)
 })
+
+describe('resilienceWorker PowerScale FEC — scripted deterministic unit-boundary pin (Task 9 fold-in)', () => {
+  afterEach(() => {
+    Math.random = REAL_RANDOM
+  })
+
+  /**
+   * Returns values from `script` in call order, then a constant safe-high value (0.99) forever
+   * after. 0.99 is guaranteed to fail every `random() < probability` check in this model — the
+   * daily failure rate, the correlated-failure trigger (fixed at 0.1), and the URE probability
+   * are all far below it — so every UNSCRIPTED call is a deliberate no-op, regardless of exactly
+   * how many of them occur or where.
+   *
+   * Unlike `mulberry32` above, this is not a PRNG feeding a 20,000-run statistical trend: it is
+   * a literal, hand-verified call sequence (checked line-by-line against
+   * `runSingleSimulation`'s `isPowerScaleFec` branch) that drives ONE simulation
+   * (`simulationCount: 1`) through an EXACT, pinned sequence of node failures.
+   */
+  function scriptedRandom(script: number[]): () => number {
+    let i = 0
+    return () => (i < script.length ? (script[i++] ?? 0.99) : 0.99)
+  }
+
+  async function runScripted(payload: Partial<SimulationInput>, script: number[]): Promise<number> {
+    Math.random = scriptedRandom(script)
+    vi.resetModules()
+    await import('@/workers/resilienceWorker')
+    const handler = (self as { onmessage: ((e: MessageEvent) => void) | null }).onmessage
+    mockPostMessage.mockClear()
+    handler?.({ data: { type: 'START', payload } } as MessageEvent)
+    const result = mockPostMessage.mock.calls.find((c) => c[0].type === 'RESULT')?.[0].payload as
+      | { survivalRate: number }
+      | undefined
+    if (!result) throw new Error('worker posted no RESULT')
+    return result.survivalRate
+  }
+
+  // '+2d:1n': u=2, M=2, nf=1 (STRIPE_SHAPES). 2 nodes (serverCount=2) sits exactly at the
+  // FEC/mirror boundary (nodeCount == 2*nf is FEC, not mirror — see the boundary test above), and
+  // 8 drives -> distributeAcrossGroups(8, 2) = [4, 4]: each node has 2 MORE drives than u, so the
+  // sweep on a node's u-th hit has something real to sweep (swept = width - u = 2 > 0) — exactly
+  // the condition the reviewer's mutation (`powerScaleUnitsConsumed += swept > 0 ? u : 1`) only
+  // misbehaves on. A protection where every node-hit sweeps nothing (or where u == 1, so `swept >
+  // 0 ? u : 1` always picks 1 anyway) cannot distinguish the mutant from the correct code.
+  const SCRIPT = [
+    0, // #1 drive-loop failure check (drive index 0)  -> true:  fails
+    0.99, // #2 correlated-failure trigger              -> false: no window
+    0, // #3 FEC weighted node selection                -> picks node 0 (first hit)
+    0, // #4 drive-loop failure check (drive index 1)  -> true:  fails
+    0.99, // #5 correlated-failure trigger              -> false: no window
+    0, // #6 FEC weighted node selection                -> picks node 0 again (SECOND hit)
+  ]
+  // After #6, node 0's own failure count reaches u=2 -> `applyPowerScaleNodeFailure` sweeps its
+  // other 2 drives. Correct code debits 1 unit per event regardless (2 events -> consumed = 2 =
+  // M): `consumed > M` is false, survives, then reaches the URE roll (`consumed >= M` is true) -
+  // scripted call #7 is unscripted and defaults to 0.99, so no URE death either. The mutant
+  // debits `u` = 2 on the SWEEPING event instead of 1 (1 + 2 = 3): `consumed(3) > M(2)` is true
+  // on event #2 itself, so the mutant returns dead immediately — it never reaches the URE roll,
+  // and every day/drive after these six calls (all defaulting to 0.99, guaranteeing no further
+  // failures for the rest of the simulated year) is irrelevant to the mutant either way, because
+  // it has already returned.
+  const PAYLOAD: Partial<SimulationInput> = {
+    driveCount: 8,
+    serverCount: 2,
+    raidLevel: 'powerscale_onefs',
+    powerScaleProtection: '+2d:1n',
+    driveCapacityBytes: 4_000_000_000_000,
+    // Slow enough that rebuild never completes within the simulated year (~4,415 days at this
+    // speed) — consumed units must not decay back down mid-run and mask the boundary.
+    rebuildSpeedMBs: 0.01,
+    ureRate: 15,
+    afrPercent: 3,
+    simulationCount: 1,
+  }
+
+  it('+2d:1n (u=2, M=2): two failures on the same node consume exactly M units and survive — the mutation over-debits the sweep event and dies instead', async () => {
+    const survivalRate = await runScripted(PAYLOAD, SCRIPT)
+    expect(survivalRate).toBe(1)
+  })
+})
