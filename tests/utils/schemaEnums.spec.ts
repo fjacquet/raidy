@@ -6,7 +6,7 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_CONTROLLER_OPTIONS } from '@/types'
+import { DEFAULT_CONTROLLER_OPTIONS, DEFAULT_POWERSCALE_TIER } from '@/types'
 import {
   BLOCK_SIZES,
   CARBON_REGIONS,
@@ -15,10 +15,22 @@ import {
   PCIE_GENS,
   PCIE_LANES,
 } from '@/types/config'
-import { CONTROLLER_TYPES } from '@/types/topology'
+import { CONTROLLER_TYPES, type PowerScaleProtection } from '@/types/topology'
 import { validateUrlState } from '@/utils/schemas'
 
 const VALID_CONTROLLER_OPTIONS = DEFAULT_CONTROLLER_OPTIONS
+
+const POWERSCALE_PROTECTIONS: PowerScaleProtection[] = [
+  '+1n',
+  '+2n',
+  '+3n',
+  '+4n',
+  '+2d:1n',
+  '+3d:1n',
+  '+3d:1n1d',
+  '+4d:1n',
+  '+4d:2n',
+]
 
 describe('URL schema closed enums', () => {
   const rootCases = [
@@ -54,6 +66,43 @@ describe('URL schema closed enums', () => {
   it('rejects a forged controller value', () => {
     const state = {
       controllerOptions: { ...VALID_CONTROLLER_OPTIONS, controller: 'not-a-controller' },
+    }
+    expect(validateUrlState(state)).toBeNull()
+  })
+
+  it('accepts only the collapsed powerscale_onefs topology level', () => {
+    expect(
+      validateUrlState({ topology: { type: 'powerscale', level: 'powerscale_onefs' } }),
+    ).not.toBeNull()
+    expect(
+      validateUrlState({ topology: { type: 'powerscale', level: 'powerscale_n2' } }),
+    ).toBeNull()
+  })
+
+  it('accepts every declared powerscale tier protection value', () => {
+    expect(POWERSCALE_PROTECTIONS.length).toBeGreaterThan(1)
+    for (const protection of POWERSCALE_PROTECTIONS) {
+      const state = {
+        powerscaleOptions: { tiers: [{ ...DEFAULT_POWERSCALE_TIER, protection }] },
+      }
+      expect(validateUrlState(state)).not.toBeNull()
+    }
+  })
+
+  it('rejects a forged powerscale tier protection value', () => {
+    const state = {
+      powerscaleOptions: {
+        tiers: [{ ...DEFAULT_POWERSCALE_TIER, protection: '+9n' }],
+      },
+    }
+    expect(validateUrlState(state)).toBeNull()
+  })
+
+  it('rejects a powerscale tier node count below the schema floor of 3', () => {
+    const state = {
+      powerscaleOptions: {
+        tiers: [{ ...DEFAULT_POWERSCALE_TIER, nodeCount: 2 }],
+      },
     }
     expect(validateUrlState(state)).toBeNull()
   })

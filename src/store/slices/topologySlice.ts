@@ -11,7 +11,7 @@ import type {
   NutanixOptions,
   ObjectScaleOptions,
   PowerFlexOptions,
-  PowerScaleOptions,
+  PowerScaleTier,
   PowerStoreOptions,
   RaidControllerOptions,
   S2DOptions,
@@ -32,12 +32,14 @@ import {
   DEFAULT_OBJECTSCALE_OPTIONS,
   DEFAULT_POWERFLEX_OPTIONS,
   DEFAULT_POWERSCALE_OPTIONS,
+  DEFAULT_POWERSCALE_TIER,
   DEFAULT_POWERSTORE_OPTIONS,
   DEFAULT_S2D_OPTIONS,
   DEFAULT_SYNOLOGY_OPTIONS,
   DEFAULT_VSAN_OPTIONS,
   DEFAULT_ZFS_OPTIONS,
   getControllerOptions,
+  POWERSCALE_MAX_TIERS,
   usesDistributedSpares,
 } from '@/types'
 
@@ -49,7 +51,9 @@ export interface TopologySlice extends TopologyState {
   setVsanOptions: (options: Partial<VsanOptions>) => void
   setObjectScaleOptions: (options: Partial<ObjectScaleOptions>) => void
   setPowerStoreOptions: (options: Partial<PowerStoreOptions>) => void
-  setPowerScaleOptions: (options: Partial<PowerScaleOptions>) => void
+  addPowerScaleTier: () => void
+  removePowerScaleTier: (index: number) => void
+  updatePowerScaleTier: (index: number, patch: Partial<PowerScaleTier>) => void
   setCephOptions: (options: Partial<CephOptions>) => void
   setLonghornOptions: (options: Partial<LonghornOptions>) => void
   setBeeGfsOptions: (options: Partial<BeeGfsOptions>) => void
@@ -129,8 +133,33 @@ export const createTopologySlice: StateCreator<TopologySlice> = (set) => ({
     set((state) => ({ objectscaleOptions: { ...state.objectscaleOptions, ...options } })),
   setPowerStoreOptions: (options) =>
     set((state) => ({ powerstoreOptions: { ...state.powerstoreOptions, ...options } })),
-  setPowerScaleOptions: (options) =>
-    set((state) => ({ powerscaleOptions: { ...state.powerscaleOptions, ...options } })),
+  addPowerScaleTier: () =>
+    set((state) => {
+      if (state.powerscaleOptions.tiers.length >= POWERSCALE_MAX_TIERS) return state
+      return {
+        powerscaleOptions: {
+          tiers: [...state.powerscaleOptions.tiers, { ...DEFAULT_POWERSCALE_TIER }],
+        },
+      }
+    }),
+  removePowerScaleTier: (index) =>
+    set((state) => {
+      // A cluster always has at least one node pool.
+      if (state.powerscaleOptions.tiers.length <= 1) return state
+      return {
+        powerscaleOptions: {
+          tiers: state.powerscaleOptions.tiers.filter((_, i) => i !== index),
+        },
+      }
+    }),
+  updatePowerScaleTier: (index, patch) =>
+    set((state) => ({
+      powerscaleOptions: {
+        tiers: state.powerscaleOptions.tiers.map((tier, i) =>
+          i === index ? { ...tier, ...patch } : tier,
+        ),
+      },
+    })),
   setCephOptions: (options) =>
     set((state) => ({ cephOptions: { ...state.cephOptions, ...options } })),
   setLonghornOptions: (options) =>

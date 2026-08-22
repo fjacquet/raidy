@@ -104,15 +104,7 @@ const TopologySchema = z.discriminatedUnion('type', [
   }),
   z.object({
     type: z.literal('powerscale'),
-    level: z.enum([
-      'powerscale_n1',
-      'powerscale_n2',
-      'powerscale_n2_1',
-      'powerscale_n3',
-      'powerscale_n4',
-      'powerscale_mirror_2x',
-      'powerscale_mirror_3x',
-    ]),
+    level: z.literal('powerscale_onefs'),
   }),
   z.object({
     type: z.literal('objectscale'),
@@ -322,14 +314,35 @@ const PowerStoreOptionsSchema = z.object({
 })
 
 /**
- * PowerScale options schema
+ * PowerScale options schema.
+ *
+ * Nested `z.object()` strips unknown keys but REQUIRES declared ones, so the
+ * removed compression/dedup/snapshot fields must not reappear here — a link
+ * carrying them is migrated in `urlStorage.ts`, not validated here.
  */
+const PowerScaleTierSchema = z.object({
+  nodeModel: z.string().min(1).max(16),
+  driveSizeTb: z.number().positive().finite(),
+  // 3 is the smallest node count any catalog model supports; a crafted link
+  // with fewer would find no efficiency curve and silently size to zero.
+  nodeCount: z.number().int().min(3).max(252),
+  protection: z.enum([
+    '+1n',
+    '+2n',
+    '+3n',
+    '+4n',
+    '+2d:1n',
+    '+3d:1n',
+    '+3d:1n1d',
+    '+4d:1n',
+    '+4d:2n',
+  ]),
+  vhsDriveCount: z.number().int().min(0).max(64),
+  vhsPercent: z.number().min(0).max(50).finite(),
+})
+
 const PowerScaleOptionsSchema = z.object({
-  compression: z.boolean(),
-  compressionRatio: z.number().min(1).max(10).finite(),
-  dedup: z.boolean(),
-  dedupRatio: z.number().min(1).max(10).finite(),
-  snapshotReservePercent: z.number().min(0).max(100).finite(),
+  tiers: z.array(PowerScaleTierSchema).min(1).max(8),
 })
 
 /**
