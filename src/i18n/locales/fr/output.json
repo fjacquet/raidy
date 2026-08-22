@@ -208,6 +208,19 @@
     }
   },
   "powerscale": {
-    "firstTierOnly": "Les indicateurs de performance et de résilience modélisent uniquement le premier pool de nœuds. La capacité, la consommation électrique et le coût couvrent l'ensemble du cluster."
+    "firstTierOnly": "Les indicateurs de performance et de résilience modélisent uniquement le premier pool de nœuds. La capacité, la consommation électrique et le coût couvrent l'ensemble du cluster.",
+    "tableCaption": "Capacité par pool de nœuds",
+    "total": "Total du cluster",
+    "eol": "Fin de vie {{date}}",
+    "column": {
+      "nodeModel": "Modèle de nœud",
+      "driveSize": "Taille de disque (TB)",
+      "nodes": "Nœuds",
+      "protection": "Protection",
+      "raw": "Brut",
+      "usable": "Utile",
+      "effective": "Effective",
+      "efficiency": "Efficacité"
+    }
   }
 }

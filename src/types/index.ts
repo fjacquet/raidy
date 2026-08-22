@@ -43,6 +43,7 @@ export type {
   NutanixOptions,
   ObjectScaleOptions,
   PowerFlexOptions,
+  PowerScaleProtection,
   PowerScaleTier,
   PowerStoreOptions,
   RaidControllerOptions,

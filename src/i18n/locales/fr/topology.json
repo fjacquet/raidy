@@ -336,34 +336,26 @@
     }
   },
   "powerscale": {
-    "title": "Options PowerScale",
-    "n1": {
-      "label": "N+1",
-      "description": "Protection parité simple"
+    "title": "Cluster PowerScale",
+    "onefs": {
+      "label": "OneFS",
+      "description": "NAS scale-out. La protection se définit par pool de nœuds."
     },
-    "n2": {
-      "label": "N+2",
-      "description": "Protection double parité"
-    },
-    "n2_1": {
-      "label": "N+2:1",
-      "description": "N+2 avec tolérance panne stripe"
-    },
-    "n3": {
-      "label": "N+3",
-      "description": "Protection triple parité"
-    },
-    "n4": {
-      "label": "N+4",
-      "description": "Protection quadruple parité"
-    },
-    "mirror_2x": {
-      "label": "Miroir 2x",
-      "description": "Miroir 2 voies, 50% efficacité"
-    },
-    "mirror_3x": {
-      "label": "Miroir 3x",
-      "description": "Miroir 3 voies, 33% efficacité"
+    "tier": {
+      "heading": "Pool de nœuds {{index}}",
+      "nodeModel": "Modèle de nœud",
+      "driveSize": "Taille de disque (TB)",
+      "nodeCount": "Nombre de nœuds",
+      "driveTotal": "{{count}} disques",
+      "protection": "Protection",
+      "vhsDriveCount": "Virtual Hot Spare (disques)",
+      "vhsPercent": "Virtual Hot Spare (%)",
+      "add": "Ajouter un pool de nœuds",
+      "remove": "Supprimer le pool de nœuds",
+      "moveUp": "Déplacer le pool vers le haut",
+      "moveDown": "Déplacer le pool vers le bas",
+      "eol": "Fin de vie {{date}}",
+      "notSizeable": "Le catalogue Dell ne publie pas cette combinaison : ce pool de nœuds ne peut pas être dimensionné et ne contribue en rien aux résultats."
     }
   },
   "ceph": {

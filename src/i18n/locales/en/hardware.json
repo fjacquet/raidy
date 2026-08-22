@@ -29,7 +29,8 @@
   "drive": {
     "label": "Drive Model",
     "count": "Drives per Server",
-    "countHint": "Total drives: {{total}}"
+    "countHint": "Total drives: {{total}}",
+    "powerscaleNote": "Drive count comes from the node pools in the Topology panel: {{drives}} drives across {{nodes}} nodes."
   },
   "server": {
     "label": "Servers / Nodes",

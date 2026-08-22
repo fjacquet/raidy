@@ -19,6 +19,11 @@ as a URL.
    than sitting there inert.
 2. **Hardware** — drive model, drives per server, servers. The drive database carries real
    published specs: capacity, IOPS, throughput, power, endurance, AFR and URE rate.
+   *PowerScale is the exception*: its cluster is built as node pools in the Topology panel (node
+   model, drive size, node count, protection, virtual hot spare — all constrained to what Dell's
+   catalog publishes, 1 to 8 pools per cluster), so the drives-per-server and servers sliders do
+   not apply and the panel shows the pools' own drive count instead. Capacity is reported per
+   pool with a cluster total; performance and resilience describe the FIRST pool only.
 3. **Workload** — read/write mix, random/sequential mix, block size, daily writes. The profile
    buttons underneath set the first three in one click, and which profiles you see depends on the
    platform: BeeGFS offers HPC and AI profiles (training data, checkpointing, scratch, genomics,

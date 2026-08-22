@@ -336,34 +336,26 @@
     }
   },
   "powerscale": {
-    "title": "PowerScale Options",
-    "n1": {
-      "label": "N+1",
-      "description": "Single parity protection"
+    "title": "PowerScale Cluster",
+    "onefs": {
+      "label": "OneFS",
+      "description": "Scale-out NAS. Protection is set per node pool."
     },
-    "n2": {
-      "label": "N+2",
-      "description": "Double parity protection"
-    },
-    "n2_1": {
-      "label": "N+2:1",
-      "description": "N+2 with stripe failure tolerance"
-    },
-    "n3": {
-      "label": "N+3",
-      "description": "Triple parity protection"
-    },
-    "n4": {
-      "label": "N+4",
-      "description": "Quad parity protection"
-    },
-    "mirror_2x": {
-      "label": "Mirror 2x",
-      "description": "2-way mirrored, 50% efficiency"
-    },
-    "mirror_3x": {
-      "label": "Mirror 3x",
-      "description": "3-way mirrored, 33% efficiency"
+    "tier": {
+      "heading": "Node pool {{index}}",
+      "nodeModel": "Node model",
+      "driveSize": "Drive size (TB)",
+      "nodeCount": "Node count",
+      "driveTotal": "{{count}} drives",
+      "protection": "Protection",
+      "vhsDriveCount": "Virtual hot spare (drives)",
+      "vhsPercent": "Virtual hot spare (%)",
+      "add": "Add node pool",
+      "remove": "Remove node pool",
+      "moveUp": "Move node pool up",
+      "moveDown": "Move node pool down",
+      "eol": "End of life {{date}}",
+      "notSizeable": "Dell's catalog does not publish this combination, so this node pool cannot be sized and contributes nothing to the results."
     }
   },
   "ceph": {

@@ -29,7 +29,8 @@
   "drive": {
     "label": "Modèle de disque",
     "count": "Disques par serveur",
-    "countHint": "Total disques: {{total}}"
+    "countHint": "Total disques: {{total}}",
+    "powerscaleNote": "Le nombre de disques provient des pools de nœuds du panneau Topologie : {{drives}} disques répartis sur {{nodes}} nœuds."
   },
   "server": {
     "label": "Serveurs / Nœuds",

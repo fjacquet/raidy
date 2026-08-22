@@ -65,6 +65,13 @@ interface SelectOption {
   value: string
   label: string
   description?: string
+  /**
+   * Optional `<optgroup>` heading. Options carrying the same group are rendered under one
+   * heading, in first-appearance order; options with no group render at the top level. Added
+   * for the PowerScale node catalog, where 22 models only become scannable once they are split
+   * into All Flash / Hybrid / Archive.
+   */
+  group?: string
 }
 
 interface SelectProps {
@@ -74,18 +81,41 @@ interface SelectProps {
   onChange: (value: string) => void
 }
 
+const SELECT_CLASS =
+  'w-full px-3 py-2 bg-slate-100 dark:bg-surface-700 border border-slate-200 dark:border-surface-600 rounded-lg text-slate-800 dark:text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent'
+
+function Option({ option }: { option: SelectOption }) {
+  return <option value={option.value}>{option.label}</option>
+}
+
 export function Select({ id, value, options, onChange }: SelectProps) {
+  // Group headings are collected in first-appearance order so the caller's ordering is what
+  // shows, rather than an alphabetical one imposed here.
+  const groups: string[] = []
+  for (const opt of options) {
+    if (opt.group !== undefined && !groups.includes(opt.group)) groups.push(opt.group)
+  }
+
   return (
     <select
       id={id}
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="w-full px-3 py-2 bg-slate-100 dark:bg-surface-700 border border-slate-200 dark:border-surface-600 rounded-lg text-slate-800 dark:text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+      className={SELECT_CLASS}
     >
-      {options.map((opt) => (
-        <option key={opt.value} value={opt.value}>
-          {opt.label}
-        </option>
+      {options
+        .filter((opt) => opt.group === undefined)
+        .map((opt) => (
+          <Option key={opt.value} option={opt} />
+        ))}
+      {groups.map((group) => (
+        <optgroup key={group} label={group}>
+          {options
+            .filter((opt) => opt.group === group)
+            .map((opt) => (
+              <Option key={opt.value} option={opt} />
+            ))}
+        </optgroup>
       ))}
     </select>
   )

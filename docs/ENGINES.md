@@ -220,6 +220,23 @@ Calculates storage capacity and efficiency.
 > panel's drive) because the vendor catalog carries capacities but no AFR/URE/MTBF — inventing
 > those would fabricate the very numbers the simulation reports. An empty or unsized tier list
 > degrades every one of these figures to a defined zero state rather than throwing.
+>
+> **The UI mirrors the model, not the old level dropdown.** `TOPOLOGY_LEVELS.powerscale` carries
+> exactly one entry (`powerscale_onefs`): protection is per node pool, so the level dropdown
+> offers no protection choice at all. That table is now typed per topology type
+> (`{ [T in TopologyType]: LevelOption<T>[] }`), and `TopologyPanel` builds a `Topology` through
+> `topologyFrom`/`defaultTopologyFor` instead of `as Topology` — the two changes together are why
+> the seven retired `powerscale_n*`/`mirror_*` levels could sit in the dropdown for months after
+> the type union dropped them, and why a retired level is a compile error now.
+> `PowerScaleOptionsPanel` renders 1-8 `PowerScaleTierRow`s, each a catalog-driven chain (model →
+> drive size → node count → protection) that re-derives everything downstream in ONE dispatch, so
+> the store can never hold — or a shared URL persist — an intermediate combination Dell does not
+> publish; a pool `sizeTier` still cannot size (an old URL below a model's node floor, say) is
+> flagged on its own row rather than shown as 0 TB. The Hardware panel hides its drive-count
+> slider for PowerScale and takes both the drive population and the raw capacity from the
+> catalog (`powerScaleDriveTotals` / `calculatePowerScaleVolumetry`), since no engine reads
+> `driveCount * serverCount` for this platform. `PowerScaleTierTable` shows the per-pool split
+> the cluster headline hides.
 
 ## Performance (`/src/engines/performance/`)
 

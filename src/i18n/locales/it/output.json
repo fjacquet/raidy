@@ -208,6 +208,19 @@
     }
   },
   "powerscale": {
-    "firstTierOnly": "I valori di prestazioni e resilienza modellano solo il primo pool di nodi. Capacità, consumo energetico e costi coprono l'intero cluster."
+    "firstTierOnly": "I valori di prestazioni e resilienza modellano solo il primo pool di nodi. Capacità, consumo energetico e costi coprono l'intero cluster.",
+    "tableCaption": "Capacità per pool di nodi",
+    "total": "Totale cluster",
+    "eol": "Fine vita {{date}}",
+    "column": {
+      "nodeModel": "Modello di nodo",
+      "driveSize": "Dimensione disco (TB)",
+      "nodes": "Nodi",
+      "protection": "Protezione",
+      "raw": "Grezza",
+      "usable": "Utile",
+      "effective": "Effettiva",
+      "efficiency": "Efficienza"
+    }
   }
 }

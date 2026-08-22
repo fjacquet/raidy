@@ -81,4 +81,41 @@ describe('HardwarePanel cluster summary', () => {
     const digits = summaryDigits()
     expect(digits).toContain(String(drive().cost_usd * 12))
   })
+
+  /**
+   * PowerScale populations are catalog facts, not panel inputs. `driveCount` and `serverCount`
+   * are stale defaults for it — no engine reads them (`hasServerCount: false`) — so a summary
+   * built from their product priced and sized a cluster the user never configured.
+   */
+  it('sizes and prices a PowerScale cluster from its node pools, not the stale sliders', () => {
+    const store = useConfigStore.getState()
+    store.setTopology({ type: 'powerscale', level: 'powerscale_onefs' })
+    store.setDriveId(DRIVE_ID)
+    // Deliberately different from the pool's own population so the two cannot be confused.
+    store.setDriveCount(7)
+    store.setServerCount(5)
+    useConfigStore.setState({
+      powerscaleOptions: {
+        tiers: [
+          {
+            nodeModel: 'F210',
+            driveSizeTb: 1.92,
+            nodeCount: 3,
+            protection: '+2d:1n',
+            vhsDriveCount: 0,
+            vhsPercent: 0,
+          },
+        ],
+      },
+    })
+
+    const digits = summaryDigits()
+    const d = drive()
+    // F210 carries 4 drives per node: 3 nodes = 12 drives, never 7 x 5 = 35.
+    expect(digits).toContain(String(d.cost_usd * 12))
+    expect(digits).not.toContain(String(d.cost_usd * 35))
+    // Raw capacity comes from the catalog's own per-node geometry, so it must not be the
+    // selected generic drive's capacity multiplied by anything this panel holds.
+    expect(digits).not.toContain(String(d.capacity_raw * 35))
+  })
 })

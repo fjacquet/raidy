@@ -29,7 +29,8 @@
   "drive": {
     "label": "Laufwerksmodell",
     "count": "Laufwerke pro Server",
-    "countHint": "Laufwerke gesamt: {{total}}"
+    "countHint": "Laufwerke gesamt: {{total}}",
+    "powerscaleNote": "Die Laufwerksanzahl stammt aus den Node-Pools im Topologie-Panel: {{drives}} Laufwerke auf {{nodes}} Nodes."
   },
   "server": {
     "label": "Server / Knoten",

@@ -13,6 +13,7 @@ import {
 } from '@/components/common/FormControls'
 import drivesData from '@/data/drives.json'
 import { effectiveServerCount, isRaidGroupMode, shouldShowControl } from '@/engines/capabilities'
+import { calculatePowerScaleVolumetry, powerScaleDriveTotals } from '@/engines/volumetry/powerscale'
 import { useConnectivityConstraints, useFormatBytes } from '@/hooks'
 import { useConfigStore } from '@/store'
 import type { Drive, DriveConnectivity, FormFactorFilter } from '@/types'
@@ -72,6 +73,7 @@ export function HardwarePanel() {
     serverCount,
     serverPowerWatts,
     topology,
+    powerscaleOptions,
     setDriveConnectivity,
     setDriveFormFactor,
     setDriveId,
@@ -140,8 +142,30 @@ export function HardwarePanel() {
   // `effectiveServerCount` rather than the raw store value, so platforms whose servers slider is
   // hidden do not pick up a stale count from a previously selected multi-node platform.
   const effServerCount = effectiveServerCount(serverCount, topology)
-  const totalDrives = driveCount * effServerCount
-  const totalRawCapacity = selectedDrive ? selectedDrive.capacity_raw * totalDrives : 0
+
+  // PowerScale populations come from the node-pool catalog, never from this panel: no engine
+  // reads `driveCount * serverCount` for it (`hasServerCount: false`, and the drive-count slider
+  // below is hidden for the same reason). Sizing the summary off those two stale defaults is how
+  // the panel used to announce a raw capacity and a price for a cluster nobody had configured.
+  const powerScale = useMemo(
+    () =>
+      topology.type === 'powerscale'
+        ? {
+            totals: powerScaleDriveTotals(powerscaleOptions),
+            // Raw comes from the catalog's per-node geometry, so this row agrees with the
+            // dashboard instead of re-deriving capacity from the selected generic drive.
+            rawCapacity: calculatePowerScaleVolumetry(powerscaleOptions).rawCapacity,
+          }
+        : null,
+    [topology.type, powerscaleOptions],
+  )
+
+  const totalDrives = powerScale ? powerScale.totals.clusterDrives : driveCount * effServerCount
+  const totalRawCapacity = powerScale
+    ? powerScale.rawCapacity
+    : selectedDrive
+      ? selectedDrive.capacity_raw * totalDrives
+      : 0
   const totalCost = selectedDrive ? selectedDrive.cost_usd * totalDrives : 0
 
   return (
@@ -224,13 +248,23 @@ export function HardwarePanel() {
         )}
       </div>
 
-      {/* Drive Count per Server */}
-      <div className="space-y-2">
-        <Label htmlFor="drive-count" hint={`${driveCount}`} tooltip={th('hardware.driveCount')}>
-          {t('drive.count')}
-        </Label>
-        <Slider id="drive-count" value={driveCount} min={1} max={100} onChange={setDriveCount} />
-      </div>
+      {/* Drive Count per Server — replaced by a readout on PowerScale, whose drives-per-node is
+          a fixed property of each node model in Dell's catalog and cannot be chosen here. */}
+      {powerScale ? (
+        <p className="text-xs text-slate-500 dark:text-slate-400">
+          {t('drive.powerscaleNote', {
+            drives: powerScale.totals.clusterDrives,
+            nodes: powerScale.totals.clusterNodes,
+          })}
+        </p>
+      ) : (
+        <div className="space-y-2">
+          <Label htmlFor="drive-count" hint={`${driveCount}`} tooltip={th('hardware.driveCount')}>
+            {t('drive.count')}
+          </Label>
+          <Slider id="drive-count" value={driveCount} min={1} max={100} onChange={setDriveCount} />
+        </div>
+      )}
 
       {/* Server Count / RAID Groups */}
       {showServerCount && (

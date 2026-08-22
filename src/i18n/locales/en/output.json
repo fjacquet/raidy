@@ -208,6 +208,19 @@
     }
   },
   "powerscale": {
-    "firstTierOnly": "Performance and resilience figures model the first node pool only. Capacity, power and cost cover the whole cluster."
+    "firstTierOnly": "Performance and resilience figures model the first node pool only. Capacity, power and cost cover the whole cluster.",
+    "tableCaption": "Capacity by node pool",
+    "total": "Cluster total",
+    "eol": "EOL {{date}}",
+    "column": {
+      "nodeModel": "Node model",
+      "driveSize": "Drive size (TB)",
+      "nodes": "Nodes",
+      "protection": "Protection",
+      "raw": "Raw",
+      "usable": "Usable",
+      "effective": "Effective",
+      "efficiency": "Efficiency"
+    }
   }
 }

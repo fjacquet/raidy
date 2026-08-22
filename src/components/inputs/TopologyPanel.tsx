@@ -18,13 +18,15 @@ import { PowerVaultOptionsPanel } from '@/components/inputs/topology-options/Pow
 import { S2dOptionsPanel } from '@/components/inputs/topology-options/S2dOptionsPanel'
 import { SynologyOptionsPanel } from '@/components/inputs/topology-options/SynologyOptionsPanel'
 import {
+  defaultTopologyFor,
+  isTopologyType,
   TOPOLOGY_LEVELS,
   TOPOLOGY_TYPES,
+  topologyFrom,
 } from '@/components/inputs/topology-options/topologyConstants'
 import { VsanOptionsPanel } from '@/components/inputs/topology-options/VsanOptionsPanel'
 import { ZfsOptionsPanel } from '@/components/inputs/topology-options/ZfsOptionsPanel'
 import { useConfigStore } from '@/store'
-import type { Topology, TopologyType } from '@/types'
 import { usesDistributedSpares } from '@/types'
 
 export function TopologyPanel() {
@@ -32,14 +34,19 @@ export function TopologyPanel() {
   const { t: th } = useTranslation('help')
   const { topology, hotSpares, setTopology, setHotSpares } = useConfigStore()
 
+  // Both handlers take a string out of the DOM and hand a validated `Topology` to the store.
+  // They used to end in `as Topology`, which paired whatever string arrived with whatever type
+  // was current — that is how selecting PowerScale went on writing the long-retired
+  // `powerscale_n1` for months. An unknown pair is now dropped rather than stored.
   const handleTypeChange = (type: string) => {
-    const levels = TOPOLOGY_LEVELS[type as TopologyType]
-    const defaultLevel = levels?.[0]?.value ?? 'RAID0'
-    setTopology({ type, level: defaultLevel } as Topology)
+    if (!isTopologyType(type)) return
+    const next = defaultTopologyFor(type)
+    if (next) setTopology(next)
   }
 
   const handleLevelChange = (level: string) => {
-    setTopology({ type: topology.type, level } as Topology)
+    const next = topologyFrom(topology.type, level)
+    if (next) setTopology(next)
   }
 
   const typeOptions = useMemo(

@@ -208,6 +208,19 @@
     }
   },
   "powerscale": {
-    "firstTierOnly": "Performance- und Resilienzwerte bilden nur den ersten Knotenpool ab. Kapazität, Stromverbrauch und Kosten decken den gesamten Cluster ab."
+    "firstTierOnly": "Performance- und Resilienzwerte bilden nur den ersten Knotenpool ab. Kapazität, Stromverbrauch und Kosten decken den gesamten Cluster ab.",
+    "tableCaption": "Kapazität pro Node-Pool",
+    "total": "Cluster gesamt",
+    "eol": "End of Life {{date}}",
+    "column": {
+      "nodeModel": "Node-Modell",
+      "driveSize": "Laufwerksgrösse (TB)",
+      "nodes": "Nodes",
+      "protection": "Schutz",
+      "raw": "Brutto",
+      "usable": "Nutzbar",
+      "effective": "Effektiv",
+      "efficiency": "Effizienz"
+    }
   }
 }

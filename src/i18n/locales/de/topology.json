@@ -336,34 +336,26 @@
     }
   },
   "powerscale": {
-    "title": "PowerScale-Optionen",
-    "n1": {
-      "label": "N+1",
-      "description": "Einfacher Paritätsschutz"
+    "title": "PowerScale-Cluster",
+    "onefs": {
+      "label": "OneFS",
+      "description": "Scale-out-NAS. Der Schutz wird pro Node-Pool festgelegt."
     },
-    "n2": {
-      "label": "N+2",
-      "description": "Doppelter Paritätsschutz"
-    },
-    "n2_1": {
-      "label": "N+2:1",
-      "description": "N+2 mit Stripe-Fehlertoleranz"
-    },
-    "n3": {
-      "label": "N+3",
-      "description": "Dreifacher Paritätsschutz"
-    },
-    "n4": {
-      "label": "N+4",
-      "description": "Vierfacher Paritätsschutz"
-    },
-    "mirror_2x": {
-      "label": "Spiegel 2x",
-      "description": "2-Wege gespiegelt, 50% Effizienz"
-    },
-    "mirror_3x": {
-      "label": "Spiegel 3x",
-      "description": "3-Wege gespiegelt, 33% Effizienz"
+    "tier": {
+      "heading": "Node-Pool {{index}}",
+      "nodeModel": "Node-Modell",
+      "driveSize": "Laufwerksgrösse (TB)",
+      "nodeCount": "Anzahl Nodes",
+      "driveTotal": "{{count}} Laufwerke",
+      "protection": "Schutz",
+      "vhsDriveCount": "Virtual Hot Spare (Laufwerke)",
+      "vhsPercent": "Virtual Hot Spare (%)",
+      "add": "Node-Pool hinzufügen",
+      "remove": "Node-Pool entfernen",
+      "moveUp": "Node-Pool nach oben verschieben",
+      "moveDown": "Node-Pool nach unten verschieben",
+      "eol": "End of Life {{date}}",
+      "notSizeable": "Der Dell-Katalog veröffentlicht diese Kombination nicht. Dieser Node-Pool lässt sich nicht dimensionieren und fliesst nicht in die Ergebnisse ein."
     }
   },
   "ceph": {
