@@ -181,68 +181,6 @@ for (const [key, seen] of byKey) {
   curves[key] = { from, bp: bpArr }
 }
 
-// --- mirror-fallback backfill: extend curves down to each model's floor
-//
-// PowerSizer's own export only lists node counts where a level is actually
-// offered, which for many (model, protection) pairs starts well above where
-// OneFS's own behaviour is already well-defined — below the FEC threshold it
-// falls back to full mirroring, and the reference closed form (see
-// docs/superpowers/specs/2026-08-22-powerscale-onefs-design.md §3.1) is exact
-// there. Task 3's lookup (`storageEfficiency`) is a straight table read with no
-// formula fallback of its own, so those low-node-count values must be baked
-// into the shipped curve, not computed at runtime.
-const NF = {
-  '+1n': 1,
-  '+2n': 2,
-  '+3n': 3,
-  '+4n': 4,
-  '+2d:1n': 1,
-  '+3d:1n': 1,
-  '+3d:1n1d': 1,
-  '+4d:1n': 1,
-  '+4d:2n': 2,
-}
-const STRIPE_U = {
-  '+1n': 1,
-  '+2n': 1,
-  '+3n': 1,
-  '+4n': 1,
-  '+2d:1n': 2,
-  '+3d:1n': 3,
-  '+3d:1n1d': 2,
-  '+4d:1n': 4,
-  '+4d:2n': 2,
-}
-const FEC_UNITS = {
-  '+1n': 1,
-  '+2n': 2,
-  '+3n': 3,
-  '+4n': 4,
-  '+2d:1n': 2,
-  '+3d:1n': 3,
-  '+3d:1n1d': 3,
-  '+4d:1n': 4,
-  '+4d:2n': 4,
-}
-const WIDTH_CAP = { 1: 18, 2: 18, 3: 18, 4: 20 }
-const closedFormEff = (protection, n) => {
-  const nf = NF[protection]
-  if (n < 2 * nf) return 1 / Math.min(nf + 1, n)
-  const width = Math.min(STRIPE_U[protection] * n, WIDTH_CAP[FEC_UNITS[protection]] ?? 20)
-  return (width - FEC_UNITS[protection]) / width
-}
-for (const [key, curve] of Object.entries(curves)) {
-  const [model, protection] = key.split('|')
-  const floor = models[model].minNodes
-  if (floor < curve.from) {
-    const prefix = []
-    for (let n = floor; n < curve.from; n++)
-      prefix.push(Math.round(closedFormEff(protection, n) * 10000))
-    curve.bp = [...prefix, ...curve.bp]
-    curve.from = floor
-  }
-}
-
 // --- protection availability and PowerSizer's Suggested level, RLE over node count
 const avail = new Map()
 const sugg = new Map()
