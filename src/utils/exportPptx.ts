@@ -7,13 +7,12 @@
  * requests — pptxgenjs runs entirely client-side.
  */
 import pptxgen from 'pptxgenjs'
-
+import { performanceApplies } from '@/engines/outputRelevance'
 import i18n from '@/i18n'
 import { DEFAULT_LANGUAGE, type Language } from '@/i18n/config'
 import type { Drive } from '@/types/drive'
 import type { CalculationResults } from '@/types/results'
 import type { Topology, ZfsOptions } from '@/types/topology'
-
 import { capturePerfGauges, captureSankeyDiagram } from './captureChart'
 import {
   buildPowerScaleExportContent,
@@ -327,7 +326,10 @@ function buildSummarySlide(
   // The Sankey grows into whatever the omitted sections leave behind. Without the performance
   // column and the energy row there is most of a slide free below it, and a chart floating above
   // half a blank slide reads as a rendering failure rather than as a deliberately short document.
-  const showPerfChart = content.performanceLines.length > 0
+  // Read the predicate, not the emptiness it happens to produce. `bottleneckLine` is
+  // `perf.layers.slice(0, 6)`, so an empty array would otherwise mean two different things and a
+  // platform whose engine returned no layers would silently lose its row.
+  const showPerfChart = performanceApplies(config.topology)
   const chartH = resilience ? 2.7 : showPerfChart ? 3.2 : 4.6
   const chartBottom = chartTop + chartH
 
@@ -378,7 +380,7 @@ function buildSummarySlide(
   // capacity beside them covers the whole cluster. Said once, in the right-hand column beside the
   // figures it qualifies — the section labels below start at x 0.4 and stop at 6.4, so this sits
   // in empty space and does not shift the rows underneath.
-  if (powerScale && (showPerf || content.resilienceLine)) {
+  if (powerScale?.scopeNote && (showPerf || content.resilienceLine)) {
     slide.addText(powerScale.scopeNote, {
       x: 8.0,
       y: nl1 + 0.34,
@@ -402,7 +404,7 @@ function buildSummarySlide(
     y += 0.85
   }
 
-  if (content.bottleneckLine.length > 0) {
+  if (showPerfChart) {
     addSectionLabel(slide, i18n.t('output:pptx.bottleneck'), palette.parity, 0.4, y)
     addStatLine(slide, content.bottleneckLine, 0.4, y + 0.33, 12.6, palette)
     y += 0.85
@@ -440,7 +442,12 @@ export async function exportToPptx(config: ExportConfig): Promise<void> {
   const palette: Brand = document.documentElement.classList.contains('dark') ? BRAND : BRAND_LIGHT
 
   // Capture the charts in parallel before building the slide.
-  const [sankey, gauges] = await Promise.all([captureSankeyDiagram(), capturePerfGauges()])
+  // Gauges are captured only where the deck will place them — otherwise four DOM captures per
+  // export are taken and discarded. See `performanceApplies`.
+  const [sankey, gauges] = await Promise.all([
+    captureSankeyDiagram(),
+    performanceApplies(config.topology) ? capturePerfGauges() : Promise.resolve([]),
+  ])
 
   const prs = new pptxgen()
   prs.layout = 'LAYOUT_WIDE' // 13.33" × 7.5"
@@ -491,10 +498,11 @@ export async function exportToPptx(config: ExportConfig): Promise<void> {
     }
   }
 
-  // Named after the project, like the PDF. It used to be `raidy-<platform>.pptx`, which ignored
-  // the project name entirely — so two PowerScale configurations both downloaded as
-  // `raidy-powerscale.pptx` and the browser disambiguated them with "(1)". The platform stays in
-  // the name because it is useful, but the project is what tells two decks apart.
+  // Named after the project, like the PDF's `<Project>_Report.pdf`. Today that is the only
+  // benefit: `projectName` is a hardcoded literal at both call sites in `OutputDashboard`, so
+  // every deck still downloads under one name and the browser still disambiguates repeats with
+  // "(1)". The distinguishing part only starts working once a project-name input exists — the
+  // shape is here waiting for it, which is why the platform is kept in the name too.
   const safeProject = (config.projectName || 'Storage Configuration')
     .replace(/[^\p{L}\p{N}]+/gu, '_')
     .replace(/^_+|_+$/g, '')

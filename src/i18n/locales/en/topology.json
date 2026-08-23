@@ -358,13 +358,13 @@
       "drrPresetPlaceholder": "Apply a data profile…",
       "drrPresetHint": "raidy's own rules of thumb for common data profiles, not values Dell publishes.",
       "drrPresets": {
-        "medicalImaging": "Medical imaging (DICOM) — 1.0",
-        "video": "Video / media — 1.0",
-        "encrypted": "Encrypted data — 1.0",
-        "archive": "Backups / archives — 1.1",
-        "generalFiles": "General files / office — 1.6",
-        "virtualization": "Virtualization / VDI — 2.0",
-        "database": "Databases — 2.0"
+        "medicalImaging": "Medical imaging (DICOM)",
+        "video": "Video / media",
+        "encrypted": "Encrypted data",
+        "archive": "Backups / archives",
+        "generalFiles": "General files / office",
+        "virtualization": "Virtualization / VDI",
+        "database": "Databases"
       },
       "add": "Add node pool",
       "remove": "Remove node pool",

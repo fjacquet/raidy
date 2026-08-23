@@ -33,7 +33,7 @@
     "powerscaleNote": "Le nombre de disques provient des pools de nœuds du panneau Topologie : {{drives}} disques répartis sur {{nodes}} nœuds."
   },
   "mediaProxy": {
-    "line": "Média de référence : {{model}} — sert au calcul de puissance, fiabilité et prix.",
+    "line": "Média de référence : {{model}} — sert au calcul de la puissance, de la fiabilité et du prix.",
     "change": "Changer le média de référence",
     "hide": "Masquer le média de référence"
   },

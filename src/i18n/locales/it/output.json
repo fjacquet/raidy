@@ -241,6 +241,7 @@
       "clusterTitle": "Cluster",
       "derivationTitle": "Derivazione della capacità utile di ogni pool",
       "pools": "Pool di nodi"
-    }
+    },
+    "exportScopeNote": "La resilienza modella solo il primo pool di nodi; la capacità copre l'intero cluster."
   }
 }

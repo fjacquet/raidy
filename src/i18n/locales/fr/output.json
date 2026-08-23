@@ -241,6 +241,7 @@
       "clusterTitle": "Cluster",
       "derivationTitle": "Dérivation de la capacité utile de chaque pool",
       "pools": "Pools de nœuds"
-    }
+    },
+    "exportScopeNote": "La résilience ne modélise que le premier pool de nœuds ; la capacité couvre tout le cluster."
   }
 }

@@ -47,39 +47,6 @@ function effectiveDiffers(ctx: RelevanceContext): boolean {
 }
 
 /**
- * True when the generic backup estimator (`usable × dailyChangeRate% × retentionDays`) is
- * offered for this platform — one predicate for BOTH the Advanced panel's two backup inputs and
- * the dashboard's backup card, so the pair cannot drift into the state this branch has already
- * had to fix twice: a live output computed from an input the user cannot see.
- *
- * False for PowerScale alone. A OneFS cluster is sized against the vendor's node catalog, and
- * its data protection is sized by the backup product, not by a change-rate slider on the array
- * — so the two inputs are hidden there, and this is what keeps the card hidden with them.
- *
- * NOT a `PlatformCapabilities` flag: the backup engine reads `dailyChangeRate` and
- * `backupRetention` for every platform including PowerScale, so no probe against engine
- * behaviour could establish it. It is a product-scope decision and lives here, in the
- * relevance layer, where scope decisions belong.
- */
-/**
- * Whether power, CO2 and cost figures belong in a document for this platform.
- *
- * False for PowerScale alone, and this one is not a matter of taste. The vendor catalog publishes
- * capacity and efficiency; it publishes NO power, price or reliability data. So those figures are
- * derived from whichever generic drive sits in the (hidden) Hardware panel plus a generic default
- * watts-per-node — demonstrably so: on an unchanged 3-node F210 cluster, switching the reference
- * medium from a 24 TB SATA HDD to a 1.92 TB NVMe moved drive power from 87 W to 107 W. A figure
- * that answers to hardware which is not in the cluster does not belong beside capacity numbers
- * that match the vendor's table exactly; on a customer deliverable the two read as equally solid.
- *
- * Same shape and same reasoning as `backupApplies`: one predicate, consulted by the exports, so
- * the decision cannot drift between the PDF and the PPTX.
- *
- * NOTE: the on-screen Power & Sustainability card is deliberately NOT gated on this. Those same
- * figures stay visible while configuring, where they are a rough order of magnitude and the user
- * can see and change the medium they come from. The line drawn here is about what leaves the app.
- */
-/**
  * Whether throughput, IOPS and the bottleneck chain belong in a document for this platform.
  *
  * False for PowerScale, for a reason of SHAPE rather than of missing data. A PowerScale node is
@@ -100,10 +67,43 @@ export function performanceApplies(topology: Topology): boolean {
   return topology.type !== 'powerscale'
 }
 
+/**
+ * Whether power, CO2 and cost figures belong in a document for this platform.
+ *
+ * False for PowerScale alone, and this one is not a matter of taste. The vendor catalog publishes
+ * capacity and efficiency; it publishes NO power, price or reliability data. So those figures are
+ * derived from whichever generic drive sits in the (hidden) Hardware panel plus a generic default
+ * watts-per-node — demonstrably so: on an unchanged 3-node F210 cluster, switching the reference
+ * medium from a 24 TB SATA HDD to a 1.92 TB NVMe moved drive power from 87 W to 107 W. A figure
+ * that answers to hardware which is not in the cluster does not belong beside capacity numbers
+ * that match the vendor's table exactly; on a customer deliverable the two read as equally solid.
+ *
+ * Same shape and same reasoning as `backupApplies`: one predicate, consulted by the exports, so
+ * the decision cannot drift between the PDF and the PPTX.
+ *
+ * NOTE: the on-screen Power & Sustainability card is deliberately NOT gated on this. Those same
+ * figures stay visible while configuring, where they are a rough order of magnitude and the user
+ * can see and change the medium they come from. The line drawn here is about what leaves the app.
+ */
 export function sustainabilityApplies(topology: Topology): boolean {
   return topology.type !== 'powerscale'
 }
 
+/**
+ * True when the generic backup estimator (`usable × dailyChangeRate% × retentionDays`) is
+ * offered for this platform — one predicate for BOTH the Advanced panel's two backup inputs and
+ * the dashboard's backup card, so the pair cannot drift into the state this branch has already
+ * had to fix twice: a live output computed from an input the user cannot see.
+ *
+ * False for PowerScale alone. A OneFS cluster is sized against the vendor's node catalog, and
+ * its data protection is sized by the backup product, not by a change-rate slider on the array
+ * — so the two inputs are hidden there, and this is what keeps the card hidden with them.
+ *
+ * NOT a `PlatformCapabilities` flag: the backup engine reads `dailyChangeRate` and
+ * `backupRetention` for every platform including PowerScale, so no probe against engine
+ * behaviour could establish it. It is a product-scope decision and lives here, in the
+ * relevance layer, where scope decisions belong.
+ */
 export function backupApplies(topology: Topology): boolean {
   return topology.type !== 'powerscale'
 }

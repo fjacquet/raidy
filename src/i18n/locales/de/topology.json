@@ -358,13 +358,13 @@
       "drrPresetPlaceholder": "Datenprofil anwenden…",
       "drrPresetHint": "Das sind raidys eigene Faustregeln für gängige Datenprofile, keine von Dell veröffentlichten Werte.",
       "drrPresets": {
-        "medicalImaging": "Medizinische Bildgebung (DICOM) — 1.0",
-        "video": "Video / Medien — 1.0",
-        "encrypted": "Verschlüsselte Daten — 1.0",
-        "archive": "Backups / Archive — 1.1",
-        "generalFiles": "Allgemeine Dateien / Büro — 1.6",
-        "virtualization": "Virtualisierung / VDI — 2.0",
-        "database": "Datenbanken — 2.0"
+        "medicalImaging": "Medizinische Bildgebung (DICOM)",
+        "video": "Video / Medien",
+        "encrypted": "Verschlüsselte Daten",
+        "archive": "Backups / Archive",
+        "generalFiles": "Allgemeine Dateien / Büro",
+        "virtualization": "Virtualisierung / VDI",
+        "database": "Datenbanken"
       },
       "add": "Node-Pool hinzufügen",
       "remove": "Node-Pool entfernen",

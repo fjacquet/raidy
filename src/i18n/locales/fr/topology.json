@@ -23,7 +23,7 @@
   },
   "hotSpares": {
     "label": "Disques de secours",
-    "distributedNote": "Cette plateforme reconstruit à partir d'une réserve répartie — aucun disque de secours dédié.",
+    "distributedNote": "Cette plateforme reconstruit à partir d'une réserve répartie ; aucun disque de secours dédié n'est utilisé.",
     "distributedNotePowerScale": "La réserve est le Virtual Hot Spare, défini par pool de nœuds ci-dessous."
   },
   "common": {
@@ -358,13 +358,13 @@
       "drrPresetPlaceholder": "Appliquer un profil de données…",
       "drrPresetHint": "Ce sont les règles empiriques propres à raidy pour des profils de données courants, pas des valeurs publiées par Dell.",
       "drrPresets": {
-        "medicalImaging": "Imagerie médicale (DICOM) — 1.0",
-        "video": "Vidéo / média — 1.0",
-        "encrypted": "Données chiffrées — 1.0",
-        "archive": "Sauvegardes / archives — 1.1",
-        "generalFiles": "Fichiers généraux / bureautique — 1.6",
-        "virtualization": "Virtualisation / VDI — 2.0",
-        "database": "Bases de données — 2.0"
+        "medicalImaging": "Imagerie médicale (DICOM)",
+        "video": "Vidéo / média",
+        "encrypted": "Données chiffrées",
+        "archive": "Sauvegardes / archives",
+        "generalFiles": "Fichiers généraux / bureautique",
+        "virtualization": "Virtualisation / VDI",
+        "database": "Bases de données"
       },
       "add": "Ajouter un pool de nœuds",
       "remove": "Supprimer le pool de nœuds",

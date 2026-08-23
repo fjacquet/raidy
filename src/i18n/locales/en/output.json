@@ -241,6 +241,7 @@
       "clusterTitle": "Cluster",
       "derivationTitle": "How each pool's usable capacity is derived",
       "pools": "Node pools"
-    }
+    },
+    "exportScopeNote": "Resilience models the first node pool only; capacity covers the whole cluster."
   }
 }

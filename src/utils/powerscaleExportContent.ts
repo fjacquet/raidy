@@ -79,7 +79,10 @@ export interface PowerScaleExportContent {
    * capacity, power and cost cover the whole cluster. Shown once per document, beside the
    * performance figures it qualifies. The same sentence the dashboard shows.
    */
-  scopeNote: string
+  /**
+   * Null when there is nothing left for it to qualify — see the assignment below.
+   */
+  scopeNote: string | null
   /** The document's entire caveat budget — one line, near the end. See `exportNotes.ts`. */
   estimateNote: string | null
 }
@@ -260,7 +263,12 @@ export function buildPowerScaleExportContent(
     ],
     poolTable,
     derivationTable,
-    scopeNote: t('output:powerscale.firstTierOnly'),
+    // Its own key, NOT the dashboard's `firstTierOnly`. That one reads "Performance and resilience
+    // figures model the first node pool only. Capacity, power and cost cover the whole cluster."
+    // — true on screen, but the documents now carry no performance, power or cost figures at all,
+    // so on a deliverable it qualified three things that are not there. And only worth saying with
+    // more than one pool, matching what the dashboard already does at `OutputDashboard.tsx`.
+    scopeNote: tiers.length > 1 ? t('output:powerscale.exportScopeNote') : null,
     estimateNote: catalogEstimateNote(topology, t),
   }
 }

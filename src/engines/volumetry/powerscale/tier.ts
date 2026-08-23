@@ -11,7 +11,7 @@
  * pool's data, defaulted from the node model's catalog value and overridable per pool. See
  * `PowerScaleTier.drrOverride`'s doc comment and ADR-0014.
  *
-
+ *
  * `sizeTier` returns `null` — never a partial result, never a guessed value —
  * for an unknown model, a drive size that model does not offer, or any
  * (model, protection, nodeCount) the vendor catalog does not publish. The URL

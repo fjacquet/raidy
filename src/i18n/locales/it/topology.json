@@ -358,13 +358,13 @@
       "drrPresetPlaceholder": "Applica un profilo dati…",
       "drrPresetHint": "Sono regole empiriche proprie di raidy per profili di dati comuni, non valori pubblicati da Dell.",
       "drrPresets": {
-        "medicalImaging": "Imaging medicale (DICOM) — 1.0",
-        "video": "Video / media — 1.0",
-        "encrypted": "Dati crittografati — 1.0",
-        "archive": "Backup / archivi — 1.1",
-        "generalFiles": "File generali / ufficio — 1.6",
-        "virtualization": "Virtualizzazione / VDI — 2.0",
-        "database": "Database — 2.0"
+        "medicalImaging": "Imaging medicale (DICOM)",
+        "video": "Video / media",
+        "encrypted": "Dati crittografati",
+        "archive": "Backup / archivi",
+        "generalFiles": "File generali / ufficio",
+        "virtualization": "Virtualizzazione / VDI",
+        "database": "Database"
       },
       "add": "Aggiungi pool di nodi",
       "remove": "Rimuovi pool di nodi",

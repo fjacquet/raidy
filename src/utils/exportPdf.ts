@@ -309,7 +309,11 @@ export function exportToPdf(config: ExportConfig): void {
   // covers the whole cluster. Said once, beside the numbers it qualifies — and only while there
   // are such figures left to qualify. With performance omitted, resilience is the last of them,
   // and it is only present once the simulation has been run.
-  if (powerScale && (performanceApplies(topology) || resilience)) {
+  if (powerScale?.scopeNote && (performanceApplies(topology) || resilience)) {
+    // `ensureRoom` like every other block here. Without it this was the one unguarded draw in the
+    // function: `y` arrives from the derivation table, which on a multi-pool cluster lands near
+    // the bottom of A4, and the note printed into the footer band or off the page.
+    y = ensureRoom(doc, y)
     doc.setFontSize(8)
     doc.setTextColor(100, 100, 100)
     const scopeLines = doc.splitTextToSize(powerScale.scopeNote, pageWidth - 28) as string[]

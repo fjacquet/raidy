@@ -297,7 +297,7 @@ describe('the two exports', () => {
     expect(writeFile).toHaveBeenCalledTimes(1)
 
     // What is asserted is that every layout call runs: the cluster table, both wide node-pool
-    // tables, the performance/power sections beneath them and the closing caveat line.
+    // tables, and the closing caveat line — power and performance are no longer among them.
     expect(() => exportToPdf(config)).not.toThrow()
 
     writeFile.mockRestore()
@@ -337,8 +337,17 @@ describe('the cluster summary', () => {
     ])
   })
 
-  it('carries the first-pool scope statement for the performance figures', () => {
-    expect(build([flash, archive]).scopeNote).toBe(t('output:powerscale.firstTierOnly'))
+  it('carries a scope statement written for the document, not for the dashboard', () => {
+    // NOT `firstTierOnly`. That string says "Performance and resilience figures model the first
+    // node pool only. Capacity, power and cost cover the whole cluster." — true on screen, but the
+    // documents carry no performance, power or cost figures at all, so it qualified three things
+    // that are not there.
+    expect(build([flash, archive]).scopeNote).toBe(t('output:powerscale.exportScopeNote'))
+    expect(build([flash, archive]).scopeNote).not.toBe(t('output:powerscale.firstTierOnly'))
+  })
+
+  it('says nothing about the first pool when there is only one', () => {
+    expect(build([flash]).scopeNote).toBeNull()
   })
 })
 
