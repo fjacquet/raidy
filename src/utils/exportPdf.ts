@@ -131,6 +131,18 @@ function renderPoolTable(doc: jsPDF, y: number, table: PowerScaleExportTable): n
  * Security: All user-controlled fields (projectName) are sanitized with DOMPurify
  * before rendering to prevent XSS injection. jsPDF 4.0.0 includes CVE-2025-68428 fix.
  */
+/**
+ * Human-readable topology for a customer-facing document.
+ *
+ * The raw discriminant reads `POWERSCALE - powerscale_onefs`: the level literal is an internal
+ * identifier and repeats the type. PowerScale is the only platform whose level carries no
+ * information a reader wants (there is exactly one), so it collapses to the product name.
+ */
+function topologyLabel(topology: Topology): string {
+  if (topology.type === 'powerscale') return 'PowerScale (OneFS)'
+  return `${topology.type.toUpperCase()} - ${topology.level}`
+}
+
 export function exportToPdf(config: ExportConfig): void {
   const {
     drive,
@@ -190,7 +202,7 @@ export function exportToPdf(config: ExportConfig): void {
       startY: y,
       head: [[t('columns.parameter'), t('columns.value')]],
       body: [
-        [t('hardware.topology'), `${topology.type.toUpperCase()} - ${topology.level}`],
+        [t('hardware.topology'), topologyLabel(topology)],
         ...powerScale.cluster.map((pair) => [pair.label, pair.value]),
       ],
       theme: 'striped',
@@ -212,7 +224,7 @@ export function exportToPdf(config: ExportConfig): void {
         [t('hardware.type'), drive.type + (drive.formFactor ? ` (${drive.formFactor})` : '')],
         [t('hardware.capacity'), formatBytes(drive.capacity_raw)],
         [t('hardware.count'), driveCount.toString()],
-        [t('hardware.topology'), `${topology.type.toUpperCase()} - ${topology.level}`],
+        [t('hardware.topology'), topologyLabel(topology)],
         [t('hardware.rawCapacity'), formatBytes(volumetry.rawCapacity)],
       ],
       theme: 'striped',

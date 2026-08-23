@@ -46,7 +46,7 @@
     "serverPower": "Serverleistung",
     "cooling": "Kühlung (PUE)",
     "annualEnergy": "Jahresenergie",
-    "annualCo2": "Jährliches CO₂"
+    "annualCo2": "Jährliches CO2"
   },
   "resilience": {
     "survivalRate": "Überlebensrate",

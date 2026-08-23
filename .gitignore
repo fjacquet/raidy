@@ -84,3 +84,8 @@ generated_imgs/
 *.xlsm
 *.xlsb
 
+
+# Artefacts générés par les tests d'export (jsPDF écrit un vrai fichier ; afterAll le supprime,
+# mais une interruption le laisserait sur place)
+Raidy_Export_*.pdf
+Raidy_Export_*.pptx
