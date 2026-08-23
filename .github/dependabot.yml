@@ -1,0 +1,33 @@
+# Dependabot version updates.
+#
+# `dependabot-automerge.yml` has existed since before this file did, so the merge half of the
+# mechanism was in place while nothing produced the PRs it merges — which is why 19 packages had
+# drifted behind by 3.1.0. Adding this file arms the other half; the workflow's guard on
+# update-type is what keeps that from being dangerous.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    # Patch and minor arrive as ONE pull request. Ten separate green PRs a week train a reviewer
+    # to merge without looking, which is precisely the habit that makes an auto-merged major
+    # dangerous.
+    groups:
+      patch-and-minor:
+        patterns: ['*']
+        update-types: [minor, patch]
+    # Majors come as their own PR, one per package, and the workflow refuses to auto-merge them.
+    labels: [dependencies]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      actions:
+        patterns: ['*']
+    labels: [dependencies, ci]
