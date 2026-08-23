@@ -12,6 +12,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Build & Development Commands
 
+**Node 22.22.2+, 24.15+ or 26+** — `jsdom` 30 pins `engines` to
+`^22.22.2 || ^24.15.0 || >=26.0.0`, so Node 20 and Node 25 both fail. CI runs 24.
+
 ```bash
 npm install            # Install dependencies
 npm run dev            # Development server (Vite HMR)
@@ -152,6 +155,7 @@ Four Swiss languages: EN (default), FR, DE, IT. Uses `react-i18next` with 10 nam
 - **PowerScale does not use the generic volumetry path** — `calculateVolumetry` returns early into `src/engines/volumetry/powerscale/`. Adding a shared overhead to the generic path will silently skip PowerScale.
 - **`src/data/powerscale*.json` are generated** — edit `scripts/build-powerscale-catalog.mjs` and regenerate; hand edits are lost. Regenerating changes three artifacts (both JSON files and `tests/fixtures/powerscale-powersizer.csv.gz`) that must be committed together.
 - **PowerScale claims in a brief are not evidence** — protection availability, node bounds and drive sizes vary per model and per drive size. Probe `src/data/powerscaleNodes.json` before writing a test vector; four fabricated vendor values reached briefs on the OneFS branch and every one was caught by an implementer reading the catalog.
+- **Never type-check via the root `tsconfig.json`** — it is a references-only solution file (`"files": []`), so `tsc --noEmit` against it reads zero files and exits 0. Name the projects: `-p tsconfig.app.json` and `-p tsconfig.test.json`. `npm run typecheck` did exactly this wrong and passed vacuously until 3.1.1.
 - **`Closes #A and #B` only closes #A** — repeat the keyword per issue.
 
 ## Git & CI
