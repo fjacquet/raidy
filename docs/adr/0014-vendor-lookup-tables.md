@@ -5,7 +5,7 @@ Date: 2026-08-22
 
 ## Context
 
-[ADR-0004](./0004-pure-function-engines.md) commits the calculation engines to pure functions:
+[ADR-0004](./0004-engines-are-pure-functions.md) commits the calculation engines to pure functions:
 given a configuration, compute a result. Every platform through 3.0 obeyed it, because every
 platform's capacity arithmetic has a closed form — RAID parity, ZFS RAIDZ, vSAN erasure coding,
 Ceph replication. The engine encodes the formula and the formula is the truth.

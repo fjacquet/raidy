@@ -9,7 +9,7 @@
  * Reported from the running app, not caught by any test: the two halves of one panel disagreed.
  */
 
-import { render } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { HardwarePanel } from '@/components/inputs/HardwarePanel'
 import drivesData from '@/data/drives.json'
@@ -87,7 +87,7 @@ describe('HardwarePanel cluster summary', () => {
    * are stale defaults for it — no engine reads them (`hasServerCount: false`) — so a summary
    * built from their product priced and sized a cluster the user never configured.
    */
-  it('sizes and prices a PowerScale cluster from its node pools, not the stale sliders', () => {
+  it('sizes a PowerScale cluster from its node pools, and prices nothing', () => {
     const store = useConfigStore.getState()
     store.setTopology({ type: 'powerscale', level: 'powerscale_onefs' })
     store.setDriveId(DRIVE_ID)
@@ -111,11 +111,17 @@ describe('HardwarePanel cluster summary', () => {
 
     const digits = summaryDigits()
     const d = drive()
-    // F210 carries 4 drives per node: 3 nodes = 12 drives, never 7 x 5 = 35.
-    expect(digits).toContain(String(d.cost_usd * 12))
-    expect(digits).not.toContain(String(d.cost_usd * 35))
-    // Raw capacity comes from the catalog's own per-node geometry, so it must not be the
-    // selected generic drive's capacity multiplied by anything this panel holds.
+    // Raw capacity comes from the catalog's own per-node geometry (F210 carries 4 drives per
+    // node: 3 nodes = 12 drives), so it must not be the selected generic drive's capacity
+    // multiplied by anything this panel holds.
     expect(digits).not.toContain(String(d.capacity_raw * 35))
+
+    // And no cost at all. An earlier version of this test asserted `cost_usd * 12` — pricing a
+    // catalog drive count at the generic dropdown's per-drive price, so an all-flash F210 cluster
+    // was billed as twelve 24 TB SATA HDDs, and changing a dropdown the panel calls inapplicable
+    // moved the price while the capacity stayed put. Dell publishes no node pricing, so the row
+    // is hidden rather than shown wrong.
+    expect(screen.queryByText(/hardware cost/i)).not.toBeInTheDocument()
+    expect(digits).not.toContain(String(d.cost_usd * 12))
   })
 })

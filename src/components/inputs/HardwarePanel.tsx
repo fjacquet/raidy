@@ -166,7 +166,12 @@ export function HardwarePanel() {
     : selectedDrive
       ? selectedDrive.capacity_raw * totalDrives
       : 0
-  const totalCost = selectedDrive ? selectedDrive.cost_usd * totalDrives : 0
+  // No cost for PowerScale. `totalDrives` comes from the vendor catalog while `selectedDrive` is
+  // whatever sits in the (inapplicable) Drive Model dropdown, so multiplying them prices an
+  // all-flash cluster at the per-drive price of a generic HDD — 12 F210 drives billed as 24 TB
+  // SATA. Dell publishes no node pricing, so the honest figure is no figure: the row is hidden
+  // rather than shown wrong, and the Cost act carries the cluster's economics.
+  const totalCost = powerScale || !selectedDrive ? null : selectedDrive.cost_usd * totalDrives
 
   return (
     <div className="space-y-5">
@@ -313,10 +318,14 @@ export function HardwarePanel() {
           <div className="text-right font-medium text-slate-900 dark:text-white">
             {formatBytes(totalRawCapacity)}
           </div>
-          <div className="text-slate-500 dark:text-slate-400">{t('summary.hardwareCost')}:</div>
-          <div className="text-right font-medium text-slate-900 dark:text-white">
-            {formatPrice(totalCost)}
-          </div>
+          {totalCost !== null && (
+            <>
+              <div className="text-slate-500 dark:text-slate-400">{t('summary.hardwareCost')}:</div>
+              <div className="text-right font-medium text-slate-900 dark:text-white">
+                {formatPrice(totalCost)}
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>

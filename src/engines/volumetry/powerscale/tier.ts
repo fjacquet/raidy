@@ -26,6 +26,15 @@ export function sizeTier(tier: PowerScaleTier): PowerScaleTierResult | null {
   const model = getModel(tier.nodeModel)
   if (!model) return null
 
+  // Node counts off the model's increment are not sellable, and — more importantly — not
+  // published. The efficiency curves are built by carrying the last published value forward over
+  // every integer, so an increment-2 model answers for odd counts too: A200 `+2n` returns 0.6667
+  // at 7 nodes, the figure Dell publishes for 6. The panel snaps to the increment, but
+  // `PowerScaleTierSchema` deliberately accepts any 3..252 on the grounds that THIS function is
+  // the gate, so a hand-edited URL reaches it. Rejecting here keeps the promise ADR-0014 makes:
+  // a combination the vendor does not publish is not sizeable, never a plausible-looking number.
+  if ((tier.nodeCount - model.minNodes) % model.nodeIncrement !== 0) return null
+
   const efficiency = storageEfficiency(
     tier.nodeModel,
     tier.driveSizeTb,

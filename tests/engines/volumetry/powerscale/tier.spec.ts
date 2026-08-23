@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { getModel } from '@/data/powerscaleCatalog'
 import { sizeTier } from '@/engines/volumetry/powerscale/tier'
 import type { PowerScaleTier } from '@/types/topology'
 
@@ -65,5 +66,62 @@ describe('sizeTier', () => {
   it('returns null for a combination the vendor catalog does not cover', () => {
     expect(sizeTier({ ...base, protection: '+1n', nodeModel: 'A200' })).toBeNull()
     expect(sizeTier({ ...base, nodeModel: 'NOPE' })).toBeNull()
+  })
+})
+
+describe('sizeTier — node counts the vendor does not publish', () => {
+  /**
+   * The efficiency curves carry the last published value forward over every integer, so a model
+   * that steps by 2 still answers for odd node counts — A200 `+2n` returns 0.6667 at 7 nodes,
+   * which is Dell's figure for 6. Those pools cannot be bought and are not published, so sizing
+   * one would put a fabricated number on the dashboard under the vendor's authority.
+   *
+   * Reachable only from a hand-edited URL: the panel snaps to the increment, but
+   * `PowerScaleTierSchema` accepts any 3..252 for any model precisely because `sizeTier` is the
+   * gate. It has to actually be one.
+   */
+  it('rejects a node count off the model increment', () => {
+    const a200 = getModel('A200')
+    expect(a200?.nodeIncrement).toBe(2)
+
+    expect(
+      sizeTier({
+        nodeModel: 'A200',
+        driveSizeTb: 8,
+        nodeCount: 7,
+        protection: '+2n',
+        vhsDriveCount: 0,
+        vhsPercent: 0,
+      }),
+    ).toBeNull()
+  })
+
+  it('still sizes the published node counts either side of it', () => {
+    for (const nodeCount of [6, 8]) {
+      expect(
+        sizeTier({
+          nodeModel: 'A200',
+          driveSizeTb: 8,
+          nodeCount,
+          protection: '+2n',
+          vhsDriveCount: 0,
+          vhsPercent: 0,
+        }),
+      ).not.toBeNull()
+    }
+  })
+
+  it('does not reject increment-1 models', () => {
+    expect(getModel('F210')?.nodeIncrement).toBe(1)
+    expect(
+      sizeTier({
+        nodeModel: 'F210',
+        driveSizeTb: 1.92,
+        nodeCount: 7,
+        protection: '+2d:1n',
+        vhsDriveCount: 0,
+        vhsPercent: 0,
+      }),
+    ).not.toBeNull()
   })
 })

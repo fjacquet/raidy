@@ -208,10 +208,9 @@ export const dellPowerstore5200QVector: DellPowerstore5200QVector = {
  * drive-count/node-count "N+x" formula (N/(N+M)) that `calculateVolumetry` no longer reaches for
  * `type: 'powerscale'` — it now branches unconditionally to the tier-based
  * `calculatePowerScaleVolumetry` sub-engine (see `src/engines/volumetry/index.ts` and
- * `src/engines/volumetry/powerscale/`). `dellStrategy.calculateDataFraction`'s N+x formulas
- * still exist in dell.ts pending removal in a later task; see
- * `tests/engines/volumetry.spec.ts`'s "PowerScale OneFS (multi-tier cluster)" describe block for
- * the one remaining direct unit test of that dead path, and
+ * `src/engines/volumetry/powerscale/`). The N+x formulas were then deleted from
+ * `dellStrategy` outright (Task 7, commit `aa8b84e`) — that path is not merely unreachable, it no
+ * longer exists, so there is nothing left for these vectors to validate. See
  * `tests/engines/volumetry/powerscale/{tier,cluster}.spec.ts` for the vendor-verified reference
  * vectors covering the current model.
  */

@@ -26,6 +26,15 @@ F210 pool with an archive A200 pool describes no real hardware. But a user with 
 cluster sees performance for one pool and power for all of them, which the dashboard notes but
 does not model. Modelling it properly means letting a workload name the pool it lands on.
 
+## Remove the pre-3.1 PowerScale URL migration shim
+
+`migratePowerScaleState` in `src/store/urlStorage.ts` rewrites links that carry protection in
+`topology.level` into the tier model. It cannot recover the node model an old link intended — no
+3.0 link named one — so it seeds the default and toasts the user to re-check. **Remove it one
+release after 3.1**, along with `LEGACY_PROTECTION` and the migration's tests. After that a 3.0
+link resets to defaults, which is the honest outcome once the shim's guess is more misleading than
+a clean slate.
+
 ## PowerScale rebuild time uses the selected drive, not the pool's
 
 `PlatformSimulationScope.mediaDrive` is `Drive | null`, all-or-nothing. PowerScale leaves it
@@ -33,6 +42,11 @@ does not model. Modelling it properly means letting a workload name the pool it 
 simulation falls back to the Hardware panel's selected drive, including its **capacity**. The
 tier knows its own `driveSizeTb`, so an 8 TB A200 pool can be simulated with a 960 GB rebuild
 window. Fixing it means widening the scope type, which touches every platform's resolver.
+
+The same root cause reaches further than rebuild time: `useSustainabilityCalc` derives PowerScale
+power, CO₂ and TCO from the selected generic drive's `power` and `cost_usd` against the catalog's
+drive count, so an all-flash F210 pool is powered and priced as whatever drive sits in the
+Hardware panel. That figure reaches the dashboard's Cost act, not just the resilience card.
 
 ## OneFS SmartPools tiering policy is unmodelled
 

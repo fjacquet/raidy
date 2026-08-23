@@ -144,7 +144,7 @@ Four Swiss languages: EN (default), FR, DE, IT. Uses `react-i18next` with 10 nam
 
 - **Worker tests: never `vi.spyOn(Math, 'random')`** — the spy records every call and the Monte Carlo worker draws millions, exhausting the heap before any assertion runs. Assign `Math.random` directly, restore in `afterEach`.
 - **Changing a store default rewrites old shared URLs** — `partialize` runs `omitDefaults`, so the hash carries only non-default values. A link made under the old default silently adopts the new one (bit v2.0.0's `hotSpares` 1→0).
-- **`SimulationInput.serverCount` is overloaded three ways** — fault-group count, BeeGFS storage-target count, and real host count for replica placement (`assignNodesRoundRobin`). Changing the group count corrupts placement.
+- **`SimulationInput.serverCount` is overloaded four ways** — fault-group count, BeeGFS storage-target count, real host count for replica placement (`assignNodesRoundRobin`), and PowerScale's first node-pool node count (driving `isPowerScaleMirrorRegion` and `distributeAcrossGroups`). Changing the group count corrupts placement.
 - **Removing an option field: delete it from `src/utils/schemas.ts` too** — nested `z.object()` strips unknown keys but *requires* declared ones, so a type-only removal breaks URL parsing.
 - **i18n: write full key paths at call sites**, not ``t(`prefix.${x}.body`)`` — `tests/i18n/orphanKeys.spec.ts` scans literally, so templates are invisible; a `DYNAMIC_PREFIXES` entry exempts the whole subtree and is weaker.
 - **Component tests rendering input panels must stub `window.matchMedia`** — jsdom lacks it and `InfoTooltip` calls it through `useIsTouchDevice`.
