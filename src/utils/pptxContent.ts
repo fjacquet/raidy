@@ -8,7 +8,12 @@
  * and no `new Date()` — the caller supplies an optional pre-formatted date
  * label to keep this module a pure function of its inputs.
  */
+
+import { performanceApplies, sustainabilityApplies } from '@/engines/outputRelevance'
+import { DEFAULT_LANGUAGE } from '@/i18n/config'
+import { catalogEstimateNote } from './exportNotes'
 import type { ExportConfig } from './exportPptx'
+import { powerScaleClusterSummary } from './powerscaleExportContent'
 import { formatBytes } from './units'
 
 export interface PptxStat {
@@ -22,9 +27,16 @@ export interface PptxContent {
   subtitle: string
   volumetryLines: PptxStat[][] // 2 rows under the Sankey
   performanceLines: PptxStat[][] // 2 rows under the gauges
-  energyLine: PptxStat[]
+  /** Null where the vendor publishes no power or price data — see `sustainabilityApplies`. */
+  energyLine: PptxStat[] | null
   bottleneckLine: PptxStat[]
   resilienceLine: PptxStat[] | null
+  /**
+   * One-line disclaimer for platforms whose capacity is looked up in a vendor catalog: the
+   * vendor's own sizer stays the reference for a firm quote, and power/reliability/price are
+   * estimates from a reference medium. `null` when the platform has nothing to disclaim.
+   */
+  estimateNote: string | null
 }
 
 /**
@@ -41,23 +53,46 @@ function formatIops(iops: number): string {
 
 export function buildPptxContent(
   config: ExportConfig,
-  t: (key: string) => string,
+  t: (key: string, options?: Record<string, string | number>) => string,
   dateLabel?: string,
 ): PptxContent {
   const unitSystem = config.unitSystem ?? 'binary'
   const { volumetry: vol, performance: perf, resilience, sustainability: sus } = config.results
   const label = (key: string) => t(`output:pptx.labels.${key}`)
 
-  const topologyLabel = config.topology.type.toUpperCase()
-  const levelLabel = 'level' in config.topology ? ` ${config.topology.level}` : ''
+  // PowerScale's level is an internal identifier with exactly one possible value, so the raw
+  // discriminant read "POWERSCALE powerscale_onefs" across the top of a customer deck. Every other
+  // platform's level carries real information and is kept. Mirrors `topologyLabel` in exportPdf.ts.
+  const isPowerScale = config.topology.type === 'powerscale'
+  const topologyLabel = isPowerScale ? 'PowerScale' : config.topology.type.toUpperCase()
+  const levelLabel = isPowerScale
+    ? ' OneFS'
+    : 'level' in config.topology
+      ? ` ${config.topology.level}`
+      : ''
   const title = `${topologyLabel}${levelLabel}`
 
+  // PowerScale's populations come from the node catalog, not the Hardware panel — that panel is
+  // hidden for it — so the drive model, drive count and server count here describe hardware the
+  // user never chose, and an F210 cluster would otherwise read "24 TB SATA HDD · 12 drives".
+  // Keyed off the topology rather than the presence of `powerScaleDetails`, so a cluster with no
+  // sizeable pool at all says "Node pools 0" instead of falling back to that stale line.
   const subtitle = [
-    config.drive.model,
-    `${config.driveCount} ${label('drives')}`,
-    config.serverCount && config.serverCount > 1
-      ? `${config.serverCount} ${label('servers')}`
-      : null,
+    ...(config.topology.type === 'powerscale'
+      ? [
+          powerScaleClusterSummary(
+            config.results.volumetry.powerScaleDetails,
+            t,
+            config.language ?? DEFAULT_LANGUAGE,
+          ),
+        ]
+      : [
+          config.drive.model,
+          `${config.driveCount} ${label('drives')}`,
+          config.serverCount && config.serverCount > 1
+            ? `${config.serverCount} ${label('servers')}`
+            : null,
+        ]),
     dateLabel,
   ]
     .filter(Boolean)
@@ -175,9 +210,10 @@ export function buildPptxContent(
     title,
     subtitle,
     volumetryLines,
-    performanceLines,
-    energyLine,
-    bottleneckLine,
+    performanceLines: performanceApplies(config.topology) ? performanceLines : [],
+    energyLine: sustainabilityApplies(config.topology) ? energyLine : null,
+    bottleneckLine: performanceApplies(config.topology) ? bottleneckLine : [],
     resilienceLine,
+    estimateNote: catalogEstimateNote(config.topology, t),
   }
 }

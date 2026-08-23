@@ -72,15 +72,28 @@ export type PowerStoreTopology =
   | 'powerstore_raid6' // RAID-6
   | 'powerstore_raid10' // RAID-10
 
-/** Dell PowerScale topologies (Scale-out NAS) */
-export type PowerScaleTopology =
-  | 'powerscale_n1' // N+1 protection
-  | 'powerscale_n2' // N+2 protection
-  | 'powerscale_n2_1' // N+2:1 protection
-  | 'powerscale_n3' // N+3 protection
-  | 'powerscale_n4' // N+4 protection
-  | 'powerscale_mirror_2x' // 2x mirrored
-  | 'powerscale_mirror_3x' // 3x mirrored
+/**
+ * Dell PowerScale topology. A cluster is a set of node pools (tiers), each with
+ * its own protection level, so `level` carries no protection — it exists only to
+ * identify the platform. Protection lives on `PowerScaleTier`.
+ */
+export type PowerScaleTopology = 'powerscale_onefs'
+
+/**
+ * OneFS protection levels as Dell's PowerSizer names them.
+ * `+Nn` tolerates N node failures; `+Nd:1n` tolerates N drive failures or 1 node;
+ * `+3d:1n1d` tolerates 3 drives, or 1 node plus 1 drive.
+ */
+export type PowerScaleProtection =
+  | '+1n'
+  | '+2n'
+  | '+3n'
+  | '+4n'
+  | '+2d:1n'
+  | '+3d:1n'
+  | '+3d:1n1d'
+  | '+4d:1n'
+  | '+4d:2n'
 
 /** Ceph storage topologies */
 export type CephTopology =
@@ -489,18 +502,57 @@ export interface PowerStoreOptions {
   systemOverheadPercent: number
 }
 
-/** Dell PowerScale-specific configuration options (Scale-out NAS) */
+/** One PowerScale node pool. */
+export interface PowerScaleTier {
+  /** Catalog model id, e.g. 'F710'. */
+  nodeModel: string
+  /** Drive size in decimal TB, as the vendor catalog names it. */
+  driveSizeTb: number
+  nodeCount: number
+  protection: PowerScaleProtection
+  /** Virtual Hot Spare expressed in whole drives. 0 disables. */
+  vhsDriveCount: number
+  /** Virtual Hot Spare expressed as a percentage of usable. 0 disables. */
+  vhsPercent: number
+  /**
+   * Operator override for this pool's data-reduction ratio. `undefined` (the default) means "use
+   * the node model's catalog default" — `sizeTier` resolves the ratio actually applied as
+   * `drrOverride ?? model.drr`, and reports it back on `PowerScaleTierResult.drr`. Optional so
+   * `omitDefaults` keeps an unused override out of the URL hash and a link shared before this
+   * field existed keeps parsing unchanged.
+   *
+   * This is NOT a column of the vendor's 122,828-row table (see ADR-0014) — DRR never appears in
+   * it. It is raidy's own assumption about the pool's DATA, layered on top of the vendor's
+   * raw/usable/efficiency numbers, which is why overriding it can never move the conformance
+   * gate: that gate asserts raw, usable and efficiency, never effective capacity.
+   */
+  drrOverride?: number
+}
+
+/**
+ * PowerScale cluster configuration.
+ *
+ * No GLOBAL compression/dedup fields: a single ratio across a cluster's heterogeneous node pools
+ * (all-flash over hybrid over archive) is meaningless, so there is no cluster-wide slider.
+ * Data reduction is instead a PER-POOL property — see `PowerScaleTier.drrOverride` — because DRR
+ * describes the pool's DATA, not its hardware: a radiology pool storing already-compressed DICOM
+ * will never see a flash node's published 2:1, however the node is provisioned.
+ * No snapshot reserve: PowerSizer does not reserve for snapshots, and a
+ * non-zero default would put every answer below the source of truth.
+ */
 export interface PowerScaleOptions {
-  /** Enable compression */
-  compression: boolean
-  /** Compression ratio (1.0 = none, 2.0 = 2:1) */
-  compressionRatio: number
-  /** Enable deduplication */
-  dedup: boolean
-  /** Deduplication ratio (1.0 = none, 2.0 = 2:1) */
-  dedupRatio: number
-  /** Snapshot reserve percentage */
-  snapshotReservePercent: number
+  tiers: PowerScaleTier[]
+}
+
+export const POWERSCALE_MAX_TIERS = 8
+
+export const DEFAULT_POWERSCALE_TIER: PowerScaleTier = {
+  nodeModel: 'F210',
+  driveSizeTb: 1.92,
+  nodeCount: 3,
+  protection: '+2d:1n',
+  vhsDriveCount: 0,
+  vhsPercent: 0,
 }
 
 /** NetApp storage-specific configuration options */
@@ -510,8 +562,9 @@ export interface NetAppOptions {
   /**
    * Snapshot reserve as a FRACTION of capacity after parity (0–0.2; default 0.05 = 5%, or 0
    * on AFF). Not a percent: `overheadCalculator.ts` multiplies by this value directly, unlike
-   * `PowerStoreOptions`/`PowerScaleOptions.snapshotReservePercent`, which are divided by 100
-   * there. The NetApp panel's slider works in percent and converts on both sides.
+   * `PowerStoreOptions.snapshotReservePercent`, which is divided by 100 there. PowerScale has
+   * no equivalent field — see `PowerScaleOptions`'s doc comment. The NetApp panel's slider
+   * works in percent and converts on both sides.
    */
   snapshotReserve: number
   /**
@@ -719,11 +772,7 @@ export const DEFAULT_POWERSTORE_OPTIONS: PowerStoreOptions = {
 
 /** Default PowerScale options */
 export const DEFAULT_POWERSCALE_OPTIONS: PowerScaleOptions = {
-  compression: true,
-  compressionRatio: 1.5,
-  dedup: false,
-  dedupRatio: 1.0,
-  snapshotReservePercent: 20,
+  tiers: [DEFAULT_POWERSCALE_TIER],
 }
 
 /** Default Ceph options */

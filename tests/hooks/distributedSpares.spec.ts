@@ -37,7 +37,7 @@ const DISTRIBUTED: Topology[] = [
   { type: 'ceph', level: 'ceph_replicated_3' },
   { type: 'powerflex', level: 'powerflex_medium_2way' },
   { type: 'powerstore', level: 'powerstore_raid5' },
-  { type: 'powerscale', level: 'powerscale_n2_1' },
+  { type: 'powerscale', level: 'powerscale_onefs' },
   { type: 'objectscale', level: 'objectscale_ec_12_4' },
   { type: 'nutanix', level: 'nutanix_rf2' },
   { type: 'longhorn', level: 'longhorn_r3' },

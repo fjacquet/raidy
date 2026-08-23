@@ -206,5 +206,42 @@
       "risk": "Risk",
       "chartUnavailable": "Capacity chart unavailable"
     }
+  },
+  "powerscale": {
+    "firstTierOnly": "Performance and resilience figures model the first node pool only. Capacity, power and cost cover the whole cluster.",
+    "tableCaption": "Capacity by node pool",
+    "total": "Cluster total",
+    "eol": "EOL {{date}}",
+    "column": {
+      "nodeModel": "Node model",
+      "driveSize": "Drive size (TB)",
+      "nodes": "Nodes",
+      "protection": "Protection",
+      "raw": "Raw",
+      "usable": "Usable",
+      "effective": "Effective",
+      "drr": "DRR",
+      "efficiency": "Efficiency",
+      "pool": "Pool",
+      "drives": "Drives",
+      "usableBeforeVhs": "Usable before VHS",
+      "usableAfterVhs": "Usable after VHS",
+      "vhsReserve": "VHS reserve",
+      "vhsPercentOfRaw": "VHS % of raw",
+      "vhsBasis": "VHS basis",
+      "protectionEfficiency": "Protection efficiency (vendor)",
+      "usableEfficiency": "Usable efficiency (after VHS)"
+    },
+    "vhsBasis": {
+      "driveCount": "Drive count",
+      "percent": "Percentage"
+    },
+    "export": {
+      "clusterSummary": "Node pools {{pools}} · Nodes {{nodes}} · Drives {{drives}}",
+      "clusterTitle": "Cluster",
+      "derivationTitle": "How each pool's usable capacity is derived",
+      "pools": "Node pools"
+    },
+    "exportScopeNote": "Resilience models the first node pool only; capacity covers the whole cluster."
   }
 }

@@ -8,6 +8,7 @@ import drivesData from '@/data/drives.json'
 import { effectiveServerCount } from '@/engines/capabilities'
 import { calculatePerformance } from '@/engines/performance'
 import { resolveTiering } from '@/engines/shared/tiering'
+import { powerScaleDriveTotals } from '@/engines/volumetry/powerscale'
 import { useTieringOptions } from '@/hooks/useTieringOptions'
 import { useConfigStore } from '@/store'
 import type { Drive } from '@/types'
@@ -37,6 +38,7 @@ export function usePerformanceCalc(): PerformanceResult {
     vsanOptions,
     s2dOptions,
     beeGfsOptions,
+    powerscaleOptions,
     // Workload
     readPercent,
     randomPercent,
@@ -74,23 +76,42 @@ export function usePerformanceCalc(): PerformanceResult {
     // leftover serverCount from a previously selected multi-node platform.
     const effServerCount = effectiveServerCount(serverCount, topology)
 
+    // PowerScale sizes from the FIRST node pool's catalog geometry: the shared Hardware panel
+    // is hidden for this platform (hasServerCount: false), so driveCount/serverCount are stale
+    // defaults, not real inputs. Performance for a heterogeneous cluster is not modelled — a
+    // client's IOPS is a property of the pool serving it, not an average across pools — so only
+    // tiers[0] is read here. `powerScaleDriveTotals` returns all zeroes for an empty/unsized
+    // tier list, which degrades every figure below to 0 rather than throwing.
+    const psTotals =
+      topology.type === 'powerscale' && powerscaleOptions
+        ? powerScaleDriveTotals(powerscaleOptions)
+        : null
+
     // Calculate total drives across all servers.
     // vSAN rebuilds from distributed slack space, not dedicated hot-spare drives,
     // so force 0 spares even if persisted URL state hydrated a non-zero count.
-    const totalDriveCount = driveCount * effServerCount
-    const totalHotSpares = usesDistributedSpares(topology.type) ? 0 : hotSpares * effServerCount
+    const totalDriveCount = psTotals ? psTotals.firstTierDrives : driveCount * effServerCount
+    const totalHotSpares = psTotals
+      ? psTotals.firstTierSpareDrives
+      : usesDistributedSpares(topology.type)
+        ? 0
+        : hotSpares * effServerCount
+    const nodeCount = psTotals ? psTotals.firstTierNodes : effServerCount
 
     // Resolve tiering for the five platforms that support it: S2D storage tiers, vSAN OSA disk
-    // groups, Ceph WAL/DB offload, Nutanix hybrid clusters, BeeGFS metadata targets.
+    // groups, Ceph WAL/DB offload, Nutanix hybrid clusters, BeeGFS metadata targets. PowerScale
+    // is not one of them — `resolveTiering` has no powerscale branch and always returns null for
+    // it, so passing `nodeCount` here (rather than the stale `effServerCount`) is harmless but
+    // kept consistent with every other server-count use below.
     // `useTieringOptions` supplies the complete option bag so no platform can be left out.
-    const tiering = resolveTiering(topology, effServerCount, tieringOptions)
+    const tiering = resolveTiering(topology, nodeCount, tieringOptions)
 
     try {
       return calculatePerformance({
         drive,
         driveCount: totalDriveCount,
         hotSpares: totalHotSpares,
-        serverCount: effServerCount,
+        serverCount: nodeCount,
         topology,
         controllerOptions,
         readPercent,
@@ -105,6 +126,10 @@ export function usePerformanceCalc(): PerformanceResult {
         vsanOptions,
         s2dOptions,
         beeGfsOptions,
+        // The SAME tier `psTotals` was derived from — never `powerscaleOptions.tiers[0]`
+        // re-indexed independently, which can point at a different tier than the one the
+        // population above came from when an earlier tier is unsizeable.
+        powerscaleTier: psTotals?.firstTier,
         tiering,
         workingSetPercent: s2dOptions?.tieringConfig?.workingSetPercent ?? 20,
       })
@@ -157,6 +182,7 @@ export function usePerformanceCalc(): PerformanceResult {
     vsanOptions,
     s2dOptions,
     beeGfsOptions,
+    powerscaleOptions,
     tieringOptions,
   ])
 }

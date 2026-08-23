@@ -10,6 +10,7 @@
  * - Filesystem overhead
  */
 
+import type { PowerScaleTierResult } from '@/types/results'
 import type { ObjectScaleOptions, S2DOptions, Topology } from '@/types/topology'
 
 export interface BreakdownEntry {
@@ -38,7 +39,6 @@ export interface BreakdownInput {
   objectscaleGeoOverhead: number
   powerstoreSnapshotReserve: number
   powerstoreSystemOverhead: number
-  powerscaleSnapshotReserve: number
   cephSafeCapacityReduction: number
   filesystemOverhead: number
   topology: Topology
@@ -89,7 +89,6 @@ export function buildBreakdown(input: BreakdownInput): BreakdownEntry[] {
     objectscaleGeoOverhead,
     powerstoreSnapshotReserve,
     powerstoreSystemOverhead,
-    powerscaleSnapshotReserve,
     cephSafeCapacityReduction,
     filesystemOverhead,
     topology,
@@ -250,15 +249,6 @@ export function buildBreakdown(input: BreakdownInput): BreakdownEntry[] {
     })
   }
 
-  if (powerscaleSnapshotReserve > 0) {
-    breakdown.push({
-      label: 'PowerScale Snapshot Reserve',
-      bytes: powerscaleSnapshotReserve,
-      percent: (powerscaleSnapshotReserve / rawCapacity) * 100,
-      color: 'var(--color-overhead)',
-    })
-  }
-
   if (cephSafeCapacityReduction > 0) {
     breakdown.push({
       label: 'Ceph Safe Capacity (85%)',
@@ -292,6 +282,54 @@ export function buildBreakdown(input: BreakdownInput): BreakdownEntry[] {
     percent: (filesystemOverhead / rawCapacity) * 100,
     color: 'var(--color-overhead)',
   })
+
+  return breakdown
+}
+
+/**
+ * Build the PowerScale cluster breakdown: one usable segment for the whole cluster, plus per-tier
+ * parity and (when non-zero) hot-spare segments.
+ *
+ * Every other platform's breakdown is label-only (no `category` field exists on `BreakdownEntry`
+ * — see the interface above), so a multi-tier cluster is disambiguated the same way: each tier's
+ * segments carry a label naming the pool (`nodeModel` + `protection`) rather than a shared
+ * generic label repeated per tier.
+ */
+export function buildPowerScaleBreakdown(
+  tiers: PowerScaleTierResult[],
+  usableCapacity: number,
+): BreakdownEntry[] {
+  const rawCapacity = tiers.reduce((sum, t) => sum + t.rawCapacity, 0)
+  if (rawCapacity === 0) return []
+
+  const breakdown: BreakdownEntry[] = [
+    {
+      label: 'Usable Capacity',
+      bytes: usableCapacity,
+      percent: (usableCapacity / rawCapacity) * 100,
+      color: 'var(--color-capacity)',
+    },
+  ]
+
+  for (const tier of tiers) {
+    const poolLabel = `${tier.nodeModel} ${tier.protection}`
+    const parityBytes = tier.rawCapacity - tier.usableCapacity
+    breakdown.push({
+      label: `Parity/Redundancy — ${poolLabel}`,
+      bytes: parityBytes,
+      percent: (parityBytes / rawCapacity) * 100,
+      color: 'var(--color-parity)',
+    })
+
+    if (tier.vhsReserve > 0) {
+      breakdown.push({
+        label: `Hot Spares (VHS) — ${poolLabel}`,
+        bytes: tier.vhsReserve,
+        percent: (tier.vhsReserve / rawCapacity) * 100,
+        color: 'var(--color-overhead)',
+      })
+    }
+  }
 
   return breakdown
 }

@@ -206,5 +206,42 @@
       "risk": "Rischio",
       "chartUnavailable": "Grafico capacità non disponibile"
     }
+  },
+  "powerscale": {
+    "firstTierOnly": "I valori di prestazioni e resilienza modellano solo il primo pool di nodi. Capacità, consumo energetico e costi coprono l'intero cluster.",
+    "tableCaption": "Capacità per pool di nodi",
+    "total": "Totale cluster",
+    "eol": "Fine vita {{date}}",
+    "column": {
+      "nodeModel": "Modello di nodo",
+      "driveSize": "Dimensione disco (TB)",
+      "nodes": "Nodi",
+      "protection": "Protezione",
+      "raw": "Grezza",
+      "usable": "Utile",
+      "effective": "Effettiva",
+      "drr": "DRR",
+      "efficiency": "Efficienza",
+      "pool": "Pool",
+      "drives": "Dischi",
+      "usableBeforeVhs": "Utile prima del VHS",
+      "usableAfterVhs": "Utile dopo il VHS",
+      "vhsReserve": "Riserva VHS",
+      "vhsPercentOfRaw": "VHS % del grezzo",
+      "vhsBasis": "Base VHS",
+      "protectionEfficiency": "Efficienza di protezione (fornitore)",
+      "usableEfficiency": "Efficienza utile (dopo VHS)"
+    },
+    "vhsBasis": {
+      "driveCount": "Numero di dischi",
+      "percent": "Percentuale"
+    },
+    "export": {
+      "clusterSummary": "Pool di nodi {{pools}} · Nodi {{nodes}} · Dischi {{drives}}",
+      "clusterTitle": "Cluster",
+      "derivationTitle": "Derivazione della capacità utile di ogni pool",
+      "pools": "Pool di nodi"
+    },
+    "exportScopeNote": "La resilienza modella solo il primo pool di nodi; la capacità copre l'intero cluster."
   }
 }

@@ -6,6 +6,7 @@ import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Label, Select, Slider } from '@/components/common/FormControls'
 import { shouldShowControl } from '@/engines/capabilities'
+import { backupApplies } from '@/engines/outputRelevance'
 import { useConfigStore } from '@/store'
 import type { ControllerType, FsType, NetworkSpeed, PCIeGen, PCIeLanes } from '@/types'
 import {
@@ -125,6 +126,17 @@ export function AdvancedPanel() {
   // vSAN ESA is NVMe-direct — no Controller layer in the bottleneck chain, so the selector
   // cannot change a result. Probed in tests/engines/performance/controllerRelevance.spec.ts.
   const showController = shouldShowControl('controller', topology.type)
+
+  // The generic backup estimator is not offered for PowerScale. `backupApplies` is the SAME
+  // predicate the dashboard's backup card consults (src/engines/outputRelevance.ts), so these
+  // two inputs and that card can never disagree — hiding one without the other is precisely the
+  // orphaned-dependency defect this branch has had to fix twice. Not a capability flag: the
+  // backup engine reads both fields for every platform, so no probe could establish it.
+  const showBackup = backupApplies(topology)
+
+  // With both gone the "Filesystem & Backup" block would render as a heading with nothing
+  // under it — PowerScale hides the filesystem selector too (`honoursFsType: false`).
+  const showFilesystemSection = showFsType || showBackup
 
   return (
     <div className="space-y-6">
@@ -333,57 +345,63 @@ export function AdvancedPanel() {
       </div>
 
       {/* Filesystem & Backup Section */}
-      <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-surface-700">
-        <h4 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-          {t('filesystem.title')}
-        </h4>
+      {showFilesystemSection && (
+        <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-surface-700">
+          <h4 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+            {t('filesystem.title')}
+          </h4>
 
-        {showFsType && (
-          <div className="space-y-2">
-            <Label htmlFor="fs-type" tooltip={th('advanced.fsType')}>
-              {t('filesystem.type')}
-            </Label>
-            <Select
-              id="fs-type"
-              value={fsType}
-              options={FS_TYPE_OPTIONS}
-              onChange={(v) => setFsType(v as FsType)}
-            />
-          </div>
-        )}
+          {showFsType && (
+            <div className="space-y-2">
+              <Label htmlFor="fs-type" tooltip={th('advanced.fsType')}>
+                {t('filesystem.type')}
+              </Label>
+              <Select
+                id="fs-type"
+                value={fsType}
+                options={FS_TYPE_OPTIONS}
+                onChange={(v) => setFsType(v as FsType)}
+              />
+            </div>
+          )}
 
-        <div className="space-y-2">
-          <Label htmlFor="backup-retention" tooltip={th('advanced.backupRetention')}>
-            {t('filesystem.backupRetention')}
-          </Label>
-          <Slider
-            id="backup-retention"
-            value={backupRetention}
-            min={1}
-            max={365}
-            onChange={setBackupRetention}
-            formatValue={(v) => `${v} days`}
-          />
+          {showBackup && (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="backup-retention" tooltip={th('advanced.backupRetention')}>
+                  {t('filesystem.backupRetention')}
+                </Label>
+                <Slider
+                  id="backup-retention"
+                  value={backupRetention}
+                  min={1}
+                  max={365}
+                  onChange={setBackupRetention}
+                  formatValue={(v) => `${v} days`}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label
+                  htmlFor="daily-change"
+                  hint={`${dailyChangeRate}%`}
+                  tooltip={th('advanced.dailyChangeRate')}
+                >
+                  {t('filesystem.dailyChangeRate')}
+                </Label>
+                <Slider
+                  id="daily-change"
+                  value={dailyChangeRate}
+                  min={0}
+                  max={50}
+                  onChange={setDailyChangeRate}
+                  formatValue={(v) => `${v}%`}
+                />
+              </div>
+            </>
+          )}
         </div>
-
-        <div className="space-y-2">
-          <Label
-            htmlFor="daily-change"
-            hint={`${dailyChangeRate}%`}
-            tooltip={th('advanced.dailyChangeRate')}
-          >
-            {t('filesystem.dailyChangeRate')}
-          </Label>
-          <Slider
-            id="daily-change"
-            value={dailyChangeRate}
-            min={0}
-            max={50}
-            onChange={setDailyChangeRate}
-            formatValue={(v) => `${v}%`}
-          />
-        </div>
-      </div>
+      )}
     </div>
   )
 }

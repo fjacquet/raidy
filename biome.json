@@ -35,6 +35,12 @@
           }
         }
       }
+    },
+    {
+      "includes": ["src/data/powerscale*.json"],
+      "formatter": {
+        "enabled": false
+      }
     }
   ],
   "formatter": {

@@ -9,6 +9,7 @@ import { dellStrategy } from '@engines/volumetry/strategies/dell'
 import * as fc from 'fast-check'
 import { describe, expect, it } from 'vitest'
 import { calculateVolumetry, type VolumetryInput } from '@/engines/volumetry'
+import { sizeTier } from '@/engines/volumetry/powerscale/tier'
 import { getS2DDualParityEfficiency } from '@/engines/volumetry/strategies/s2d'
 import {
   DEFAULT_BEEGFS_OPTIONS,
@@ -24,6 +25,7 @@ import {
   DEFAULT_SYNOLOGY_OPTIONS,
   DEFAULT_VSAN_OPTIONS,
   DEFAULT_ZFS_OPTIONS,
+  type PowerScaleTier,
   type StandardRaidLevel,
   type Topology,
   type VsanEsaTopology,
@@ -35,7 +37,6 @@ import {
   dellAdaptVectors,
   dellObjectscaleVectors,
   dellPowerflexVectors,
-  dellPowerscaleVectors,
   dellPowerstore5200QVector,
   dellPowerstoreVectors,
 } from '../fixtures/dell-vectors'
@@ -3441,158 +3442,138 @@ describe('Volumetry Engine - Error Handling', () => {
     })
   })
 
-  describe('PowerScale Snapshot Reserve', () => {
-    it('should calculate PowerScale N+2 with snapshot reserve', () => {
+  // ============================================================
+  // PowerScale OneFS (multi-tier cluster model)
+  // ============================================================
+  //
+  // The previous drive-count/node-count "N+x" tests here (`powerscale_n1`..`powerscale_n4`,
+  // `powerscale_mirror_2x/3x`, and a snapshot-reserve feature) modeled a topology shape that no
+  // longer exists: `PowerScaleTopology` is now the single level 'powerscale_onefs', and
+  // `calculateVolumetry` branches every `type: 'powerscale'` input straight to the tier-based
+  // `calculatePowerScaleVolumetry` sub-engine (see `src/engines/volumetry/index.ts`) before any
+  // drive/node data-fraction arithmetic can run. PowerScale also has no snapshot reserve field
+  // by design — see `PowerScaleOptions`'s doc comment in topology.ts. `dellStrategy`'s N+x
+  // formulas have since been deleted from dell.ts entirely (Task 7) — that path is not just
+  // unreachable, it no longer exists.
+  //
+  // Full multi-tier coverage (single tier, heterogeneous sums, dropped/unsizeable tiers, cluster
+  // efficiency as Σusable/Σraw) lives in tests/engines/volumetry/powerscale/cluster.spec.ts and
+  // tests/engines/volumetry/powerscale/tier.spec.ts. The tests below only re-confirm the wiring:
+  // that `calculateVolumetry` itself reaches the sub-engine for the new topology shape.
+
+  describe('Volumetry Engine - PowerScale OneFS (multi-tier cluster)', () => {
+    it('routes a single-tier cluster through the sub-engine and matches sizeTier exactly', () => {
+      const tier: PowerScaleTier = {
+        nodeModel: 'F200',
+        driveSizeTb: 1.92,
+        nodeCount: 6,
+        protection: '+2d:1n',
+        vhsDriveCount: 0,
+        vhsPercent: 0,
+      }
       const input: VolumetryInput = {
-        ...createInput(10, { type: 'powerscale', level: 'powerscale_n2' }, 0, 10),
-        powerscaleOptions: {
-          ...DEFAULT_POWERSCALE_OPTIONS,
-          snapshotReservePercent: 25, // 25% snapshot reserve
-          compression: false,
-          compressionRatio: 1.0,
-          dedup: false,
-          dedupRatio: 1.0,
-        },
+        ...createInput(0, { type: 'powerscale', level: 'powerscale_onefs' }),
+        powerscaleOptions: { tiers: [tier] },
       }
 
       const result = calculateVolumetry(input)
+      const expected = sizeTier(tier)
 
-      // N+2: (10-2)/10 = 80% efficiency base, minus 25% snapshot reserve
-      expect(result.rawCapacity).toBe(10e12)
-      expect(result.efficiency).toBeLessThan(80) // Reduced by snapshot reserve
-      expect(Number.isFinite(result.efficiency)).toBe(true)
+      expect(result.rawCapacity).toBe(expected?.rawCapacity)
+      expect(result.usableCapacity).toBe(expected?.usableLessVhs)
+      expect(result.powerScaleDetails?.tiers).toHaveLength(1)
+    })
 
-      // Breakdown should include snapshot reserve entry
-      const hasSnapshotReserve = result.breakdown.some((item) =>
-        item.label.includes('PowerScale Snapshot Reserve'),
+    it('sums a heterogeneous multi-tier cluster end to end', () => {
+      const flash: PowerScaleTier = {
+        nodeModel: 'F200',
+        driveSizeTb: 1.92,
+        nodeCount: 6,
+        protection: '+2d:1n',
+        vhsDriveCount: 0,
+        vhsPercent: 0,
+      }
+      const archive: PowerScaleTier = {
+        nodeModel: 'A200',
+        driveSizeTb: 8,
+        nodeCount: 12,
+        protection: '+2n',
+        vhsDriveCount: 0,
+        vhsPercent: 0,
+      }
+      const input: VolumetryInput = {
+        ...createInput(0, { type: 'powerscale', level: 'powerscale_onefs' }),
+        powerscaleOptions: { tiers: [flash, archive] },
+      }
+
+      const result = calculateVolumetry(input)
+      const a = sizeTier(flash)
+      const b = sizeTier(archive)
+
+      expect(result.rawCapacity).toBeCloseTo((a?.rawCapacity ?? 0) + (b?.rawCapacity ?? 0), -6)
+      expect(result.usableCapacity).toBeCloseTo(
+        (a?.usableLessVhs ?? 0) + (b?.usableLessVhs ?? 0),
+        -6,
       )
-      expect(hasSnapshotReserve).toBe(true)
+      expect(result.powerScaleDetails?.tiers).toHaveLength(2)
     })
 
-    it('should calculate PowerScale N+3 with snapshot reserve and dedup', () => {
+    it('drops a tier the catalog cannot size and keeps sizing the rest, end to end', () => {
+      const flash: PowerScaleTier = {
+        nodeModel: 'F200',
+        driveSizeTb: 1.92,
+        nodeCount: 6,
+        protection: '+2d:1n',
+        vhsDriveCount: 0,
+        vhsPercent: 0,
+      }
       const input: VolumetryInput = {
-        ...createInput(12, { type: 'powerscale', level: 'powerscale_n3' }, 0, 12),
+        ...createInput(0, { type: 'powerscale', level: 'powerscale_onefs' }),
         powerscaleOptions: {
-          ...DEFAULT_POWERSCALE_OPTIONS,
-          snapshotReservePercent: 20, // 20% snapshot reserve
-          compression: true,
-          compressionRatio: 2.0,
-          dedup: true,
-          dedupRatio: 3.0,
+          tiers: [
+            flash,
+            {
+              nodeModel: 'NOPE',
+              driveSizeTb: 8,
+              nodeCount: 12,
+              protection: '+2n',
+              vhsDriveCount: 0,
+              vhsPercent: 0,
+            },
+          ],
         },
       }
 
       const result = calculateVolumetry(input)
-
-      // N+3: (12-3)/12 = 75% efficiency base, minus 20% snapshot reserve
-      expect(result.rawCapacity).toBe(12e12)
-      expect(Number.isFinite(result.efficiency)).toBe(true)
-
-      // Effective capacity should reflect compression and dedup
-      expect(result.effectiveCapacity).toBeGreaterThan(result.usableCapacity)
+      expect(result.powerScaleDetails?.tiers).toHaveLength(1)
+      expect(result.rawCapacity).toBe(sizeTier(flash)?.rawCapacity)
     })
 
-    it('should calculate PowerScale N+4 with snapshot reserve', () => {
-      const input: VolumetryInput = {
-        ...createInput(20, { type: 'powerscale', level: 'powerscale_n4' }, 0, 20),
-        powerscaleOptions: {
-          ...DEFAULT_POWERSCALE_OPTIONS,
-          snapshotReservePercent: 30, // 30% snapshot reserve
-          compression: false,
-          compressionRatio: 1.0,
-          dedup: false,
-          dedupRatio: 1.0,
-        },
+    it('efficiency rises with node count on the same protection curve (F200 +2d:1n)', () => {
+      // Vendor curve F200|+2d:1n starts at 3 nodes and rises monotonically with node count
+      // (docs/vendor-specs); this only asserts the monotonic relationship, not exact
+      // percentages, since usableFactor (drive-format overhead) also multiplies in.
+      const at3: PowerScaleTier = {
+        nodeModel: 'F200',
+        driveSizeTb: 1.92,
+        nodeCount: 3,
+        protection: '+2d:1n',
+        vhsDriveCount: 0,
+        vhsPercent: 0,
       }
+      const at6: PowerScaleTier = { ...at3, nodeCount: 6 }
 
-      const result = calculateVolumetry(input)
-
-      // N+4: (20-4)/20 = 80% efficiency base, minus 30% snapshot reserve
-      // serverCount=N: 1 drive per node (single-drive-per-node cluster)
-      expect(result.rawCapacity).toBe(20e12)
-      expect(result.efficiency).toBeLessThan(80)
-      expect(Number.isFinite(result.efficiency)).toBe(true)
-    })
-  })
-
-  // ============================================================
-  // PowerScale OneFS Reference Vectors (Phase 11)
-  // ============================================================
-
-  describe('Volumetry Engine - PowerScale OneFS (Dell Info Hub Reference)', () => {
-    describe.each(dellPowerscaleVectors)('$name', ({
-      level,
-      nodeCount,
-      totalDriveCount,
-      expectedDataFraction,
-      tolerance,
-    }) => {
-      it(`should return data fraction ${(expectedDataFraction * 100).toFixed(2)}% for ${nodeCount} nodes`, () => {
-        // Pass serverCount via options (mirrors vSAN pattern)
-        const result = dellStrategy.calculateDataFraction(level, totalDriveCount, {
-          serverCount: nodeCount,
-        })
-        expect(result).toBeCloseTo(expectedDataFraction, 3)
+      const result3 = calculateVolumetry({
+        ...createInput(0, { type: 'powerscale', level: 'powerscale_onefs' }),
+        powerscaleOptions: { tiers: [at3] },
+      })
+      const result6 = calculateVolumetry({
+        ...createInput(0, { type: 'powerscale', level: 'powerscale_onefs' }),
+        powerscaleOptions: { tiers: [at6] },
       })
 
-      it(`should produce correct usable capacity for ${nodeCount} nodes x ${totalDriveCount} drives`, () => {
-        const input: VolumetryInput = {
-          ...createInput(totalDriveCount, { type: 'powerscale', level }, 0, nodeCount),
-          powerscaleOptions: {
-            ...DEFAULT_POWERSCALE_OPTIONS,
-            snapshotReservePercent: 0, // Isolate data fraction from snapshot reserve
-            compression: false,
-            compressionRatio: 1.0,
-            dedup: false,
-            dedupRatio: 1.0,
-          },
-        }
-        const result = calculateVolumetry(input)
-        const expectedRaw = totalDriveCount * 1_000_000_000_000
-        expect(result.rawCapacity).toBe(expectedRaw)
-        // Usable capacity should reflect node-based data fraction (before FS overhead)
-        const expectedUsableBeforeFs = expectedRaw * expectedDataFraction
-        expect(result.usableCapacity).toBeLessThanOrEqual(expectedUsableBeforeFs * (1 + tolerance))
-        expect(result.usableCapacity).toBeGreaterThan(expectedUsableBeforeFs * 0.95) // Allow FS overhead
-      })
-    })
-
-    it('should change efficiency when nodeCount changes but driveCount stays constant', () => {
-      // Same total drives (120), different node counts
-      // 4 nodes x 30 drives: N+2 = (4-2)/4 = 50%
-      const input4 = {
-        ...createInput(120, { type: 'powerscale', level: 'powerscale_n2' }, 0, 4),
-        powerscaleOptions: {
-          ...DEFAULT_POWERSCALE_OPTIONS,
-          snapshotReservePercent: 0,
-          compression: false,
-          compressionRatio: 1.0,
-          dedup: false,
-          dedupRatio: 1.0,
-        },
-      }
-      // 10 nodes x 12 drives: N+2 = (10-2)/10 = 80%
-      const input10 = {
-        ...createInput(120, { type: 'powerscale', level: 'powerscale_n2' }, 0, 10),
-        powerscaleOptions: {
-          ...DEFAULT_POWERSCALE_OPTIONS,
-          snapshotReservePercent: 0,
-          compression: false,
-          compressionRatio: 1.0,
-          dedup: false,
-          dedupRatio: 1.0,
-        },
-      }
-      const result4 = calculateVolumetry(input4)
-      const result10 = calculateVolumetry(input10)
-
-      // Same raw capacity
-      expect(result4.rawCapacity).toBe(result10.rawCapacity)
-      // Different efficiencies: 4-node should be LOWER than 10-node
-      expect(result4.efficiency).toBeLessThan(result10.efficiency)
-      // 4-node N+2: ~50% efficiency, 10-node N+2: ~80% efficiency
-      expect(result4.efficiency).toBeLessThan(55)
-      expect(result10.efficiency).toBeGreaterThan(75)
+      expect(result3.rawCapacity).toBe(result6.rawCapacity / 2) // same drives/node, half the nodes
+      expect(result3.efficiency).toBeLessThan(result6.efficiency)
     })
   })
 

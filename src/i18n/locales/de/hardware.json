@@ -29,13 +29,21 @@
   "drive": {
     "label": "Laufwerksmodell",
     "count": "Laufwerke pro Server",
-    "countHint": "Laufwerke gesamt: {{total}}"
+    "countHint": "Laufwerke gesamt: {{total}}",
+    "powerscaleNote": "Die Laufwerksanzahl stammt aus den Node-Pools im Topologie-Panel: {{drives}} Laufwerke auf {{nodes}} Nodes."
+  },
+  "mediaProxy": {
+    "line": "Referenzmedium: {{model}} — Grundlage für Leistungsaufnahme, Zuverlässigkeit und Preis.",
+    "change": "Referenzmedium ändern",
+    "hide": "Referenzmedium ausblenden"
   },
   "server": {
     "label": "Server / Knoten",
     "labelRaidGroups": "RAID-Gruppen",
     "power": "Serverleistung (W)",
-    "powerHint": "Ohne Laufwerke"
+    "powerHint": "Ohne Laufwerke",
+    "powerPerNode": "Node-Leistung (W)",
+    "powerHintPerNode": "Pro Node, ohne Laufwerke"
   },
   "summary": {
     "rawCapacity": "Bruttokapazität",

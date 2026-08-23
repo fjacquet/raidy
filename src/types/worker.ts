@@ -3,6 +3,7 @@
  */
 
 import type { URERate } from './drive'
+import type { PowerScaleProtection } from './topology'
 
 /** Input parameters for Monte Carlo simulation */
 export interface SimulationInput {
@@ -67,6 +68,21 @@ export interface SimulationInput {
    * `TieredCapacityResult.cacheTierDriveCount` already is.
    */
   fastTierDeviceCount?: number
+  /**
+   * The PowerScale tier's OneFS protection level (e.g. `'+2d:1n'`), when `raidLevel ===
+   * 'powerscale_onefs'`. Absent for every other platform, and absent for PowerScale when the
+   * simulated tier's protection isn't known (e.g. an empty tier list) — the worker then falls
+   * back to `getParityDrives`'s generic single-parity default, matching the pre-tier-model
+   * behaviour rather than fabricating a protection.
+   *
+   * NOT vendor-attested. Unlike every capacity number on this branch, this field (and the
+   * node-failure model it drives — see `computeTopologyModel`) cannot be validated against
+   * Dell's PowerSizer export: that workbook is a capacity calculator and carries no AFR, URE or
+   * MTBF, let alone a reliability model. The tolerance rule this drives is derived from
+   * published OneFS protection semantics (`STRIPE_SHAPES`'s `nf`/`M`), not sourced from the
+   * vendor table the rest of this branch validates against.
+   */
+  powerScaleProtection?: PowerScaleProtection
 }
 
 /** Result from Monte Carlo simulation */

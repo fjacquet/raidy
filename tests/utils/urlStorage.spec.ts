@@ -658,11 +658,16 @@ describe('URL Storage - Platform Options Persistence (Task 9)', () => {
         compressionRatio: 2.0,
       },
       powerscaleOptions: {
-        compression: true,
-        compressionRatio: 1.8,
-        dedup: true,
-        dedupRatio: 1.5,
-        snapshotReservePercent: 25,
+        tiers: [
+          {
+            nodeModel: 'F710',
+            driveSizeTb: 3.84,
+            nodeCount: 6,
+            protection: '+2d:1n',
+            vhsDriveCount: 1,
+            vhsPercent: 0,
+          },
+        ],
       },
       synologyOptions: {
         filesystem: 'btrfs',
@@ -936,11 +941,16 @@ describe('URL Storage - Security: Malicious URL Protection (SEC-01, SEC-02, SEC-
         systemOverheadPercent: 5,
       },
       powerscaleOptions: {
-        compression: true,
-        compressionRatio: 1.5,
-        dedup: false,
-        dedupRatio: 1.0,
-        snapshotReservePercent: 20,
+        tiers: [
+          {
+            nodeModel: 'F210',
+            driveSizeTb: 1.92,
+            nodeCount: 3,
+            protection: '+2d:1n',
+            vhsDriveCount: 0,
+            vhsPercent: 0,
+          },
+        ],
       },
       readPercent: 70,
       blockSize: '64K',

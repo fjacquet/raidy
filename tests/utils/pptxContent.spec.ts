@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest'
+import common from '@/i18n/locales/en/common.json'
 import en from '@/i18n/locales/en/output.json'
 import type { ExportConfig } from '@/utils/exportPptx'
 import { buildPptxContent } from '@/utils/pptxContent'
 
 const t = (key: string) => {
+  if (key === 'common:powerScale.estimateNote') return common.powerScale.estimateNote
   const labels = (en.pptx as Record<string, unknown>).labels as Record<string, string>
   const short = key.replace('output:pptx.labels.', '')
   return labels[short] ?? key
@@ -89,7 +91,7 @@ describe('buildPptxContent', () => {
     const allStats = [
       ...content.volumetryLines.flat(),
       ...content.performanceLines.flat(),
-      ...content.energyLine,
+      ...(content.energyLine ?? []),
       ...content.bottleneckLine,
     ]
     for (const s of allStats) expect(s.label).not.toMatch(/^output:pptx/)
@@ -117,6 +119,27 @@ describe('buildPptxContent', () => {
     const content = buildPptxContent({ ...config, serverCount: 1 }, t)
     expect(content.subtitle).not.toMatch(/\d+ servers/)
   })
+  /**
+   * PowerSizer is the rule; raidy is the shortcut. A deck that leaves the app for a customer says
+   * so — and says which of its figures are estimates from a reference medium rather than
+   * vendor-published values. Same sentence as the Hardware panel's, from the same key.
+   */
+  it('carries the PowerSizer estimate note for PowerScale', () => {
+    const content = buildPptxContent(
+      {
+        ...config,
+        topology: { type: 'powerscale', level: 'powerscale_onefs' } as ExportConfig['topology'],
+      },
+      t,
+    )
+    expect(content.estimateNote).toBe(common.powerScale.estimateNote)
+    expect(content.estimateNote).toMatch(/PowerSizer/)
+  })
+
+  it("carries no estimate note for a platform sized from the user's own drive", () => {
+    expect(buildPptxContent(config, t).estimateNote).toBeNull()
+  })
+
   it('formats K-suffix IOPS with one decimal, matching the on-screen gauges (finding #12)', () => {
     const content = buildPptxContent(config, t)
     // maxReadIOPS: 1200 must render as '1.2K' (Speedometer/AnimatedCounter convention),

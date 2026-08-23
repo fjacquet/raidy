@@ -44,5 +44,8 @@
     "auto": "Auto",
     "light": "Light",
     "dark": "Dark"
+  },
+  "powerScale": {
+    "estimateNote": "Capacity and efficiency come from Dell's published table; data reduction is raidy's assumption about your data, and resilience is derived from published OneFS behaviour, not Dell-published figures. PowerSizer remains the reference for a firm quote."
   }
 }

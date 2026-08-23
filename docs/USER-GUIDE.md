@@ -19,6 +19,22 @@ as a URL.
    than sitting there inert.
 2. **Hardware** — drive model, drives per server, servers. The drive database carries real
    published specs: capacity, IOPS, throughput, power, endurance, AFR and URE rate.
+   *PowerScale is the exception*: its cluster is built as node pools in the Topology panel (node
+   model, drive size, node count, protection, virtual hot spare — all constrained to what Dell's
+   catalog publishes, 1 to 8 pools per cluster), so the drives-per-server and servers sliders do
+   not apply and the panel shows the pools' own drive count instead. Capacity is reported per
+   pool with a cluster total; performance and resilience describe the FIRST pool only. The drive
+   picker collapses to a one-line **reference medium** — Dell's catalog publishes capacities and
+   efficiencies but no power, reliability or price, so a generic drive stands in for those three;
+   click through the line to change it. Server power stays, relabelled **per node**, because it is
+   multiplied by the cluster's node count. The backup retention and daily-change-rate inputs are
+   not offered for PowerScale, and the backup figure is not reported. The exported deck and report
+   describe the cluster pool by pool rather than as a single drive model: a capacity table (model,
+   drive size, nodes, drives, protection, raw, usable, DRR, effective) and a second table showing
+   how each pool's usable capacity was derived (the vendor's protection efficiency, the Virtual
+   Hot Spare reserve and which of the two vendor formulas produced it, and the efficiency the pool
+   actually delivers), each closing with a cluster total. Both carry one line saying which figures
+   are estimates and that Dell's own sizer remains the reference for a firm quote.
 3. **Workload** — read/write mix, random/sequential mix, block size, daily writes. The profile
    buttons underneath set the first three in one click, and which profiles you see depends on the
    platform: BeeGFS offers HPC and AI profiles (training data, checkpointing, scratch, genomics,

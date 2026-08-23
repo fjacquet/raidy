@@ -29,13 +29,21 @@
   "drive": {
     "label": "Modello disco",
     "count": "Dischi per server",
-    "countHint": "Dischi totali: {{total}}"
+    "countHint": "Dischi totali: {{total}}",
+    "powerscaleNote": "Il numero di dischi deriva dai pool di nodi del pannello Topologia: {{drives}} dischi su {{nodes}} nodi."
+  },
+  "mediaProxy": {
+    "line": "Supporto di riferimento: {{model}} — usato per consumo, affidabilità e prezzo.",
+    "change": "Cambia supporto di riferimento",
+    "hide": "Nascondi supporto di riferimento"
   },
   "server": {
     "label": "Server / Nodi",
     "labelRaidGroups": "Gruppi RAID",
     "power": "Potenza server (W)",
-    "powerHint": "Esclusi i dischi"
+    "powerHint": "Esclusi i dischi",
+    "powerPerNode": "Potenza per nodo (W)",
+    "powerHintPerNode": "Per nodo, esclusi i dischi"
   },
   "summary": {
     "rawCapacity": "Capacità grezza",

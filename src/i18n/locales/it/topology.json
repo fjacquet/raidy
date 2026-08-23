@@ -23,7 +23,8 @@
   },
   "hotSpares": {
     "label": "Dischi di riserva",
-    "distributedNote": "vSAN ricostruisce dallo spazio libero distribuito — i dischi di riserva dedicati non vengono utilizzati."
+    "distributedNote": "Questa piattaforma ricostruisce da capacità di riserva distribuita — non usa dischi hot spare dedicati.",
+    "distributedNotePowerScale": "La riserva è il Virtual Hot Spare, impostato per pool di nodi qui sotto."
   },
   "common": {
     "enableCompression": "Abilita compressione",
@@ -336,34 +337,41 @@
     }
   },
   "powerscale": {
-    "title": "Opzioni PowerScale",
-    "n1": {
-      "label": "N+1",
-      "description": "Protezione parità singola"
+    "title": "Cluster PowerScale",
+    "onefs": {
+      "label": "OneFS",
+      "description": "NAS scale-out. La protezione si imposta per pool di nodi."
     },
-    "n2": {
-      "label": "N+2",
-      "description": "Protezione doppia parità"
-    },
-    "n2_1": {
-      "label": "N+2:1",
-      "description": "N+2 con tolleranza guasto stripe"
-    },
-    "n3": {
-      "label": "N+3",
-      "description": "Protezione tripla parità"
-    },
-    "n4": {
-      "label": "N+4",
-      "description": "Protezione quadrupla parità"
-    },
-    "mirror_2x": {
-      "label": "Mirror 2x",
-      "description": "Mirror 2 vie, 50% efficienza"
-    },
-    "mirror_3x": {
-      "label": "Mirror 3x",
-      "description": "Mirror 3 vie, 33% efficienza"
+    "tier": {
+      "heading": "Pool di nodi {{index}}",
+      "nodeModel": "Modello di nodo",
+      "driveSize": "Dimensione disco (TB)",
+      "nodeCount": "Numero di nodi",
+      "driveTotal": "{{count}} dischi",
+      "protection": "Protezione",
+      "vhsDriveCount": "Virtual Hot Spare (dischi)",
+      "vhsPercent": "Virtual Hot Spare (%)",
+      "drr": "Rapporto di riduzione dei dati (DRR)",
+      "drrCatalogHint": "Valore di catalogo {{value}}",
+      "drrModified": "Modificato",
+      "drrPresetLabel": "Profilo dati",
+      "drrPresetPlaceholder": "Applica un profilo dati…",
+      "drrPresetHint": "Sono regole empiriche proprie di raidy per profili di dati comuni, non valori pubblicati da Dell.",
+      "drrPresets": {
+        "medicalImaging": "Imaging medicale (DICOM)",
+        "video": "Video / media",
+        "encrypted": "Dati crittografati",
+        "archive": "Backup / archivi",
+        "generalFiles": "File generali / ufficio",
+        "virtualization": "Virtualizzazione / VDI",
+        "database": "Database"
+      },
+      "add": "Aggiungi pool di nodi",
+      "remove": "Rimuovi pool di nodi",
+      "moveUp": "Sposta il pool in alto",
+      "moveDown": "Sposta il pool in basso",
+      "eol": "Fine vita {{date}}",
+      "notSizeable": "Il catalogo Dell non pubblica questa combinazione: questo pool di nodi non può essere dimensionato e non contribuisce ai risultati."
     }
   },
   "ceph": {

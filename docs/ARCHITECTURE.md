@@ -164,6 +164,13 @@ one strategy per platform ([ADR-0003](./adr/0003-strategy-pattern-per-platform.m
 | Sustainability | `src/engines/sustainability/` | Power draw, energy, CO₂, flash endurance, TCO |
 | Backup | `src/engines/backup/` | Backup capacity from change rate and retention |
 
+> **PowerScale is the exception to the strategy-per-platform shape.** `calculateVolumetry` returns
+> early into `src/engines/volumetry/powerscale/` instead of selecting a `VolumetryStrategy`, because
+> its input model is **node-pool-centric rather than drive-centric**: the user picks node models and
+> pool sizes, and drive counts are derived from the vendor catalog rather than entered. A shared
+> overhead added to the generic path will silently skip PowerScale. See
+> [ADR-0014](./adr/0014-vendor-lookup-tables.md).
+
 **The per-platform formulas, vendor tables, caveats and known limitations live in
 [ENGINES.md](./ENGINES.md).** That is the document to read before changing a number; this one
 describes how the pieces fit together.
@@ -341,6 +348,11 @@ the Effective-capacity tile is hidden for RAID and shown for ZFS+compression) pl
 presence (e.g. the Survival tile only appears once a Monte Carlo run has produced a result).
 Not-applicable is omitted; applicable-but-zero is still shown.
 
+The same module also exports `backupApplies(topology)`, the one predicate that decides both
+whether `AdvancedPanel` shows the backup inputs and whether `CapacityAct` renders the backup card
+— an input and the output it feeds are one decision, so they cannot drift into a live figure
+computed from a control the user cannot see.
+
 | Component | Purpose / Data Source |
 |-----------|------------------------|
 | `HeadlineBand.tsx` | Persistent KPI band (usable/effective capacity, efficiency, peak IOPS, survival, annual energy) |
@@ -510,6 +522,16 @@ results, locale, and unit system and returns a plain-data slide description with
 or `pptxgenjs` calls. `exportPptx.ts` consumes that data to render slides and capture chart PNGs;
 keeping the two separate means the slide content itself is unit-testable without a DOM or the
 PPTX library.
+
+`src/utils/powerscaleExportContent.ts` is the same pattern for the one platform whose document
+*structure* differs: a PowerScale cluster is 1-8 heterogeneous node pools rather than one drive
+model times a count, so `exportToPptx` and `exportToPdf` both dispatch on
+`topology.type === 'powerscale'` and render `buildPowerScaleExportContent()`'s two per-pool tables
+(a core table and a derivation table, each with a cluster total) in place of the generic hardware
+and capacity blocks. Everything downstream — performance, power, resilience — stays shared. The
+builder returns finished, locale-formatted cells, so the deck and the report cannot format the
+same number differently. `src/utils/exportNotes.ts` supplies the single caveat line both documents
+carry once, near the end.
 
 ---
 

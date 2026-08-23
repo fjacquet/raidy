@@ -43,14 +43,10 @@ describe('Dell Performance Strategy', () => {
       ['powerstore_raid5', 3.0],
       ['powerstore_raid6', 4.0],
       ['powerstore_raid10', 2.0],
-      // PowerScale
-      ['powerscale_n1', 2.5],
-      ['powerscale_n2', 3.5],
-      ['powerscale_n2_1', 3.5],
-      ['powerscale_n3', 4.5],
-      ['powerscale_n4', 5.5],
-      ['powerscale_mirror_2x', 2.0],
-      ['powerscale_mirror_3x', 3.0],
+      // PowerScale: the old N+x/mirror levels were deleted (Task 7) along with
+      // PowerScaleTopology's per-level union — 'powerscale_onefs' is now the only level,
+      // and it falls through to the 3.0 default until Task 8 reads the tier's protection.
+      ['powerscale_onefs', 3.0],
       // ObjectScale
       ['objectscale_ec_12_4', 1.33],
       ['objectscale_ec_10_2', 1.2],

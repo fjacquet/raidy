@@ -4,18 +4,18 @@
  * Supports multiple Dell storage platforms:
  * - PowerFlex (formerly VxFlex OS/ScaleIO): SDS with 2/3-way mirror or EC
  * - PowerStore: Block/file storage with RAID 5/6/10
- * - PowerScale (formerly Isilon): Scale-out NAS with N+x protection
  * - ObjectScale: Object storage (S3) with EC and geo-replication
+ *
+ * PowerScale (formerly Isilon) has its own sub-engine — see
+ * `src/engines/volumetry/powerscale/`. `calculateVolumetry` branches into it
+ * immediately after topology validation, so this strategy never sees a
+ * `powerscale_*` level.
  */
 
 import type { VolumetryStrategy } from './VolumetryStrategy'
 
-interface DellPowerscaleOptions {
-  serverCount: number
-}
-
 export const dellStrategy: VolumetryStrategy = {
-  calculateDataFraction(level: string, driveCount: number, options?: unknown): number {
+  calculateDataFraction(level: string, driveCount: number, _options?: unknown): number {
     const usableDrives = driveCount
 
     // PowerFlex (Software-Defined Storage)
@@ -80,47 +80,6 @@ export const dellStrategy: VolumetryStrategy = {
       }
     }
 
-    // PowerScale (Scale-out NAS)
-    // OneFS protection is NODE-level: formula N/(N+M) where N = data nodes, M = protection nodes
-    // serverCount (node count) is threaded via options from calculationHelpers.ts
-    if (level.startsWith('powerscale_')) {
-      const opts = options as DellPowerscaleOptions | undefined
-      const nodeCount = opts?.serverCount ?? usableDrives // fallback to driveCount if no serverCount passed
-
-      switch (level) {
-        case 'powerscale_n1':
-          // N+1 protection: (N-1)/N where N = node count
-          return (nodeCount - 1) / nodeCount
-
-        case 'powerscale_n2':
-          // N+2 protection: (N-2)/N where N = node count
-          return (nodeCount - 2) / nodeCount
-
-        case 'powerscale_n2_1':
-          // N+2:1 protection: (N-2)/N with 1 stripe failure tolerance
-          return (nodeCount - 2) / nodeCount
-
-        case 'powerscale_n3':
-          // N+3 protection: (N-3)/N where N = node count
-          return (nodeCount - 3) / nodeCount
-
-        case 'powerscale_n4':
-          // N+4 protection: (N-4)/N where N = node count
-          return (nodeCount - 4) / nodeCount
-
-        case 'powerscale_mirror_2x':
-          // 2x mirrored: 50% efficiency (independent of node count)
-          return 0.5
-
-        case 'powerscale_mirror_3x':
-          // 3x mirrored: 33.3% efficiency (independent of node count)
-          return 1 / 3
-
-        default:
-          return (nodeCount - 2) / nodeCount // Default to N+2
-      }
-    }
-
     // ObjectScale (Object Storage S3)
     if (level.startsWith('objectscale_')) {
       switch (level) {
@@ -151,7 +110,7 @@ export const dellStrategy: VolumetryStrategy = {
 
   // Dell storage systems have various overhead mechanisms:
   // - PowerFlex FG metadata: handled in main engine (12-15%)
-  // - PowerStore/PowerScale snapshot reserves: handled in main engine
+  // - PowerStore snapshot reserves: handled in main engine
   // - ObjectScale system/geo overhead: handled in main engine
   // calculateOverhead not needed here
 }

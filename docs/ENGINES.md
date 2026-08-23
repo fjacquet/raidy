@@ -66,12 +66,31 @@ Calculates storage capacity and efficiency.
 > which inputs actually move the volumetry output for a given topology type. It exposes
 > `getCapabilities(type)` and `shouldShowControl(control, type)` for the six
 > global/cross-cutting controls whose usefulness varies by platform: `compression`, `dedup`,
-> `hotSpares`, `serverCount`, `fsType`, `controller`. The map is probe-enforced —
+> `hotSpares`, `serverCount`, `fsType`, `controller` — plus one flag read straight off
+> `getCapabilities`, `drivePopulationFromCatalog`, which describes the drive picker rather than
+> gating a single control. The map is probe-enforced —
 > `tests/engines/capabilities.spec.ts` drives `calculateVolumetry` with each flag toggled and
 > asserts the flag matches actual engine behavior (e.g. the global
 > `compressionRatio`/`dedupRatio` inputs only move `effectiveCapacity` for ZFS; every other
 > platform either has no data-reduction step or reduces through its own platform-specific
 > options panel instead), so the map cannot silently drift from the engines it describes.
+>
+> `drivePopulationFromCatalog` is true only for `powerscale`, where `calculateVolumetry`
+> short-circuits into `calculatePowerScaleVolumetry(powerscaleOptions)` before `driveCount` is
+> read at all. Its probe doubles the drive count and asserts `rawCapacity` does not move — the
+> other fourteen types double with it. It is a statement about where the *population* comes from,
+> not a licence to hide the drive picker: the catalog carries no power, reliability or price, so
+> the selected drive is still read by sustainability, TCO, performance and resilience. See the
+> PowerScale UI notes below for how `HardwarePanel` keeps it reachable.
+>
+> Those four figures stay on SCREEN and leave the customer documents. `sustainabilityApplies` and
+> `performanceApplies` (`src/engines/outputRelevance.ts`) gate the PDF and the deck: the vendor
+> table publishes capacity and efficiency and nothing else, so power, cost, IOPS and the
+> bottleneck chain answer to the reference medium rather than to the cluster — changing only that
+> medium on an unchanged 3-node F210 moved drive power 87 W to 107 W and Max Read IOPS 2,028 to
+> 2,280,000. Performance is also the wrong shape here: a node is an appliance, sized per node.
+> While configuring, the order of magnitude is useful and the medium is one click away; on a
+> deliverable, beside vendor-exact capacity, it reads as equally solid. See `docs/BACKLOG.md`.
 >
 > `honoursFsType` is true for `standard` **and `longhorn`** — the filesystem-overhead switch has
 > no case for Longhorn, so it falls through to the `default` branch that reads the user's choice.
@@ -108,7 +127,6 @@ Calculates storage capacity and efficiency.
 > | `netAppOptions.snapshotReserve` | multiplies directly (fraction) | `0..1` | panel divides by 100 on write, multiplies by 100 on display |
 > | `powerstoreOptions.snapshotReservePercent` | divided by 100 (percent) | `0..100` | panel writes raw percent |
 > | `powerstoreOptions.systemOverheadPercent` | divided by 100 (percent) | `0..100` | panel writes raw percent |
-> | `powerscaleOptions.snapshotReservePercent` | divided by 100 (percent) | `0..100` | panel writes raw percent |
 > | `objectscaleOptions.systemOverheadPercent` | divided by 100 (percent) | `0..100` | panel writes raw percent |
 > | `netAppOptions.waflOverhead` | multiplies directly (fraction) | `0..1` | panel divides by 100 on write, multiplies by 100 on display |
 > | `netAppOptions.dataReductionRatio` | multiplies directly (true ratio, not a proportion) | `1..20` | panel writes raw ratio |
@@ -119,7 +137,7 @@ Calculates storage capacity and efficiency.
 > | `longhornOptions.overProvisioningPercent` | not multiplied against capacity (advisory display only) | `0..1000` | panel writes raw percent |
 > | `beeGfsOptions.fsOverheadPercent` | divided by 100 (percent) | `0.5..5` | panel writes raw percent |
 > | `TieringConfig.workingSetPercent` | divided by 100 (percent) | `0..100` | panel writes raw percent |
-> | `*.compressionRatio` / `*.dedupRatio` (vSAN, PowerFlex, Nutanix, PowerStore, PowerScale, ObjectScale, global) | multiply directly (true ratios, e.g. 1.5 = 1.5:1, not proportions of 1) | `1..10` | panels write the raw ratio value; no /100 or ×100 anywhere in this family |
+> | `*.compressionRatio` / `*.dedupRatio` (vSAN, PowerFlex, Nutanix, PowerStore, ObjectScale, global) | multiply directly (true ratios, e.g. 1.5 = 1.5:1, not proportions of 1) | `1..10` | panels write the raw ratio value; no /100 or ×100 anywhere in this family |
 >
 > Every live (engine-consumed) field's three facts agree, so no code changed. This table
 > originally also listed four fields with no engine consumer at all — `synologyOptions.btrfsOverhead`,
@@ -134,6 +152,241 @@ Calculates storage capacity and efficiency.
 > size are already set explicitly by the user via the tiering picker (`resolveTiering` /
 > `TieringConfig`), so deriving them from a ratio would mean silently overriding that explicit
 > choice rather than modeling anything real.
+>
+> A fifth field left this table later, for a third reason again: PowerScale's
+> `snapshotReservePercent`, `compressionRatio` and `dedupRatio` were live and correctly
+> wired, but the OneFS rebuild retired the generic drive-centric PowerScale path they
+> belonged to. Data reduction is a published property of each node model in Dell's
+> catalog (1.0, 1.6 or 2.0), not a user-set slider, and PowerSizer reserves nothing for
+> snapshots — so a non-zero default would have put every raidy answer below the source of
+> truth. `PowerScaleOptions` is now `{ tiers }` alone; see
+> [adr/0014](./adr/0014-vendor-lookup-tables.md).
+>
+> **Performance, resilience and sustainability read the tier model, not the Hardware panel**
+> (PowerScale has `hasServerCount: false`, so the shared drive-count/server-count sliders are
+> stale for it). `powerScaleDriveTotals` (`src/engines/volumetry/powerscale/index.ts`) is the one
+> place both populations are derived: `firstTierDrives`/`firstTierNodes`/`firstTierSpareDrives`
+> for the FIRST node pool only, and `clusterDrives`/`clusterNodes` summed across every tier — plus
+> `firstTier`, the actual `PowerScaleTier` object those first-tier numbers came from (not
+> `options.tiers[0]` re-indexed independently, which can silently point at a DIFFERENT tier when
+> an earlier one is unsizeable). A tier is included here under the EXACT same rule
+> `calculatePowerScaleVolumetry` uses — `sizeTier(tier) !== null` — not merely "the model name
+> resolves": a tier with a real model but an unpublished protection/node-count combination
+> contributes nothing, the same "confidently wrong on a dashboard that looks correct" failure the
+> unknown-model case already guarded against.
+>
+> **Performance and resilience use the first-tier fields** — a client's IOPS and a rebuild's
+> exposure window are properties of the pool serving the data, not an average across
+> heterogeneous pools, so `usePerformanceCalc`/`useResilience`'s `powerscale` scope resolver read
+> `tiers[0]` only (in practice, `powerScaleDriveTotals`'s `firstTier`). **Sustainability sums the
+> cluster fields** — power, cooling and TCO are physically additive across the whole rack, so
+> `useSustainabilityCalc` reads every tier. The dashboard surfaces this split with a note
+> (`output:powerscale.firstTierOnly`) whenever a cluster has more than one tier.
+>
+> **Write penalty** (`dellPerformanceStrategy.getWritePenalty('powerscale_onefs', tier)`, tier ==
+> `powerScaleDriveTotals(...).firstTier` — never a second, independent `tiers[0]` lookup, so the
+> penalty can't describe a different tier than the one the population came from) is protection-
+> and node-count-aware: `STRIPE_SHAPES[protection].M + 1.5` when the pool has enough nodes to
+> stripe FEC (the FEC-unit-count rule the old `+1n..+4n` levels already encoded), or the mirror
+> copy count (`powerScaleMirrorCopies`, e.g. 2.0/3.0) when it doesn't — see the resilience
+> paragraph below for that boundary. Falls back to a neutral 3.0 when no tier is configured.
+>
+> **Resilience's node-failure model is NOT vendor-attested**, unlike everything else on this
+> branch: Dell's PowerSizer export is a capacity calculator and carries no AFR, URE or MTBF, so
+> there is no source of truth to validate a reliability model against. `SimulationInput.
+> powerScaleProtection` (threaded from `firstTier.protection`) drives a dedicated model in
+> `resilienceWorker.ts`'s `computeTopologyModel`/`runSingleSimulation`, split into the two
+> regimes OneFS itself uses:
+>
+> - **Mirror region** (`nodeCount < 2*nf`, too few nodes to stripe FEC): OneFS mirrors instead,
+>   `min(nf+1, nodeCount)`-way. This reuses the EXISTING drive-pair mirror machinery
+>   (`isMirror`, `assignNodesRoundRobin`) verbatim rather than inventing a parallel one — a
+>   PowerScale pool in this region and a native `mirrorCopies`-driven mirror input with the same
+>   derived copy count produce bit-identical survival rates under the same random stream.
+> - **FEC region** (`nodeCount >= 2*nf`): a dedicated branch — neither `isGroup` (independent
+>   parallel groups, any one lost = total loss) nor the flat node-blind parity count fits "one
+>   flat domain, counted per node" — spends a single UNIT BUDGET (`M`): a drive failure debits 1
+>   unit; a whole-node failure debits `u` units, realized (`applyPowerScaleNodeFailure`) as `u`
+>   accumulated 1-unit drive debits landing on the SAME node followed by a sweep that removes the
+>   rest of that node's drives as one event — not as a side effect of the first drive on it
+>   dying. Loss when consumed units exceed `M`. `nf` stays in `STRIPE_SHAPES` as a
+>   vendor-published cross-check (`nf == floor(M / u)` holds for all nine entries — `+3d:1n1d`'s
+>   own name is the clearest instance: `u=2, M=3`, i.e. "1 node + 1 drive") but is NOT read by
+>   the loss decision directly. An earlier version of this model used `nf` and `M` as two
+>   independent thresholds ("more than `nf` nodes touched, OR more than `M` drives in one node")
+>   and was vacuously wrong for every `+Nn` protection: with `u=1` a node's own budget is
+>   exhausted by its first failed drive regardless of how many more it has, so a 15-drive-per-
+>   node A200 under `+2n` was declared dead on the THIRD drive failure concentrated in one node —
+>   contradicting "+Nn tolerates whole-node loss" one paragraph up. The unit budget fixes this:
+>   the same A200 pool now survives losing 30 drives across its first two whole nodes and dies on
+>   the third node's first drive, exactly matching the claim.
+>
+> `isPowerScaleMirrorRegion`/`powerScaleMirrorCopies` (`stripeShape.ts`) are the single place the
+> mirror-vs-FEC boundary lives, shared by the capacity closed form (`onefsFormula.ts`, test-only),
+> the write penalty, and the resilience worker, so none of the three can disagree about where it
+> sits. Before this model existed, every PowerScale pool was silently simulated tolerating exactly
+> one drive failure (the `getParityDrives` catch-all default), regardless of its real protection —
+> a `+3n` 20-node pool that tolerates three whole nodes was simulated as dying on the second drive
+> failure anywhere in the pool.
+>
+> `hasHotSpare` for PowerScale comes from the tier's own Virtual Hot Spare count
+> (`firstTierSpareDrives > 0`), not the generic Hardware-panel hot-spares slider — that slider is
+> meaningless for PowerScale (the panel is hidden), so reading it would either strand a
+> configured VHS with no immediate-rebuild credit or grant credit from a leftover value a
+> previously selected platform left in the store.
+>
+> Resilience's `mediaDrive` is deliberately left `null` for PowerScale (keeping the Hardware
+> panel's drive) because the vendor catalog carries capacities but no AFR/URE/MTBF — inventing
+> those would fabricate the very numbers the simulation reports. An empty or unsized tier list
+> degrades every one of these figures to a defined zero state rather than throwing.
+>
+> **The UI mirrors the model, not the old level dropdown.** `TOPOLOGY_LEVELS.powerscale` carries
+> exactly one entry (`powerscale_onefs`): protection is per node pool, so the level dropdown
+> offers no protection choice at all. That table is now typed per topology type
+> (`{ [T in TopologyType]: LevelOption<T>[] }`), and `TopologyPanel` builds a `Topology` through
+> `topologyFrom`/`defaultTopologyFor` instead of `as Topology` — the two changes together are why
+> the seven retired `powerscale_n*`/`mirror_*` levels could sit in the dropdown for months after
+> the type union dropped them, and why a retired level is a compile error now.
+> `PowerScaleOptionsPanel` renders 1-8 `PowerScaleTierRow`s, each a catalog-driven chain (model →
+> drive size → node count → protection) that re-derives everything downstream in ONE dispatch, so
+> the store can never hold — or a shared URL persist — an intermediate combination Dell does not
+> publish; a pool `sizeTier` still cannot size (an old URL below a model's node floor, say) is
+> flagged on its own row rather than shown as 0 TB. The Hardware panel hides its drive-count
+> slider for PowerScale and takes both the drive population and the raw capacity from the
+> catalog (`powerScaleDriveTotals` / `calculatePowerScaleVolumetry`), since no engine reads
+> `driveCount * serverCount` for this platform. `PowerScaleTierTable` shows the per-pool split
+> the cluster headline hides.
+>
+> **The Hardware panel collapses to a media proxy, and the picker stays reachable.** A PowerScale
+> cluster is not configured by picking a SATA drive, so the connectivity filter, form-factor
+> filter, drive dropdown and drive-properties card collapse behind one line — *"Reference medium:
+> &lt;model&gt; — used for power, reliability and price"* — with a disclosure that reveals them
+> again. Collapsed, not removed: the catalog carries capacities and efficiencies but **no power,
+> no AFR/URE/MTBF and no price**, so the selected drive is still read for real by
+> `calculateSustainability`'s `drivePower`, by `calculateTCO`, by the performance engine's first
+> pool, and (through the store, not `SimulationInput.mediaDrive`) by the resilience worker.
+> Hiding it outright would freeze four live outputs on a value the user cannot see — the defect
+> this platform's panel has already had to fix twice, for the cost row and for `mirrorCopies`.
+> The branch is `getCapabilities(type).drivePopulationFromCatalog`, which is probe-backed rather
+> than a UI preference. **The server-power field stays visible and is relabelled per node**,
+> because sustainability multiplies it by the cluster's node count.
+>
+> **The Advanced panel drops the two backup inputs, and the backup card goes with them.**
+> `backupRetention` and `dailyChangeRate` are hidden for PowerScale and
+> `backupApplies(topology)` (`src/engines/outputRelevance.ts`) is the single predicate BOTH the
+> panel and `CapacityAct`'s backup card consult, so the input and the output cannot drift into
+> the orphaned-dependency state above. This one is a product-scope decision, not a vendor-derived
+> constraint — the backup engine reads both fields for every platform, PowerScale included, so no
+> probe against engine behaviour could establish it and it is deliberately NOT a capability flag.
+> Everything else stays: PUE still drives cooling, and the performance threshold still draws the
+> operational-capacity marker.
+>
+> **The exports take a dedicated path, not a relabelled generic one.** Every other platform's
+> deck and report describe "one drive model × a count"; a PowerScale cluster is 1-8 heterogeneous
+> node pools, so that is the wrong *structure*, not merely the wrong label — an early stopgap that
+> overrode the hardware line with a `hardwareLabel` string has been removed. `exportToPptx` and
+> `exportToPdf` both dispatch on `topology.type === 'powerscale'` into
+> `buildPowerScaleExportContent` (`src/utils/powerscaleExportContent.ts`), a pure builder in the
+> mould of `pptxContent.ts`: no renderer types, no i18n singleton, every cell already
+> locale-formatted so the two documents cannot format the same number differently.
+>
+> The thirteen required per-pool columns do not read on one 13.33" slide, so the builder returns
+> **two** tables keyed by the same pool number — a core table (model with generation/tier, drive
+> size, nodes, drives, protection, raw, usable after VHS, DRR, effective) and a derivation table
+> (protection efficiency, usable before VHS, VHS reserve in bytes and as a % of raw, which of the
+> two vendor VHS formulas won, usable after VHS, usable efficiency). Each gets its own slide; the
+> report stacks them at 7pt. Both close with a cluster total row. EOL is deliberately not a
+> column.
+>
+> **Two efficiency columns, two labels.** `PowerScaleTierResult.efficiency` is the vendor's
+> *protection* efficiency, taken before `usableFactor` and before the VHS reserve;
+> `usableLessVhs / rawCapacity` is what the pool actually delivers and is the per-pool form of
+> `clusterEfficiency`. A one-pool cluster once showed 66.7% and 46.3% for the same pool under one
+> heading. The export labels them **"Protection efficiency (vendor)"** and **"Usable efficiency
+> (after VHS)"** — not "effective efficiency", because the same table already uses *Effective* for
+> the after-DRR capacity.
+>
+> **One caveat, once.** The PDF and PPTX exports carry a single line
+> (`common:powerScale.estimateNote`, via `catalogEstimateNote` in `src/utils/exportNotes.ts`):
+> capacity and efficiency are Dell's published figures, power/reliability/price are estimates, and
+> data reduction is raidy's own assumption about the data — not a value Dell publishes — with
+> PowerSizer remaining the reference for a firm quote. PowerSizer is the rule and raidy is the
+> shortcut — but a shortcut that refuses to estimate is not a shortcut, so no figure is suppressed
+> to avoid being wrong, and the caveat is not repeated per page, per section or per row. In the
+> deck it sits on the last slide, under the derivation table; in the report it sits at the end of
+> the last page. A *scope* statement (`output:powerscale.firstTierOnly` — the gauges model the
+> first node pool, the capacity covers the cluster) rides beside the performance figures in both
+> documents; it is a statement of what is modelled, not a hedge about accuracy, and it is also
+> said only once.
+
+### PowerScale / OneFS (`src/engines/volumetry/powerscale/`)
+
+PowerScale is the one platform whose numbers are **looked up, not derived**. See
+[ADR-0014](./adr/0014-vendor-lookup-tables.md) for why, and
+[the design spec](./superpowers/specs/2026-08-22-powerscale-onefs-design.md) for the full
+argument.
+
+**Stripe geometry.** Every protection maps to `{u, M, nf}` in `stripeShape.ts` — `u` stripe units
+placed per node, `M` FEC units in the stripe, `nf` whole-node failures tolerated:
+
+| Protection | `u` | `M` | `nf` |
+|---|---|---|---|
+| `+1n` | 1 | 1 | 1 |
+| `+2n` | 1 | 2 | 2 |
+| `+3n` | 1 | 3 | 3 |
+| `+4n` | 1 | 4 | 4 |
+| `+2d:1n` | 2 | 2 | 1 |
+| `+3d:1n` | 3 | 3 | 1 |
+| `+3d:1n1d` | 2 | 3 | 1 |
+| `+4d:1n` | 4 | 4 | 1 |
+| `+4d:2n` | 2 | 4 | 2 |
+
+The table is self-consistent under one rule: **`nf == floor(M / u)`**, for all nine entries. A
+drive failure spends one unit and a whole-node failure spends `u`, so a protection tolerates
+`floor(M/u)` nodes. `+3d:1n1d` is the clearest case — its own name reads "one node plus one
+drive", which is `u + 1 = 2 + 1 = 3 = M` exactly. Both the resilience simulator and the
+performance write penalty spend that budget rather than carrying a second threshold.
+
+**Stripe width** is `min(u·N, Wmax)`, where `Wmax` is 18 for `M ∈ {2,3}` and 20 for `M = 4`.
+
+**Mirror fallback.** When `N < 2·nf` OneFS mirrors instead of striping FEC, at `1/min(nf+1, N)`.
+`isPowerScaleMirrorRegion` and `powerScaleMirrorCopies` in `stripeShape.ts` are the **single**
+definition of that boundary — the capacity closed form, the write penalty and the resilience
+worker all import it, so they cannot drift apart.
+
+**Neighborhoods.** Node pools split above roughly 20 nodes, so efficiency does not climb
+monotonically with node count — it saws. This is one reason no closed form reproduces the vendor
+table.
+
+**Per-tier capacity chain**, per node pool:
+
+```
+rawTB(t)       = nodeCount(t) × drivesPerNode(model) × rawPerDriveTB(model, driveSize)
+usableTB(t)    = rawTB(t) × efficiency(model, protection, nodeCount(t)) × usableFactor(model, driveSize)
+lessVHS(t)     = usableTB(t) − max(vhsByDriveCount(t), vhsByPercent(t))
+effectiveTB(t) = lessVHS(t) × drr(t)          where drr(t) = tier.drrOverride ?? model.drr
+```
+
+`efficiency` is the vendor's published protection efficiency. `usableFactor` (0.9775–0.9906 across
+the catalog, never 1) is the filesystem loss. Both come from the 122,828-row table.
+
+**Data reduction does not.** `drr(t)` is the one factor in this chain that is not a vendor-published
+quantity — DRR never appears as a column of the table (see [ADR-0014](./adr/0014-vendor-lookup-tables.md)).
+Each node model still carries a catalog **default** (1.0, 1.6 or 2.0, Dell's assumption that
+all-flash inline compression pays off), but DRR describes the *data* a pool stores, not the
+hardware it sits on — a radiology pool of already-compressed DICOM never sees a flash node's
+published 2:1. `PowerScaleTier.drrOverride` lets an operator override the default **per pool**
+(`PowerScaleTierRow` also offers a short list of workload presets — medical imaging, video,
+encrypted data, backups, general files, virtualization, databases — that set it in one click, each
+one raidy's own rule of thumb rather than a Dell figure). There is still no *global*
+compression/dedup slider: one ratio across a cluster's heterogeneous pools (all-flash over hybrid
+over archive) would be meaningless, which is the reason `PowerScaleOptions` carries no cluster-wide
+reduction field. Because DRR sits outside the table, overriding it can never move the conformance
+gate below — that gate asserts raw, usable and efficiency, never effective capacity.
+
+**A pool the vendor does not publish is not sizeable.** `storageEfficiency` returns `undefined`
+and `sizeTier` returns `null` — never zero. Unsizeable pools are dropped before any aggregate, so
+a cluster total is always the sum of exactly the rows shown beside it.
 
 ## Performance (`/src/engines/performance/`)
 

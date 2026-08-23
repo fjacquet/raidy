@@ -144,11 +144,14 @@ Four Swiss languages: EN (default), FR, DE, IT. Uses `react-i18next` with 10 nam
 
 - **Worker tests: never `vi.spyOn(Math, 'random')`** — the spy records every call and the Monte Carlo worker draws millions, exhausting the heap before any assertion runs. Assign `Math.random` directly, restore in `afterEach`.
 - **Changing a store default rewrites old shared URLs** — `partialize` runs `omitDefaults`, so the hash carries only non-default values. A link made under the old default silently adopts the new one (bit v2.0.0's `hotSpares` 1→0).
-- **`SimulationInput.serverCount` is overloaded three ways** — fault-group count, BeeGFS storage-target count, and real host count for replica placement (`assignNodesRoundRobin`). Changing the group count corrupts placement.
+- **`SimulationInput.serverCount` is overloaded four ways** — fault-group count, BeeGFS storage-target count, real host count for replica placement (`assignNodesRoundRobin`), and PowerScale's first node-pool node count (driving `isPowerScaleMirrorRegion` and `distributeAcrossGroups`). Changing the group count corrupts placement.
 - **Removing an option field: delete it from `src/utils/schemas.ts` too** — nested `z.object()` strips unknown keys but *requires* declared ones, so a type-only removal breaks URL parsing.
 - **i18n: write full key paths at call sites**, not ``t(`prefix.${x}.body`)`` — `tests/i18n/orphanKeys.spec.ts` scans literally, so templates are invisible; a `DYNAMIC_PREFIXES` entry exempts the whole subtree and is weaker.
 - **Component tests rendering input panels must stub `window.matchMedia`** — jsdom lacks it and `InfoTooltip` calls it through `useIsTouchDevice`.
 - **`check:dead` fails spuriously inside `.claude/worktrees/*`** — the worktree's `node_modules` is nearly empty, so knip reports unlisted binaries and unused devDeps. Run the gate on the main checkout.
+- **PowerScale does not use the generic volumetry path** — `calculateVolumetry` returns early into `src/engines/volumetry/powerscale/`. Adding a shared overhead to the generic path will silently skip PowerScale.
+- **`src/data/powerscale*.json` are generated** — edit `scripts/build-powerscale-catalog.mjs` and regenerate; hand edits are lost. Regenerating changes three artifacts (both JSON files and `tests/fixtures/powerscale-powersizer.csv.gz`) that must be committed together.
+- **PowerScale claims in a brief are not evidence** — protection availability, node bounds and drive sizes vary per model and per drive size. Probe `src/data/powerscaleNodes.json` before writing a test vector; four fabricated vendor values reached briefs on the OneFS branch and every one was caught by an implementer reading the catalog.
 - **`Closes #A and #B` only closes #A** — repeat the keyword per issue.
 
 ## Git & CI

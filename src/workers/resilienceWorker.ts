@@ -3,6 +3,11 @@
  * Runs 10,000+ simulations to calculate array survival probability.
  */
 
+import {
+  isPowerScaleMirrorRegion,
+  powerScaleMirrorCopies,
+  STRIPE_SHAPES,
+} from '@/engines/volumetry/powerscale/stripeShape'
 import type { SimulationInput, WorkerInputMessage, WorkerOutputMessage } from '@/types/worker'
 
 // Post typed message to main thread
@@ -39,6 +44,39 @@ export function distributeAcrossGroups(total: number, groups: number): number[] 
   const base = Math.floor(total / groups)
   const remainder = total % groups
   return Array.from({ length: groups }, (_, g) => base + (g < remainder ? 1 : 0))
+}
+
+/**
+ * Applies ONE resolved PowerScale node-erasure-coding failure event to `nodeFailures` (mutated
+ * in place) and returns how many EXTRA drives in that node were swept for free as a result.
+ *
+ * Debiting the stripe's unit budget for the event itself is the caller's job (always exactly
+ * 1 — see `runSingleSimulation`'s PowerScale branch); this function's only responsibility is
+ * the sweep: once `hitNode`'s own failure count reaches `unitsPerNode` (`u`), OneFS's node-level
+ * FEC treats the REST of that node's local population as gone too — "an event that removes
+ * that node's drives together" (fix round 2, item 2), not one more independent per-drive roll.
+ * The swept extras never separately debit the budget (the node's whole contribution was
+ * already fully billed via the `u` individual-drive debits that got it here); they only need
+ * to leave the caller's `failedDrives` ledger in the state a real whole-node loss would, which
+ * is exactly the number this function returns.
+ *
+ * Extracted as its own pure function — same reasoning as `distributeAcrossGroups` and
+ * `assignNodesRoundRobin` above — because the unit budget is the one part of the PowerScale
+ * model precise enough to pin exactly (survives at the budget `M`, dies at `M + 1`) without a
+ * statistical/seeded-random proof; see `tests/workers/resiliencePowerScale.spec.ts`.
+ */
+export function applyPowerScaleNodeFailure(
+  nodeFailures: number[],
+  nodeWidths: number[],
+  unitsPerNode: number,
+  hitNode: number,
+): number {
+  nodeFailures[hitNode] = (nodeFailures[hitNode] ?? 0) + 1
+  if (nodeFailures[hitNode] !== unitsPerNode) return 0
+  const width = nodeWidths[hitNode] ?? 0
+  const extraDrivesSwept = Math.max(0, width - unitsPerNode)
+  if (extraDrivesSwept > 0) nodeFailures[hitNode] = width
+  return extraDrivesSwept
 }
 
 export interface GroupPairState {
@@ -274,12 +312,41 @@ export interface TopologyModel {
    * Node assigned to each replica slot of each flat mirror group (issue
    * #113) — the drive-pair model used by plain RAID1/10, and by every
    * tiered platform's mirror level (vSAN OSA RAID1, Ceph replicated,
-   * Nutanix RF2/RF3, S2D mirror, PowerScale mirror, PowerVault RAID1/10,
-   * PowerFlex mirror). `mirrorGroupNodes[g][c]` is the node for copy `c` of
-   * mirror group `g`. Empty when `isMirror` is false. See
+   * Nutanix RF2/RF3, S2D mirror, PowerVault RAID1/10, PowerFlex mirror).
+   * `powerscale_mirror_2x`/`_3x` are no longer valid levels, but PowerScale
+   * DOES join this family conditionally: when a pool has too few nodes for
+   * its protection's node-failure tolerance (`nodeCount < 2*nf`), OneFS
+   * mirrors instead of striping FEC — see `isPowerScaleMirrorRegion` and the
+   * PowerScale block in `computeTopologyModel` below. Outside that region
+   * PowerScale uses the dedicated node-erasure-coding model instead
+   * (`isPowerScaleFec`), not this one. `mirrorGroupNodes[g][c]` is the node
+   * for copy `c` of mirror group `g`. Empty when `isMirror` is false. See
    * `assignNodesRoundRobin` for the placement rule and its degenerate case.
    */
   mirrorGroupNodes: number[][]
+  /**
+   * PowerScale node-erasure-coding region (`nodeCount >= 2*nf` for the tier's protection) — a
+   * single flat domain spanning the WHOLE pool, unlike `isGroup` (independent parallel groups,
+   * any one lost = total loss) and unlike the plain parity model (node-blind drive counting).
+   * False for every non-PowerScale level, and false for PowerScale when no protection was
+   * supplied or the pool is small enough to fall into the mirror region instead (`isMirror`
+   * handles that case). See the dedicated branch in `runSingleSimulation`.
+   *
+   * NOT vendor-attested — see `SimulationInput.powerScaleProtection`'s doc comment.
+   */
+  isPowerScaleFec: boolean
+  /** `nf` from `STRIPE_SHAPES` — vendor-published node-failure count, a cross-check only. NOT
+   * used in the loss decision — see the unit-budget comment on `powerScaleUnitBudget`. 0 when
+   * `isPowerScaleFec` is false. */
+  powerScaleNodeTolerance: number
+  /** `M` from `STRIPE_SHAPES` — total stripe-unit budget the pool tolerates before data loss.
+   * 0 when `isPowerScaleFec` is false. */
+  powerScaleUnitBudget: number
+  /** `u` from `STRIPE_SHAPES` — stripe units one whole node contributes (and the per-node
+   * drive-failure count that triggers the whole-node sweep). 0 when `isPowerScaleFec` is false. */
+  powerScaleUnitsPerNode: number
+  /** Per-node drive counts (`distributeAcrossGroups(driveCount, nodeCount)`). Empty when `isPowerScaleFec` is false. */
+  powerScaleNodeWidths: number[]
 }
 
 /**
@@ -301,9 +368,29 @@ export function computeTopologyModel(input: SimulationInput): TopologyModel {
     ureRate,
     serverCount = 1,
     mirrorCopies = 0,
+    powerScaleProtection,
   } = input
 
   const parityDrives = getParityDrives(raidLevel)
+
+  // PowerScale (#1, fix round 1): OneFS protection is per NODE, not per drive, and
+  // `getParityDrives` above has no case for `'powerscale_onefs'` — it falls to the generic
+  // single-parity default, which is the correct fallback ONLY when no protection is known
+  // (empty tier list). When a protection IS known, `STRIPE_SHAPES` decides everything below.
+  //
+  // NOT vendor-attested — see `SimulationInput.powerScaleProtection`'s doc comment. Dell's
+  // PowerSizer export carries no AFR/URE/MTBF; this model is derived from published OneFS
+  // protection semantics, not sourced from the workbook the rest of this branch validates
+  // capacity against.
+  const powerScaleShape =
+    raidLevel === 'powerscale_onefs' && powerScaleProtection
+      ? STRIPE_SHAPES[powerScaleProtection]
+      : undefined
+  // Too few nodes for the protection's node-failure tolerance to be worth striping: OneFS
+  // mirrors instead (same boundary the capacity closed form uses — see `isPowerScaleMirrorRegion`).
+  const powerScaleMirrorRegionFlag = powerScaleShape
+    ? isPowerScaleMirrorRegion(powerScaleShape.nf, serverCount)
+    : false
 
   // Topology classification. A caller can pass mirrorCopies (e.g. BeeGFS buddy
   // mirroring) even for a level whose local redundancy is zero (beegfs_single),
@@ -316,10 +403,25 @@ export function computeTopologyModel(input: SimulationInput): TopologyModel {
   // redundancy — see the buddy-pair handling below). Only when the level has
   // no native group shape does mirrorCopies switch on the drive-pair mirror
   // model directly (e.g. plain 'mirror' / 'raid1', or beegfs_single which has
-  // no local redundancy of its own).
+  // no local redundancy of its own). PowerScale joins the mirror family only
+  // inside its own mirror region (`powerScaleMirrorRegionFlag`) — see above.
   const isGroup = isGroupTopology(raidLevel)
-  const isMirror = !isGroup && (mirrorCopies >= 2 || isMirrorTopology(raidLevel))
-  const effectiveMirrorCopies = mirrorCopies >= 2 ? mirrorCopies : 2
+  const isMirror =
+    !isGroup &&
+    (mirrorCopies >= 2 ||
+      isMirrorTopology(raidLevel) ||
+      (powerScaleShape !== undefined && powerScaleMirrorRegionFlag))
+  const effectiveMirrorCopies =
+    powerScaleShape !== undefined && powerScaleMirrorRegionFlag
+      ? // Guard against a stale/zero serverCount (#3, fix round 2): serverCount=0 would give
+        // Math.min(nf+1, 0) = 0, and effectiveMirrorCopies=0 crashes numMirrorGroups (divide by
+        // zero -> Infinity -> assignNodesRoundRobin allocates an Infinite-length array). The FEC
+        // path already guards the analogous case with the same Math.max(1, ...); this makes the
+        // defense consistent across both PowerScale branches in this block.
+        powerScaleMirrorCopies(powerScaleShape.nf, Math.max(1, serverCount))
+      : mirrorCopies >= 2
+        ? mirrorCopies
+        : 2
 
   // Calculate rebuild time in hours
   const driveCapacityMB = driveCapacityBytes / (1024 * 1024)
@@ -333,12 +435,44 @@ export function computeTopologyModel(input: SimulationInput): TopologyModel {
   // both by single-node standard RAID1/RAID10 (`serverCount` defaults to 1,
   // so every copy lands on node 0 — today's behaviour, unchanged) and by
   // every tiered platform's mirror level (vSAN OSA RAID1, Ceph replicated,
-  // Nutanix RF2/RF3, S2D mirror/MAP, PowerScale mirror, PowerVault RAID1/10,
-  // PowerFlex mirror), where `serverCount` is the real host count and real
-  // placement puts each copy on a different host. See
+  // Nutanix RF2/RF3, S2D mirror/MAP, PowerVault RAID1/10, PowerFlex mirror),
+  // where `serverCount` is the real host count and real placement puts each
+  // copy on a different host. PowerScale reuses this exact machinery inside
+  // its mirror region — see the note on `mirrorGroupNodes` above. See
   // `assignNodesRoundRobin` for the rule.
   const mirrorGroupNodes: number[][] = isMirror
     ? assignNodesRoundRobin(numMirrorGroups, effectiveMirrorCopies, serverCount)
+    : []
+
+  // PowerScale node-erasure-coding region (`!powerScaleMirrorRegionFlag`, protection known): a
+  // single flat domain spanning the WHOLE pool, not multiple independent stripe groups
+  // (`isGroup` below) and not node-blind drive counting (the plain parity model at the bottom
+  // of `runSingleSimulation`). Node widths reuse `distributeAcrossGroups` — the same
+  // "spread the remainder instead of dropping it" utility the RAID50/60 group model uses below,
+  // just applied to physical nodes instead of RAID groups.
+  //
+  // UNIT BUDGET (fix round 2, item 1 — replaces the round-1 "nf nodes touched OR M drives in one
+  // node" rule, which was wrong: with u=1 (every `+Nn` protection), that rule declared a node
+  // dead on its THIRD failed drive regardless of how many drives it has, contradicting
+  // `useResilience.ts`'s own "+Nn tolerates whole-node loss" claim for, say, a 15-drive-per-node
+  // A200. The consistency condition `nf == floor(M / u)` holds for all nine STRIPE_SHAPES
+  // entries (verified against the table, not assumed) — `+3d:1n1d`'s own name is the clearest
+  // instance: u=2, M=3, i.e. "1 node (u=2 units) + 1 more drive (1 unit) = M". `nf` stays in
+  // STRIPE_SHAPES as a vendor-published cross-check but is NOT read by the loss decision below;
+  // the simulation spends the `M`-unit budget directly. See the dedicated branch in
+  // `runSingleSimulation` for how a drive failure (1 unit) and a node failure (`u` units, see
+  // its comment for why this is realized as `u` accumulated 1-unit debits plus a sweep rather
+  // than one lump `u` debit) are told apart.
+  const isPowerScaleFec = powerScaleShape !== undefined && !powerScaleMirrorRegionFlag
+  /** `nf` — vendor-published node-failure count, cross-check only. NOT used in the loss decision. */
+  const powerScaleNodeTolerance = powerScaleShape?.nf ?? 0
+  /** `M` — total stripe-unit budget. Loss when consumed units exceed this. */
+  const powerScaleUnitBudget = powerScaleShape?.M ?? 0
+  /** `u` — stripe units one node contributes; also the per-node drive-failure count that
+   * triggers sweeping the rest of that node's drives as one whole-node-failure event. */
+  const powerScaleUnitsPerNode = powerScaleShape?.u ?? 0
+  const powerScaleNodeWidths: number[] = isPowerScaleFec
+    ? distributeAcrossGroups(driveCount, Math.max(1, serverCount))
     : []
 
   // Group topology: RAID 50/60 (and BeeGFS RAID6/RAIDZ2/RAID10 storage targets)
@@ -515,6 +649,11 @@ export function computeTopologyModel(input: SimulationInput): TopologyModel {
     groupUreProbability,
     groupNodeIndices,
     mirrorGroupNodes,
+    isPowerScaleFec,
+    powerScaleNodeTolerance,
+    powerScaleUnitBudget,
+    powerScaleUnitsPerNode,
+    powerScaleNodeWidths,
   }
 }
 
@@ -562,6 +701,10 @@ function runSingleSimulation(
     rebuildTimeHours,
     ureProbability,
     groupUreProbability,
+    isPowerScaleFec,
+    powerScaleUnitBudget,
+    powerScaleUnitsPerNode,
+    powerScaleNodeWidths,
   } = topo
 
   // Base daily failure rate per drive
@@ -629,6 +772,13 @@ function runSingleSimulation(
   // Mirror: per-group failure tracking (supports 2-way, 3-way, N-way mirrors)
   const mirrorGroupFailures = isMirror ? (new Array(numMirrorGroups).fill(0) as number[]) : []
   const groupFailures = isGroup ? (new Array(numGroups).fill(0) as number[]) : []
+  // PowerScale FEC region (unit budget, fix round 2): per-node failure counts, capped
+  // implicitly at `powerScaleUnitsPerNode` (a node past that count is "swept" — see the
+  // dedicated branch below) — plus the running stripe-unit budget consumed so far.
+  const powerScaleNodeFailures = isPowerScaleFec
+    ? (new Array(powerScaleNodeWidths.length).fill(0) as number[])
+    : []
+  let powerScaleUnitsConsumed = 0
   let isRebuilding = false
   let rebuildDaysRemaining = 0
   // Replacement-sourcing delay state (issue #93). `repairPending` and `isRebuilding` are
@@ -859,6 +1009,75 @@ function runSingleSimulation(
               return { survived: false, rebuildTimeHours, hadURE, hadDualFailure }
             }
           }
+        } else if (isPowerScaleFec) {
+          // PowerScale node-erasure-coding region — UNIT BUDGET (fix round 2, item 1; replaces
+          // the round-1 "nf nodes touched OR M drives in one node" rule). NOT vendor-attested —
+          // see `SimulationInput.powerScaleProtection`'s doc comment.
+          //
+          // A drive failure debits 1 unit from the pool's `powerScaleUnitBudget` (= M); data
+          // loss when consumed units exceed it. A WHOLE-NODE failure debits `u` units — realized
+          // here as `u` accumulated 1-unit drive debits landing on the SAME node, followed by a
+          // sweep (below) that removes the rest of that node's drives as one event, rather than
+          // one lump `u` debit charged on the first drive alone (item 2: a lone first failure
+          // must NOT be promoted to a full node loss before `u` failures actually land there).
+          //
+          // Failure assignment is weighted by surviving drives per node — identical idiom to
+          // the isGroup branch above, applied to physical nodes instead of RAID groups. A swept
+          // node's `powerScaleNodeFailures` equals its own width, so `survivingPerNode` is 0
+          // there and it drops out of selection naturally.
+          const survivingPerNode = powerScaleNodeWidths.map(
+            (width, n) => width - (powerScaleNodeFailures[n] ?? 0),
+          )
+          const totalSurviving = survivingPerNode.reduce((a, b) => a + b, 0)
+
+          let r = random() * totalSurviving
+          let hitNode = 0
+          for (let n = 0; n < powerScaleNodeWidths.length; n++) {
+            r -= survivingPerNode[n] ?? 0
+            if (r <= 0) {
+              hitNode = n
+              break
+            }
+          }
+
+          // This one failure debits 1 unit, always — whether it is the first drive to fail in
+          // `hitNode` or its `u`-th (the one that completes a whole-node loss). The sweep that
+          // follows (extracted to `applyPowerScaleNodeFailure`) costs nothing further; it only
+          // brings the GLOBAL `failedDrives` ledger to the state a real whole-node loss would
+          // leave it in, so `activeDrives` shrinks correctly for subsequent days (the shared
+          // `failedDrives++` a few lines up only counted the ONE triggering drive).
+          powerScaleUnitsConsumed++
+          failedDrives += applyPowerScaleNodeFailure(
+            powerScaleNodeFailures,
+            powerScaleNodeWidths,
+            powerScaleUnitsPerNode,
+            hitNode,
+          )
+
+          if (powerScaleUnitsConsumed > powerScaleUnitBudget) {
+            hadDualFailure = true
+            return { survived: false, rebuildTimeHours, hadURE, hadDualFailure }
+          }
+
+          // Start rebuild immediately (hot spare present) or begin the replacement-sourcing
+          // delay first (#93) — see REPLACEMENT_DELAY_DAYS.
+          if (!isRebuilding && !repairPending) {
+            if (hasHotSpare) {
+              isRebuilding = true
+              rebuildDaysRemaining = Math.ceil(rebuildTimeHours / 24)
+            } else {
+              repairPending = true
+              replacementDelayDaysRemaining = REPLACEMENT_DELAY_DAYS
+            }
+          }
+
+          // URE fatal once the budget is at its limit (mirrors the group/mirror branches' "at
+          // parity limit" condition). Unconditional on rebuild state — see the isMirror
+          // branch's comment (#93).
+          if (powerScaleUnitsConsumed >= powerScaleUnitBudget && random() < ureProbability) {
+            hadURE = true
+            return { survived: false, rebuildTimeHours, hadURE, hadDualFailure }
+          }
         } else {
           // Standard parity topology: global failure count determines data loss
           if (failedDrives > parityDrives) {
@@ -942,6 +1161,25 @@ function runSingleSimulation(
             }
             const cur = groupFailures[maxIdx] ?? 0
             if (cur > 0) groupFailures[maxIdx] = cur - 1
+          }
+        }
+        if (isPowerScaleFec) {
+          // Repair the most degraded node first (mirrors the group/mirror repair logic above).
+          let maxIdx = 0
+          for (let n = 1; n < powerScaleNodeWidths.length; n++) {
+            if ((powerScaleNodeFailures[n] ?? 0) > (powerScaleNodeFailures[maxIdx] ?? 0)) maxIdx = n
+          }
+          const cur = powerScaleNodeFailures[maxIdx] ?? 0
+          if (cur > 0) {
+            // A count above `powerScaleUnitsPerNode` is carrying "free" swept drives that
+            // never debited the budget (see the sweep comment above) — repairing those first
+            // returns nothing. Only once repair works back down into the billed region (<= u)
+            // does each repair also return 1 unit to `powerScaleUnitsConsumed`, mirroring
+            // exactly how those units were debited on the way up.
+            if (cur <= powerScaleUnitsPerNode) {
+              powerScaleUnitsConsumed = Math.max(0, powerScaleUnitsConsumed - 1)
+            }
+            powerScaleNodeFailures[maxIdx] = cur - 1
           }
         }
         if (failedDrives === 0) {

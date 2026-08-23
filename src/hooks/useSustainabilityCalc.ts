@@ -8,6 +8,7 @@ import drivesData from '@/data/drives.json'
 import { effectiveServerCount } from '@/engines/capabilities'
 import { resolveTiering } from '@/engines/shared/tiering'
 import { calculateSustainability } from '@/engines/sustainability'
+import { powerScaleDriveTotals } from '@/engines/volumetry/powerscale'
 import { useTieringOptions } from '@/hooks/useTieringOptions'
 import { useConfigStore } from '@/store'
 import type { Drive } from '@/types'
@@ -30,6 +31,7 @@ export function useSustainabilityCalc(usableCapacity: number): SustainabilityRes
     serverPowerWatts,
     // Topology (needed for tiering resolver)
     topology,
+    powerscaleOptions,
     // Workload
     dailyWriteVolume,
     // Advanced (sustainability-related only)
@@ -60,17 +62,30 @@ export function useSustainabilityCalc(usableCapacity: number): SustainabilityRes
     // leftover serverCount from a previously selected multi-node platform.
     const effServerCount = effectiveServerCount(serverCount, topology)
 
-    // Calculate total drives across all servers
-    const totalDriveCount = driveCount * effServerCount
+    // Power, cooling and TCO are additive across node pools, so sustainability counts EVERY
+    // tier — unlike performance and resilience, which model the first pool only (a client's
+    // IOPS or a rebuild's exposure window are properties of the pool serving the data; a
+    // cluster's power draw is not). `powerScaleDriveTotals` returns all zeroes for an
+    // empty/unsized tier list, which degrades every figure below to 0 rather than throwing.
+    const psTotals =
+      topology.type === 'powerscale' && powerscaleOptions
+        ? powerScaleDriveTotals(powerscaleOptions)
+        : null
 
-    // Resolve tiering configuration (null when not a tiered topology)
-    const tiering = resolveTiering(topology, effServerCount, tieringOptions)
+    // Calculate total drives across all servers
+    const totalDriveCount = psTotals ? psTotals.clusterDrives : driveCount * effServerCount
+    const nodeCount = psTotals ? psTotals.clusterNodes : effServerCount
+
+    // Resolve tiering configuration (null when not a tiered topology). PowerScale has no
+    // tiering branch in `resolveTiering`, so passing `nodeCount` here is harmless but kept
+    // consistent with every other server-count use below.
+    const tiering = resolveTiering(topology, nodeCount, tieringOptions)
 
     try {
       return calculateSustainability({
         drive,
         driveCount: totalDriveCount,
-        serverCount: effServerCount,
+        serverCount: nodeCount,
         serverPowerWatts,
         pue,
         carbonRegion,
@@ -114,6 +129,7 @@ export function useSustainabilityCalc(usableCapacity: number): SustainabilityRes
     dailyWriteVolume,
     usableCapacity,
     topology,
+    powerscaleOptions,
     tieringOptions,
   ])
 }

@@ -6,6 +6,8 @@
 import { compressToEncodedURIComponent, decompressFromEncodedURIComponent } from 'lz-string'
 import { toast } from 'sonner'
 import type { StateStorage } from 'zustand/middleware'
+import { getModel, suggestedProtection } from '@/data/powerscaleCatalog'
+import { DEFAULT_POWERSCALE_TIER, type PowerScaleProtection } from '@/types/topology'
 import { validateUrlState } from '@/utils/schemas'
 
 /**
@@ -29,6 +31,78 @@ function isPersistEnvelope(value: unknown): value is PersistEnvelope {
   if (typeof value !== 'object' || value === null || !('state' in value)) return false
   const state = (value as Record<string, unknown>).state
   return typeof state === 'object' && state !== null
+}
+
+/**
+ * Migrate a pre-3.1 PowerScale link.
+ *
+ * Old links carry protection in `topology.level` and a single implicit node
+ * pool sized by `serverCount`. They cannot name a node model, so we seed the
+ * default model and clamp the node count into its bounds. Delete this shim one
+ * release after 3.1.
+ */
+const LEGACY_PROTECTION: Record<string, PowerScaleProtection> = {
+  powerscale_n1: '+1n',
+  powerscale_n2: '+2n',
+  powerscale_n2_1: '+2d:1n',
+  powerscale_n3: '+3n',
+  powerscale_n4: '+4n',
+}
+
+export function migratePowerScaleState(state: unknown): unknown {
+  if (typeof state !== 'object' || state === null) return state
+  const s = state as Record<string, unknown>
+  const topology = s.topology as { type?: string; level?: string } | undefined
+  const options = s.powerscaleOptions as Record<string, unknown> | undefined
+
+  // Migrate on the SHAPE, not on the topology discriminant. `omitDefaults` keeps a non-default
+  // `powerscaleOptions` in the hash even after the user switches to another platform, so a link
+  // shared from, say, ZFS can still carry the old `{compression, dedup, snapshotReservePercent}`
+  // bag. Keying on `type === 'powerscale'` left that bag unmigrated, and the Zod schema then
+  // rejected the whole payload — turning a valid ZFS link into "Invalid configuration link" and
+  // full default state.
+  const staleOptions = options !== undefined && !('tiers' in options)
+  const staleTopology = topology?.type === 'powerscale' && topology.level !== 'powerscale_onefs'
+  if (!staleOptions && !staleTopology) return state
+
+  // A stale options bag under another platform is dropped, not rebuilt: it described a PowerScale
+  // config the user has already navigated away from, and the tier model cannot recover what node
+  // hardware it meant. The link's actual topology is what they shared.
+  if (!staleTopology) {
+    const { powerscaleOptions: _dropped, ...rest } = s
+    return rest
+  }
+
+  const model = getModel(DEFAULT_POWERSCALE_TIER.nodeModel)
+  const rawNodes =
+    typeof s.serverCount === 'number' ? s.serverCount : DEFAULT_POWERSCALE_TIER.nodeCount
+  const nodeCount = Math.min(
+    model?.maxNodes ?? 252,
+    Math.max(model?.minNodes ?? 3, Math.round(rawNodes)),
+  )
+
+  const protection =
+    LEGACY_PROTECTION[topology.level ?? ''] ??
+    suggestedProtection(
+      DEFAULT_POWERSCALE_TIER.nodeModel,
+      DEFAULT_POWERSCALE_TIER.driveSizeTb,
+      nodeCount,
+    ) ??
+    DEFAULT_POWERSCALE_TIER.protection
+
+  toast.info('Shared link migrated', {
+    description:
+      'This link used the previous PowerScale model. The node pool was rebuilt with a default node model — please re-check it.',
+    duration: 8000,
+  })
+
+  return {
+    ...s,
+    topology: { type: 'powerscale', level: 'powerscale_onefs' },
+    powerscaleOptions: {
+      tiers: [{ ...DEFAULT_POWERSCALE_TIER, nodeCount, protection }],
+    },
+  }
 }
 
 /**
@@ -64,7 +138,7 @@ export const urlHashStorage: StateStorage = {
         })
         return null
       }
-      const validated = validateUrlState(parsed.state)
+      const validated = validateUrlState(migratePowerScaleState(parsed.state))
 
       if (!validated) {
         // Validation failed - notify user with toast

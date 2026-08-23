@@ -104,15 +104,7 @@ const TopologySchema = z.discriminatedUnion('type', [
   }),
   z.object({
     type: z.literal('powerscale'),
-    level: z.enum([
-      'powerscale_n1',
-      'powerscale_n2',
-      'powerscale_n2_1',
-      'powerscale_n3',
-      'powerscale_n4',
-      'powerscale_mirror_2x',
-      'powerscale_mirror_3x',
-    ]),
+    level: z.literal('powerscale_onefs'),
   }),
   z.object({
     type: z.literal('objectscale'),
@@ -266,8 +258,8 @@ const ControllerOptionsSchema = z.object({
 const NetAppOptionsSchema = z.object({
   raidType: z.enum(['raid_dp', 'raid_tec']),
   // FRACTION, not a percent: overheadCalculator.ts multiplies capacityAfterParity by this
-  // value directly (unlike powerstore/powerscale `snapshotReservePercent`, which are divided
-  // by 100 there). A `.max(100)` bound let a crafted link validate a 100x reserve; the panel
+  // value directly (unlike powerstore's `snapshotReservePercent`, which is divided by 100
+  // there; PowerScale's was retired with the drive-centric path). A `.max(100)` bound let a crafted link validate a 100x reserve; the panel
   // slider works in percent and divides by 100 on the way in.
   snapshotReserve: z.number().min(0).max(1).finite(),
   dataReductionRatio: z.number().min(1).max(20).finite(),
@@ -322,14 +314,41 @@ const PowerStoreOptionsSchema = z.object({
 })
 
 /**
- * PowerScale options schema
+ * PowerScale options schema.
+ *
+ * Nested `z.object()` strips unknown keys but REQUIRES declared ones, so the
+ * removed compression/dedup/snapshot fields must not reappear here — a link
+ * carrying them is migrated in `urlStorage.ts`, not validated here.
  */
+const PowerScaleTierSchema = z.object({
+  nodeModel: z.string().min(1).max(16),
+  driveSizeTb: z.number().positive().finite(),
+  // 3 is the smallest node count any catalog model supports; a crafted link
+  // with fewer would find no efficiency curve and silently size to zero.
+  nodeCount: z.number().int().min(3).max(252),
+  protection: z.enum([
+    '+1n',
+    '+2n',
+    '+3n',
+    '+4n',
+    '+2d:1n',
+    '+3d:1n',
+    '+3d:1n1d',
+    '+4d:1n',
+    '+4d:2n',
+  ]),
+  vhsDriveCount: z.number().int().min(0).max(64),
+  vhsPercent: z.number().min(0).max(50).finite(),
+  // Per-pool data-reduction override. `.min(1)` matters as much as `.finite()` here: DRR is a
+  // reduction ratio, never an expansion, and 0 (or a negative) would zero out — or invert — a
+  // pool's effective capacity from a hand-edited link. Bounded at 20 to match NetApp's
+  // `dataReductionRatio`, the closest analog elsewhere in this schema. Optional so an unset
+  // override (the default) and every link shared before this field existed keep parsing.
+  drrOverride: z.number().min(1).max(20).finite().optional(),
+})
+
 const PowerScaleOptionsSchema = z.object({
-  compression: z.boolean(),
-  compressionRatio: z.number().min(1).max(10).finite(),
-  dedup: z.boolean(),
-  dedupRatio: z.number().min(1).max(10).finite(),
-  snapshotReservePercent: z.number().min(0).max(100).finite(),
+  tiers: z.array(PowerScaleTierSchema).min(1).max(8),
 })
 
 /**

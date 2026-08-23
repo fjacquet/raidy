@@ -51,7 +51,7 @@ const REPRESENTATIVE: { topology: Topology; drives: number; servers: number }[] 
   { topology: { type: 'ceph', level: 'ceph_replicated_3' }, drives: 12, servers: 4 },
   { topology: { type: 'powerflex', level: 'powerflex_medium_2way' }, drives: 12, servers: 4 },
   { topology: { type: 'powerstore', level: 'powerstore_raid5' }, drives: 12, servers: 2 },
-  { topology: { type: 'powerscale', level: 'powerscale_n2_1' }, drives: 12, servers: 4 },
+  { topology: { type: 'powerscale', level: 'powerscale_onefs' }, drives: 12, servers: 4 },
   { topology: { type: 'objectscale', level: 'objectscale_ec_12_4' }, drives: 16, servers: 4 },
   { topology: { type: 'nutanix', level: 'nutanix_rf2' }, drives: 12, servers: 4 },
   { topology: { type: 'powervault', level: 'powervault_raid6' }, drives: 12, servers: 1 },

@@ -44,5 +44,8 @@
     "auto": "Auto",
     "light": "Chiaro",
     "dark": "Scuro"
+  },
+  "powerScale": {
+    "estimateNote": "Capacità ed efficienza provengono dalla tabella pubblicata da Dell; la riduzione dati è un'ipotesi di raidy sui vostri dati e la resilienza deriva dal comportamento OneFS pubblicato, non da valori pubblicati da Dell. PowerSizer resta il riferimento per un preventivo vincolante."
   }
 }

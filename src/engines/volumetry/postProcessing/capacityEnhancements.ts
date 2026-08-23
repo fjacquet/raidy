@@ -13,7 +13,6 @@ import type {
   NutanixOptions,
   ObjectScaleOptions,
   PowerFlexOptions,
-  PowerScaleOptions,
   PowerStoreOptions,
   Topology,
   VsanOptions,
@@ -46,7 +45,6 @@ export const CEPH_COMPRESSION_RATIOS: Record<CephOptions['compressionAlgorithm']
  * - Nutanix: Compression and deduplication
  * - ObjectScale: Compression for S3 object storage
  * - PowerStore: Compression and deduplication
- * - PowerScale: Compression and deduplication
  * - Ceph: BlueStore inline compression, ratio driven by the chosen algorithm
  * - vSAN: Compression and deduplication (OSA + ESA), each gated by its toggle
  *
@@ -68,7 +66,6 @@ export function applyCompressionDedup(
     nutanixOptions: NutanixOptions
     objectscaleOptions: ObjectScaleOptions
     powerstoreOptions: PowerStoreOptions
-    powerscaleOptions: PowerScaleOptions
     cephOptions: CephOptions
     vsanOptions: VsanOptions
   },
@@ -79,7 +76,6 @@ export function applyCompressionDedup(
     nutanixOptions,
     objectscaleOptions,
     powerstoreOptions,
-    powerscaleOptions,
     cephOptions,
     vsanOptions,
   } = options
@@ -125,13 +121,6 @@ export function applyCompressionDedup(
     const psCompRatio = powerstoreOptions.compression ? powerstoreOptions.compressionRatio : 1.0
     const psDedupRatio = powerstoreOptions.dedup ? powerstoreOptions.dedupRatio : 1.0
     return usableCapacity * psCompRatio * psDedupRatio
-  }
-
-  // PowerScale compression and deduplication
-  if (topology.type === 'powerscale') {
-    const pscCompRatio = powerscaleOptions.compression ? powerscaleOptions.compressionRatio : 1.0
-    const pscDedupRatio = powerscaleOptions.dedup ? powerscaleOptions.dedupRatio : 1.0
-    return usableCapacity * pscCompRatio * pscDedupRatio
   }
 
   // Ceph BlueStore inline compression — ratio is driven by the chosen algorithm.

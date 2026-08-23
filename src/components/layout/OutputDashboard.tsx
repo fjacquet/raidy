@@ -3,11 +3,13 @@
  */
 
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   CapacityAct,
   CostAct,
   HeadlineBand,
   PerformanceAct,
+  PowerScaleTierTable,
   ResilienceAct,
   TakeawayAct,
 } from '@/components/outputs'
@@ -15,6 +17,7 @@ import drivesData from '@/data/drives.json'
 import { effectiveServerCount } from '@/engines/capabilities'
 import { useCalculations, useIsMobile, useResilience } from '@/hooks'
 import { useTieringOptions } from '@/hooks/useTieringOptions'
+import type { Language } from '@/i18n/config'
 import { useConfigStore } from '@/store'
 import type { Drive } from '@/types'
 import { exportToPdf } from '@/utils'
@@ -24,6 +27,7 @@ import { exportToPptx } from '@/utils/exportPptx'
 const drives = drivesData as Record<string, Drive>
 
 export function OutputDashboard() {
+  const { t, i18n } = useTranslation('output')
   const {
     topology,
     zfsOptions,
@@ -36,6 +40,7 @@ export function OutputDashboard() {
     s2dOptions,
     powerFlexOptions,
     beeGfsOptions,
+    powerscaleOptions,
   } = useConfigStore()
   const tieringOptions = useTieringOptions()
   const results = useCalculations()
@@ -65,12 +70,14 @@ export function OutputDashboard() {
     if (topology.type === 'beegfs' && beeGfsOptions.storageBuddyMirror) {
       return 2
     }
-    // 3-way mirrors (by level name)
+    // 3-way mirrors (by level name). No PowerScale entry: OneFS mirror protection is per node
+    // pool, and the resilience worker models it through `powerScaleProtection` on
+    // `SimulationInput` rather than this cluster-wide copy count. The `powerscale_mirror_2x/3x`
+    // comparisons that used to sit here matched a level `PowerScaleTopology` no longer has.
     if (
       level === 'ceph_replicated_3' ||
       level === 'nutanix_rf3' ||
       level === 'objectscale_mirror_3' ||
-      level === 'powerscale_mirror_3x' ||
       level === 'vsan_osa_raid1_ftt2' ||
       level.includes('3way')
     ) {
@@ -83,7 +90,6 @@ export function OutputDashboard() {
       level === 'raid1e' ||
       level === 'ceph_replicated_2' ||
       level === 'nutanix_rf2' ||
-      level === 'powerscale_mirror_2x' ||
       level === 'vsan_osa_raid1' ||
       level === 'vsan_esa_raid1' ||
       level === 'powervault_raid1' ||
@@ -113,6 +119,7 @@ export function OutputDashboard() {
     autoRun: false,
     mirrorCopies,
     tieringOptions,
+    powerscaleOptions,
   })
 
   // Export handlers
@@ -133,6 +140,7 @@ export function OutputDashboard() {
         },
         projectName: 'Storage Configuration',
         unitSystem,
+        language: i18n.language as Language,
       })
     } catch {
       setExportError(true)
@@ -142,6 +150,8 @@ export function OutputDashboard() {
   const handleExportPptx = () => {
     if (!selectedDrive) return
     setExportError(false)
+    // Both exports dispatch on `topology.type === 'powerscale'` internally and describe the
+    // cluster from `volumetry.powerScaleDetails`, so no caller-side hardware override is needed.
     exportToPptx({
       drive: selectedDrive,
       driveCount,
@@ -154,6 +164,7 @@ export function OutputDashboard() {
       },
       projectName: 'Storage Configuration',
       unitSystem,
+      language: i18n.language as Language,
     }).catch(() => setExportError(true))
   }
 
@@ -175,6 +186,29 @@ export function OutputDashboard() {
         operationalLimit={operationalLimit}
         performanceThreshold={performanceThreshold}
       />
+
+      {/* PowerScale per-node-pool capacity. Rendered next to the cluster-wide Capacity act
+          because the headline number is a sum over heterogeneous pools and is unreadable
+          without the split. */}
+      {topology.type === 'powerscale' && volumetry.powerScaleDetails ? (
+        <div className="panel">
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
+            {t('powerscale.tableCaption')}
+          </h3>
+          <PowerScaleTierTable details={volumetry.powerScaleDetails} />
+        </div>
+      ) : null}
+
+      {/* PowerScale performance/resilience model the FIRST node pool only (a client's IOPS and
+          a rebuild's exposure window are properties of the pool serving the data, not an
+          average across heterogeneous pools) — unlike capacity, power and cost, which sum
+          every tier. Only worth saying when there is more than one tier to be misread as. */}
+      {topology.type === 'powerscale' && powerscaleOptions.tiers.length > 1 && (
+        <p className="text-xs text-amber-600 dark:text-amber-400 flex items-start gap-2">
+          <span aria-hidden="true">⚠</span>
+          <span>{t('powerscale.firstTierOnly')}</span>
+        </p>
+      )}
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <PerformanceAct performance={performance} />

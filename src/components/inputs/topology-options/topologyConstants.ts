@@ -4,9 +4,9 @@
  * Centralized definitions for all supported storage topologies.
  */
 
-import type { TopologyType } from '@/types'
+import type { Topology, TopologyType } from '@/types'
 
-export const TOPOLOGY_TYPES: { value: string; labelKey: string }[] = [
+export const TOPOLOGY_TYPES: { value: TopologyType; labelKey: string }[] = [
   { value: 'standard', labelKey: 'type.standard' },
   { value: 'beegfs', labelKey: 'type.beegfs' },
   { value: 'ceph', labelKey: 'type.ceph' },
@@ -24,10 +24,25 @@ export const TOPOLOGY_TYPES: { value: string; labelKey: string }[] = [
   { value: 'proprietary', labelKey: 'type.proprietary' },
 ]
 
-export const TOPOLOGY_LEVELS: Record<
-  TopologyType,
-  { value: string; labelKey: string; descriptionKey: string }[]
-> = {
+/** The topology configuration for one type — `Topology` narrowed to that discriminant. */
+export type TopologyFor<T extends TopologyType> = Extract<Topology, { type: T }>
+
+interface LevelOption<T extends TopologyType> {
+  value: TopologyFor<T>['level']
+  labelKey: string
+  descriptionKey: string
+}
+
+/**
+ * The level dropdown's contents, per topology type.
+ *
+ * Each list is typed to its OWN type's level union rather than to `string`. That is deliberate
+ * and load-bearing: while this was `Record<TopologyType, { value: string }[]>` it went on
+ * offering seven PowerScale levels for months after the `PowerScaleTopology` union had been
+ * narrowed to the single literal `'powerscale_onefs'`, and `tsc` had nothing to say about it.
+ * A level retired from `src/types/topology.ts` is now a compile error here.
+ */
+export const TOPOLOGY_LEVELS: { [T in TopologyType]: LevelOption<T>[] } = {
   standard: [
     {
       value: 'RAID0',
@@ -242,41 +257,16 @@ export const TOPOLOGY_LEVELS: Record<
       descriptionKey: 'powerstore.raid10.description',
     },
   ],
+  // One entry, not seven. Protection is per node pool (`PowerScaleTier.protection`, chosen from
+  // the vendor catalog in PowerScaleOptionsPanel), so the level carries no protection at all —
+  // it exists only to identify the platform. The seven invented N+x/mirror levels this replaced
+  // survived a type-only retirement because this table used to be typed `{ value: string }[]`;
+  // the per-type typing above is what makes a stale level a compile error now.
   powerscale: [
     {
-      value: 'powerscale_n1',
-      labelKey: 'powerscale.n1.label',
-      descriptionKey: 'powerscale.n1.description',
-    },
-    {
-      value: 'powerscale_n2',
-      labelKey: 'powerscale.n2.label',
-      descriptionKey: 'powerscale.n2.description',
-    },
-    {
-      value: 'powerscale_n2_1',
-      labelKey: 'powerscale.n2_1.label',
-      descriptionKey: 'powerscale.n2_1.description',
-    },
-    {
-      value: 'powerscale_n3',
-      labelKey: 'powerscale.n3.label',
-      descriptionKey: 'powerscale.n3.description',
-    },
-    {
-      value: 'powerscale_n4',
-      labelKey: 'powerscale.n4.label',
-      descriptionKey: 'powerscale.n4.description',
-    },
-    {
-      value: 'powerscale_mirror_2x',
-      labelKey: 'powerscale.mirror_2x.label',
-      descriptionKey: 'powerscale.mirror_2x.description',
-    },
-    {
-      value: 'powerscale_mirror_3x',
-      labelKey: 'powerscale.mirror_3x.label',
-      descriptionKey: 'powerscale.mirror_3x.description',
+      value: 'powerscale_onefs',
+      labelKey: 'powerscale.onefs.label',
+      descriptionKey: 'powerscale.onefs.description',
     },
   ],
   powerflex: [
@@ -458,4 +448,37 @@ export const TOPOLOGY_LEVELS: Record<
       descriptionKey: 'netapp.raid_tec.description',
     },
   ],
+}
+
+/**
+ * Pair a topology type with a level that type actually publishes.
+ *
+ * Returns `null` for a pair the table above does not list, which is the check the old
+ * `setTopology({ type, level } as Topology)` cast at the call sites skipped: selecting
+ * PowerScale used to write `level: 'powerscale_n1'`, a value `PowerScaleTopology` had already
+ * stopped accepting, and nothing anywhere complained.
+ *
+ * `TOPOLOGY_LEVELS` is keyed by topology type and each list is typed to that type's own level
+ * union, so a value taken from `TOPOLOGY_LEVELS[type]` is by construction valid for `type`.
+ * TypeScript cannot correlate the two through a generic index, so one assertion remains — here,
+ * once, guarded by a real lookup, instead of at every call site unguarded.
+ */
+export function topologyFrom<T extends TopologyType>(
+  type: T,
+  level: string,
+): TopologyFor<T> | null {
+  const options: { value: string }[] = TOPOLOGY_LEVELS[type]
+  const option = options.find((o) => o.value === level)
+  return option ? ({ type, level: option.value } as TopologyFor<T>) : null
+}
+
+/** The topology a type falls back to when it is selected: its first published level. */
+export function defaultTopologyFor<T extends TopologyType>(type: T): TopologyFor<T> | null {
+  const first: { value: string } | undefined = TOPOLOGY_LEVELS[type][0]
+  return first ? topologyFrom(type, first.value) : null
+}
+
+/** Narrow a value coming out of the DOM to a topology type the table knows. */
+export function isTopologyType(value: string): value is TopologyType {
+  return Object.hasOwn(TOPOLOGY_LEVELS, value)
 }

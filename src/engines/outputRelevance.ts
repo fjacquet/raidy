@@ -46,6 +46,68 @@ function effectiveDiffers(ctx: RelevanceContext): boolean {
   return supported && ctx.volumetry.effectiveCapacity !== ctx.volumetry.usableCapacity
 }
 
+/**
+ * Whether throughput, IOPS and the bottleneck chain belong in a document for this platform.
+ *
+ * False for PowerScale, for a reason of SHAPE rather than of missing data. A PowerScale node is
+ * an appliance: its throughput and IOPS are properties of the node model and the node count, not
+ * of an individual drive. raidy models them per drive — reference medium times catalog drive
+ * count — which is the wrong logic for this platform and swings wildly: on an unchanged 3-node
+ * F210 cluster, changing only the reference medium moved Max Read IOPS from 2,028 to 2,280,000
+ * and flipped the reported bottleneck from Media to Network.
+ *
+ * The vendor capacity workbook cannot supply the right figures either: it carries no IOPS,
+ * throughput or latency data on any sheet. Per-node numbers would have to come from Dell node
+ * spec sheets — values raidy would introduce, not read. Recorded in docs/BACKLOG.md.
+ *
+ * As with `sustainabilityApplies`, the on-screen cards stay: while configuring, the order of
+ * magnitude is useful and the medium behind it is one click away. This governs what leaves.
+ */
+export function performanceApplies(topology: Topology): boolean {
+  return topology.type !== 'powerscale'
+}
+
+/**
+ * Whether power, CO2 and cost figures belong in a document for this platform.
+ *
+ * False for PowerScale alone, and this one is not a matter of taste. The vendor catalog publishes
+ * capacity and efficiency; it publishes NO power, price or reliability data. So those figures are
+ * derived from whichever generic drive sits in the (hidden) Hardware panel plus a generic default
+ * watts-per-node — demonstrably so: on an unchanged 3-node F210 cluster, switching the reference
+ * medium from a 24 TB SATA HDD to a 1.92 TB NVMe moved drive power from 87 W to 107 W. A figure
+ * that answers to hardware which is not in the cluster does not belong beside capacity numbers
+ * that match the vendor's table exactly; on a customer deliverable the two read as equally solid.
+ *
+ * Same shape and same reasoning as `backupApplies`: one predicate, consulted by the exports, so
+ * the decision cannot drift between the PDF and the PPTX.
+ *
+ * NOTE: the on-screen Power & Sustainability card is deliberately NOT gated on this. Those same
+ * figures stay visible while configuring, where they are a rough order of magnitude and the user
+ * can see and change the medium they come from. The line drawn here is about what leaves the app.
+ */
+export function sustainabilityApplies(topology: Topology): boolean {
+  return topology.type !== 'powerscale'
+}
+
+/**
+ * True when the generic backup estimator (`usable × dailyChangeRate% × retentionDays`) is
+ * offered for this platform — one predicate for BOTH the Advanced panel's two backup inputs and
+ * the dashboard's backup card, so the pair cannot drift into the state this branch has already
+ * had to fix twice: a live output computed from an input the user cannot see.
+ *
+ * False for PowerScale alone. A OneFS cluster is sized against the vendor's node catalog, and
+ * its data protection is sized by the backup product, not by a change-rate slider on the array
+ * — so the two inputs are hidden there, and this is what keeps the card hidden with them.
+ *
+ * NOT a `PlatformCapabilities` flag: the backup engine reads `dailyChangeRate` and
+ * `backupRetention` for every platform including PowerScale, so no probe against engine
+ * behaviour could establish it. It is a product-scope decision and lives here, in the
+ * relevance layer, where scope decisions belong.
+ */
+export function backupApplies(topology: Topology): boolean {
+  return topology.type !== 'powerscale'
+}
+
 export function shouldShowKpi(kpi: KpiId, ctx: RelevanceContext): boolean {
   switch (kpi) {
     case 'usable':
@@ -75,7 +137,9 @@ export function shouldShowSection(section: SectionId, ctx: SectionContext): bool
     case 'beegfsDetails':
       return ctx.topology?.type === 'beegfs' && ctx.volumetry?.beeGfsDetails != null
     case 'backup':
-      return ctx.hasBackup === true
+      // Opt-in on the topology: a caller that omits it gets no card, rather than one that
+      // silently escapes the `backupApplies` guard because `undefined !== 'powerscale'`.
+      return ctx.hasBackup === true && ctx.topology != null && backupApplies(ctx.topology)
     case 'flashEndurance':
       return ctx.sustainability?.flashEndurance != null
   }

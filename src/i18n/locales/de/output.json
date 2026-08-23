@@ -206,5 +206,42 @@
       "risk": "Risiko",
       "chartUnavailable": "Kapazitätsdiagramm nicht verfügbar"
     }
+  },
+  "powerscale": {
+    "firstTierOnly": "Performance- und Resilienzwerte bilden nur den ersten Knotenpool ab. Kapazität, Stromverbrauch und Kosten decken den gesamten Cluster ab.",
+    "tableCaption": "Kapazität pro Node-Pool",
+    "total": "Cluster gesamt",
+    "eol": "End of Life {{date}}",
+    "column": {
+      "nodeModel": "Node-Modell",
+      "driveSize": "Laufwerksgrösse (TB)",
+      "nodes": "Nodes",
+      "protection": "Schutz",
+      "raw": "Brutto",
+      "usable": "Nutzbar",
+      "effective": "Effektiv",
+      "drr": "DRR",
+      "efficiency": "Effizienz",
+      "pool": "Pool",
+      "drives": "Laufwerke",
+      "usableBeforeVhs": "Nutzbar vor VHS",
+      "usableAfterVhs": "Nutzbar nach VHS",
+      "vhsReserve": "VHS-Reserve",
+      "vhsPercentOfRaw": "VHS % vom Brutto",
+      "vhsBasis": "VHS-Basis",
+      "protectionEfficiency": "Schutzeffizienz (Hersteller)",
+      "usableEfficiency": "Nutzbare Effizienz (nach VHS)"
+    },
+    "vhsBasis": {
+      "driveCount": "Laufwerksanzahl",
+      "percent": "Prozentsatz"
+    },
+    "export": {
+      "clusterSummary": "Node-Pools {{pools}} · Nodes {{nodes}} · Laufwerke {{drives}}",
+      "clusterTitle": "Cluster",
+      "derivationTitle": "Herleitung der nutzbaren Kapazität je Pool",
+      "pools": "Node-Pools"
+    },
+    "exportScopeNote": "Die Resilienz modelliert nur den ersten Node-Pool; die Kapazität umfasst den gesamten Cluster."
   }
 }

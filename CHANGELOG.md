@@ -5,6 +5,116 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.0] - 2026-08-23
+
+### Added
+
+- **PowerScale / OneFS rebuilt against Dell's PowerSizer.** A vendor capacity workbook, not
+  redistributable, carries 122,828 rows exported from PowerSizer. raidy now ships the derived
+  table rather than a formula, because no closed form reproduces it — H710 at 22 nodes
+  on `+3n` reads 0.7250, which needs 15.95 data nodes out of 22, and 378 entries depend on drive
+  size, which the published OneFS model has no term for. See
+  [ADR-0014](./docs/adr/0014-vendor-lookup-tables.md).
+- **Multi-tier clusters.** A PowerScale cluster is 1–8 heterogeneous node pools under one OneFS
+  namespace, each with its own node model, drive size, node count, protection and Virtual Hot
+  Spare. The output shows a row per pool plus a cluster total.
+- **A node catalog drives the input panel.** Pick a node model; drive sizes, drives per node and
+  node-count bounds all derive from it. Node counts snap to each model's own increment (A/H-series
+  step by 2; F800/F810 are minimum 4 / increment 2 while F210/F710 are 3 / 1). Protections are
+  offered only where Dell publishes them, and an end-of-life model is badged.
+- **A conformance gate over all 122,828 rows** runs on every test run. Storage efficiency is
+  asserted **exactly**, at integer basis points.
+- **Virtual Hot Spare, per-model data reduction, and end-of-life dates** from the vendor catalog.
+- **Per-pool data-reduction override.** DRR is a property of the data a pool stores, not of the
+  hardware it sits on — a radiology pool of already-compressed DICOM never sees a flash node's
+  published 2:1. Each `PowerScaleTier` now carries an optional `drrOverride`; `sizeTier` resolves
+  the applied ratio as `drrOverride ?? model.drr`, still exposed on `PowerScaleTierResult.drr` and
+  now shown in its own column in the per-pool output table. A short list of workload presets
+  (medical imaging, video, encrypted data, backups, general files, virtualization, databases) —
+  raidy's own rules of thumb, not Dell figures — set the ratio in one click; the numeric field
+  stays for anyone who has measured their own. Optional field: `omitDefaults` keeps it out of the
+  URL hash when unused, and a link shared before this field existed still parses.
+- **One caveat, once, on every PowerScale export.** The PDF and PPTX carry a single closing line:
+  capacity and efficiency are Dell's published figures, power/reliability/price/data-reduction are
+  estimates, and PowerSizer remains the reference for a firm quote. No figure is suppressed to
+  avoid being wrong, and the line is not repeated per page or per section.
+- **A dedicated PowerScale export path for both the deck and the report.** Every other platform's
+  document describes "one drive model × a count"; a cluster of 1–8 heterogeneous node pools makes
+  that the wrong structure, not merely the wrong label. `exportToPptx` and `exportToPdf` now
+  dispatch on the topology into `buildPowerScaleExportContent`
+  (`src/utils/powerscaleExportContent.ts`), a pure builder that returns two per-pool tables: a
+  core table (model with generation and tier, drive size, nodes, drives, protection, raw, usable
+  after VHS, applied DRR, effective) and a derivation table (the vendor's protection efficiency,
+  usable before VHS, the VHS reserve in bytes and as a percentage of raw, which of the two vendor
+  VHS formulas produced it, usable after VHS, and the efficiency the pool actually delivers). Each
+  closes with a cluster total; the deck gives each table its own slide. The two efficiency columns
+  carry distinct labels in all four locales — "Protection efficiency (vendor)" and "Usable
+  efficiency (after VHS)" — so the quantity a one-pool cluster once reported twice under one
+  heading cannot be confused again.
+- `PlatformCapabilities.drivePopulationFromCatalog` — probe-backed like every other flag in that
+  map (double the drive count, assert `rawCapacity` does not move).
+
+### Changed
+
+- **PowerScale's Hardware panel collapses to a reference-medium line.** A PowerScale cluster is
+  not configured by picking a SATA drive, so the connectivity filter, form-factor filter, drive
+  dropdown and drive-properties card sit behind a disclosure. They are collapsed, not removed: the
+  node catalog carries no power, no reliability and no price, so the selected drive is still read
+  by sustainability, TCO, performance and resilience, and hiding it would freeze four live figures
+  on a value nobody can see. The server-power input stays, relabelled **per node** — it is
+  multiplied by the cluster's node count.
+- **PowerScale drops the backup inputs and the backup card together.** `backupRetention` and
+  `dailyChangeRate` are hidden, and `backupApplies` is the one predicate both the Advanced panel
+  and the dashboard consult, so the card cannot outlive the controls that feed it. PUE and the
+  performance threshold stay — both still move a figure that is shown.
+
+- **PowerScale resilience models OneFS protection.** Every PowerScale pool was previously simulated
+  as tolerating exactly one drive failure, whatever its protection — a `+3n` 20-node pool that
+  survives three whole nodes was shown the durability of single parity. The simulator now spends
+  the stripe's unit budget: a drive failure costs 1 unit, a whole-node failure costs `u`, and data
+  is lost past `M`. This model is derived from published OneFS semantics and is **not
+  vendor-attested** — PowerSizer is a capacity calculator and carries no AFR, URE or MTBF.
+- **The PowerScale write penalty is protection-driven**, resolved from the pool's protection rather
+  than a flat constant, including the mirror region where OneFS mirrors instead of striping FEC.
+- Performance and resilience read the **first** node pool; sustainability sums **every** pool.
+  Power and cooling are additive across a rack, but a client's IOPS and a rebuild's exposure window
+  belong to the pool serving the data.
+
+### Removed
+
+- **Power, cost, performance and bottleneck figures from PowerScale documents** (PDF and deck).
+  The vendor workbook is a capacity calculator: none of its sheets carry watt, price, IOPS,
+  throughput or latency data — its only price cells are seller-entered inputs. Those figures were
+  therefore derived from whichever generic drive sat in the hidden Hardware panel, and moved with
+  it: on an unchanged 3-node F210 cluster, switching the reference medium moved drive power from
+  87 W to 107 W and Max Read IOPS from 2,028 to 2,280,000, flipping the reported bottleneck from
+  Media to Network. Beside capacity numbers that match the vendor's table exactly, they read as
+  equally solid. Performance is additionally the wrong *shape* here — a node is an appliance,
+  sized per node rather than per drive. Both stay on screen while configuring, where the reference
+  medium is visible and changeable; `docs/BACKLOG.md` records what a per-node model would need.
+- PowerScale's GLOBAL compression, dedup and snapshot-reserve controls. A single ratio across a
+  cluster's heterogeneous node pools (all-flash over hybrid over archive) is meaningless, and
+  PowerSizer reserves nothing for snapshots — a non-zero default put every answer below the source
+  of truth. Data reduction returns as a **per-pool** override (see Added, above) — a property of
+  the pool's data, not a cluster-wide slider.
+- The `powerscale_n1` … `powerscale_n4` and `powerscale_mirror_2x` / `_3x` topology levels.
+  Protection is a property of a node pool, not of the cluster.
+- The `hardwareLabel` export override. It was a stopgap that relabelled the generic hardware line
+  so a PowerScale cluster would not print "24 TB SATA HDD, 12 drives"; the dedicated export path
+  above describes the cluster from `volumetry.powerScaleDetails` instead, so no caller-side
+  override is needed.
+
+### BREAKING
+
+- **The PowerScale URL shape changed.** Protection moved out of `topology.level` into each tier,
+  and `PowerScaleOptions` is now `{ tiers }`. Links made before 3.1 are migrated on load: the old
+  level maps to the equivalent protection, the node count is clamped into the default model's
+  bounds, and a toast asks the user to re-check the rebuilt pool. **The migration shim is removed
+  one release after 3.1** — a 3.0 link opened after that resets to defaults.
+- Because a migrated link cannot know which node model was intended, it seeds the default model.
+  Any 3.0 PowerScale link therefore describes different hardware after migration, not merely a
+  different notation.
+
 ## [3.0.0] - 2026-08-06
 
 ### Added

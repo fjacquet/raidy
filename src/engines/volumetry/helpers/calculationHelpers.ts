@@ -81,8 +81,10 @@ function getStrategy(topologyType: TopologyType): VolumetryStrategy {
       return vsanStrategy
     case 'powerflex':
     case 'powerstore':
-    case 'powerscale':
     case 'objectscale':
+      return dellStrategy
+    // unreachable: PowerScale is handled before getDataFraction, see volumetry/index.ts
+    case 'powerscale':
       return dellStrategy
     case 'proprietary':
     case 'powervault':
@@ -152,10 +154,6 @@ export function getDataFraction(
       break
     case 'standard':
       // RAID 50/60 need serverCount as number of RAID groups
-      options = { serverCount }
-      break
-    case 'powerscale':
-      // PowerScale N+x protection is node-level: formula uses serverCount (nodes), not driveCount
       options = { serverCount }
       break
     default:

@@ -1,22 +1,23 @@
+import {
+  isPowerScaleMirrorRegion,
+  powerScaleMirrorCopies,
+  STRIPE_SHAPES,
+} from '@/engines/volumetry/powerscale/stripeShape'
+import type { PowerScaleProtection } from '@/types/topology'
 import type { PerformanceStrategy } from './PerformanceStrategy'
 
 /**
  * Dell storage systems performance strategy.
  *
- * Handles PowerStore, PowerScale, ObjectScale, and PowerVault.
+ * Handles PowerStore, ObjectScale, PowerVault, and PowerScale.
+ *
+ * PowerScale (scale-out NAS) protection lives on the tier, not the level —
+ * see the protection-driven branch at the top of `getWritePenalty`.
  *
  * PowerStore (block storage):
  * - powerstore_raid5: 3x (optimized RAID-5 with NVMe)
  * - powerstore_raid6: 4x
  * - powerstore_raid10: 2x
- *
- * PowerScale (scale-out NAS):
- * - powerscale_n1: 2.5x (N+1 with inline writes)
- * - powerscale_n2: 3.5x (N+2)
- * - powerscale_n3: 4.5x (N+3)
- * - powerscale_n4: 5.5x (N+4)
- * - powerscale_mirror_2x: 2x
- * - powerscale_mirror_3x: 3x
  *
  * ObjectScale (S3 object storage):
  * - objectscale_ec_12_4: 1.33x (EC 12+4: 16/12, default min 5 nodes)
@@ -32,7 +33,32 @@ import type { PerformanceStrategy } from './PerformanceStrategy'
  * - powervault_adapt: 2.5x (distributed parity)
  */
 export const dellPerformanceStrategy: PerformanceStrategy = {
-  getWritePenalty(level: string): number {
+  getWritePenalty(level: string, options?: unknown): number {
+    // PowerScale protection now lives on the tier, not the level. The FEC-region penalty
+    // follows the FEC unit count the pre-existing +1n..+4n values already encoded: 2.5, 3.5,
+    // 4.5, 5.5 for M = 1..4, i.e. M + 1.5. Drive-level levels carry the same FEC count as their
+    // node-level peers, so +2d:1n prices like +2n — which is also what the old
+    // powerscale_n2_1 case did.
+    //
+    // Fix round 1, item 4: a pool too small for its protection's node-failure tolerance
+    // (`nodeCount < 2*nf`) doesn't stripe FEC at all — OneFS mirrors instead (same boundary the
+    // capacity and resilience models use, from `stripeShape.ts`). The retired table priced that
+    // case at the mirror copy count (`powerscale_mirror_2x` -> 2.0, `_3x` -> 3.0); pricing it at
+    // `M + 1.5` instead (5.5 for a 3-node +4n pool) silently reintroduced the exact defect that
+    // table's removal was supposed to be neutral on. `nodeCount` is read from the tier when
+    // present; callers that pass only `{ protection }` (no tier, e.g. unit tests exercising the
+    // FEC-region formula directly) skip the mirror check entirely and always get the FEC-region
+    // price, which is what every pre-existing caller of this shape already expected.
+    if (level === 'powerscale_onefs') {
+      const tier = options as { protection?: PowerScaleProtection; nodeCount?: number } | undefined
+      const protection = tier?.protection
+      if (!protection) return 3.0
+      const shape = STRIPE_SHAPES[protection]
+      if (tier?.nodeCount !== undefined && isPowerScaleMirrorRegion(shape.nf, tier.nodeCount)) {
+        return powerScaleMirrorCopies(shape.nf, tier.nodeCount)
+      }
+      return shape.M + 1.5
+    }
     switch (level) {
       // PowerStore
       case 'powerstore_raid5':
@@ -43,26 +69,6 @@ export const dellPerformanceStrategy: PerformanceStrategy = {
 
       case 'powerstore_raid10':
         return 2.0
-
-      // PowerScale
-      case 'powerscale_n1':
-        return 2.5 // N+1 with inline writes
-
-      case 'powerscale_n2':
-      case 'powerscale_n2_1':
-        return 3.5 // N+2
-
-      case 'powerscale_n3':
-        return 4.5 // N+3
-
-      case 'powerscale_n4':
-        return 5.5 // N+4
-
-      case 'powerscale_mirror_2x':
-        return 2.0
-
-      case 'powerscale_mirror_3x':
-        return 3.0
 
       // ObjectScale
       case 'objectscale_ec_12_4':
@@ -103,9 +109,9 @@ export const dellPerformanceStrategy: PerformanceStrategy = {
     driveCount: number,
     driveIOPS: number,
     readPercent: number,
-    _options?: unknown,
+    options?: unknown,
   ): number {
-    const writePenalty = this.getWritePenalty(level)
+    const writePenalty = this.getWritePenalty(level, options)
     const readFraction = readPercent / 100
     const writeFraction = 1 - readFraction
 

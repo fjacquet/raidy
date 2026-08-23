@@ -5,6 +5,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { effectiveServerCount } from '@/engines/capabilities'
 import { resolveTiering, type TieringResolverOptions } from '@/engines/shared/tiering'
+import { powerScaleDriveTotals } from '@/engines/volumetry/powerscale'
 import {
   calculateStorageTargets,
   resolveBeeGfsUsableDrives,
@@ -12,7 +13,12 @@ import {
 import { usesDistributedSpares } from '@/types'
 import type { Drive } from '@/types/drive'
 import type { ResilienceResult, SimulationProgress } from '@/types/results'
-import type { BeeGfsOptions, Topology } from '@/types/topology'
+import type {
+  BeeGfsOptions,
+  PowerScaleOptions,
+  PowerScaleProtection,
+  Topology,
+} from '@/types/topology'
 import type { SimulationInput, SimulationOutput, WorkerOutputMessage } from '@/types/worker'
 
 interface UseResilienceOptions {
@@ -41,6 +47,13 @@ interface UseResilienceOptions {
    * for the storage-target fault group) — see `SIMULATION_SCOPE_BY_TOPOLOGY`.
    */
   tieringOptions?: TieringResolverOptions
+  /**
+   * PowerScale's tier bag — kept separate from `tieringOptions` (which is the S2D/vSAN/Ceph/
+   * Nutanix/BeeGFS tiering-resolver bag and has no PowerScale field) because PowerScale's
+   * "tiers" are independent node pools, not a cache/capacity split. See the `powerscale`
+   * resolver in `SIMULATION_SCOPE_BY_TOPOLOGY`.
+   */
+  powerscaleOptions?: PowerScaleOptions
 }
 
 interface UseResilienceResult {
@@ -126,6 +139,8 @@ interface SimulationScopeContext {
   topology: Topology
   /** Complete per-platform tiering option bag — see `UseResilienceOptions.tieringOptions`. */
   tieringOptions?: TieringResolverOptions
+  /** PowerScale's tier bag — see `UseResilienceOptions.powerscaleOptions`. */
+  powerscaleOptions?: PowerScaleOptions
 }
 
 /** How a platform overrides the naive `driveCount * serverCount` population, if at all. */
@@ -138,6 +153,23 @@ interface PlatformSimulationScope extends SimulationScope {
    * devices with it — see `SHARED_FAST_TIER_TOPOLOGIES`.
    */
   sharedFastTier?: { afrPercent: number; deviceCount: number } | null
+  /**
+   * Whether rebuild can start immediately for this platform's population (issue #93 signal),
+   * when that answer is NOT simply "the generic Hardware-panel hot-spares slider is non-zero".
+   * `undefined` (every resolver except PowerScale's) falls through to the generic
+   * `totalHotSpares > 0` computed at the call site. PowerScale sets this explicitly from the
+   * tier's own Virtual Hot Spare count — the generic slider is meaningless for it (the Hardware
+   * panel is hidden), so leaving this unset would either strand a configured VHS with no
+   * immediate-rebuild credit or silently grant credit from a leftover value a previously
+   * selected platform left in the store.
+   */
+  hasHotSpare?: boolean
+  /**
+   * The PowerScale tier's OneFS protection, threaded to the worker so it can realize the
+   * "`+Nn` tolerates whole-node loss" claim (see the `powerscale` resolver below). `undefined`
+   * for every non-PowerScale resolver, and for PowerScale when no tier could be sized.
+   */
+  powerScaleProtection?: PowerScaleProtection
 }
 
 /**
@@ -236,6 +268,58 @@ const SIMULATION_SCOPE_BY_TOPOLOGY: Partial<Record<Topology['type'], SimulationS
   vsan_osa: tieredPlatformScope,
   ceph: tieredPlatformScope,
   nutanix: tieredPlatformScope,
+  /**
+   * PowerScale: the population comes from the FIRST node pool's catalog geometry,
+   * never from the Hardware panel — that panel is hidden for PowerScale, so its
+   * driveCount/serverCount are stale defaults.
+   *
+   * `mediaDrive: null` keeps the Hardware panel's drive for reliability: the
+   * vendor catalog gives capacities, not AFR/URE/MTBF, and inventing those
+   * would fabricate the very numbers the simulation reports.
+   *
+   * Nodes are the failure-isolation groups: OneFS protection spends a single stripe-unit
+   * budget (`M`) across the pool — a drive failure debits 1 unit, a whole-node failure debits
+   * `u` units, loss when consumed units exceed `M` — realized by `powerScaleProtection` below,
+   * which the worker (`computeTopologyModel`'s PowerScale block, `applyPowerScaleNodeFailure`)
+   * turns into the actual node-failure-tolerance model. `nf` (node-failure count) is a
+   * vendor-published cross-check derivable from the same table (`nf == floor(M / u)`), not a
+   * second, independent tolerance the loss decision reads directly. That model is NOT
+   * vendor-attested (see `SimulationInput.powerScaleProtection`'s doc comment) — Dell's
+   * PowerSizer export has no AFR/URE/MTBF to validate a reliability model against, unlike every
+   * capacity number on this branch.
+   *
+   * `firstTier` — not `powerscaleOptions.tiers[0]` re-indexed independently — is read from the
+   * SAME `powerScaleDriveTotals` call the population comes from, so the protection driving the
+   * simulation can never describe a DIFFERENT tier than the one whose drives/nodes it's
+   * simulating (an earlier tier `sizeTier` rejects is skipped by `powerScaleDriveTotals`, and a
+   * second, independent `tiers[0]` lookup would not know that).
+   *
+   * `hasHotSpare` comes from the tier's own Virtual Hot Spare count, not the generic
+   * Hardware-panel hot-spares slider read at the call site — that slider is meaningless for
+   * PowerScale (the panel is hidden), so using it would either strand a configured VHS with no
+   * immediate-rebuild credit or grant credit from a leftover value a previously selected
+   * platform left in the store.
+   */
+  powerscale: ({ powerscaleOptions }) => {
+    if (!powerscaleOptions) return null
+    const { firstTierDrives, firstTierNodes, firstTierSpareDrives, firstTier } =
+      powerScaleDriveTotals(powerscaleOptions)
+    if (firstTierDrives === 0) {
+      return { driveCount: 0, groupCount: 1, mediaDrive: null, hasHotSpare: false }
+    }
+    return {
+      driveCount: Math.max(0, firstTierDrives - firstTierSpareDrives),
+      groupCount: firstTierNodes,
+      mediaDrive: null,
+      // `sizeTier` reserves `max(vhsByDriveCount, vhsByPercent)`, so a pool with
+      // `vhsDriveCount: 0, vhsPercent: 20` has a real reserve and pays for it in usable capacity.
+      // Reading only the drive count charged that pool the replacement delay anyway, while an
+      // equivalent pool expressed as `vhsDriveCount: 1` got immediate-rebuild credit. The two
+      // controls agree here the same way they already agree in capacity.
+      hasHotSpare: firstTierSpareDrives > 0 || (firstTier?.vhsPercent ?? 0) > 0,
+      powerScaleProtection: firstTier?.protection,
+    }
+  },
 }
 
 /**
@@ -363,6 +447,7 @@ export function useResilience(options: UseResilienceOptions): UseResilienceResul
     autoRun = false,
     mirrorCopies = 0,
     tieringOptions,
+    powerscaleOptions,
   } = options
 
   const [result, setResult] = useState<ResilienceResult | null>(null)
@@ -498,6 +583,7 @@ export function useResilience(options: UseResilienceOptions): UseResilienceResul
       hotSpares,
       topology,
       tieringOptions,
+      powerscaleOptions,
     })
 
     const mediaDrive = scope?.mediaDrive ?? drive
@@ -517,15 +603,23 @@ export function useResilience(options: UseResilienceOptions): UseResilienceResul
       serverCount: groupCount,
       mirrorCopies,
       // Whether rebuild can start immediately or must first wait out a replacement-sourcing
-      // delay (#93) — see SimulationInput.hasHotSpare. Reuses `totalHotSpares` (already zeroed
-      // for `usesDistributedSpares` platforms above), so vSAN — which has no dedicated spare
-      // drive to credit — gets no credit here either, without a platform-specific branch.
-      hasHotSpare: totalHotSpares > 0,
+      // delay (#93) — see SimulationInput.hasHotSpare. `scope?.hasHotSpare` lets a resolver
+      // override the generic answer with a platform-specific spare signal — PowerScale's does,
+      // from the tier's own VHS count, since the generic Hardware-panel hot-spares slider is
+      // meaningless for it. Every other resolver leaves it `undefined` and falls through to
+      // `totalHotSpares` (already zeroed for `usesDistributedSpares` platforms above), so vSAN
+      // — which has no dedicated spare drive to credit — still gets no credit here either,
+      // without a platform-specific branch.
+      hasHotSpare: scope?.hasHotSpare ?? totalHotSpares > 0,
       // Shared fast-tier failure domain (#88). Absent for every platform outside
       // SHARED_FAST_TIER_TOPOLOGIES, and for those two when tiering is off — the worker's
       // defaults then reproduce the pre-#88 model exactly.
       sharedFastTierAfrPercent: scope?.sharedFastTier?.afrPercent,
       fastTierDeviceCount: scope?.sharedFastTier?.deviceCount,
+      // PowerScale's tier protection (#1, fix round 1) — see the `powerscale` resolver above
+      // and `SimulationInput.powerScaleProtection`'s doc comment for why this cannot be
+      // vendor-validated the way every capacity number on this branch is.
+      powerScaleProtection: scope?.powerScaleProtection,
     }
 
     worker.postMessage({ type: 'START', payload: input })
@@ -539,6 +633,7 @@ export function useResilience(options: UseResilienceOptions): UseResilienceResul
     simulationCount,
     mirrorCopies,
     tieringOptions,
+    powerscaleOptions,
   ])
 
   // Abort simulation
