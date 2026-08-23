@@ -22,6 +22,8 @@ import {
   suggestedProtection,
 } from '@/data/powerscaleCatalog'
 import { sizeTier } from '@/engines/volumetry/powerscale/tier'
+import type { Language } from '@/i18n/config'
+import { formatNumber } from '@/i18n/formatters'
 import { useConfigStore } from '@/store'
 import type { PowerScaleProtection, PowerScaleTier } from '@/types'
 
@@ -33,10 +35,21 @@ interface PowerScaleTierRowProps {
   canMoveDown: boolean
 }
 
-/** Clamp to the model's bounds and snap to its node increment. */
-function clampNodes(modelId: string, requested: number): number {
+/** Catalog tier names, in the order the model picker should present them. */
+const MODEL_TIER_ORDER = ['All Flash', 'Hybrid', 'Archive']
+
+/**
+ * Clamp to the model's bounds and snap to its node increment.
+ *
+ * `fallback` is returned when the model is not in the catalog, which only happens for a
+ * hand-edited or legacy URL naming a model we do not publish. `sizeTier` rejects such a tier
+ * anyway and the row shows the "cannot be sized" warning, so nothing is fabricated either way —
+ * but returning the request would write an unvalidated number into the store and the URL hash,
+ * so the previous value stands instead.
+ */
+function clampNodes(modelId: string, requested: number, fallback: number): number {
   const model = getModel(modelId)
-  if (!model) return requested
+  if (!model) return fallback
   const stepped =
     model.minNodes +
     Math.round((requested - model.minNodes) / model.nodeIncrement) * model.nodeIncrement
@@ -66,7 +79,8 @@ export function PowerScaleTierRow({
   canMoveUp,
   canMoveDown,
 }: PowerScaleTierRowProps) {
-  const { t } = useTranslation('topology')
+  const { t, i18n } = useTranslation('topology')
+  const language = i18n.language as Language
   const tiers = useConfigStore((state) => state.powerscaleOptions.tiers)
   const updatePowerScaleTier = useConfigStore((state) => state.updatePowerScaleTier)
   const removePowerScaleTier = useConfigStore((state) => state.removePowerScaleTier)
@@ -77,15 +91,28 @@ export function PowerScaleTierRow({
 
   const idPrefix = `powerscale-tier-${index}`
 
-  const modelOptions = listModels().map((m) => ({
-    value: m.id,
-    label: `${m.id} (${m.generation})`,
-    group: m.tier,
-  }))
+  // `Select` renders group headings in first-appearance order, so the ordering is this call
+  // site's job. `listModels()` is sorted by id, which would open the dropdown on Archive (A200
+  // sorts before F200) — backwards for a picker whose most-used entries are all-flash.
+  const modelOptions = [...listModels()]
+    .sort((a, b) => {
+      const rank = (tierName: string) => {
+        const i = MODEL_TIER_ORDER.indexOf(tierName)
+        return i === -1 ? MODEL_TIER_ORDER.length : i
+      }
+      return rank(a.tier) - rank(b.tier) || a.id.localeCompare(b.id)
+    })
+    .map((m) => ({
+      value: m.id,
+      label: `${m.id} (${m.generation})`,
+      group: m.tier,
+    }))
 
+  // `value` stays the raw string so the change handler can parse it; only the LABEL is localised,
+  // so an fr/de user does not read `1.92` here and `1,92` for the same number in the output table.
   const driveSizeOptions = listDriveSizes(tier.nodeModel).map((size) => ({
     value: String(size),
-    label: String(size),
+    label: formatNumber(size, language),
   }))
 
   // An unpublished protection can only arrive from a hand-edited or legacy URL. Listing it keeps
@@ -99,7 +126,7 @@ export function PowerScaleTierRow({
   const selectModel = (nodeModel: string) => {
     const sizes = listDriveSizes(nodeModel)
     const driveSizeTb = sizes.includes(tier.driveSizeTb) ? tier.driveSizeTb : (sizes[0] ?? 0)
-    const nodeCount = clampNodes(nodeModel, tier.nodeCount)
+    const nodeCount = clampNodes(nodeModel, tier.nodeCount, tier.nodeCount)
     updatePowerScaleTier(index, {
       nodeModel,
       driveSizeTb,
@@ -121,7 +148,7 @@ export function PowerScaleTierRow({
     // Clearing the field yields 0 (and a non-numeric entry NaN); storing either would cascade
     // through sizeTier into every dashboard number.
     if (!Number.isFinite(requested) || requested <= 0) return
-    const nodeCount = clampNodes(tier.nodeModel, requested)
+    const nodeCount = clampNodes(tier.nodeModel, requested, tier.nodeCount)
     updatePowerScaleTier(index, {
       nodeCount,
       protection: resolveProtection(tier.nodeModel, tier.driveSizeTb, nodeCount, tier.protection),

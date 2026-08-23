@@ -27,6 +27,18 @@ export function PowerScaleTierTable({ details }: PowerScaleTierTableProps) {
   const percent = (fraction: number) =>
     formatNumber(fraction * 100, language, { minimumFractionDigits: 1, maximumFractionDigits: 1 })
 
+  /**
+   * Effective efficiency: what the pool actually delivers, `usableLessVhs / raw`.
+   *
+   * NOT `PowerScaleTierResult.efficiency`, which is the vendor's PROTECTION efficiency — applied
+   * before `usableFactor` (0.9775-0.9906 across the catalog, never 1) and before the Virtual Hot
+   * Spare reserve. Rendering that in this column made a row disagree with its own Usable and Raw
+   * cells (by twenty points at `vhsPercent: 30`) and with the footer beneath it, which has always
+   * been the aggregate form of THIS quantity. A reader who wants the vendor's headline figure
+   * reads the Protection column.
+   */
+  const effectiveEfficiency = (usable: number, raw: number) => (raw > 0 ? usable / raw : 0)
+
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
@@ -89,7 +101,9 @@ export function PowerScaleTierTable({ details }: PowerScaleTierTableProps) {
               <td className="py-2 pr-3 text-right text-green-400">
                 {formatBytes(tier.effectiveCapacity)}
               </td>
-              <td className="py-2 text-right">{percent(tier.efficiency)}%</td>
+              <td className="py-2 text-right">
+                {percent(effectiveEfficiency(tier.usableLessVhs, tier.rawCapacity))}%
+              </td>
             </tr>
           ))}
         </tbody>
