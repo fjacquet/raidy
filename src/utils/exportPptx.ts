@@ -473,6 +473,13 @@ export async function exportToPptx(config: ExportConfig): Promise<void> {
     }
   }
 
+  // Named after the project, like the PDF. It used to be `raidy-<platform>.pptx`, which ignored
+  // the project name entirely — so two PowerScale configurations both downloaded as
+  // `raidy-powerscale.pptx` and the browser disambiguated them with "(1)". The platform stays in
+  // the name because it is useful, but the project is what tells two decks apart.
+  const safeProject = (config.projectName || 'Storage Configuration')
+    .replace(/[^\p{L}\p{N}]+/gu, '_')
+    .replace(/^_+|_+$/g, '')
   const safeLabel = (config.topology.type ?? 'storage').replace(/[^a-z0-9]/gi, '-')
-  await prs.writeFile({ fileName: `raidy-${safeLabel}.pptx` })
+  await prs.writeFile({ fileName: `${safeProject || 'Storage_Configuration'}_${safeLabel}.pptx` })
 }
