@@ -25,6 +25,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **A conformance gate over all 122,828 rows** runs on every test run. Storage efficiency is
   asserted **exactly**, at integer basis points.
 - **Virtual Hot Spare, per-model data reduction, and end-of-life dates** from the vendor catalog.
+- **Per-pool data-reduction override.** DRR is a property of the data a pool stores, not of the
+  hardware it sits on — a radiology pool of already-compressed DICOM never sees a flash node's
+  published 2:1. Each `PowerScaleTier` now carries an optional `drrOverride`; `sizeTier` resolves
+  the applied ratio as `drrOverride ?? model.drr`, still exposed on `PowerScaleTierResult.drr` and
+  now shown in its own column in the per-pool output table. A short list of workload presets
+  (medical imaging, video, encrypted data, backups, general files, virtualization, databases) —
+  raidy's own rules of thumb, not Dell figures — set the ratio in one click; the numeric field
+  stays for anyone who has measured their own. Optional field: `omitDefaults` keeps it out of the
+  URL hash when unused, and a link shared before this field existed still parses.
 - **One caveat, once, on every PowerScale export.** The PDF and PPTX carry a single closing line:
   capacity and efficiency are Dell's published figures, power/reliability/price/data-reduction are
   estimates, and PowerSizer remains the reference for a firm quote. No figure is suppressed to
@@ -60,9 +69,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
-- PowerScale's compression, dedup and snapshot-reserve controls. Data reduction is a published
-  property of each node model (1.0, 1.6 or 2.0), not a user-set slider, and PowerSizer reserves
-  nothing for snapshots — a non-zero default put every answer below the source of truth.
+- PowerScale's GLOBAL compression, dedup and snapshot-reserve controls. A single ratio across a
+  cluster's heterogeneous node pools (all-flash over hybrid over archive) is meaningless, and
+  PowerSizer reserves nothing for snapshots — a non-zero default put every answer below the source
+  of truth. Data reduction returns as a **per-pool** override (see Added, above) — a property of
+  the pool's data, not a cluster-wide slider.
 - The `powerscale_n1` … `powerscale_n4` and `powerscale_mirror_2x` / `_3x` topology levels.
   Protection is a property of a node pool, not of the cluster.
 

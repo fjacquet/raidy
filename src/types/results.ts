@@ -140,7 +140,11 @@ export interface PowerScaleTierResult {
   effectiveCapacity: number
   /** Storage efficiency for this pool, 0-1 */
   efficiency: number
-  /** Data reduction ratio for this node model (1.0, 1.6 or 2.0) */
+  /**
+   * Data reduction ratio actually applied to this pool: the operator's `drrOverride` when set,
+   * otherwise the node model's catalog default (1.0, 1.6 or 2.0). Not a vendor-published value —
+   * see `PowerScaleTier.drrOverride`'s doc comment.
+   */
   drr: number
   generation: 'Gen6' | 'Gen6.5' | 'Gen7'
   tier: 'All Flash' | 'Hybrid' | 'Archive'

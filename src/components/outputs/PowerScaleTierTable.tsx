@@ -66,6 +66,9 @@ export function PowerScaleTierTable({ details }: PowerScaleTierTableProps) {
             <th scope="col" className="py-2 pr-3 text-right">
               {t('powerscale.column.effective')}
             </th>
+            <th scope="col" className="py-2 pr-3 text-right">
+              {t('powerscale.column.drr')}
+            </th>
             <th scope="col" className="py-2 text-right">
               {t('powerscale.column.efficiency')}
             </th>
@@ -101,6 +104,7 @@ export function PowerScaleTierTable({ details }: PowerScaleTierTableProps) {
               <td className="py-2 pr-3 text-right text-green-400">
                 {formatBytes(tier.effectiveCapacity)}
               </td>
+              <td className="py-2 pr-3 text-right">{formatNumber(tier.drr, language)}</td>
               <td className="py-2 text-right">
                 {percent(effectiveEfficiency(tier.usableLessVhs, tier.rawCapacity))}%
               </td>
@@ -115,6 +119,11 @@ export function PowerScaleTierTable({ details }: PowerScaleTierTableProps) {
             <td className="py-2 pr-3 text-right">{formatBytes(details.clusterRaw)}</td>
             <td className="py-2 pr-3 text-right">{formatBytes(details.clusterUsable)}</td>
             <td className="py-2 pr-3 text-right">{formatBytes(details.clusterEffective)}</td>
+            {/* DRR does not sum across heterogeneous pools the way capacity does — a per-pool
+                column only, no cluster figure. */}
+            <td className="py-2 pr-3 text-right" aria-hidden="true">
+              —
+            </td>
             <td className="py-2 text-right">{percent(details.clusterEfficiency)}%</td>
           </tr>
         </tfoot>

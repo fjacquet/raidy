@@ -4,9 +4,10 @@
  * PowerScale clusters are heterogeneous by design: all-flash over hybrid over archive, under one
  * OneFS namespace. Protection, stripe width and neighborhood splitting are all per node pool, so
  * each tier is configured and sized on its own and the cluster is their sum. That is why this
- * panel carries no compression, dedup or snapshot-reserve control: the data-reduction ratio is a
- * published property of each node model in Dell's catalog, and PowerSizer reserves nothing for
- * snapshots.
+ * panel carries no GLOBAL compression, dedup or snapshot-reserve control: a single ratio across
+ * heterogeneous pools is meaningless, and PowerSizer reserves nothing for snapshots. Data
+ * reduction is instead a per-pool control — each `PowerScaleTierRow` offers its own DRR override,
+ * because DRR describes the pool's data, not its hardware.
  */
 
 import { useTranslation } from 'react-i18next'

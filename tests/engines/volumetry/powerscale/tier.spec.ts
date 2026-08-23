@@ -40,6 +40,39 @@ describe('sizeTier', () => {
     expect(r?.effectiveCapacity).toBeCloseTo(r?.usableLessVhs ?? 0, -6)
   })
 
+  describe('drrOverride', () => {
+    /**
+     * DRR is a property of the data, not the hardware (see the brief for this feature and
+     * ADR-0014): an override never touches raw, usable or the vendor's published efficiency —
+     * only `effectiveCapacity` and the reported `drr` move.
+     */
+    it('sizes to usableLessVhs x override when one is set', () => {
+      const overridden = sizeTier({ ...base, drrOverride: 1 })
+      const catalog = sizeTier(base)
+
+      expect(base.drrOverride).toBeUndefined()
+      expect(catalog?.drr).toBe(2) // F200's catalog default
+      expect(overridden?.drr).toBe(1)
+      expect(overridden?.rawCapacity).toBe(catalog?.rawCapacity)
+      expect(overridden?.usableCapacity).toBe(catalog?.usableCapacity)
+      expect(overridden?.usableLessVhs).toBe(catalog?.usableLessVhs)
+      expect(overridden?.efficiency).toBe(catalog?.efficiency)
+      expect(overridden?.effectiveCapacity).toBeCloseTo((overridden?.usableLessVhs ?? 0) * 1, -6)
+    })
+
+    it('sizes to usableLessVhs x the catalog default when no override is set', () => {
+      const r = sizeTier(base)
+      expect(r?.drr).toBe(2)
+      expect(r?.effectiveCapacity).toBeCloseTo((r?.usableLessVhs ?? 0) * 2, -6)
+    })
+
+    it('an override of exactly the catalog value reports unchanged effective capacity', () => {
+      const overridden = sizeTier({ ...base, drrOverride: 2 })
+      const catalog = sizeTier(base)
+      expect(overridden?.effectiveCapacity).toBe(catalog?.effectiveCapacity)
+    })
+  })
+
   it('reserves virtual hot spare drives at the vendor 2.2 multiplier', () => {
     // Workbook: VHS by drives = vhsDriveCount x driveSizeTb x 2.2, on the
     // NOMINAL drive size - not scaled by efficiency or usableFactor.

@@ -38,6 +38,27 @@ interface PowerScaleTierRowProps {
 /** Catalog tier names, in the order the model picker should present them. */
 const MODEL_TIER_ORDER = ['All Flash', 'Hybrid', 'Archive']
 
+/** Bounds for `PowerScaleTier.drrOverride` — matches `PowerScaleTierSchema` in schemas.ts. */
+const DRR_MIN = 1
+const DRR_MAX = 20
+
+/**
+ * DRR workload presets — raidy's own rules of thumb, not vendor-published values.
+ *
+ * Each maps a common data profile to a ratio a user can apply in one click instead of measuring
+ * their own. "Backups / archives" is a range in the underlying design note (1.0-1.2, already
+ * deduplicated upstream by most backup software); 1.1 is the single value offered here.
+ */
+const DRR_PRESETS = [
+  { id: 'medicalImaging', value: 1.0 },
+  { id: 'video', value: 1.0 },
+  { id: 'encrypted', value: 1.0 },
+  { id: 'archive', value: 1.1 },
+  { id: 'generalFiles', value: 1.6 },
+  { id: 'virtualization', value: 2.0 },
+  { id: 'database', value: 2.0 },
+] as const
+
 /**
  * Clamp to the model's bounds and snap to its node increment.
  *
@@ -88,6 +109,22 @@ export function PowerScaleTierRow({
   const model = getModel(tier.nodeModel)
   const protections = availableProtections(tier.nodeModel, tier.driveSizeTb, tier.nodeCount)
   const sized = sizeTier(tier)
+
+  // Same resolution `sizeTier` applies — override when set, else the catalog default — so the
+  // field always shows the ratio actually in effect, even before this row's own `sizeTier` call
+  // above resolves (a model the catalog does not carry falls back to 1, matching `sizeTier`'s own
+  // "unsizeable" path rather than showing a stale number).
+  const catalogDrr = model?.drr ?? 1
+  const effectiveDrr = tier.drrOverride ?? catalogDrr
+  const isDrrModified = tier.drrOverride !== undefined && tier.drrOverride !== catalogDrr
+
+  const drrPresetOptions = [
+    { value: '', label: t('powerscale.tier.drrPresetPlaceholder') },
+    ...DRR_PRESETS.map((preset) => ({
+      value: String(preset.value),
+      label: t(`powerscale.tier.drrPresets.${preset.id}`),
+    })),
+  ]
 
   const idPrefix = `powerscale-tier-${index}`
 
@@ -153,6 +190,28 @@ export function PowerScaleTierRow({
       nodeCount,
       protection: resolveProtection(tier.nodeModel, tier.driveSizeTb, nodeCount, tier.protection),
     })
+  }
+
+  /**
+   * Clearing the field (or any non-finite/non-positive entry) CLEARS the override rather than
+   * writing 0 or NaN into the store — 0 would zero out this pool's effective capacity, and either
+   * would cascade through `calculatePowerScaleVolumetry`'s cluster sum. `sizeTier` already treats
+   * `drrOverride: undefined` as "fall back to the catalog default", so clearing the input and
+   * clicking "reset to catalog" are the same action.
+   */
+  const selectDrrOverride = (raw: number) => {
+    if (!Number.isFinite(raw) || raw <= 0) {
+      updatePowerScaleTier(index, { drrOverride: undefined })
+      return
+    }
+    updatePowerScaleTier(index, { drrOverride: Math.min(DRR_MAX, Math.max(DRR_MIN, raw)) })
+  }
+
+  /** Presets are fire-and-forget: they set the override and the picker returns to its placeholder. */
+  const applyDrrPreset = (raw: string) => {
+    const value = Number(raw)
+    if (!Number.isFinite(value) || value <= 0) return
+    updatePowerScaleTier(index, { drrOverride: value })
   }
 
   /**
@@ -263,6 +322,38 @@ export function PowerScaleTierRow({
               vhsPercent: Number.isFinite(value) ? Math.min(50, Math.max(0, value)) : 0,
             })
           }
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label
+          htmlFor={`${idPrefix}-drr`}
+          hint={t('powerscale.tier.drrCatalogHint', { value: formatNumber(catalogDrr, language) })}
+          tooltip={t('powerscale.tier.drrPresetHint')}
+        >
+          {t('powerscale.tier.drr')}
+        </Label>
+        <div className="flex items-center gap-2">
+          <NumberInput
+            id={`${idPrefix}-drr`}
+            value={effectiveDrr}
+            min={DRR_MIN}
+            max={DRR_MAX}
+            step={0.1}
+            onChange={selectDrrOverride}
+          />
+          {isDrrModified && (
+            <span className="rounded bg-primary-100 dark:bg-primary-900 px-1.5 py-0.5 text-[10px] font-medium text-primary-700 dark:text-primary-200">
+              {t('powerscale.tier.drrModified')}
+            </span>
+          )}
+        </div>
+        <Label htmlFor={`${idPrefix}-drr-preset`}>{t('powerscale.tier.drrPresetLabel')}</Label>
+        <Select
+          id={`${idPrefix}-drr-preset`}
+          value=""
+          options={drrPresetOptions}
+          onChange={applyDrrPreset}
         />
       </div>
 

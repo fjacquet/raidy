@@ -4,10 +4,14 @@
  *   raw       = nodes x drivesPerNode x rawPerDrive
  *   usable    = raw x efficiency x usableFactor
  *   lessVHS   = usable - max(vhsByDriveCount, vhsByPercent)
- *   effective = lessVHS x drr(model)
+ *   effective = lessVHS x drr(tier)          where drr(tier) = tier.drrOverride ?? model.drr
  *
- * Every factor comes from Dell's PowerSizer export; none is computed here.
+ * raw, usable and efficiency come from Dell's PowerSizer export; none is computed here. `drr` is
+ * the one factor that is NOT a vendor-published quantity: it is raidy's own assumption about the
+ * pool's data, defaulted from the node model's catalog value and overridable per pool. See
+ * `PowerScaleTier.drrOverride`'s doc comment and ADR-0014.
  *
+
  * `sizeTier` returns `null` — never a partial result, never a guessed value —
  * for an unknown model, a drive size that model does not offer, or any
  * (model, protection, nodeCount) the vendor catalog does not publish. The URL
@@ -80,6 +84,12 @@ export function sizeTier(tier: PowerScaleTier): PowerScaleTierResult | null {
   const vhsReserve = Math.min(usableCapacity, Math.max(vhsByDrives, vhsByPercent))
   const usableLessVhs = Math.max(0, usableCapacity - vhsReserve)
 
+  // The one non-vendor factor in this chain: `tier.drrOverride` when the operator has set one,
+  // otherwise the node model's catalog default. Never a column of the PowerSizer export (see the
+  // module doc comment above), so this can never move the 122,828-row conformance gate, which
+  // asserts raw, usable and efficiency only.
+  const drr = tier.drrOverride ?? model.drr
+
   return {
     nodeModel: tier.nodeModel,
     driveSizeTb: tier.driveSizeTb,
@@ -91,9 +101,9 @@ export function sizeTier(tier: PowerScaleTier): PowerScaleTierResult | null {
     vhsReserve,
     vhsSource,
     usableLessVhs,
-    effectiveCapacity: usableLessVhs * model.drr,
+    effectiveCapacity: usableLessVhs * drr,
     efficiency,
-    drr: model.drr,
+    drr,
     generation: model.generation,
     tier: model.tier,
     endOfLife: model.endOfLife,

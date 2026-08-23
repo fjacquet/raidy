@@ -82,6 +82,16 @@ argument for approximating.
   MTBF. The PowerScale resilience model is derived from published OneFS protection semantics and is
   labelled **NOT vendor-attested** everywhere a reader will look. Do not let a future change quietly
   imply otherwise.
+- **Data reduction (DRR) is not a column of the table either.** The 122,828 rows carry raw, usable
+  and efficiency; DRR (1.0, 1.6 or 2.0) is Dell's per-model *default assumption* about the data a
+  node sizes, layered on top of the table by `sizeTier`, not read out of it. That is why
+  `PowerScaleTier.drrOverride` — a per-pool override, because DRR describes the pool's data, not
+  its hardware — can exist at all without touching anything this ADR makes exact: the conformance
+  gate below asserts raw, usable and efficiency, never effective capacity. If a DRR override ever
+  moved that gate, it would mean DRR had reached a quantity the vendor does publish, and this
+  decision needs revisiting. (There is still no *global* compression/dedup slider — one ratio
+  across a cluster's heterogeneous pools would be meaningless — but that is a different question
+  from whether DRR is vendor data, which it never was.)
 
 ## Alternatives rejected
 

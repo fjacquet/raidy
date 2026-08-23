@@ -230,4 +230,45 @@ describe('PowerScaleOptionsPanel', () => {
 
     expect(screen.getByText(/cannot be sized/i)).toBeInTheDocument()
   })
+
+  describe('data-reduction override', () => {
+    it('pre-fills the field with the catalog default and shows no modified marker', () => {
+      // F210's catalog DRR is 2.
+      render(<PowerScaleOptionsPanel />)
+      const drr = screen.getByRole('spinbutton', { name: /data reduction ratio/i })
+      expect(drr).toHaveValue(2)
+      expect(screen.queryByText(/modified/i)).not.toBeInTheDocument()
+      expect(tiers()[0]?.drrOverride).toBeUndefined()
+    })
+
+    it('stores an override and shows the modified marker once it differs from the catalog', () => {
+      render(<PowerScaleOptionsPanel />)
+      fireEvent.change(screen.getByRole('spinbutton', { name: /data reduction ratio/i }), {
+        target: { value: '1' },
+      })
+      expect(tiers()[0]?.drrOverride).toBe(1)
+      expect(screen.getByText(/modified/i)).toBeInTheDocument()
+    })
+
+    it('applies a workload preset in one click', () => {
+      render(<PowerScaleOptionsPanel />)
+      fireEvent.change(screen.getByRole('combobox', { name: /data profile/i }), {
+        target: { value: '1' },
+      })
+      expect(tiers()[0]?.drrOverride).toBe(1)
+      expect(screen.getByRole('spinbutton', { name: /data reduction ratio/i })).toHaveValue(1)
+    })
+
+    it('clears the override — not writes NaN or 0 — when the field is emptied', () => {
+      setTiers([{ ...(tiers()[0] as PowerScaleTier), drrOverride: 1 }])
+      render(<PowerScaleOptionsPanel />)
+      fireEvent.change(screen.getByRole('spinbutton', { name: /data reduction ratio/i }), {
+        target: { value: '' },
+      })
+      expect(tiers()[0]?.drrOverride).toBeUndefined()
+      expect(Number.isNaN(tiers()[0]?.drrOverride)).toBe(false)
+      // Falls back to the catalog default once cleared.
+      expect(screen.getByRole('spinbutton', { name: /data reduction ratio/i })).toHaveValue(2)
+    })
+  })
 })

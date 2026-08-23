@@ -79,4 +79,42 @@ describe('calculatePowerScaleVolumetry', () => {
     expect(parity[0]?.label).toContain('F200')
     expect(parity[1]?.label).toContain('A200')
   })
+
+  describe('per-pool drrOverride', () => {
+    it('an override on one pool leaves the other pool effective capacity untouched', () => {
+      const baseline = calculatePowerScaleVolumetry({ tiers: [flash, archive] })
+      const overridden = calculatePowerScaleVolumetry({
+        tiers: [{ ...flash, drrOverride: 1 }, archive],
+      })
+
+      const baselineArchive = baseline.powerScaleDetails?.tiers[1]
+      const overriddenArchive = overridden.powerScaleDetails?.tiers[1]
+      expect(overriddenArchive?.effectiveCapacity).toBe(baselineArchive?.effectiveCapacity)
+
+      const baselineFlash = baseline.powerScaleDetails?.tiers[0]
+      const overriddenFlash = overridden.powerScaleDetails?.tiers[0]
+      expect(overriddenFlash?.drr).toBe(1)
+      expect(overriddenFlash?.effectiveCapacity).not.toBe(baselineFlash?.effectiveCapacity)
+    })
+
+    it('the cluster total is the sum of the per-pool effective capacities, override included', () => {
+      const r = calculatePowerScaleVolumetry({
+        tiers: [{ ...flash, drrOverride: 1 }, archive],
+      })
+      const [a, b] = r.powerScaleDetails?.tiers ?? []
+      expect(r.effectiveCapacity).toBeCloseTo(
+        (a?.effectiveCapacity ?? 0) + (b?.effectiveCapacity ?? 0),
+        -6,
+      )
+    })
+
+    it('does not move raw, usable or efficiency — only effective capacity — matching the conformance gate invariant', () => {
+      const baseline = calculatePowerScaleVolumetry({ tiers: [flash] })
+      const overridden = calculatePowerScaleVolumetry({ tiers: [{ ...flash, drrOverride: 1 }] })
+      expect(overridden.rawCapacity).toBe(baseline.rawCapacity)
+      expect(overridden.usableCapacity).toBe(baseline.usableCapacity)
+      expect(overridden.efficiency).toBe(baseline.efficiency)
+      expect(overridden.effectiveCapacity).not.toBe(baseline.effectiveCapacity)
+    })
+  })
 })

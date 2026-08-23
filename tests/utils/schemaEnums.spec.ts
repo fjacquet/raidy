@@ -106,4 +106,44 @@ describe('URL schema closed enums', () => {
     }
     expect(validateUrlState(state)).toBeNull()
   })
+
+  describe('powerscale tier drrOverride', () => {
+    it('parses a link with no drrOverride at all — the shape shared before this field existed', () => {
+      const state = { powerscaleOptions: { tiers: [{ ...DEFAULT_POWERSCALE_TIER }] } }
+      const parsed = validateUrlState(state)
+      expect(parsed).not.toBeNull()
+      expect(parsed?.powerscaleOptions?.tiers[0]?.drrOverride).toBeUndefined()
+    })
+
+    it('accepts a valid override', () => {
+      const state = {
+        powerscaleOptions: { tiers: [{ ...DEFAULT_POWERSCALE_TIER, drrOverride: 1.6 }] },
+      }
+      const parsed = validateUrlState(state)
+      expect(parsed?.powerscaleOptions?.tiers[0]?.drrOverride).toBe(1.6)
+    })
+
+    it('rejects 0 — it would zero out effective capacity cluster-wide', () => {
+      const state = {
+        powerscaleOptions: { tiers: [{ ...DEFAULT_POWERSCALE_TIER, drrOverride: 0 }] },
+      }
+      expect(validateUrlState(state)).toBeNull()
+    })
+
+    it('rejects a negative override', () => {
+      const state = {
+        powerscaleOptions: { tiers: [{ ...DEFAULT_POWERSCALE_TIER, drrOverride: -1.6 }] },
+      }
+      expect(validateUrlState(state)).toBeNull()
+    })
+
+    it('rejects a non-finite override', () => {
+      for (const drrOverride of [Number.NaN, Number.POSITIVE_INFINITY]) {
+        const state = {
+          powerscaleOptions: { tiers: [{ ...DEFAULT_POWERSCALE_TIER, drrOverride }] },
+        }
+        expect(validateUrlState(state)).toBeNull()
+      }
+    })
+  })
 })

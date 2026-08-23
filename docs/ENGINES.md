@@ -274,11 +274,11 @@ Calculates storage capacity and efficiency.
 >
 > **One caveat, once.** The PDF and PPTX exports carry a single line
 > (`common:powerScale.estimateNote`, via `catalogEstimateNote` in `src/utils/exportNotes.ts`):
-> capacity and efficiency are Dell's published figures, power/reliability/price/data-reduction
-> are estimates, and PowerSizer remains the reference for a firm quote. PowerSizer is the rule and
-> raidy is the shortcut — but a shortcut that refuses to estimate is not a shortcut, so no figure
-> is suppressed to avoid being wrong, and the caveat is not repeated per page, per section or per
-> row.
+> capacity and efficiency are Dell's published figures, power/reliability/price are estimates, and
+> data reduction is raidy's own assumption about the data — not a value Dell publishes — with
+> PowerSizer remaining the reference for a firm quote. PowerSizer is the rule and raidy is the
+> shortcut — but a shortcut that refuses to estimate is not a shortcut, so no figure is suppressed
+> to avoid being wrong, and the caveat is not repeated per page, per section or per row.
 
 ### PowerScale / OneFS (`src/engines/volumetry/powerscale/`)
 
@@ -325,13 +325,25 @@ table.
 rawTB(t)       = nodeCount(t) × drivesPerNode(model) × rawPerDriveTB(model, driveSize)
 usableTB(t)    = rawTB(t) × efficiency(model, protection, nodeCount(t)) × usableFactor(model, driveSize)
 lessVHS(t)     = usableTB(t) − max(vhsByDriveCount(t), vhsByPercent(t))
-effectiveTB(t) = lessVHS(t) × drr(model)
+effectiveTB(t) = lessVHS(t) × drr(t)          where drr(t) = tier.drrOverride ?? model.drr
 ```
 
 `efficiency` is the vendor's published protection efficiency. `usableFactor` (0.9775–0.9906 across
-the catalog, never 1) is the filesystem loss. **Data reduction is a property of the node model** —
-Dell publishes 1.0, 1.6 or 2.0 per model — not a user-set slider, which is why `PowerScaleOptions`
-carries no compression or dedup fields.
+the catalog, never 1) is the filesystem loss. Both come from the 122,828-row table.
+
+**Data reduction does not.** `drr(t)` is the one factor in this chain that is not a vendor-published
+quantity — DRR never appears as a column of the table (see [ADR-0014](./adr/0014-vendor-lookup-tables.md)).
+Each node model still carries a catalog **default** (1.0, 1.6 or 2.0, Dell's assumption that
+all-flash inline compression pays off), but DRR describes the *data* a pool stores, not the
+hardware it sits on — a radiology pool of already-compressed DICOM never sees a flash node's
+published 2:1. `PowerScaleTier.drrOverride` lets an operator override the default **per pool**
+(`PowerScaleTierRow` also offers a short list of workload presets — medical imaging, video,
+encrypted data, backups, general files, virtualization, databases — that set it in one click, each
+one raidy's own rule of thumb rather than a Dell figure). There is still no *global*
+compression/dedup slider: one ratio across a cluster's heterogeneous pools (all-flash over hybrid
+over archive) would be meaningless, which is the reason `PowerScaleOptions` carries no cluster-wide
+reduction field. Because DRR sits outside the table, overriding it can never move the conformance
+gate below — that gate asserts raw, usable and efficiency, never effective capacity.
 
 **A pool the vendor does not publish is not sizeable.** `storageEfficiency` returns `undefined`
 and `sizeTier` returns `null` — never zero. Unsizeable pools are dropped before any aggregate, so

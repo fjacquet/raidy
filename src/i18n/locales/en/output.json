@@ -220,6 +220,7 @@
       "raw": "Raw",
       "usable": "Usable",
       "effective": "Effective",
+      "drr": "DRR",
       "efficiency": "Efficiency"
     }
   }

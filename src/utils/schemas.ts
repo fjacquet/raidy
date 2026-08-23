@@ -339,6 +339,12 @@ const PowerScaleTierSchema = z.object({
   ]),
   vhsDriveCount: z.number().int().min(0).max(64),
   vhsPercent: z.number().min(0).max(50).finite(),
+  // Per-pool data-reduction override. `.min(1)` matters as much as `.finite()` here: DRR is a
+  // reduction ratio, never an expansion, and 0 (or a negative) would zero out — or invert — a
+  // pool's effective capacity from a hand-edited link. Bounded at 20 to match NetApp's
+  // `dataReductionRatio`, the closest analog elsewhere in this schema. Optional so an unset
+  // override (the default) and every link shared before this field existed keep parsing.
+  drrOverride: z.number().min(1).max(20).finite().optional(),
 })
 
 const PowerScaleOptionsSchema = z.object({

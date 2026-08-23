@@ -514,13 +514,29 @@ export interface PowerScaleTier {
   vhsDriveCount: number
   /** Virtual Hot Spare expressed as a percentage of usable. 0 disables. */
   vhsPercent: number
+  /**
+   * Operator override for this pool's data-reduction ratio. `undefined` (the default) means "use
+   * the node model's catalog default" — `sizeTier` resolves the ratio actually applied as
+   * `drrOverride ?? model.drr`, and reports it back on `PowerScaleTierResult.drr`. Optional so
+   * `omitDefaults` keeps an unused override out of the URL hash and a link shared before this
+   * field existed keeps parsing unchanged.
+   *
+   * This is NOT a column of the vendor's 122,828-row table (see ADR-0014) — DRR never appears in
+   * it. It is raidy's own assumption about the pool's DATA, layered on top of the vendor's
+   * raw/usable/efficiency numbers, which is why overriding it can never move the conformance
+   * gate: that gate asserts raw, usable and efficiency, never effective capacity.
+   */
+  drrOverride?: number
 }
 
 /**
  * PowerScale cluster configuration.
  *
- * No compression/dedup fields: the data-reduction ratio is a property of the
- * node model in Dell's catalog (1.0, 1.6 or 2.0), not a user-set slider.
+ * No GLOBAL compression/dedup fields: a single ratio across a cluster's heterogeneous node pools
+ * (all-flash over hybrid over archive) is meaningless, so there is no cluster-wide slider.
+ * Data reduction is instead a PER-POOL property — see `PowerScaleTier.drrOverride` — because DRR
+ * describes the pool's DATA, not its hardware: a radiology pool storing already-compressed DICOM
+ * will never see a flash node's published 2:1, however the node is provisioned.
  * No snapshot reserve: PowerSizer does not reserve for snapshots, and a
  * non-zero default would put every answer below the source of truth.
  */
