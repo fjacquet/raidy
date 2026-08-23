@@ -279,7 +279,7 @@ describe('the two exports', () => {
 
   it('renders a PowerScale deck and report without throwing', async () => {
     // Only the file handoff is stubbed; every layout call underneath runs for real.
-    const pptx = await import('pptxgenjs')
+    const pptx = await import('pptxgenjs-plus')
     const writeFile = vi
       .spyOn(pptx.default.prototype, 'writeFile')
       .mockResolvedValue('raidy-powerscale.pptx')
