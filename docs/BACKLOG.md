@@ -48,6 +48,24 @@ power, CO₂ and TCO from the selected generic drive's `power` and `cost_usd` ag
 drive count, so an all-flash F210 pool is powered and priced as whatever drive sits in the
 Hardware panel. That figure reaches the dashboard's Cost act, not just the resilience card.
 
+## `maxNodes` and the efficiency table disagree about F710/F910
+
+`powerscaleNodes.json` gives F710 and F910 `maxNodes: 128`, but the PowerSizer export publishes
+5,203 F710 and 4,590 F910 efficiency rows above that, up to 252 nodes. `sizeTier` deliberately
+does not gate on `maxNodes` — the table is what PowerSizer sizes from, and gating broke the
+conformance gate immediately — but the two fields come from the same workbook and one of them is
+describing something other than a pool ceiling. Worth resolving against Dell rather than leaving
+a known internal contradiction in the catalog.
+
+## PowerScale TCO prices catalog drives at the generic drive's unit cost
+
+`calculateTCO` receives `driveCount = clusterDrives` from the catalog while `drive` is still the
+Hardware panel's selected model, so `hardwareCost`, `maintenanceCost` and `replacementCost` price
+an all-flash cluster at whatever drive sits in a dropdown the panel itself calls inapplicable.
+`HardwarePanel` suppresses its own cost row for exactly this reason and points the reader at the
+Cost act, which computes the same product. Dell publishes no node pricing, so this needs either
+suppression there too or a per-model cost in the catalog.
+
 ## OneFS SmartPools tiering policy is unmodelled
 
 Pools are sized independently. Real clusters move data between them on policy, so a SmartPools

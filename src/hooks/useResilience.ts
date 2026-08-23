@@ -311,7 +311,12 @@ const SIMULATION_SCOPE_BY_TOPOLOGY: Partial<Record<Topology['type'], SimulationS
       driveCount: Math.max(0, firstTierDrives - firstTierSpareDrives),
       groupCount: firstTierNodes,
       mediaDrive: null,
-      hasHotSpare: firstTierSpareDrives > 0,
+      // `sizeTier` reserves `max(vhsByDriveCount, vhsByPercent)`, so a pool with
+      // `vhsDriveCount: 0, vhsPercent: 20` has a real reserve and pays for it in usable capacity.
+      // Reading only the drive count charged that pool the replacement delay anyway, while an
+      // equivalent pool expressed as `vhsDriveCount: 1` got immediate-rebuild credit. The two
+      // controls agree here the same way they already agree in capacity.
+      hasHotSpare: firstTierSpareDrives > 0 || (firstTier?.vhsPercent ?? 0) > 0,
       powerScaleProtection: firstTier?.protection,
     }
   },

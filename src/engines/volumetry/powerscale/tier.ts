@@ -27,7 +27,17 @@ export function sizeTier(tier: PowerScaleTier): PowerScaleTierResult | null {
   if (!model) return null
 
   // Node counts off the model's increment are not sellable, and — more importantly — not
-  // published. The efficiency curves are built by carrying the last published value forward over
+  // published.
+  //
+  // Deliberately NOT gated on `model.maxNodes`. A review flagged that an F710 sizes at 252 nodes
+  // although its catalog entry says `maxNodes: 128` — but the vendor's own PowerSizer export
+  // publishes 5,203 F710 rows and 4,590 F910 rows above 128, up to 252, and the conformance gate
+  // rejected the guard within one run. Where the table genuinely stops, `storageEfficiency`
+  // already returns `undefined` (the curve index falls off the end), so the published data is the
+  // gate at the top end. `maxNodes` and the efficiency table disagree inside the workbook itself;
+  // the table is what PowerSizer sizes from, so the table wins.
+  //
+  // The efficiency curves are built by carrying the last published value forward over
   // every integer, so an increment-2 model answers for odd counts too: A200 `+2n` returns 0.6667
   // at 7 nodes, the figure Dell publishes for 6. The panel snaps to the increment, but
   // `PowerScaleTierSchema` deliberately accepts any 3..252 on the grounds that THIS function is

@@ -258,8 +258,8 @@ const ControllerOptionsSchema = z.object({
 const NetAppOptionsSchema = z.object({
   raidType: z.enum(['raid_dp', 'raid_tec']),
   // FRACTION, not a percent: overheadCalculator.ts multiplies capacityAfterParity by this
-  // value directly (unlike powerstore/powerscale `snapshotReservePercent`, which are divided
-  // by 100 there). A `.max(100)` bound let a crafted link validate a 100x reserve; the panel
+  // value directly (unlike powerstore's `snapshotReservePercent`, which is divided by 100
+  // there; PowerScale's was retired with the drive-centric path). A `.max(100)` bound let a crafted link validate a 100x reserve; the panel
   // slider works in percent and divides by 100 on the way in.
   snapshotReserve: z.number().min(0).max(1).finite(),
   dataReductionRatio: z.number().min(1).max(20).finite(),

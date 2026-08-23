@@ -24,13 +24,40 @@ interface EfficiencyTable {
 
 const table = efficiencyData as unknown as EfficiencyTable
 
+/**
+ * Exception key with the drive size resolved against the keys actually present, mirroring
+ * `resolveDriveSizeKey` in the catalog module. `2` and `2.0` are the same double but not the same
+ * string, so the on-disk formatting is what has to match, not the caller's literal.
+ */
+function exceptionKey(
+  modelId: string,
+  driveSizeTb: number,
+  protection: PowerScaleProtection,
+  nodeCount: number,
+): string {
+  const exact = `${modelId}|${driveSizeTb}|${protection}|${nodeCount}`
+  if (table.exceptions[exact] !== undefined) return exact
+  const prefix = `${modelId}|`
+  const suffix = `|${protection}|${nodeCount}`
+  for (const key of Object.keys(table.exceptions)) {
+    if (!key.startsWith(prefix) || !key.endsWith(suffix)) continue
+    const size = key.slice(prefix.length, key.length - suffix.length)
+    if (Number(size) === driveSizeTb) return key
+  }
+  return exact
+}
+
 export function storageEfficiency(
   modelId: string,
   driveSizeTb: number,
   protection: PowerScaleProtection,
   nodeCount: number,
 ): number | undefined {
-  const exception = table.exceptions[`${modelId}|${driveSizeTb}|${protection}|${nodeCount}`]
+  // Interpolating `driveSizeTb` would format 2.0 as '2', so a regenerated catalog that wrote the
+  // key as '2.0' would silently miss every exception and fall through to the general curve — a
+  // plausible wrong number rather than "not sizeable", which is the one outcome this module
+  // exists to prevent. Resolve the size against the keys actually present, as the catalog does.
+  const exception = table.exceptions[exceptionKey(modelId, driveSizeTb, protection, nodeCount)]
   if (exception !== undefined) return exception / 10000
 
   const curve = table.curves[`${modelId}|${protection}`]

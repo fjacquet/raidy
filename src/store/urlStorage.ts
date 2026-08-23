@@ -53,8 +53,25 @@ export function migratePowerScaleState(state: unknown): unknown {
   if (typeof state !== 'object' || state === null) return state
   const s = state as Record<string, unknown>
   const topology = s.topology as { type?: string; level?: string } | undefined
-  if (topology?.type !== 'powerscale') return state
-  if (topology.level === 'powerscale_onefs') return state
+  const options = s.powerscaleOptions as Record<string, unknown> | undefined
+
+  // Migrate on the SHAPE, not on the topology discriminant. `omitDefaults` keeps a non-default
+  // `powerscaleOptions` in the hash even after the user switches to another platform, so a link
+  // shared from, say, ZFS can still carry the old `{compression, dedup, snapshotReservePercent}`
+  // bag. Keying on `type === 'powerscale'` left that bag unmigrated, and the Zod schema then
+  // rejected the whole payload — turning a valid ZFS link into "Invalid configuration link" and
+  // full default state.
+  const staleOptions = options !== undefined && !('tiers' in options)
+  const staleTopology = topology?.type === 'powerscale' && topology.level !== 'powerscale_onefs'
+  if (!staleOptions && !staleTopology) return state
+
+  // A stale options bag under another platform is dropped, not rebuilt: it described a PowerScale
+  // config the user has already navigated away from, and the tier model cannot recover what node
+  // hardware it meant. The link's actual topology is what they shared.
+  if (!staleTopology) {
+    const { powerscaleOptions: _dropped, ...rest } = s
+    return rest
+  }
 
   const model = getModel(DEFAULT_POWERSCALE_TIER.nodeModel)
   const rawNodes =
