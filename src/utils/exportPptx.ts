@@ -1,12 +1,12 @@
 /**
- * PPTX Export utility using pptxgenjs.
+ * PPTX Export utility using pptxgenjs-plus.
  * Single dense executive one-pager: a crystal-clear VOLUME spec and PERFORMANCE
  * maximums on top (a large Sankey + a tight 2×2 of gauges, each with explicit
  * number lines), with energy, bottlenecks, and resilience spread underneath to
  * fill the page. Charts are captured from the DOM via html-to-image. No server
- * requests — pptxgenjs runs entirely client-side.
+ * requests — pptxgenjs-plus runs entirely client-side.
  */
-import pptxgen from 'pptxgenjs'
+import pptxgen from 'pptxgenjs-plus'
 import { performanceApplies } from '@/engines/outputRelevance'
 import i18n from '@/i18n'
 import { DEFAULT_LANGUAGE, type Language } from '@/i18n/config'
@@ -46,7 +46,7 @@ export interface ExportConfig {
 /** Standard slide font. */
 const FONT = 'Arial'
 
-/** Brand color palette (6-char hex, no '#', required by pptxgenjs). */
+/** Brand color palette (6-char hex, no '#', required by pptxgenjs-plus). */
 const BRAND = {
   bg: '1A1B2E', // surface-900 — slide background
   panel: '1E2035', // surface-800 — card/panel fills
@@ -91,7 +91,7 @@ function roleColor(role: PptxStat['role'], palette: Brand): string {
 }
 
 /** Add the thin accent bar at the top of the slide. */
-function addAccentBar(slide: pptxgen.Slide, prs: pptxgen, palette: Brand): void {
+function addAccentBar(slide: pptxgen.PresSlide, prs: pptxgen, palette: Brand): void {
   slide.addShape(prs.ShapeType.rect, {
     x: 0,
     y: 0,
@@ -104,7 +104,7 @@ function addAccentBar(slide: pptxgen.Slide, prs: pptxgen, palette: Brand): void 
 
 /** A small uppercase section label. */
 function addSectionLabel(
-  slide: pptxgen.Slide,
+  slide: pptxgen.PresSlide,
   title: string,
   color: string,
   x: number,
@@ -126,7 +126,7 @@ function addSectionLabel(
 
 /** Place a captured chart image (aspect-preserving), or a muted fallback note. */
 function addChartOrFallback(
-  slide: pptxgen.Slide,
+  slide: pptxgen.PresSlide,
   dataUrl: string | null,
   box: { x: number; y: number; w: number; h: number },
   fallback: string,
@@ -151,7 +151,7 @@ function addChartOrFallback(
 
 /** A dense "label value · label value" stat line built from text runs. */
 function addStatLine(
-  slide: pptxgen.Slide,
+  slide: pptxgen.PresSlide,
   stats: PptxStat[],
   x: number,
   y: number,

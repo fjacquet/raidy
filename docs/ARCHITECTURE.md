@@ -16,7 +16,7 @@ Raidy is a browser-based Single Page Application (SPA) / Progressive Web App (PW
 | Tailwind CSS | 4.x | Responsive styling (dark mode native) |
 | Vite | 8.x | Build tool |
 | D3-Sankey | - | Capacity waterfall visualization |
-| jspdf-autotable / pptxgenjs | - | PDF and PowerPoint export |
+| jspdf-autotable / pptxgenjs-plus | - | PDF and PowerPoint export |
 | jsPDF | - | PDF report generation |
 | LZ-String | - | URL state compression |
 
@@ -519,7 +519,7 @@ the PDF and PPTX. The ZFS provisioning commands users actually copied still exis
 
 `src/utils/pptxContent.ts` is a pure content builder — `buildPptxContent()` takes calculation
 results, locale, and unit system and returns a plain-data slide description with no side effects
-or `pptxgenjs` calls. `exportPptx.ts` consumes that data to render slides and capture chart PNGs;
+or `pptxgenjs-plus` calls. `exportPptx.ts` consumes that data to render slides and capture chart PNGs;
 keeping the two separate means the slide content itself is unit-testable without a DOM or the
 PPTX library.
 

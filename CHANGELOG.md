@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- **PPTX export now uses `pptxgenjs-plus` instead of `pptxgenjs`.** Upstream `pptxgenjs` last
+  published on 2026-06-26 — fourteen months ago — and carries 291 open issues. The fork is an
+  actively maintained, MIT-licensed continuation.
+
+  The switch also **eliminates the two `image-size` advisories outright**
+  (`GHSA-5p2g-fcmc-qvqq`, `GHSA-w3rx-r6r6-pgpr`) rather than waiving them: the fork's dependency
+  tree is `@node-projects/jszip`, `@rgrove/parse-xml` and `pako`, with no `image-size` at all.
+  `npm audit` now reports **0 vulnerabilities**, and the two waivers have been removed from
+  `osv-scanner.toml`, restoring it to "no per-advisory waivers in effect".
+
+  **"Drop-in" holds at runtime but not in the type system.** The fork exports the slide type as
+  `PresSlide`, where `pptxgenjs` exported `Slide`; four annotations in `src/utils/exportPptx.ts`
+  changed. Everything else — `addSlide`, `addText`, `addTable`, `addImage`, `writeFile`,
+  `TextProps`, `TableRow` — is unchanged.
+
+  Verified: a generated deck is a structurally valid OOXML package (40 parts, intact zip, correct
+  `[Content_Types].xml`, text and `<a:tbl>` present in `slide1.xml`).
+
+  **Cost:** the eager app chunk grows from 335.6 to 390.3 KiB gz (+16%). It stays inside the
+  420 KiB budget but consumes most of the remaining headroom, because `exportPptx.ts` is imported
+  statically by `OutputDashboard`. Making that import lazy is the obvious follow-up.
+
 ## [3.1.1] - 2026-08-23
 
 ### Changed
