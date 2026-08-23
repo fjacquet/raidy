@@ -16,6 +16,7 @@ import type { PowerScaleTier, Topology } from '@/types/topology'
 import { exportToPdf } from '@/utils/exportPdf'
 import { exportToPptx } from '@/utils/exportPptx'
 import { buildPowerScaleExportContent } from '@/utils/powerscaleExportContent'
+import { buildPptxContent } from '@/utils/pptxContent'
 
 const TOPOLOGY: Topology = { type: 'powerscale', level: 'powerscale_onefs' }
 
@@ -338,5 +339,49 @@ describe('the cluster summary', () => {
 
   it('carries the first-pool scope statement for the performance figures', () => {
     expect(build([flash, archive]).scopeNote).toBe(t('output:powerscale.firstTierOnly'))
+  })
+})
+
+describe('power and cost are absent from PowerScale documents', () => {
+  const drive = { model: 'Test 24TB', type: 'HDD', capacity_raw: 24e12 } as never
+
+  /**
+   * The vendor catalog publishes capacity and efficiency; it publishes no power, price or
+   * reliability data. Those figures were therefore derived from whichever generic drive sat in the
+   * hidden Hardware panel — on an unchanged 3-node F210 cluster, switching the reference medium
+   * from a 24 TB SATA HDD to a 1.92 TB NVMe moved drive power from 87 W to 107 W. Beside capacity
+   * numbers that match the vendor's table exactly, they read as equally solid, so they leave the
+   * customer-facing documents entirely.
+   */
+  it('omits the energy line from the deck', () => {
+    const content = buildPptxContent(
+      {
+        drive,
+        driveCount: 12,
+        topology: TOPOLOGY,
+        results: results([flash, archive]),
+        unitSystem: 'decimal' as const,
+        language: 'en' as const,
+        projectName: 'x',
+      } as never,
+      (k: string) => k,
+    )
+    expect(content.energyLine).toBeNull()
+  })
+
+  it('keeps the energy line for every other platform', () => {
+    const content = buildPptxContent(
+      {
+        drive,
+        driveCount: 12,
+        topology: { type: 'standard', level: 'RAID6' } as never,
+        results: results([flash, archive]),
+        unitSystem: 'decimal' as const,
+        language: 'en' as const,
+        projectName: 'x',
+      } as never,
+      (k: string) => k,
+    )
+    expect(content.energyLine).not.toBeNull()
   })
 })

@@ -6,6 +6,7 @@
 import DOMPurify from 'dompurify'
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
+import { sustainabilityApplies } from '@/engines/outputRelevance'
 import i18n from '@/i18n'
 import { DEFAULT_LANGUAGE, type Language } from '@/i18n/config'
 import type { Drive } from '@/types/drive'
@@ -312,31 +313,37 @@ export function exportToPdf(config: ExportConfig): void {
   }
   y += 4
 
-  // Check if we need a new page
-  if (y > 240) {
+  // Only break for a section that is actually going to be drawn. Without this guard the break
+  // fired anyway once the sustainability table was omitted, and the report ran to a second page
+  // holding nothing but the closing note.
+  if (y > 240 && sustainabilityApplies(topology)) {
     doc.addPage()
     y = 20
   }
 
-  // Sustainability Section
-  y = addSectionTitle(doc, y, t('sections.power'))
+  // Sustainability section — omitted where the vendor publishes no power or price data, so the
+  // figures would answer to a reference medium rather than to the cluster. See
+  // `sustainabilityApplies`.
+  if (sustainabilityApplies(topology)) {
+    y = addSectionTitle(doc, y, t('sections.power'))
 
-  autoTable(doc, {
-    startY: y,
-    head: [[t('columns.metric'), t('columns.value')]],
-    body: [
-      [t('power.totalPower'), `${formatNumber(sustainability.powerBreakdown.total)} W`],
-      [t('power.drivePower'), `${formatNumber(sustainability.powerBreakdown.drives)} W`],
-      [t('power.serverPower'), `${formatNumber(sustainability.powerBreakdown.servers)} W`],
-      [t('power.cooling'), `${formatNumber(sustainability.powerBreakdown.cooling)} W`],
-      [t('power.annualEnergy'), `${formatNumber(sustainability.annualEnergyKwh)} kWh`],
-      [t('power.annualCo2'), `${formatNumber(sustainability.annualCO2Kg)} kg`],
-    ],
-    theme: 'striped',
-    headStyles: { fillColor: [34, 197, 94] }, // Green
-  })
+    autoTable(doc, {
+      startY: y,
+      head: [[t('columns.metric'), t('columns.value')]],
+      body: [
+        [t('power.totalPower'), `${formatNumber(sustainability.powerBreakdown.total)} W`],
+        [t('power.drivePower'), `${formatNumber(sustainability.powerBreakdown.drives)} W`],
+        [t('power.serverPower'), `${formatNumber(sustainability.powerBreakdown.servers)} W`],
+        [t('power.cooling'), `${formatNumber(sustainability.powerBreakdown.cooling)} W`],
+        [t('power.annualEnergy'), `${formatNumber(sustainability.annualEnergyKwh)} kWh`],
+        [t('power.annualCo2'), `${formatNumber(sustainability.annualCO2Kg)} kg`],
+      ],
+      theme: 'striped',
+      headStyles: { fillColor: [34, 197, 94] }, // Green
+    })
 
-  y = tableEnd(doc) + 10
+    y = tableEnd(doc) + 10
+  }
 
   // Resilience Section (if available)
   if (resilience) {

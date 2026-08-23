@@ -9,6 +9,7 @@
  * label to keep this module a pure function of its inputs.
  */
 
+import { sustainabilityApplies } from '@/engines/outputRelevance'
 import { DEFAULT_LANGUAGE } from '@/i18n/config'
 import { catalogEstimateNote } from './exportNotes'
 import type { ExportConfig } from './exportPptx'
@@ -26,7 +27,8 @@ export interface PptxContent {
   subtitle: string
   volumetryLines: PptxStat[][] // 2 rows under the Sankey
   performanceLines: PptxStat[][] // 2 rows under the gauges
-  energyLine: PptxStat[]
+  /** Null where the vendor publishes no power or price data — see `sustainabilityApplies`. */
+  energyLine: PptxStat[] | null
   bottleneckLine: PptxStat[]
   resilienceLine: PptxStat[] | null
   /**
@@ -209,7 +211,7 @@ export function buildPptxContent(
     subtitle,
     volumetryLines,
     performanceLines,
-    energyLine,
+    energyLine: sustainabilityApplies(config.topology) ? energyLine : null,
     bottleneckLine,
     resilienceLine,
     estimateNote: catalogEstimateNote(config.topology, t),

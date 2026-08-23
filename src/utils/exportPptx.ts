@@ -382,9 +382,13 @@ function buildSummarySlide(
   // ── Extras spread to fill the page ────────────────────────────────────
   let y = nl1 + 0.5
 
-  addSectionLabel(slide, i18n.t('output:pptx.sustainability'), palette.overhead, 0.4, y)
-  addStatLine(slide, content.energyLine, 0.4, y + 0.33, 12.6, palette)
-  y += 0.85
+  // Power/CO2 omitted where the vendor publishes none — see `sustainabilityApplies`. The gap is
+  // closed rather than left blank: the blocks below simply start higher.
+  if (content.energyLine) {
+    addSectionLabel(slide, i18n.t('output:pptx.sustainability'), palette.overhead, 0.4, y)
+    addStatLine(slide, content.energyLine, 0.4, y + 0.33, 12.6, palette)
+    y += 0.85
+  }
 
   addSectionLabel(slide, i18n.t('output:pptx.bottleneck'), palette.parity, 0.4, y)
   addStatLine(slide, content.bottleneckLine, 0.4, y + 0.33, 12.6, palette)

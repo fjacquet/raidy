@@ -46,6 +46,6 @@
     "dark": "Scuro"
   },
   "powerScale": {
-    "estimateNote": "Capacità ed efficienza provengono dalla tabella pubblicata da Dell; consumo, affidabilità e prezzo sono stime, e la riduzione dei dati è un'ipotesi di raidy sui tuoi dati, non un valore pubblicato da Dell. PowerSizer resta il riferimento per un'offerta vincolante."
+    "estimateNote": "Capacità ed efficienza provengono dalla tabella pubblicata da Dell; la riduzione dati è un'ipotesi di raidy sui vostri dati e la resilienza deriva dal comportamento OneFS pubblicato, non da valori pubblicati da Dell. PowerSizer resta il riferimento per un preventivo vincolante."
   }
 }

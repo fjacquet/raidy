@@ -91,7 +91,7 @@ describe('buildPptxContent', () => {
     const allStats = [
       ...content.volumetryLines.flat(),
       ...content.performanceLines.flat(),
-      ...content.energyLine,
+      ...(content.energyLine ?? []),
       ...content.bottleneckLine,
     ]
     for (const s of allStats) expect(s.label).not.toMatch(/^output:pptx/)
