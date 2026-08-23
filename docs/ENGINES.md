@@ -83,6 +83,15 @@ Calculates storage capacity and efficiency.
 > the selected drive is still read by sustainability, TCO, performance and resilience. See the
 > PowerScale UI notes below for how `HardwarePanel` keeps it reachable.
 >
+> Those four figures stay on SCREEN and leave the customer documents. `sustainabilityApplies` and
+> `performanceApplies` (`src/engines/outputRelevance.ts`) gate the PDF and the deck: the vendor
+> table publishes capacity and efficiency and nothing else, so power, cost, IOPS and the
+> bottleneck chain answer to the reference medium rather than to the cluster — changing only that
+> medium on an unchanged 3-node F210 moved drive power 87 W to 107 W and Max Read IOPS 2,028 to
+> 2,280,000. Performance is also the wrong shape here: a node is an appliance, sized per node.
+> While configuring, the order of magnitude is useful and the medium is one click away; on a
+> deliverable, beside vendor-exact capacity, it reads as equally solid. See `docs/BACKLOG.md`.
+>
 > `honoursFsType` is true for `standard` **and `longhorn`** — the filesystem-overhead switch has
 > no case for Longhorn, so it falls through to the `default` branch that reads the user's choice.
 > `honoursController` is false only for `vsan_esa`, which is NVMe-direct and has no Controller
