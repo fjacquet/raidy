@@ -79,6 +79,27 @@ function effectiveDiffers(ctx: RelevanceContext): boolean {
  * figures stay visible while configuring, where they are a rough order of magnitude and the user
  * can see and change the medium they come from. The line drawn here is about what leaves the app.
  */
+/**
+ * Whether throughput, IOPS and the bottleneck chain belong in a document for this platform.
+ *
+ * False for PowerScale, for a reason of SHAPE rather than of missing data. A PowerScale node is
+ * an appliance: its throughput and IOPS are properties of the node model and the node count, not
+ * of an individual drive. raidy models them per drive — reference medium times catalog drive
+ * count — which is the wrong logic for this platform and swings wildly: on an unchanged 3-node
+ * F210 cluster, changing only the reference medium moved Max Read IOPS from 2,028 to 2,280,000
+ * and flipped the reported bottleneck from Media to Network.
+ *
+ * The vendor capacity workbook cannot supply the right figures either: it carries no IOPS,
+ * throughput or latency data on any sheet. Per-node numbers would have to come from Dell node
+ * spec sheets — values raidy would introduce, not read. Recorded in docs/BACKLOG.md.
+ *
+ * As with `sustainabilityApplies`, the on-screen cards stay: while configuring, the order of
+ * magnitude is useful and the medium behind it is one click away. This governs what leaves.
+ */
+export function performanceApplies(topology: Topology): boolean {
+  return topology.type !== 'powerscale'
+}
+
 export function sustainabilityApplies(topology: Topology): boolean {
   return topology.type !== 'powerscale'
 }

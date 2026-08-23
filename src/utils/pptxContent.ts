@@ -9,7 +9,7 @@
  * label to keep this module a pure function of its inputs.
  */
 
-import { sustainabilityApplies } from '@/engines/outputRelevance'
+import { performanceApplies, sustainabilityApplies } from '@/engines/outputRelevance'
 import { DEFAULT_LANGUAGE } from '@/i18n/config'
 import { catalogEstimateNote } from './exportNotes'
 import type { ExportConfig } from './exportPptx'
@@ -210,9 +210,9 @@ export function buildPptxContent(
     title,
     subtitle,
     volumetryLines,
-    performanceLines,
+    performanceLines: performanceApplies(config.topology) ? performanceLines : [],
     energyLine: sustainabilityApplies(config.topology) ? energyLine : null,
-    bottleneckLine,
+    bottleneckLine: performanceApplies(config.topology) ? bottleneckLine : [],
     resilienceLine,
     estimateNote: catalogEstimateNote(config.topology, t),
   }

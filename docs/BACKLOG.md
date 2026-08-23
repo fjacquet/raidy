@@ -66,6 +66,29 @@ an all-flash cluster at whatever drive sits in a dropdown the panel itself calls
 Cost act, which computes the same product. Dell publishes no node pricing, so this needs either
 suppression there too or a per-model cost in the catalog.
 
+## PowerScale performance is modelled per drive, which is the wrong shape
+
+A PowerScale node is an appliance: its throughput and IOPS are properties of the node model and
+the node count, not of an individual drive. raidy currently derives them from the reference
+medium in the Hardware panel times the catalog drive count, so on an unchanged 3-node F210
+cluster the reported Max Read IOPS moved from 2,028 to 2,280,000 — a factor of a thousand —
+purely by changing that drive, and the reported bottleneck flipped from Media to Network.
+
+The vendor capacity workbook cannot supply the right numbers: all thirteen of its sheets were
+scanned and it carries no IOPS, throughput, latency, watt or published price data at all — the
+only price cells are seller-entered inputs for a discount/cost-per-GB analysis. Per-node figures
+would have to come from Dell node spec sheets, i.e. values raidy introduces rather than reads.
+
+Until then the figures do not belong on a customer document, for the same reason power and cost
+were removed (`sustainabilityApplies`).
+
+## Sell-side analysis: cost per effective GB against a seller-entered list price
+
+The workbook's "Selling with DRR" and "Node Count Calculator" sheets do something raidy does not:
+the seller types a list price and gets cost per effective GB, the discount needed to match a
+no-DRR solution, and a resulting selling price. That is a genuinely useful shape for a quick
+sizing tool — the price is the user's input, so nothing has to be published or invented.
+
 ## OneFS SmartPools tiering policy is unmodelled
 
 Pools are sized independently. Real clusters move data between them on policy, so a SmartPools

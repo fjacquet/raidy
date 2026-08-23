@@ -324,49 +324,61 @@ function buildSummarySlide(
   // ── Top charts: large Sankey (left) + tight 2×2 gauges (right) ────────
   // Shorter charts when resilience is shown, to leave room for its row.
   const chartTop = 1.4
-  const chartH = resilience ? 2.7 : 3.2
+  // The Sankey grows into whatever the omitted sections leave behind. Without the performance
+  // column and the energy row there is most of a slide free below it, and a chart floating above
+  // half a blank slide reads as a rendering failure rather than as a deliberately short document.
+  const showPerfChart = content.performanceLines.length > 0
+  const chartH = resilience ? 2.7 : showPerfChart ? 3.2 : 4.6
   const chartBottom = chartTop + chartH
 
   // Wider Sankey (reads like the web); smaller gauges packed to the right.
+  // With performance omitted the right-hand column is empty, so the Sankey takes the full width
+  // rather than leaving half the slide blank.
+  const showPerf = showPerfChart
   addSectionLabel(slide, i18n.t('output:pptx.volumetry'), palette.capacity, 0.4, 1.0)
   addChartOrFallback(
     slide,
     charts.sankey,
-    { x: 0.25, y: chartTop, w: 7.6, h: chartH },
+    { x: 0.25, y: chartTop, w: showPerf ? 7.6 : 12.75, h: chartH },
     i18n.t('output:pptx.labels.chartUnavailable'),
     palette,
   )
 
-  addSectionLabel(slide, i18n.t('output:pptx.performance'), palette.accent, 8.0, 1.0)
-  const gaugeColX: [number, number] = [8.0, 10.5]
-  const gaugeRowY: [number, number] = [chartTop + 0.1, chartTop + chartH / 2 + 0.05]
-  const gaugeW = 2.45
-  const gaugeH = chartH / 2 - 0.35
-  charts.gauges.forEach((gauge, i) => {
-    const col = i % 2
-    const row = i < 2 ? 0 : 1
-    addChartOrFallback(
-      slide,
-      gauge,
-      { x: gaugeColX[col] ?? 8.0, y: gaugeRowY[row] ?? chartTop, w: gaugeW, h: gaugeH },
-      '',
-      palette,
-    )
-  })
+  if (showPerf) {
+    addSectionLabel(slide, i18n.t('output:pptx.performance'), palette.accent, 8.0, 1.0)
+    const gaugeColX: [number, number] = [8.0, 10.5]
+    const gaugeRowY: [number, number] = [chartTop + 0.1, chartTop + chartH / 2 + 0.05]
+    const gaugeW = 2.45
+    const gaugeH = chartH / 2 - 0.35
+    charts.gauges.forEach((gauge, i) => {
+      const col = i % 2
+      const row = i < 2 ? 0 : 1
+      addChartOrFallback(
+        slide,
+        gauge,
+        { x: gaugeColX[col] ?? 8.0, y: gaugeRowY[row] ?? chartTop, w: gaugeW, h: gaugeH },
+        '',
+        palette,
+      )
+    })
+  }
 
   // ── Crystal-clear number lines beneath each chart ─────────────────────
   const nl0 = chartBottom + 0.14
   const nl1 = nl0 + 0.36
-  addStatLine(slide, content.volumetryLines[0] ?? [], 0.4, nl0, 7.6, palette)
-  addStatLine(slide, content.volumetryLines[1] ?? [], 0.4, nl1, 7.6, palette, 10)
-  addStatLine(slide, content.performanceLines[0] ?? [], 8.0, nl0, 5.0, palette)
-  addStatLine(slide, content.performanceLines[1] ?? [], 8.0, nl1, 5.0, palette)
+  const statW = showPerf ? 7.6 : 12.6
+  addStatLine(slide, content.volumetryLines[0] ?? [], 0.4, nl0, statW, palette)
+  addStatLine(slide, content.volumetryLines[1] ?? [], 0.4, nl1, statW, palette, 10)
+  if (showPerf) {
+    addStatLine(slide, content.performanceLines[0] ?? [], 8.0, nl0, 5.0, palette)
+    addStatLine(slide, content.performanceLines[1] ?? [], 8.0, nl1, 5.0, palette)
+  }
 
   // Scope, not caveat: a PowerScale cluster's gauges describe the FIRST node pool, while the
   // capacity beside them covers the whole cluster. Said once, in the right-hand column beside the
   // figures it qualifies — the section labels below start at x 0.4 and stop at 6.4, so this sits
   // in empty space and does not shift the rows underneath.
-  if (powerScale) {
+  if (powerScale && (showPerf || content.resilienceLine)) {
     slide.addText(powerScale.scopeNote, {
       x: 8.0,
       y: nl1 + 0.34,
@@ -390,9 +402,11 @@ function buildSummarySlide(
     y += 0.85
   }
 
-  addSectionLabel(slide, i18n.t('output:pptx.bottleneck'), palette.parity, 0.4, y)
-  addStatLine(slide, content.bottleneckLine, 0.4, y + 0.33, 12.6, palette)
-  y += 0.85
+  if (content.bottleneckLine.length > 0) {
+    addSectionLabel(slide, i18n.t('output:pptx.bottleneck'), palette.parity, 0.4, y)
+    addStatLine(slide, content.bottleneckLine, 0.4, y + 0.33, 12.6, palette)
+    y += 0.85
+  }
 
   // Resilience — only when the simulation has actually been run.
   if (content.resilienceLine) {

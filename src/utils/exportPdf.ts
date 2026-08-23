@@ -6,7 +6,7 @@
 import DOMPurify from 'dompurify'
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
-import { sustainabilityApplies } from '@/engines/outputRelevance'
+import { performanceApplies, sustainabilityApplies } from '@/engines/outputRelevance'
 import i18n from '@/i18n'
 import { DEFAULT_LANGUAGE, type Language } from '@/i18n/config'
 import type { Drive } from '@/types/drive'
@@ -276,35 +276,40 @@ export function exportToPdf(config: ExportConfig): void {
     y = tableEnd(doc) + 10
   }
 
-  // Performance Section
-  y = ensureRoom(doc, y)
-  y = addSectionTitle(doc, y, t('sections.performance'))
+  // Performance section — omitted where raidy models it per drive but the platform is an
+  // appliance sized per node. See `performanceApplies`.
+  if (performanceApplies(topology)) {
+    y = ensureRoom(doc, y)
+    y = addSectionTitle(doc, y, t('sections.performance'))
 
-  autoTable(doc, {
-    startY: y,
-    head: [[t('columns.metric'), t('columns.value')]],
-    body: [
-      [
-        t('performance.maxReadThroughput'),
-        `${formatNumber(performance.maxReadThroughputMBs)} MB/s`,
+    autoTable(doc, {
+      startY: y,
+      head: [[t('columns.metric'), t('columns.value')]],
+      body: [
+        [
+          t('performance.maxReadThroughput'),
+          `${formatNumber(performance.maxReadThroughputMBs)} MB/s`,
+        ],
+        [
+          t('performance.maxWriteThroughput'),
+          `${formatNumber(performance.maxWriteThroughputMBs)} MB/s`,
+        ],
+        [t('performance.maxReadIops'), formatNumber(performance.maxReadIOPS)],
+        [t('performance.maxWriteIops'), formatNumber(performance.maxWriteIOPS)],
+        [t('performance.bottleneck'), formatBottleneck(performance.bottleneck, tOutput)],
       ],
-      [
-        t('performance.maxWriteThroughput'),
-        `${formatNumber(performance.maxWriteThroughputMBs)} MB/s`,
-      ],
-      [t('performance.maxReadIops'), formatNumber(performance.maxReadIOPS)],
-      [t('performance.maxWriteIops'), formatNumber(performance.maxWriteIOPS)],
-      [t('performance.bottleneck'), formatBottleneck(performance.bottleneck, tOutput)],
-    ],
-    theme: 'striped',
-    headStyles: { fillColor: HEADER_BLUE },
-  })
+      theme: 'striped',
+      headStyles: { fillColor: HEADER_BLUE },
+    })
 
-  y = tableEnd(doc) + 6
+    y = tableEnd(doc) + 6
+  }
 
   // Scope, not caveat: the figures above model the FIRST node pool, while the capacity above them
-  // covers the whole cluster. Said once, beside the numbers it qualifies.
-  if (powerScale) {
+  // covers the whole cluster. Said once, beside the numbers it qualifies — and only while there
+  // are such figures left to qualify. With performance omitted, resilience is the last of them,
+  // and it is only present once the simulation has been run.
+  if (powerScale && (performanceApplies(topology) || resilience)) {
     doc.setFontSize(8)
     doc.setTextColor(100, 100, 100)
     const scopeLines = doc.splitTextToSize(powerScale.scopeNote, pageWidth - 28) as string[]
