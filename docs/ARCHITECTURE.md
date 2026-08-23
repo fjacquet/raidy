@@ -523,6 +523,16 @@ or `pptxgenjs` calls. `exportPptx.ts` consumes that data to render slides and ca
 keeping the two separate means the slide content itself is unit-testable without a DOM or the
 PPTX library.
 
+`src/utils/powerscaleExportContent.ts` is the same pattern for the one platform whose document
+*structure* differs: a PowerScale cluster is 1-8 heterogeneous node pools rather than one drive
+model times a count, so `exportToPptx` and `exportToPdf` both dispatch on
+`topology.type === 'powerscale'` and render `buildPowerScaleExportContent()`'s two per-pool tables
+(a core table and a derivation table, each with a cluster total) in place of the generic hardware
+and capacity blocks. Everything downstream — performance, power, resilience — stays shared. The
+builder returns finished, locale-formatted cells, so the deck and the report cannot format the
+same number differently. `src/utils/exportNotes.ts` supplies the single caveat line both documents
+carry once, near the end.
+
 ---
 
 ## Adding New Features

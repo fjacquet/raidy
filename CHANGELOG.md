@@ -38,6 +38,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   capacity and efficiency are Dell's published figures, power/reliability/price/data-reduction are
   estimates, and PowerSizer remains the reference for a firm quote. No figure is suppressed to
   avoid being wrong, and the line is not repeated per page or per section.
+- **A dedicated PowerScale export path for both the deck and the report.** Every other platform's
+  document describes "one drive model × a count"; a cluster of 1–8 heterogeneous node pools makes
+  that the wrong structure, not merely the wrong label. `exportToPptx` and `exportToPdf` now
+  dispatch on the topology into `buildPowerScaleExportContent`
+  (`src/utils/powerscaleExportContent.ts`), a pure builder that returns two per-pool tables: a
+  core table (model with generation and tier, drive size, nodes, drives, protection, raw, usable
+  after VHS, applied DRR, effective) and a derivation table (the vendor's protection efficiency,
+  usable before VHS, the VHS reserve in bytes and as a percentage of raw, which of the two vendor
+  VHS formulas produced it, usable after VHS, and the efficiency the pool actually delivers). Each
+  closes with a cluster total; the deck gives each table its own slide. The two efficiency columns
+  carry distinct labels in all four locales — "Protection efficiency (vendor)" and "Usable
+  efficiency (after VHS)" — so the quantity a one-pool cluster once reported twice under one
+  heading cannot be confused again.
 - `PlatformCapabilities.drivePopulationFromCatalog` — probe-backed like every other flag in that
   map (double the drive count, assert `rawCapacity` does not move).
 
@@ -76,6 +89,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the pool's data, not a cluster-wide slider.
 - The `powerscale_n1` … `powerscale_n4` and `powerscale_mirror_2x` / `_3x` topology levels.
   Protection is a property of a node pool, not of the cluster.
+- The `hardwareLabel` export override. It was a stopgap that relabelled the generic hardware line
+  so a PowerScale cluster would not print "24 TB SATA HDD, 12 drives"; the dedicated export path
+  above describes the cluster from `volumetry.powerScaleDetails` instead, so no caller-side
+  override is needed.
 
 ### BREAKING
 

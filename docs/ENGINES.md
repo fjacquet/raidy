@@ -272,13 +272,43 @@ Calculates storage capacity and efficiency.
 > Everything else stays: PUE still drives cooling, and the performance threshold still draws the
 > operational-capacity marker.
 >
+> **The exports take a dedicated path, not a relabelled generic one.** Every other platform's
+> deck and report describe "one drive model × a count"; a PowerScale cluster is 1-8 heterogeneous
+> node pools, so that is the wrong *structure*, not merely the wrong label — an early stopgap that
+> overrode the hardware line with a `hardwareLabel` string has been removed. `exportToPptx` and
+> `exportToPdf` both dispatch on `topology.type === 'powerscale'` into
+> `buildPowerScaleExportContent` (`src/utils/powerscaleExportContent.ts`), a pure builder in the
+> mould of `pptxContent.ts`: no renderer types, no i18n singleton, every cell already
+> locale-formatted so the two documents cannot format the same number differently.
+>
+> The thirteen required per-pool columns do not read on one 13.33" slide, so the builder returns
+> **two** tables keyed by the same pool number — a core table (model with generation/tier, drive
+> size, nodes, drives, protection, raw, usable after VHS, DRR, effective) and a derivation table
+> (protection efficiency, usable before VHS, VHS reserve in bytes and as a % of raw, which of the
+> two vendor VHS formulas won, usable after VHS, usable efficiency). Each gets its own slide; the
+> report stacks them at 7pt. Both close with a cluster total row. EOL is deliberately not a
+> column.
+>
+> **Two efficiency columns, two labels.** `PowerScaleTierResult.efficiency` is the vendor's
+> *protection* efficiency, taken before `usableFactor` and before the VHS reserve;
+> `usableLessVhs / rawCapacity` is what the pool actually delivers and is the per-pool form of
+> `clusterEfficiency`. A one-pool cluster once showed 66.7% and 46.3% for the same pool under one
+> heading. The export labels them **"Protection efficiency (vendor)"** and **"Usable efficiency
+> (after VHS)"** — not "effective efficiency", because the same table already uses *Effective* for
+> the after-DRR capacity.
+>
 > **One caveat, once.** The PDF and PPTX exports carry a single line
 > (`common:powerScale.estimateNote`, via `catalogEstimateNote` in `src/utils/exportNotes.ts`):
 > capacity and efficiency are Dell's published figures, power/reliability/price are estimates, and
 > data reduction is raidy's own assumption about the data — not a value Dell publishes — with
 > PowerSizer remaining the reference for a firm quote. PowerSizer is the rule and raidy is the
 > shortcut — but a shortcut that refuses to estimate is not a shortcut, so no figure is suppressed
-> to avoid being wrong, and the caveat is not repeated per page, per section or per row.
+> to avoid being wrong, and the caveat is not repeated per page, per section or per row. In the
+> deck it sits on the last slide, under the derivation table; in the report it sits at the end of
+> the last page. A *scope* statement (`output:powerscale.firstTierOnly` — the gauges model the
+> first node pool, the capacity covers the cluster) rides beside the performance figures in both
+> documents; it is a statement of what is modelled, not a hedge about accuracy, and it is also
+> said only once.
 
 ### PowerScale / OneFS (`src/engines/volumetry/powerscale/`)
 

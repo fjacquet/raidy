@@ -221,7 +221,26 @@
       "usable": "Usable",
       "effective": "Effective",
       "drr": "DRR",
-      "efficiency": "Efficiency"
+      "efficiency": "Efficiency",
+      "pool": "Pool",
+      "drives": "Drives",
+      "usableBeforeVhs": "Usable before VHS",
+      "usableAfterVhs": "Usable after VHS",
+      "vhsReserve": "VHS reserve",
+      "vhsPercentOfRaw": "VHS % of raw",
+      "vhsBasis": "VHS basis",
+      "protectionEfficiency": "Protection efficiency (vendor)",
+      "usableEfficiency": "Usable efficiency (after VHS)"
+    },
+    "vhsBasis": {
+      "driveCount": "Drive count",
+      "percent": "Percentage"
+    },
+    "export": {
+      "clusterSummary": "Node pools {{pools}} · Nodes {{nodes}} · Drives {{drives}}",
+      "clusterTitle": "Cluster",
+      "derivationTitle": "How each pool's usable capacity is derived",
+      "pools": "Node pools"
     }
   }
 }

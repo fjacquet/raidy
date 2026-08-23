@@ -221,7 +221,26 @@
       "usable": "Nutzbar",
       "effective": "Effektiv",
       "drr": "DRR",
-      "efficiency": "Effizienz"
+      "efficiency": "Effizienz",
+      "pool": "Pool",
+      "drives": "Laufwerke",
+      "usableBeforeVhs": "Nutzbar vor VHS",
+      "usableAfterVhs": "Nutzbar nach VHS",
+      "vhsReserve": "VHS-Reserve",
+      "vhsPercentOfRaw": "VHS % vom Brutto",
+      "vhsBasis": "VHS-Basis",
+      "protectionEfficiency": "Schutzeffizienz (Hersteller)",
+      "usableEfficiency": "Nutzbare Effizienz (nach VHS)"
+    },
+    "vhsBasis": {
+      "driveCount": "Laufwerksanzahl",
+      "percent": "Prozentsatz"
+    },
+    "export": {
+      "clusterSummary": "Node-Pools {{pools}} · Nodes {{nodes}} · Laufwerke {{drives}}",
+      "clusterTitle": "Cluster",
+      "derivationTitle": "Herleitung der nutzbaren Kapazität je Pool",
+      "pools": "Node-Pools"
     }
   }
 }

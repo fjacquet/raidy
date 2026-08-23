@@ -221,7 +221,26 @@
       "usable": "Utile",
       "effective": "Effective",
       "drr": "DRR",
-      "efficiency": "Efficacité"
+      "efficiency": "Efficacité",
+      "pool": "Pool",
+      "drives": "Disques",
+      "usableBeforeVhs": "Utile avant VHS",
+      "usableAfterVhs": "Utile après VHS",
+      "vhsReserve": "Réserve VHS",
+      "vhsPercentOfRaw": "VHS % du brut",
+      "vhsBasis": "Base VHS",
+      "protectionEfficiency": "Efficacité de protection (constructeur)",
+      "usableEfficiency": "Efficacité utile (après VHS)"
+    },
+    "vhsBasis": {
+      "driveCount": "Nombre de disques",
+      "percent": "Pourcentage"
+    },
+    "export": {
+      "clusterSummary": "Pools de nœuds {{pools}} · Nœuds {{nodes}} · Disques {{drives}}",
+      "clusterTitle": "Cluster",
+      "derivationTitle": "Dérivation de la capacité utile de chaque pool",
+      "pools": "Pools de nœuds"
     }
   }
 }

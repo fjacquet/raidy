@@ -9,8 +9,10 @@
  * label to keep this module a pure function of its inputs.
  */
 
+import { DEFAULT_LANGUAGE } from '@/i18n/config'
 import { catalogEstimateNote } from './exportNotes'
 import type { ExportConfig } from './exportPptx'
+import { powerScaleClusterSummary } from './powerscaleExportContent'
 import { formatBytes } from './units'
 
 export interface PptxStat {
@@ -49,7 +51,7 @@ function formatIops(iops: number): string {
 
 export function buildPptxContent(
   config: ExportConfig,
-  t: (key: string) => string,
+  t: (key: string, options?: Record<string, string | number>) => string,
   dateLabel?: string,
 ): PptxContent {
   const unitSystem = config.unitSystem ?? 'binary'
@@ -60,9 +62,20 @@ export function buildPptxContent(
   const levelLabel = 'level' in config.topology ? ` ${config.topology.level}` : ''
   const title = `${topologyLabel}${levelLabel}`
 
+  // PowerScale's populations come from the node catalog, not the Hardware panel — that panel is
+  // hidden for it — so the drive model, drive count and server count here describe hardware the
+  // user never chose, and an F210 cluster would otherwise read "24 TB SATA HDD · 12 drives".
+  // Keyed off the topology rather than the presence of `powerScaleDetails`, so a cluster with no
+  // sizeable pool at all says "Node pools 0" instead of falling back to that stale line.
   const subtitle = [
-    ...(config.hardwareLabel
-      ? [config.hardwareLabel]
+    ...(config.topology.type === 'powerscale'
+      ? [
+          powerScaleClusterSummary(
+            config.results.volumetry.powerScaleDetails,
+            t,
+            config.language ?? DEFAULT_LANGUAGE,
+          ),
+        ]
       : [
           config.drive.model,
           `${config.driveCount} ${label('drives')}`,

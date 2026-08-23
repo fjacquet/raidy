@@ -9,11 +9,17 @@
 import pptxgen from 'pptxgenjs'
 
 import i18n from '@/i18n'
+import { DEFAULT_LANGUAGE, type Language } from '@/i18n/config'
 import type { Drive } from '@/types/drive'
 import type { CalculationResults } from '@/types/results'
 import type { Topology, ZfsOptions } from '@/types/topology'
 
 import { capturePerfGauges, captureSankeyDiagram } from './captureChart'
+import {
+  buildPowerScaleExportContent,
+  type PowerScaleExportContent,
+  type PowerScaleExportTable,
+} from './powerscaleExportContent'
 import { buildPptxContent, type PptxStat } from './pptxContent'
 import type { UnitSystem } from './units'
 
@@ -32,14 +38,10 @@ export interface ExportConfig {
   projectName?: string
   unitSystem?: UnitSystem
   /**
-   * Overrides the generic "<drive model> · <n> drives · <n> servers" hardware line.
-   *
-   * PowerScale populations come from the node catalog, not the Hardware panel — that panel is
-   * hidden for it (`hasServerCount: false`) — so `drive`, `driveCount` and `serverCount` describe
-   * hardware the user never chose. Without this, an F210 cluster exported as "24 TB SATA HDD,
-   * 12 drives, 1 server".
+   * Locale for number formatting (apostrophe thousands separator in every Swiss locale).
+   * Injected rather than read from the i18n singleton so the content builders stay pure.
    */
-  hardwareLabel?: string
+  language?: Language
 }
 
 /** Standard slide font. */
@@ -175,6 +177,90 @@ function addStatLine(
   slide.addText(runs, { x, y, w, h: 0.34, valign: 'middle', fontFace: FONT })
 }
 
+/**
+ * Column widths in inches, in the same order as the table's own columns.
+ *
+ * Both sum to 11.9" and sit at x = 0.7 on the 13.33" wide layout, leaving a symmetric margin.
+ * Thirteen required columns do not read on one slide at any font size a customer would accept,
+ * so `buildPowerScaleExportContent` splits them into two tables of ten and nine and each gets a
+ * slide of its own — no required column is dropped.
+ */
+const POOL_COL_W = [0.5, 2.35, 1.0, 0.7, 0.8, 1.2, 1.5, 1.6, 0.7, 1.55]
+const DERIVATION_COL_W = [0.5, 1.5, 1.5, 1.5, 1.35, 1.15, 1.35, 1.5, 1.55]
+
+/** Left edge and width of both node-pool tables, in inches. */
+const TABLE_X = 0.7
+const TABLE_W = 11.9
+
+/**
+ * One node-pool table on its own slide, with the cluster total as the closing row.
+ *
+ * `footnote` carries the document's single caveat line on the LAST slide only — the deck says it
+ * once, near the end, exactly as the report does.
+ */
+function buildTableSlide(
+  prs: pptxgen,
+  palette: Brand,
+  table: PowerScaleExportTable,
+  colW: number[],
+  footnote: string | null,
+): void {
+  const slide = prs.addSlide()
+  slide.background = { fill: palette.bg }
+  addAccentBar(slide, prs, palette)
+
+  slide.addText(table.title, {
+    x: 0.4,
+    y: 0.2,
+    w: 12.6,
+    h: 0.45,
+    fontSize: 18,
+    bold: true,
+    color: palette.textWhite,
+    fontFace: FONT,
+  })
+
+  const headerRow: pptxgen.TableRow = table.columns.map((label) => ({
+    text: label,
+    options: { bold: true, color: palette.textWhite, fill: { color: palette.panel }, fontSize: 8 },
+  }))
+
+  const bodyRows: pptxgen.TableRow[] = table.rows.map((row) =>
+    row.map((cell) => ({ text: cell, options: { color: palette.textWhite } })),
+  )
+
+  const totalRow: pptxgen.TableRow = table.totalRow.map((cell) => ({
+    text: cell,
+    options: { bold: true, color: palette.textWhite, fill: { color: palette.panel } },
+  }))
+
+  slide.addTable([headerRow, ...bodyRows, totalRow], {
+    x: TABLE_X,
+    y: 0.85,
+    w: TABLE_W,
+    colW,
+    rowH: 0.3,
+    fontSize: 10,
+    fontFace: FONT,
+    color: palette.textWhite,
+    valign: 'middle',
+    border: { type: 'solid', pt: 0.5, color: palette.border },
+  })
+
+  if (footnote) {
+    slide.addText(footnote, {
+      x: 0.4,
+      y: 7.02,
+      w: 12.6,
+      h: 0.34,
+      fontSize: 8,
+      italic: true,
+      color: palette.textMuted,
+      fontFace: FONT,
+    })
+  }
+}
+
 /** Build the single dense executive one-pager slide. */
 function buildSummarySlide(
   prs: pptxgen,
@@ -182,6 +268,7 @@ function buildSummarySlide(
   charts: { sankey: string | null; gauges: (string | null)[] },
   content: ReturnType<typeof buildPptxContent>,
   palette: Brand,
+  powerScale: PowerScaleExportContent | null,
 ): void {
   const slide = prs.addSlide()
   slide.background = { fill: palette.bg }
@@ -252,6 +339,23 @@ function buildSummarySlide(
   addStatLine(slide, content.performanceLines[0] ?? [], 8.0, nl0, 5.0, palette)
   addStatLine(slide, content.performanceLines[1] ?? [], 8.0, nl1, 5.0, palette)
 
+  // Scope, not caveat: a PowerScale cluster's gauges describe the FIRST node pool, while the
+  // capacity beside them covers the whole cluster. Said once, in the right-hand column beside the
+  // figures it qualifies — the section labels below start at x 0.4 and stop at 6.4, so this sits
+  // in empty space and does not shift the rows underneath.
+  if (powerScale) {
+    slide.addText(powerScale.scopeNote, {
+      x: 8.0,
+      y: nl1 + 0.34,
+      w: 5.0,
+      h: 0.34,
+      fontSize: 7,
+      italic: true,
+      color: palette.textMuted,
+      fontFace: FONT,
+    })
+  }
+
   // ── Extras spread to fill the page ────────────────────────────────────
   let y = nl1 + 0.5
 
@@ -309,7 +413,40 @@ export async function exportToPptx(config: ExportConfig): Promise<void> {
     day: 'numeric',
   })
   const content = buildPptxContent(config, i18n.t, dateLabel)
-  buildSummarySlide(prs, config, { sankey, gauges }, content, palette)
+
+  // PowerScale takes a dedicated path: a cluster is 1-8 heterogeneous node pools, so "one drive
+  // model × a count" is the wrong shape for the document, not merely the wrong label on a line.
+  const powerScale =
+    config.topology.type === 'powerscale'
+      ? buildPowerScaleExportContent(config.results.volumetry.powerScaleDetails, {
+          t: i18n.t,
+          language: config.language ?? DEFAULT_LANGUAGE,
+          unitSystem: config.unitSystem ?? 'binary',
+          topology: config.topology,
+        })
+      : null
+
+  // The caveat line moves to the last slide when there are more slides after this one, so the
+  // deck still says it exactly once, near the end.
+  buildSummarySlide(
+    prs,
+    config,
+    { sankey, gauges },
+    powerScale ? { ...content, estimateNote: null } : content,
+    palette,
+    powerScale,
+  )
+
+  if (powerScale) {
+    buildTableSlide(prs, palette, powerScale.poolTable, POOL_COL_W, null)
+    buildTableSlide(
+      prs,
+      palette,
+      powerScale.derivationTable,
+      DERIVATION_COL_W,
+      powerScale.estimateNote,
+    )
+  }
 
   const safeLabel = (config.topology.type ?? 'storage').replace(/[^a-z0-9]/gi, '-')
   await prs.writeFile({ fileName: `raidy-${safeLabel}.pptx` })
