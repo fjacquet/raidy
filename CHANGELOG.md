@@ -82,6 +82,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+- **Power, cost, performance and bottleneck figures from PowerScale documents** (PDF and deck).
+  The vendor workbook is a capacity calculator: none of its sheets carry watt, price, IOPS,
+  throughput or latency data — its only price cells are seller-entered inputs. Those figures were
+  therefore derived from whichever generic drive sat in the hidden Hardware panel, and moved with
+  it: on an unchanged 3-node F210 cluster, switching the reference medium moved drive power from
+  87 W to 107 W and Max Read IOPS from 2,028 to 2,280,000, flipping the reported bottleneck from
+  Media to Network. Beside capacity numbers that match the vendor's table exactly, they read as
+  equally solid. Performance is additionally the wrong *shape* here — a node is an appliance,
+  sized per node rather than per drive. Both stay on screen while configuring, where the reference
+  medium is visible and changeable; `docs/BACKLOG.md` records what a per-node model would need.
 - PowerScale's GLOBAL compression, dedup and snapshot-reserve controls. A single ratio across a
   cluster's heterogeneous node pools (all-flash over hybrid over archive) is meaningless, and
   PowerSizer reserves nothing for snapshots — a non-zero default put every answer below the source
