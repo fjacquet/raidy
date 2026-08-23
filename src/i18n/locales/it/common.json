@@ -44,5 +44,8 @@
     "auto": "Auto",
     "light": "Chiaro",
     "dark": "Scuro"
+  },
+  "powerScale": {
+    "estimateNote": "Capacità ed efficienza provengono dalla tabella pubblicata da Dell; consumo, affidabilità, prezzo e riduzione dei dati sono stime. PowerSizer resta il riferimento per un'offerta vincolante."
   }
 }

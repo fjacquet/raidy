@@ -44,5 +44,8 @@
     "auto": "Auto",
     "light": "Clair",
     "dark": "Sombre"
+  },
+  "powerScale": {
+    "estimateNote": "La capacité et l'efficacité proviennent de la table publiée par Dell ; la puissance, la fiabilité, le prix et la réduction de données sont des estimations. PowerSizer reste la référence pour un devis ferme."
   }
 }

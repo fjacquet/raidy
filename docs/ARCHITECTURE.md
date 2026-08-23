@@ -348,6 +348,11 @@ the Effective-capacity tile is hidden for RAID and shown for ZFS+compression) pl
 presence (e.g. the Survival tile only appears once a Monte Carlo run has produced a result).
 Not-applicable is omitted; applicable-but-zero is still shown.
 
+The same module also exports `backupApplies(topology)`, the one predicate that decides both
+whether `AdvancedPanel` shows the backup inputs and whether `CapacityAct` renders the backup card
+— an input and the output it feeds are one decision, so they cannot drift into a live figure
+computed from a control the user cannot see.
+
 | Component | Purpose / Data Source |
 |-----------|------------------------|
 | `HeadlineBand.tsx` | Persistent KPI band (usable/effective capacity, efficiency, peak IOPS, survival, annual energy) |

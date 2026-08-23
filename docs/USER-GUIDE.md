@@ -23,7 +23,14 @@ as a URL.
    model, drive size, node count, protection, virtual hot spare — all constrained to what Dell's
    catalog publishes, 1 to 8 pools per cluster), so the drives-per-server and servers sliders do
    not apply and the panel shows the pools' own drive count instead. Capacity is reported per
-   pool with a cluster total; performance and resilience describe the FIRST pool only.
+   pool with a cluster total; performance and resilience describe the FIRST pool only. The drive
+   picker collapses to a one-line **reference medium** — Dell's catalog publishes capacities and
+   efficiencies but no power, reliability or price, so a generic drive stands in for those three;
+   click through the line to change it. Server power stays, relabelled **per node**, because it is
+   multiplied by the cluster's node count. The backup retention and daily-change-rate inputs are
+   not offered for PowerScale, and the backup figure is not reported. Exported decks and reports
+   carry one line saying which figures are estimates and that Dell's own sizer remains the
+   reference for a firm quote.
 3. **Workload** — read/write mix, random/sequential mix, block size, daily writes. The profile
    buttons underneath set the first three in one click, and which profiles you see depends on the
    platform: BeeGFS offers HPC and AI profiles (training data, checkpointing, scratch, genomics,

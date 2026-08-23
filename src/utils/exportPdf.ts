@@ -10,6 +10,7 @@ import i18n from '@/i18n'
 import type { Drive } from '@/types/drive'
 import type { CalculationResults } from '@/types/results'
 import type { Topology, ZfsOptions } from '@/types/topology'
+import { catalogEstimateNote } from './exportNotes'
 import { formatBottleneck } from './formatBottleneck'
 import { formatBytes as formatBytesUtil, type UnitSystem } from './units'
 
@@ -339,18 +340,30 @@ export function exportToPdf(config: ExportConfig): void {
     }
   }
 
+  // One caveat, once — the report's entire caveat budget, at the end of the last page. Capacity
+  // and efficiency are the vendor's published figures; power, reliability, price and data
+  // reduction are estimates; PowerSizer is where a firm quote comes from. Repeating it per page
+  // or per section would turn a quick sizing tool into a compliance artifact.
+  const estimateNote = catalogEstimateNote(topology, (key) => i18n.t(key) as string)
+  const pageHeight = doc.internal.pageSize.getHeight()
+  if (estimateNote) {
+    const noteLines = doc.splitTextToSize(estimateNote, pageWidth - 28) as string[]
+    // Below the last section if there is room, otherwise pinned just above the footer.
+    const noteY = Math.min(y + 6, pageHeight - 16 - (noteLines.length - 1) * 3.5)
+    doc.setFontSize(8)
+    doc.setTextColor(150, 150, 150)
+    doc.text(noteLines, pageWidth / 2, noteY, { align: 'center' })
+  }
+
   // Footer
   const pageCount = doc.getNumberOfPages()
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i)
     doc.setFontSize(8)
     doc.setTextColor(150, 150, 150)
-    doc.text(
-      t('footer', { current: i, total: pageCount }),
-      pageWidth / 2,
-      doc.internal.pageSize.getHeight() - 10,
-      { align: 'center' },
-    )
+    doc.text(t('footer', { current: i, total: pageCount }), pageWidth / 2, pageHeight - 10, {
+      align: 'center',
+    })
   }
 
   // Download

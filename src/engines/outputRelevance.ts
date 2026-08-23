@@ -46,6 +46,25 @@ function effectiveDiffers(ctx: RelevanceContext): boolean {
   return supported && ctx.volumetry.effectiveCapacity !== ctx.volumetry.usableCapacity
 }
 
+/**
+ * True when the generic backup estimator (`usable × dailyChangeRate% × retentionDays`) is
+ * offered for this platform — one predicate for BOTH the Advanced panel's two backup inputs and
+ * the dashboard's backup card, so the pair cannot drift into the state this branch has already
+ * had to fix twice: a live output computed from an input the user cannot see.
+ *
+ * False for PowerScale alone. A OneFS cluster is sized against the vendor's node catalog, and
+ * its data protection is sized by the backup product, not by a change-rate slider on the array
+ * — so the two inputs are hidden there, and this is what keeps the card hidden with them.
+ *
+ * NOT a `PlatformCapabilities` flag: the backup engine reads `dailyChangeRate` and
+ * `backupRetention` for every platform including PowerScale, so no probe against engine
+ * behaviour could establish it. It is a product-scope decision and lives here, in the
+ * relevance layer, where scope decisions belong.
+ */
+export function backupApplies(topology: Topology): boolean {
+  return topology.type !== 'powerscale'
+}
+
 export function shouldShowKpi(kpi: KpiId, ctx: RelevanceContext): boolean {
   switch (kpi) {
     case 'usable':
@@ -75,7 +94,9 @@ export function shouldShowSection(section: SectionId, ctx: SectionContext): bool
     case 'beegfsDetails':
       return ctx.topology?.type === 'beegfs' && ctx.volumetry?.beeGfsDetails != null
     case 'backup':
-      return ctx.hasBackup === true
+      // Opt-in on the topology: a caller that omits it gets no card, rather than one that
+      // silently escapes the `backupApplies` guard because `undefined !== 'powerscale'`.
+      return ctx.hasBackup === true && ctx.topology != null && backupApplies(ctx.topology)
     case 'flashEndurance':
       return ctx.sustainability?.flashEndurance != null
   }

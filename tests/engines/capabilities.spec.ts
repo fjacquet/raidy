@@ -111,6 +111,31 @@ describe('capability map matches engine behavior', () => {
     })
 
     /**
+     * `drivePopulationFromCatalog` is the flag the Hardware panel uses to decide whether its
+     * drive picker is the SOURCE of the population or merely a proxy for the properties a
+     * vendor catalog omits. It is not a UI preference: it is probeable, and probed here.
+     *
+     * Double the drive count. For fourteen types `rawCapacity` doubles with it — the panel's
+     * `driveCount` is the population. For PowerScale `calculateVolumetry` short-circuits into
+     * `calculatePowerScaleVolumetry(powerscaleOptions)` before `driveCount` is read at all, so
+     * raw capacity does not move: the population is the node catalog's, and the selected drive
+     * survives only as the media proxy sustainability, TCO, performance and resilience read.
+     */
+    it(`${topology.type}: drivePopulationFromCatalog=${caps.drivePopulationFromCatalog}`, () => {
+      const base = calculateVolumetry(
+        createVolumetryInput(drives, topology, { serverCount: servers }),
+      )
+      const doubled = calculateVolumetry(
+        createVolumetryInput(drives * 2, topology, { serverCount: servers }),
+      )
+      if (caps.drivePopulationFromCatalog) {
+        expect(doubled.rawCapacity).toBe(base.rawCapacity)
+      } else {
+        expect(doubled.rawCapacity).toBeGreaterThan(base.rawCapacity)
+      }
+    })
+
+    /**
      * `getFilesystemOverheadPercent` switches on `topology.type` and returns a platform
      * constant for thirteen of the fifteen types. Two consult the user's `fsType`:
      * `standard`, via an explicit case, and `longhorn`, which has NO case and so falls
@@ -163,6 +188,14 @@ describe('hasServerCount is structural (not probed)', () => {
   it('keeps compression and dedup off for PowerScale — DRR is a node-model property', () => {
     expect(PLATFORM_CAPABILITIES.powerscale.supportsCompression).toBe(false)
     expect(PLATFORM_CAPABILITIES.powerscale.supportsDedup).toBe(false)
+  })
+
+  it('marks PowerScale — and only PowerScale — as catalog-populated', () => {
+    for (const type of allTypes) {
+      expect(getCapabilities(type).drivePopulationFromCatalog, `catalog flag for ${type}`).toBe(
+        type === 'powerscale',
+      )
+    }
   })
 })
 

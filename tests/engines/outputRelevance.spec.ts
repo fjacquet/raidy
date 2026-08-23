@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import {
+  backupApplies,
   type RelevanceContext,
   type SectionContext,
   shouldShowKpi,
   shouldShowSection,
 } from '@/engines/outputRelevance'
 import type { SustainabilityResult, VolumetryResult } from '@/types/results'
+import type { Topology } from '@/types/topology'
 
 const vol = (over: Partial<VolumetryResult> = {}): VolumetryResult => ({
   rawCapacity: 1000,
@@ -108,8 +110,30 @@ describe('shouldShowSection', () => {
     expect(shouldShowSection('beegfsDetails', wrongTopology)).toBe(false)
   })
   it('shows backup only when hasBackup', () => {
-    expect(shouldShowSection('backup', { hasBackup: true })).toBe(true)
-    expect(shouldShowSection('backup', { hasBackup: false })).toBe(false)
+    const raid: Topology = { type: 'standard', level: 'RAID5' }
+    expect(shouldShowSection('backup', { topology: raid, hasBackup: true })).toBe(true)
+    expect(shouldShowSection('backup', { topology: raid, hasBackup: false })).toBe(false)
+  })
+
+  /**
+   * The Advanced panel hides `backupRetention` and `dailyChangeRate` for PowerScale, so a backup
+   * card here would report a figure derived from two values the user can neither see nor change —
+   * the same orphaned-dependency defect this branch has already fixed twice. Input visibility and
+   * output visibility are one decision, made in one place: `backupApplies`.
+   */
+  it('hides backup for PowerScale even when a result exists', () => {
+    const powerscale: Topology = { type: 'powerscale', level: 'powerscale_onefs' }
+    expect(shouldShowSection('backup', { topology: powerscale, hasBackup: true })).toBe(false)
+    expect(backupApplies(powerscale)).toBe(false)
+    expect(backupApplies({ type: 'standard', level: 'RAID5' })).toBe(true)
+  })
+
+  /**
+   * A missing topology must not be read as "not PowerScale". The section is opt-in: an act that
+   * forgets to pass its topology gets no backup card rather than a silently unguarded one.
+   */
+  it('hides backup when the caller passes no topology', () => {
+    expect(shouldShowSection('backup', { hasBackup: true })).toBe(false)
   })
   it('always shows the four core acts', () => {
     for (const s of ['capacity', 'performance', 'resilience', 'cost', 'takeaway'] as const) {

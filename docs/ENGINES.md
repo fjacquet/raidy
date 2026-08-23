@@ -66,12 +66,22 @@ Calculates storage capacity and efficiency.
 > which inputs actually move the volumetry output for a given topology type. It exposes
 > `getCapabilities(type)` and `shouldShowControl(control, type)` for the six
 > global/cross-cutting controls whose usefulness varies by platform: `compression`, `dedup`,
-> `hotSpares`, `serverCount`, `fsType`, `controller`. The map is probe-enforced —
+> `hotSpares`, `serverCount`, `fsType`, `controller` — plus one flag read straight off
+> `getCapabilities`, `drivePopulationFromCatalog`, which describes the drive picker rather than
+> gating a single control. The map is probe-enforced —
 > `tests/engines/capabilities.spec.ts` drives `calculateVolumetry` with each flag toggled and
 > asserts the flag matches actual engine behavior (e.g. the global
 > `compressionRatio`/`dedupRatio` inputs only move `effectiveCapacity` for ZFS; every other
 > platform either has no data-reduction step or reduces through its own platform-specific
 > options panel instead), so the map cannot silently drift from the engines it describes.
+>
+> `drivePopulationFromCatalog` is true only for `powerscale`, where `calculateVolumetry`
+> short-circuits into `calculatePowerScaleVolumetry(powerscaleOptions)` before `driveCount` is
+> read at all. Its probe doubles the drive count and asserts `rawCapacity` does not move — the
+> other fourteen types double with it. It is a statement about where the *population* comes from,
+> not a licence to hide the drive picker: the catalog carries no power, reliability or price, so
+> the selected drive is still read by sustainability, TCO, performance and resilience. See the
+> PowerScale UI notes below for how `HardwarePanel` keeps it reachable.
 >
 > `honoursFsType` is true for `standard` **and `longhorn`** — the filesystem-overhead switch has
 > no case for Longhorn, so it falls through to the `default` branch that reads the user's choice.
@@ -237,6 +247,38 @@ Calculates storage capacity and efficiency.
 > catalog (`powerScaleDriveTotals` / `calculatePowerScaleVolumetry`), since no engine reads
 > `driveCount * serverCount` for this platform. `PowerScaleTierTable` shows the per-pool split
 > the cluster headline hides.
+>
+> **The Hardware panel collapses to a media proxy, and the picker stays reachable.** A PowerScale
+> cluster is not configured by picking a SATA drive, so the connectivity filter, form-factor
+> filter, drive dropdown and drive-properties card collapse behind one line — *"Reference medium:
+> &lt;model&gt; — used for power, reliability and price"* — with a disclosure that reveals them
+> again. Collapsed, not removed: the catalog carries capacities and efficiencies but **no power,
+> no AFR/URE/MTBF and no price**, so the selected drive is still read for real by
+> `calculateSustainability`'s `drivePower`, by `calculateTCO`, by the performance engine's first
+> pool, and (through the store, not `SimulationInput.mediaDrive`) by the resilience worker.
+> Hiding it outright would freeze four live outputs on a value the user cannot see — the defect
+> this platform's panel has already had to fix twice, for the cost row and for `mirrorCopies`.
+> The branch is `getCapabilities(type).drivePopulationFromCatalog`, which is probe-backed rather
+> than a UI preference. **The server-power field stays visible and is relabelled per node**,
+> because sustainability multiplies it by the cluster's node count.
+>
+> **The Advanced panel drops the two backup inputs, and the backup card goes with them.**
+> `backupRetention` and `dailyChangeRate` are hidden for PowerScale and
+> `backupApplies(topology)` (`src/engines/outputRelevance.ts`) is the single predicate BOTH the
+> panel and `CapacityAct`'s backup card consult, so the input and the output cannot drift into
+> the orphaned-dependency state above. This one is a product-scope decision, not a vendor-derived
+> constraint — the backup engine reads both fields for every platform, PowerScale included, so no
+> probe against engine behaviour could establish it and it is deliberately NOT a capability flag.
+> Everything else stays: PUE still drives cooling, and the performance threshold still draws the
+> operational-capacity marker.
+>
+> **One caveat, once.** The PDF and PPTX exports carry a single line
+> (`common:powerScale.estimateNote`, via `catalogEstimateNote` in `src/utils/exportNotes.ts`):
+> capacity and efficiency are Dell's published figures, power/reliability/price/data-reduction
+> are estimates, and PowerSizer remains the reference for a firm quote. PowerSizer is the rule and
+> raidy is the shortcut — but a shortcut that refuses to estimate is not a shortcut, so no figure
+> is suppressed to avoid being wrong, and the caveat is not repeated per page, per section or per
+> row.
 
 ### PowerScale / OneFS (`src/engines/volumetry/powerscale/`)
 

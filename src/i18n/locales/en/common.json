@@ -44,5 +44,8 @@
     "auto": "Auto",
     "light": "Light",
     "dark": "Dark"
+  },
+  "powerScale": {
+    "estimateNote": "Capacity and efficiency come from Dell's published table; power, reliability, price and data reduction are estimates. PowerSizer remains the reference for a firm quote."
   }
 }

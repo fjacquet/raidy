@@ -25,8 +25,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **A conformance gate over all 122,828 rows** runs on every test run. Storage efficiency is
   asserted **exactly**, at integer basis points.
 - **Virtual Hot Spare, per-model data reduction, and end-of-life dates** from the vendor catalog.
+- **One caveat, once, on every PowerScale export.** The PDF and PPTX carry a single closing line:
+  capacity and efficiency are Dell's published figures, power/reliability/price/data-reduction are
+  estimates, and PowerSizer remains the reference for a firm quote. No figure is suppressed to
+  avoid being wrong, and the line is not repeated per page or per section.
+- `PlatformCapabilities.drivePopulationFromCatalog` — probe-backed like every other flag in that
+  map (double the drive count, assert `rawCapacity` does not move).
 
 ### Changed
+
+- **PowerScale's Hardware panel collapses to a reference-medium line.** A PowerScale cluster is
+  not configured by picking a SATA drive, so the connectivity filter, form-factor filter, drive
+  dropdown and drive-properties card sit behind a disclosure. They are collapsed, not removed: the
+  node catalog carries no power, no reliability and no price, so the selected drive is still read
+  by sustainability, TCO, performance and resilience, and hiding it would freeze four live figures
+  on a value nobody can see. The server-power input stays, relabelled **per node** — it is
+  multiplied by the cluster's node count.
+- **PowerScale drops the backup inputs and the backup card together.** `backupRetention` and
+  `dailyChangeRate` are hidden, and `backupApplies` is the one predicate both the Advanced panel
+  and the dashboard consult, so the card cannot outlive the controls that feed it. PUE and the
+  performance threshold stay — both still move a figure that is shown.
 
 - **PowerScale resilience models OneFS protection.** Every PowerScale pool was previously simulated
   as tolerating exactly one drive failure, whatever its protection — a `+3n` 20-node pool that

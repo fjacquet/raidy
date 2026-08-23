@@ -182,8 +182,10 @@ export function CapacityAct({
         </div>
       )}
 
-      {/* Backup Requirements Card */}
-      {shouldShowSection('backup', { hasBackup: backup != null }) && backup && (
+      {/* Backup Requirements Card — `topology` participates because PowerScale hides the two
+          inputs that feed it (AdvancedPanel), and a card fed by invisible inputs is the defect
+          `backupApplies` exists to prevent. */}
+      {shouldShowSection('backup', { topology, hasBackup: backup != null }) && backup && (
         <div className="panel">
           <BackupCard backup={backup} />
         </div>

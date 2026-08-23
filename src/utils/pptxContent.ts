@@ -8,6 +8,8 @@
  * and no `new Date()` — the caller supplies an optional pre-formatted date
  * label to keep this module a pure function of its inputs.
  */
+
+import { catalogEstimateNote } from './exportNotes'
 import type { ExportConfig } from './exportPptx'
 import { formatBytes } from './units'
 
@@ -25,6 +27,12 @@ export interface PptxContent {
   energyLine: PptxStat[]
   bottleneckLine: PptxStat[]
   resilienceLine: PptxStat[] | null
+  /**
+   * One-line disclaimer for platforms whose capacity is looked up in a vendor catalog: the
+   * vendor's own sizer stays the reference for a firm quote, and power/reliability/price are
+   * estimates from a reference medium. `null` when the platform has nothing to disclaim.
+   */
+  estimateNote: string | null
 }
 
 /**
@@ -183,5 +191,6 @@ export function buildPptxContent(
     energyLine,
     bottleneckLine,
     resilienceLine,
+    estimateNote: catalogEstimateNote(config.topology, t),
   }
 }

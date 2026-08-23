@@ -2,7 +2,7 @@
  * Hardware configuration panel - drive selection and count.
  */
 
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   Label,
@@ -12,7 +12,12 @@ import {
   Slider,
 } from '@/components/common/FormControls'
 import drivesData from '@/data/drives.json'
-import { effectiveServerCount, isRaidGroupMode, shouldShowControl } from '@/engines/capabilities'
+import {
+  effectiveServerCount,
+  getCapabilities,
+  isRaidGroupMode,
+  shouldShowControl,
+} from '@/engines/capabilities'
 import { calculatePowerScaleVolumetry, powerScaleDriveTotals } from '@/engines/volumetry/powerscale'
 import { useConnectivityConstraints, useFormatBytes } from '@/hooks'
 import { useConfigStore } from '@/store'
@@ -84,6 +89,21 @@ export function HardwarePanel() {
 
   // RAID 50/60 use serverCount as number of RAID groups
   const isRaidGroups = isRaidGroupMode(topology)
+
+  /**
+   * PowerScale's populations and capacities are looked up in the vendor node catalog, so the
+   * connectivity filter, form-factor filter and drive dropdown describe hardware that is not in
+   * the cluster. They collapse to one line naming the selected medium.
+   *
+   * They collapse — they do not disappear. The catalog publishes no power, no reliability and no
+   * price, so that medium is still read by sustainability, TCO, performance and resilience. A
+   * hidden picker would freeze four live outputs on a value the user cannot see, which is the
+   * defect this branch has already fixed twice. `getCapabilities(...).drivePopulationFromCatalog`
+   * is probe-backed (tests/engines/capabilities.spec.ts) rather than a UI preference.
+   */
+  const mediaIsProxy = getCapabilities(topology.type).drivePopulationFromCatalog
+  const [proxyPickerOpen, setProxyPickerOpen] = useState(false)
+  const showDrivePicker = !mediaIsProxy || proxyPickerOpen
 
   // serverCount is structural: meaningful for multi-node platforms, plus the
   // standard-RAID RAID50/60 special case where it doubles as the RAID-group count
@@ -175,83 +195,112 @@ export function HardwarePanel() {
 
   return (
     <div className="space-y-5">
-      {/* Drive Connectivity Filter */}
-      <div className="space-y-2">
-        <Label tooltip={th('hardware.connectivity')}>{t('connectivity.label')}</Label>
-        {constraint === 'nvme_only' ? (
-          <>
-            <div className="px-3 py-2 bg-slate-100 dark:bg-surface-700 rounded-lg text-sm text-slate-600 dark:text-slate-300">
-              {t('connectivity.nvme')}
-            </div>
-            {reasonKey && <p className="text-xs text-amber-500">{t(reasonKey)}</p>}
-          </>
-        ) : (
-          <>
-            <SegmentedControl
-              value={driveConnectivity}
-              options={filteredConnectivityOptions}
-              onChange={(value) => setDriveConnectivity(value as DriveConnectivity)}
-            />
-            {constraint === 'flash_only' && reasonKey && (
-              <p className="text-xs text-blue-400">{t(reasonKey)}</p>
+      {/* Media proxy line — see `mediaIsProxy` above for why the picker collapses rather than
+          disappears. */}
+      {mediaIsProxy && (
+        <div className="space-y-2">
+          {/* One matter-of-fact line, no stacked caveat: raidy is a quick sizing tool, and the
+              caveat budget is spent once, in the exports that leave for a customer. */}
+          <p className="text-sm text-slate-600 dark:text-slate-300">
+            {t('mediaProxy.line', { model: selectedDrive?.model ?? '—' })}
+          </p>
+          <button
+            type="button"
+            onClick={() => setProxyPickerOpen((open) => !open)}
+            aria-expanded={proxyPickerOpen}
+            className="text-xs text-primary-500 hover:text-primary-400 underline underline-offset-2"
+          >
+            {proxyPickerOpen ? t('mediaProxy.hide') : t('mediaProxy.change')}
+          </button>
+        </div>
+      )}
+
+      {showDrivePicker && (
+        <>
+          {/* Drive Connectivity Filter */}
+          <div className="space-y-2">
+            <Label tooltip={th('hardware.connectivity')}>{t('connectivity.label')}</Label>
+            {constraint === 'nvme_only' ? (
+              <>
+                <div className="px-3 py-2 bg-slate-100 dark:bg-surface-700 rounded-lg text-sm text-slate-600 dark:text-slate-300">
+                  {t('connectivity.nvme')}
+                </div>
+                {reasonKey && <p className="text-xs text-amber-500">{t(reasonKey)}</p>}
+              </>
+            ) : (
+              <>
+                <SegmentedControl
+                  value={driveConnectivity}
+                  options={filteredConnectivityOptions}
+                  onChange={(value) => setDriveConnectivity(value as DriveConnectivity)}
+                />
+                {constraint === 'flash_only' && reasonKey && (
+                  <p className="text-xs text-blue-400">{t(reasonKey)}</p>
+                )}
+              </>
             )}
-          </>
-        )}
-      </div>
-
-      {/* Form Factor Filter */}
-      <div className="space-y-2">
-        <Label htmlFor="form-factor" tooltip={th('hardware.formFactor')}>
-          {t('formFactor.label')}
-        </Label>
-        <Select
-          id="form-factor"
-          value={driveFormFactor}
-          options={formFactorOptions}
-          onChange={(value) => setDriveFormFactor(value as FormFactorFilter)}
-        />
-      </div>
-
-      {/* Drive Selection */}
-      <div className="space-y-2">
-        <Label
-          htmlFor="drive-select"
-          hint={`${filteredDrives.length} ${t('properties.title').toLowerCase()}`}
-          tooltip={th('hardware.driveModel')}
-        >
-          {t('drive.label')}
-        </Label>
-        <Select id="drive-select" value={driveId} options={driveOptions} onChange={setDriveId} />
-        {selectedDrive && (
-          <div className="grid grid-cols-2 gap-2 mt-2 text-xs text-slate-500 dark:text-slate-400">
-            <div>
-              {t('properties.type')}:{' '}
-              <span className="text-slate-600 dark:text-slate-300">
-                {selectedDrive.type}
-                {selectedDrive.formFactor ? ` (${selectedDrive.formFactor})` : ''}
-              </span>
-            </div>
-            <div>
-              {t('properties.cost')}:{' '}
-              <span className="text-slate-600 dark:text-slate-300">
-                {formatPrice(selectedDrive.cost_usd)}
-              </span>
-            </div>
-            <div>
-              {t('properties.readIops').replace(' IOPS', '')}:{' '}
-              <span className="text-slate-600 dark:text-slate-300">
-                {selectedDrive.performance.iops_read.toLocaleString()} IOPS
-              </span>
-            </div>
-            <div>
-              {t('properties.writeIops').replace(' IOPS', '')}:{' '}
-              <span className="text-slate-600 dark:text-slate-300">
-                {selectedDrive.performance.iops_write.toLocaleString()} IOPS
-              </span>
-            </div>
           </div>
-        )}
-      </div>
+
+          {/* Form Factor Filter */}
+          <div className="space-y-2">
+            <Label htmlFor="form-factor" tooltip={th('hardware.formFactor')}>
+              {t('formFactor.label')}
+            </Label>
+            <Select
+              id="form-factor"
+              value={driveFormFactor}
+              options={formFactorOptions}
+              onChange={(value) => setDriveFormFactor(value as FormFactorFilter)}
+            />
+          </div>
+
+          {/* Drive Selection */}
+          <div className="space-y-2">
+            <Label
+              htmlFor="drive-select"
+              hint={`${filteredDrives.length} ${t('properties.title').toLowerCase()}`}
+              tooltip={th('hardware.driveModel')}
+            >
+              {t('drive.label')}
+            </Label>
+            <Select
+              id="drive-select"
+              value={driveId}
+              options={driveOptions}
+              onChange={setDriveId}
+            />
+            {selectedDrive && (
+              <div className="grid grid-cols-2 gap-2 mt-2 text-xs text-slate-500 dark:text-slate-400">
+                <div>
+                  {t('properties.type')}:{' '}
+                  <span className="text-slate-600 dark:text-slate-300">
+                    {selectedDrive.type}
+                    {selectedDrive.formFactor ? ` (${selectedDrive.formFactor})` : ''}
+                  </span>
+                </div>
+                <div>
+                  {t('properties.cost')}:{' '}
+                  <span className="text-slate-600 dark:text-slate-300">
+                    {formatPrice(selectedDrive.cost_usd)}
+                  </span>
+                </div>
+                <div>
+                  {t('properties.readIops').replace(' IOPS', '')}:{' '}
+                  <span className="text-slate-600 dark:text-slate-300">
+                    {selectedDrive.performance.iops_read.toLocaleString()} IOPS
+                  </span>
+                </div>
+                <div>
+                  {t('properties.writeIops').replace(' IOPS', '')}:{' '}
+                  <span className="text-slate-600 dark:text-slate-300">
+                    {selectedDrive.performance.iops_write.toLocaleString()} IOPS
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+        </>
+      )}
 
       {/* Drive Count per Server — replaced by a readout on PowerScale, whose drives-per-node is
           a fixed property of each node model in Dell's catalog and cannot be chosen here. */}
@@ -291,14 +340,17 @@ export function HardwarePanel() {
         </div>
       )}
 
-      {/* Server Power */}
+      {/* Server Power — live everywhere, including PowerScale, where sustainability multiplies it
+          by the cluster's node count (11 nodes really is x11). Relabelled per node there so the
+          field cannot be read as a whole-cluster figure. Full key paths on both branches: the
+          orphan-key scan reads literals only. */}
       <div className="space-y-2">
         <Label
           htmlFor="server-power"
-          hint={t('server.powerHint')}
+          hint={powerScale ? t('server.powerHintPerNode') : t('server.powerHint')}
           tooltip={th('hardware.serverPower')}
         >
-          {t('server.power')}
+          {powerScale ? t('server.powerPerNode') : t('server.power')}
         </Label>
         <NumberInput
           id="server-power"

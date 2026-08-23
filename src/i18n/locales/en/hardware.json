@@ -32,11 +32,18 @@
     "countHint": "Total drives: {{total}}",
     "powerscaleNote": "Drive count comes from the node pools in the Topology panel: {{drives}} drives across {{nodes}} nodes."
   },
+  "mediaProxy": {
+    "line": "Reference medium: {{model}} — used for power, reliability and price.",
+    "change": "Change reference medium",
+    "hide": "Hide reference medium"
+  },
   "server": {
     "label": "Servers / Nodes",
     "labelRaidGroups": "RAID Groups",
     "power": "Server Power (W)",
-    "powerHint": "Excluding drives"
+    "powerHint": "Excluding drives",
+    "powerPerNode": "Node Power (W)",
+    "powerHintPerNode": "Per node, excluding drives"
   },
   "summary": {
     "rawCapacity": "Raw Capacity",

@@ -44,5 +44,8 @@
     "auto": "Auto",
     "light": "Hell",
     "dark": "Dunkel"
+  },
+  "powerScale": {
+    "estimateNote": "Kapazität und Effizienz stammen aus der von Dell veröffentlichten Tabelle; Leistungsaufnahme, Zuverlässigkeit, Preis und Datenreduktion sind Schätzwerte. PowerSizer bleibt die Referenz für ein verbindliches Angebot."
   }
 }

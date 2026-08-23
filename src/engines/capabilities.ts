@@ -33,6 +33,24 @@ export interface PlatformCapabilities {
    * which layer happens to bind rather than whether the controller is read at all.
    */
   honoursController: boolean
+  /**
+   * True when the platform's drive population AND raw capacity come from a vendor node
+   * catalog rather than the Hardware panel's drive × count inputs.
+   *
+   * True only for `powerscale`: `calculateVolumetry` short-circuits into
+   * `calculatePowerScaleVolumetry(powerscaleOptions)` before `driveCount` is read at all.
+   *
+   * This is NOT "hide the drive picker". The catalog publishes capacities and efficiencies but
+   * **no power, no reliability and no price**, so the selected drive is still read for real by
+   * sustainability, TCO, performance and resilience. The flag says the picker is a *proxy for
+   * those properties* rather than the source of the population — which is why HardwarePanel
+   * collapses it behind a labelled disclosure instead of removing it. Removing it would freeze
+   * live outputs on an invisible value.
+   *
+   * Probed in tests/engines/capabilities.spec.ts by doubling `driveCount` and asserting
+   * `rawCapacity` does not move.
+   */
+  drivePopulationFromCatalog: boolean
 }
 
 // WHY THIS TABLE EXISTS
@@ -88,6 +106,7 @@ export const PLATFORM_CAPABILITIES: Record<TopologyType, PlatformCapabilities> =
     // Explicit `case 'standard'` in getFilesystemOverheadPercent.
     honoursFsType: true,
     honoursController: true,
+    drivePopulationFromCatalog: false,
   },
   zfs: {
     supportsCompression: true,
@@ -95,6 +114,7 @@ export const PLATFORM_CAPABILITIES: Record<TopologyType, PlatformCapabilities> =
     hasServerCount: false,
     honoursFsType: false,
     honoursController: true,
+    drivePopulationFromCatalog: false,
   },
   s2d: {
     supportsCompression: false,
@@ -102,6 +122,7 @@ export const PLATFORM_CAPABILITIES: Record<TopologyType, PlatformCapabilities> =
     hasServerCount: true,
     honoursFsType: false,
     honoursController: true,
+    drivePopulationFromCatalog: false,
   },
   proprietary: {
     supportsCompression: false,
@@ -109,6 +130,7 @@ export const PLATFORM_CAPABILITIES: Record<TopologyType, PlatformCapabilities> =
     hasServerCount: false,
     honoursFsType: false,
     honoursController: true,
+    drivePopulationFromCatalog: false,
   },
   vsan_osa: {
     supportsCompression: false,
@@ -116,6 +138,7 @@ export const PLATFORM_CAPABILITIES: Record<TopologyType, PlatformCapabilities> =
     hasServerCount: true,
     honoursFsType: false,
     honoursController: true,
+    drivePopulationFromCatalog: false,
   },
   vsan_esa: {
     supportsCompression: false,
@@ -126,6 +149,7 @@ export const PLATFORM_CAPABILITIES: Record<TopologyType, PlatformCapabilities> =
     // computes iopsCeiling from PCIe and network alone. The only type where this is false.
     // Flipping it to true fails the probe with "expected 4032512 to be greater than 4032512".
     honoursController: false,
+    drivePopulationFromCatalog: false,
   },
   ceph: {
     supportsCompression: false,
@@ -133,6 +157,7 @@ export const PLATFORM_CAPABILITIES: Record<TopologyType, PlatformCapabilities> =
     hasServerCount: true,
     honoursFsType: false,
     honoursController: true,
+    drivePopulationFromCatalog: false,
   },
   powerflex: {
     supportsCompression: false,
@@ -140,6 +165,7 @@ export const PLATFORM_CAPABILITIES: Record<TopologyType, PlatformCapabilities> =
     hasServerCount: true,
     honoursFsType: false,
     honoursController: true,
+    drivePopulationFromCatalog: false,
   },
   powerstore: {
     supportsCompression: false,
@@ -147,6 +173,7 @@ export const PLATFORM_CAPABILITIES: Record<TopologyType, PlatformCapabilities> =
     hasServerCount: true,
     honoursFsType: false,
     honoursController: true,
+    drivePopulationFromCatalog: false,
   },
   powerscale: {
     supportsCompression: false,
@@ -156,6 +183,11 @@ export const PLATFORM_CAPABILITIES: Record<TopologyType, PlatformCapabilities> =
     hasServerCount: false,
     honoursFsType: false,
     honoursController: true,
+    // The one platform whose population is looked up rather than configured here: capacity comes
+    // from the node catalog (ADR-0014). The Hardware panel's drive stays live all the same — the
+    // catalog publishes no power, no reliability and no price — so the panel keeps it reachable
+    // as a labelled media proxy rather than hiding a value four engines still read.
+    drivePopulationFromCatalog: true,
   },
   objectscale: {
     supportsCompression: false,
@@ -163,6 +195,7 @@ export const PLATFORM_CAPABILITIES: Record<TopologyType, PlatformCapabilities> =
     hasServerCount: true,
     honoursFsType: false,
     honoursController: true,
+    drivePopulationFromCatalog: false,
   },
   nutanix: {
     supportsCompression: false,
@@ -170,6 +203,7 @@ export const PLATFORM_CAPABILITIES: Record<TopologyType, PlatformCapabilities> =
     hasServerCount: true,
     honoursFsType: false,
     honoursController: true,
+    drivePopulationFromCatalog: false,
   },
   powervault: {
     supportsCompression: false,
@@ -177,6 +211,7 @@ export const PLATFORM_CAPABILITIES: Record<TopologyType, PlatformCapabilities> =
     hasServerCount: false,
     honoursFsType: false,
     honoursController: true,
+    drivePopulationFromCatalog: false,
   },
   longhorn: {
     supportsCompression: false,
@@ -187,6 +222,7 @@ export const PLATFORM_CAPABILITIES: Record<TopologyType, PlatformCapabilities> =
     // this to false makes the probe fail with 2.85 TB vs 2.97 TB (ext4 5% vs xfs 1%).
     honoursFsType: true,
     honoursController: true,
+    drivePopulationFromCatalog: false,
   },
   beegfs: {
     supportsCompression: false,
@@ -194,6 +230,7 @@ export const PLATFORM_CAPABILITIES: Record<TopologyType, PlatformCapabilities> =
     hasServerCount: true,
     honoursFsType: false,
     honoursController: true,
+    drivePopulationFromCatalog: false,
   },
 } as const
 

@@ -268,6 +268,22 @@ function buildSummarySlide(
     addSectionLabel(slide, i18n.t('output:pptx.resilience'), palette.capacity, 0.4, y)
     addStatLine(slide, content.resilienceLine, 0.4, y + 0.33, 12.6, palette)
   }
+
+  // Positioning footnote — pinned to the bottom of the 7.5" slide rather than following `y`, so
+  // it cannot be pushed off the page by a resilience row. This deck goes to a customer: it says
+  // the vendor's sizer remains the reference and which figures here are estimates.
+  if (content.estimateNote) {
+    slide.addText(content.estimateNote, {
+      x: 0.4,
+      y: 7.02,
+      w: 12.6,
+      h: 0.34,
+      fontSize: 8,
+      italic: true,
+      color: palette.textMuted,
+      fontFace: FONT,
+    })
+  }
 }
 
 /**
