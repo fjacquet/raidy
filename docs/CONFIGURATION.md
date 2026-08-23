@@ -11,7 +11,21 @@ changing it, not this one.
 | `security.yml` | push + PR to `main`, weekly cron (Mon 04:23) | `web-security.yml@v1` |
 | `deploy.yml` | push to `main`, manual dispatch | `web-deploy.yml@v1` (build-dir `dist`) |
 | `release.yml` | `v*` tags | `web-release.yml@v1` (no npm, no Docker) |
-| `dependabot-automerge.yml` | `pull_request_target` from `dependabot[bot]` | — (inline `gh pr merge --auto --rebase`) |
+| `dependabot-automerge.yml` | `pull_request_target` from `dependabot[bot]` | — (inline, patch/minor only) |
+
+`.github/dependabot.yml` is what produces those pull requests. It did not exist until after 3.1.1,
+so the merge half of the mechanism sat armed while nothing fed it — which is how twenty-six packages
+drifted behind and had to be swept by hand in 3.1.1. npm patch and minor updates arrive **grouped
+into one weekly PR**; ten separate green PRs a week teach a reviewer to merge without looking, and
+that habit is what makes an auto-merged major dangerous. GitHub Actions are grouped the same way.
+
+`dependabot-automerge.yml` auto-merges only patch and minor, decided from
+`dependabot/fetch-metadata`'s `update-type`. **A major stays open and gets a comment saying why** —
+silence would be indistinguishable from the workflow failing. That guard matters here specifically:
+the whole test suite runs on jsdom, so a `jsdom` or `@testing-library/jest-dom` major merging
+itself overnight would be a poor way to discover a breaking change. That is not hypothetical: 3.1.1
+carried exactly those two majors, and `jsdom` 30 both narrowed the supported Node range and changed
+how `getComputedStyle` serializes values.
 
 `release.yml` declares `packages: write`, `id-token: write` and `attestations: write` — the first
 because the reusable workflow's npm/Docker jobs validate permissions even when skipped, the other

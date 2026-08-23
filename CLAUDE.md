@@ -159,6 +159,7 @@ Four Swiss languages: EN (default), FR, DE, IT. Uses `react-i18next` with 10 nam
 - **Main branch**: `main`
 - **CI is federated** to reusable workflows in `fjacquet/ci@v1`. The local files are thin callers:
   `ci.yml`, `security.yml`, `deploy.yml` (Pages on push to `main`), `release.yml` (`v*` tags),
-  `dependabot-automerge.yml`. There is no `static.yml` or `codeql.yml` — see
+  `dependabot-automerge.yml` (patch/minor only; majors stay open by design, guarded on
+  `dependabot/fetch-metadata`). There is no `static.yml` or `codeql.yml` — see
   [docs/CONFIGURATION.md](./docs/CONFIGURATION.md).
 - **Base path**: `/raidy/` (configured in `vite.config.ts` for GitHub Pages)
