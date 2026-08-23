@@ -58,8 +58,16 @@ export function buildPptxContent(
   const { volumetry: vol, performance: perf, resilience, sustainability: sus } = config.results
   const label = (key: string) => t(`output:pptx.labels.${key}`)
 
-  const topologyLabel = config.topology.type.toUpperCase()
-  const levelLabel = 'level' in config.topology ? ` ${config.topology.level}` : ''
+  // PowerScale's level is an internal identifier with exactly one possible value, so the raw
+  // discriminant read "POWERSCALE powerscale_onefs" across the top of a customer deck. Every other
+  // platform's level carries real information and is kept. Mirrors `topologyLabel` in exportPdf.ts.
+  const isPowerScale = config.topology.type === 'powerscale'
+  const topologyLabel = isPowerScale ? 'PowerScale' : config.topology.type.toUpperCase()
+  const levelLabel = isPowerScale
+    ? ' OneFS'
+    : 'level' in config.topology
+      ? ` ${config.topology.level}`
+      : ''
   const title = `${topologyLabel}${levelLabel}`
 
   // PowerScale's populations come from the node catalog, not the Hardware panel — that panel is

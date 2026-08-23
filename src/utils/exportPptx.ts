@@ -201,51 +201,74 @@ const TABLE_W = 11.9
 function buildTableSlide(
   prs: pptxgen,
   palette: Brand,
-  table: PowerScaleExportTable,
-  colW: number[],
+  tables: { table: PowerScaleExportTable; colW: number[] }[],
   footnote: string | null,
 ): void {
   const slide = prs.addSlide()
   slide.background = { fill: palette.bg }
   addAccentBar(slide, prs, palette)
 
-  slide.addText(table.title, {
-    x: 0.4,
-    y: 0.2,
-    w: 12.6,
-    h: 0.45,
-    fontSize: 18,
-    bold: true,
-    color: palette.textWhite,
-    fontFace: FONT,
-  })
+  // A 16:9 slide is 7.5" tall. One node pool is a three-row table, which at a fixed row height
+  // floated in the top-left corner with most of the slide empty — and the deck is the artefact
+  // people actually present. So the block is laid out to fill the space: rows grow for small
+  // clusters, several tables can share a slide, and at the eight-pool maximum this collapses
+  // back to the compact one-table-per-slide layout it started from.
+  const bandTop = 0.85
+  const bandBottom = footnote ? 6.85 : 7.2
+  const titleH = 0.5
+  const gap = 0.35
+  const totalRows = tables.reduce((n, t) => n + t.table.rows.length + 2, 0)
+  const chrome = tables.length * titleH + (tables.length - 1) * gap
+  const rowH = Math.min(0.62, Math.max(0.26, (bandBottom - bandTop - chrome) / totalRows))
+  const blockH = chrome + rowH * totalRows
+  let y = bandTop + Math.max(0, (bandBottom - bandTop - blockH) / 2)
 
-  const headerRow: pptxgen.TableRow = table.columns.map((label) => ({
-    text: label,
-    options: { bold: true, color: palette.textWhite, fill: { color: palette.panel }, fontSize: 8 },
-  }))
+  for (const { table, colW } of tables) {
+    slide.addText(table.title, {
+      x: 0.4,
+      y,
+      w: 12.6,
+      h: 0.45,
+      fontSize: 18,
+      bold: true,
+      color: palette.textWhite,
+      fontFace: FONT,
+    })
+    y += titleH
 
-  const bodyRows: pptxgen.TableRow[] = table.rows.map((row) =>
-    row.map((cell) => ({ text: cell, options: { color: palette.textWhite } })),
-  )
+    const headerRow: pptxgen.TableRow = table.columns.map((label) => ({
+      text: label,
+      options: {
+        bold: true,
+        color: palette.textWhite,
+        fill: { color: palette.panel },
+        fontSize: 8,
+      },
+    }))
 
-  const totalRow: pptxgen.TableRow = table.totalRow.map((cell) => ({
-    text: cell,
-    options: { bold: true, color: palette.textWhite, fill: { color: palette.panel } },
-  }))
+    const bodyRows: pptxgen.TableRow[] = table.rows.map((row) =>
+      row.map((cell) => ({ text: cell, options: { color: palette.textWhite } })),
+    )
 
-  slide.addTable([headerRow, ...bodyRows, totalRow], {
-    x: TABLE_X,
-    y: 0.85,
-    w: TABLE_W,
-    colW,
-    rowH: 0.3,
-    fontSize: 10,
-    fontFace: FONT,
-    color: palette.textWhite,
-    valign: 'middle',
-    border: { type: 'solid', pt: 0.5, color: palette.border },
-  })
+    const totalRow: pptxgen.TableRow = table.totalRow.map((cell) => ({
+      text: cell,
+      options: { bold: true, color: palette.textWhite, fill: { color: palette.panel } },
+    }))
+
+    slide.addTable([headerRow, ...bodyRows, totalRow], {
+      x: TABLE_X,
+      y,
+      w: TABLE_W,
+      colW,
+      rowH,
+      fontSize: 10,
+      fontFace: FONT,
+      color: palette.textWhite,
+      valign: 'middle',
+      border: { type: 'solid', pt: 0.5, color: palette.border },
+    })
+    y += rowH * (bodyRows.length + 2) + gap
+  }
 
   if (footnote) {
     slide.addText(footnote, {
@@ -438,14 +461,16 @@ export async function exportToPptx(config: ExportConfig): Promise<void> {
   )
 
   if (powerScale) {
-    buildTableSlide(prs, palette, powerScale.poolTable, POOL_COL_W, null)
-    buildTableSlide(
-      prs,
-      palette,
-      powerScale.derivationTable,
-      DERIVATION_COL_W,
-      powerScale.estimateNote,
-    )
+    // Few pools: both tables share one slide, which fills it and keeps the deck short. Beyond
+    // that they need a slide each to stay legible.
+    const pool = { table: powerScale.poolTable, colW: POOL_COL_W }
+    const derivation = { table: powerScale.derivationTable, colW: DERIVATION_COL_W }
+    if (powerScale.poolTable.rows.length <= 4) {
+      buildTableSlide(prs, palette, [pool, derivation], powerScale.estimateNote)
+    } else {
+      buildTableSlide(prs, palette, [pool], null)
+      buildTableSlide(prs, palette, [derivation], powerScale.estimateNote)
+    }
   }
 
   const safeLabel = (config.topology.type ?? 'storage').replace(/[^a-z0-9]/gi, '-')
