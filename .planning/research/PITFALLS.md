@@ -216,10 +216,10 @@ Add `case 'powerscale': options = { serverCount }; break;` to the switch in `get
 - Dell ObjectScale 1.3 Administration Guide — EC schemes: https://www.dell.com/support/manuals/en-us/objectscale/objectscale_p_1_3_admin_guide/data-protection-with-objectscale-erasure-coding-schemes
 - ECS geo-replication overhead (2-site 2.67×, 3-site 2.0×, XOR for 3+): https://www.dell.com/support/manuals/en-us/ecs-appliance-/ecs_p_adminguide_3_5_0_1/ecs-data-protection
 - PowerFlex 5.0 specification sheet (EC 2+2 and 8+2 schemes, 80% max efficiency): https://www.delltechnologies.com/asset/en-us/products/storage/technical-support/powerflex-5-0-specification-sheet.pdf
-- Existing project code: `/Users/fjacquet/Projects/raidy/src/engines/volumetry/strategies/dell.ts`
-- Existing project code: `/Users/fjacquet/Projects/raidy/src/engines/volumetry/strategies/proprietary.ts` (contains ADAPT hardcoded constants)
-- Existing project code: `/Users/fjacquet/Projects/raidy/src/engines/volumetry/helpers/calculationHelpers.ts` (confirms serverCount is not passed for powerscale)
-- Existing tests: `/Users/fjacquet/Projects/raidy/tests/engines/volumetry.spec.ts` lines 3727–3766 (ADAPT wrong expected values)
+- Existing project code: `src/engines/volumetry/strategies/dell.ts`
+- Existing project code: `src/engines/volumetry/strategies/proprietary.ts` (contains ADAPT hardcoded constants)
+- Existing project code: `src/engines/volumetry/helpers/calculationHelpers.ts` (confirms serverCount is not passed for powerscale)
+- Existing tests: `tests/engines/volumetry.spec.ts` lines 3727–3766 (ADAPT wrong expected values)
 
 ---
 *Pitfalls research for: Dell storage capacity formula implementation in Raidy v1.2*

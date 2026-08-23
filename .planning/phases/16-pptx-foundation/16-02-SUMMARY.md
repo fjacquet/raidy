@@ -95,6 +95,6 @@ npm run build       # exits 0 (✓ built in 2.64s)
 
 ## Self-Check: PASSED
 
-- `/Users/fjacquet/Projects/raidy/src/utils/exportPptx.ts` — FOUND
-- `/Users/fjacquet/Projects/raidy/src/utils/index.ts` — modified, FOUND
+- `src/utils/exportPptx.ts` — FOUND
+- `src/utils/index.ts` — modified, FOUND
 - Commit `5b5bcaa` — FOUND
