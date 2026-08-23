@@ -4,7 +4,9 @@ Raidy is a 100% client-side Vite + React app. There is no backend, no database, 
 
 ## Prerequisites
 
-- **Node.js 24** (the CI build runs on Node 24; 20+ works locally).
+- **Node.js 22.22.2+, 24.15+ or 26+.** The CI build runs on Node 24. The floor is set by
+  `jsdom` 30, whose `engines` range is `^22.22.2 || ^24.15.0 || >=26.0.0` — Node 20 and
+  Node 25 are outside it, so the test suite will not run there.
 - **npm** (the repo ships a `package-lock.json`).
 
 ## Setup

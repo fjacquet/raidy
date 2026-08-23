@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- **Dependencies brought current in one sweep** — 26 packages, three of them majors.
+  `jsdom` 29 → 30, `@testing-library/jest-dom` 6 → 7 and `@types/node` 25 → 26; the rest are
+  patch and minor (Biome 2.5.10, Vite 8.2.2, Vitest 4.1.11, React 19.2.8, i18next 26.4.0,
+  knip 6.32.2, fast-check 4.9.0, jsPDF 4.2.1 among them). All 1796 tests, the type check, the
+  linter, knip, the build and the bundle budget pass unchanged.
+- **Node floor raised to 22.22.2 / 24.15 / 26.** `jsdom` 30 narrowed its `engines` range to
+  `^22.22.2 || ^24.15.0 || >=26.0.0`, which excludes Node 20 and Node 25. CI already runs
+  Node 24. Recorded in [docs/GETTING-STARTED.md](./docs/GETTING-STARTED.md).
+- **Biome config migrated for 2.5.x** — `linter.rules.recommended` became `linter.rules.preset`,
+  and the 2.5 formatter reflowed three test files.
+
+### Fixed
+
+- **`npm run typecheck` was checking nothing.** It ran `tsc --noEmit` against the root
+  `tsconfig.json`, which is a references-only solution file (`"files": []`), so the command
+  exited 0 without reading a single source file. It now names the app and test projects
+  explicitly — the behaviour [docs/DEVELOPMENT.md](./docs/DEVELOPMENT.md) described all along,
+  whose own wording is corrected here to spell out the `-p tsconfig.app.json` it was missing.
+  Three files reached only by the entry point — `src/App.tsx`, `src/main.tsx` and
+  `src/components/layout/index.ts` — had been covered by `npm run build` alone.
+
 ## [3.1.0] - 2026-08-23
 
 ### Added

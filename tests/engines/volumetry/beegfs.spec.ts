@@ -352,17 +352,16 @@ describe('BeeGFS volumetry — validation guards', () => {
     { level: 'beegfs_raidz2' as const, topology: raidz2, min: 4 },
     { level: 'beegfs_raid10' as const, topology: raid10, min: 2 },
     { level: 'beegfs_single' as const, topology: single, min: 1 },
-  ])('returns zero-state for $level with drivesPerTarget one below its minimum ($min)', ({
-    level,
-    topology,
-    min,
-  }) => {
-    const result = calculateVolumetry(
-      createVolumetryInput(24, topology, {
-        beeGfsOptions: beegfs({ drivesPerTarget: min - 1, storageBuddyMirror: false }),
-      }),
-    )
-    expect(result.usableCapacity).toBe(0)
-    expect(result.breakdown[0]?.label).toBe(`${level} needs >= ${min} drives per target`)
-  })
+  ])(
+    'returns zero-state for $level with drivesPerTarget one below its minimum ($min)',
+    ({ level, topology, min }) => {
+      const result = calculateVolumetry(
+        createVolumetryInput(24, topology, {
+          beeGfsOptions: beegfs({ drivesPerTarget: min - 1, storageBuddyMirror: false }),
+        }),
+      )
+      expect(result.usableCapacity).toBe(0)
+      expect(result.breakdown[0]?.label).toBe(`${level} needs >= ${min} drives per target`)
+    },
+  )
 })

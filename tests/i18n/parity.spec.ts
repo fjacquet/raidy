@@ -92,31 +92,32 @@ describe('i18n key parity against en reference', () => {
         }
       })
 
-      it.each(
-        targetLocales,
-      )('%s preserves every {{placeholder}} present in the en value', (locale) => {
-        const enEntries = flattenEntries(loadNamespace(REFERENCE_LOCALE, namespace))
-        const localeEntries = flattenEntries(loadNamespace(locale, namespace))
-        const problems: string[] = []
+      it.each(targetLocales)(
+        '%s preserves every {{placeholder}} present in the en value',
+        (locale) => {
+          const enEntries = flattenEntries(loadNamespace(REFERENCE_LOCALE, namespace))
+          const localeEntries = flattenEntries(loadNamespace(locale, namespace))
+          const problems: string[] = []
 
-        for (const [key, enValue] of Object.entries(enEntries)) {
-          const enPlaceholders = new Set(extractPlaceholders(enValue))
-          if (enPlaceholders.size === 0) continue
+          for (const [key, enValue] of Object.entries(enEntries)) {
+            const enPlaceholders = new Set(extractPlaceholders(enValue))
+            if (enPlaceholders.size === 0) continue
 
-          const localeValue = localeEntries[key]
-          const localePlaceholders = new Set(extractPlaceholders(localeValue))
-          const missing = [...enPlaceholders].filter((p) => !localePlaceholders.has(p))
-          if (missing.length > 0) {
-            problems.push(`${locale}/${namespace}: ${key} missing ${missing.join(', ')}`)
+            const localeValue = localeEntries[key]
+            const localePlaceholders = new Set(extractPlaceholders(localeValue))
+            const missing = [...enPlaceholders].filter((p) => !localePlaceholders.has(p))
+            if (missing.length > 0) {
+              problems.push(`${locale}/${namespace}: ${key} missing ${missing.join(', ')}`)
+            }
           }
-        }
 
-        if (problems.length > 0) {
-          throw new Error(
-            `Found ${problems.length} value(s) with dropped/mangled placeholder(s):\n${problems.join('\n')}`,
-          )
-        }
-      })
+          if (problems.length > 0) {
+            throw new Error(
+              `Found ${problems.length} value(s) with dropped/mangled placeholder(s):\n${problems.join('\n')}`,
+            )
+          }
+        },
+      )
     })
   }
 })
