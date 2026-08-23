@@ -1,9 +1,9 @@
 # Dependabot version updates.
 #
 # `dependabot-automerge.yml` has existed since before this file did, so the merge half of the
-# mechanism was in place while nothing produced the PRs it merges — which is why 19 packages had
-# drifted behind by 3.1.0. Adding this file arms the other half; the workflow's guard on
-# update-type is what keeps that from being dangerous.
+# mechanism was in place while nothing produced the PRs it merges — which is why 26 packages had
+# drifted behind by 3.1.1 and were swept by hand. Adding this file arms the other half; the
+# workflow's guard on update-type is what keeps that from being dangerous.
 version: 2
 updates:
   - package-ecosystem: npm
