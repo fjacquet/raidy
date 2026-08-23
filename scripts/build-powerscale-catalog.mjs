@@ -2,9 +2,9 @@
 // Derives raidy's PowerScale data from Dell's capacity-calculator workbook.
 //
 // The workbook is not redistributable and is NEVER committed. Pass its path:
-//   node scripts/build-powerscale-catalog.mjs ~/path/vendor capacity workbook
+//   node scripts/build-powerscale-catalog.mjs ~/path/<vendor-capacity-workbook>.xlsm
 //
-// Its hidden `the data` sheet holds 122,828 rows exported from Dell's
+// Its data sheet holds 122,828 rows exported from Dell's
 // PowerSizer. The workbook itself says the numbers are "derived
 // directly from PowerSizer. They are not direct calculations" — so we extract
 // the table rather than porting formulas.
@@ -269,7 +269,7 @@ for (const line of eolTsv.split('\n').filter(Boolean)) {
 
 writeFileSync(
   'src/data/powerscaleNodes.json',
-  `${JSON.stringify({ generatedFrom: 'vendor capacity workbook', rowCount: rows.length, models, availability, protectionSets }, null, 0)}\n`,
+  `${JSON.stringify({ generatedFrom: 'vendor capacity workbook (not redistributable)', rowCount: rows.length, models, availability, protectionSets }, null, 0)}\n`,
 )
 writeFileSync(
   'src/data/powerscaleEfficiency.json',

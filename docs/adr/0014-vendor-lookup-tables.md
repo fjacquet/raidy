@@ -10,12 +10,10 @@ given a configuration, compute a result. Every platform through 3.0 obeyed it, b
 platform's capacity arithmetic has a closed form — RAID parity, ZFS RAIDZ, vSAN erasure coding,
 Ceph replication. The engine encodes the formula and the formula is the truth.
 
-Dell PowerScale broke that. A partner supplied
-`vendor capacity workbook`, a macro-enabled workbook whose hidden `the data`
-sheet holds **122,828 rows** exported from Dell's PowerSizer. The workbook is explicit
-about what it is:
-
-> (vendor statement: figures are exported from PowerSizer, not computed in the workbook)
+Dell PowerScale broke that. The authority is
+`<vendor-capacity-workbook>.xlsm`, a vendor capacity workbook whose data
+sheet holds **122,828 rows** exported from Dell's PowerSizer sizing tool. The workbook states plainly that its figures are exported from PowerSizer rather than computed,
+so there are no formulas in it to port — the value is the table itself.
 
 We tried to derive them anyway. The OneFS FEC model is well documented: `u` stripe units per node,
 `M` FEC units, node fault tolerance `nf`, stripe `width = min(u·N, Wmax)` with `Wmax` 18 for

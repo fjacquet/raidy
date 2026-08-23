@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **PowerScale / OneFS rebuilt against Dell's PowerSizer.** A vendor-sourced workbook's hidden
-  `the data` sheet holds 122,828 rows exported from Dell's corporate sizer. raidy now ships
+  the data sheet holds 122,828 rows exported from Dell's corporate sizer. raidy now ships
   the derived table rather than a formula, because no closed form reproduces it — H710 at 22 nodes
   on `+3n` reads 0.7250, which needs 15.95 data nodes out of 22, and 378 entries depend on drive
   size, which the published OneFS model has no term for. See

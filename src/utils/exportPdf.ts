@@ -24,6 +24,15 @@ const LOCALE_MAP: Record<string, string> = {
 interface ExportConfig {
   drive: Drive
   driveCount: number
+  /**
+   * Overrides the generic "<drive model> · <n> drives · <n> servers" hardware line.
+   *
+   * PowerScale populations come from the node catalog, not the Hardware panel — that panel is
+   * hidden for it (`hasServerCount: false`) — so `drive`, `driveCount` and `serverCount` describe
+   * hardware the user never chose. Without this, an F210 cluster exported as "24 TB SATA HDD,
+   * 12 drives, 1 server".
+   */
+  hardwareLabel?: string
   topology: Topology
   zfsOptions?: ZfsOptions
   results: CalculationResults
@@ -121,10 +130,17 @@ export function exportToPdf(config: ExportConfig): void {
   autoTable(doc, {
     startY: y,
     head: [[t('columns.parameter'), t('columns.value')]],
+    // When `hardwareLabel` is set the media rows are dropped, not relabelled: for PowerScale the
+    // selected drive is not in the cluster at all, so its model, type and per-drive capacity would
+    // each be a wrong answer to a question the reader did not ask.
     body: [
-      [t('hardware.model'), drive.model],
-      [t('hardware.type'), drive.type + (drive.formFactor ? ` (${drive.formFactor})` : '')],
-      [t('hardware.capacity'), formatBytes(drive.capacity_raw)],
+      ...(config.hardwareLabel
+        ? [[t('hardware.model'), config.hardwareLabel]]
+        : [
+            [t('hardware.model'), drive.model],
+            [t('hardware.type'), drive.type + (drive.formFactor ? ` (${drive.formFactor})` : '')],
+            [t('hardware.capacity'), formatBytes(drive.capacity_raw)],
+          ]),
       [t('hardware.count'), driveCount.toString()],
       [t('hardware.topology'), `${topology.type.toUpperCase()} - ${topology.level}`],
       [t('hardware.rawCapacity'), formatBytes(volumetry.rawCapacity)],

@@ -31,6 +31,15 @@ export interface ExportConfig {
   results: CalculationResults
   projectName?: string
   unitSystem?: UnitSystem
+  /**
+   * Overrides the generic "<drive model> · <n> drives · <n> servers" hardware line.
+   *
+   * PowerScale populations come from the node catalog, not the Hardware panel — that panel is
+   * hidden for it (`hasServerCount: false`) — so `drive`, `driveCount` and `serverCount` describe
+   * hardware the user never chose. Without this, an F210 cluster exported as "24 TB SATA HDD,
+   * 12 drives, 1 server".
+   */
+  hardwareLabel?: string
 }
 
 /** Standard slide font. */

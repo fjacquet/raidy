@@ -5,11 +5,11 @@ Date: 2026-08-22
 
 ## 1. Source of truth
 
-`vendor capacity workbook` (Dell, 21.7 MB, macro-enabled), obtained under a vendor agreement.
-Its hidden `the data` sheet holds **122,828 rows** exported from Dell's corporate
+`<vendor-capacity-workbook>.xlsm` (Dell, 21.7 MB, macro-enabled), obtained under a vendor agreement.
+Its data sheet holds **122,828 rows** exported from Dell's corporate
 PowerSizer. The workbook states plainly:
 
-> (vendor statement: figures are exported from PowerSizer, not computed in the workbook)
+> (vendor statement: the figures are exported from PowerSizer, not computed in the workbook)
 
 So the workbook contains no formulas worth porting. The value is the table itself, plus the
 rules encoded in the visible sheets (VHS, DRR, protection availability, node-count bounds).

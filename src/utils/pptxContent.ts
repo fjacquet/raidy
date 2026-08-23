@@ -53,11 +53,15 @@ export function buildPptxContent(
   const title = `${topologyLabel}${levelLabel}`
 
   const subtitle = [
-    config.drive.model,
-    `${config.driveCount} ${label('drives')}`,
-    config.serverCount && config.serverCount > 1
-      ? `${config.serverCount} ${label('servers')}`
-      : null,
+    ...(config.hardwareLabel
+      ? [config.hardwareLabel]
+      : [
+          config.drive.model,
+          `${config.driveCount} ${label('drives')}`,
+          config.serverCount && config.serverCount > 1
+            ? `${config.serverCount} ${label('servers')}`
+            : null,
+        ]),
     dateLabel,
   ]
     .filter(Boolean)

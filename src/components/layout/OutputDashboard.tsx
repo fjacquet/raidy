@@ -2,7 +2,7 @@
  * Right panel containing calculation results and visualizations.
  */
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   CapacityAct,
@@ -15,6 +15,7 @@ import {
 } from '@/components/outputs'
 import drivesData from '@/data/drives.json'
 import { effectiveServerCount } from '@/engines/capabilities'
+import { powerScaleDriveTotals } from '@/engines/volumetry/powerscale'
 import { useCalculations, useIsMobile, useResilience } from '@/hooks'
 import { useTieringOptions } from '@/hooks/useTieringOptions'
 import { useConfigStore } from '@/store'
@@ -130,7 +131,8 @@ export function OutputDashboard() {
     try {
       exportToPdf({
         drive: selectedDrive,
-        driveCount,
+        driveCount: powerScaleExport?.driveCount ?? driveCount,
+        hardwareLabel: powerScaleExport?.hardwareLabel,
         topology,
         zfsOptions: topology.type === 'zfs' ? zfsOptions : undefined,
         results: {
@@ -145,13 +147,29 @@ export function OutputDashboard() {
     }
   }
 
+  /**
+   * PowerScale exports describe node pools, not the Hardware panel's drive. That panel is hidden
+   * for this platform, so `driveCount`, `serverCount` and the selected drive model are stale
+   * values the user never set — an F210 cluster would otherwise export as "24 TB SATA HDD,
+   * 12 drives, 1 server".
+   */
+  const powerScaleExport = useMemo(() => {
+    if (topology.type !== 'powerscale') return null
+    const totals = powerScaleDriveTotals(powerscaleOptions)
+    const pools = powerscaleOptions.tiers
+      .map((tier) => `${tier.nodeModel} x${tier.nodeCount} ${tier.protection}`)
+      .join(' + ')
+    return { driveCount: totals.clusterDrives, hardwareLabel: pools }
+  }, [topology.type, powerscaleOptions])
+
   const handleExportPptx = () => {
     if (!selectedDrive) return
     setExportError(false)
     exportToPptx({
       drive: selectedDrive,
-      driveCount,
-      serverCount: effectiveServerCount(serverCount, topology),
+      driveCount: powerScaleExport?.driveCount ?? driveCount,
+      hardwareLabel: powerScaleExport?.hardwareLabel,
+      serverCount: powerScaleExport ? undefined : effectiveServerCount(serverCount, topology),
       topology,
       zfsOptions: topology.type === 'zfs' ? zfsOptions : undefined,
       results: {

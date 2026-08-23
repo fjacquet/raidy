@@ -95,7 +95,7 @@ Produces the vendor data raidy will ship. Nothing else can start without it.
 ```jsonc
 // powerscaleNodes.json
 {
-  "generatedFrom": "vendor capacity workbook",
+  "generatedFrom": "<vendor-capacity-workbook>.xlsm",
   "rowCount": 122828,
   "models": {
     "F710": {
@@ -191,9 +191,9 @@ Expected: FAIL — `Cannot find module '@/data/powerscaleNodes.json'`
 // Derives raidy's PowerScale data from Dell's capacity-calculator workbook.
 //
 // The workbook is not redistributable and is NEVER committed. Pass its path:
-//   node scripts/build-powerscale-catalog.mjs ~/path/vendor capacity workbook
+//   node scripts/build-powerscale-catalog.mjs ~/path/<vendor-capacity-workbook>.xlsm
 //
-// Its hidden `the data` sheet holds 122,828 rows exported from Dell's
+// Its data sheet holds 122,828 rows exported from Dell's
 // PowerSizer. The workbook itself says the numbers are "derived
 // directly from PowerSizer. They are not direct calculations" — so we extract
 // the table rather than porting formulas.
@@ -429,7 +429,7 @@ for (const line of eolTsv.split('\n').filter(Boolean)) {
 
 writeFileSync(
   'src/data/powerscaleNodes.json',
-  `${JSON.stringify({ generatedFrom: 'vendor capacity workbook', rowCount: rows.length, models, availability, protectionSets }, null, 0)}\n`,
+  `${JSON.stringify({ generatedFrom: '<vendor-capacity-workbook>.xlsm', rowCount: rows.length, models, availability, protectionSets }, null, 0)}\n`,
 )
 writeFileSync('src/data/powerscaleEfficiency.json', `${JSON.stringify({ curves, exceptions }, null, 0)}\n`)
 
@@ -457,7 +457,7 @@ Append to `.gitignore`:
 
 - [ ] **Step 5: Generate the data**
 
-Run: `node scripts/build-powerscale-catalog.mjs ~/Library/CloudStorage/OneDrive-Home/vendor capacity workbook`
+Run: `node scripts/build-powerscale-catalog.mjs ~/Library/CloudStorage/OneDrive-Home/<vendor-capacity-workbook>.xlsm`
 Expected: `wrote catalog (22 models), efficiency (... curves), fixture (122828 rows)`
 
 - [ ] **Step 6: Run test to verify it passes**
