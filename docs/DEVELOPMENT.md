@@ -11,7 +11,7 @@ All scripts are in `package.json`. A `Makefile` wraps the common ones (`make dev
 | `npm run dev` | Vite dev server with HMR at `http://localhost:5173/raidy/`. |
 | `npm run build` | Production build: `tsc -b && vite build`. The `prebuild` hook runs the supply-chain gate first. |
 | `npm run preview` | Serve the production build locally for a final smoke check. |
-| `npm run typecheck` | Type-checks the app (`tsc --noEmit`) **and** the test project (`tsc --noEmit -p tsconfig.test.json`). |
+| `npm run typecheck` | Type-checks the app (`tsc --noEmit -p tsconfig.app.json`) **and** the test project (`tsc --noEmit -p tsconfig.test.json`). |
 | `npm run lint` | `biome check .` (lint + format check). |
 | `npm run lint:fix` | `biome check --write .` — apply safe fixes + organize imports. |
 | `npm run format` | `biome format --write .`. |
