@@ -159,6 +159,13 @@ one strategy per platform ([ADR-0003](./adr/0003-strategy-pattern-per-platform.m
 | Engine | Location | Produces |
 |---|---|---|
 | Volumetry | `src/engines/volumetry/` | Usable and effective capacity, parity/filesystem/spare overheads, per-platform detail cards |
+
+> **PowerScale is the exception to the strategy-per-platform shape.** `calculateVolumetry` returns
+> early into `src/engines/volumetry/powerscale/` instead of selecting a `VolumetryStrategy`, because
+> its input model is **node-pool-centric rather than drive-centric**: the user picks node models and
+> pool sizes, and drive counts are derived from the vendor catalog rather than entered. A shared
+> overhead added to the generic path will silently skip PowerScale. See
+> [ADR-0014](./adr/0014-vendor-lookup-tables.md).
 | Performance | `src/engines/performance/` | Burst and sustained IOPS and throughput, the Media→Controller→PCIe→Network bottleneck chain, latency |
 | Resilience | `src/workers/resilienceWorker.ts` | Annual survival rate, URE and dual-failure probabilities, rebuild time — Monte Carlo in a Web Worker ([ADR-0006](./adr/0006-monte-carlo-and-the-superset-invariant.md)) |
 | Sustainability | `src/engines/sustainability/` | Power draw, energy, CO₂, flash endurance, TCO |

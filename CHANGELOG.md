@@ -5,6 +5,60 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.0] - 2026-08-23
+
+### Added
+
+- **PowerScale / OneFS rebuilt against Dell's PowerSizer.** A vendor-sourced workbook's hidden
+  `the data` sheet holds 122,828 rows exported from Dell's corporate sizer. raidy now ships
+  the derived table rather than a formula, because no closed form reproduces it — H710 at 22 nodes
+  on `+3n` reads 0.7250, which needs 15.95 data nodes out of 22, and 378 entries depend on drive
+  size, which the published OneFS model has no term for. See
+  [ADR-0014](./docs/adr/0014-vendor-lookup-tables.md).
+- **Multi-tier clusters.** A PowerScale cluster is 1–8 heterogeneous node pools under one OneFS
+  namespace, each with its own node model, drive size, node count, protection and Virtual Hot
+  Spare. The output shows a row per pool plus a cluster total.
+- **A node catalog drives the input panel.** Pick a node model; drive sizes, drives per node and
+  node-count bounds all derive from it. Node counts snap to each model's own increment (A/H-series
+  step by 2; F800/F810 are minimum 4 / increment 2 while F210/F710 are 3 / 1). Protections are
+  offered only where Dell publishes them, and an end-of-life model is badged.
+- **A conformance gate over all 122,828 rows** runs on every test run. Storage efficiency is
+  asserted **exactly**, at integer basis points.
+- **Virtual Hot Spare, per-model data reduction, and end-of-life dates** from the vendor catalog.
+
+### Changed
+
+- **PowerScale resilience models OneFS protection.** Every PowerScale pool was previously simulated
+  as tolerating exactly one drive failure, whatever its protection — a `+3n` 20-node pool that
+  survives three whole nodes was shown the durability of single parity. The simulator now spends
+  the stripe's unit budget: a drive failure costs 1 unit, a whole-node failure costs `u`, and data
+  is lost past `M`. This model is derived from published OneFS semantics and is **not
+  vendor-attested** — PowerSizer is a capacity calculator and carries no AFR, URE or MTBF.
+- **The PowerScale write penalty is protection-driven**, resolved from the pool's protection rather
+  than a flat constant, including the mirror region where OneFS mirrors instead of striping FEC.
+- Performance and resilience read the **first** node pool; sustainability sums **every** pool.
+  Power and cooling are additive across a rack, but a client's IOPS and a rebuild's exposure window
+  belong to the pool serving the data.
+
+### Removed
+
+- PowerScale's compression, dedup and snapshot-reserve controls. Data reduction is a published
+  property of each node model (1.0, 1.6 or 2.0), not a user-set slider, and PowerSizer reserves
+  nothing for snapshots — a non-zero default put every answer below the source of truth.
+- The `powerscale_n1` … `powerscale_n4` and `powerscale_mirror_2x` / `_3x` topology levels.
+  Protection is a property of a node pool, not of the cluster.
+
+### BREAKING
+
+- **The PowerScale URL shape changed.** Protection moved out of `topology.level` into each tier,
+  and `PowerScaleOptions` is now `{ tiers }`. Links made before 3.1 are migrated on load: the old
+  level maps to the equivalent protection, the node count is clamped into the default model's
+  bounds, and a toast asks the user to re-check the rebuilt pool. **The migration shim is removed
+  one release after 3.1** — a 3.0 link opened after that resets to defaults.
+- Because a migrated link cannot know which node model was intended, it seeds the default model.
+  Any 3.0 PowerScale link therefore describes different hardware after migration, not merely a
+  different notation.
+
 ## [3.0.0] - 2026-08-06
 
 ### Added

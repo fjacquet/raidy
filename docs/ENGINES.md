@@ -141,7 +141,7 @@ Calculates storage capacity and efficiency.
 > catalog (1.0, 1.6 or 2.0), not a user-set slider, and PowerSizer reserves nothing for
 > snapshots — so a non-zero default would have put every raidy answer below the source of
 > truth. `PowerScaleOptions` is now `{ tiers }` alone; see
-> [adr/0014](./adr/0014-powerscale-onefs-vendor-table.md).
+> [adr/0014](./adr/0014-vendor-lookup-tables.md).
 >
 > **Performance, resilience and sustainability read the tier model, not the Hardware panel**
 > (PowerScale has `hasServerCount: false`, so the shared drive-count/server-count sliders are
@@ -237,6 +237,63 @@ Calculates storage capacity and efficiency.
 > catalog (`powerScaleDriveTotals` / `calculatePowerScaleVolumetry`), since no engine reads
 > `driveCount * serverCount` for this platform. `PowerScaleTierTable` shows the per-pool split
 > the cluster headline hides.
+
+### PowerScale / OneFS (`src/engines/volumetry/powerscale/`)
+
+PowerScale is the one platform whose numbers are **looked up, not derived**. See
+[ADR-0014](./adr/0014-vendor-lookup-tables.md) for why, and
+[the design spec](./superpowers/specs/2026-08-22-powerscale-onefs-design.md) for the full
+argument.
+
+**Stripe geometry.** Every protection maps to `{u, M, nf}` in `stripeShape.ts` — `u` stripe units
+placed per node, `M` FEC units in the stripe, `nf` whole-node failures tolerated:
+
+| Protection | `u` | `M` | `nf` |
+|---|---|---|---|
+| `+1n` | 1 | 1 | 1 |
+| `+2n` | 1 | 2 | 2 |
+| `+3n` | 1 | 3 | 3 |
+| `+4n` | 1 | 4 | 4 |
+| `+2d:1n` | 2 | 2 | 1 |
+| `+3d:1n` | 3 | 3 | 1 |
+| `+3d:1n1d` | 2 | 3 | 1 |
+| `+4d:1n` | 4 | 4 | 1 |
+| `+4d:2n` | 2 | 4 | 2 |
+
+The table is self-consistent under one rule: **`nf == floor(M / u)`**, for all nine entries. A
+drive failure spends one unit and a whole-node failure spends `u`, so a protection tolerates
+`floor(M/u)` nodes. `+3d:1n1d` is the clearest case — its own name reads "one node plus one
+drive", which is `u + 1 = 2 + 1 = 3 = M` exactly. Both the resilience simulator and the
+performance write penalty spend that budget rather than carrying a second threshold.
+
+**Stripe width** is `min(u·N, Wmax)`, where `Wmax` is 18 for `M ∈ {2,3}` and 20 for `M = 4`.
+
+**Mirror fallback.** When `N < 2·nf` OneFS mirrors instead of striping FEC, at `1/min(nf+1, N)`.
+`isPowerScaleMirrorRegion` and `powerScaleMirrorCopies` in `stripeShape.ts` are the **single**
+definition of that boundary — the capacity closed form, the write penalty and the resilience
+worker all import it, so they cannot drift apart.
+
+**Neighborhoods.** Node pools split above roughly 20 nodes, so efficiency does not climb
+monotonically with node count — it saws. This is one reason no closed form reproduces the vendor
+table.
+
+**Per-tier capacity chain**, per node pool:
+
+```
+rawTB(t)       = nodeCount(t) × drivesPerNode(model) × rawPerDriveTB(model, driveSize)
+usableTB(t)    = rawTB(t) × efficiency(model, protection, nodeCount(t)) × usableFactor(model, driveSize)
+lessVHS(t)     = usableTB(t) − max(vhsByDriveCount(t), vhsByPercent(t))
+effectiveTB(t) = lessVHS(t) × drr(model)
+```
+
+`efficiency` is the vendor's published protection efficiency. `usableFactor` (0.9775–0.9906 across
+the catalog, never 1) is the filesystem loss. **Data reduction is a property of the node model** —
+Dell publishes 1.0, 1.6 or 2.0 per model — not a user-set slider, which is why `PowerScaleOptions`
+carries no compression or dedup fields.
+
+**A pool the vendor does not publish is not sizeable.** `storageEfficiency` returns `undefined`
+and `sizeTier` returns `null` — never zero. Unsizeable pools are dropped before any aggregate, so
+a cluster total is always the sum of exactly the rows shown beside it.
 
 ## Performance (`/src/engines/performance/`)
 

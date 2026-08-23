@@ -149,6 +149,9 @@ Four Swiss languages: EN (default), FR, DE, IT. Uses `react-i18next` with 10 nam
 - **i18n: write full key paths at call sites**, not ``t(`prefix.${x}.body`)`` — `tests/i18n/orphanKeys.spec.ts` scans literally, so templates are invisible; a `DYNAMIC_PREFIXES` entry exempts the whole subtree and is weaker.
 - **Component tests rendering input panels must stub `window.matchMedia`** — jsdom lacks it and `InfoTooltip` calls it through `useIsTouchDevice`.
 - **`check:dead` fails spuriously inside `.claude/worktrees/*`** — the worktree's `node_modules` is nearly empty, so knip reports unlisted binaries and unused devDeps. Run the gate on the main checkout.
+- **PowerScale does not use the generic volumetry path** — `calculateVolumetry` returns early into `src/engines/volumetry/powerscale/`. Adding a shared overhead to the generic path will silently skip PowerScale.
+- **`src/data/powerscale*.json` are generated** — edit `scripts/build-powerscale-catalog.mjs` and regenerate; hand edits are lost. Regenerating changes three artifacts (both JSON files and `tests/fixtures/powerscale-powersizer.csv.gz`) that must be committed together.
+- **PowerScale claims in a brief are not evidence** — protection availability, node bounds and drive sizes vary per model and per drive size. Probe `src/data/powerscaleNodes.json` before writing a test vector; four fabricated vendor values reached briefs on the OneFS branch and every one was caught by an implementer reading the catalog.
 - **`Closes #A and #B` only closes #A** — repeat the keyword per issue.
 
 ## Git & CI

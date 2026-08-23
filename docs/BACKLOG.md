@@ -17,6 +17,28 @@ which touched enough shared code to expose pre-existing gaps.
 
 *Nothing open.* B21 (#88) closed 2026-08-05; see `docs/superpowers/specs/2026-08-05-fast-tier-failure-domain-design.md` for what was deliberately left out of it.
 
+## PowerScale performance and resilience size the first node pool only
+
+`usePerformanceCalc` and `useResilience` read `tiers[0]` (via `powerScaleDriveTotals`'s
+`firstTier`); only sustainability sums every pool. This was deliberate — a client's IOPS and a
+rebuild's exposure window are properties of the pool serving the data, and averaging an all-flash
+F210 pool with an archive A200 pool describes no real hardware. But a user with a heterogeneous
+cluster sees performance for one pool and power for all of them, which the dashboard notes but
+does not model. Modelling it properly means letting a workload name the pool it lands on.
+
+## PowerScale rebuild time uses the selected drive, not the pool's
+
+`PlatformSimulationScope.mediaDrive` is `Drive | null`, all-or-nothing. PowerScale leaves it
+`null` — correct, since the vendor catalog carries no AFR/URE/MTBF to simulate with — so the
+simulation falls back to the Hardware panel's selected drive, including its **capacity**. The
+tier knows its own `driveSizeTb`, so an 8 TB A200 pool can be simulated with a 960 GB rebuild
+window. Fixing it means widening the scope type, which touches every platform's resolver.
+
+## OneFS SmartPools tiering policy is unmodelled
+
+Pools are sized independently. Real clusters move data between them on policy, so a SmartPools
+file-pool policy changes the effective capacity split without changing any pool's geometry.
+
 ---
 
 ## How to close an item

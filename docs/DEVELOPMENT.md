@@ -74,6 +74,29 @@ Two things to know before you silence a finding:
 
 `src/engines/**` are **pure functions** — no React, no DOM, no store. Each platform implements a strategy registered in the engine's `index.ts` (see [ARCHITECTURE.md](./ARCHITECTURE.md)). To add a platform: add a strategy file, register it, add types in `src/types/topology.ts`, add a store slice option, and add a UI options panel.
 
+## Regenerating the PowerScale catalog
+
+`src/data/powerscaleNodes.json`, `src/data/powerscaleEfficiency.json` and
+`tests/fixtures/powerscale-powersizer.csv.gz` are **generated**. Hand edits are lost on the next
+regeneration, and the Biome formatter is disabled for the two JSON files so a reformat cannot
+disguise one.
+
+They come from `vendor capacity workbook`, a **not redistributable** macro-enabled
+workbook whose hidden `the data` sheet holds 122,828 rows. It is **never committed** —
+`.gitignore` guards `*.xlsm` and `*.xlsb` — so you need your own copy to regenerate.
+
+```bash
+node scripts/build-powerscale-catalog.mjs /path/to/vendor capacity workbook
+```
+
+The script shells out to `uv run --with openpyxl python3` to read the workbook, so `uv` must be on
+PATH. It asserts the row count and that every efficiency lands in `[0, 1]`; if either fails it
+exits rather than emitting a partial catalog.
+
+**Commit all three artifacts together.** Committing a subset leaves
+`tests/engines/volumetry/powerscale/powersizer.spec.ts` validating the engine against a table it no
+longer ships — the gate stays green while proving nothing.
+
 ## Git & commits
 
 - Default branch: **`main`**.

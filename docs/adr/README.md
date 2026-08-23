@@ -16,6 +16,7 @@ to change it — a different person, usually with a plan to "simplify" something
 | [0007](./0007-sourced-lists-over-probed-flags.md) | Sourced lists and probed flags answer different questions | Before merging two per-platform lists that look redundant |
 | [0012](./0012-per-platform-output-relevance.md) | Outputs are filtered per platform, like inputs | Adding a KPI or a dashboard section |
 | [0013](./0013-sizing-tool-not-provisioning.md) | Raidy sizes storage; it does not provision it | When "export to Terraform" is proposed again |
+| [0014](./0014-vendor-lookup-tables.md) | Ship the vendor's table when no closed form reproduces it | Before approximating a number a vendor publishes exactly |
 
 ## Tooling and delivery
 
@@ -40,6 +41,7 @@ documents, and `tests/fixtures/*-vectors.ts` for the numbers that pin them.
 The test for whether something belongs here: **could a competent person reasonably have decided
 otherwise?** If yes, record the alternative and why it lost. If it is simply what the vendor
 documents, it is reference material.
+
 
 ## Writing a new one
 
