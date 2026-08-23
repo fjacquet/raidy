@@ -457,7 +457,7 @@ Append to `.gitignore`:
 
 - [ ] **Step 5: Generate the data**
 
-Run: `node scripts/build-powerscale-catalog.mjs ~/Library/CloudStorage/OneDrive-Home/<vendor-capacity-workbook>.xlsm`
+Run: `node scripts/build-powerscale-catalog.mjs <workbook-directory>/<vendor-capacity-workbook>.xlsm`
 Expected: `wrote catalog (22 models), efficiency (... curves), fixture (122828 rows)`
 
 - [ ] **Step 6: Run test to verify it passes**
