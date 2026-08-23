@@ -23,7 +23,8 @@
   },
   "hotSpares": {
     "label": "Dischi di riserva",
-    "distributedNote": "vSAN ricostruisce dallo spazio libero distribuito — i dischi di riserva dedicati non vengono utilizzati."
+    "distributedNote": "Questa piattaforma ricostruisce da capacità di riserva distribuita — non usa dischi hot spare dedicati.",
+    "distributedNotePowerScale": "La riserva è il Virtual Hot Spare, impostato per pool di nodi qui sotto."
   },
   "common": {
     "enableCompression": "Abilita compressione",

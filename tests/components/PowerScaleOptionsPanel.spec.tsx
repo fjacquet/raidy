@@ -253,10 +253,27 @@ describe('PowerScaleOptionsPanel', () => {
     it('applies a workload preset in one click', () => {
       render(<PowerScaleOptionsPanel />)
       fireEvent.change(screen.getByRole('combobox', { name: /data profile/i }), {
-        target: { value: '1' },
+        target: { value: 'medicalImaging' },
       })
       expect(tiers()[0]?.drrOverride).toBe(1)
       expect(screen.getByRole('spinbutton', { name: /data reduction ratio/i })).toHaveValue(1)
+    })
+
+    it('keeps same-ratio profiles distinguishable', () => {
+      // Options are keyed by preset id, not by ratio. Three profiles sit at 1.0 (medical imaging,
+      // video, encrypted) and two at 2.0; keying by the ratio made them duplicate <option> values
+      // — React logged duplicate keys and the select could not tell them apart, so choosing
+      // "Video" selected "Medical imaging". jsdom renders that without complaint; only a real
+      // browser surfaced it, which is why the distinctness is pinned here.
+      render(<PowerScaleOptionsPanel />)
+      const profile = screen.getByRole('combobox', { name: /data profile/i }) as HTMLSelectElement
+      const values = Array.from(profile.options).map((o) => o.value)
+      expect(new Set(values).size).toBe(values.length)
+
+      fireEvent.change(profile, { target: { value: 'video' } })
+      expect(tiers()[0]?.drrOverride).toBe(1)
+      fireEvent.change(profile, { target: { value: 'database' } })
+      expect(tiers()[0]?.drrOverride).toBe(2)
     })
 
     it('clears the override — not writes NaN or 0 — when the field is emptied', () => {

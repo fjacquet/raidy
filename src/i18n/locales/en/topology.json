@@ -23,7 +23,8 @@
   },
   "hotSpares": {
     "label": "Hot Spares",
-    "distributedNote": "vSAN rebuilds from distributed slack space — dedicated hot spares are not used."
+    "distributedNote": "This platform rebuilds from distributed spare capacity — dedicated hot-spare drives are not used.",
+    "distributedNotePowerScale": "Spare capacity is the Virtual Hot Spare, set per node pool below."
   },
   "common": {
     "enableCompression": "Enable Compression",

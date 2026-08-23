@@ -99,9 +99,16 @@ export function TopologyPanel() {
         </p>
       </div>
 
-      {/* Hot Spares — hidden for topologies that rebuild from distributed slack space (vSAN) */}
+      {/* Hot Spares — hidden for the ten topologies that rebuild from distributed spare capacity.
+          The note used to name vSAN specifically, so the other nine platforms each told the user
+          about a product they had not selected. PowerScale gets its own line because the claim is
+          doubly wrong there: it DOES have a dedicated reserve, the per-pool Virtual Hot Spare. */}
       {usesDistributedSpares(topology.type) ? (
-        <p className="text-xs text-slate-500">{t('hotSpares.distributedNote')}</p>
+        <p className="text-xs text-slate-500">
+          {topology.type === 'powerscale'
+            ? t('hotSpares.distributedNotePowerScale')
+            : t('hotSpares.distributedNote')}
+        </p>
       ) : (
         <div className="space-y-2">
           <Label htmlFor="hot-spares" tooltip={th('topology.hotSpares')}>

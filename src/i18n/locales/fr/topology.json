@@ -23,7 +23,8 @@
   },
   "hotSpares": {
     "label": "Disques de secours",
-    "distributedNote": "vSAN reconstruit via l'espace libre distribué — aucun disque de secours dédié n'est utilisé."
+    "distributedNote": "Cette plateforme reconstruit à partir d'une réserve répartie — aucun disque de secours dédié.",
+    "distributedNotePowerScale": "La réserve est le Virtual Hot Spare, défini par pool de nœuds ci-dessous."
   },
   "common": {
     "enableCompression": "Activer la compression",

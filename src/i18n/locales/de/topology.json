@@ -23,7 +23,8 @@
   },
   "hotSpares": {
     "label": "Hot Spares",
-    "distributedNote": "vSAN rekonstruiert über verteilten freien Speicher — dedizierte Hot Spares werden nicht verwendet."
+    "distributedNote": "Diese Plattform rekonstruiert aus verteilter Reservekapazität — dedizierte Hot-Spare-Laufwerke werden nicht verwendet.",
+    "distributedNotePowerScale": "Die Reserve ist der Virtual Hot Spare, pro Node-Pool weiter unten festgelegt."
   },
   "common": {
     "enableCompression": "Komprimierung aktivieren",

@@ -50,13 +50,13 @@ const DRR_MAX = 20
  * deduplicated upstream by most backup software); 1.1 is the single value offered here.
  */
 const DRR_PRESETS = [
-  { id: 'medicalImaging', value: 1.0 },
-  { id: 'video', value: 1.0 },
-  { id: 'encrypted', value: 1.0 },
-  { id: 'archive', value: 1.1 },
-  { id: 'generalFiles', value: 1.6 },
-  { id: 'virtualization', value: 2.0 },
-  { id: 'database', value: 2.0 },
+  { id: 'medicalImaging', value: 1.0, labelKey: 'powerscale.tier.drrPresets.medicalImaging' },
+  { id: 'video', value: 1.0, labelKey: 'powerscale.tier.drrPresets.video' },
+  { id: 'encrypted', value: 1.0, labelKey: 'powerscale.tier.drrPresets.encrypted' },
+  { id: 'archive', value: 1.1, labelKey: 'powerscale.tier.drrPresets.archive' },
+  { id: 'generalFiles', value: 1.6, labelKey: 'powerscale.tier.drrPresets.generalFiles' },
+  { id: 'virtualization', value: 2.0, labelKey: 'powerscale.tier.drrPresets.virtualization' },
+  { id: 'database', value: 2.0, labelKey: 'powerscale.tier.drrPresets.database' },
 ] as const
 
 /**
@@ -118,12 +118,16 @@ export function PowerScaleTierRow({
   const effectiveDrr = tier.drrOverride ?? catalogDrr
   const isDrrModified = tier.drrOverride !== undefined && tier.drrOverride !== catalogDrr
 
+  // Keyed by preset id, NOT by ratio. Three profiles sit at 1.0 (medical imaging, video,
+  // encrypted) and two at 2.0, so using the ratio as the option value gave duplicate React keys
+  // and — worse — a <select> whose options were indistinguishable: picking "Video" selected
+  // "Medical imaging". Only a browser surfaced it; jsdom renders duplicate keys without complaint.
+  //
+  // Labels are looked up by full literal key path, never interpolated: `tests/i18n/orphanKeys`
+  // scans the source literally, so a template makes every one of these keys invisible to it.
   const drrPresetOptions = [
     { value: '', label: t('powerscale.tier.drrPresetPlaceholder') },
-    ...DRR_PRESETS.map((preset) => ({
-      value: String(preset.value),
-      label: t(`powerscale.tier.drrPresets.${preset.id}`),
-    })),
+    ...DRR_PRESETS.map((preset) => ({ value: preset.id, label: t(preset.labelKey) })),
   ]
 
   const idPrefix = `powerscale-tier-${index}`
@@ -208,10 +212,10 @@ export function PowerScaleTierRow({
   }
 
   /** Presets are fire-and-forget: they set the override and the picker returns to its placeholder. */
-  const applyDrrPreset = (raw: string) => {
-    const value = Number(raw)
-    if (!Number.isFinite(value) || value <= 0) return
-    updatePowerScaleTier(index, { drrOverride: value })
+  const applyDrrPreset = (id: string) => {
+    const preset = DRR_PRESETS.find((p) => p.id === id)
+    if (!preset) return
+    updatePowerScaleTier(index, { drrOverride: preset.value })
   }
 
   /**
