@@ -96,7 +96,16 @@ function size(row: VendorRow): PowerScaleTierResult | null {
   })
 }
 
-describe('PowerSizer conformance', () => {
+/**
+ * Walking 122,828 rows through the real engine takes seconds by design, and Vitest's default
+ * per-test timeout is 5s. Locally each case runs in about 1.3s, but on a CI runner it lands at
+ * 5-7s and every case fails — as a TIMEOUT, which reads at a glance like the conformance gate
+ * going red. This declares what the gate actually costs instead of sitting just under the
+ * default and turning red whenever the machine is busy.
+ */
+const CONFORMANCE_TIMEOUT_MS = 60_000
+
+describe('PowerSizer conformance', { timeout: CONFORMANCE_TIMEOUT_MS }, () => {
   it('loaded the full vendor export', () => {
     expect(rows).toHaveLength(122828)
   })
