@@ -19,7 +19,15 @@ updates:
       patch-and-minor:
         patterns: ['*']
         update-types: [minor, patch]
-    # Majors come as their own PR, one per package, and the workflow refuses to auto-merge them.
+      # vitest and @vitest/* pin EXACT peers on each other (@vitest/coverage-v8 declares
+      # `peer vitest@"4.1.11"`), so a major bumped one package at a time is unresolvable:
+      # the 5.0.0 bump arrived as PRs #168/#169/#170 and each failed `npm ci` with ERESOLVE
+      # on its own. Group the family across all update types so a major arrives installable.
+      vitest:
+        patterns: ['vitest', '@vitest/*']
+        update-types: [major, minor, patch]
+    # Other majors still come as their own PR, one per package, and the workflow refuses to
+    # auto-merge them — grouping here changes how the PR is built, not whether it is reviewed.
     labels: [dependencies]
 
   - package-ecosystem: github-actions
