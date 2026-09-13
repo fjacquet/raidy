@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.3] - 2026-09-13
+
+### Changed
+
+- **Vitest bumped to the 5.0.0 major** (`vitest`, `@vitest/coverage-v8`, `@vitest/ui` together).
+  `@vitest/coverage-v8` pins an exact `peer vitest@"4.1.11"`, so Dependabot's three separate major
+  PRs (#168-#170) each failed `npm ci` with an unresolvable peer set. `.github/dependabot.yml` now
+  groups the vitest family across all update types so a future major always arrives as one
+  installable PR. **Contributors running `npm ci` locally will now get Vitest 5** — no code
+  changes were required, but local test tooling output/behavior may differ slightly from 4.x.
+- Routine patch/minor dependency refresh (Dependabot, no security advisories involved):
+  `pptxgenjs-plus` 4.1.20 → 4.3.1, `zod` 4.4.3 → 4.5.4, `i18next` 26.4.0 → 26.4.2, `react-i18next`
+  17.0.12 → 17.0.13, `react-error-boundary` 6.1.3 → 6.1.4, `@biomejs/biome` 2.5.10 → 2.5.12, and
+  assorted devDependency bumps (`@testing-library/react`, `@testing-library/user-event`,
+  `@types/node`, `@types/react-dom`, `@vitejs/plugin-react`, `knip`).
+
 ## [3.1.2] - 2026-08-23
 
 ### Changed
