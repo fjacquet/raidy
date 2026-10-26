@@ -22,24 +22,27 @@ The standard approach is layered defense:
 The established libraries/tools for React SPA security:
 
 ### Core
-| Library | Version | Purpose | Why Standard |
-|---------|---------|---------|--------------|
-| Zod | 3.24+ | Runtime schema validation | TypeScript-first, zero dependencies, type inference, 10M+ weekly downloads |
-| DOMPurify | 3.3.1+ | HTML sanitization | Industry standard for XSS prevention, works client/server-side |
-| react-error-boundary | 4.1+ | Declarative error boundaries | Avoids class components, built-in reset logic, 1M+ weekly downloads |
+
+| Library              | Version | Purpose                      | Why Standard                                                               |
+| -------------------- | ------- | ---------------------------- | -------------------------------------------------------------------------- |
+| Zod                  | 3.24+   | Runtime schema validation    | TypeScript-first, zero dependencies, type inference, 10M+ weekly downloads |
+| DOMPurify            | 3.3.1+  | HTML sanitization            | Industry standard for XSS prevention, works client/server-side             |
+| react-error-boundary | 4.1+    | Declarative error boundaries | Avoids class components, built-in reset logic, 1M+ weekly downloads        |
 
 ### Supporting
-| Library | Version | Purpose | When to Use |
-|---------|---------|---------|-------------|
-| @braintree/sanitize-url | 7.1+ | URL validation | Prevents javascript: scheme attacks in href attributes |
-| isomorphic-dompurify | 2.19+ | SSR-compatible sanitization | When using Next.js or SSR (not needed for Raidy) |
+
+| Library                 | Version | Purpose                     | When to Use                                            |
+| ----------------------- | ------- | --------------------------- | ------------------------------------------------------ |
+| @braintree/sanitize-url | 7.1+    | URL validation              | Prevents javascript: scheme attacks in href attributes |
+| isomorphic-dompurify    | 2.19+   | SSR-compatible sanitization | When using Next.js or SSR (not needed for Raidy)       |
 
 ### Alternatives Considered
-| Instead of | Could Use | Tradeoff |
-|------------|-----------|----------|
-| Zod | Yup | Better Formik integration, but weaker TypeScript support |
-| Zod | Joi | More features, but Node-only (no browser support) |
-| react-error-boundary | Custom class | More control, but verbose and error-prone |
+
+| Instead of           | Could Use    | Tradeoff                                                 |
+| -------------------- | ------------ | -------------------------------------------------------- |
+| Zod                  | Yup          | Better Formik integration, but weaker TypeScript support |
+| Zod                  | Joi          | More features, but Node-only (no browser support)        |
+| react-error-boundary | Custom class | More control, but verbose and error-prone                |
 
 **Installation:**
 ```bash
@@ -50,6 +53,7 @@ npm install --save-dev @types/dompurify
 ## Architecture Patterns
 
 ### Recommended Project Structure
+
 ```
 src/
 ├── utils/
@@ -63,6 +67,7 @@ src/
 ```
 
 ### Pattern 1: URL State Validation Schema
+
 **What:** Define Zod schema matching Zustand store shape for runtime validation after LZ-string decompression
 **When to use:** Every URL hash load (on app init, shared link navigation)
 **Example:**
@@ -71,7 +76,16 @@ src/
 import { z } from 'zod'
 
 // Enum validation with TypeScript type guard
-const TopologyTypeSchema = z.enum(['standard', 'zfs', 's2d', 'ceph', 'vsan_esa', 'vsan_osa', 'powerflex', 'proprietary'])
+const TopologyTypeSchema = z.enum([
+  'standard',
+  'zfs',
+  's2d',
+  'ceph',
+  'vsan_esa',
+  'vsan_osa',
+  'powerflex',
+  'proprietary',
+])
 
 // Numeric bounds validation
 const DriveCountSchema = z.number().int().min(1).max(1000)
@@ -82,7 +96,7 @@ export const ConfigStateSchema = z.object({
   driveCount: DriveCountSchema,
   topology: z.object({
     type: TopologyTypeSchema,
-    level: z.string()
+    level: z.string(),
   }),
   serverCount: z.number().int().min(1).max(100).optional(),
   // ... other fields
@@ -101,6 +115,7 @@ export function validateUrlState(data: unknown): ConfigState | null {
 ```
 
 ### Pattern 2: CSP Configuration for Static Hosting
+
 **What:** Configure Content Security Policy headers via deployment platform config files
 **When to use:** All production deployments
 
@@ -144,6 +159,7 @@ export function validateUrlState(data: unknown): ConfigState | null {
 **Note:** GitHub Pages does NOT support HTTP headers via config files. Meta tag approach cannot enforce frame-ancestors or report-uri directives. Consider Netlify/Vercel for production.
 
 ### Pattern 3: React Error Boundary with User-Friendly Messages
+
 **What:** Catch calculation engine errors and render fallback UI without exposing stack traces
 **When to use:** Wrap calculation dashboard and PDF export components
 **Example:**
@@ -183,6 +199,7 @@ export function AppErrorBoundary({ children }: { children: React.ReactNode }) {
 ```
 
 ### Anti-Patterns to Avoid
+
 - **Showing stack traces to users:** Leaks implementation details, helps attackers understand code structure
 - **Client-only validation mindset:** In SPAs without backend, validation after deserialization IS the security layer
 - **Trusting URL hash data:** LZ-string decompression returns strings - must validate before type coercion
@@ -193,28 +210,30 @@ export function AppErrorBoundary({ children }: { children: React.ReactNode }) {
 
 Problems that look simple but have existing solutions:
 
-| Problem | Don't Build | Use Instead | Why |
-|---------|-------------|-------------|-----|
-| Runtime type validation | Custom if/else chains | Zod schemas | Handles edge cases (NaN, Infinity, type coercion), provides error paths, composable |
-| HTML sanitization | Regex-based stripping | DOMPurify | Handles nested tags, attribute-based XSS, SVG/MathML vectors, constantly updated |
-| URL scheme validation | String startsWith() | @braintree/sanitize-url or URL constructor | Prevents javascript:, data:, vbscript: schemes, handles edge cases |
-| Error boundaries | Custom class components | react-error-boundary | Built-in reset logic, TypeScript support, hooks integration |
-| Enum validation | Manual includes() checks | Zod enum schemas | Type inference, exhaustive checking, error messages |
+| Problem                 | Don't Build              | Use Instead                                | Why                                                                                 |
+| ----------------------- | ------------------------ | ------------------------------------------ | ----------------------------------------------------------------------------------- |
+| Runtime type validation | Custom if/else chains    | Zod schemas                                | Handles edge cases (NaN, Infinity, type coercion), provides error paths, composable |
+| HTML sanitization       | Regex-based stripping    | DOMPurify                                  | Handles nested tags, attribute-based XSS, SVG/MathML vectors, constantly updated    |
+| URL scheme validation   | String startsWith()      | @braintree/sanitize-url or URL constructor | Prevents javascript:, data:, vbscript: schemes, handles edge cases                  |
+| Error boundaries        | Custom class components  | react-error-boundary                       | Built-in reset logic, TypeScript support, hooks integration                         |
+| Enum validation         | Manual includes() checks | Zod enum schemas                           | Type inference, exhaustive checking, error messages                                 |
 
 **Key insight:** Security vulnerabilities often hide in edge cases. Library maintainers handle 100+ edge cases you haven't considered (e.g., DOMPurify handles `<svg><script href="data:,alert(1)"/>` injection).
 
 ## Common Pitfalls
 
 ### Pitfall 1: jsPDF Path Traversal (CVE-2025-68428)
+
 **What goes wrong:** Passing user-controlled file paths to jsPDF methods (addImage, html, addFont, loadFile) in Node.js builds allows reading arbitrary files
 **Why it happens:** jsPDF ≤3.0.4 didn't sanitize paths; attackers could pass `"../../../etc/passwd"` to embed file contents in PDF
 **How to avoid:**
 - Use jsPDF ≥4.0.0 (Raidy currently uses 4.0.0 ✓)
 - Never pass user-controlled paths to file-loading methods
 - Raidy only uses jsPDF for text/table rendering (not file loading), so safe
-**Warning signs:** If adding image upload features in future, validate paths strictly
+  **Warning signs:** If adding image upload features in future, validate paths strictly
 
 ### Pitfall 2: LZ-String Decompression Without Validation
+
 **What goes wrong:** `decompressFromEncodedURIComponent()` returns strings; parsing JSON from untrusted source without validation allows injection of malformed data (NaN, Infinity, negative drive counts)
 **Why it happens:** Developers assume URL state is "their own data" and safe; attackers can craft malicious URLs
 **How to avoid:**
@@ -233,15 +252,17 @@ if (!result.success) {
 **Warning signs:** Calculation engines returning NaN, negative capacities, missing validation in urlStorage.ts
 
 ### Pitfall 3: CSP Breaking Inline Styles/Scripts
+
 **What goes wrong:** Strict CSP blocks Tailwind's utility classes or React's inline event handlers; app appears broken
 **Why it happens:** CSP `script-src 'self'` blocks inline `<script>` tags; `style-src 'self'` blocks inline styles
 **How to avoid:**
 - Use `'unsafe-inline'` for script-src and style-src during migration (Raidy pattern)
 - Long-term: Use nonces or hashes for specific inline scripts
 - Test CSP in report-only mode first (`Content-Security-Policy-Report-Only`)
-**Warning signs:** Blank page after CSP deployment, console errors "Refused to execute inline script"
+  **Warning signs:** Blank page after CSP deployment, console errors "Refused to execute inline script"
 
 ### Pitfall 4: Information Leakage Through Error Messages
+
 **What goes wrong:** Showing raw error.message or stack traces to users reveals internal paths, library versions, logic flow
 **Why it happens:** Developers use error.message for debugging and forget to sanitize for production
 **How to avoid:**
@@ -260,51 +281,60 @@ catch (error) {
 **Warning signs:** Users reporting error messages with file paths, stack traces visible in screenshots
 
 ### Pitfall 5: Relying Only on Client-Side Validation
+
 **What goes wrong:** In SPAs, there IS no server-side validation; all security depends on post-deserialization validation
 **Why it happens:** Developers think "client-side validation is just UX" and skip thorough validation
 **How to avoid:**
 - Treat URL deserialization as "untrusted input boundary"
 - Validate ALL fields after JSON.parse() before passing to calculation engines
 - Use TypeScript strict mode + Zod for defense in depth
-**Warning signs:** Calculation engines accepting invalid inputs (0 drives, negative capacity), no validation tests
+  **Warning signs:** Calculation engines accepting invalid inputs (0 drives, negative capacity), no validation tests
 
 ### Pitfall 6: GitHub Pages CSP Limitations
+
 **What goes wrong:** Using GitHub Pages with meta tag CSP, assuming full protection; missing critical directives like frame-ancestors
 **Why it happens:** GitHub Pages doesn't support HTTP headers; meta tags only support subset of CSP directives
 **How to avoid:**
 - Use Netlify or Vercel for production (free tier supports HTTP headers)
 - If stuck with GitHub Pages, use Cloudflare Workers proxy to inject headers
 - Document CSP limitations in deployment guide
-**Warning signs:** CSP frame-ancestors not working, report-uri not receiving violations
+  **Warning signs:** CSP frame-ancestors not working, report-uri not receiving violations
 
 ## Code Examples
 
 Verified patterns from official sources:
 
 ### Bounds Checking with Zod
+
 ```typescript
 // Source: https://github.com/colinhacks/zod (official Zod docs)
 import { z } from 'zod'
 
 // Min/max with custom error messages
-const DriveCountSchema = z.number()
+const DriveCountSchema = z
+  .number()
   .int('Drive count must be an integer')
   .min(1, 'At least 1 drive required')
   .max(1000, 'Maximum 1000 drives supported')
   .finite('Drive count must be finite') // Rejects NaN, Infinity
 
 // Refinements for complex validation
-const ServerCountSchema = z.number().int().min(1).refine(
-  (val) => val >= 3 || topology === 'simple',
-  'Redundant topologies require minimum 3 servers'
-)
+const ServerCountSchema = z
+  .number()
+  .int()
+  .min(1)
+  .refine(
+    (val) => val >= 3 || topology === 'simple',
+    'Redundant topologies require minimum 3 servers',
+  )
 ```
 
 ### Enum Validation with Type Guards
+
 ```typescript
 // Source: https://www.webdevtutor.net/blog/typescript-validate-enum-type
 const TOPOLOGY_TYPES = ['standard', 'zfs', 's2d', 'ceph'] as const
-type TopologyType = typeof TOPOLOGY_TYPES[number]
+type TopologyType = (typeof TOPOLOGY_TYPES)[number]
 
 function isValidTopologyType(value: unknown): value is TopologyType {
   return typeof value === 'string' && TOPOLOGY_TYPES.includes(value as TopologyType)
@@ -317,6 +347,7 @@ if (!isValidTopologyType(data.topology.type)) {
 ```
 
 ### URL State Validation Pipeline
+
 ```typescript
 // Source: Raidy codebase + Zod best practices
 // Modified src/store/urlStorage.ts
@@ -357,11 +388,12 @@ export const urlHashStorage: StateStorage = {
       showUserNotification('Unable to load configuration')
       return null
     }
-  }
+  },
 }
 ```
 
 ### PDF Export Sanitization
+
 ```typescript
 // Source: jsPDF security advisory + DOMPurify docs
 import DOMPurify from 'dompurify'
@@ -372,7 +404,7 @@ export function exportToPdf(config: ExportConfig): void {
   // Sanitize user-controlled text fields
   const safeProjectName = DOMPurify.sanitize(projectName, {
     ALLOWED_TAGS: [], // Strip all HTML
-    KEEP_CONTENT: true // Keep text content
+    KEEP_CONTENT: true, // Keep text content
   })
 
   // jsPDF 4.0.0+ is safe for text rendering (no file paths)
@@ -386,6 +418,7 @@ export function exportToPdf(config: ExportConfig): void {
 ```
 
 ### Error Boundary with Reset
+
 ```typescript
 // Source: https://github.com/bvaughn/react-error-boundary
 import { useErrorBoundary } from 'react-error-boundary'
@@ -418,14 +451,14 @@ function CalculationDashboard() {
 
 ## State of the Art
 
-| Old Approach | Current Approach | When Changed | Impact |
-|--------------|------------------|--------------|--------|
-| Yup for validation | Zod for validation | 2021-2022 | Better TypeScript inference, zero dependencies |
-| Class-based error boundaries | react-error-boundary library | 2020 | Functional components, hooks integration |
-| Custom CSP nonce generation | Platform-managed nonces (Netlify CSP integration) | 2023-2024 | Simplified deployment, automatic rotation |
-| jsPDF ≤3.0.4 | jsPDF ≥4.0.0 | Jan 2026 | Fixes CVE-2025-68428 path traversal |
-| Feature-Policy header | Permissions-Policy header | 2020 | Renamed header, same functionality |
-| Client-side validation only | Post-deserialization validation in SPAs | Ongoing | Recognize URL state as untrusted input |
+| Old Approach                 | Current Approach                                  | When Changed | Impact                                         |
+| ---------------------------- | ------------------------------------------------- | ------------ | ---------------------------------------------- |
+| Yup for validation           | Zod for validation                                | 2021-2022    | Better TypeScript inference, zero dependencies |
+| Class-based error boundaries | react-error-boundary library                      | 2020         | Functional components, hooks integration       |
+| Custom CSP nonce generation  | Platform-managed nonces (Netlify CSP integration) | 2023-2024    | Simplified deployment, automatic rotation      |
+| jsPDF ≤3.0.4                 | jsPDF ≥4.0.0                                      | Jan 2026     | Fixes CVE-2025-68428 path traversal            |
+| Feature-Policy header        | Permissions-Policy header                         | 2020         | Renamed header, same functionality             |
+| Client-side validation only  | Post-deserialization validation in SPAs           | Ongoing      | Recognize URL state as untrusted input         |
 
 **Deprecated/outdated:**
 - **Feature-Policy header**: Replaced by Permissions-Policy (still supported but use new name)
@@ -465,6 +498,7 @@ Things that couldn't be fully resolved:
 ## Sources
 
 ### Primary (HIGH confidence)
+
 - [OWASP Error Handling Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Error_Handling_Cheat_Sheet.html) - Error message best practices
 - [OWASP Input Validation Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html) - Client vs server validation
 - [jsPDF Security Advisory GHSA-f8cm-6447-x5h2](https://github.com/parallax/jsPDF/security/advisories/GHSA-f8cm-6447-x5h2) - CVE-2025-68428 details
@@ -475,6 +509,7 @@ Things that couldn't be fully resolved:
 - [react-error-boundary GitHub](https://github.com/bvaughn/react-error-boundary) - Error boundary library
 
 ### Secondary (MEDIUM confidence)
+
 - [StackHawk React XSS Guide](https://www.stackhawk.com/blog/react-xss-guide-examples-and-prevention/) - React security patterns
 - [Snyk React Security Best Practices](https://snyk.io/blog/10-react-security-best-practices/) - 10 security guidelines
 - [Pragmatic Web Security: React XSS Part 1](https://pragmaticwebsecurity.com/articles/spasecurity/react-xss-part1.html) - URL validation
@@ -484,6 +519,7 @@ Things that couldn't be fully resolved:
 - [GitHub Discussion: GitHub Pages CSP](https://github.com/orgs/community/discussions/54257) - Platform limitations
 
 ### Tertiary (LOW confidence)
+
 - Multiple Medium articles on React security (varying quality, dates)
 - Blog posts on CSP configuration (implementation details vary by platform version)
 - Community discussions on TypeScript validation patterns (best practices evolving)

@@ -12,30 +12,30 @@
 
 No new libraries are required. The fixes are pure arithmetic corrections within existing TypeScript engine files. The current stack is correct for this work.
 
-| Technology | Version | Purpose | Why Recommended |
-|------------|---------|---------|-----------------|
-| TypeScript (existing) | ~5.x | Formula implementation | Pure functions, no runtime overhead, already in use |
-| Vitest (existing) | ~2.x | Test vectors for all corrected formulas | Already configured, fast, supports test fixtures pattern in use |
-| fast-check (existing) | ~3.x | Property-based validation of formula properties | Already in use; good for verifying boundary conditions at drive count limits |
+| Technology            | Version | Purpose                                         | Why Recommended                                                              |
+| --------------------- | ------- | ----------------------------------------------- | ---------------------------------------------------------------------------- |
+| TypeScript (existing) | ~5.x    | Formula implementation                          | Pure functions, no runtime overhead, already in use                          |
+| Vitest (existing)     | ~2.x    | Test vectors for all corrected formulas         | Already configured, fast, supports test fixtures pattern in use              |
+| fast-check (existing) | ~3.x    | Property-based validation of formula properties | Already in use; good for verifying boundary conditions at drive count limits |
 
 ### Supporting Libraries
 
 No new npm packages are needed or recommended for the calculation fixes themselves.
 
-| Library | Version | Purpose | When to Use |
-|---------|---------|---------|-------------|
-| *(none needed)* | — | All formulas are arithmetic | Pure math, no external dependencies required |
+| Library         | Version | Purpose                     | When to Use                                  |
+| --------------- | ------- | --------------------------- | -------------------------------------------- |
+| _(none needed)_ | —       | All formulas are arithmetic | Pure math, no external dependencies required |
 
 ### Development Tools
 
-| Tool | Purpose | Notes |
-|------|---------|-------|
-| Dell PowerSizer (web) | Official reference output to derive test vectors | Requires Dell partner/customer login at https://powersizer.dell.com/; use to generate reference capacity numbers for test vectors |
-| Dell MidRange Sizer (web) | Reference for PowerVault ME5 | At https://midrangesizer.dell.com/; legacy tool covering ME4/ME5 |
-| Dell PowerVault ME5 Admin Guide (PDF) | ADAPT stripe formula source | Publicly available at https://www.dell.com/support/manuals/en-us/powervault-me5012/me5_series_ag/ |
-| Dell PowerStore KB 000188491 | PowerStore DRE geometry reference | https://www.dell.com/support/kbdoc/en-us/000188491/ |
-| Dell ObjectScale Admin Guide | EC scheme overhead factors | https://www.dell.com/support/manuals/en-us/objectscale/ |
-| Dell PowerScale OneFS Admin Guide | Disk usage calculation reference | https://www.dell.com/support/manuals/en-us/isilon-onefs/ifs_pub_9.2.1.0_administration_guide_cli/disk-usage-calculations |
+| Tool                                  | Purpose                                          | Notes                                                                                                                             |
+| ------------------------------------- | ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------- |
+| Dell PowerSizer (web)                 | Official reference output to derive test vectors | Requires Dell partner/customer login at https://powersizer.dell.com/; use to generate reference capacity numbers for test vectors |
+| Dell MidRange Sizer (web)             | Reference for PowerVault ME5                     | At https://midrangesizer.dell.com/; legacy tool covering ME4/ME5                                                                  |
+| Dell PowerVault ME5 Admin Guide (PDF) | ADAPT stripe formula source                      | Publicly available at https://www.dell.com/support/manuals/en-us/powervault-me5012/me5_series_ag/                                 |
+| Dell PowerStore KB 000188491          | PowerStore DRE geometry reference                | https://www.dell.com/support/kbdoc/en-us/000188491/                                                                               |
+| Dell ObjectScale Admin Guide          | EC scheme overhead factors                       | https://www.dell.com/support/manuals/en-us/objectscale/                                                                           |
+| Dell PowerScale OneFS Admin Guide     | Disk usage calculation reference                 | https://www.dell.com/support/manuals/en-us/isilon-onefs/ifs_pub_9.2.1.0_administration_guide_cli/disk-usage-calculations          |
 
 ---
 
@@ -231,21 +231,21 @@ No new packages required. All fixes are arithmetic formula corrections in existi
 
 ## Alternatives Considered
 
-| Recommended | Alternative | When to Use Alternative |
-|-------------|-------------|-------------------------|
-| Pure TypeScript arithmetic | Math.js or decimal.js library | Only if floating-point precision becomes an issue; unlikely for storage capacity (percentages at ±1% tolerance) |
-| Manual test vectors from Dell Sizer | Automated API scraping | Dell Sizer has no public API; manual vector extraction required |
-| Reconstructing formulas from docs | Contacting Dell SE | Use Dell SE if PowerSizer access is unavailable and docs remain ambiguous |
+| Recommended                         | Alternative                   | When to Use Alternative                                                                                         |
+| ----------------------------------- | ----------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Pure TypeScript arithmetic          | Math.js or decimal.js library | Only if floating-point precision becomes an issue; unlikely for storage capacity (percentages at ±1% tolerance) |
+| Manual test vectors from Dell Sizer | Automated API scraping        | Dell Sizer has no public API; manual vector extraction required                                                 |
+| Reconstructing formulas from docs   | Contacting Dell SE            | Use Dell SE if PowerSizer access is unavailable and docs remain ambiguous                                       |
 
 ---
 
 ## What NOT to Use
 
-| Avoid | Why | Use Instead |
-|-------|-----|-------------|
-| Hardcoded percentage constants (0.85, 0.87, 0.75) | Does not scale with drive count | Drive-count-aware formula with geometry lookup |
-| Dell Sizer API calls at runtime | No public API exists; SPA must remain static | Encode validated reference vectors as test fixtures |
-| New npm dependencies for math | Overkill for simple arithmetic ratios | Native TypeScript arithmetic |
+| Avoid                                             | Why                                          | Use Instead                                         |
+| ------------------------------------------------- | -------------------------------------------- | --------------------------------------------------- |
+| Hardcoded percentage constants (0.85, 0.87, 0.75) | Does not scale with drive count              | Drive-count-aware formula with geometry lookup      |
+| Dell Sizer API calls at runtime                   | No public API exists; SPA must remain static | Encode validated reference vectors as test fixtures |
+| New npm dependencies for math                     | Overkill for simple arithmetic ratios        | Native TypeScript arithmetic                        |
 
 ---
 
@@ -270,10 +270,10 @@ No new packages required. All fixes are arithmetic formula corrections in existi
 
 All changes are within existing TypeScript files. No version compatibility concerns.
 
-| Package | Compatible With | Notes |
-|---------|-----------------|-------|
-| Vitest 2.x (existing) | fast-check 3.x (existing) | No changes needed |
-| TypeScript 5.x (existing) | All existing packages | No changes needed |
+| Package                   | Compatible With           | Notes             |
+| ------------------------- | ------------------------- | ----------------- |
+| Vitest 2.x (existing)     | fast-check 3.x (existing) | No changes needed |
+| TypeScript 5.x (existing) | All existing packages     | No changes needed |
 
 ---
 
@@ -302,5 +302,6 @@ Dell's support portal (dell.com/support/manuals/, dell.com/support/kbdoc/) retur
 3. Record inputs and outputs manually to populate test fixture vectors
 
 ---
-*Stack research for: Dell storage capacity formula fixes (PowerVault ADAPT, PowerStore, PowerScale, PowerFlex, ObjectScale)*
-*Researched: 2026-03-25*
+
+_Stack research for: Dell storage capacity formula fixes (PowerVault ADAPT, PowerStore, PowerScale, PowerFlex, ObjectScale)_
+_Researched: 2026-03-25_

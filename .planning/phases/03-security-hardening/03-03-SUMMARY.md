@@ -1,48 +1,52 @@
 ---
+
 phase: 03-security-hardening
 plan: 03
 subsystem: security
 tags: [validation, error-handling, react-error-boundary, zod]
 
 # Dependency graph
+
 requires:
-  - phase: 03-01
-    provides: URL state validation with Zod schemas
-provides:
-  - Blocking validation enforcement prevents invalid calculations
-  - Error boundary catches calculation crashes with user-friendly recovery
-  - validateOrThrow() for explicit validation enforcement
-  - AppErrorBoundary component for graceful error handling
-affects: [04-ui-polish, 05-deployment]
+- phase: 03-01
+  provides: URL state validation with Zod schemas
+  provides:
+- Blocking validation enforcement prevents invalid calculations
+- Error boundary catches calculation crashes with user-friendly recovery
+- validateOrThrow() for explicit validation enforcement
+- AppErrorBoundary component for graceful error handling
+  affects: [04-ui-polish, 05-deployment]
 
 # Tech tracking
+
 tech-stack:
-  added: [react-error-boundary@4.1.2]
-  patterns: [error boundary pattern, blocking validation pattern]
+added: [react-error-boundary@4.1.2]
+patterns: [error boundary pattern, blocking validation pattern]
 
 key-files:
-  created:
-    - src/components/ErrorBoundary.tsx
-    - tests/components/ErrorBoundary.spec.tsx
+created:
+- src/components/ErrorBoundary.tsx
+- tests/components/ErrorBoundary.spec.tsx
   modified:
-    - src/utils/validators.ts
-    - src/App.tsx
-    - src/hooks/useCalculations.ts
-    - tests/utils/validators.spec.ts
+- src/utils/validators.ts
+- src/App.tsx
+- src/hooks/useCalculations.ts
+- tests/utils/validators.spec.ts
 
 key-decisions:
-  - "Use react-error-boundary library for error handling (hooks-based, TypeScript support, 1M+ weekly downloads)"
-  - "Never expose error.message or error.stack to users (security: prevents internal path disclosure)"
-  - "Reset clears URL hash and reloads to default state (simple recovery UX)"
-  - "validateOrThrow() for explicit blocking vs hasBlockingErrors() for conditional checking"
-  - "Validation check happens in useCalculations before calculation engines (prevents crashes)"
+- "Use react-error-boundary library for error handling (hooks-based, TypeScript support, 1M+ weekly downloads)"
+- "Never expose error.message or error.stack to users (security: prevents internal path disclosure)"
+- "Reset clears URL hash and reloads to default state (simple recovery UX)"
+- "validateOrThrow() for explicit blocking vs hasBlockingErrors() for conditional checking"
+- "Validation check happens in useCalculations before calculation engines (prevents crashes)"
 
 patterns-established:
-  - "Error boundary wraps entire application for calculation crash recovery"
-  - "Blocking validation returns zero-state results with error messages instead of throwing"
-  - "Console logging for debugging but never user-visible error details"
+- "Error boundary wraps entire application for calculation crash recovery"
+- "Blocking validation returns zero-state results with error messages instead of throwing"
+- "Console logging for debugging but never user-visible error details"
 
 # Metrics
+
 duration: 5min
 completed: 2026-01-18
 ---
@@ -60,6 +64,7 @@ completed: 2026-01-18
 - **Files modified:** 6
 
 ## Accomplishments
+
 - Error boundary intercepts calculation crashes and shows fallback UI without exposing stack traces
 - Validators now block calculations when error-severity alerts are present (e.g., RAID5 with 2 drives)
 - Reset button clears URL hash and reloads app to default state for recovery
@@ -74,6 +79,7 @@ Each task was committed atomically:
 3. **Task 3: Test error handling and recovery** - `3be291b` (test)
 
 ## Files Created/Modified
+
 - `src/components/ErrorBoundary.tsx` - Error boundary with fallback UI and reset functionality
 - `src/utils/validators.ts` - Added validateOrThrow() for explicit blocking validation
 - `src/App.tsx` - Wrapped Cockpit with AppErrorBoundary component
@@ -130,5 +136,6 @@ None - plan executed exactly as written.
 **No blockers or concerns.**
 
 ---
-*Phase: 03-security-hardening*
-*Completed: 2026-01-18*
+
+_Phase: 03-security-hardening_
+_Completed: 2026-01-18_

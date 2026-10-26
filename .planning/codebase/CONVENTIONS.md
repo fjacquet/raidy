@@ -111,16 +111,16 @@ Configured in `tsconfig.app.json` and `vite.config.ts`:
 
 ```typescript
 // External libraries
-import { useMemo } from "react";
-import { useTranslation } from "react-i18next";
-import { create } from "zustand";
+import { useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
+import { create } from 'zustand'
 
 // Path alias imports
-import drivesData from "@/data/drives.json";
-import { calculateVolumetry } from "@/engines/volumetry";
-import { useConfigStore } from "@/store";
-import type { Drive, Topology } from "@/types";
-import { formatBytes } from "@/utils";
+import drivesData from '@/data/drives.json'
+import { calculateVolumetry } from '@/engines/volumetry'
+import { useConfigStore } from '@/store'
+import type { Drive, Topology } from '@/types'
+import { formatBytes } from '@/utils'
 ```
 
 **Type-only imports:**
@@ -128,8 +128,8 @@ import { formatBytes } from "@/utils";
 - Use `import type` for type-only imports to improve tree-shaking:
 
 ```typescript
-import type { Drive, DriveConnectivity } from "@/types";
-import type { StateCreator } from "zustand";
+import type { Drive, DriveConnectivity } from '@/types'
+import type { StateCreator } from 'zustand'
 ```
 
 ## Error Handling
@@ -145,39 +145,36 @@ import type { StateCreator } from "zustand";
 
 ```typescript
 try {
-  runSimulation(message.payload);
+  runSimulation(message.payload)
 } catch (error) {
   postMessage({
-    type: "ERROR",
-    payload: error instanceof Error ? error.message : "Unknown error",
-  });
+    type: 'ERROR',
+    payload: error instanceof Error ? error.message : 'Unknown error',
+  })
 }
 ```
 
 **Validation pattern:**
 
 ```typescript
-function validateDriveCount(
-  driveCount: number,
-  topology: Topology
-): ValidationAlert | null {
-  if (topology.level === "raidz1" && driveCount < 3) {
+function validateDriveCount(driveCount: number, topology: Topology): ValidationAlert | null {
+  if (topology.level === 'raidz1' && driveCount < 3) {
     return {
-      severity: "error",
-      code: "ZFS_RAIDZ1_MIN_DRIVES",
-      message: "ZFS RAIDZ1 requires minimum 3 drives.",
-    };
+      severity: 'error',
+      code: 'ZFS_RAIDZ1_MIN_DRIVES',
+      message: 'ZFS RAIDZ1 requires minimum 3 drives.',
+    }
   }
-  return null; // Valid
+  return null // Valid
 }
 ```
 
 **Entry point guard:**
 
 ```typescript
-const rootElement = document.getElementById("root");
+const rootElement = document.getElementById('root')
 if (!rootElement) {
-  throw new Error("Root element not found");
+  throw new Error('Root element not found')
 }
 ```
 
@@ -252,10 +249,10 @@ export function formatBytes(bytes: number, system: UnitSystem = 'binary'): strin
 
 ```typescript
 export interface VolumetryInput {
-  drive: Drive;
-  driveCount: number;
-  hotSpares: number;
-  topology: Topology;
+  drive: Drive
+  driveCount: number
+  hotSpares: number
+  topology: Topology
   // ... more fields
 }
 
@@ -266,10 +263,10 @@ export function calculateVolumetry(input: VolumetryInput): VolumetryResult {
     hotSpares,
     topology,
     // ... destructure all
-  } = input;
+  } = input
 
   // Implementation
-  return { rawCapacity, usableCapacity /* ... */ };
+  return { rawCapacity, usableCapacity /* ... */ }
 }
 ```
 
@@ -295,8 +292,8 @@ export type {
   Drive,
   DriveConnectivity,
   DriveDatabase, // ... type exports
-} from "./drive";
-export { CONNECTIVITY_TO_TYPES, getDefaultFormFactor } from "./drive";
+} from './drive'
+export { CONNECTIVITY_TO_TYPES, getDefaultFormFactor } from './drive'
 ```
 
 ## Component Patterns
@@ -324,10 +321,10 @@ export function HardwarePanel() {
 
 ```typescript
 // Select specific state
-const unitSystem = useConfigStore((state) => state.unitSystem);
+const unitSystem = useConfigStore((state) => state.unitSystem)
 
 // Or destructure multiple
-const { driveId, driveCount, setDriveId } = useConfigStore();
+const { driveId, driveCount, setDriveId } = useConfigStore()
 ```
 
 ## TypeScript Strict Mode

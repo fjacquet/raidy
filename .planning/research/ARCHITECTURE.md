@@ -11,13 +11,13 @@
 No new components. All changes are surgical edits within the existing strategy pattern.
 The three affected files are:
 
-| File | Change type |
-|------|-------------|
-| `src/engines/volumetry/strategies/proprietary.ts` | Modify `powervault_adapt` case |
-| `src/engines/volumetry/strategies/dell.ts` | Modify `powerstore_raid5` and `powerstore_raid6` cases |
-| `src/engines/volumetry/overhead/overheadCalculator.ts` | Add PowerStore system overhead block |
-| `tests/engines/volumetry.spec.ts` | Update ADAPT assertions; add Dell Sizer reference vectors |
-| `tests/fixtures/dell-vectors.ts` | New fixture file for Dell Sizer reference data |
+| File                                                   | Change type                                               |
+| ------------------------------------------------------ | --------------------------------------------------------- |
+| `src/engines/volumetry/strategies/proprietary.ts`      | Modify `powervault_adapt` case                            |
+| `src/engines/volumetry/strategies/dell.ts`             | Modify `powerstore_raid5` and `powerstore_raid6` cases    |
+| `src/engines/volumetry/overhead/overheadCalculator.ts` | Add PowerStore system overhead block                      |
+| `tests/engines/volumetry.spec.ts`                      | Update ADAPT assertions; add Dell Sizer reference vectors |
+| `tests/fixtures/dell-vectors.ts`                       | New fixture file for Dell Sizer reference data            |
 
 ---
 
@@ -75,12 +75,12 @@ For 24 drives: `(24 - 4) / 24 = 0.833` (83.3%), not 87%.
 
 PowerStore's internal RAID is drive-count-aware. Dell Sizer selects stripe width based on how many drives are installed:
 
-| Drive count | RAID-5 stripe | Efficiency | RAID-6 stripe | Efficiency |
-|-------------|---------------|------------|---------------|------------|
-| 3–5 | 4+1 | 4/5 = 80.0% | n/a | — |
-| 6–9 | 4+1 | 4/5 = 80.0% | 4+2 | 4/6 = 66.7% |
-| 10–20 | 8+1 | 8/9 = 88.9% | 8+2 | 8/10 = 80.0% |
-| 21+ | 12+1 | 12/13 = 92.3% | n/a (unsupported at scale) | — |
+| Drive count | RAID-5 stripe | Efficiency    | RAID-6 stripe              | Efficiency   |
+| ----------- | ------------- | ------------- | -------------------------- | ------------ |
+| 3–5         | 4+1           | 4/5 = 80.0%   | n/a                        | —            |
+| 6–9         | 4+1           | 4/5 = 80.0%   | 4+2                        | 4/6 = 66.7%  |
+| 10–20       | 8+1           | 8/9 = 88.9%   | 8+2                        | 8/10 = 80.0% |
+| 21+         | 12+1          | 12/13 = 92.3% | n/a (unsupported at scale) | —            |
 
 The stripe-width selection logic belongs in `calculateDataFraction()`. Rationale: it is purely an efficiency fraction, not an overhead in bytes. The method signature already receives `driveCount`, which is the only input needed to select the stripe width.
 
@@ -161,20 +161,21 @@ The `powerstoreSystemOverhead` must also appear in:
 ## Patterns to Follow
 
 ### Pattern: Existing overhead block style
+
 Every per-topology overhead in `overheadCalculator.ts` follows this exact structure:
 
 ```typescript
 // PowerStore system overhead (3-5% internal OS/metadata/rebuild journals)
 let powerstoreSystemOverhead = 0
 if (topology.type === 'powerstore') {
-  powerstoreSystemOverhead =
-    capacityAfterParity * (powerstoreOptions.systemOverheadPercent / 100)
+  powerstoreSystemOverhead = capacityAfterParity * (powerstoreOptions.systemOverheadPercent / 100)
 }
 ```
 
 The new block must match this style exactly — same comment format, same guard pattern, same variable naming convention.
 
 ### Pattern: Named constants for magic numbers
+
 ADAPT protection level should be a `const` inside the case block, not a numeric literal:
 ```typescript
 case 'powervault_adapt': {
@@ -184,6 +185,7 @@ case 'powervault_adapt': {
 ```
 
 ### Anti-Pattern: Hardcoded efficiency constants
+
 The current `0.85`/`0.87` pattern for ADAPT and `0.80`/`0.75` for PowerStore are anti-patterns that hide the actual formula. Replace them with derived expressions that make the underlying formula legible.
 
 ---
@@ -225,12 +227,12 @@ Build in this order to minimize test regressions cascading across steps:
 
 ## Test Regression Map
 
-| What changes | Tests that will break | Why |
-|---|---|---|
-| ADAPT formula (0.85/0.87 → dynamic) | `volumetry.spec.ts` lines 3728–3756 (4 tests) | Expected efficiency values will drop from ~83–87% to ~60–68% |
-| PowerStore RAID-5 fraction (0.80 → drive-count-aware) | `volumetry.spec.ts` PowerStore snapshot tests (lines 3147–3172) | Base efficiency changes, affecting relative efficiency assertions |
-| PowerStore system overhead added | Same PowerStore snapshot tests | Additional overhead reduces total efficiency further |
-| PowerStore Options type change | `tests/store/urlStorage.spec.ts` if it tests default store shape | New field with default — likely backward-compatible but verify |
+| What changes                                          | Tests that will break                                            | Why                                                               |
+| ----------------------------------------------------- | ---------------------------------------------------------------- | ----------------------------------------------------------------- |
+| ADAPT formula (0.85/0.87 → dynamic)                   | `volumetry.spec.ts` lines 3728–3756 (4 tests)                    | Expected efficiency values will drop from ~83–87% to ~60–68%      |
+| PowerStore RAID-5 fraction (0.80 → drive-count-aware) | `volumetry.spec.ts` PowerStore snapshot tests (lines 3147–3172)  | Base efficiency changes, affecting relative efficiency assertions |
+| PowerStore system overhead added                      | Same PowerStore snapshot tests                                   | Additional overhead reduces total efficiency further              |
+| PowerStore Options type change                        | `tests/store/urlStorage.spec.ts` if it tests default store shape | New field with default — likely backward-compatible but verify    |
 
 Tests that will NOT break from these changes: RAID, ZFS, vSAN, S2D, Ceph, Nutanix, Synology, NetApp, PowerFlex, PowerScale, ObjectScale, performance, resilience.
 

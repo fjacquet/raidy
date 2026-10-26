@@ -31,13 +31,13 @@ the table exactly.
 `src/engines/volumetry/strategies/dell.ts` models PowerScale as `(N − M) / N` on the node count,
 with seven invented levels (`powerscale_n1/n2/n2_1/n3/n4/mirror_2x/mirror_3x`).
 
-| Config | raidy today | PowerSizer | Error |
-| --- | --- | --- | --- |
-| A200, 9 nodes, `+2d:1n` | 0.778 (via `n2_1`) | 0.8889 | −12.5 % |
-| A200, 20 nodes, `+2n` | 0.900 | 0.8000 | +12.5 % |
-| F200, 20 nodes, `+2n` | 0.900 | 0.8889 | +1.2 % |
-| A200, 5 nodes, `+3n` | 0.400 | 0.2500 | +60 % |
-| A200, 40 nodes, `+3n` | 0.925 | 0.7000 | +32 % |
+| Config                  | raidy today        | PowerSizer | Error   |
+| ----------------------- | ------------------ | ---------- | ------- |
+| A200, 9 nodes, `+2d:1n` | 0.778 (via `n2_1`) | 0.8889     | −12.5 % |
+| A200, 20 nodes, `+2n`   | 0.900              | 0.8000     | +12.5 % |
+| F200, 20 nodes, `+2n`   | 0.900              | 0.8889     | +1.2 %  |
+| A200, 5 nodes, `+3n`    | 0.400              | 0.2500     | +60 %   |
+| A200, 40 nodes, `+3n`   | 0.925              | 0.7000     | +32 %   |
 
 Three separate structural faults:
 
@@ -47,7 +47,7 @@ Three separate structural faults:
 2. **No stripe-width cap.** OneFS stripes max out; efficiency stops climbing. raidy climbs to
    `(N−M)/N` forever, so it over-reports on every large cluster.
 3. **No neighborhood split.** Above ~20 nodes a chassis-based node pool splits, and efficiency
-   *drops*. raidy shows a monotonic climb where the truth is a sawtooth.
+   _drops_. raidy shows a monotonic climb where the truth is a sawtooth.
 
 4. **A cluster is one homogeneous pool.** Real PowerScale clusters are heterogeneous node
    pools — all-flash over hybrid over archive under one OneFS namespace — each with its own
@@ -64,17 +64,17 @@ node-count bounds and increments.
 Reverse-engineering the 122,828 rows produced a genuine closed form for the single-pool case.
 Each level has stripe units per node `u`, FEC units `M`, node fault tolerance `nf`:
 
-| Level | u | M | nf |
-| --- | --- | --- | --- |
-| `+1n` | 1 | 1 | 1 |
-| `+2n` | 1 | 2 | 2 |
-| `+3n` | 1 | 3 | 3 |
-| `+4n` | 1 | 4 | 4 |
-| `+2d:1n` | 2 | 2 | 1 |
-| `+3d:1n` | 3 | 3 | 1 |
-| `+3d:1n1d` | 2 | 3 | 1 |
-| `+4d:1n` | 4 | 4 | 1 |
-| `+4d:2n` | 2 | 4 | 2 |
+| Level      | u   | M   | nf  |
+| ---------- | --- | --- | --- |
+| `+1n`      | 1   | 1   | 1   |
+| `+2n`      | 1   | 2   | 2   |
+| `+3n`      | 1   | 3   | 3   |
+| `+4n`      | 1   | 4   | 4   |
+| `+2d:1n`   | 2   | 2   | 1   |
+| `+3d:1n`   | 3   | 3   | 1   |
+| `+3d:1n1d` | 2   | 3   | 1   |
+| `+4d:1n`   | 4   | 4   | 1   |
+| `+4d:2n`   | 2   | 4   | 2   |
 
 ```
 if N < 2·nf:  eff = 1 / min(nf + 1, N)        # OneFS falls back to mirroring
@@ -186,7 +186,7 @@ files below and the fixture. Documented in `docs/DEVELOPMENT.md`; run manually, 
 
 Per node model: generation, tier, `drivesPerNode`, `minNodes`, `maxNodes`, `nodeIncrement`,
 `drr`, and per drive size `rawPerDriveTB` + `usableFactor`. Plus run-length encoded protection
-availability and PowerSizer's *Suggested* protection, both as functions of node count (1,153
+availability and PowerSizer's _Suggested_ protection, both as functions of node count (1,153
 availability runs and 729 suggested runs across the 107 `(model, driveSize)` combos, over 26
 distinct availability sets).
 
@@ -207,8 +207,8 @@ Decompressed in the test with `node:zlib`. Not bundled — `tests/` is outside t
 
 ### PowerScale gets its own sub-engine
 
-Every other raidy platform is *drive-centric*: `rawCapacity = drive.capacity_raw × driveCount`,
-then a single `dataFraction`. PowerScale is *node-pool-centric* and multi-tier, so it does not
+Every other raidy platform is _drive-centric_: `rawCapacity = drive.capacity_raw × driveCount`,
+then a single `dataFraction`. PowerScale is _node-pool-centric_ and multi-tier, so it does not
 fit that chain — there is no single drive, no single count, and no single efficiency.
 
 `calculateVolumetry` therefore branches once, immediately after topology validation:
@@ -241,16 +241,16 @@ export interface PowerScaleTierResult {
   protection: PowerScaleProtection
   drivesPerNode: number
   rawCapacity: number
-  usableCapacity: number      // after efficiency and usableFactor, before VHS
+  usableCapacity: number // after efficiency and usableFactor, before VHS
   vhsReserve: number
-  vhsSource: 'driveCount' | 'percent'   // which reserve won, as the workbook highlights
+  vhsSource: 'driveCount' | 'percent' // which reserve won, as the workbook highlights
   usableLessVhs: number
   effectiveCapacity: number
-  efficiency: number          // storage efficiency for this pool, 0-1
+  efficiency: number // storage efficiency for this pool, 0-1
   drr: number
   generation: 'Gen6' | 'Gen6.5' | 'Gen7'
   tier: 'All Flash' | 'Hybrid' | 'Archive'
-  endOfLife?: string          // ISO date, when the model is EOL
+  endOfLife?: string // ISO date, when the model is EOL
 }
 
 export interface PowerScaleCapacityDetails {
@@ -258,7 +258,7 @@ export interface PowerScaleCapacityDetails {
   clusterRaw: number
   clusterUsable: number
   clusterEffective: number
-  clusterEfficiency: number   // Σ usable / Σ raw
+  clusterEfficiency: number // Σ usable / Σ raw
 }
 ```
 
@@ -305,30 +305,37 @@ Re-modelling a heterogeneous cluster's performance and resilience per pool is re
 ## 6. Types, store, schema — and the URL break
 
 `topology.level` collapses to the single value `'powerscale_onefs'`. It no longer carries
-protection, because a cluster has one protection level *per node pool*, not one per cluster —
+protection, because a cluster has one protection level _per node pool_, not one per cluster —
 the nine real levels live in `PowerScaleProtection` on the tier. The seven invented levels
 (`powerscale_n1/n2/n2_1/n3/n4/mirror_2x/mirror_3x`) are deleted.
 
 ```ts
 export type PowerScaleProtection =
-  | '+1n' | '+2n' | '+3n' | '+4n'
-  | '+2d:1n' | '+3d:1n' | '+3d:1n1d' | '+4d:1n' | '+4d:2n'
+  | '+1n'
+  | '+2n'
+  | '+3n'
+  | '+4n'
+  | '+2d:1n'
+  | '+3d:1n'
+  | '+3d:1n1d'
+  | '+4d:1n'
+  | '+4d:2n'
 ```
 
 `PowerScaleOptions` is replaced wholesale by a tier list:
 
 ```ts
 export interface PowerScaleTier {
-  nodeModel: string          // e.g. 'F710'
-  driveSizeTb: number        // e.g. 15.36
+  nodeModel: string // e.g. 'F710'
+  driveSizeTb: number // e.g. 15.36
   nodeCount: number
-  protection: PowerScaleProtection   // '+2d:1n' etc., the nine real levels
-  vhsDriveCount: number      // 0 = disabled
-  vhsPercent: number         // 0 = disabled; the larger of the two reserves applies
+  protection: PowerScaleProtection // '+2d:1n' etc., the nine real levels
+  vhsDriveCount: number // 0 = disabled
+  vhsPercent: number // 0 = disabled; the larger of the two reserves applies
 }
 
 export interface PowerScaleOptions {
-  tiers: PowerScaleTier[]    // 1-8 entries
+  tiers: PowerScaleTier[] // 1-8 entries
 }
 ```
 
@@ -339,7 +346,7 @@ source of truth). Per the CLAUDE.md gotcha, all five must come out of `src/utils
 in the same change or URL parsing breaks.
 
 Protection moves from `topology.level` into the tier, because a cluster has one protection
-level *per pool*. `topology.level` keeps a single value used only for display and for the
+level _per pool_. `topology.level` keeps a single value used only for display and for the
 platform's identity in the topology selector; the nine real levels live in
 `PowerScaleProtection`. This is why the level-enum rename below is a display concern rather
 than a calculation one.
@@ -348,7 +355,7 @@ than a calculation one.
 `urlStorage.ts` runs on read: it rewrites `topology.level` to `powerscale_onefs`, and seeds a
 single tier from the old state — node count from `serverCount`, protection mapped
 `n1→+1n, n2→+2n, n2_1→+2d:1n, n3→+3n, n4→+4n`, with the two mirror levels falling back to
-PowerSizer's *Suggested* level for the resolved model. The old drive-based state cannot name a
+PowerSizer's _Suggested_ level for the resolved model. The old drive-based state cannot name a
 node model, so the shim picks the catalog model whose `drivesPerNode` and drive size best match
 the old `driveId`/`driveCount`, and surfaces a toast saying the link was migrated and should be
 re-checked. Deleted after one release.
@@ -365,7 +372,7 @@ node pool. Each row is a dependency chain mirroring the workbook's own left-to-r
 2. **Drive size** — only sizes valid for that model.
 3. **Node count** — clamped to `minNodes..maxNodes`, stepped by `nodeIncrement`.
 4. **Protection** — only levels available for that `(model, driveSize, nodeCount)`, defaulting
-   to PowerSizer's *Suggested*. An unavailable combination is not offered rather than silently
+   to PowerSizer's _Suggested_. An unavailable combination is not offered rather than silently
    mis-computed.
 5. **VHS** — drive-count and percentage inputs, showing which reserve applies.
 
@@ -395,17 +402,17 @@ A new `tests/engines/powerscale-powersizer.spec.ts` walks all 122,828 fixture ro
 
 The gate is precision-matched to what the source can actually assert:
 
-| Quantity | Gate | Why |
-|---|---|---|
+| Quantity           | Gate                            | Why                                                                      |
+| ------------------ | ------------------------------- | ------------------------------------------------------------------------ |
 | Storage efficiency | **exact**, integer basis points | We ship the vendor's own value; any drift is a regression, not rounding. |
-| Raw capacity | ±0.005 TB | The workbook prints raw to 2 decimals. |
-| Usable capacity | ±0.06 % relative | See below. |
+| Raw capacity       | ±0.005 TB                       | The workbook prints raw to 2 decimals.                                   |
+| Usable capacity    | ±0.06 % relative                | See below.                                                               |
 
 Usable cannot be matched bit-exactly, and claiming otherwise would be false. The workbook
 prints usable to 2 decimal places of TB and efficiency to 4 decimals, so reconstructing
 `usable = raw × efficiency × usableFactor` inherits both roundings. With `usableFactor` fitted
 per `(model, driveSize)` by least squares, the reconstruction lands at **max 0.053 % error,
-p99 0.008 %** across all 122,828 rows — *inside the vendor's own printing precision*, since the
+p99 0.008 %** across all 122,828 rows — _inside the vendor's own printing precision_, since the
 2-decimal rounding of usable TB alone can account for up to 0.088 %. The spec therefore also
 asserts the p99 stays under 0.01 %, which is the real regression tripwire; the 0.06 % bound
 only catches catastrophes.

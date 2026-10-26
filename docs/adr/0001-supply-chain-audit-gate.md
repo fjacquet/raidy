@@ -5,7 +5,7 @@
 
 ## Context
 
-Raidy ships as a static, 100% client-side bundle to GitHub Pages. It has no backend, so the dependency tree *is* the attack surface: a compromised or telemetry-bearing package would execute in users' browsers, and the app's "Copy URL to Share" feature means configuration data is the only thing of value to exfiltrate. The project previously gated on Snyk (`npx snyk test`) in a separate `ci.yml`, which required a token and ran disconnected from the deploy pipeline.
+Raidy ships as a static, 100% client-side bundle to GitHub Pages. It has no backend, so the dependency tree _is_ the attack surface: a compromised or telemetry-bearing package would execute in users' browsers, and the app's "Copy URL to Share" feature means configuration data is the only thing of value to exfiltrate. The project previously gated on Snyk (`npx snyk test`) in a separate `ci.yml`, which required a token and ran disconnected from the deploy pipeline.
 
 We aligned raidy's developer conventions with the sibling project **vatlas** (treated as the reference), whose hardened single-pipeline approach we adopt here.
 

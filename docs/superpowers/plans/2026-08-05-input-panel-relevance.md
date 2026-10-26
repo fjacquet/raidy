@@ -17,7 +17,7 @@
 - Biome: 2-space indent, 100-char width, single quotes, semicolons as-needed. Run `rtk npm run lint:fix` before each commit.
 - Every locale change touches **all four** of `en`, `fr`, `de`, `it`. The i18n parity test fails otherwise.
 - `fr`/`de`/`it` strings carry full accents/diacritics (this was settled in #86 — unaccented strings were drift, not convention).
-- Docs stay in sync in the *same commit*: any change to config, CI, dependencies, or behaviour updates the matching file in `docs/` plus `CHANGELOG.md`.
+- Docs stay in sync in the _same commit_: any change to config, CI, dependencies, or behaviour updates the matching file in `docs/` plus `CHANGELOG.md`.
 - Deleting a field means deleting its **ALLOWLIST entry** in `tests/utils/optionFieldsConsumed.spec.ts` too. A stale entry blesses a field that no longer exists.
 - Nested platform option schemas in `src/utils/schemas.ts` are plain `z.object()` — they **strip** unknown keys rather than rejecting. Field removal is therefore link-safe for shared URLs. Do not add `.strict()`.
 - Never widen an assertion to make a test pass. If a number moves in Tasks 1–8, stop and report: it means a control was consumed after all.
@@ -54,7 +54,7 @@ rtk grep -rn "cacheMode" src/engines src/workers src/hooks src/utils/validators.
 
 Expected: **zero hits** for both. If either returns a hit, STOP and report — the spec's premise is wrong for that field and deleting it would change a number.
 
-Note `synologyOptions.cacheMode` is a *different* field (Task 4) and lives in `src/types/topology.ts` under `SynologyOptions`. Do not confuse them; the grep above covers engines only, where neither appears.
+Note `synologyOptions.cacheMode` is a _different_ field (Task 4) and lives in `src/types/topology.ts` under `SynologyOptions`. Do not confuse them; the grep above covers engines only, where neither appears.
 
 - [ ] **Step 2: Write a failing test that pins the store surface**
 
@@ -151,7 +151,7 @@ PowerVault renders five controls and **all five are inert** — the user tunes m
 
 Controls to delete: `powervaultOptions.model`, `.controllers`, `.tiering`, `.ssdReadCache`, `.thinProvisioning`; `powerscaleOptions.smartQuotas`, `.syncIQ`.
 
-**Do not touch** `powerstoreOptions.model`. It looks inert (no engine reads it) but the panel's preset handler writes `systemOverheadPercent` from it, and that field *is* engine-read. Deleting `model` would remove the only way to pick a preset. It is Class C, not Class A.
+**Do not touch** `powerstoreOptions.model`. It looks inert (no engine reads it) but the panel's preset handler writes `systemOverheadPercent` from it, and that field _is_ engine-read. Deleting `model` would remove the only way to pick a preset. It is Class C, not Class A.
 
 - [ ] **Step 1: Confirm each of the seven is allowlisted, then remove the entries first**
 
@@ -558,7 +558,7 @@ They stay. The problem is that they pass the guard test **by accident**: the tes
 
 - [ ] **Step 1: Read the guard test's docstring**
 
-It already carves out a category for "kept informational, hint text says so" fields. Class C is a *different* category: consumed, but by the view layer.
+It already carves out a category for "kept informational, hint text says so" fields. Class C is a _different_ category: consumed, but by the view layer.
 
 - [ ] **Step 2: Add an explicit `UI_ONLY_CONSUMERS` list**
 
@@ -566,7 +566,7 @@ Name the three fields with a one-line reason each, and assert they are consumed 
 
 - [ ] **Step 3: Demonstrate falsifiability**
 
-Add a fourth, fictional entry to `UI_ONLY_CONSUMERS` for a field that *is* engine-read (e.g. `netAppOptions.waflOverhead`). The test must fail. Quote the message, then remove the fictional entry.
+Add a fourth, fictional entry to `UI_ONLY_CONSUMERS` for a field that _is_ engine-read (e.g. `netAppOptions.waflOverhead`). The test must fail. Quote the message, then remove the fictional entry.
 
 - [ ] **Step 4: Run the suite and commit**
 
@@ -594,7 +594,7 @@ The label carries the name and the value carries the number; the hint should car
 
 - [ ] **Step 1: Rewrite the four strings**
 
-From *"Filesystem overhead: {{percent}}%. Reduces usable capacity — varies with inode ratio and formatting options on ext4/XFS storage targets"* to the varies-with clause alone.
+From _"Filesystem overhead: {{percent}}%. Reduces usable capacity — varies with inode ratio and formatting options on ext4/XFS storage targets"_ to the varies-with clause alone.
 
 The `{{percent}}` placeholder disappears from the string. Check whether the placeholder-preservation test asserts placeholder **parity across locales** or placeholder **presence per key** — if the latter, its expectation for this key must be updated in the same commit. Read the test before editing.
 
@@ -647,7 +647,7 @@ Create `tests/engines/volumetry/hotSpareDefault.spec.ts` asserting the **post-ch
 
 - [ ] **Step 5: Run the full suite and triage every failure individually**
 
-Existing specs that relied on the default of 1 will fail. Each one must be inspected: if the spec is *about* hot spares, set `hotSpares: 1` explicitly to preserve its intent. If it merely inherited the default, update the expected value and say so in the commit. **Never widen an assertion to make it pass.**
+Existing specs that relied on the default of 1 will fail. Each one must be inspected: if the spec is _about_ hot spares, set `hotSpares: 1` explicitly to preserve its intent. If it merely inherited the default, update the expected value and say so in the commit. **Never widen an assertion to make it pass.**
 
 - [ ] **Step 6: Write the CHANGELOG entry**
 
@@ -676,7 +676,7 @@ because every assertion used toBeGreaterThan."
 
 Eight platforms join `vsan_osa` and `vsan_esa`: `s2d`, `powerscale`, `powerstore`, `powerflex`, `nutanix`, `ceph`, `longhorn`, `objectscale`.
 
-**Do not flip `supportsHotSpares`.** The engine genuinely subtracts hot spares for all fifteen types — the zeroing lives in the *hooks* (`useVolumetryCalc`, `usePerformanceCalc`, `useResilience`), which the probe bypasses by calling `calculateVolumetry` directly. Setting `supportsHotSpares: false` would make the probe fail, correctly. Extend the list only.
+**Do not flip `supportsHotSpares`.** The engine genuinely subtracts hot spares for all fifteen types — the zeroing lives in the _hooks_ (`useVolumetryCalc`, `usePerformanceCalc`, `useResilience`), which the probe bypasses by calling `calculateVolumetry` directly. Setting `supportsHotSpares: false` would make the probe fail, correctly. Extend the list only.
 
 While here, record the resulting oddity rather than leaving it for the next reader: `shouldShowControl('hotSpares', …)` is **never called** in the UI — `TopologyPanel` gates on `usesDistributedSpares` instead — and `supportsHotSpares` is `true` for all fifteen types, so the flag carries no information. Two mechanisms, one of them vestigial. Unifying them is out of scope here; file an issue and add a comment at both sites pointing at each other.
 
@@ -692,15 +692,15 @@ While here, record the resulting oddity rather than leaving it for the next read
 
 Sources, for the code comment and the CHANGELOG:
 
-| Platform | Vendor statement |
-|---|---|
-| S2D | Reserve capacity "serves the same function as a hot spare" but is "taken evenly from every drive in the pool" |
-| PowerScale | Virtual Hot Spare — reserved space, not a physical disk |
-| PowerStore | "Dedicated hot spare drives are not required"; spare space distributed across each resiliency set |
-| PowerFlex | Spare capacity spread across all disks |
-| Nutanix | Many-to-many rebuild; no single hot-spare destination |
-| Ceph | No traditional hot spare; recovery backfills into free cluster capacity |
-| Longhorn | Replicas rebuild onto any node with free space |
+| Platform    | Vendor statement                                                                                                            |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------- |
+| S2D         | Reserve capacity "serves the same function as a hot spare" but is "taken evenly from every drive in the pool"               |
+| PowerScale  | Virtual Hot Spare — reserved space, not a physical disk                                                                     |
+| PowerStore  | "Dedicated hot spare drives are not required"; spare space distributed across each resiliency set                           |
+| PowerFlex   | Spare capacity spread across all disks                                                                                      |
+| Nutanix     | Many-to-many rebuild; no single hot-spare destination                                                                       |
+| Ceph        | No traditional hot spare; recovery backfills into free cluster capacity                                                     |
+| Longhorn    | Replicas rebuild onto any node with free space                                                                              |
 | ObjectScale | Erasure-coded fragments re-created on surviving nodes — **inferred from architecture, no vendor source states it directly** |
 
 Mark ObjectScale's entry as inference in the code comment. Do not present it as a citation.

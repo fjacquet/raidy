@@ -1,49 +1,53 @@
 ---
+
 phase: 07-dependency-maintenance
 plan: 02
 subsystem: infra
 tags: [npm, biome, jsdom, types-node, dependencies, devDependencies]
 
 # Dependency graph
+
 requires:
-  - phase: 07-dependency-maintenance-01
-    provides: dompurify and react-i18next patch updates already applied
+- phase: 07-dependency-maintenance-01
+  provides: dompurify and react-i18next patch updates already applied
 
 provides:
-  - "@biomejs/biome at 2.4.6 in node_modules (linter toolchain updated)"
-  - "jsdom at 28.1.0 in node_modules (test environment updated)"
-  - "@types/node at 25.3.3 in node_modules (Node.js type definitions updated)"
+- "@biomejs/biome at 2.4.6 in node_modules (linter toolchain updated)"
+- "jsdom at 28.1.0 in node_modules (test environment updated)"
+- "@types/node at 25.3.3 in node_modules (Node.js type definitions updated)"
 
 affects:
-  - 07-dependency-maintenance-03 (verification and lint checks against updated versions)
+- 07-dependency-maintenance-03 (verification and lint checks against updated versions)
 
 # Tech tracking
+
 tech-stack:
-  added: []
-  patterns:
-    - "Exact version pinning pattern checked (npm install --save-dev pkg@version)"
-    - "Incremental dev dependency updates, one group per plan"
+added: []
+patterns:
+- "Exact version pinning pattern checked (npm install --save-dev pkg@version)"
+- "Incremental dev dependency updates, one group per plan"
 
 key-files:
-  created: []
-  modified:
-    - package.json
-    - package-lock.json
+created: []
+modified:
+- package.json
+- package-lock.json
 
 key-decisions:
-  - "Biome was already at ^2.4.6 in HEAD from a prior plan execution — Task 1 confirmed the resolved version (2.4.6) and no file changes were required"
-  - "jsdom 28.1.0 and @types/node 25.3.3 installed together in a single npm install call per plan instructions"
-  - "@types/node is a major version bump (24 → 25) — type errors (if any) deferred to Plan 03 typecheck"
+- "Biome was already at ^2.4.6 in HEAD from a prior plan execution — Task 1 confirmed the resolved version (2.4.6) and no file changes were required"
+- "jsdom 28.1.0 and @types/node 25.3.3 installed together in a single npm install call per plan instructions"
+- "@types/node is a major version bump (24 → 25) — type errors (if any) deferred to Plan 03 typecheck"
 
 patterns-established:
-  - "Dev dependency updates verified via npm list before committing"
+- "Dev dependency updates verified via npm list before committing"
 
 requirements-completed:
-  - DEVDEP-01
-  - DEVDEP-02
-  - DEVDEP-03
+- DEVDEP-01
+- DEVDEP-02
+- DEVDEP-03
 
 # Metrics
+
 duration: 2min
 completed: 2026-03-05
 ---
@@ -115,5 +119,6 @@ None - no external service configuration required.
 - Particularly: @types/node 25.x may introduce type incompatibilities — Plan 03 typecheck will surface these
 
 ---
-*Phase: 07-dependency-maintenance*
-*Completed: 2026-03-05*
+
+_Phase: 07-dependency-maintenance_
+_Completed: 2026-03-05_

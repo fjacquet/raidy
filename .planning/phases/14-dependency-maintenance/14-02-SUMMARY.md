@@ -1,28 +1,30 @@
 ---
+
 phase: "14"
 plan: "02"
 subsystem: toolchain
 tags: [deps, biome, vitest, lint, testing]
 dependency_graph:
-  requires: [14-01]
-  provides: [updated-toolchain-wave-2]
-  affects: [ci, lint, tests]
+requires: [14-01]
+provides: [updated-toolchain-wave-2]
+affects: [ci, lint, tests]
 tech_stack:
-  added: []
-  patterns: []
+added: []
+patterns: []
 key_files:
-  created: []
-  modified:
-    - package.json
-    - package-lock.json
-    - biome.json
-decisions:
-  - Updated biome.json schema URL from 2.4.6 to 2.4.10 to silence schema version mismatch warning
-metrics:
+created: []
+modified:
+- package.json
+- package-lock.json
+- biome.json
+  decisions:
+- Updated biome.json schema URL from 2.4.6 to 2.4.10 to silence schema version mismatch warning
+  metrics:
   duration: "~5 minutes"
   completed_date: "2026-04-01"
   tasks_completed: 2
   files_changed: 3
+
 ---
 
 # Phase 14 Plan 02: Tool Chain Updates Summary
@@ -34,12 +36,12 @@ metrics:
 
 ## Packages updated
 
-| Package | From | To |
-|---------|------|----|
-| @biomejs/biome | 2.4.6 | 2.4.10 |
-| vitest | 4.0.18 | 4.1.2 |
-| @vitest/coverage-v8 | 4.0.18 | 4.1.2 |
-| @vitest/ui | 4.0.18 | 4.1.2 |
+| Package             | From   | To     |
+| ------------------- | ------ | ------ |
+| @biomejs/biome      | 2.4.6  | 2.4.10 |
+| vitest              | 4.0.18 | 4.1.2  |
+| @vitest/coverage-v8 | 4.0.18 | 4.1.2  |
+| @vitest/ui          | 4.0.18 | 4.1.2  |
 
 ## Notes
 

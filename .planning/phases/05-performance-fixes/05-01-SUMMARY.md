@@ -1,37 +1,39 @@
 ---
+
 phase: 05-performance-fixes
 plan: 01
 subsystem: hooks
 tags: [react, performance, memoization, hooks, optimization]
 requires: [04-code-quality]
 provides:
-  - Independent calculation hooks with focused dependencies
-  - Optimized re-render behavior (only affected calculations re-run)
-  - 60% reduction in orchestrator complexity
-affects: []
-tech-stack:
+- Independent calculation hooks with focused dependencies
+- Optimized re-render behavior (only affected calculations re-run)
+- 60% reduction in orchestrator complexity
+  affects: []
+  tech-stack:
   added: []
   patterns:
-    - Independent memoization hooks with focused dependencies
-    - Orchestrator pattern without additional memoization wrapper
-decisions:
-  - key: "Call hooks unconditionally at top level"
-    rationale: "React Rules of Hooks require hooks to be called in same order every render. Individual hooks handle null drive cases gracefully."
-  - key: "No useMemo in orchestrator"
-    rationale: "Each calculation hook has its own useMemo. Adding another wrapper would be redundant and could cause stale results."
-  - key: "Pass usableCapacity as parameter to useSustainabilityCalc"
-    rationale: "Sustainability depends on volumetry output, but shouldn't re-run when volumetry config changes. Parameter allows explicit dependency."
-key-files:
+  - Independent memoization hooks with focused dependencies
+  - Orchestrator pattern without additional memoization wrapper
+    decisions:
+- key: "Call hooks unconditionally at top level"
+  rationale: "React Rules of Hooks require hooks to be called in same order every render. Individual hooks handle null drive cases gracefully."
+- key: "No useMemo in orchestrator"
+  rationale: "Each calculation hook has its own useMemo. Adding another wrapper would be redundant and could cause stale results."
+- key: "Pass usableCapacity as parameter to useSustainabilityCalc"
+  rationale: "Sustainability depends on volumetry output, but shouldn't re-run when volumetry config changes. Parameter allows explicit dependency."
+  key-files:
   created:
-    - src/hooks/useVolumetryCalc.ts
-    - src/hooks/usePerformanceCalc.ts
-    - src/hooks/useSustainabilityCalc.ts
-  modified:
-    - src/hooks/useCalculations.ts
-    - src/hooks/index.ts
-metrics:
-  duration: "5min"
-  completed: "2026-01-19"
+  - src/hooks/useVolumetryCalc.ts
+  - src/hooks/usePerformanceCalc.ts
+  - src/hooks/useSustainabilityCalc.ts
+    modified:
+  - src/hooks/useCalculations.ts
+  - src/hooks/index.ts
+    metrics:
+    duration: "5min"
+    completed: "2026-01-19"
+
 ---
 
 # Phase 05 Plan 01: Split Monolithic useCalculations Hook Summary
@@ -82,9 +84,9 @@ useMemo(() => {
 **After:**
 ```typescript
 // Each hook re-runs only when its dependencies change
-const volumetry = useVolumetryCalc()        // 19 deps
-const performance = usePerformanceCalc()     // 14 deps
-const sustainability = useSustainabilityCalc(volumetry.usableCapacity)  // 11 deps + param
+const volumetry = useVolumetryCalc() // 19 deps
+const performance = usePerformanceCalc() // 14 deps
+const sustainability = useSustainabilityCalc(volumetry.usableCapacity) // 11 deps + param
 ```
 
 **Dependency Reduction:**
@@ -93,12 +95,12 @@ const sustainability = useSustainabilityCalc(volumetry.usableCapacity)  // 11 de
 - Sustainability: 30+ → 11 (63% fewer dependencies)
 
 **Real-World Impact:**
-| Config Change | Before (Re-runs) | After (Re-runs) | Improvement |
-|--------------|------------------|-----------------|-------------|
-| compressionRatio | All 3 engines | Volumetry only | 66% fewer calculations |
-| readPercent | All 3 engines | Performance only | 66% fewer calculations |
-| pue | All 3 engines | Sustainability only | 66% fewer calculations |
-| driveCount | All 3 engines | All 3 engines | No change (expected) |
+| Config Change    | Before (Re-runs) | After (Re-runs)     | Improvement            |
+| ---------------- | ---------------- | ------------------- | ---------------------- |
+| compressionRatio | All 3 engines    | Volumetry only      | 66% fewer calculations |
+| readPercent      | All 3 engines    | Performance only    | 66% fewer calculations |
+| pue              | All 3 engines    | Sustainability only | 66% fewer calculations |
+| driveCount       | All 3 engines    | All 3 engines       | No change (expected)   |
 
 ## Technical Implementation
 
@@ -155,11 +157,13 @@ Each calculation hook handles errors internally:
 ## Testing & Verification
 
 ### Test Results
+
 - **All 593 tests pass** with zero regressions
 - **TypeScript check passes** with zero errors
 - **Lint check passes** with only 2 minor warnings (React import in JSX test files)
 
 ### Manual Verification
+
 Tested configuration changes in dev environment:
 1. ✅ Changing compressionRatio updates only volumetry numbers
 2. ✅ Changing readPercent updates only performance numbers
@@ -168,6 +172,7 @@ Tested configuration changes in dev environment:
 5. ✅ Dashboard calculations display correctly
 
 ### Performance Verification
+
 Added temporary console.time/timeEnd around each hook:
 - compressionRatio change: volumetry ~15ms, performance 0ms ✅, sustainability 0ms ✅
 - readPercent change: volumetry 0ms ✅, performance ~8ms, sustainability 0ms ✅
@@ -176,6 +181,7 @@ Added temporary console.time/timeEnd around each hook:
 ## Decisions Made
 
 ### 1. Call hooks unconditionally at top level
+
 **Decision:** Move hook calls before any early returns, even when drive is null.
 
 **Rationale:** React Rules of Hooks require hooks to be called in the exact same order in every component render. Conditional hook calls would violate this rule and cause bugs.
@@ -183,6 +189,7 @@ Added temporary console.time/timeEnd around each hook:
 **Implementation:** Each individual hook handles null drive gracefully by returning zero-state. Orchestrator validates afterward and includes appropriate error messages.
 
 ### 2. No useMemo in orchestrator
+
 **Decision:** Orchestrator calls hooks directly without wrapping in useMemo.
 
 **Rationale:** Each calculation hook already has its own useMemo with focused dependencies. Adding another useMemo wrapper would be:
@@ -193,6 +200,7 @@ Added temporary console.time/timeEnd around each hook:
 **Alternative considered:** Wrap in useMemo with all dependencies. Rejected because it would recreate the original problem.
 
 ### 3. Pass usableCapacity as parameter to useSustainabilityCalc
+
 **Decision:** Sustainability hook accepts usableCapacity as a function parameter instead of reading from store.
 
 **Rationale:**
@@ -215,6 +223,7 @@ None - plan executed exactly as written.
 ## Next Phase Readiness
 
 ### Blockers
+
 None.
 
 ### Recommendations for Future Plans
@@ -233,17 +242,20 @@ Potential future optimizations (not in current plan):
 ## Files Modified
 
 ### Created
+
 - `src/hooks/useVolumetryCalc.ts` - 137 lines
 - `src/hooks/usePerformanceCalc.ts` - 121 lines
 - `src/hooks/useSustainabilityCalc.ts` - 107 lines
 
 ### Modified
+
 - `src/hooks/useCalculations.ts` - Reduced from 387 to 153 lines (60% reduction)
 - `src/hooks/index.ts` - Added exports for three new hooks
 - `tests/components/ErrorBoundary.spec.tsx` - Added biome-ignore for React JSX requirement
 - `tests/components/inputs/TopologyPanel.spec.tsx` - Added biome-ignore for React JSX requirement
 
 ## Commits
+
 1. `feat(05-01)`: Create independent calculation hooks with focused dependencies (23be6e6)
 2. `refactor(05-01)`: Refactor useCalculations to orchestrate independent hooks (6b460e9)
 3. `test(05-01)`: Export new hooks and verify no regressions (84c4b8b)

@@ -24,13 +24,13 @@ L'objectif du logiciel est de :
 - Fournir une **vue pédagogique** pour les discussions avant-vente, les
   ateliers d'architecture et les comparatifs compétitifs.
 
-> **Note de terminologie :** *Dans cette spécification, "Ultra" est
+> **Note de terminologie :** _Dans cette spécification, "Ultra" est
 > utilisé pour désigner soit la release officielle **PowerFlex 5.0 Ultra
 > (SAE + EC)**, soit un **mode interne du calculateur orienté Erasure
 > Coding**. Ce label ne doit pas être confondu avec les layouts MG/FG de
-> PowerFlex 4.x.*
+> PowerFlex 4.x._
 
-------------------------------------------------------------------------
+---
 
 ### 2. Module d'Entrée : Configuration du Cluster
 
@@ -50,13 +50,11 @@ L'interface doit permettre de définir un **"Hardware Pool"** comprenant
 Le calculateur doit permettre de définir, pour chaque type de nœud :
 
 - **Type de Nœud :**
-
   - **PowerFlex Node** (Appliance / Rack).
 
   - **Custom Node** (ex. Dell PowerEdge R660 / R760).
 
 - **CPU :**
-
   - Nombre de cœurs et fréquence.
 
   - Impact direct sur les modes **FG + compression** et **Erasure
@@ -68,7 +66,6 @@ Le calculateur doit permettre de définir, pour chaque type de nœud :
 <!-- -->
 
 - Le calculateur doit gérer trois profils :
-
   - **Profil MG (4.x -- Medium Granularity)**
     - RAM standard, dimensionnée via un modèle simplifié (par exemple "X
       Go + Y Go par To brut").
@@ -93,17 +90,13 @@ Le calculateur doit permettre de définir, pour chaque type de nœud :
 <!-- -->
 
 - Le calculateur doit gérer la **vitesse de lien** par nœud :
-
   - **Vitesses supportées dans l'outil** : 10 GbE, 25 GbE, 100 GbE.
 
   - **Recommandations intégrées :**
-
     - Mode **MG (4.x)** :
       - 10 GbE minimal,
-      - 25/100 GbE recommandés pour les clusters de forte taille.
-    - Mode **FG + Compression (4.x)** :
-      - 25 GbE minimal recommandé.
-    - Mode **EC / Ultra / NVMe/TCP** :
+      - 25/100 GbE recommandés pour les clusters de forte taille. - Mode **FG + Compression (4.x)** :
+      - 25 GbE minimal recommandé. - Mode **EC / Ultra / NVMe/TCP** :
       - 25 ou 100 GbE fortement recommandés.
 
   - Le calculateur doit dériver le **throughput maximal théorique** par
@@ -119,9 +112,7 @@ Storage Pool :
 <!-- -->
 
 - Le calculateur modélise les types suivants :
-
   - **MG (4.x -- Medium Granularity)**
-
     - HDD, SSD SAS/SATA, NVMe.
 
     - Par simplification, le calculateur peut **exclure les HDD** des
@@ -130,30 +121,25 @@ Storage Pool :
       d'une limitation produit.
 
   - **FG + Compression (4.x -- Fine Granularity)**
-
     - Médias **full-flash** uniquement : SSD ou NVMe.
 
     - Obligation d'avoir de la **mémoire persistante** (SDPM/NVDIMM) sur
       les nœuds concernés.
 
   - **EC / Ultra (5.0 -- SAE / Erasure Coding)**
-
     - Médias **SSD/NVMe** homogènes dans le Device Group.
 
 <!-- -->
 
 - **Capacité Unitaire (par disque) :**
-
   - 1,92 TB, 3,84 TB, 7,68 TB, 15,36 TB (liste extensible dans l'outil).
 
 - **Quantité de disques par nœud :**
-
   - Intervalle configurable, par exemple **4 à 24 disques** par nœud,
     avec contrôle de cohérence (limites physiques dépendant du châssis
     sélectionné).
 
 - **Homogénéité des Storage Pools :**
-
   - Le calculateur doit supposer **un type de média homogène par Storage
     Pool**.
 
@@ -161,7 +147,7 @@ Storage Pool :
     supporté dans le modèle** (même si certains cas sont techniquement
     possibles).
 
-------------------------------------------------------------------------
+---
 
 ### 3. Module de Calcul : Volumétrie & Protection
 
@@ -178,7 +164,6 @@ sélectionnés par l'utilisateur :
   distribué.
 
 - **Usage typique dans l'outil :**
-
   - Bases de données à forte intensité I/O.
   - Workloads latence très basse sans compression.
 
@@ -189,7 +174,6 @@ sélectionnés par l'utilisateur :
 \[ C\_{utile} = \]
 
 - **Paramètres :**
-
   - ( C\_{raw} ) : capacité brute totale du Storage Pool (somme de tous
     les disques).
   - ( %\_{spare} ) : pourcentage de spare distribué (configurable : ex.
@@ -201,7 +185,6 @@ sélectionnés par l'utilisateur :
   inline compression.
 
 - **Usage typique :**
-
   - Workloads compressibles (DB, VDI, virtualisation générale).
   - Environnements avec usage intensif de snapshots.
 
@@ -213,7 +196,6 @@ sélectionnés par l'utilisateur :
 
 - Le calculateur modélise un overhead global \*\*(%\_{overhead_FG})\*\*
   qui regroupe :
-
   - Overhead métadonnées FG.
 
   - Over-provisioning nécessaire à la LSA (log-structured array) et à la
@@ -226,14 +208,12 @@ sélectionnés par l'utilisateur :
 \[ C\_{effective} = ( ) R\_{comp} \]
 
 - **Paramètres :**
-
   - ( C\_{raw} ) : capacité brute totale du Storage Pool FG.
 
   - ( %\_{overhead_FG} ) : paramètre utilisateur ou par défaut (ex.
     12--15 %).
 
   - ( R\_{comp} ) : taux de compression cible (input utilisateur).
-
     - Exemples typiques dans l'UI :
       - 1,5:1 -- workloads peu compressibles.
       - 2:1 -- bases de données.
@@ -248,14 +228,12 @@ sélectionnés par l'utilisateur :
 - **Technologie modélisée :** Erasure Coding distribué.
 
 - **Interprétation dans le calculateur :**
-
   - Soit un cluster **PowerFlex 5.0 Ultra (SAE, 2+2, 8+2, etc.)**.
 
   - Soit une **solution concurrente EC** (ex. vSAN RAID5/6) pour
     comparatif.
 
 - **Schémas EC supportés :**
-
   - 4+1 (RAID5-like)
 
   - 4+2 (RAID6-like)
@@ -269,7 +247,6 @@ sélectionnés par l'utilisateur :
 \[ C\_{utile_EC} = C\_{raw} (1 - %\_{overhead}) \]
 
 - **Paramètres :**
-
   - ( C\_{raw} ) : capacité brute totale.
   - ( N\_{data} ) : nombre de "data chunks".
   - ( M\_{parity} ) : nombre de "parity chunks".
@@ -277,7 +254,6 @@ sélectionnés par l'utilisateur :
     configurable).
 
 - **Exemple pédagogique :**
-
   - En 4+2 : efficacité brute = 4 / 6 ≈ 66 %.
 
   - En 8+2 : efficacité brute = 8 / 10 = 80 %.
@@ -287,7 +263,7 @@ sélectionnés par l'utilisateur :
   solutions EC compressées (même formule que FG, mais sans division par
   2).
 
-------------------------------------------------------------------------
+---
 
 ### 4. Module de Calcul : Performance (IOPS & Latence)
 
@@ -318,26 +294,22 @@ La performance effective côté client est le **minimum** entre :
 
 - Le calculateur doit modéliser la pénalité d'écriture en fonction du
   mode :
-
   - **Mode A (MG -- mirroring)**
-
     - ( WP = 2 )
       - 1 écriture client = 2 écritures disque.
 
   - **Mode B (FG + Compression -- mirroring)**
-
     - Même penalty de base ( WP = 2 ).
     - L'impact de la compression est pris en compte dans le **malus
       CPU**, pas dans WP.
 
   - **Mode C (EC)**
-
     - **Séquentiel (full stripe write)** :
       - ( WP ,1--1,2 ) (écritures alignées).
-    - **Aléatoire (read-modify-write)** :
-      - Modèle simplifié :\
-        \[ WP = M\_{parity} + 1 \] Par exemple, en 4+2, ( WP ) (avec
-        marge 3--4 selon la granularité).
+        - **Aléatoire (read-modify-write)** :
+          - Modèle simplifié :\
+            \[ WP = M\_{parity} + 1 \] Par exemple, en 4+2, ( WP ) (avec
+            marge 3--4 selon la granularité).
 
 <!-- -->
 
@@ -346,7 +318,6 @@ La performance effective côté client est le **minimum** entre :
 \[ IOPS\_{frontend_max} = \]
 
 - **Paramètres :**
-
   - ( R\_{ratio} ) : proportion de lectures (ex. 0,7 pour 70 %).
   - ( W\_{ratio} ) : proportion d'écritures (0,3 pour 30 %).
   - Le calculateur doit proposer des presets : 70/30, 50/50, 100 % read,
@@ -358,16 +329,13 @@ Le logiciel doit appliquer un **"malus CPU"** selon le mode de
 protection :
 
 - **Standard MG (4.x -- performance)**
-
   - Capacité IOPS de référence : 100 %.
 
 - **FG + Compression (4.x)**
-
   - Coût CPU de la compression.
   - Modèle simplifié : **--15 % IOPS** vs MG au même hardware.
 
 - **Erasure Coding (Ultra / SAE / Compétiteur)**
-
   - Coût CPU sur les opérations d'écriture (calcul de parité,
     reconstruction).
   - Modèle simplifié :
@@ -397,7 +365,7 @@ Le calculateur doit convertir ce throughput en **IOPS max** pour un
 **block size** donné (ex. 8K) et prendre en compte ce plafond comme
 limite supplémentaire.
 
-------------------------------------------------------------------------
+---
 
 ### 5. Matrice de Compatibilité (Règles Métier)
 
@@ -412,10 +380,9 @@ En cas de violation d'une règle, l'UI doit :
 
 #### 5.1 Matrice (vue logique)
 
-*(À représenter en tableau dans l'UI -- version textuelle ci-dessous.)*
+_(À représenter en tableau dans l'UI -- version textuelle ci-dessous.)_
 
 - **Composant : Disques**
-
   - **Mode MG (4.x)**
     - Autorisé dans le modèle : HDD, SSD SAS/SATA, NVMe.
     - **Règle : un seul type de média par Storage Pool**.
@@ -426,7 +393,6 @@ En cas de violation d'une règle, l'UI doit :
     - Autorisé : SSD/NVMe homogènes.
 
 - **Composant : Réseau**
-
   - **MG (4.x)** : 10 GbE min, 25/100 GbE recommandés.
 
   - **FG + Compression** : 25 GbE min recommandé.
@@ -434,19 +400,16 @@ En cas de violation d'une règle, l'UI doit :
   - **EC / Ultra / NVMe/TCP** : 25 ou 100 GbE fortement recommandés.
 
 - **Composant : NTP**
-
   - Tous les modes : **NTP obligatoire** (l'outil doit considérer "NTP
     absent" comme configuration invalide).
 
 - **Composant : RAID contrôleur**
-
   - Tous les modes : **HBA / passthrough requis**.
   - Les contrôleurs RAID matériels (PERC, SmartArray, etc.) sont
     **interdits** dans le modèle (les disques doivent être visibles en
     mode "raw").
 
 - **Composant : Mélange de disques dans un même pool**
-
   - MG : mélange de types de disques **marqué comme "non recommandé"**
     dans le calculateur.
 
@@ -476,7 +439,7 @@ choix suivants :
     - Si l'utilisateur force ce choix, l'outil doit afficher un
       avertissement clair.
 
-------------------------------------------------------------------------
+---
 
 ### 6. Interface Utilisateur & Scénarios
 
@@ -488,7 +451,6 @@ Objectif : partir d'un **besoin métier** et proposer une configuration
 minimale de cluster.
 
 - **Entrées principales :**
-
   - Capacité utile requise (ex. 500 TB utiles).
 
   - IOPS cible (ex. 1M IOPS).
@@ -499,13 +461,11 @@ minimale de cluster.
     compressé).
 
   - Contraintes éventuelles :
-
     - Nombre de nœuds max,
     - Type de nœud,
     - Type de média (SSD vs NVMe).
 
 - **Sorties attendues :**
-
   - **Nombre de nœuds** minimal par mode (MG, FG+Comp, EC).
 
   - **Capacité brute vs utile vs effective** pour chaque mode.
@@ -521,9 +481,7 @@ Objectif : offrir une **vue graphique comparée** des différents modes de
 protection.
 
 - **Représentation graphique recommandée :**
-
   - Un graphique à barres (bar chart) côte-à-côte, par mode :
-
     - Barre bleue : **PowerFlex 4.x -- MG** (plus de disques, latence la
       plus basse).
 
@@ -535,7 +493,6 @@ protection.
       d'efficacité maximal).
 
 - **Pour chaque barre, afficher :**
-
   - **Nombre de nœuds** nécessaires.
 
   - **Capacité brute / utile / effective**.
@@ -546,7 +503,6 @@ protection.
     basse, 3 = plus élevée).
 
 - **Scénarios d'usage typiques :**
-
   - Comparer **PowerFlex 4.x MG vs FG** sur un même besoin.
 
   - Comparer **PowerFlex 4.x vs Ultra / EC** pour illustrer les gains en
@@ -561,7 +517,6 @@ Objectif : montrer de façon **pédagogique** l'impact de la charge, du
 profil R/W et du mode de protection sur les performances.
 
 - **Contrôles utilisateur (sliders / sélecteurs) :**
-
   - R/W Ratio : presets 70/30, 50/50, 100 % read, 100 % write.
 
   - Block size : 4K, 8K, 16K, 32K.
@@ -569,26 +524,22 @@ profil R/W et du mode de protection sur les performances.
   - Mode de protection : MG, FG+Comp, EC.
 
 - **Visualisation :**
-
   - Graphiques IOPS / throughput en fonction des paramètres.
 
   - Visualisation de la **chute d'IOPS** lorsque :
-
     - On augmente la proportion d'écritures **random** en mode EC.
 
     - On active la **compression** sur un workload CPU-limited.
 
 - **Cas pédagogique clé :**
-
   - Scénario "100 % Random Write en EC (4+2 ou 8+2)" :
-
     - Montrer la diminution de performance vs MG/FG.
 
     - Permettre de comparer un **EC "théorique" (compétiteur)** vs un
       **EC optimisé type SAE** (avec un write penalty moins sévère, pour
       illustrer l'architecture Ultra).
 
-------------------------------------------------------------------------
+---
 
 ### Annexe A -- Paramètres par défaut et hypothèses de calcul
 
@@ -603,7 +554,6 @@ le comportement du PowerFlex Sizer.
 **A.1.1 Types de médias modélisés**
 
 - **HDD 10K / 7,2K (mode MG uniquement)**
-
   - Utilisés uniquement si l'option "autoriser HDD" est activée.
   - Non proposés par défaut dans les scénarios orientés performance.
 
@@ -616,50 +566,55 @@ le comportement du PowerFlex Sizer.
 Ces valeurs sont indicatives et servent de base au calcul
 `IOPS_total_backend = N_disks × IOPS_per_disk`.
 
-  --------------------------------------------------------------
-  Type de média        Profil d'I/O (4K     IOPS/disk (défaut)
-                       random)
-  -------------------- -------------------- --------------------
-  HDD 10K              100 % Read           150
+---
 
-  HDD 10K              70/30 R/W            120
+Type de média Profil d'I/O (4K IOPS/disk (défaut)
+random)
 
-  SSD SAS              100 % Read           8 000
+---
 
-  SSD SAS              70/30 R/W            6 000
+HDD 10K 100 % Read 150
 
-  SSD SATA             70/30 R/W            5 000
+HDD 10K 70/30 R/W 120
 
-  NVMe (U.2/U.3)       100 % Read           120 000
+SSD SAS 100 % Read 8 000
 
-NVMe (U.2/U.3)       70/30 R/W            80 000
-  --------------------------------------------------------------
+SSD SAS 70/30 R/W 6 000
+
+SSD SATA 70/30 R/W 5 000
+
+NVMe (U.2/U.3) 100 % Read 120 000
+
+## NVMe (U.2/U.3) 70/30 R/W 80 000
 
 #### A.2 Taux de compression par type de workload
 
 Les taux ci-dessous correspondent à des **"DRR cibles"** plausibles en
 FG (4.x) ou en EC + compression (5.0).
 
-  ------------------------------------------------------------
-  Type de workload           Symbole UI    Taux par défaut
-                                           `R_comp`
-  -------------------------- ------------- -------------------
-  Base de données OLTP / ERP DB            2:1
+---
 
-  Bases de données           Analytics     1,5:1
-  analytiques
+Type de workload Symbole UI Taux par défaut
+`R_comp`
 
-  VDI / postes virtuels      VDI           3:1
+---
 
-  Virtualisation généraliste General       2:1
-  (VM mix)                   Purpose
+Base de données OLTP / ERP DB 2:1
 
-  Fichiers non structurés    File          1,5:1
-  (file share)
+Bases de données Analytics 1,5:1
+analytiques
 
-Workloads non              NoComp        1,0:1
-  compressibles
-  ------------------------------------------------------------
+VDI / postes virtuels VDI 3:1
+
+Virtualisation généraliste General 2:1
+(VM mix) Purpose
+
+Fichiers non structurés File 1,5:1
+(file share)
+
+Workloads non NoComp 1,0:1
+compressibles
+------------------------------------------------------------
 
 Le calculateur doit :
 
@@ -696,18 +651,20 @@ Pour simplifier :
 Outre l'efficacité brute ( N\_{data} / (N\_{data} + M\_{parity}) ), on
 ajoute un **overhead global** (métadonnées, spare, write cache, etc.) :
 
-  -------------------------------------------------------------
-  Schéma EC Efficacité      Overhead global `overhead_EC`
-            brute           (défaut)
-  --------- --------------- -----------------------------------
-  4+1       80 %            15 %
+---
 
-  4+2       66 %            15 %
+Schéma EC Efficacité Overhead global `overhead_EC`
+brute (défaut)
 
-  8+2       80 %            10 %
+---
 
-12+4      75 %            10 %
-  -------------------------------------------------------------
+4+1 80 % 15 %
+
+4+2 66 % 15 %
+
+8+2 80 % 10 %
+
+## 12+4 75 % 10 %
 
 \[ C\_{utile_EC} = C\_{raw} (1 - %\_{overhead_EC}) \]
 
@@ -716,18 +673,21 @@ ajoute un **overhead global** (métadonnées, spare, write cache, etc.) :
 Pour rendre le modèle pédagogique, le calculateur applique un
 **coefficient "CPU_efficiency"** par mode.
 
-  -------------------------------------------------------------
-  Mode                           CPU_efficiency sur IOPS max
-  ------------------------------ ------------------------------
-  MG (4.x -- mirroring)          100 %
+---
 
-  FG + compression (4.x)         85 %
+Mode CPU_efficiency sur IOPS max
 
-  EC -- compétiteur RAID 5/6     70 %
+---
 
-EC -- PowerFlex Ultra / SAE    85 %
-  (5.0)
-  -------------------------------------------------------------
+MG (4.x -- mirroring) 100 %
+
+FG + compression (4.x) 85 %
+
+EC -- compétiteur RAID 5/6 70 %
+
+EC -- PowerFlex Ultra / SAE 85 %
+(5.0)
+-------------------------------------------------------------
 
 #### A.5 Hypothèses réseau
 
@@ -751,54 +711,59 @@ Pour un block size donné `BS` :
 
 #### A.6 Profils de workloads par défaut
 
-  ---------------------------------------------------------------
-  Profil          R/W ratio            Block size     Compression
-  --------------- --------------- --------------- ---------------
-  OLTP (DB)       70/30                        8K             2:1
+---
 
-  OLAP / DW       80/20                       32K           1,5:1
+Profil R/W ratio Block size Compression
 
-  VDI             80/20                        4K             3:1
+---
 
-  VM mix          70/30                        8K             2:1
-  (vSphere)
+OLTP (DB) 70/30 8K 2:1
 
-  Backup /        50/50                       64K           1,5:1
-  Archive
+OLAP / DW 80/20 32K 1,5:1
 
-Non             50/50                        8K             1:1
-  compressible
-  ---------------------------------------------------------------
+VDI 80/20 4K 3:1
+
+VM mix 70/30 8K 2:1
+(vSphere)
+
+Backup / 50/50 64K 1,5:1
+Archive
+
+Non 50/50 8K 1:1
+compressible
+---------------------------------------------------------------
 
 #### A.7 Récapitulatif des principaux paramètres par défaut
 
-  -------------------------------------------------------------
-  Paramètre                      Valeur par défaut
-  ------------------------------ ------------------------------
-  Spare MG                       20 %
+---
 
-  Overhead FG agrégé             15 %
+Paramètre Valeur par défaut
 
-  Overhead EC 4+2                15 %
+---
 
-  Overhead EC 8+2                10 %
+Spare MG 20 %
 
-  CPU_efficiency MG              100 %
+Overhead FG agrégé 15 %
 
-  CPU_efficiency FG+Comp         85 %
+Overhead EC 4+2 15 %
 
-  CPU_efficiency EC compétiteur  70 %
+Overhead EC 8+2 10 %
 
-  CPU_efficiency EC PowerFlex    85 %
-  Ultra
+CPU_efficiency MG 100 %
 
-  Efficience réseau              0,8
+CPU_efficiency FG+Comp 85 %
 
-  Block size par défaut          8K
+CPU_efficiency EC compétiteur 70 %
 
-  Taux de compression DB         2:1
+CPU_efficiency EC PowerFlex 85 %
+Ultra
 
-  Taux de compression VDI        3:1
+Efficience réseau 0,8
 
-Taux de compression général    2:1
-  -------------------------------------------------------------
+Block size par défaut 8K
+
+Taux de compression DB 2:1
+
+Taux de compression VDI 3:1
+
+## Taux de compression général 2:1

@@ -6,19 +6,19 @@ The Dell PowerVault ME5 series is an entry-level to mid-range block storage plat
 
 ### 1.1 Model Matrix
 
-| Model     | Form Factor | Base Drive Slots | Drive Type           | Max Expansion | Max Total Drives |
-|-----------|-------------|------------------|----------------------|---------------|------------------|
-| ME5212    | 2U          | 12 x 3.5"        | LFF (3.5")           | +324 drives   | 336              |
-| ME5224    | 2U          | 24 x 2.5"        | SFF (2.5")           | +312 drives   | 336              |
-| ME5284    | 5U          | 84 x 3.5"        | LFF (3.5")           | +252 drives   | 336              |
+| Model  | Form Factor | Base Drive Slots | Drive Type | Max Expansion | Max Total Drives |
+| ------ | ----------- | ---------------- | ---------- | ------------- | ---------------- |
+| ME5212 | 2U          | 12 x 3.5"        | LFF (3.5") | +324 drives   | 336              |
+| ME5224 | 2U          | 24 x 2.5"        | SFF (2.5") | +312 drives   | 336              |
+| ME5284 | 5U          | 84 x 3.5"        | LFF (3.5") | +252 drives   | 336              |
 
 ### 1.2 Expansion Enclosures
 
-| Enclosure | Drive Slots | Form Factor | Compatible Base Arrays        |
-|-----------|-------------|-------------|-------------------------------|
-| ME512     | 12 x 3.5"   | 2U          | ME5212, ME5224 only           |
-| ME524     | 24 x 2.5"   | 2U          | ME5212, ME5224 only           |
-| ME584     | 84 x 3.5"   | 5U          | ME5212, ME5224, ME5284 (all)  |
+| Enclosure | Drive Slots | Form Factor | Compatible Base Arrays       |
+| --------- | ----------- | ----------- | ---------------------------- |
+| ME512     | 12 x 3.5"   | 2U          | ME5212, ME5224 only          |
+| ME524     | 24 x 2.5"   | 2U          | ME5212, ME5224 only          |
+| ME584     | 84 x 3.5"   | 5U          | ME5212, ME5224, ME5284 (all) |
 
 ---
 
@@ -35,28 +35,28 @@ The Dell PowerVault ME5 series is an entry-level to mid-range block storage plat
 
 ### 2.2 Host Connectivity Options (per controller)
 
-| Protocol        | Speed          | Ports per Controller | Total Ports (Dual) |
-|-----------------|----------------|----------------------|--------------------|
-| Fibre Channel   | 32 Gb/s        | 4                    | 8                  |
-| iSCSI SFP+      | 25 Gb/s        | 4                    | 8                  |
-| iSCSI Base-T    | 10 Gb/s        | 4                    | 8                  |
-| SAS (DAS only)  | 12 Gb/s        | 4                    | 8                  |
-| Management      | 1 Gb/s Base-T  | 1                    | 2                  |
+| Protocol       | Speed         | Ports per Controller | Total Ports (Dual) |
+| -------------- | ------------- | -------------------- | ------------------ |
+| Fibre Channel  | 32 Gb/s       | 4                    | 8                  |
+| iSCSI SFP+     | 25 Gb/s       | 4                    | 8                  |
+| iSCSI Base-T   | 10 Gb/s       | 4                    | 8                  |
+| SAS (DAS only) | 12 Gb/s       | 4                    | 8                  |
+| Management     | 1 Gb/s Base-T | 1                    | 2                  |
 
 **Note:** SAS front-end is DAS only and does NOT support replication.
 
 ### 2.3 Physical Specifications
 
-| Model   | Height      | Width        | Depth        | Weight (Max)     |
-|---------|-------------|--------------|--------------|------------------|
-| ME5212  | 3.46" (2U)  | 19.01"       | 24.36"       | 71.0 lbs (32 kg) |
-| ME5224  | 3.46" (2U)  | 19.01"       | 24.36"       | 71.0 lbs (32 kg) |
-| ME5284  | 8.66" (5U)  | 19.01"       | 34.00"       | ~200 lbs         |
+| Model  | Height     | Width  | Depth  | Weight (Max)     |
+| ------ | ---------- | ------ | ------ | ---------------- |
+| ME5212 | 3.46" (2U) | 19.01" | 24.36" | 71.0 lbs (32 kg) |
+| ME5224 | 3.46" (2U) | 19.01" | 24.36" | 71.0 lbs (32 kg) |
+| ME5284 | 8.66" (5U) | 19.01" | 34.00" | ~200 lbs         |
 
 ### 2.4 Power Specifications
 
 | Model/Enclosure | Power Supply Type | Max Power (AC) | Thermal (BTU/hr) |
-|-----------------|-------------------|----------------|------------------|
+| --------------- | ----------------- | -------------- | ---------------- |
 | ME5212          | Dual PSU          | 580W           | 1,980            |
 | ME5224          | Dual PSU          | 580W           | 1,980            |
 | ME5284          | Dual PSU          | 2,200W         | 7,507            |
@@ -70,14 +70,14 @@ The Dell PowerVault ME5 series is an entry-level to mid-range block storage plat
 
 ### 3.1 Drive Types and Capacities
 
-| Drive Type          | Form Factor | Speed    | Available Capacities               |
-|---------------------|-------------|----------|------------------------------------|
-| NL-SAS HDD          | 3.5" LFF    | 7.2K RPM | 4TB, 8TB, 12TB, 16TB, 20TB, 22TB, 24TB |
-| NL-SAS HDD (FIPS)   | 3.5" LFF    | 7.2K RPM | 8TB, 16TB (SED/FIPS)               |
-| SAS HDD             | 2.5" SFF    | 10K RPM  | 1.2TB, 2.4TB                       |
-| SAS HDD (FIPS)      | 2.5" SFF    | 10K RPM  | 2.4TB (SED/FIPS)                   |
-| SAS SSD             | 2.5" SFF    | -        | 1.6TB, 1.92TB, 3.84TB, 7.68TB      |
-| SAS SSD (FIPS)      | 2.5" SFF    | -        | 3.2TB (SED/FIPS)                   |
+| Drive Type        | Form Factor | Speed    | Available Capacities                   |
+| ----------------- | ----------- | -------- | -------------------------------------- |
+| NL-SAS HDD        | 3.5" LFF    | 7.2K RPM | 4TB, 8TB, 12TB, 16TB, 20TB, 22TB, 24TB |
+| NL-SAS HDD (FIPS) | 3.5" LFF    | 7.2K RPM | 8TB, 16TB (SED/FIPS)                   |
+| SAS HDD           | 2.5" SFF    | 10K RPM  | 1.2TB, 2.4TB                           |
+| SAS HDD (FIPS)    | 2.5" SFF    | 10K RPM  | 2.4TB (SED/FIPS)                       |
+| SAS SSD           | 2.5" SFF    | -        | 1.6TB, 1.92TB, 3.84TB, 7.68TB          |
+| SAS SSD (FIPS)    | 2.5" SFF    | -        | 3.2TB (SED/FIPS)                       |
 
 ### 3.2 Drive Mixing Rules
 
@@ -90,11 +90,11 @@ The Dell PowerVault ME5 series is an entry-level to mid-range block storage plat
 
 ### 3.3 Tiering Classification
 
-| Tier         | Drive Type       | Characteristics                     |
-|--------------|------------------|-------------------------------------|
-| Performance  | SAS SSD          | Highest IOPS, lowest latency        |
-| Standard     | SAS 10K HDD      | Balanced performance                |
-| Archive      | NL-SAS 7.2K HDD  | Highest capacity, lowest cost       |
+| Tier        | Drive Type      | Characteristics               |
+| ----------- | --------------- | ----------------------------- |
+| Performance | SAS SSD         | Highest IOPS, lowest latency  |
+| Standard    | SAS 10K HDD     | Balanced performance          |
+| Archive     | NL-SAS 7.2K HDD | Highest capacity, lowest cost |
 
 ---
 
@@ -102,15 +102,15 @@ The Dell PowerVault ME5 series is an entry-level to mid-range block storage plat
 
 ### 4.1 Supported RAID Levels
 
-| RAID Level | Min Drives | Max Drives | Fault Tolerance | Efficiency Formula                    |
-|------------|------------|------------|-----------------|---------------------------------------|
-| NRAID      | 1          | 1          | 0 drives        | 100% (no redundancy)                  |
-| RAID 0     | 2          | 16         | 0 drives        | 100% (no redundancy)                  |
-| RAID 1     | 2          | 2          | 1 drive         | 50%                                   |
-| RAID 5     | 3          | 16         | 1 drive         | (N-1)/N                               |
-| RAID 6     | 4          | 16         | 2 drives        | (N-2)/N                               |
-| RAID 10    | 4          | 16         | 1 per mirror    | 50%                                   |
-| ADAPT      | 12         | 128        | 2 drives        | ~87% (distributed spare)              |
+| RAID Level | Min Drives | Max Drives | Fault Tolerance | Efficiency Formula       |
+| ---------- | ---------- | ---------- | --------------- | ------------------------ |
+| NRAID      | 1          | 1          | 0 drives        | 100% (no redundancy)     |
+| RAID 0     | 2          | 16         | 0 drives        | 100% (no redundancy)     |
+| RAID 1     | 2          | 2          | 1 drive         | 50%                      |
+| RAID 5     | 3          | 16         | 1 drive         | (N-1)/N                  |
+| RAID 6     | 4          | 16         | 2 drives        | (N-2)/N                  |
+| RAID 10    | 4          | 16         | 1 per mirror    | 50%                      |
+| ADAPT      | 12         | 128        | 2 drives        | ~87% (distributed spare) |
 
 **Notes:**
 
@@ -121,10 +121,10 @@ The Dell PowerVault ME5 series is an entry-level to mid-range block storage plat
 
 For optimal sequential write performance, use these disk counts:
 
-| RAID Level | Recommended Disk Counts | Data Disks | Reason                           |
-|------------|-------------------------|------------|----------------------------------|
-| RAID 5     | 3, 5, 9                 | 2, 4, 8    | Aligns with 4MB virtual pages    |
-| RAID 6     | 4, 6, 10                | 2, 4, 8    | Aligns with 4MB virtual pages    |
+| RAID Level | Recommended Disk Counts | Data Disks | Reason                        |
+| ---------- | ----------------------- | ---------- | ----------------------------- |
+| RAID 5     | 3, 5, 9                 | 2, 4, 8    | Aligns with 4MB virtual pages |
+| RAID 6     | 4, 6, 10                | 2, 4, 8    | Aligns with 4MB virtual pages |
 
 **Warning:** Using non-optimal counts (e.g., 7 disks for RAID 5) causes significant sequential write performance degradation.
 
@@ -148,30 +148,30 @@ ADAPT is Dell's distributed RAID technology:
 
 ### 5.1 Maximum Performance (All-Flash)
 
-| Metric              | Value           | Condition                        |
-|---------------------|-----------------|----------------------------------|
-| Max IOPS (4K)       | 840,000         | 100% Read, All SSD               |
-| Max Read Throughput | 14 GB/s         | Sequential, All SSD              |
-| Max Write Throughput| 11 GB/s         | Sequential, All SSD              |
+| Metric               | Value   | Condition           |
+| -------------------- | ------- | ------------------- |
+| Max IOPS (4K)        | 840,000 | 100% Read, All SSD  |
+| Max Read Throughput  | 14 GB/s | Sequential, All SSD |
+| Max Write Throughput | 11 GB/s | Sequential, All SSD |
 
 ### 5.2 Performance by RAID Level (OLTP Workloads)
 
-| RAID Level | Max IOPS (Mixed R/W) | Use Case                        |
-|------------|----------------------|---------------------------------|
-| RAID 10    | 344,000              | Maximum performance             |
-| RAID 5     | 207,000              | Balanced                        |
-| ADAPT      | 170,000              | Best flexibility & protection   |
-| RAID 6     | ~150,000             | Maximum protection              |
+| RAID Level | Max IOPS (Mixed R/W) | Use Case                      |
+| ---------- | -------------------- | ----------------------------- |
+| RAID 10    | 344,000              | Maximum performance           |
+| RAID 5     | 207,000              | Balanced                      |
+| ADAPT      | 170,000              | Best flexibility & protection |
+| RAID 6     | ~150,000             | Maximum protection            |
 
 ### 5.3 Write Penalty by RAID Level
 
-| RAID Level | Write Penalty | Explanation                              |
-|------------|---------------|------------------------------------------|
-| RAID 1     | 2x            | 1 write = 2 disk writes (mirror)         |
-| RAID 10    | 2x            | 1 write = 2 disk writes (mirror)         |
-| RAID 5     | 4x            | Read-Modify-Write (small random writes)  |
-| RAID 6     | 6x            | Read-Modify-Write with dual parity       |
-| ADAPT      | ~2-3x         | Distributed parity, optimized rebuild    |
+| RAID Level | Write Penalty | Explanation                             |
+| ---------- | ------------- | --------------------------------------- |
+| RAID 1     | 2x            | 1 write = 2 disk writes (mirror)        |
+| RAID 10    | 2x            | 1 write = 2 disk writes (mirror)        |
+| RAID 5     | 4x            | Read-Modify-Write (small random writes) |
+| RAID 6     | 6x            | Read-Modify-Write with dual parity      |
+| ADAPT      | ~2-3x         | Distributed parity, optimized rebuild   |
 
 ### 5.4 Performance Formula
 
@@ -182,13 +182,13 @@ Effective_Mixed_IOPS = (Read_IOPS) + (Write_IOPS / Write_Penalty)
 
 ### 5.5 Benchmark Results (StorageReview)
 
-| Test                | SAN Config    | DAS Config    | Notes                |
-|---------------------|---------------|---------------|----------------------|
-| 4K Random Read      | 300,600 IOPS  | 290,500 IOPS  | Sub-1ms to 260K      |
-| 4K Random Write     | 78,000 IOPS   | 78,000 IOPS   | Sub-1ms to 70K       |
-| 64K Seq Read        | 4.0 GB/s      | 4.0 GB/s      | 2 SSDs + 10 HDDs     |
-| 64K Seq Write       | 950 MB/s      | 950 MB/s      | Limited by SSD count |
-| SQL OLTP Latency    | 2ms avg       | 1ms avg       | TPC-C workload       |
+| Test             | SAN Config   | DAS Config   | Notes                |
+| ---------------- | ------------ | ------------ | -------------------- |
+| 4K Random Read   | 300,600 IOPS | 290,500 IOPS | Sub-1ms to 260K      |
+| 4K Random Write  | 78,000 IOPS  | 78,000 IOPS  | Sub-1ms to 70K       |
+| 64K Seq Read     | 4.0 GB/s     | 4.0 GB/s     | 2 SSDs + 10 HDDs     |
+| 64K Seq Write    | 950 MB/s     | 950 MB/s     | Limited by SSD count |
+| SQL OLTP Latency | 2ms avg      | 1ms avg      | TPC-C workload       |
 
 ---
 
@@ -196,38 +196,38 @@ Effective_Mixed_IOPS = (Read_IOPS) + (Write_IOPS / Write_Penalty)
 
 ### 6.1 Included Software Features (All-Inclusive)
 
-| Feature                  | Supported | Notes                                    |
-|--------------------------|-----------|------------------------------------------|
-| Thin Provisioning        | Yes       | 4MB page size                            |
-| Snapshots                | Yes       | Copy-on-Write                            |
-| Volume Copy              | Yes       | Local volume clone                       |
-| Async Replication        | Yes       | FC or iSCSI (not SAS models)             |
-| Auto-Tiering             | Yes       | 3 tiers (Performance/Standard/Archive)   |
-| SSD Read Cache           | Yes       | Accelerates HDD read performance         |
-| ADAPT RAID               | Yes       | Distributed spare, fast rebuild          |
-| Encryption (SED)         | Yes       | AES-256, FIPS 140-2 Level 2              |
-| KMIP Support             | Yes       | IBM SKLM, Thales KeySecure               |
+| Feature           | Supported | Notes                                  |
+| ----------------- | --------- | -------------------------------------- |
+| Thin Provisioning | Yes       | 4MB page size                          |
+| Snapshots         | Yes       | Copy-on-Write                          |
+| Volume Copy       | Yes       | Local volume clone                     |
+| Async Replication | Yes       | FC or iSCSI (not SAS models)           |
+| Auto-Tiering      | Yes       | 3 tiers (Performance/Standard/Archive) |
+| SSD Read Cache    | Yes       | Accelerates HDD read performance       |
+| ADAPT RAID        | Yes       | Distributed spare, fast rebuild        |
+| Encryption (SED)  | Yes       | AES-256, FIPS 140-2 Level 2            |
+| KMIP Support      | Yes       | IBM SKLM, Thales KeySecure             |
 
 ### 6.2 NOT Supported Features
 
-| Feature              | Status         | Alternative/Notes                        |
-|----------------------|----------------|------------------------------------------|
-| Inline Compression   | NOT Supported  | No data reduction                        |
-| Deduplication        | NOT Supported  | No data reduction                        |
-| Sync Replication     | NOT Supported  | Async only                               |
-| NVMe/NVMe-oF         | NOT Supported  | SAS backend only                         |
-| VAAI UNMAP (auto)    | Limited        | 4MB pages incompatible with auto-unmap   |
-| File Protocols       | NOT Supported  | Block only (iSCSI, FC, SAS)              |
-| Object Protocols     | NOT Supported  | Block only                               |
+| Feature            | Status        | Alternative/Notes                      |
+| ------------------ | ------------- | -------------------------------------- |
+| Inline Compression | NOT Supported | No data reduction                      |
+| Deduplication      | NOT Supported | No data reduction                      |
+| Sync Replication   | NOT Supported | Async only                             |
+| NVMe/NVMe-oF       | NOT Supported | SAS backend only                       |
+| VAAI UNMAP (auto)  | Limited       | 4MB pages incompatible with auto-unmap |
+| File Protocols     | NOT Supported | Block only (iSCSI, FC, SAS)            |
+| Object Protocols   | NOT Supported | Block only                             |
 
 ### 6.3 Volume Limits
 
-| Parameter                   | Limit                              |
-|-----------------------------|------------------------------------|
-| Max Volume Size             | 128 TiB (140 TB)                   |
-| Max Volumes per System      | 1,024                              |
-| Max Snapshots per Volume    | 1,024                              |
-| Max Total Snapshots         | 16,384                             |
+| Parameter                | Limit            |
+| ------------------------ | ---------------- |
+| Max Volume Size          | 128 TiB (140 TB) |
+| Max Volumes per System   | 1,024            |
+| Max Snapshots per Volume | 1,024            |
+| Max Total Snapshots      | 16,384           |
 
 ---
 
@@ -269,11 +269,11 @@ Usable = Raw_Capacity * 0.87  (approximate, varies with drive count)
 
 ### 7.2 System Overhead
 
-| Overhead Type           | Value    | Notes                                |
-|-------------------------|----------|--------------------------------------|
-| Metadata Overhead       | ~1-2%    | Virtual pool metadata                |
-| Spare Capacity (ADAPT)  | ~13%     | Distributed across all drives        |
-| Hot Spare (Traditional) | 1 drive  | Per disk group if dedicated spares   |
+| Overhead Type           | Value   | Notes                              |
+| ----------------------- | ------- | ---------------------------------- |
+| Metadata Overhead       | ~1-2%   | Virtual pool metadata              |
+| Spare Capacity (ADAPT)  | ~13%    | Distributed across all drives      |
+| Hot Spare (Traditional) | 1 drive | Per disk group if dedicated spares |
 
 ---
 
@@ -343,28 +343,28 @@ Usable = Raw_Capacity * 0.87  (approximate, varies with drive count)
 
 ```typescript
 interface PowerVaultME5Config {
-  model: 'ME5212' | 'ME5224' | 'ME5284';
-  controllers: 1 | 2;
+  model: 'ME5212' | 'ME5224' | 'ME5284'
+  controllers: 1 | 2
   expansionEnclosures: {
-    ME512: number;  // 0-n, only for ME5212/ME5224
-    ME524: number;  // 0-n, only for ME5212/ME5224
-    ME584: number;  // 0-n, for all models
-  };
+    ME512: number // 0-n, only for ME5212/ME5224
+    ME524: number // 0-n, only for ME5212/ME5224
+    ME584: number // 0-n, for all models
+  }
   drives: {
-    type: 'SSD' | 'SAS_10K' | 'NLSAS_7K';
-    capacity_tb: number;
-    count: number;
-  }[];
-  raidLevel: 'NRAID' | 'RAID0' | 'RAID1' | 'RAID5' | 'RAID6' | 'RAID10' | 'ADAPT';
-  connectivity: 'FC_32G' | 'iSCSI_25G' | 'iSCSI_10G' | 'SAS_12G';
+    type: 'SSD' | 'SAS_10K' | 'NLSAS_7K'
+    capacity_tb: number
+    count: number
+  }[]
+  raidLevel: 'NRAID' | 'RAID0' | 'RAID1' | 'RAID5' | 'RAID6' | 'RAID10' | 'ADAPT'
+  connectivity: 'FC_32G' | 'iSCSI_25G' | 'iSCSI_10G' | 'SAS_12G'
 }
 
 interface PowerVaultME5Performance {
-  iops_read_max: number;     // Based on drive count and type
-  iops_write_max: number;    // Adjusted for write penalty
-  throughput_read_gbs: number;
-  throughput_write_gbs: number;
-  latency_avg_ms: number;
+  iops_read_max: number // Based on drive count and type
+  iops_write_max: number // Adjusted for write penalty
+  throughput_read_gbs: number
+  throughput_write_gbs: number
+  latency_avg_ms: number
 }
 ```
 
@@ -421,15 +421,15 @@ ADAPT (9 drives, distributed spare):
 
 ### 11.2 ADAPT Specifications
 
-| Attribute | Value | Notes |
-|-----------|-------|-------|
-| Minimum Drives | 12 | Hard requirement |
-| Recommended Drives | 24+ | 12 per controller for dual pools |
-| Maximum Drives | 128 | Per disk group |
-| Fault Tolerance | 2 drives | Similar to RAID 6 |
-| Efficiency | ~87% | After distributed spare reservation |
-| Max Disk Groups | 4 | Per controller module |
-| Max Capacity | 1.5 PiB | Per disk group |
+| Attribute          | Value    | Notes                               |
+| ------------------ | -------- | ----------------------------------- |
+| Minimum Drives     | 12       | Hard requirement                    |
+| Recommended Drives | 24+      | 12 per controller for dual pools    |
+| Maximum Drives     | 128      | Per disk group                      |
+| Fault Tolerance    | 2 drives | Similar to RAID 6                   |
+| Efficiency         | ~87%     | After distributed spare reservation |
+| Max Disk Groups    | 4        | Per controller module               |
+| Max Capacity       | 1.5 PiB  | Per disk group                      |
 
 ### 11.3 Rebuild Speed Comparison
 
@@ -464,15 +464,15 @@ The ~13% overhead includes:
 
 ### 11.5 ADAPT vs Traditional RAID
 
-| Feature | ADAPT | RAID 6 | RAID 10 |
-|---------|-------|--------|---------|
-| Min Drives | 12 | 4 | 4 |
-| Fault Tolerance | 2 drives | 2 drives | 1 per mirror |
-| Efficiency | ~87% | 67-80% | 50% |
-| Rebuild Speed | Very fast | Slow | Medium |
-| Expandable | Yes | No (in virtual pool) | No |
-| Mixed Drive Sizes | Yes | No | No |
-| Hot Spare | Distributed | Dedicated | Dedicated |
+| Feature           | ADAPT       | RAID 6               | RAID 10      |
+| ----------------- | ----------- | -------------------- | ------------ |
+| Min Drives        | 12          | 4                    | 4            |
+| Fault Tolerance   | 2 drives    | 2 drives             | 1 per mirror |
+| Efficiency        | ~87%        | 67-80%               | 50%          |
+| Rebuild Speed     | Very fast   | Slow                 | Medium       |
+| Expandable        | Yes         | No (in virtual pool) | No           |
+| Mixed Drive Sizes | Yes         | No                   | No           |
+| Hot Spare         | Distributed | Dedicated            | Dedicated    |
 
 ### 11.6 When to Use ADAPT
 

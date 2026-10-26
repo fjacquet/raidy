@@ -1,4 +1,5 @@
 ---
+
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Rich Export & Polish
@@ -6,10 +7,10 @@ status: verifying
 last_updated: "2026-04-01T10:03:05.471Z"
 last_activity: 2026-04-01
 progress:
-  total_phases: 5
-  completed_phases: 4
-  total_plans: 10
-  completed_plans: 10
+total_phases: 5
+completed_phases: 4
+total_plans: 10
+completed_plans: 10
 ---
 
 # Project State
@@ -55,10 +56,10 @@ See .planning/PROJECT.md Key Decisions table for full list.
 
 ### v1.3 Phase Map
 
-| Phase | Name | Requirements | Status |
-|-------|------|--------------|--------|
-| 14 | Dependency Maintenance | DEPS-01 | Not started |
-| 15 | Code Quality Fixes | QUALITY-01, QUALITY-02 | Not started |
-| 16 | PPTX Foundation | EXPORT-01, EXPORT-06, EXPORT-10 | Not started |
-| 17 | PPTX Content | EXPORT-02, EXPORT-03, EXPORT-04, EXPORT-05 | Not started |
-| 18 | PDF Revamp | EXPORT-07, EXPORT-08, EXPORT-09 | Not started |
+| Phase | Name                   | Requirements                               | Status      |
+| ----- | ---------------------- | ------------------------------------------ | ----------- |
+| 14    | Dependency Maintenance | DEPS-01                                    | Not started |
+| 15    | Code Quality Fixes     | QUALITY-01, QUALITY-02                     | Not started |
+| 16    | PPTX Foundation        | EXPORT-01, EXPORT-06, EXPORT-10            | Not started |
+| 17    | PPTX Content           | EXPORT-02, EXPORT-03, EXPORT-04, EXPORT-05 | Not started |
+| 18    | PDF Revamp             | EXPORT-07, EXPORT-08, EXPORT-09            | Not started |

@@ -11,8 +11,8 @@ items are decisions that are not mine to make.
 
 The worst of the set, because it is the file a newcomer opens to understand the pipeline.
 
-It opened with *"The CI/CD pipeline is a single workflow, `.github/workflows/static.yml`"* and
-described an eleven-step build job, plus *"a separate `.github/workflows/codeql.yml`"*.
+It opened with _"The CI/CD pipeline is a single workflow, `.github/workflows/static.yml`"_ and
+described an eleven-step build job, plus _"a separate `.github/workflows/codeql.yml`"_.
 
 **Neither file exists.** CI was federated to reusable workflows in `fjacquet/ci@v1`; the local
 files are five thin callers (`ci`, `security`, `deploy`, `release`, `dependabot-automerge`). The
@@ -20,7 +20,7 @@ eleven steps live in a repository this one does not control, so reproducing them
 again by definition. Rewritten to describe the delegation and to enumerate only the gates that
 actually live here.
 
-It also claimed third-party actions are *"pinned to commit SHAs"*. The local callers pin to `@v1`
+It also claimed third-party actions are _"pinned to commit SHAs"_. The local callers pin to `@v1`
 tags. Dropped rather than restated, since it describes the central repo's practice.
 
 `CLAUDE.md` carried the same `static.yml` reference.
@@ -38,17 +38,17 @@ A dead key passes parity forever, because all four locales agree on it.
 
 ### Stale facts
 
-| Claim | Where | Reality |
-|---|---|---|
-| Recharts in the tech stack | `README.md`, `ARCHITECTURE.md` | Removed 2026-08-05, 8.5 MB unused |
-| Vite 7.x | `ARCHITECTURE.md` | 8.x |
-| `engines/resilience/` in the tree | `ARCHITECTURE.md` | Does not exist — the worker is in `src/workers/` |
-| `engines/backup/`, `engines/shared/` absent | `ARCHITECTURE.md` | Both exist |
-| `OutputDashboard.tsx` ~249 lines | `ARCHITECTURE.md` | 203 |
-| `topology.ts` ~730 lines | `CLAUDE.md` | ~1000 |
-| 8 i18n namespaces | `CLAUDE.md` | 10 — `help` and `guide` were missing |
-| Nutanix, PowerVault | `README.md` platform list | Absent. Two of fifteen platforms invisible |
-| `prebuild` runs "the supply-chain gate" | `GETTING-STARTED.md` | Runs two gates |
+| Claim                                       | Where                          | Reality                                          |
+| ------------------------------------------- | ------------------------------ | ------------------------------------------------ |
+| Recharts in the tech stack                  | `README.md`, `ARCHITECTURE.md` | Removed 2026-08-05, 8.5 MB unused                |
+| Vite 7.x                                    | `ARCHITECTURE.md`              | 8.x                                              |
+| `engines/resilience/` in the tree           | `ARCHITECTURE.md`              | Does not exist — the worker is in `src/workers/` |
+| `engines/backup/`, `engines/shared/` absent | `ARCHITECTURE.md`              | Both exist                                       |
+| `OutputDashboard.tsx` ~249 lines            | `ARCHITECTURE.md`              | 203                                              |
+| `topology.ts` ~730 lines                    | `CLAUDE.md`                    | ~1000                                            |
+| 8 i18n namespaces                           | `CLAUDE.md`                    | 10 — `help` and `guide` were missing             |
+| Nutanix, PowerVault                         | `README.md` platform list      | Absent. Two of fifteen platforms invisible       |
+| `prebuild` runs "the supply-chain gate"     | `GETTING-STARTED.md`           | Runs two gates                                   |
 
 ### A whole subsystem was undocumented
 
@@ -57,7 +57,7 @@ from a `help` namespace. `ARCHITECTURE.md` mentioned neither, which is also why 
 was wrong: those two namespaces exist for the parts of the app the calculation path never touches.
 
 Added an "In-app guidance" section. This matters beyond bookkeeping — asked whether the project
-has a user guide, the honest answer is *yes, inside the app*, and no document said so.
+has a user guide, the honest answer is _yes, inside the app_, and no document said so.
 
 ### `doc/` and `docs/`
 
@@ -65,7 +65,7 @@ Two top-level directories one letter apart. `doc/spec/` held 13 vendor specifica
 last touched January 2026, **referenced from nowhere** in any doc, README or CLAUDE.md.
 
 Moved to `docs/vendor-specs/` with a README stating what they are and, more usefully, what they
-are *not*: historical inputs that predate BeeGFS, Longhorn, PowerVault ADAPT and the vSAN ESA
+are _not_: historical inputs that predate BeeGFS, Longhorn, PowerVault ADAPT and the vSAN ESA
 recalibration. Where they and the code disagree, the code and its validation vectors win. Deleting
 them would have thrown away reasoning nobody could re-derive; leaving them unreferenced meant
 nobody would find it.
@@ -124,8 +124,8 @@ choice rather than a side effect of a sync pass.
 
 ### The CHANGELOG entries are very long
 
-Mine included; today's additions run to hundreds of lines. For a tool whose output is *numbers
-people quote in proposals*, recording why a figure moved and by how much has obvious value, and
+Mine included; today's additions run to hundreds of lines. For a tool whose output is _numbers
+people quote in proposals_, recording why a figure moved and by how much has obvious value, and
 the 2.0.0 and 2.1.0 reader warnings are the clearest example of it paying off.
 
 But the file is 1215 lines and every release adds a page. Worth an explicit decision: keep the

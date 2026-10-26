@@ -58,13 +58,13 @@ PowerStore does not expose raw RAID groups. The Dynamic Resiliency Engine (DRE) 
 
 ### DRE Geometry Options
 
-| Geometry | Parity Factor | Min Drives | Tolerance |
-|----------|--------------|------------|-----------|
-| 4+1 (DRE SP) | 4/5 = 80.00% | 6 | 1 drive |
-| 8+1 (DRE SP) | 8/9 = 88.89% | 10 | 1 drive |
-| 4+2 (DRE DP) | 4/6 = 66.67% | 7 | 2 drives |
-| 8+2 (DRE DP) | 8/10 = 80.00% | 10 | 2 drives |
-| 16+2 (DRE DP) | 16/18 = 88.89% | 19 | 2 drives |
+| Geometry      | Parity Factor  | Min Drives | Tolerance |
+| ------------- | -------------- | ---------- | --------- |
+| 4+1 (DRE SP)  | 4/5 = 80.00%   | 6          | 1 drive   |
+| 8+1 (DRE SP)  | 8/9 = 88.89%   | 10         | 1 drive   |
+| 4+2 (DRE DP)  | 4/6 = 66.67%   | 7          | 2 drives  |
+| 8+2 (DRE DP)  | 8/10 = 80.00%  | 10         | 2 drives  |
+| 16+2 (DRE DP) | 16/18 = 88.89% | 19         | 2 drives  |
 
 **Geometry Selection (DRE SP — single parity):**
 - Small arrays (6-9 drives): 4+1 geometry
@@ -113,23 +113,26 @@ Back-calculation:
 
 ```typescript
 // Step 1: Determine DRE geometry from drive count
-function getDreGeometry(driveCount: number, isDoubleParity: boolean): { data: number, parity: number } {
+function getDreGeometry(
+  driveCount: number,
+  isDoubleParity: boolean,
+): { data: number; parity: number } {
   if (isDoubleParity) {
-    if (driveCount <= 9)  return { data: 4, parity: 2 }  // 4+2
-    if (driveCount <= 18) return { data: 8, parity: 2 }  // 8+2
-    return { data: 16, parity: 2 }                        // 16+2
+    if (driveCount <= 9) return { data: 4, parity: 2 } // 4+2
+    if (driveCount <= 18) return { data: 8, parity: 2 } // 8+2
+    return { data: 16, parity: 2 } // 16+2
   } else {
-    if (driveCount <= 9)  return { data: 4, parity: 1 }  // 4+1
-    return { data: 8, parity: 1 }                         // 8+1
+    if (driveCount <= 9) return { data: 4, parity: 1 } // 4+1
+    return { data: 8, parity: 1 } // 8+1
   }
 }
 
 // Step 2: Compute usable fraction
 const { data, parity } = getDreGeometry(driveCount, isDP)
 const stripeWidth = data + parity
-const spareFraction = 1 / (stripeWidth + 1)  // one spare per RRS
+const spareFraction = 1 / (stripeWidth + 1) // one spare per RRS
 const raidFraction = data / stripeWidth
-const systemOverhead = 0.075  // ~7.5% mid-point of observed 5-8% range
+const systemOverhead = 0.075 // ~7.5% mid-point of observed 5-8% range
 const usableFraction = raidFraction * (1 - spareFraction) * (1 - systemOverhead)
 ```
 
@@ -179,14 +182,14 @@ For N+2:1 (the most common production default), the `:1` means 1 additional mirr
 **Overhead Table (approximate, large files, for isi status reporting):**
 
 | Protection | 3 nodes | 4 nodes | 5 nodes | 6 nodes | 8 nodes | 10 nodes | 15 nodes | 20+ nodes |
-|------------|---------|---------|---------|---------|---------|----------|---------|-----------|
-| N+1        | 50.0%   | 33.3%   | 25.0%   | 20.0%   | 14.3%   | 11.1%    | 7.1%    | ~5%       |
-| N+2        | 66.7%   | 50.0%   | 40.0%   | 33.3%   | 25.0%   | 20.0%    | 13.3%   | ~10%      |
-| N+2:1      | 66.7%   | 50.0%   | 40.0%   | 33.3%   | 25.0%   | 20.0%    | 13.3%   | ~10%      |
-| N+3        | —       | 75.0%   | 60.0%   | 50.0%   | 37.5%   | 30.0%    | 20.0%   | ~15%      |
-| N+4        | —       | —       | 80.0%   | 66.7%   | 50.0%   | 40.0%    | 26.7%   | ~20%      |
-| 2x mirror  | 50.0%   | 50.0%   | 50.0%   | 50.0%   | 50.0%   | 50.0%    | 50.0%   | 50.0%     |
-| 3x mirror  | 66.7%   | 66.7%   | 66.7%   | 66.7%   | 66.7%   | 66.7%    | 66.7%   | 66.7%     |
+| ---------- | ------- | ------- | ------- | ------- | ------- | -------- | -------- | --------- |
+| N+1        | 50.0%   | 33.3%   | 25.0%   | 20.0%   | 14.3%   | 11.1%    | 7.1%     | ~5%       |
+| N+2        | 66.7%   | 50.0%   | 40.0%   | 33.3%   | 25.0%   | 20.0%    | 13.3%    | ~10%      |
+| N+2:1      | 66.7%   | 50.0%   | 40.0%   | 33.3%   | 25.0%   | 20.0%    | 13.3%    | ~10%      |
+| N+3        | —       | 75.0%   | 60.0%   | 50.0%   | 37.5%   | 30.0%    | 20.0%    | ~15%      |
+| N+4        | —       | —       | 80.0%   | 66.7%   | 50.0%   | 40.0%    | 26.7%    | ~20%      |
+| 2x mirror  | 50.0%   | 50.0%   | 50.0%   | 50.0%   | 50.0%   | 50.0%    | 50.0%    | 50.0%     |
+| 3x mirror  | 66.7%   | 66.7%   | 66.7%   | 66.7%   | 66.7%   | 66.7%    | 66.7%    | 66.7%     |
 
 Overhead % = protection_width / (data_width + protection_width) = M / N
 Data efficiency = 1 - overhead = (N - M) / N, where N = node_count, M = protection_level integer
@@ -197,11 +200,11 @@ Data efficiency = 1 - overhead = (N - M) / N, where N = node_count, M = protecti
 // PowerScale: data fraction is node-count dependent
 function powerscaleDataFraction(
   nodeCount: number,
-  protectionLevel: number  // 1 for N+1, 2 for N+2, 3 for N+3, 4 for N+4
+  protectionLevel: number, // 1 for N+1, 2 for N+2, 3 for N+3, 4 for N+4
 ): number {
   const dataWidth = nodeCount - protectionLevel
-  if (dataWidth <= 0) return 0  // invalid config
-  return dataWidth / nodeCount  // (N - M) / N
+  if (dataWidth <= 0) return 0 // invalid config
+  return dataWidth / nodeCount // (N - M) / N
 }
 ```
 
@@ -233,13 +236,13 @@ PowerFlex 5.0 introduced Scalable Availability Engine (SAE) with native EC suppo
 
 ### EC Scheme Data Fractions
 
-| Scheme | Data | Parity | Fraction | Min Nodes | Notes |
-|--------|------|--------|----------|-----------|-------|
-| 2+2    | 2    | 2      | 50.0%    | 5         | PowerFlex 5.0 only |
-| 4+1    | 4    | 1      | 80.0%    | 5         | Fine Granularity |
-| 4+2    | 4    | 2      | 66.7%    | 5         | Fine Granularity |
+| Scheme | Data | Parity | Fraction | Min Nodes | Notes                          |
+| ------ | ---- | ------ | -------- | --------- | ------------------------------ |
+| 2+2    | 2    | 2      | 50.0%    | 5         | PowerFlex 5.0 only             |
+| 4+1    | 4    | 1      | 80.0%    | 5         | Fine Granularity               |
+| 4+2    | 4    | 2      | 66.7%    | 5         | Fine Granularity               |
 | 8+2    | 8    | 2      | 80.0%    | 11        | PowerFlex 5.0 SAE; most common |
-| 12+4   | 12   | 4      | 75.0%    | —         | Fine Granularity |
+| 12+4   | 12   | 4      | 75.0%    | —         | Fine Granularity               |
 
 **Formula (all EC schemes):**
 ```
@@ -276,12 +279,12 @@ FG pools incur metadata overhead due to 4 KB granularity and deduplication maps.
 
 ### EC Scheme Data Fractions
 
-| Scheme     | Data | Parity | Fraction | Overhead Multiplier | Min Nodes | Use Case |
-|------------|------|--------|----------|--------------------|-----------|----|
-| 12+4       | 12   | 4      | 75.0%    | 1.33x              | 5         | Default; general purpose |
-| 10+2       | 10   | 2      | 83.3%    | 1.2x               | 7         | Cold/archive |
-| 24+4       | 24   | 4      | 85.7%    | 1.167x             | 8         | Tech preview |
-| Triple mirror | 3 | —     | 33.3%    | 3x                 | 3         | Metadata; small configs |
+| Scheme        | Data | Parity | Fraction | Overhead Multiplier | Min Nodes | Use Case                 |
+| ------------- | ---- | ------ | -------- | ------------------- | --------- | ------------------------ |
+| 12+4          | 12   | 4      | 75.0%    | 1.33x               | 5         | Default; general purpose |
+| 10+2          | 10   | 2      | 83.3%    | 1.2x                | 7         | Cold/archive             |
+| 24+4          | 24   | 4      | 85.7%    | 1.167x              | 8         | Tech preview             |
+| Triple mirror | 3    | —      | 33.3%    | 3x                  | 3         | Metadata; small configs  |
 
 **Formula:**
 ```
@@ -290,11 +293,11 @@ data_fraction = data_segments / (data_segments + parity_segments)
 
 ### Geo-Replication Overhead
 
-| Configuration | Overhead Multiplier | Notes |
-|---------------|--------------------|----|
-| Single site, 12+4 | 1.33x (75.0% eff.) | Local EC only |
-| Two sites, 12+4   | 2.67x (37.5% eff.) | Each site stores full EC replica |
-| Three+ sites, 12+4 | 1.33x–2.67x | Sites share chunks; not full replica per site |
+| Configuration      | Overhead Multiplier | Notes                                         |
+| ------------------ | ------------------- | --------------------------------------------- |
+| Single site, 12+4  | 1.33x (75.0% eff.)  | Local EC only                                 |
+| Two sites, 12+4    | 2.67x (37.5% eff.)  | Each site stores full EC replica              |
+| Three+ sites, 12+4 | 1.33x–2.67x         | Sites share chunks; not full replica per site |
 
 For two-site geo-replication, data is erasure-coded at each site independently:
 ```
@@ -320,31 +323,31 @@ For three or more sites, ECS optimizes by combining replicated chunks across sit
 
 ### Table Stakes (Users Expect These)
 
-| Feature | Why Expected | Complexity | Notes |
-|---------|--------------|------------|-------|
-| ADAPT formula using `((N-2) × drive) × 0.80` | Dell Sizer matches; hardcoded 85-87% is clearly wrong | LOW | Verified against 27.93 TiB reference |
-| PowerStore RAID geometry aware calculation | Sizer shows 81.97%, not 75% | MEDIUM | Geometry selected by drive count |
-| PowerScale efficiency scales with node count | Isilon fundamentals | LOW | Current code already does this correctly |
-| PowerFlex EC pure math | Standard EC arithmetic | LOW | Current implementation is correct |
-| ObjectScale EC pure math | Standard EC arithmetic | LOW | Current implementation is correct |
-| Test vectors matching Dell Sizer ±1% | Validation requirement for all fixes | MEDIUM | Requires adding test fixture data |
+| Feature                                      | Why Expected                                          | Complexity | Notes                                    |
+| -------------------------------------------- | ----------------------------------------------------- | ---------- | ---------------------------------------- |
+| ADAPT formula using `((N-2) × drive) × 0.80` | Dell Sizer matches; hardcoded 85-87% is clearly wrong | LOW        | Verified against 27.93 TiB reference     |
+| PowerStore RAID geometry aware calculation   | Sizer shows 81.97%, not 75%                           | MEDIUM     | Geometry selected by drive count         |
+| PowerScale efficiency scales with node count | Isilon fundamentals                                   | LOW        | Current code already does this correctly |
+| PowerFlex EC pure math                       | Standard EC arithmetic                                | LOW        | Current implementation is correct        |
+| ObjectScale EC pure math                     | Standard EC arithmetic                                | LOW        | Current implementation is correct        |
+| Test vectors matching Dell Sizer ±1%         | Validation requirement for all fixes                  | MEDIUM     | Requires adding test fixture data        |
 
 ### Differentiators (Competitive Advantage)
 
-| Feature | Value Proposition | Complexity | Notes |
-|---------|-------------------|------------|-------|
-| ADAPT stripe width auto-selection (8+2 vs 16+2) | Reflects actual ME5 behavior; > 18 drives get better efficiency | LOW | Threshold: > 18 drives → 16+2 |
-| PowerStore DRE geometry auto-selection | Reflects actual PowerStore behavior; correct efficiency by drive count | MEDIUM | Need drive count thresholds table |
-| PowerStore system overhead per model class | Small models have higher overhead than large | HIGH | Requires model-level parameterization; LOW confidence data |
-| ObjectScale two-site geo-replication modeling | Doubles overhead; common enterprise deployment | MEDIUM | Needs new topology option |
+| Feature                                         | Value Proposition                                                      | Complexity | Notes                                                      |
+| ----------------------------------------------- | ---------------------------------------------------------------------- | ---------- | ---------------------------------------------------------- |
+| ADAPT stripe width auto-selection (8+2 vs 16+2) | Reflects actual ME5 behavior; > 18 drives get better efficiency        | LOW        | Threshold: > 18 drives → 16+2                              |
+| PowerStore DRE geometry auto-selection          | Reflects actual PowerStore behavior; correct efficiency by drive count | MEDIUM     | Need drive count thresholds table                          |
+| PowerStore system overhead per model class      | Small models have higher overhead than large                           | HIGH       | Requires model-level parameterization; LOW confidence data |
+| ObjectScale two-site geo-replication modeling   | Doubles overhead; common enterprise deployment                         | MEDIUM     | Needs new topology option                                  |
 
 ### Anti-Features (Commonly Requested, Often Problematic)
 
-| Feature | Why Requested | Why Problematic | Alternative |
-|---------|---------------|-----------------|-------------|
-| Exact PowerStore system overhead by model | Precision | Dell does not publish exact percentages; varies with initialization state | Use conservative 5-8% range; document the uncertainty |
-| Per-file small-file overhead for PowerScale | Accuracy | Workload-dependent, not computable from drive count alone | Use large-file formula as approximation; document limitation |
-| FG metadata overhead for PowerFlex | Accuracy | Varies with compression, snapshot count | Model EC math only; document FG adds ~11% overhead in notes |
+| Feature                                     | Why Requested | Why Problematic                                                           | Alternative                                                  |
+| ------------------------------------------- | ------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| Exact PowerStore system overhead by model   | Precision     | Dell does not publish exact percentages; varies with initialization state | Use conservative 5-8% range; document the uncertainty        |
+| Per-file small-file overhead for PowerScale | Accuracy      | Workload-dependent, not computable from drive count alone                 | Use large-file formula as approximation; document limitation |
+| FG metadata overhead for PowerFlex          | Accuracy      | Varies with compression, snapshot count                                   | Model EC math only; document FG adds ~11% overhead in notes  |
 
 ---
 
@@ -391,25 +394,25 @@ Dell Sizer test vectors (DELL-09)
 
 ## Feature Prioritization Matrix
 
-| Feature | User Value | Implementation Cost | Priority |
-|---------|------------|---------------------|----------|
-| Fix ADAPT formula | HIGH — 28% error today | LOW — single line change | P1 |
-| Fix PowerStore RAID-6 formula | HIGH — 8% error today | MEDIUM — geometry selection needed | P1 |
-| Fix PowerStore RAID-5 formula | HIGH — validation needed | MEDIUM — same geometry logic | P1 |
-| Dell Sizer test vectors | HIGH — prevents regression | LOW — data entry | P1 |
-| ADAPT 8+2 vs 16+2 auto-select | MEDIUM — affects >18 drive configs | LOW — threshold check | P2 |
-| PowerStore model-specific overhead | MEDIUM — refines accuracy | HIGH — needs more reference data | P3 |
-| ObjectScale geo-replication | LOW — niche config | MEDIUM | P3 |
+| Feature                            | User Value                         | Implementation Cost                | Priority |
+| ---------------------------------- | ---------------------------------- | ---------------------------------- | -------- |
+| Fix ADAPT formula                  | HIGH — 28% error today             | LOW — single line change           | P1       |
+| Fix PowerStore RAID-6 formula      | HIGH — 8% error today              | MEDIUM — geometry selection needed | P1       |
+| Fix PowerStore RAID-5 formula      | HIGH — validation needed           | MEDIUM — same geometry logic       | P1       |
+| Dell Sizer test vectors            | HIGH — prevents regression         | LOW — data entry                   | P1       |
+| ADAPT 8+2 vs 16+2 auto-select      | MEDIUM — affects >18 drive configs | LOW — threshold check              | P2       |
+| PowerStore model-specific overhead | MEDIUM — refines accuracy          | HIGH — needs more reference data   | P3       |
+| ObjectScale geo-replication        | LOW — niche config                 | MEDIUM                             | P3       |
 
 ---
 
 ## Reference Validation Summary
 
-| Product | Config | Formula Result | Dell Sizer | Error | Status |
-|---------|--------|---------------|------------|-------|--------|
-| ME5 ADAPT | 12×3.84TB, 8+2 | 27.94 TiB | 27.93 TiB | 0.04% | PASS |
-| PowerStore DRE DP | 35×30.72TB, 16+2, ~5% overhead | 800.4 TiB | 801.57 TiB | 0.1% | PASS |
-| PowerStore DRE DP | 35×30.72TB, 16+2, 7.5% overhead | 791.8 TiB | 801.57 TiB | 1.2% | MARGINAL |
+| Product           | Config                          | Formula Result | Dell Sizer | Error | Status   |
+| ----------------- | ------------------------------- | -------------- | ---------- | ----- | -------- |
+| ME5 ADAPT         | 12×3.84TB, 8+2                  | 27.94 TiB      | 27.93 TiB  | 0.04% | PASS     |
+| PowerStore DRE DP | 35×30.72TB, 16+2, ~5% overhead  | 800.4 TiB      | 801.57 TiB | 0.1%  | PASS     |
+| PowerStore DRE DP | 35×30.72TB, 16+2, 7.5% overhead | 791.8 TiB      | 801.57 TiB | 1.2%  | MARGINAL |
 
 **Recommended constant:** 5% system overhead for PowerStore (not 7.5%) gives best match against the reference case.
 
@@ -417,14 +420,14 @@ Dell Sizer test vectors (DELL-09)
 
 ## Competitor Feature Analysis
 
-| Feature | Dell Sizer (official) | WintelGuy | Raidy (current) | Raidy (proposed) |
-|---------|----------------------|-----------|-----------------|-----------------|
-| ADAPT | Dynamic formula | N/A | Hardcoded 85-87% | `((N-2)/N) × 0.80` |
-| PowerStore RAID-6 | Geometry-aware + overhead | N/A | Hardcoded 75% | Geometry-select + 5% overhead |
-| PowerStore RAID-5 | Geometry-aware + overhead | N/A | Hardcoded 80% | Geometry-select + 5% overhead |
-| PowerScale N+x | Node-count dependent | N/A | `(N-M)/N` (correct) | No change needed |
-| PowerFlex EC | Pure math | N/A | Pure math (correct) | No change needed |
-| ObjectScale EC | Pure math + geo | N/A | Pure math (correct) | Add geo-replication |
+| Feature           | Dell Sizer (official)     | WintelGuy | Raidy (current)     | Raidy (proposed)              |
+| ----------------- | ------------------------- | --------- | ------------------- | ----------------------------- |
+| ADAPT             | Dynamic formula           | N/A       | Hardcoded 85-87%    | `((N-2)/N) × 0.80`            |
+| PowerStore RAID-6 | Geometry-aware + overhead | N/A       | Hardcoded 75%       | Geometry-select + 5% overhead |
+| PowerStore RAID-5 | Geometry-aware + overhead | N/A       | Hardcoded 80%       | Geometry-select + 5% overhead |
+| PowerScale N+x    | Node-count dependent      | N/A       | `(N-M)/N` (correct) | No change needed              |
+| PowerFlex EC      | Pure math                 | N/A       | Pure math (correct) | No change needed              |
+| ObjectScale EC    | Pure math + geo           | N/A       | Pure math (correct) | Add geo-replication           |
 
 ---
 
@@ -442,5 +445,5 @@ Dell Sizer test vectors (DELL-09)
 
 ---
 
-*Feature research for: Dell storage capacity calculation formulas (Raidy v1.2)*
-*Researched: 2026-03-25*
+_Feature research for: Dell storage capacity calculation formulas (Raidy v1.2)_
+_Researched: 2026-03-25_

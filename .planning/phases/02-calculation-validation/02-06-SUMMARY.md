@@ -1,48 +1,52 @@
 ---
+
 phase: 02-calculation-validation
 plan: 06
 subsystem: testing
 tags: [vitest, performance, dell, nutanix, powerflex, objectscale, powerstore, powerscale, latency, coverage]
 
 # Dependency graph
+
 requires:
-  - phase: 02-01
-    provides: Performance engine with basic RAID write penalties
-  - phase: 02-03
-    provides: Bottleneck chain testing patterns
-provides:
-  - Advanced topology performance tests (PowerFlex, ObjectScale, PowerStore, PowerScale, Nutanix)
-  - Network type variation tests (RDMA, 25GbE, 10GbE)
-  - Compression and dedup overhead validation
-  - Write penalty edge case coverage
-  - 75%+ performance engine test coverage
-affects: [03-ui-foundation, future performance UI work]
+- phase: 02-01
+  provides: Performance engine with basic RAID write penalties
+- phase: 02-03
+  provides: Bottleneck chain testing patterns
+  provides:
+- Advanced topology performance tests (PowerFlex, ObjectScale, PowerStore, PowerScale, Nutanix)
+- Network type variation tests (RDMA, 25GbE, 10GbE)
+- Compression and dedup overhead validation
+- Write penalty edge case coverage
+- 75%+ performance engine test coverage
+  affects: [03-ui-foundation, future performance UI work]
 
 # Tech tracking
+
 tech-stack:
-  added: []
-  patterns:
-    - Latency validation across multiple network types
-    - CPU overhead accumulation testing (compression + dedup)
-    - Write penalty edge case coverage patterns
+added: []
+patterns:
+- Latency validation across multiple network types
+- CPU overhead accumulation testing (compression + dedup)
+- Write penalty edge case coverage patterns
 
 key-files:
-  created: []
-  modified:
-    - tests/engines/performance.spec.ts
+created: []
+modified:
+- tests/engines/performance.spec.ts
 
 key-decisions:
-  - "Test all three Nutanix network types (RDMA, 25GbE, 10GbE) to validate latency variations"
-  - "Accumulate CPU overhead for compression + dedup in Nutanix tests to validate lines 514-519"
-  - "Add write penalty edge cases for multiple topologies to reach 75% coverage threshold"
-  - "Use table-driven tests for topology variations to minimize code duplication"
+- "Test all three Nutanix network types (RDMA, 25GbE, 10GbE) to validate latency variations"
+- "Accumulate CPU overhead for compression + dedup in Nutanix tests to validate lines 514-519"
+- "Add write penalty edge cases for multiple topologies to reach 75% coverage threshold"
+- "Use table-driven tests for topology variations to minimize code duplication"
 
 patterns-established:
-  - "Network type variation testing: Test min/mid/max latency scenarios"
-  - "CPU overhead accumulation testing: none → compression → dedup → both"
-  - "Latency formula validation: mediaLatency * multiplier + networkLatency + cpuOverhead"
+- "Network type variation testing: Test min/mid/max latency scenarios"
+- "CPU overhead accumulation testing: none → compression → dedup → both"
+- "Latency formula validation: mediaLatency * multiplier + networkLatency + cpuOverhead"
 
 # Metrics
+
 duration: 8min
 completed: 2026-01-18
 ---
@@ -60,6 +64,7 @@ completed: 2026-01-18
 - **Files modified:** 1
 
 ## Accomplishments
+
 - Added 28 advanced topology performance tests covering PowerFlex, ObjectScale, PowerStore, PowerScale, and Nutanix
 - Validated all three Nutanix network types (RDMA 100μs, 25GbE 250μs, 10GbE 500μs) with latency calculations
 - Tested CPU overhead accumulation for compression (+50μs) and dedup (+100μs) combinations
@@ -101,6 +106,7 @@ Each task was committed atomically:
 **Coverage improvement:** 50.70% → 75.23% lines (+24.53 points)
 
 ## Files Created/Modified
+
 - `tests/engines/performance.spec.ts` - Advanced topology performance tests
   - Added Dell PowerFlex latency tests (2-way/3-way mirror, compression, CPU factors)
   - Added Dell ObjectScale S3 latency tests (EC variations, protocol overhead)
@@ -165,5 +171,6 @@ None - all tests passed on first run after implementation.
 **Remaining uncovered lines:** 237-339, 347-363 (write penalty switch defaults, less critical edge cases)
 
 ---
-*Phase: 02-calculation-validation*
-*Completed: 2026-01-18*
+
+_Phase: 02-calculation-validation_
+_Completed: 2026-01-18_

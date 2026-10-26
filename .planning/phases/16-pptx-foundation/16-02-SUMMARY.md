@@ -1,30 +1,32 @@
 ---
+
 phase: 16-pptx-foundation
 plan: "02"
 subsystem: utils/export
 tags: [pptx, export, brand, pptxgenjs, in-browser]
 dependency_graph:
-  requires: [16-01]
-  provides: [exportToPptx, BRAND]
-  affects: [src/utils/index.ts]
+requires: [16-01]
+provides: [exportToPptx, BRAND]
+affects: [src/utils/index.ts]
 tech_stack:
-  added: []
-  patterns: [pptxgenjs v4 browser API, bytes-to-TB conversion, dark brand palette]
+added: []
+patterns: [pptxgenjs v4 browser API, bytes-to-TB conversion, dark brand palette]
 key_files:
-  created:
-    - src/utils/exportPptx.ts
+created:
+- src/utils/exportPptx.ts
   modified:
-    - src/utils/index.ts
-decisions:
-  - "Used bytes-to-TB conversion (÷1e12) matching app's decimal TB convention; plan template incorrectly referenced non-existent .TB fields"
-  - "Drive display uses model field only — Drive interface has no brand field"
-  - "effectiveCapacity field used directly (no null fallback needed — VolumetryResult.effectiveCapacity is always present)"
-metrics:
+- src/utils/index.ts
+  decisions:
+- "Used bytes-to-TB conversion (÷1e12) matching app's decimal TB convention; plan template incorrectly referenced non-existent .TB fields"
+- "Drive display uses model field only — Drive interface has no brand field"
+- "effectiveCapacity field used directly (no null fallback needed — VolumetryResult.effectiveCapacity is always present)"
+  metrics:
   duration: "~10 minutes"
   completed: "2026-04-01"
   tasks_completed: 1
   tasks_total: 1
   files_changed: 2
+
 ---
 
 # Phase 16 Plan 02: PPTX Generation Engine with Brand Styling Summary

@@ -1,53 +1,57 @@
 ---
+
 phase: 10-powerstore-system-overhead-addition
 plan: 01
 subsystem: testing
 tags: [powerstore, dell, volumetry, overhead, tdd, capacity]
 
 # Dependency graph
+
 requires:
-  - phase: 09-powerstore-data-fraction-fix
-    provides: PowerStore DRE drive-count-aware geometry fix enabling correct post-parity capacity
-provides:
-  - systemOverheadPercent field on PowerStoreOptions (configurable, default 5%)
-  - powerstoreSystemOverhead computation in overheadCalculator.ts
-  - "PowerStore System Overhead" distinct breakdown line item in buildBreakdown.ts
-  - Dell Sizer 5200Q end-to-end reference vector (dellPowerstore5200QVector)
-  - Three TDD tests verifying system overhead behavior
-affects:
-  - Any phase touching PowerStore capacity pipeline
-  - UI panels displaying PowerStore options (systemOverheadPercent visible to users)
+- phase: 09-powerstore-data-fraction-fix
+  provides: PowerStore DRE drive-count-aware geometry fix enabling correct post-parity capacity
+  provides:
+- systemOverheadPercent field on PowerStoreOptions (configurable, default 5%)
+- powerstoreSystemOverhead computation in overheadCalculator.ts
+- "PowerStore System Overhead" distinct breakdown line item in buildBreakdown.ts
+- Dell Sizer 5200Q end-to-end reference vector (dellPowerstore5200QVector)
+- Three TDD tests verifying system overhead behavior
+  affects:
+- Any phase touching PowerStore capacity pipeline
+- UI panels displaying PowerStore options (systemOverheadPercent visible to users)
 
 # Tech tracking
+
 tech-stack:
-  added: []
-  patterns:
-    - "System overhead as configurable percent on platform options interface (mirrors ObjectScale pattern)"
-    - "TDD RED-GREEN-CLEANUP with Dell Sizer reference vector as acceptance criterion"
+added: []
+patterns:
+- "System overhead as configurable percent on platform options interface (mirrors ObjectScale pattern)"
+- "TDD RED-GREEN-CLEANUP with Dell Sizer reference vector as acceptance criterion"
 
 key-files:
-  created:
-    - tests/fixtures/dell-vectors.ts (DellPowerstore5200QVector interface + dellPowerstore5200QVector export)
+created:
+- tests/fixtures/dell-vectors.ts (DellPowerstore5200QVector interface + dellPowerstore5200QVector export)
   modified:
-    - src/types/topology.ts (systemOverheadPercent field added to PowerStoreOptions, default 5 in DEFAULT_POWERSTORE_OPTIONS)
-    - src/engines/volumetry/overhead/overheadCalculator.ts (powerstoreSystemOverhead in OverheadResult, computation block, capacityForFs chain, totalOverhead sum, return object)
-    - src/engines/volumetry/index.ts (powerstoreSystemOverhead destructured from overheads, propagated to buildBreakdown call)
-    - src/engines/volumetry/breakdown/buildBreakdown.ts (powerstoreSystemOverhead in BreakdownInput, distinct breakdown entry)
-    - tests/engines/volumetry.spec.ts (three new tests in "PowerStore System Overhead" describe block)
-    - src/store/configStore.ts (systemOverheadPercent: 5 added to hardcoded powerstoreOptions default state)
+- src/types/topology.ts (systemOverheadPercent field added to PowerStoreOptions, default 5 in DEFAULT_POWERSTORE_OPTIONS)
+- src/engines/volumetry/overhead/overheadCalculator.ts (powerstoreSystemOverhead in OverheadResult, computation block, capacityForFs chain, totalOverhead sum, return object)
+- src/engines/volumetry/index.ts (powerstoreSystemOverhead destructured from overheads, propagated to buildBreakdown call)
+- src/engines/volumetry/breakdown/buildBreakdown.ts (powerstoreSystemOverhead in BreakdownInput, distinct breakdown entry)
+- tests/engines/volumetry.spec.ts (three new tests in "PowerStore System Overhead" describe block)
+- src/store/configStore.ts (systemOverheadPercent: 5 added to hardcoded powerstoreOptions default state)
 
 key-decisions:
-  - "PowerStore system overhead: ~5% default back-calculated from Dell Sizer 5200Q reference (35-drive RAID(16+2))"
-  - "systemOverheadPercent is user-configurable on PowerStoreOptions (like snapshotReservePercent) to support different PowerStore models"
-  - "Overhead applied to capacityAfterParity (post-parity, pre-snapshot), matching ObjectScale system overhead pattern"
+- "PowerStore system overhead: ~5% default back-calculated from Dell Sizer 5200Q reference (35-drive RAID(16+2))"
+- "systemOverheadPercent is user-configurable on PowerStoreOptions (like snapshotReservePercent) to support different PowerStore models"
+- "Overhead applied to capacityAfterParity (post-parity, pre-snapshot), matching ObjectScale system overhead pattern"
 
 patterns-established:
-  - "Platform system overhead pattern: add field to PlatformOptions, compute in overheadCalculator.ts, subtract in capacityForFs chain, show as distinct breakdown entry"
-  - "Dell Sizer reference test: use DellPowerstoreXXXVector fixture with 2% tolerance, set snapshotReservePercent:0 to isolate overhead under test"
+- "Platform system overhead pattern: add field to PlatformOptions, compute in overheadCalculator.ts, subtract in capacityForFs chain, show as distinct breakdown entry"
+- "Dell Sizer reference test: use DellPowerstoreXXXVector fixture with 2% tolerance, set snapshotReservePercent:0 to isolate overhead under test"
 
 requirements-completed: [DELL-05, DELL-06]
 
 # Metrics
+
 duration: 23min
 completed: 2026-03-25
 ---
@@ -130,5 +134,6 @@ None - no external service configuration required.
 - If a UI panel for PowerStore options exists, `systemOverheadPercent` should be surfaced as a configurable field for users who want to tune for smaller PowerStore models (1000T, 3200) where the 5% default may not apply
 
 ---
-*Phase: 10-powerstore-system-overhead-addition*
-*Completed: 2026-03-25*
+
+_Phase: 10-powerstore-system-overhead-addition_
+_Completed: 2026-03-25_

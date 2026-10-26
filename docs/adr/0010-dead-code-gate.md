@@ -19,7 +19,7 @@ translation keys.
 
 - **`.githooks/pre-commit`**, armed by `npm install` through a `prepare` script that sets
   `core.hooksPath`. No husky — a hook is nine lines of shell and one config line.
-- **`prebuild`**, alongside the supply-chain check, so `git commit --no-verify` *defers* the
+- **`prebuild`**, alongside the supply-chain check, so `git commit --no-verify` _defers_ the
   failure to build time rather than avoiding it.
 
 ## Consequences

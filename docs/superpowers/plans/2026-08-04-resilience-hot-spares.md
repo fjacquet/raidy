@@ -24,11 +24,11 @@
 
 ## File Structure
 
-| File | Responsibility | Task |
-|---|---|---|
-| `src/hooks/useResilience.ts` | Both subtraction sites | 1, 2 |
-| `tests/hooks/useResilienceHotSpares.spec.ts` | All hot-spare population assertions, both paths | 1, 2 |
-| `CHANGELOG.md`, `docs/ARCHITECTURE.md`, `docs/BACKLOG.md` | Documentation of the behaviour change and the residual gap | 2 |
+| File                                                      | Responsibility                                             | Task |
+| --------------------------------------------------------- | ---------------------------------------------------------- | ---- |
+| `src/hooks/useResilience.ts`                              | Both subtraction sites                                     | 1, 2 |
+| `tests/hooks/useResilienceHotSpares.spec.ts`              | All hot-spare population assertions, both paths            | 1, 2 |
+| `CHANGELOG.md`, `docs/ARCHITECTURE.md`, `docs/BACKLOG.md` | Documentation of the behaviour change and the residual gap | 2    |
 
 ---
 
@@ -146,21 +146,21 @@ Expected: the first two cases and the clamp case FAIL, reporting `expected 24 to
 In `src/hooks/useResilience.ts`, add `usesDistributedSpares` to the existing `@/types` import, then inside `runSimulation`, immediately after the `effServerCount` line and before the `scope` resolution, insert:
 
 ```ts
-    // A hot spare holds no data, so its failure is not a data-loss event. Volumetry
-    // (useVolumetryCalc.ts:80) and performance (usePerformanceCalc.ts:77) already remove spares
-    // from their populations on this exact rule; resilience did not, which inflated the failure
-    // population and understated survival for every configuration with a spare (#80).
-    // vSAN rebuilds from distributed slack space rather than dedicated spare drives, so
-    // usesDistributedSpares zeroes the subtraction there.
-    const totalHotSpares = usesDistributedSpares(topology.type) ? 0 : hotSpares * effServerCount
+// A hot spare holds no data, so its failure is not a data-loss event. Volumetry
+// (useVolumetryCalc.ts:80) and performance (usePerformanceCalc.ts:77) already remove spares
+// from their populations on this exact rule; resilience did not, which inflated the failure
+// population and understated survival for every configuration with a spare (#80).
+// vSAN rebuilds from distributed slack space rather than dedicated spare drives, so
+// usesDistributedSpares zeroes the subtraction there.
+const totalHotSpares = usesDistributedSpares(topology.type) ? 0 : hotSpares * effServerCount
 ```
 
 Then change the population line:
 
 ```ts
-    const totalDriveCount = scope
-      ? scope.driveCount
-      : Math.max(0, driveCount * effServerCount - totalHotSpares)
+const totalDriveCount = scope
+  ? scope.driveCount
+  : Math.max(0, driveCount * effServerCount - totalHotSpares)
 ```
 
 Leave the `groupCount` line unchanged.

@@ -14,30 +14,30 @@ follow-up implementation ticket that would touch `src/hooks/useResilience.ts`
 ## Recap of the problem
 
 PR #82 made the Monte Carlo simulation size its population from the **capacity tier** for tiered
-S2D, vSAN OSA, Ceph and Nutanix. It corrected *which* drives are simulated without modelling *why*
+S2D, vSAN OSA, Ceph and Nutanix. It corrected _which_ drives are simulated without modelling _why_
 a fast-tier failure could cascade. The fast tier is therefore currently **not simulated at all** on
 these paths — it is neither a failure source nor a group-kill trigger.
 
 Issue #88 correctly identifies this as the one outstanding modelling gap in this repo that moves
 numbers in the **unsafe** direction: every other gap understates resilience, this one reports
-*better* survival than the hardware delivers.
+_better_ survival than the hardware delivers.
 
 **This document's headline finding is that the framing in #88, while directionally right about the
 physics, is wrong about the magnitude — and that the obvious implementation would make the tool
 much less accurate, not more.** Two things came out of the research that reframe the whole ticket:
 
 1. **A fast-tier group kill is almost never a data-loss event.** On every platform studied, the
-   blast radius of a fast-tier device failure is bounded by *one node's contribution*, and every
+   blast radius of a fast-tier device failure is bounded by _one node's contribution_, and every
    one of these platforms places its redundancy **across nodes** by construction. A vSAN disk-group
    loss, a Ceph WAL/DB kill, an S2D cache-drive loss — all are "this node degraded, rebuild from
-   the other nodes," not "data gone." Data loss requires a *second* fault-domain failure inside the
+   the other nodes," not "data gone." Data loss requires a _second_ fault-domain failure inside the
    rebuild window. Sources in §1–§4.
 2. **The simulation has no concept of a node.** For the four tiered platforms, `groupCount` is
    `serverCount` but the worker only uses `serverCount` when `isGroupTopology(raidLevel)` is true —
    and no vSAN/Ceph/Nutanix/S2D level string is in that list. Those levels route to the **flat
    drive-pair mirror model** (arbitrary pairing) or the **global-counter parity model**, neither of
    which knows which node a drive lives on. Injecting a correlated group kill into either produces
-   a large, physically *wrong* survival drop. Quantified in §6.
+   a large, physically _wrong_ survival drop. Quantified in §6.
 
 So the correct sequencing is: **node-aware placement is a prerequisite, not a detail.** Modelling
 the blast radius without it is worse than the status quo.
@@ -45,7 +45,7 @@ the blast radius without it is worse than the status quo.
 **The four questions asked per platform:**
 1. What does a fast-tier device failure actually take down (blast radius)?
 2. Is it recoverable in place, or must the dependent capacity devices be rebuilt?
-3. Is it a *data-loss* event at the cluster level, or a degradation-plus-resync event?
+3. Is it a _data-loss_ event at the cluster level, or a degradation-plus-resync event?
 4. Does the app's existing `TieringConfig` carry enough to know the blast radius?
 
 Each section answers 1–4 with sources, then §5–§8 design the change and §9 states what should
@@ -58,16 +58,16 @@ Each section answers 1–4 with sources, then §5–§8 design the change and §
 ### Blast radius — confirmed, and worse than #88 states
 
 A vSAN OSA disk group is **exactly one cache device plus 1–7 capacity devices**; a host may have
-**up to 5 disk groups**. Broadcom TechDocs, *Claim Storage Devices for vSAN OSA Cluster*, verbatim:
-"You can add only one cache device per disk group." *vSAN Concepts*: "Each disk group contains one
+**up to 5 disk groups**. Broadcom TechDocs, _Claim Storage Devices for vSAN OSA Cluster_, verbatim:
+"You can add only one cache device per disk group." _vSAN Concepts_: "Each disk group contains one
 flash cache device, and one or multiple capacity devices for persistent storage." The 1–7 and 5
-limits are stated in *Designing and Sizing vSAN Hosts* ("vSAN OSA must have at least 32 GB memory
+limits are stated in _Designing and Sizing vSAN Hosts_ ("vSAN OSA must have at least 32 GB memory
 to support 5 disk groups per host and 7 capacity devices per disk group") and verbatim on VMware's
 own product blog ("Disk groups contain at most 1 cache device and between 1 to 7 capacity devices…
 At most a vSAN host can have 5 disk groups").
 
 The cache-failure statement #88 relies on is confirmed **verbatim** in current vSAN 8.0 TechDocs,
-*A Flash Caching Device Is Not Accessible in a vSAN Cluster*:
+_A Flash Caching Device Is Not Accessible in a vSAN Cluster_:
 
 > "vSAN interprets the failure of a single flash caching device as a failure of the entire disk
 > group."
@@ -77,7 +77,7 @@ is funneled through the caching/buffering device before it is stored on a capaci
 disk group."
 
 **The research found a second trigger #88 does not mention, and it dominates the frequency.** With
-deduplication and compression enabled, *any* device failure — cache **or capacity** — kills the
+deduplication and compression enabled, _any_ device failure — cache **or capacity** — kills the
 whole disk group. Broadcom KB 327008, verbatim:
 
 > "When VMware vSAN is configured with Deduplication and Compression enabled, a failure of any
@@ -89,10 +89,10 @@ vSAN 7.0 U1 added a third state. Its release notes, verbatim: "With compression-
 capacity device only impacts that device and not the entire disk group." So there are **three**
 space-efficiency states with **three** different capacity-failure blast radii:
 
-| Failure | Dedup+compression OFF | Compression-only (7.0 U1+) | Dedup+compression ON |
-|---|---|---|---|
-| **Cache device** | Whole disk group | Whole disk group | Whole disk group |
-| **Capacity device** | That device only | That device only | **Whole disk group** |
+| Failure             | Dedup+compression OFF | Compression-only (7.0 U1+) | Dedup+compression ON |
+| ------------------- | --------------------- | -------------------------- | -------------------- |
+| **Cache device**    | Whole disk group      | Whole disk group           | Whole disk group     |
+| **Capacity device** | That device only      | That device only           | **Whole disk group** |
 
 No vSAN 7.x or 8.0 change softens the cache-device blast radius — the statement is still present
 verbatim in the current 8.0 docs. Max disk groups per host is unchanged at 5. vSAN **ESA** has no
@@ -101,10 +101,10 @@ claimed by vSAN ESA remains independent from each other"), so ESA is out of scop
 
 ### Is it data loss? — No, and this is the crux
 
-**A disk group is a physical blast radius, not a placement fault domain.** VMware's *vSAN
-Availability Technologies* whitepaper, verbatim: "vSAN uses a construct known as a 'fault domain' to
+**A disk group is a physical blast radius, not a placement fault domain.** VMware's _vSAN
+Availability Technologies_ whitepaper, verbatim: "vSAN uses a construct known as a 'fault domain' to
 help it distribute data in a resilient way. By default, vSAN treats each host as a fault domain."
-*Designing and Sizing vSAN Fault Domains*: "vSAN ensures that each protection component (replicas
+_Designing and Sizing vSAN Fault Domains_: "vSAN ensures that each protection component (replicas
 and witnesses) is placed in a separate fault domain."
 
 Because a host is its own fault domain, two replicas of one object can never land on the same host,
@@ -122,13 +122,13 @@ and
 > "a failure only applies to the hosts that the object resides on, NOT the total number of failures
 > within a cluster."
 
-*A Flash Caching Device Is Not Accessible* confirms the outcome: at FTT ≥ 1, VM objects "remain
+_A Flash Caching Device Is Not Accessible_ confirms the outcome: at FTT ≥ 1, VM objects "remain
 accessible from other ESXi hosts" and automatic reprotection begins. Only at FTT = 0 do objects
-become inaccessible. *Replace a Capacity Device*: "When the number of failures of the object replica
+become inaccessible. _Replace a Capacity Device_: "When the number of failures of the object replica
 with the affected components exceeds the FTT value, the virtual machines on the disk become
 inaccessible."
 
-**Rebuild trigger — a correction to the obvious assumption.** A device *hardware* failure marks
+**Rebuild trigger — a correction to the obvious assumption.** A device _hardware_ failure marks
 components **degraded**, which triggers rebuild **immediately**. The well-known 60-minute
 `vsan.clomrepairdelay` applies only to **absent** components (host reboot, network partition,
 maintenance mode). Broadcom KB 327031, verbatim: "If a failure in a physical hardware component is
@@ -140,7 +140,7 @@ the wrong mechanism.)
 
 vSAN 7.0 U2 added durability components ("enhanced data durability to tolerate unplanned host,
 disk, or network failures by creating additional durability components at the time of failure"),
-which does not change the blast radius but *reduces* second-failure risk during the degraded
+which does not change the blast radius but _reduces_ second-failure risk during the degraded
 window — i.e. it pushes in the safe direction relative to any model that ignores it.
 
 ### Does `TieringConfig` carry enough? — Yes, derivably
@@ -181,8 +181,8 @@ than citing docs.ceph.com, because docs.ceph.com does not say it.
 
 ### Recoverable in place? — No; full destroy-and-backfill
 
-The *mechanism* is officially documented, even though the multi-OSD generalisation is not. *Adding
-and Removing OSDs* gives the replacement procedure — `ceph osd safe-to-destroy`, `ceph osd destroy`,
+The _mechanism_ is officially documented, even though the multi-OSD generalisation is not. _Adding
+and Removing OSDs_ gives the replacement procedure — `ceph osd safe-to-destroy`, `ceph osd destroy`,
 wipe, re-provision with the same ID — after which Ceph "begins rebalancing the cluster by migrating
 placement groups (PGs)", transitioning `active+clean` → `active, some degraded objects` →
 `active+clean`. There is no in-place metadata resync path for an OSD whose RocksDB lived on a dead
@@ -190,7 +190,7 @@ device: the replacement OSD is repopulated **entirely by backfill from other rep
 
 ### Ratio — the codebase default is well within vendor guidance
 
-Ceph's official *Hardware Recommendations* states **"4-5x HDD OSDs per DB/WAL SATA SSD"** and
+Ceph's official _Hardware Recommendations_ states **"4-5x HDD OSDs per DB/WAL SATA SSD"** and
 **"≤10 HDD OSDs per DB/WAL NVMe SSD"**. `cephadm`'s OSD service spec has first-class support via
 `db_slots` ("Chop the DB device into this many slices and use one for each of this many HDD OSDs"),
 confirming the shared-device pattern is intentional and supported, not an edge case.
@@ -203,14 +203,14 @@ currently reaches no engine is precisely the gap this work would close.
 
 ### Is it data loss? — No; it is a host-failure-shaped event
 
-CRUSH's default failure domain is the host. *CRUSH Maps*, verbatim: "If the `crush_location` is not
+CRUSH's default failure domain is the host. _CRUSH Maps_, verbatim: "If the `crush_location` is not
 set explicitly, a default of `root=default host=HOSTNAME` is used for OSDs." And on the design
 intent: "By reflecting the underlying physical organization of the installation, CRUSH can model
 (and thereby address) the potential for correlated device failures."
 
 A WAL/DB NVMe lives inside one host and serves only OSDs in that host. So losing every OSD behind it
 is a **strict subset of a host failure** — an event CRUSH already places replicas and EC shards to
-survive, by construction. The blast radius is *not* novel.
+survive, by construction. The blast radius is _not_ novel.
 
 **What is novel is the frequency, not the shape.** A host-failure-shaped event is being triggered by
 a single NVMe dying, which is far more probable than a whole server dying. That is the honest
@@ -222,7 +222,7 @@ default), two more failure domains must go during the backfill window. The defau
 "can sustain the overlapping loss of two OSDs without losing data."
 
 **Negative finding:** no official Ceph source quantifies recovery time for N concurrent OSD losses
-relative to one. Ceph documents *tolerance* and *mechanism* but not *timing-vs-N*. There is nothing
+relative to one. Ceph documents _tolerance_ and _mechanism_ but not _timing-vs-N_. There is nothing
 to calibrate a backfill-duration model against.
 
 ---
@@ -239,7 +239,7 @@ between them. But there is **no sub-node grouping**: no SSD "owns" a defined sub
 the way a vSAN cache device owns its disk group or a Ceph WAL/DB device owns its OSDs.
 
 The documented worst case of a single SSD failure is a **CVM restart** — i.e. the whole node's
-storage contribution briefly drops out. The Bible's *Drive Breakdown* notes "Nutanix Home is
+storage contribution briefly drops out. The Bible's _Drive Breakdown_ notes "Nutanix Home is
 mirrored across the first two SSDs to ensure availability", Cassandra "is sharded across multiple
 SSDs in the node (currently up to 4)", and "in dual SSD systems, metadata will be mirrored between
 the SSDs"; the pre-5.0 legacy behaviour was "if that SSD fails the CVM will be restarted."
@@ -252,7 +252,7 @@ special-cased.
 
 **Recommendation: model nothing for Nutanix.** Record the finding in code so it is not re-researched.
 
-*Confidence caveat:* this is inference from documented architecture. Nutanix never states "there is
+_Confidence caveat:_ this is inference from documented architecture. Nutanix never states "there is
 no disk-group-equivalent blast radius" — that conclusion is drawn from the absence of any such
 grouping in the architecture docs plus the CVM-restart language, not from a verbatim denial.
 
@@ -263,7 +263,7 @@ grouping in the architecture docs plus the CVM-restart language, not from a verb
 **#88 lists only vSAN and Ceph. S2D turns out to have the same structure, documented more clearly
 than either of them.**
 
-Microsoft Learn, *Understanding the storage pool cache*, verbatim:
+Microsoft Learn, _Understanding the storage pool cache_, verbatim:
 
 > "The cache is implemented at the drive level: individual cache drives within one server are bound
 > to one or many capacity drives within the same server."
@@ -275,8 +275,8 @@ Microsoft Learn, *Understanding the storage pool cache*, verbatim:
 This is structurally identical to a vSAN disk group: one fast device owning a bounded set of
 capacity devices within one node. And Microsoft documents the failure behaviour explicitly:
 
-> "When a cache drive fails, any writes which haven't yet been destaged are lost *to the local
-> server*, meaning they exist only on the other copies (in other servers). Just like after any other
+> "When a cache drive fails, any writes which haven't yet been destaged are lost _to the local
+> server_, meaning they exist only on the other copies (in other servers). Just like after any other
 > drive failure, Storage Spaces can and does automatically recover by consulting the surviving
 > copies. For a brief period, the capacity drives which were bound to the lost cache drive appear
 > unhealthy. Once the cache rebinding has occurred (automatic) and the data repair has completed
@@ -293,7 +293,7 @@ And on why it is not a data-loss event:
 
 So S2D lands in exactly the same place as vSAN and Ceph: **a real, documented, multi-device
 correlated degradation event, bounded by one node, not a data-loss event** because resiliency is
-cross-server by construction. Note the binding is *dynamic* — it "adjusts… after failures" — which
+cross-server by construction. Note the binding is _dynamic_ — it "adjusts… after failures" — which
 makes S2D's blast radius genuinely more transient than vSAN's.
 
 `S2DOptions.tieringConfig` carries the same `fastTier.driveCount` / `capacityTier.driveCount` pair,
@@ -303,22 +303,22 @@ so the binding ratio is derivable identically to vSAN.
 
 ## 5. BeeGFS MDT — correctly out of scope, confirmed
 
-BeeGFS's architecture split is unambiguous. *Architecture Overview*: metadata servers "do the
+BeeGFS's architecture split is unambiguous. _Architecture Overview_: metadata servers "do the
 coordination of file placement and striping among the storage servers", while storage servers "are
 responsible for storing stripes of the actual contents of user files." Metadata buddy mirroring is
-configured independently of storage buddy mirroring (*Mirroring*: "Both metadata and storage
+configured independently of storage buddy mirroring (_Mirroring_: "Both metadata and storage
 mirroring can be enabled with the `beegfs` command line tool"; separate buddy-group definitions,
 separate `beegfs mirror init` flow, and a different resync mechanism — metadata resync sends the
 full mirrored metadata rather than using storage's timestamp-based incremental path).
 
 **An MDT loss does not destroy storage-target data.** The strongest official anchor is the
-*Filesystem Check* page's warning about `beegfs-fsck --automatic`:
+_Filesystem Check_ page's warning about `beegfs-fsck --automatic`:
 
 > "In a system with data loss on the metadata targets, this would result in a deletion of storage
 > data. Therefore, we recommend not to enable `--automatic`, unless you are sure about it."
 
 That sentence only makes sense if the storage bytes are still physically present when the MDT is
-lost — fsck is warning about what its own repair logic would do to *now-orphaned* chunks. So MDT
+lost — fsck is warning about what its own repair logic would do to _now-orphaned_ chunks. So MDT
 loss is a "cannot find/reassemble the file" event, not a "the file's blocks are destroyed" event;
 actual destruction is introduced by careless repair tooling afterwards, which is an operator
 behaviour this tool does not and should not model.
@@ -327,11 +327,11 @@ behaviour this tool does not and should not model.
 sense this simulation measures.** MDT drives should stay excluded, exactly as the existing comment
 in `resolveBeeGfsSimulationScope` says. No change.
 
-*Confidence caveat:* BeeGFS never states "MDT loss is a separate protection domain" in resilience-
+_Confidence caveat:_ BeeGFS never states "MDT loss is a separate protection domain" in resilience-
 modelling terms. That framing is inference from the architecture split, the independent mirroring
 mechanisms, and the fsck warning — the fsck sentence is the single quotable anchor.
 
-Context for MDT sizing, since it came up: *Metadata Node Tuning* recommends "low-latency devices
+Context for MDT sizing, since it came up: _Metadata Node Tuning_ recommends "low-latency devices
 like SSDs or NVMes" and notes "it is generally recommended to store metadata on a RAID-1 or RAID-10
 volume" because "small random writes are inefficient on RAID-5 and RAID-6."
 
@@ -341,7 +341,7 @@ volume" because "small random writes are inefficient on RAID-5 and RAID-6."
 
 **This section is the reason this document does not simply recommend "build it."**
 
-The four tiered platforms hand the worker `groupCount = serverCount`, but the worker only *uses*
+The four tiered platforms hand the worker `groupCount = serverCount`, but the worker only _uses_
 `serverCount` when `isGroupTopology(raidLevel)` returns true — and that function matches only
 `raid50`, `raid60`, `beegfs_raid6`, `beegfs_raidz2`, `beegfs_raid10`. **No vSAN, Ceph, Nutanix or
 S2D level string is in it.** So today:
@@ -349,28 +349,28 @@ S2D level string is in it.** So today:
 - `vsan_osa_raid1` → `mirrorCopies = 2` (`OutputDashboard.tsx:88`) → `isMirror` path → the flat
   drive-pair model, which pairs drives **arbitrarily** with no idea which host they are on.
 - `vsan_osa_raid5` / `vsan_osa_raid6` → `mirrorCopies = 0`, not a group topology → the **standard
-  parity path**, whose test is a *cluster-global* counter: `failedDrives > parityDrives`. Worse,
+  parity path**, whose test is a _cluster-global_ counter: `failedDrives > parityDrives`. Worse,
   `getParityDrives` does not recognise these strings at all and falls through to `return 1`, so a
   vSAN RAID-6 FTT=2 configuration is simulated with a tolerance of one drive **cluster-wide**.
 
 Now inject a group kill into each:
 
 **Into the flat mirror model.** A 7-drive simultaneous kill lands 7 failures into arbitrarily-chosen
-mirror pairs. In reality this can *never* destroy a pair, because vSAN guarantees the two replicas
+mirror pairs. In reality this can _never_ destroy a pair, because vSAN guarantees the two replicas
 sit on different hosts. In the simulation it is a birthday problem:
 
 | Capacity drives | Mirror pairs | Group kill | P(≥2 land in the same pair) → spurious data loss |
-|---|---|---|---|
-| 84 | 42 | 7 drives | **41.0%** |
-| 48 | 24 | 7 drives | **62.0%** |
-| 24 | 12 | 5 drives | **61.8%** |
+| --------------- | ------------ | ---------- | ------------------------------------------------ |
+| 84              | 42           | 7 drives   | **41.0%**                                        |
+| 48              | 24           | 7 drives   | **62.0%**                                        |
+| 24              | 12           | 5 drives   | **61.8%**                                        |
 
-**Into the global-counter parity model.** Tolerance is 1 drive cluster-wide, so *every* group kill
+**Into the global-counter parity model.** Tolerance is 1 drive cluster-wide, so _every_ group kill
 is an instant, guaranteed data loss — survival would drop by the full group-kill probability.
 
 Either way the tool would report a large survival collapse that **does not correspond to any
 physical failure mode**. It would be moving in the pessimistic direction, which is the "safe"
-direction for a sizing tool, but it would be pessimistic *for a fabricated reason*, and a user
+direction for a sizing tool, but it would be pessimistic _for a fabricated reason_, and a user
 comparing vSAN OSA against ESA would see a difference that is mostly simulation artefact.
 
 **Therefore: node-aware component placement is a hard prerequisite for modelling fast-tier
@@ -392,49 +392,49 @@ Anything smaller than that is invisible in the shipped app.
 
 ### vSAN OSA — dedup OFF (cache-device trigger only)
 
-| Configuration | P(≥1 group kill/yr) | Rebuild window | Added annual data-loss probability |
-|---|---|---|---|
-| 4 hosts × 1 DG × 5 cap | 1.75% | 57 h | **0.0002 pp** |
-| 6 hosts × 2 DG × 7 cap | 5.15% | 156 h | **0.004 pp** |
-| 8 hosts × 3 DG × 7 cap | 10.04% | 157 h | **0.018 pp** |
+| Configuration          | P(≥1 group kill/yr) | Rebuild window | Added annual data-loss probability |
+| ---------------------- | ------------------- | -------------- | ---------------------------------- |
+| 4 hosts × 1 DG × 5 cap | 1.75%               | 57 h           | **0.0002 pp**                      |
+| 6 hosts × 2 DG × 7 cap | 5.15%               | 156 h          | **0.004 pp**                       |
+| 8 hosts × 3 DG × 7 cap | 10.04%              | 157 h          | **0.018 pp**                       |
 
 **A rounding error — one to two orders of magnitude below the noise floor.** Group kills are
 frequent, but they are not data loss, and the second-failure-in-window term is tiny.
 
 ### vSAN OSA — dedup ON (any device kills the group, per KB 327008)
 
-| Configuration | P(kill per group/yr) | P(≥1 kill/yr) | Added annual data-loss probability |
-|---|---|---|---|
-| 6 hosts × 2 DG × 4 cap (16 TB) | 3.59% | 35.5% | **0.14 pp** |
-| 6 hosts × 2 DG × 7 cap (16 TB) | 5.88% | 51.7% | **0.59 pp** |
-| 8 hosts × 3 DG × 7 cap (16 TB) | 5.88% | 76.7% | **1.84 pp** |
+| Configuration                  | P(kill per group/yr) | P(≥1 kill/yr) | Added annual data-loss probability |
+| ------------------------------ | -------------------- | ------------- | ---------------------------------- |
+| 6 hosts × 2 DG × 4 cap (16 TB) | 3.59%                | 35.5%         | **0.14 pp**                        |
+| 6 hosts × 2 DG × 7 cap (16 TB) | 5.88%                | 51.7%         | **0.59 pp**                        |
+| 8 hosts × 3 DG × 7 cap (16 TB) | 5.88%                | 76.7%         | **1.84 pp**                        |
 
 **This is the whole ticket.** The dedup case is 30–100× the cache-only case and lands well above the
 noise floor. It is driven by the trigger #88 never mentions — capacity-device failures, which are
-~2× more likely per device than cache failures *and* there are up to 7× more of them per group.
+~2× more likely per device than cache failures _and_ there are up to 7× more of them per group.
 
 ### Ceph — WAL/DB NVMe kill, `walDbRatio = 4`
 
-| Configuration | P(≥1 WAL/DB kill/yr) | Backfill window | Added annual data-loss probability |
-|---|---|---|---|
-| 4 hosts × 8 HDD, size=3 | 3.47% | 44 h | **0.000003 pp** |
-| 6 hosts × 12 HDD, size=3 | 7.63% | 89 h | **0.00015 pp** |
-| 8 hosts × 24 HDD, size=3 | 19.08% | 89 h | **0.0029 pp** |
-| 6 hosts × 12 HDD, **size=2 / EC m=1** | 7.63% | 89 h | **0.048 pp** |
+| Configuration                         | P(≥1 WAL/DB kill/yr) | Backfill window | Added annual data-loss probability |
+| ------------------------------------- | -------------------- | --------------- | ---------------------------------- |
+| 4 hosts × 8 HDD, size=3               | 3.47%                | 44 h            | **0.000003 pp**                    |
+| 6 hosts × 12 HDD, size=3              | 7.63%                | 89 h            | **0.00015 pp**                     |
+| 8 hosts × 24 HDD, size=3              | 19.08%               | 89 h            | **0.0029 pp**                      |
+| 6 hosts × 12 HDD, **size=2 / EC m=1** | 7.63%                | 89 h            | **0.048 pp**                       |
 
 **A rounding error at `size=3`** — three failure domains must go, and the third term crushes it. Even
 the `size=2` case sits at the edge of the noise floor.
 
 ### Verdict on magnitude
 
-| Platform / mode | Effect | Above the 10K-iteration noise floor? | Worth the complexity? |
-|---|---|---|---|
-| vSAN OSA, **dedup ON** | 0.14–1.84 pp | **Yes, clearly** | **Yes** |
-| vSAN OSA, dedup OFF | 0.0002–0.018 pp | No | No |
-| Ceph, size=3 / EC m≥2 | ~0.000003–0.003 pp | No | No |
-| Ceph, size=2 / EC m=1 | ~0.05 pp | Marginal | Marginal |
-| S2D | same shape as vSAN dedup-OFF | No | No |
-| Nutanix | no structure to model | — | No |
+| Platform / mode        | Effect                       | Above the 10K-iteration noise floor? | Worth the complexity? |
+| ---------------------- | ---------------------------- | ------------------------------------ | --------------------- |
+| vSAN OSA, **dedup ON** | 0.14–1.84 pp                 | **Yes, clearly**                     | **Yes**               |
+| vSAN OSA, dedup OFF    | 0.0002–0.018 pp              | No                                   | No                    |
+| Ceph, size=3 / EC m≥2  | ~0.000003–0.003 pp           | No                                   | No                    |
+| Ceph, size=2 / EC m=1  | ~0.05 pp                     | Marginal                             | Marginal              |
+| S2D                    | same shape as vSAN dedup-OFF | No                                   | No                    |
+| Nutanix                | no structure to model        | —                                    | No                    |
 
 **The honest summary: for five of the six rows, #88's concern is real physics with a negligible
 numeric consequence.** The single row that justifies the work is vSAN OSA with deduplication
@@ -488,9 +488,9 @@ day loop. That is close to the whole change.
 happening.
 
 **Fidelity:** lower, in a specific and important way. It cannot express the vSAN dedup case
-faithfully, because there the group-kill probability is a function of the *surviving* capacity
+faithfully, because there the group-kill probability is a function of the _surviving_ capacity
 device count in that group, which changes as the simulation runs. Collapsing it to a constant
-per-day rate is an approximation. It also cannot model a fast-tier device failing *during* a
+per-day rate is an approximation. It also cannot model a fast-tier device failing _during_ a
 degraded window and interacting with the rebuild.
 
 ### Recommendation
@@ -499,7 +499,7 @@ degraded window and interacting with the rebuild.
 
 Approach B is tempting because it is cheap, and for Ceph/S2D — where §7 shows the effect is a
 rounding error — cheap-and-approximate would be fine. But for those platforms the right answer is
-*not to model it at all*, so B has no constituency: the only platform where the number is worth
+_not to model it at all_, so B has no constituency: the only platform where the number is worth
 moving (vSAN dedup) is exactly the platform B approximates worst.
 
 Sequenced:
@@ -526,7 +526,7 @@ covers. Modelling it would mean inventing a structure Nutanix does not have.
 **Ceph WAL/DB — real, but numerically negligible; document the physics, skip the model.** The blast
 radius is a strict subset of a host failure, which CRUSH is designed around. At the recommended
 `size=3`, §7 puts the effect at ~0.0001–0.003 pp — three to four orders of magnitude below the
-noise floor. The genuine finding is that a *host-failure-shaped* event is triggered by a single NVMe,
+noise floor. The genuine finding is that a _host-failure-shaped_ event is triggered by a single NVMe,
 which is more probable than a whole server dying; that is worth writing down, but it does not change
 a survival number anyone can read. Note also that the primary claim here is community-sourced, not
 doc-sourced (§2) — building a model on it would give it more apparent authority than the sourcing
@@ -534,7 +534,7 @@ supports.
 
 **S2D cache binding — real, documented, and explicitly transient.** Microsoft describes the affected
 capacity drives as appearing "unhealthy" for "a brief period" before automatic rebinding and repair,
-and states data survives via cross-server copies. It is a *degradation* event, and this panel reports
+and states data survives via cross-server copies. It is a _degradation_ event, and this panel reports
 data-loss probability. Same magnitude class as vSAN dedup-OFF: below the noise floor.
 
 **BeeGFS MDT — out of scope, permanently.** §5. Storage-target data survives an MDT loss; what is
@@ -542,16 +542,16 @@ lost is the namespace. Nothing about future research will change this — it is 
 sourcing gap.
 
 **The 60-minute `vsan.clomrepairdelay` for device failures.** It does not apply: a hardware device
-failure marks components *degraded* and rebuilds immediately (§1). Modelling a 60-minute window here
+failure marks components _degraded_ and rebuilds immediately (§1). Modelling a 60-minute window here
 would cite the right constant for the wrong event.
 
 **vSAN 7.0 U2 durability components.** They shorten the vulnerability window, i.e. they push
-survival *up*. Omitting them keeps the model conservative, which is the correct direction. Modelling
+survival _up_. Omitting them keeps the model conservative, which is the correct direction. Modelling
 them would need a resync-rate figure VMware does not publish.
 
 **Backfill/rebuild duration as a function of N concurrent failures.** No official Ceph or VMware
 source quantifies it (§2). The current model's single-drive rebuild time applied N times is a guess
-either way; at least it is an *existing* guess rather than a new one.
+either way; at least it is an _existing_ guess rather than a new one.
 
 **Group-kill events as instant data loss.** The single most important negative: on all four
 platforms a fast-tier group kill is degradation-plus-resync, not data loss. Any implementation that
@@ -564,14 +564,14 @@ returns `survived: false` on a group kill is wrong, and by a lot — §7's dedup
 
 Each row is independently decidable.
 
-| Platform | Blast radius | Data loss? | Input available? | Effect size | Recommendation |
-|---|---|---|---|---|---|
-| **vSAN OSA** (dedup ON) | Whole disk group, on **any** device failure | No — degrade + resync; loss only if FTT exhausted | Yes — `fastTier.driveCount`, `capacityTier.driveCount`, `vsanOptions.dedup` | **0.14–1.84 pp** | **Model it** (Approach A), after node-aware placement |
-| **vSAN OSA** (dedup OFF) | Whole disk group, on cache failure only | Same | Same | 0.0002–0.018 pp | Falls out of the above for free; would not justify the work alone |
-| **Ceph WAL/DB** | All OSDs behind the NVMe | No — subset of a host failure CRUSH tolerates | Yes — `walDbRatio` is the right input (#104) | ~0.0001–0.003 pp (size=3) | **Document, do not model** |
-| **S2D cache binding** | 1–12+ bound capacity drives, transient | No — cross-server copies; auto-rebind | Yes — same `TieringConfig` derivation | Below noise floor | **Document, do not model** |
-| **Nutanix hybrid** | No sub-node structure; worst case is CVM restart | No | n/a | Nothing to model | **Document the negative finding** |
-| **BeeGFS MDT** | Namespace, not data | No | n/a | n/a | **Keep excluded**; no change |
+| Platform                 | Blast radius                                     | Data loss?                                        | Input available?                                                            | Effect size               | Recommendation                                                    |
+| ------------------------ | ------------------------------------------------ | ------------------------------------------------- | --------------------------------------------------------------------------- | ------------------------- | ----------------------------------------------------------------- |
+| **vSAN OSA** (dedup ON)  | Whole disk group, on **any** device failure      | No — degrade + resync; loss only if FTT exhausted | Yes — `fastTier.driveCount`, `capacityTier.driveCount`, `vsanOptions.dedup` | **0.14–1.84 pp**          | **Model it** (Approach A), after node-aware placement             |
+| **vSAN OSA** (dedup OFF) | Whole disk group, on cache failure only          | Same                                              | Same                                                                        | 0.0002–0.018 pp           | Falls out of the above for free; would not justify the work alone |
+| **Ceph WAL/DB**          | All OSDs behind the NVMe                         | No — subset of a host failure CRUSH tolerates     | Yes — `walDbRatio` is the right input (#104)                                | ~0.0001–0.003 pp (size=3) | **Document, do not model**                                        |
+| **S2D cache binding**    | 1–12+ bound capacity drives, transient           | No — cross-server copies; auto-rebind             | Yes — same `TieringConfig` derivation                                       | Below noise floor         | **Document, do not model**                                        |
+| **Nutanix hybrid**       | No sub-node structure; worst case is CVM restart | No                                                | n/a                                                                         | Nothing to model          | **Document the negative finding**                                 |
+| **BeeGFS MDT**           | Namespace, not data                              | No                                                | n/a                                                                         | n/a                       | **Keep excluded**; no change                                      |
 
 ---
 
@@ -579,15 +579,15 @@ Each row is independently decidable.
 
 - **Before/after vectors** for a tiered vSAN OSA configuration with dedup on and off, following the
   `tests/fixtures/resilience-vectors.ts` convention #107 established: document the payload plus the
-  *direction and rough magnitude*, with an actual measured run recorded in the comment, and assert
+  _direction and rough magnitude_, with an actual measured run recorded in the comment, and assert
   against wide bands rather than exact rates.
-- **A guard against the §6 artefact.** A test that a group kill in a node-aware model does *not*
+- **A guard against the §6 artefact.** A test that a group kill in a node-aware model does _not_
   destroy a mirror pair — i.e. that survival after adding disk-group modelling stays within a
   fraction of a percentage point of the pre-change number for the dedup-OFF case. If it moves by
   tens of points, the node-awareness prerequisite is not actually working, and the test should say
   so loudly rather than the vectors being recalibrated to match.
 - **A property test** that `P(group kill)` rises monotonically with capacity-devices-per-group when
-  dedup is on, and is *independent* of it when dedup is off. That distinction is the entire content
+  dedup is on, and is _independent_ of it when dedup is off. That distinction is the entire content
   of KB 327008 and is the thing most likely to be implemented backwards.
 - **Regression net:** every untiered configuration, and every platform not being changed
   (Ceph, S2D, Nutanix, BeeGFS), must produce byte-identical simulation input. `tieredPlatformScope`
@@ -603,7 +603,7 @@ claim is architecturally sound — BlueStore needs its RocksDB and WAL at OSD st
 uniform community practice, but the only direct statement found ("all the OSDs with their DB/WAL on
 the same SSD will have to be destroyed and rebuilt") is from a ceph-users mailing-list thread whose
 page returned HTTP 503, leaving only a search-engine summary. Everything downstream in §2 — the
-ratio guidance, the destroy-and-backfill mechanism, the CRUSH host-domain framing — *is* officially
+ratio guidance, the destroy-and-backfill mechanism, the CRUSH host-domain framing — _is_ officially
 sourced; it is specifically the "one device kills N OSDs" premise that rests on consensus rather
 than documentation. This is a further argument for §9's "document, do not model" recommendation for
 Ceph: a model would lend the premise more authority than its sourcing carries.
@@ -636,7 +636,7 @@ example of 2 groups on the product blog. Any default this tool picks is a judgem
 - [vSAN Availability Technologies (whitepaper PDF)](https://www.vmware.com/docs/vmw-vSAN-Availability-Technologies) — host as default fault domain; "Unavailability of data does not mean 'data loss.'"
 - [Understanding vSAN Architecture: Disk Groups (VMware VCF blog)](https://blogs.vmware.com/cloud-foundation/2019/04/18/vsan-disk-groups/) — 1 cache + 1–7 capacity; max 5 disk groups; 2-disk-group worked example
 - [The Impact of a Storage Device Failure in vSAN ESA versus OSA (VMware VCF blog)](https://blogs.vmware.com/cloud-foundation/2023/08/02/the-impact-of-a-storage-device-failure-in-vsan-esa-versus-osa/) — I/O funnelled through the cache device; ESA device independence
-- [One versus multiple vSAN disk groups per host — Yellow Bricks](https://www.yellow-bricks.com/2014/05/22/one-versus-multiple-vsan-diskgroups-per-host/) — *weak source*, personal blog; disk group as failure domain
+- [One versus multiple vSAN disk groups per host — Yellow Bricks](https://www.yellow-bricks.com/2014/05/22/one-versus-multiple-vsan-diskgroups-per-host/) — _weak source_, personal blog; disk group as failure domain
 
 **Ceph:**
 - [BlueStore Config Reference (Reef)](https://docs.ceph.com/en/reef/rados/configuration/bluestore-config-ref/) — provisioning strategies; **negative finding: no failure-domain caveat**
@@ -647,8 +647,8 @@ example of 2 groups on the product blog. Any default this tool picks is a judgem
 - [CRUSH Maps (latest)](https://docs.ceph.com/en/latest/rados/operations/crush-map/) — default `host` failure domain; correlated-failure modelling intent
 - [Erasure Code (Reef)](https://docs.ceph.com/en/reef/rados/operations/erasure-code/) — default profile tolerates overlapping loss of two OSDs
 - [Troubleshooting OSDs (latest)](https://docs.ceph.com/en/latest/rados/troubleshooting/troubleshooting-osd/)
-- [ceph-users: "Shared WAL/DB device partition for multiple OSDs?"](https://www.spinics.net/lists/ceph-users/msg44600.html) — *weak source*, community
-- [ceph-users: "Proper procedure to replace DB/WAL SSD"](https://ceph-users.ceph.narkive.com/uhXS1ygJ/proper-procedure-to-replace-db-wal-ssd) — *weak source*; **returned HTTP 503, only a search-engine summary was verifiable**
+- [ceph-users: "Shared WAL/DB device partition for multiple OSDs?"](https://www.spinics.net/lists/ceph-users/msg44600.html) — _weak source_, community
+- [ceph-users: "Proper procedure to replace DB/WAL SSD"](https://ceph-users.ceph.narkive.com/uhXS1ygJ/proper-procedure-to-replace-db-wal-ssd) — _weak source_; **returned HTTP 503, only a search-engine summary was verifiable**
 
 **Microsoft S2D:**
 - [Understanding the storage pool cache in Azure Local and Windows Server clusters (Microsoft Learn)](https://learn.microsoft.com/en-us/windows-server/storage/storage-spaces/cache) — per-drive cache binding, 1:1 to 1:12+; cache-drive failure behaviour; server-level resiliency
@@ -656,8 +656,8 @@ example of 2 groups on the product blog. Any default this tool picks is a judgem
 **Nutanix:**
 - [The Nutanix Bible — Book of AOS Storage](https://www.nutanixbible.com/4c-book-of-aos-storage.html) — Extent Store spans tiers; OpLog on SSD in hybrid; Curator re-replication on disk failure
 - [The Nutanix Bible — Book of Basics: Drive Breakdown](https://www.nutanixbible.com/2i-book-of-basics-drive-breakdown.html) — Nutanix Home mirrored across two SSDs; Cassandra sharded/mirrored; pre-5.0 CVM restart behaviour
-- [next.nutanix.com — CVM Crashed](https://next.nutanix.com/how-it-works-22/cvm-crashed-37283) — *weak source*, community corroboration
-- [next.nutanix.com — CVM fails to boot due to disk errors](https://next.nutanix.com/ahv-virtualization-27/cvm-fails-to-boot-due-to-disk-errors-38548) — *weak source*, community corroboration
+- [next.nutanix.com — CVM Crashed](https://next.nutanix.com/how-it-works-22/cvm-crashed-37283) — _weak source_, community corroboration
+- [next.nutanix.com — CVM fails to boot due to disk errors](https://next.nutanix.com/ahv-virtualization-27/cvm-fails-to-boot-due-to-disk-errors-38548) — _weak source_, community corroboration
 
 **BeeGFS:**
 - [Architecture Overview](https://doc.beegfs.io/latest/architecture/overview.html) — metadata/storage separation

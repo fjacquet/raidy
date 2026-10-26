@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 > **See Also**: [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) for system architecture and data flow. Also in `docs/`: [ENGINES.md](./docs/ENGINES.md) (per-platform formulas and their sources), [USER-GUIDE.md](./docs/USER-GUIDE.md), [DEVELOPMENT.md](./docs/DEVELOPMENT.md), [TESTING.md](./docs/TESTING.md), [CONFIGURATION.md](./docs/CONFIGURATION.md) (CI & security gates), [GETTING-STARTED.md](./docs/GETTING-STARTED.md), [SECURITY.md](./docs/SECURITY.md), [adr/](./docs/adr/) (architecture decisions), and [vendor-specs/](./docs/vendor-specs/) (the source material the engines were built from).
 >
-> **Docs stay in sync with code.** Any change to config, CI, dependencies, or behavior must update the matching doc in `docs/` (and `README.md`/`CHANGELOG.md` where relevant) in the *same commit*. Stale docs are treated as a defect, not a follow-up.
+> **Docs stay in sync with code.** Any change to config, CI, dependencies, or behavior must update the matching doc in `docs/` (and `README.md`/`CHANGELOG.md` where relevant) in the _same commit_. Stale docs are treated as a defect, not a follow-up.
 
 ## Project Overview
 
@@ -64,12 +64,12 @@ rather than a copy here, which is how the list drifts.
 
 All engines are pure functions in `src/engines/` using the **strategy pattern** — each storage platform has its own strategy implementation.
 
-| Engine | Location | Purpose |
-|--------|----------|---------|
-| **Volumetry** | `src/engines/volumetry/` | Usable capacity, parity overhead, filesystem losses, compression/dedup |
-| **Performance** | `src/engines/performance/` | IOPS, throughput, bottleneck chain (Media→Controller→PCIe→Network) |
-| **Resilience** | `src/workers/resilienceWorker.ts` | Monte Carlo simulation (100K iterations in Web Worker) |
-| **Sustainability** | `src/engines/sustainability/` | Power, CO2 emissions, flash endurance, TCO |
+| Engine             | Location                          | Purpose                                                                |
+| ------------------ | --------------------------------- | ---------------------------------------------------------------------- |
+| **Volumetry**      | `src/engines/volumetry/`          | Usable capacity, parity overhead, filesystem losses, compression/dedup |
+| **Performance**    | `src/engines/performance/`        | IOPS, throughput, bottleneck chain (Media→Controller→PCIe→Network)     |
+| **Resilience**     | `src/workers/resilienceWorker.ts` | Monte Carlo simulation (100K iterations in Web Worker)                 |
+| **Sustainability** | `src/engines/sustainability/`     | Power, CO2 emissions, flash endurance, TCO                             |
 
 ### Engine Strategy Pattern
 
@@ -148,7 +148,7 @@ Four Swiss languages: EN (default), FR, DE, IT. Uses `react-i18next` with 10 nam
 - **Worker tests: never `vi.spyOn(Math, 'random')`** — the spy records every call and the Monte Carlo worker draws millions, exhausting the heap before any assertion runs. Assign `Math.random` directly, restore in `afterEach`.
 - **Changing a store default rewrites old shared URLs** — `partialize` runs `omitDefaults`, so the hash carries only non-default values. A link made under the old default silently adopts the new one (bit v2.0.0's `hotSpares` 1→0).
 - **`SimulationInput.serverCount` is overloaded four ways** — fault-group count, BeeGFS storage-target count, real host count for replica placement (`assignNodesRoundRobin`), and PowerScale's first node-pool node count (driving `isPowerScaleMirrorRegion` and `distributeAcrossGroups`). Changing the group count corrupts placement.
-- **Removing an option field: delete it from `src/utils/schemas.ts` too** — nested `z.object()` strips unknown keys but *requires* declared ones, so a type-only removal breaks URL parsing.
+- **Removing an option field: delete it from `src/utils/schemas.ts` too** — nested `z.object()` strips unknown keys but _requires_ declared ones, so a type-only removal breaks URL parsing.
 - **i18n: write full key paths at call sites**, not ``t(`prefix.${x}.body`)`` — `tests/i18n/orphanKeys.spec.ts` scans literally, so templates are invisible; a `DYNAMIC_PREFIXES` entry exempts the whole subtree and is weaker.
 - **Component tests rendering input panels must stub `window.matchMedia`** — jsdom lacks it and `InfoTooltip` calls it through `useIsTouchDevice`.
 - **`check:dead` fails spuriously inside `.claude/worktrees/*`** — the worktree's `node_modules` is nearly empty, so knip reports unlisted binaries and unused devDeps. Run the gate on the main checkout.

@@ -76,7 +76,6 @@ Si EC-X est activé (généralement sur les données froides), le ratio change. 
 $$C_{usable\_ec} = C_{formatted} \times 0.75$$
 
 > Approximation, car EC ne s'applique pas à tout
-
 1. Capacité Effective (Avec réduction de données):
 
 $$C_{effective} = C_{usable} \times (Ratio_{comp} \times Ratio_{dedup})$$

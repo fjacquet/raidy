@@ -1,45 +1,49 @@
 ---
+
 phase: 04-code-quality
 plan: 02
 subsystem: error-handling
 tags:
-  [error-logging, toast-notifications, sonner, observability, user-experience]
+[error-logging, toast-notifications, sonner, observability, user-experience]
 
 # Dependency graph
+
 requires:
-  - phase: 03-security-hardening
-    provides: Error boundaries and validation infrastructure
-provides:
-  - Calculation error logging with structured context
-  - User-facing toast notifications for URL hash parse failures
-  - Complete error handling observability
-affects: [monitoring, debugging, user-support]
+- phase: 03-security-hardening
+  provides: Error boundaries and validation infrastructure
+  provides:
+- Calculation error logging with structured context
+- User-facing toast notifications for URL hash parse failures
+- Complete error handling observability
+  affects: [monitoring, debugging, user-support]
 
 # Tech tracking
+
 tech-stack:
-  added: [sonner]
-  patterns: [structured-error-logging, user-friendly-error-notifications]
+added: [sonner]
+patterns: [structured-error-logging, user-friendly-error-notifications]
 
 key-files:
-  created:
-    - tests/hooks/useCalculations.spec.ts
-    - tests/store/urlStorage.spec.ts
+created:
+- tests/hooks/useCalculations.spec.ts
+- tests/store/urlStorage.spec.ts
   modified:
-    - src/hooks/useCalculations.ts
-    - src/store/urlStorage.ts
-    - src/App.tsx
+- src/hooks/useCalculations.ts
+- src/store/urlStorage.ts
+- src/App.tsx
 
 key-decisions:
-  - "Use sonner for toast notifications (lightweight 30KB, 200K+ weekly downloads)"
-  - "Structured error logging with context (driveId, topology, counts, timestamp)"
-  - "Maintain console.error for developer debugging alongside user notifications"
+- "Use sonner for toast notifications (lightweight 30KB, 200K+ weekly downloads)"
+- "Structured error logging with context (driveId, topology, counts, timestamp)"
+- "Maintain console.error for developer debugging alongside user notifications"
 
 patterns-established:
-  - "Error logging pattern: console.error with message, context object, ISO timestamp"
-  - "User notification pattern: toast.error with user-friendly description, 5s duration"
-  - "Safe fallback pattern: return zero-state instead of crashing on errors"
+- "Error logging pattern: console.error with message, context object, ISO timestamp"
+- "User notification pattern: toast.error with user-friendly description, 5s duration"
+- "Safe fallback pattern: return zero-state instead of crashing on errors"
 
 # Metrics
+
 duration: 17min
 completed: 2026-01-18
 ---

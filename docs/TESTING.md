@@ -51,11 +51,11 @@ of Dell's PowerSizer export (`tests/fixtures/powerscale-powersizer.csv.gz`,
 
 Precision differs per quantity, deliberately:
 
-| Quantity | Gate | Why |
-|---|---|---|
-| Storage efficiency | exact (basis points) | Shipped verbatim from the vendor. |
-| Raw capacity | +/- 0.005 TB, or 6 significant figures for larger clusters | The vendor's own cached "Raw TB" cell holds 2 decimals up to 4 integer digits, then degrades to ~6 significant figures - confirmed by `raw.toPrecision(6)` matching the vendor value exactly on every one of the 1,534 rows (of 122,828) where raw >= 10,000 TB. Not an extraction artifact: openpyxl reads that cell's cached value verbatim, untouched by `build-powerscale-catalog.mjs`. |
-| Usable capacity | +/- 0.06 % relative, p99 < 0.01 % | Reconstructed from a 4-decimal efficiency; the workbook's own 2-decimal usable rounding is worth up to 0.088 %. Measured at authoring time: max 0.053 %, p99 0.008 %. |
+| Quantity           | Gate                                                       | Why                                                                                                                                                                                                                                                                                                                                                                                         |
+| ------------------ | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Storage efficiency | exact (basis points)                                       | Shipped verbatim from the vendor.                                                                                                                                                                                                                                                                                                                                                           |
+| Raw capacity       | +/- 0.005 TB, or 6 significant figures for larger clusters | The vendor's own cached "Raw TB" cell holds 2 decimals up to 4 integer digits, then degrades to ~6 significant figures - confirmed by `raw.toPrecision(6)` matching the vendor value exactly on every one of the 1,534 rows (of 122,828) where raw >= 10,000 TB. Not an extraction artifact: openpyxl reads that cell's cached value verbatim, untouched by `build-powerscale-catalog.mjs`. |
+| Usable capacity    | +/- 0.06 % relative, p99 < 0.01 %                          | Reconstructed from a 4-decimal efficiency; the workbook's own 2-decimal usable rounding is worth up to 0.088 %. Measured at authoring time: max 0.053 %, p99 0.008 %.                                                                                                                                                                                                                       |
 
 Regenerate the fixture with:
 

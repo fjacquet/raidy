@@ -1,31 +1,33 @@
 ---
+
 phase: 11-powerscale-servercount-fix
 plan: "01"
 subsystem: volumetry-engine
 tags: [tdd, bugfix, dell, powerscale, onefs, calculation-accuracy]
 dependency_graph:
-  requires: []
-  provides: [DELL-07, DELL-08]
-  affects: [src/engines/volumetry/strategies/dell.ts, src/engines/volumetry/helpers/calculationHelpers.ts]
+requires: []
+provides: [DELL-07, DELL-08]
+affects: [src/engines/volumetry/strategies/dell.ts, src/engines/volumetry/helpers/calculationHelpers.ts]
 tech_stack:
-  added: []
-  patterns: [strategy-pattern, tdd-red-green, options-threading]
+added: []
+patterns: [strategy-pattern, tdd-red-green, options-threading]
 key_files:
-  created:
-    - tests/fixtures/dell-vectors.ts (extended with DellPowerscaleVector and dellPowerscaleVectors)
+created:
+- tests/fixtures/dell-vectors.ts (extended with DellPowerscaleVector and dellPowerscaleVectors)
   modified:
-    - src/engines/volumetry/strategies/dell.ts
-    - src/engines/volumetry/helpers/calculationHelpers.ts
-    - tests/engines/volumetry.spec.ts
-decisions:
-  - "Use serverCount (nodeCount) not driveCount in PowerScale N+x formula: OneFS protection is node-level"
-  - "Fallback to usableDrives (driveCount) when no serverCount provided for backward compatibility"
-  - "Mirror cases (2x, 3x) remain fixed ratios independent of node count"
-metrics:
+- src/engines/volumetry/strategies/dell.ts
+- src/engines/volumetry/helpers/calculationHelpers.ts
+- tests/engines/volumetry.spec.ts
+  decisions:
+- "Use serverCount (nodeCount) not driveCount in PowerScale N+x formula: OneFS protection is node-level"
+- "Fallback to usableDrives (driveCount) when no serverCount provided for backward compatibility"
+- "Mirror cases (2x, 3x) remain fixed ratios independent of node count"
+  metrics:
   duration: "7 minutes"
   completed: "2026-03-25"
   tasks_completed: 3
   files_modified: 4
+
 ---
 
 # Phase 11 Plan 01: PowerScale ServerCount Fix Summary
@@ -64,16 +66,16 @@ PowerScale (OneFS) protection overhead is node-level, not drive-level. The formu
 
 ## Verification Results
 
-| Check | Result |
-|-------|--------|
+| Check                                                              | Result            |
+| ------------------------------------------------------------------ | ----------------- |
 | `calculateDataFraction('powerscale_n2', 360, { serverCount: 10 })` | 0.80 (was 0.9944) |
-| `calculateDataFraction('powerscale_n1', 144, { serverCount: 4 })` | 0.75 |
-| 4-node vs 10-node N+2 (120 drives each): different efficiency | PASS |
-| `npx vitest run` | 679 PASS, 0 FAIL |
-| `npm run typecheck` | Clean |
-| `npm run lint` | Clean |
-| `npm run build` | Success |
-| Zero `it.skip` in volumetry.spec.ts | Confirmed |
+| `calculateDataFraction('powerscale_n1', 144, { serverCount: 4 })`  | 0.75              |
+| 4-node vs 10-node N+2 (120 drives each): different efficiency      | PASS              |
+| `npx vitest run`                                                   | 679 PASS, 0 FAIL  |
+| `npm run typecheck`                                                | Clean             |
+| `npm run lint`                                                     | Clean             |
+| `npm run build`                                                    | Success           |
+| Zero `it.skip` in volumetry.spec.ts                                | Confirmed         |
 
 ## Decisions Made
 

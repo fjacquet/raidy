@@ -1,27 +1,29 @@
 ---
+
 phase: "16"
 plan: "01"
 subsystem: export
 tags: [pptx, html-to-image, chart-capture, dependencies]
 dependency_graph:
-  requires: []
-  provides: [captureSankeyDiagram]
-  affects: [src/utils/index.ts, src/components/outputs/SankeyDiagram.tsx]
+requires: []
+provides: [captureSankeyDiagram]
+affects: [src/utils/index.ts, src/components/outputs/SankeyDiagram.tsx]
 tech_stack:
-  added: [pptxgenjs@4.0.1, html-to-image@1.11.13]
-  patterns: [DOM capture via html-to-image, id-targeted element capture]
+added: [pptxgenjs@4.0.1, html-to-image@1.11.13]
+patterns: [DOM capture via html-to-image, id-targeted element capture]
 key_files:
-  created: [src/utils/captureChart.ts]
-  modified: [src/components/outputs/SankeyDiagram.tsx, src/utils/index.ts, package.json, package-lock.json]
+created: [src/utils/captureChart.ts]
+modified: [src/components/outputs/SankeyDiagram.tsx, src/utils/index.ts, package.json, package-lock.json]
 decisions:
-  - Wrapped SVG in div for html-to-image compatibility (requires HTMLElement, not SVGElement)
-  - pixelRatio=2 for retina-quality output in PPTX slides
-  - backgroundColor=#1A1B2E matches app dark brand theme
-metrics:
+- Wrapped SVG in div for html-to-image compatibility (requires HTMLElement, not SVGElement)
+- pixelRatio=2 for retina-quality output in PPTX slides
+- backgroundColor=#1A1B2E matches app dark brand theme
+  metrics:
   duration: "~5 min"
   completed_date: "2026-04-01"
   tasks_completed: 2
   files_changed: 5
+
 ---
 
 # Phase 16 Plan 01: Library Setup + Chart Capture Infrastructure Summary

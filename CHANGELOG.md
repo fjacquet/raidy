@@ -156,7 +156,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   it: on an unchanged 3-node F210 cluster, switching the reference medium moved drive power from
   87 W to 107 W and Max Read IOPS from 2,028 to 2,280,000, flipping the reported bottleneck from
   Media to Network. Beside capacity numbers that match the vendor's table exactly, they read as
-  equally solid. Performance is additionally the wrong *shape* here — a node is an appliance,
+  equally solid. Performance is additionally the wrong _shape_ here — a node is an appliance,
   sized per node rather than per drive. Both stay on screen while configuring, where the reference
   medium is visible and changeable; `docs/BACKLOG.md` records what a per-node model would need.
 - PowerScale's GLOBAL compression, dedup and snapshot-reserve controls. A single ratio across a
@@ -251,12 +251,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 > the resilience model changed — S2D, Nutanix, untiered configurations and BeeGFS are bit-for-bit
 > identical, and a zero-AFR cache device reproduces the 2.0.0 result exactly.
 >
-> | Configuration | Survival | Dual-failure |
-> |---|---|---|
-> | vSAN OSA RAID-1, tiered | 85.6% → 77.6% | 0.015% → 4.5% |
-> | vSAN OSA RAID-5, tiered | 10.4% → 9.3% | 0.010% → 0.28% |
-> | Ceph 3× replicated, tiered | 99.99% → 98.7% | 0% → 0.38% |
->
+> | Configuration              | Survival       | Dual-failure   | > | -------------------------- | -------------- | -------------- | > | vSAN OSA RAID-1, tiered    | 85.6% → 77.6%  | 0.015% → 4.5%  | > | vSAN OSA RAID-5, tiered    | 10.4% → 9.3%   | 0.010% → 0.28% | > | Ceph 3× replicated, tiered | 99.99% → 98.7% | 0% → 0.38%     | >
 > This is the correction of the one behaviour that erred on the **unsafe** side — the simulation
 > previously reported survival as though the cache or `block.db` device could not fail at all. The
 > new figures are a conservative bound, not a calibrated estimate; see the entry for why.
@@ -292,25 +287,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   string concatenation, which a translator cannot reorder.
 
   PowerVault's keys are written out in **full** rather than assembled from the level name. A
-  template like `` t(`powervault.level.${key}.body`) `` is invisible to the orphan-key scan — the
+  template like ``t(`powervault.level.${key}.body`)`` is invisible to the orphan-key scan — the
   first attempt did exactly that, and the test caught the five `.body` keys while the `.title`
   keys passed only by the accidental leaf-literal fallback. Spelling the paths out restores the
   guarantee, verified by mutation: mistyping one key surfaces it as an orphan.
 
-
 - **The fast tier is now a shared failure domain for vSAN OSA and Ceph (#88).** This was the one
   modelled behaviour that erred in the **optimistic** direction: #82 made the simulation size its
-  population from the capacity tier, which fixed *which* drives are simulated without modelling
-  *why* a fast-tier failure cascades. Survival was reported as though the cache device could not
+  population from the capacity tier, which fixed _which_ drives are simulated without modelling
+  _why_ a fast-tier failure cascades. Survival was reported as though the cache device could not
   fail at all.
 
   Two vendors document the cascade, and the research is what scoped the change:
-
   - **vSAN OSA** — "vSAN interprets the failure of a single flash caching device as a failure of
     the entire disk group", cache and capacity devices alike marked degraded ([Broadcom](https://techdocs.broadcom.com/us/en/vmware-cis/vsan/vsan/8-0/vsan-monitoring/handling-failures-and-troubleshooting-virtual-san/handling-failures-in-virtual-san/failure-handling-in-virtual-san/a-flash-caching-device-is-not-accessible.html)).
   - **Ceph** — "a corrupt block.db file will impact all OSDs which are included in that block.db
     file" ([Red Hat](https://docs.redhat.com/en/documentation/red_hat_ceph_storage/3/html/operations_guide/handling-a-disk-failure)).
-    Worth recording that the *upstream* Ceph documentation does not state this — it shows
+    Worth recording that the _upstream_ Ceph documentation does not state this — it shows
     provisioning several `db` volumes on one SSD without the failure consequence — so Red Hat is
     the citable source.
 
@@ -322,13 +315,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   **Numbers move down, for the affected platforms only.** At 48 capacity drives behind 8 cache
   devices (6 per disk group), cache AFR 2%, 20K iterations:
 
-  | Configuration | Survival | Dual-failure |
-  |---|---|---|
-  | vSAN OSA RAID-1 | 85.6% → 77.6% | 0.015% → **4.5%** |
-  | vSAN OSA RAID-5 | 10.4% → 9.3% | 0.010% → 0.28% |
-  | Ceph 3× replicated | 99.99% → 98.7% | 0% → 0.38% |
+  | Configuration      | Survival       | Dual-failure      |
+  | ------------------ | -------------- | ----------------- |
+  | vSAN OSA RAID-1    | 85.6% → 77.6%  | 0.015% → **4.5%** |
+  | vSAN OSA RAID-5    | 10.4% → 9.3%   | 0.010% → 0.28%    |
+  | Ceph 3× replicated | 99.99% → 98.7% | 0% → 0.38%        |
 
-  The dual-failure column is the mechanism: six drives dying *together* is a far worse event than
+  The dual-failure column is the mechanism: six drives dying _together_ is a far worse event than
   six dying independently across a year.
 
   **The cascade is node-blind, and that is a stated conservatism rather than an oversight.**
@@ -342,7 +335,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
   **Everything else is bit-for-bit unchanged** — S2D, Nutanix, untiered and BeeGFS verified
   identical, and a zero-AFR fast tier reproduces the pre-#88 result exactly rather than closely.
-  The forced failures run through the *same* failure body as ordinary ones, so the mirror
+  The forced failures run through the _same_ failure body as ordinary ones, so the mirror
   assignment, URE check, rebuild trigger and correlated window all apply to them; a parallel code
   path would have silently skipped all four.
 
@@ -351,16 +344,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 > **Read this first if you sized hardware on 1.16.x.** This release removes things, and two of
 > the removals move numbers you may have quoted.
 >
-> | What | Impact | Why |
-> |---|---|---|
-> | Default hot spares | **1 → 0** | A spare is a design choice, not an assumption. Usable capacity on first load is now what your hardware actually gives. |
-> | Hot spares on 8 platforms | **+20-23% usable** | S2D, Ceph, Nutanix, Longhorn, PowerFlex, PowerStore, PowerScale and ObjectScale rebuild from distributed reserve. The control was configuring something they do not have. |
-> | Spare-free survival rates | **slightly lower** | Rebuild now waits out a replacement-sourcing delay when there is no dedicated spare. Only observable at elevated AFR. |
-> | YAML / Ansible / Terraform export | **gone** | ZFS-only, three lines of output, not deployable. |
->
+> | What                              | Impact             | Why                                                                                                                                                                       | > | --------------------------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | > | Default hot spares                | **1 → 0**          | A spare is a design choice, not an assumption. Usable capacity on first load is now what your hardware actually gives.                                                    | > | Hot spares on 8 platforms         | **+20-23% usable** | S2D, Ceph, Nutanix, Longhorn, PowerFlex, PowerStore, PowerScale and ObjectScale rebuild from distributed reserve. The control was configuring something they do not have. | > | Spare-free survival rates         | **slightly lower** | Rebuild now waits out a replacement-sourcing delay when there is no dedicated spare. Only observable at elevated AFR.                                                     | > | YAML / Ansible / Terraform export | **gone**           | ZFS-only, three lines of output, not deployable.                                                                                                                          | >
 > **Shared links from 1.x still load, but one class of them now shows a different number.** The
 > URL only carries values that differ from the defaults (`omitDefaults` in `configStore.ts`), so a
-> link created on 1.16.x with the *then-default* one spare per server did not record `hotSpares`
+> link created on 1.16.x with the _then-default_ one spare per server did not record `hotSpares`
 > at all — and now resolves to the new default of zero. Such a link reports one drive per server
 > more usable capacity than it did when it was shared. Links where the spare count was changed
 > from the default are unaffected: that value was written into the URL and still is.
@@ -462,7 +449,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   **The naive split was the trap, and the issue said so.** Four of the five panels render the same
   compression control (a toggle plus a ratio slider that appears only when it is on), two render
   the same dedup control, and two the same snapshot-reserve slider. Five files each re-typing that
-  markup would be the worse problem — the #110 sweep found four *false* hint texts in this very
+  markup would be the worse problem — the #110 sweep found four _false_ hint texts in this very
   file, and duplicated markup is how a claim gets fixed in one copy and left standing in three.
   Those blocks live in `dellShared.tsx` as `DataReductionControl`, `SnapshotReserveSlider` and
   `OptionsSection`.
@@ -489,12 +476,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   **Usable capacity increases on these platforms for anyone who had set a hot spare.** Measured
   at 12 drives × 4 nodes with 2 spares per node:
 
-  | Platform | Before | After | Change |
-  |---|---|---|---|
-  | S2D (mirror) | 17.4 TB | 21.3 TB | +23% |
-  | Ceph (3× replicated) | 11.1 TB | 13.3 TB | +20% |
-  | Nutanix (RF2) | 17.7 TB | 21.3 TB | +20% |
-  | Longhorn (R3) | 9.90 TB | 11.9 TB | +20% |
+  | Platform             | Before  | After   | Change |
+  | -------------------- | ------- | ------- | ------ |
+  | S2D (mirror)         | 17.4 TB | 21.3 TB | +23%   |
+  | Ceph (3× replicated) | 11.1 TB | 13.3 TB | +20%   |
+  | Nutanix (RF2)        | 17.7 TB | 21.3 TB | +20%   |
+  | Longhorn (R3)        | 9.90 TB | 11.9 TB | +20%   |
 
   Standard RAID, ZFS, PowerVault ME5, Synology, NetApp and BeeGFS keep the control — all six
   document dedicated spares, and are unaffected. ObjectScale's inclusion rests on its
@@ -509,17 +496,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   **Usable capacity increases for any configuration left at the default.** If you sized hardware
   on a previous release without changing the hot-spare slider, your figure was low:
 
-  | Configuration | Before (1 spare/node) | After (0) | Change |
-  |---|---|---|---|
-  | Standard RAID 6, 8 drives | 4.95 TB | 5.94 TB | +20% |
-  | ZFS raidz2, 8 drives | 4.81 TB | 5.80 TB | +21% |
-  | BeeGFS RAID 6, 48 drives (12 × 4 nodes) | 29.4 TB | 39.2 TB | +33% |
+  | Configuration                           | Before (1 spare/node) | After (0) | Change |
+  | --------------------------------------- | --------------------- | --------- | ------ |
+  | Standard RAID 6, 8 drives               | 4.95 TB               | 5.94 TB   | +20%   |
+  | ZFS raidz2, 8 drives                    | 4.81 TB               | 5.80 TB   | +21%   |
+  | BeeGFS RAID 6, 48 drives (12 × 4 nodes) | 29.4 TB               | 39.2 TB   | +33%   |
 
   BeeGFS moves furthest, and not by coincidence: four spares across four nodes leave 44 drives,
   which does not divide by a 12-drive storage target. Three targets form and **eight drives are
   stranded**, contributing nothing. On that layout each spare cost far more than itself. The
   same arithmetic has a sharper edge worth knowing: a single node with 12 drives and one spare
-  leaves 11, which forms *no* complete target — usable capacity zero.
+  leaves 11, which forms _no_ complete target — usable capacity zero.
 
   Pinned with exact-byte vectors rather than relational bounds
   (`tests/engines/volumetry/hotSpareDefault.spec.ts`); the 45× tiered-cache error in 1.16.0
@@ -548,7 +535,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
   The two could not simply be merged, and the reason is now recorded at the surviving site rather
   than left for the next reader to rediscover: the engines genuinely subtract hot spares for
-  every platform, and the zeroing happens in the calculation hooks *before* the engine is called.
+  every platform, and the zeroing happens in the calculation hooks _before_ the engine is called.
   A capability flag asserting "this platform ignores hot spares" would be refuted by the
   capability probe, which drives `calculateVolumetry` directly and would still see the
   subtraction. The capability map answers "does the engine read this input"; the topology list
@@ -591,7 +578,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Four unused packages: `recharts` (8.5 MB), `js-yaml` (1.0 MB), and the redundant
   `@types/dompurify` and `@types/js-yaml`.** None was imported anywhere — the app draws its charts
   as hand-rolled SVG, builds YAML from template literals, and `dompurify` v3 ships its own types.
-  The first two sat in the *production* dependency graph of a project that supply-chain-checks
+  The first two sat in the _production_ dependency graph of a project that supply-chain-checks
   every build, so this removes attack surface, not only weight. Verified by a successful build
   plus `check:bundle-size` and `check:supply-chain`, not by grep alone. No behaviour changes.
 
@@ -608,13 +595,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and ZFS's Special vdev.** Each was a real platform feature the tool does not model — dm-crypt
   and vSAN DARE carry no published capacity tax, BlueStore-vs-FileStore has no per-backend
   overhead split here, FileStore's journal placement is superseded by the WAL/DB Offload setting
-  that *is* modelled, and a ZFS special vdev's capacity effect depends on its own size and the
+  that _is_ modelled, and a ZFS special vdev's capacity effect depends on its own size and the
   pool's small-block mix, neither of which this tool knows. All five said as much in their own
   hint text. **No calculated figure changes.**
 
 - **Every PowerVault configuration control, and PowerScale's SmartQuotas and SyncIQ toggles.**
   PowerVault rendered five controls — model, controller count, auto-tiering, SSD read cache and
-  thin provisioning — and *all five* were inert: ME5 is modelled with one flat metadata overhead
+  thin provisioning — and _all five_ were inert: ME5 is modelled with one flat metadata overhead
   regardless, and each control's own hint text said "for reference only, not used in any
   calculation". With the last field gone the whole `PowerVaultOptions` object went too; it had
   been threaded through `VolumetryInput` without ever being read. PowerScale's SmartQuotas
@@ -665,7 +652,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   bottleneck chain and bounds IOPS by PCIe and network alone, so the selector could not change
   a result. vSAN OSA's `vsanFastTierModel` blends the two tiers by working set only on its
   hybrid branch, so the slider is inert in all-flash mode — a sub-mode gate rather than a
-  platform one. The PCIe controls, which *do* bind on ESA, are unaffected. **No calculated
+  platform one. The PCIe controls, which _do_ bind on ESA, are unaffected. **No calculated
   figure changes.**
 
 - **The Advanced panel's Filesystem selector is now shown only where the engine reads it.**
@@ -683,13 +670,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the **drives' own ceiling**, before the controller/PCIe/network chain caps it: below full, the
   chain is throttling drives you paid for; at full, the drives themselves are the limit. Colours
   run red-to-green accordingly, the inverse of before — a full gauge is now the good outcome.
-  Scaling to the bottleneck was considered and rejected: throughput *is* the bottleneck by
+  Scaling to the bottleneck was considered and rejected: throughput _is_ the bottleneck by
   construction, so those gauges would have read 100% permanently.
 
 - **Topology names, RAID level descriptions and network-speed labels are translated again.**
   Three lookup tables held English string literals while fully translated keys sat unused in
-  every locale file — a French user picking RAID 0 read *"Stripe, no redundancy"* although
-  `fr/topology.json` already said *"Agrégat, sans redondance"*. 80 level entries, 15 platform
+  every locale file — a French user picking RAID 0 read _"Stripe, no redundancy"_ although
+  `fr/topology.json` already said _"Agrégat, sans redondance"_. 80 level entries, 15 platform
   names and 7 link speeds now resolve through i18n. Six level entries had never been translated
   at all (Longhorn R2/R3 and the four BeeGFS levels, both platforms added after the level tree
   was built) and were written for all four languages, along with a missing `type.beegfs` and the
@@ -735,14 +722,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   falls out of reusing the existing population-sizing signal, no platform-specific branch was
   needed.
   **Interaction with the new zero-spare default.** The hot-spare default changed from 1 to 0 in
-  this same release, so the spare-free curve is now the *default* curve rather than an opt-in one:
+  this same release, so the spare-free curve is now the _default_ curve rather than an opt-in one:
   a first load of any platform lands on it. That is the intended pairing — a tool that assumes a
   spare nobody configured was overstating both usable capacity and survival at once. Users who do
   configure a spare get exactly the numbers they got before this change.
   **Gated by `tests/workers/resilienceReplacementDelay.spec.ts`.** The vectors below were
   measured outside the test harness and are evidence, not a gate — nothing in CI would have
   noticed the mechanism silently ceasing to work. Three seeded-PRNG tests now pin it: that
-  omitting `hasHotSpare` is *exactly* the pre-#93 path (every caller predating this change omits
+  omitting `hasHotSpare` is _exactly_ the pre-#93 path (every caller predating this change omits
   it), that spare-free survives strictly less often than spared, and that the delay does not
   collapse into a short rebuild. The last is the one worth having: chaining the two countdowns
   with independent `if`s instead of `else if` makes a 1-day delay followed by a ≤1-day rebuild
@@ -766,19 +753,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - vSAN OSA RAID1 (distributed spares, 24 drives): always resolves `hasHotSpare: false` — 95.7%
     (hypothetical `hasHotSpare: true`, to show the credit it is correctly denied) vs. 94.6% (what
     it actually gets), confirming vSAN sits on the spare-free curve as required.
-  - Real-world AFR (~1%) configurations are unaffected in any *observable* way at 100K
+  - Real-world AFR (~1%) configurations are unaffected in any _observable_ way at 100K
     iterations: the 1-day exposure extension is real but the baseline dual-failure probability is
     already far below the simulation's noise floor at that AFR, so before/after numbers are
     identical to the precision the tool reports (this matches the existing behavior of every
     other rare-event mechanic in this worker).
-  Coverage on `src/workers/resilienceWorker.ts` after this change: 95.3% statements / 84.2%
-  branches / 100% functions / 95.5% lines (threshold: 75%). Benchmark (`beegfs_raid10` unmerged,
-  100K iterations, the worker's most expensive configuration, measured with `tsx` outside the
-  test harness, 6 trials across 2 sessions): before ranged 9.7–14.0s, after (`hasHotSpare: false`)
-  ranged 10.2–13.3s across the same trials — no consistent, statistically meaningful regression;
-  the two extra branches and two extra per-iteration state variables (`repairPending`,
-  `replacementDelayDaysRemaining`) added are within this measurement's run-to-run noise floor
-  (single-process JIT/GC variance was ±15–20% run over run even on unmodified code).
+    Coverage on `src/workers/resilienceWorker.ts` after this change: 95.3% statements / 84.2%
+    branches / 100% functions / 95.5% lines (threshold: 75%). Benchmark (`beegfs_raid10` unmerged,
+    100K iterations, the worker's most expensive configuration, measured with `tsx` outside the
+    test harness, 6 trials across 2 sessions): before ranged 9.7–14.0s, after (`hasHotSpare: false`)
+    ranged 10.2–13.3s across the same trials — no consistent, statistically meaningful regression;
+    the two extra branches and two extra per-iteration state variables (`repairPending`,
+    `replacementDelayDaysRemaining`) added are within this measurement's run-to-run noise floor
+    (single-process JIT/GC variance was ±15–20% run over run even on unmodified code).
 
 - **`fr` and `de` locale strings are now consistently accented.** What looked like a deliberate
   "unaccented" convention was actually per-file drift: e.g. `fr/topology.json` carried ~420
@@ -855,13 +842,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 > **Read this first if you sized hardware on 1.15.x.** Four published figures move in this
 > release, in different directions and for different reasons.
 >
-> | What | Direction | Why |
-> |---|---|---|
-> | Tiered S2D read IOPS | **down ~45x** | Bug fix (#111) — the old figure was unachievable |
-> | PERC controller IOPS ceiling | **up 3.4–4.7x** | Bug fix (#84) — the old column used an undocumented basis |
-> | vSAN OSA / Nutanix tiered performance | **up** | New models (#89) where none existed |
-> | RAID 50/60 survival | **down slightly** | Bug fix (#70) — drives that were never simulated now are |
->
+> | What                                  | Direction         | Why                                                       | > | ------------------------------------- | ----------------- | --------------------------------------------------------- | > | Tiered S2D read IOPS                  | **down ~45x**     | Bug fix (#111) — the old figure was unachievable          | > | PERC controller IOPS ceiling          | **up 3.4–4.7x**   | Bug fix (#84) — the old column used an undocumented basis | > | vSAN OSA / Nutanix tiered performance | **up**            | New models (#89) where none existed                       | > | RAID 50/60 survival                   | **down slightly** | Bug fix (#70) — drives that were never simulated now are  | >
 > Nothing here changes usable-capacity figures.
 >
 > **Known limitation shipping in this release:** write-back absorption still has no drain-rate
@@ -869,6 +850,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 > real cache tier saturates. The reported write figure is a burst figure. Tracked, not fixed here.
 
 ### Added
+
 - **Dell PERC H975i (PERC13) controller option** (`perc_h975i`). Broadcom SAS5132W, PCIe Gen5
   x16, RAID 0/1/5/6/10/50/60, supercapacitor-backed cache, up to 16 NVMe drives per controller.
   Rated at 12,900,000 IOPS / 56,000 MB/s per controller (Signal65 PERC13 lab testing, corroborated by StorageReview, RAID 5,
@@ -887,6 +869,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   media layer, so the two can no longer diverge. Untiered configurations are unaffected. (#90)
 
 ### Changed
+
 - **vSAN OSA and Nutanix hybrid tiered configurations now get a fast-tier performance model —
   their published IOPS/throughput numbers rise** (#89). Previously only S2D modelled a cache-tier
   contribution; vSAN OSA, Ceph, Nutanix and BeeGFS all fell through to a capacity-tier-only media
@@ -912,7 +895,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`src/engines/performance/utils/fast-tier-models.ts`), not a branch in the orchestrator.
 - **`CONTROLLER_LIMITS` PERC entries recalibrated onto a documented, consistent basis** (#84).
   Throughput was already close to the real per-controller vendor figure; IOPS were 3.4–4.7x
-  *below* any measured per-controller number, from an undocumented basis, so the controller layer
+  _below_ any measured per-controller number, from an undocumented basis, so the controller layer
   of the bottleneck chain was not comparable across controllers. All four PERC entries now use
   one controller / 100% 4K random read (IOPS) / 100% 64K sequential read (throughput) / FIO /
   non-degraded volume, sourced from Tolly Report #223103 (Jan 2023):
@@ -998,16 +981,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   silently skipped them. Defaults are now taken from the slices themselves rather than restated.
 
 ### Fixed
+
 - **Tiered S2D (and now vSAN OSA hybrid) read IOPS/throughput were computed with an
   unachievable formula — the corrected numbers drop sharply** (#111). This is the opposite
   movement from the vSAN OSA/Nutanix increase above, and for a different reason: it's a bug fix,
   not a new model. The read blend split `workingSetPercent` of traffic to the cache tier and the
   rest to the capacity tier, then took a **weighted average of the two tiers' raw IOPS/bandwidth
   capacities** as the achievable total. That is not a throughput — both tiers must clear their own
-  share of the *same* total concurrently (`shareA·T ≤ capA` and `(1−shareA)·T ≤ capB`), so the
+  share of the _same_ total concurrently (`shareA·T ≤ capA` and `(1−shareA)·T ≤ capB`), so the
   true achievable total is bounded by whichever tier saturates first
   (`T = min(capA / shareA, capB / (1 − shareA))`), not their weighted sum. The old formula let a
-  fast cache tier's raw capacity leak into the total in proportion to how *little* traffic it
+  fast cache tier's raw capacity leak into the total in proportion to how _little_ traffic it
   actually served — the faster the cache, the more inflated the number (e.g. `ws=0.5`, cache
   1,000,000 IOPS, capacity 1,000 IOPS: old formula gave 500,500; the correct bound gives ~2,000).
   Both S2D's read blend and vSAN OSA hybrid's (which reused it, per #89 above) are corrected via a
@@ -1087,6 +1071,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   introduces, not a behavior change.
 
 ### Removed
+
 - **Four option fields with no consumer at all** (#104), found during the #61 fraction-vs-percent
   audit. Two were fully dead in both directions — `synologyOptions.btrfsOverhead` (the engine uses
   the hardcoded `FILESYSTEM_OVERHEAD.btrfs` constant instead) and `objectscaleOptions.fillRatePercent`
@@ -1114,6 +1099,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.15.1] - 2026-08-04
 
 ### Fixed
+
 - **Tiered configurations are sized from the capacity tier in every engine.** Resilience simulated
   the Hardware panel's drive count and media for tiered S2D, vSAN OSA, Ceph and Nutanix, and the
   performance engine costed the bulk pool against the cache-tier drive for every tiered platform
@@ -1126,6 +1112,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (#59, #60)
 
 ### Changed
+
 - `useTieringOptions()` assembles the complete platform option bag once for the calculation
   hooks. Each hook previously hand-listed a subset when calling `resolveTiering`, which is the
   mistake that produced all three bugs above.
@@ -1133,6 +1120,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.15.0] - 2026-08-04
 
 ### Added
+
 - **BeeGFS platform support** across all four engines. BeeGFS is modeled unlike every other
   platform: the topology level (`beegfs_raid6`, `beegfs_raid10`, `beegfs_raidz2`,
   `beegfs_single`) is the storage target's **local** RAID rather than a cluster-wide efficiency
@@ -1154,6 +1142,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     via the shared `TieringPanel`), capacity detail card, and i18n across en/fr/de/it.
 
 ### Changed
+
 - **Per-platform network model refactor** (`NETWORK_MODEL_BY_TOPOLOGY` in
   `src/engines/performance/utils/bottleneck-chain.ts`): replaced a vSAN-hardcoded branch in
   `performance/index.ts` with a topology-keyed lookup table of network-model resolvers. vSAN
@@ -1162,10 +1151,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   platform's network behavior going forward is a table entry, not another orchestrator branch.
 
 ### Fixed
+
 - **BeeGFS is no longer classified as pure software-defined storage — the HBA rule is now
   level-aware.** `'beegfs'` was listed in `HBA_REQUIRED_TOPOLOGIES` alongside Ceph and vSAN, so
   `getControllerOptions()` offered **only** IT-mode HBAs. BeeGFS never sees the disks: each
-  storage target is a *local* volume it addresses as one block device, and in the most common
+  storage target is a _local_ volume it addresses as one block device, and in the most common
   deployment that device is a hardware RAID6 volume on a PERC or LSI controller. Because the
   bottleneck chain's Controller layer reads `CONTROLLER_LIMITS[controller]`, a BeeGFS RAID6 node
   was modelled with roughly **2.7× the controller IOPS ceiling and 1.6× the throughput** it
@@ -1178,7 +1168,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   hardware-RAID BeeGFS level is loaded from a link with an HBA selected. `requiresHba` and
   `getControllerOptions` gained an optional `level` argument: **every other platform's controller
   list and numeric output are unchanged**, with or without it.
-- **`NetAppOptions.snapshotReserve` unit confusion.** The field is a *fraction* —
+- **`NetAppOptions.snapshotReserve` unit confusion.** The field is a _fraction_ —
   `overheadCalculator.ts` multiplies capacity by it directly — but its Zod bound was
   `.min(0).max(100)` and the panel slider wrote raw percent into it, so moving the slider to 5
   meant a **500%** snapshot reserve and a crafted link with `100` validated into a 100× reserve.
@@ -1187,7 +1177,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   previously-nonsensical non-default slider positions move. The two `snapshotReservePercent`
   fields (PowerStore, PowerScale) were checked and are correct — percent everywhere, divided by
   100 in the engine.
-  - **User-visible consequence for old shared links.** A link created *after* someone moved the
+  - **User-visible consequence for old shared links.** A link created _after_ someone moved the
     old NetApp snapshot-reserve slider encodes a value above the new `0..1` bound, so it now
     fails validation on load. Rejection is whole-payload: the **entire** configuration resets to
     defaults, not just the NetApp options. This is correct — those links encode a ≥100% reserve
@@ -1197,7 +1187,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   tunables but had no consumer anywhere in `src/engines/` — two controls a user could move with
   zero effect on any output. They are now marked informational in the panel (tooltip + hint) the
   same way `network` already was, rather than wired to a fabricated formula: `numTargets` caps
-  *single-file* throughput while every performance figure here is a cluster aggregate bounded by
+  _single-file_ throughput while every performance figure here is a cluster aggregate bounded by
   the total storage-target count, and the bottleneck chain has no per-file layer for a chunk
   boundary to act on. The reasoning is recorded on the fields themselves in
   `src/types/topology.ts`. No calculated result changes.
@@ -1208,11 +1198,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   cache is a finite buffer — under a sustained write stream the host rate converges on the rate
   at which the cache drains to the array, so the ceiling is the back-end array's and the RAID 5/6
   read-modify-write cost is deferred, never removed. The real benefits (write latency, burst
-  absorption) belong to the *unsaturated* cache, a transient the engine does not represent. The
+  absorption) belong to the _unsaturated_ cache, a transient the engine does not represent. The
   derivation is recorded on the `writePolicy` type. No calculated result changes.
 - **BeeGFS stranded drives no longer count as usable capacity.** Usable capacity was computed
-  from every drive left after hot spares, while the validator warned *"N drive(s) do not fill a
-  full storage target and are stranded"* and the capacity card printed the same count. A storage
+  from every drive left after hot spares, while the validator warned _"N drive(s) do not fill a
+  full storage target and are stranded"_ and the capacity card printed the same count. A storage
   target **is** a local RAID volume, so a partial group is not a target at all: capacity is now
   computed on `storageTargetCount × drivesPerTarget` drives only, and the stranded remainder gets
   its own "BeeGFS Stranded Drives" breakdown bucket (raw capacity still counts every drive).
@@ -1258,6 +1248,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.14.0] - 2026-07-12
 
 ### Changed
+
 - **Presales-first guided-narrative dashboard.** `OutputDashboard.tsx` was recomposed from an
   undifferentiated equal-weight card grid into a persistent headline KPI band
   (`src/components/outputs/HeadlineBand.tsx`) followed by five narrative "acts"
@@ -1279,6 +1270,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.13.0] - 2026-07-12
 
 ### Added
+
 - **External-reference validation vectors for six platforms.** S2D (Microsoft Learn), Nutanix,
   NetApp (efficiency calculator), Ceph (docs.ceph.com), Synology (RAID calculator), and Longhorn
   (longhorn.io docs) each gained a `tests/fixtures/*-vectors.ts` file exercised through a shared
@@ -1289,6 +1281,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   tests.
 
 ### Changed
+
 - **PPTX export rebuilt around a pure content builder** (`src/utils/pptxContent.ts`). Slide
   content (Sankey + 2×2 gauges + stat lines) is now assembled as plain data — independent of
   `pptxgenjs` and the DOM — then rendered by `exportPptx.ts`. The export is now fully localized
@@ -1297,6 +1290,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and export failures now surface in the UI instead of failing silently.
 
 ### Fixed
+
 - **PPTX IOPS K-suffix formatting now matches the on-screen gauges' precision** (audit finding
   #12): the exported PPTX rounded K-suffix IOPS to zero decimals (e.g. `1K`) while the dashboard's
   `Speedometer`/`AnimatedCounter` show one decimal (`1.3K`) for the same value — `formatIops()`
@@ -1308,6 +1302,7 @@ fixed, logged, and deferred product decisions).
 ## [1.12.0] - 2026-07-08
 
 ### Added
+
 - **Longhorn topology** (#51): SUSE Longhorn distributed block storage as a forward topology
   modeled on Ceph replicated pools. Replica-aware capacity (R2/R3), free-space guardrail
   (`F = 1 − "Storage Minimal Available %"`) and snapshot reserve, with advisory growth and
@@ -1320,6 +1315,7 @@ fixed, logged, and deferred product decisions).
 ## [1.11.0] - 2026-06-26
 
 ### Added
+
 - Expanded the drive database: 20–30 TB nearline HDDs (CMR/SMR/HAMR), 24G-SAS TLC SSDs, small SATA TLC SSDs, and E1.L/E3.L QLC NVMe rulers up to 122.88 TB. Backfilled NAND cell type (TLC/QLC) on all SSDs and removed the unused AIC form factor.
 
 ## [1.10.0] - 2026-06-26
@@ -1329,101 +1325,122 @@ Full audit of the S2D / Azure Local model against the
 Microsoft Learn ([fault tolerance](https://learn.microsoft.com/en-us/windows-server/storage/storage-spaces/fault-tolerance)).
 
 ### Fixed
+
 - **S2D storage tiers are now applied to the calculations.** Enabling "Storage Tiers" (SSD cache + HDD/SSD capacity) was silently ignored — the tiering switch lived on a redundant `enabled` flag the UI never set, so the engine always fell back to the single global drive. Tiering now activates from the platform toggle plus drive selection (the legacy `enabled` flag is no longer consulted), and the S2D panel seeds default cache/capacity drives so a result appears immediately. The capacity tier drives usable capacity and resiliency; the cache tier is excluded from usable and shown as its own band. The same root cause also silently disabled vSAN OSA disk-group tiering, Ceph WAL/DB offload, and Nutanix hybrid tiering — all now activate consistently when their drives are selected.
-- **S2D rebuild reserve is now removed before the resiliency multiplier.** The reserve (1 capacity drive/server, capped at 4) is unallocated *raw* pool space, so it is now subtracted from raw capacity *before* applying the mirror/parity efficiency — matching the AzureLocal reference and Microsoft's model. Previously a raw-sized reserve was subtracted *after* the efficiency multiplier, under-counting usable capacity by ~10–30% for any reserve-enabled mirror config. The 4-drive cap and the opt-in `node_failure` strategy are unchanged.
+- **S2D rebuild reserve is now removed before the resiliency multiplier.** The reserve (1 capacity drive/server, capped at 4) is unallocated _raw_ pool space, so it is now subtracted from raw capacity _before_ applying the mirror/parity efficiency — matching the AzureLocal reference and Microsoft's model. Previously a raw-sized reserve was subtracted _after_ the efficiency multiplier, under-counting usable capacity by ~10–30% for any reserve-enabled mirror config. The 4-drive cap and the opt-in `node_failure` strategy are unchanged.
 - **Tiered S2D overhead now uses the capacity-tier drive** instead of the global drive when sizing the rebuild reserve.
 
 ### Changed
+
 - **S2D dual parity now uses Microsoft's stepped efficiency tables.** The previous smooth `(N−2)/N` over-stated efficiency at scale (87.5% at 16 nodes). Dual parity now follows Microsoft's published Reed-Solomon/LRC steps, which differ for all-flash vs hybrid clusters: all-flash 50% (4–6) → 66.7% (7–8) → 75% (9–15) → 80% (16, LRC 12+2+1); hybrid 50% (4–6) → 66.7% (7–11) → 72.7% (12–16, LRC 8+2+1). Mirror-accelerated parity uses the same stepped efficiency for its parity portion.
 - **Performance and sustainability engines are now tier-aware for S2D.** With tiering on, the performance media layer models write-back cache (writes absorbed by the cache tier; reads a working-set-weighted blend of cache and capacity); power sums both tiers and flash-endurance is computed on the SSD cache that actually absorbs the writes.
 
 ### Added
+
 - **Azure Local infrastructure-volume reserve.** S2D usable capacity now reflects a fixed ~277 GB cluster reserve for infrastructure volumes (Arc Resource Bridge + AKS images, ClusterPerformanceHistory, system), matching the reference calculator.
 
 ## [1.9.1] - 2026-06-26
 
 ### Fixed
-- **vSAN ESA adaptive RAID-5 threshold now matches VMware.** The 4+1 stripe (80% efficiency) now engages at ≥ 6 hosts (host-count only) as VMware documents — previously it required ≥ 5 hosts *and* ≥ 100 drives. 3–5 host clusters correctly stay 2+1 (67%). Resolves a known limitation noted in 1.9.0.
+
+- **vSAN ESA adaptive RAID-5 threshold now matches VMware.** The 4+1 stripe (80% efficiency) now engages at ≥ 6 hosts (host-count only) as VMware documents — previously it required ≥ 5 hosts _and_ ≥ 100 drives. 3–5 host clusters correctly stay 2+1 (67%). Resolves a known limitation noted in 1.9.0.
 - **vSAN ESA RAID-6 is now a fixed 4+2 stripe.** ESA adapts only RAID-5; RAID-6 stays 4+2 (67% efficiency) regardless of cluster size. Removed the incorrect 6+2 (75%) scheme the model applied at ≥ 8 hosts. Resolves a known limitation noted in 1.9.0.
 
 ## [1.9.0] - 2026-06-25
 
 ### Added
+
 - **S2D best-practice alerts.** Single parity now warns it is supported but not recommended for clustered S2D (`S2D_SINGLE_PARITY_DISCOURAGED`); 2-node clusters are advised to use nested resiliency (`S2D_2NODE_NESTED_RECOMMENDED`); two-way mirror shows an info recommending three-way mirror for production HA (`S2D_3WAY_RECOMMENDED`).
 - **Expanded in-app platform guide for S2D and vSAN ESA.** The guide sections (`PlatformGuide.tsx` + `guide.json`, all four languages) gained resiliency/efficiency tables, replication behavior, rebuild reserve, nested resiliency, and best-practice guidance.
 
 ### Fixed
+
 - **S2D resiliency node minimums are now validated.** A new `validateS2DResiliency` check (`src/utils/validators.ts`) enforces Microsoft's fault-domain minimums per resiliency type: three-way mirror and single parity require ≥ 3 fault domains (nodes), dual parity and mirror-accelerated parity (MAP) require ≥ 4. Each violation raises an error alert (`S2D_3WAY_MIN_NODES`, `S2D_PARITY_MIN_NODES`, `S2D_DUAL_PARITY_MIN_NODES`, `S2D_MAP_MIN_NODES`).
 - **S2D mirror write penalty now scales with the copy count.** The performance engine (`src/engines/performance/strategies/s2d.ts`) previously used a flat mirror penalty; it now charges two-way = 2×, three-way = 3×, and MAP = `mirrorCopies + 0.5`, with `s2dOptions` threaded through `PerformanceInput`/`usePerformanceCalc`.
 - **S2D rebuild reserve now follows Microsoft's rule.** The default `drive_failure` strategy reserves 1 capacity drive per server, capped at 4 drives cluster-wide (`capacity_raw × min(faultDomains, 4)`), instead of an uncapped per-node reserve. The reserve is also clamped to the available post-parity capacity so tiny clusters can no longer under-count usable capacity. The default `reserveStrategy` changed from `node_failure` to `drive_failure`; `node_failure` remains as an opt-in whole-node reserve.
 
 ### Changed
+
 - **S2D fault-domain bounds tightened from 1–100 to 2–16** (`src/utils/schemas.ts`), matching the supported Microsoft S2D cluster range.
 
 ### Known limitations
+
 - **vSAN ESA adaptive RAID-5 threshold diverges from VMware docs.** Raidy switches RAID-5 to a 4+1 stripe at ≥ 5 hosts AND ≥ 100 drives, whereas VMware documents the 4+1 threshold as ≥ 6 hosts (host-count only). Intentionally left unchanged here; flagged as a follow-up.
 - **vSAN ESA RAID-6 scheme diverges from VMware docs.** Raidy models a 6+2 RAID-6 stripe at ≥ 8 hosts, whereas VMware documents ESA RAID-6 as a fixed 4+2. Intentionally left unchanged here; flagged as a follow-up.
 
 ## [1.8.0] - 2026-06-25
 
 ### Added
+
 - **vSAN compression & deduplication now affect usable capacity.** The compression and deduplication toggles in the vSAN panel were dead — `vsanOptions` was never forwarded to the data-reduction stage and that stage had no vSAN branch, so toggling them changed nothing (both OSA and ESA). Each toggle now drives effective capacity (`C_eff = C_usable × comp × dedup`), with dedicated ratio sliders in the vSAN panel. Defaults follow ESA: compression on (1.5×), dedup off. The redundant global compression/dedup sliders are hidden for vSAN, consistent with Nutanix/Ceph/PowerStore.
 
 ### Fixed
+
 - **vSAN no longer reserves dedicated hot spares.** vSAN (OSA and ESA) rebuilds from distributed slack space, not dedicated spare drives, yet the app defaulted to 1 hot spare and deducted a full drive's capacity from usable. Selecting a vSAN topology now forces 0 spares (enforced in the store and defensively in the volumetry/performance hooks so shared URLs cannot reintroduce one), and the hot-spares slider is replaced by an explanatory note.
 - **vSAN ESA bottleneck chain no longer shows a SAS HBA.** ESA is NVMe-only with drives attached directly to PCIe, but the performance chain always inserted a controller layer and defaulted ESA to a "Generic SAS HBA". The controller layer is now dropped for ESA (the chain becomes Media → PCIe → Network), the IOPS ceiling falls back to the PCIe/network limit, and ESA defaults its controller to the NVMe HBA.
 
 ### Changed
+
 - **Realistic vSAN network bottleneck model.** The network stage compared raw aggregate media bandwidth against a one-directional port aggregate (`speed × nodes`), so a small NVMe cluster was always flagged network-bound. The vSAN network ceiling now accounts for full-duplex links, on-the-wire compression (ESA compresses before replication), and the fraction of throughput that actually crosses the fabric (writes × replication/EC factor + remote reads). Non-vSAN topologies keep the previous model unchanged.
 
 ## [1.7.1] - 2026-05-24
 
 ### Fixed
+
 - **Ceph compression now reduces effective capacity.** Enabling compression on a Ceph pool previously had no effect — the toggle, the algorithm selector, and the global compression slider were all dead. Effective capacity now reflects the chosen BlueStore algorithm (ZSTD 1.7×, LZ4 1.4×, Snappy 1.3×), gated by the compression toggle. The Ceph panel shows the resulting ratio, and the redundant global compression/dedup sliders are hidden for Ceph (consistent with Nutanix/PowerStore). Ceph has no native inline dedup, so only compression applies.
 
 ## [1.7.0] - 2026-05-24
 
 ### Added
+
 - **Auto light/dark mode.** A header toggle (Auto / Light / Dark) switches the theme; Auto follows the OS (`prefers-color-scheme`) and reacts to changes. The preference persists (`raidy-theme`) and applies before first paint (no flash). Built on Tailwind's class-based `dark:` variant.
 - The PowerPoint export **follows the app theme** — a light deck (white paper) in light mode, the dark deck in dark mode, with charts captured on a matching background.
 
 ## [1.6.1] - 2026-05-24
 
 ### Changed
+
 - PowerPoint export is now a single executive one-pager instead of a 7-slide deck. The slide keeps all visuals — Sankey capacity waterfall, performance speedometers, and resilience donut — alongside a compact key-metrics grid (usable capacity, efficiency, IOPS, power, energy, CO₂, survival) and a bottleneck footer.
 
 ## [1.6.0] - 2026-05-24
 
 ### Changed
+
 - Federated developer conventions with the sibling **vatlas** project (reference): Biome config (now identical), TypeScript layout + test type-checking via `tsconfig.test.json`, dependency versions, and the `docs/` structure.
 - Upgraded Vite 7→8, `@vitejs/plugin-react` 5→6, i18next 25→26, react-i18next 16→17, jsdom 28→29; removed unused `autoprefixer`/`postcss`.
 - Consolidated CI into a single hardened pipeline (`static.yml`): Node 24, SHA-pinned actions, supply-chain denylist, `npm audit` (LOW+), OSV-Scanner gate, bundle-size budgets, and a CycloneDX SBOM. Removed Snyk.
 - Restructured documentation under `docs/` (ARCHITECTURE, DEVELOPMENT, TESTING, CONFIGURATION, GETTING-STARTED) with ADRs for the security gate and the intentional divergences from vatlas.
 
 ### Fixed
+
 - PowerPoint export: the drive-detail slide now reads the correct nested fields — Active Power (`power.load_watts`) and DWPD (`reliability.dwpd`, shown only for flash). Previously rendered "undefined W" and never emitted the DWPD row.
 - Resolved 170 latent type errors across the test suite, which is now type-checked in CI (the previous `typecheck` script was a no-op for app/test code).
 
 ### Security
+
 - Bumped `dompurify` to 3.4.5 (resolves a moderate advisory). CI now fails on LOW+ advisories via both `npm audit` and OSV-Scanner, and adds a telemetry-package denylist supply-chain gate.
 
 ## [1.2.0] - 2026-02-03
 
 ### Added
+
 - Backup Requirements calculation connecting existing retention/change rate settings to a new output card (#8)
 
 ## [1.1.0] - 2026-02-03
 
 ### Added
+
 - Filesystem selector now affects capacity calculations (#6)
   - XFS: 1%, ext4: 5%, ZFS: 1%, Btrfs: 4%, ReFS: 2%, NTFS: 2%
 
 ### Security
+
 - Updated jspdf to 4.1.0 (fixes 4 vulnerabilities)
 
 ## [1.0.0] - 2026-02-03
 
 ### Added
+
 - User-defined performance capacity threshold (50-100%) for operational capacity planning (#5)
 - Contextual help tooltips throughout the UI
 - Sizing guide documentation
@@ -1432,10 +1449,12 @@ Microsoft Learn ([fault tolerance](https://learn.microsoft.com/en-us/windows-ser
 - i18n support for EN, FR, DE, IT (Swiss languages)
 
 ### Changed
+
 - Anonymized drive database (removed vendor brand names)
 - Refactored `useCalculations` hook to orchestrate independent hooks
 
 ### Fixed
+
 - Nutanix RF2/RF3/EC efficiency calculations
 - TypeScript build errors
 - Edge case in standard error calculation
@@ -1444,6 +1463,7 @@ Microsoft Learn ([fault tolerance](https://learn.microsoft.com/en-us/windows-ser
 ## [0.1.0] - Initial Development
 
 ### Added
+
 - Core volumetry engine with strategy pattern for multiple platforms
 - Performance engine with bottleneck analysis
 - Resilience engine with Monte Carlo simulation

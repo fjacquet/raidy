@@ -1,42 +1,46 @@
 ---
+
 phase: 13-test-suite-cleanup
 plan: 02
 subsystem: testing
 tags: [vitest, performance-strategies, sustainability, tco, coverage, tdd]
 
 # Dependency graph
+
 requires:
-  - phase: 13-test-suite-cleanup plan 01
-    provides: test infrastructure and initial coverage improvements
-provides:
-  - 100% test coverage for all 8 performance strategy files (dell, proprietary, powerflex, s2d, vsan, ceph, zfs, nutanix)
-  - 100% statement coverage for sustainability engine (calculateSustainability, calculateTCO)
-  - Overall coverage at 84.13% statements, well above 75% threshold
-affects: []
+- phase: 13-test-suite-cleanup plan 01
+  provides: test infrastructure and initial coverage improvements
+  provides:
+- 100% test coverage for all 8 performance strategy files (dell, proprietary, powerflex, s2d, vsan, ceph, zfs, nutanix)
+- 100% statement coverage for sustainability engine (calculateSustainability, calculateTCO)
+- Overall coverage at 84.13% statements, well above 75% threshold
+  affects: []
 
 # Tech tracking
+
 tech-stack:
-  added: []
-  patterns: [describe.each for parametric write penalty tests, expectedIOPS helper for formula verification]
+added: []
+patterns: [describe.each for parametric write penalty tests, expectedIOPS helper for formula verification]
 
 key-files:
-  created:
-    - tests/engines/performance/strategies/perf-strategies.spec.ts
-    - tests/engines/sustainability.spec.ts
+created:
+- tests/engines/performance/strategies/perf-strategies.spec.ts
+- tests/engines/sustainability.spec.ts
   modified: []
 
 key-decisions:
-  - "Used describe.each pattern for write penalty assertions to keep tests DRY across 60+ level/value pairs"
-  - "Used expectedIOPS helper function to verify calculateIOPS formula consistently across all strategies"
-  - "Tested special factors (ObjectScale 0.9, WAFL 1.05, ESA 1.1, 100GbE 1.1, ARC 1.1) with comparison assertions"
+- "Used describe.each pattern for write penalty assertions to keep tests DRY across 60+ level/value pairs"
+- "Used expectedIOPS helper function to verify calculateIOPS formula consistently across all strategies"
+- "Tested special factors (ObjectScale 0.9, WAFL 1.05, ESA 1.1, 100GbE 1.1, ARC 1.1) with comparison assertions"
 
 patterns-established:
-  - "describe.each([level, expected]) for exhaustive write penalty coverage"
-  - "Shared drive fixtures (testSsdDrive, testHddDrive) for sustainability tests"
+- "describe.each([level, expected]) for exhaustive write penalty coverage"
+- "Shared drive fixtures (testSsdDrive, testHddDrive) for sustainability tests"
 
 requirements-completed: [DELL-12]
 
 # Metrics
+
 duration: 8min
 completed: 2026-03-25
 ---
@@ -54,6 +58,7 @@ completed: 2026-03-25
 - **Files created:** 2
 
 ## Accomplishments
+
 - All 8 performance strategy files now have 100% test coverage for getWritePenalty (every named level + default) and calculateIOPS (including special factors)
 - Sustainability engine has full test coverage: power breakdown, CO2 emissions by region, flash endurance (SSD vs HDD vs zero-DWPD), TCO cost components
 - Overall coverage improved to 84.13% statements (was below 75% target), providing significant buffer against future regressions
@@ -69,10 +74,12 @@ Each task was committed atomically:
 _Both tasks used TDD approach: tests written for existing production code, all passing._
 
 ## Files Created/Modified
+
 - `tests/engines/performance/strategies/perf-strategies.spec.ts` - 90 tests covering Dell, Proprietary, PowerFlex, S2D, vSAN, Ceph, ZFS, Nutanix strategies
 - `tests/engines/sustainability.spec.ts` - 23 tests covering calculateSustainability and calculateTCO
 
 ## Decisions Made
+
 - Used `describe.each` pattern for parametric write penalty tests -- keeps 60+ level/value pairs DRY and readable
 - Created `expectedIOPS` helper function to verify the IOPS formula consistently: `(readIOPS + writeIOPS) * specialFactor`
 - Tested special factors via comparison (with/without) to verify they are applied correctly rather than hardcoding expected IOPS values
@@ -82,12 +89,15 @@ _Both tasks used TDD approach: tests written for existing production code, all p
 None - plan executed exactly as written.
 
 ## Issues Encountered
+
 None
 
 ## User Setup Required
+
 None - no external service configuration required.
 
 ## Next Phase Readiness
+
 - Phase 13 test-suite-cleanup is complete (both plans executed)
 - Coverage at 84.13% provides healthy buffer above 75% threshold
 - All 881 tests passing, no regressions
@@ -102,5 +112,6 @@ None - no external service configuration required.
 - FOUND: commit f594314 (Task 2)
 
 ---
-*Phase: 13-test-suite-cleanup*
-*Completed: 2026-03-25*
+
+_Phase: 13-test-suite-cleanup_
+_Completed: 2026-03-25_

@@ -1,39 +1,41 @@
 ---
+
 phase: 08-powervault-adapt-formula-fix
 plan: 01
 subsystem: volumetry-engine
 tags: [dell, powervault, adapt, formula-fix, tdd, test-vectors]
 dependency_graph:
-  requires: []
-  provides: [DELL-01, DELL-02]
-  affects:
-    - src/engines/volumetry/strategies/proprietary.ts
-    - tests/fixtures/dell-vectors.ts
-    - tests/engines/volumetry.spec.ts
-tech_stack:
+requires: []
+provides: [DELL-01, DELL-02]
+affects:
+- src/engines/volumetry/strategies/proprietary.ts
+- tests/fixtures/dell-vectors.ts
+- tests/engines/volumetry.spec.ts
+  tech_stack:
   added: []
   patterns:
-    - TDD (RED/GREEN cycle)
-    - Dell Sizer reference vectors
-    - Drive-count-aware ADAPT formula
-key_files:
+- TDD (RED/GREEN cycle)
+- Dell Sizer reference vectors
+- Drive-count-aware ADAPT formula
+  key_files:
   created:
-    - tests/fixtures/dell-vectors.ts
+- tests/fixtures/dell-vectors.ts
   modified:
-    - src/engines/volumetry/strategies/proprietary.ts
-    - tests/engines/volumetry.spec.ts
-decisions:
-  - "ADAPT threshold at >18 drives (not >=24) per Dell ME5 Admin Guide — 8+2 for 1-18 drives, 16+2 for 19+ drives"
-  - "Formula ((N-2)/N) * stripe_efficiency replaces hardcoded 0.85/0.87 constants"
-  - "Dell MidRange Sizer ME5224 12x3.84TB as primary reference case (27.93 TiB usable)"
-  - "TDD cycle: skip wrong tests → add correct tests (RED) → fix formula (GREEN) → delete skipped tests"
-metrics:
+- src/engines/volumetry/strategies/proprietary.ts
+- tests/engines/volumetry.spec.ts
+  decisions:
+- "ADAPT threshold at >18 drives (not >=24) per Dell ME5 Admin Guide — 8+2 for 1-18 drives, 16+2 for 19+ drives"
+- "Formula ((N-2)/N) * stripe_efficiency replaces hardcoded 0.85/0.87 constants"
+- "Dell MidRange Sizer ME5224 12x3.84TB as primary reference case (27.93 TiB usable)"
+- "TDD cycle: skip wrong tests → add correct tests (RED) → fix formula (GREEN) → delete skipped tests"
+  metrics:
   duration: 8 minutes
   completed_date: "2026-03-25"
   tasks_completed: 3
   tasks_total: 3
   files_created: 1
   files_modified: 2
+
 ---
 
 # Phase 08 Plan 01: PowerVault ADAPT Formula Fix Summary
@@ -63,12 +65,12 @@ case 'powervault_adapt': {
 
 **Before vs After:**
 
-| Drive Count | Before | After | Dell Sizer | Error (before) |
-|-------------|--------|-------|-----------|----------------|
-| 12 drives   | 85.0%  | 66.67% | ~66.67%  | -28.3 pp |
-| 18 drives   | 85.0%  | 71.11% | ~71.11%  | -13.9 pp |
-| 24 drives   | 87.0%  | 81.48% | ~81.48%  | -5.5 pp  |
-| 36 drives   | 87.0%  | 83.95% | ~83.95%  | -3.0 pp  |
+| Drive Count | Before | After  | Dell Sizer | Error (before) |
+| ----------- | ------ | ------ | ---------- | -------------- |
+| 12 drives   | 85.0%  | 66.67% | ~66.67%    | -28.3 pp       |
+| 18 drives   | 85.0%  | 71.11% | ~71.11%    | -13.9 pp       |
+| 24 drives   | 87.0%  | 81.48% | ~81.48%    | -5.5 pp        |
+| 36 drives   | 87.0%  | 83.95% | ~83.95%    | -3.0 pp        |
 
 **New test fixture `tests/fixtures/dell-vectors.ts`:** 4 reference vectors (12/18/24/36 drives) derived from Dell MidRange Sizer and Dell ME5 Admin Guide.
 
@@ -76,11 +78,11 @@ case 'powervault_adapt': {
 
 ## Tasks Completed
 
-| Task | Description | Commit | Type |
-|------|-------------|--------|------|
-| 1 | Skip wrong tests, create Dell fixture, add correct RED tests | 65ff4c5 | test (TDD RED) |
-| 2 | Fix ADAPT formula in proprietary.ts, all tests GREEN | ef6d1a5 | feat (TDD GREEN) |
-| 3 | Delete skipped tests, final validation | cb9293a | refactor |
+| Task | Description                                                  | Commit  | Type             |
+| ---- | ------------------------------------------------------------ | ------- | ---------------- |
+| 1    | Skip wrong tests, create Dell fixture, add correct RED tests | 65ff4c5 | test (TDD RED)   |
+| 2    | Fix ADAPT formula in proprietary.ts, all tests GREEN         | ef6d1a5 | feat (TDD GREEN) |
+| 3    | Delete skipped tests, final validation                       | cb9293a | refactor         |
 
 ## Decisions Made
 

@@ -1,4 +1,5 @@
 ---
+
 phase: 14-dependency-maintenance
 verified: 2026-04-01T07:56:33Z
 status: passed
@@ -16,32 +17,32 @@ score: 3/3 must-haves verified
 
 ### Observable Truths
 
-| # | Truth | Status | Evidence |
-|---|-------|--------|----------|
-| 1 | `npm outdated` shows no packages where Current != Wanted | VERIFIED | 6 packages listed, all have Current == Wanted; all are intentional major-version holds |
-| 2 | All CI checks pass (tests, typecheck, lint) | VERIFIED | typecheck exit 0, lint exit 0 (31 pre-existing warnings, 0 errors), 881/881 tests pass |
-| 3 | No runtime regressions | VERIFIED | Browser smoke-test APPROVED per 14-03-SUMMARY.md; all 4 languages (EN/FR/DE/IT) confirmed working |
+| #   | Truth                                                    | Status   | Evidence                                                                                          |
+| --- | -------------------------------------------------------- | -------- | ------------------------------------------------------------------------------------------------- |
+| 1   | `npm outdated` shows no packages where Current != Wanted | VERIFIED | 6 packages listed, all have Current == Wanted; all are intentional major-version holds            |
+| 2   | All CI checks pass (tests, typecheck, lint)              | VERIFIED | typecheck exit 0, lint exit 0 (31 pre-existing warnings, 0 errors), 881/881 tests pass            |
+| 3   | No runtime regressions                                   | VERIFIED | Browser smoke-test APPROVED per 14-03-SUMMARY.md; all 4 languages (EN/FR/DE/IT) confirmed working |
 
 **Score:** 3/3 truths verified
 
 ### Required Artifacts
 
-| Artifact | Expected | Status | Details |
-|----------|----------|--------|---------|
-| `package.json` | Updated dependency versions | VERIFIED | All 3 waves applied; confirmed by grep of version strings |
-| `package-lock.json` | Lock file consistent with package.json | VERIFIED | npm install produces no changes (consistent state) |
-| `biome.json` | Schema URL matches installed biome version (2.4.10) | VERIFIED | Updated in plan 14-02 per SUMMARY |
-| `.planning/phases/14-dependency-maintenance/14-01-SUMMARY.md` | Status: COMPLETE | VERIFIED | Exists, Status: COMPLETE, 8 packages updated |
-| `.planning/phases/14-dependency-maintenance/14-02-SUMMARY.md` | Status: COMPLETE | VERIFIED | Exists, Status: COMPLETE, 4 toolchain packages updated |
-| `.planning/phases/14-dependency-maintenance/14-03-SUMMARY.md` | Status: COMPLETE | VERIFIED | Exists, Status: COMPLETE, 3 i18n/plugin packages updated |
+| Artifact                                                      | Expected                                            | Status   | Details                                                   |
+| ------------------------------------------------------------- | --------------------------------------------------- | -------- | --------------------------------------------------------- |
+| `package.json`                                                | Updated dependency versions                         | VERIFIED | All 3 waves applied; confirmed by grep of version strings |
+| `package-lock.json`                                           | Lock file consistent with package.json              | VERIFIED | npm install produces no changes (consistent state)        |
+| `biome.json`                                                  | Schema URL matches installed biome version (2.4.10) | VERIFIED | Updated in plan 14-02 per SUMMARY                         |
+| `.planning/phases/14-dependency-maintenance/14-01-SUMMARY.md` | Status: COMPLETE                                    | VERIFIED | Exists, Status: COMPLETE, 8 packages updated              |
+| `.planning/phases/14-dependency-maintenance/14-02-SUMMARY.md` | Status: COMPLETE                                    | VERIFIED | Exists, Status: COMPLETE, 4 toolchain packages updated    |
+| `.planning/phases/14-dependency-maintenance/14-03-SUMMARY.md` | Status: COMPLETE                                    | VERIFIED | Exists, Status: COMPLETE, 3 i18n/plugin packages updated  |
 
 ### Key Link Verification
 
-| From | To | Via | Status | Details |
-|------|----|-----|--------|---------|
-| package.json constraints | installed node_modules | npm install | WIRED | Current == Wanted for all packages; no drift |
-| Updated deps | CI pipeline | npm test / typecheck / lint | WIRED | All 3 CI commands exit 0 with 0 errors |
-| i18n update (react-i18next 16.6.6) | runtime browser behavior | human smoke-test | WIRED | Approved per 14-03-SUMMARY.md |
+| From                               | To                       | Via                         | Status | Details                                      |
+| ---------------------------------- | ------------------------ | --------------------------- | ------ | -------------------------------------------- |
+| package.json constraints           | installed node_modules   | npm install                 | WIRED  | Current == Wanted for all packages; no drift |
+| Updated deps                       | CI pipeline              | npm test / typecheck / lint | WIRED  | All 3 CI commands exit 0 with 0 errors       |
+| i18n update (react-i18next 16.6.6) | runtime browser behavior | human smoke-test            | WIRED  | Approved per 14-03-SUMMARY.md                |
 
 ### Data-Flow Trace (Level 4)
 
@@ -49,12 +50,12 @@ Not applicable — this phase updates configuration/dependency files, not compon
 
 ### Behavioral Spot-Checks
 
-| Behavior | Command | Result | Status |
-|----------|---------|--------|--------|
-| TypeScript compiles with no errors | `npm run typecheck` | exit 0, no diagnostics | PASS |
-| Biome lint passes with no errors | `npm run lint` | exit 0, 31 warnings (pre-existing, all at warn level) | PASS |
-| All tests pass | `npm test -- --run` | 20 test files, 881/881 tests passed | PASS |
-| No unexpected outdated packages | `npm outdated` | 6 packages, all Current == Wanted, all intentional major holds | PASS |
+| Behavior                           | Command             | Result                                                         | Status |
+| ---------------------------------- | ------------------- | -------------------------------------------------------------- | ------ |
+| TypeScript compiles with no errors | `npm run typecheck` | exit 0, no diagnostics                                         | PASS   |
+| Biome lint passes with no errors   | `npm run lint`      | exit 0, 31 warnings (pre-existing, all at warn level)          | PASS   |
+| All tests pass                     | `npm test -- --run` | 20 test files, 881/881 tests passed                            | PASS   |
+| No unexpected outdated packages    | `npm outdated`      | 6 packages, all Current == Wanted, all intentional major holds | PASS   |
 
 ### Requirements Coverage
 

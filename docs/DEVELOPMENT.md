@@ -6,21 +6,21 @@ Day-to-day workflow: the dev loop, type checking, linting, and the conventions t
 
 All scripts are in `package.json`. A `Makefile` wraps the common ones (`make dev`, `make build`, `make test`, `make all`).
 
-| Command | Description |
-|---|---|
-| `npm run dev` | Vite dev server with HMR at `http://localhost:5173/raidy/`. |
-| `npm run build` | Production build: `tsc -b && vite build`. The `prebuild` hook runs the supply-chain gate first. |
-| `npm run preview` | Serve the production build locally for a final smoke check. |
-| `npm run typecheck` | Type-checks the app (`tsc --noEmit -p tsconfig.app.json`) **and** the test project (`tsc --noEmit -p tsconfig.test.json`). |
-| `npm run lint` | `biome check .` (lint + format check). |
-| `npm run lint:fix` | `biome check --write .` — apply safe fixes + organize imports. |
-| `npm run format` | `biome format --write .`. |
-| `npm run test` | `vitest` in watch mode. |
-| `npm run test:run` | `vitest run` — single CI-style pass. |
-| `npm run test:coverage` | `vitest run --coverage` (engines/workers/utils gated ≥75%). |
-| `npm run test:ui` | Vitest browser UI. |
-| `npm run check:supply-chain` | Telemetry/analytics denylist over `package.json`. Also runs as the `prebuild` hook. |
-| `npm run check:bundle-size` | Post-build gz budget check on the eager `index` and lazy `vendor-pdf` chunks. |
+| Command                      | Description                                                                                                                |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `npm run dev`                | Vite dev server with HMR at `http://localhost:5173/raidy/`.                                                                |
+| `npm run build`              | Production build: `tsc -b && vite build`. The `prebuild` hook runs the supply-chain gate first.                            |
+| `npm run preview`            | Serve the production build locally for a final smoke check.                                                                |
+| `npm run typecheck`          | Type-checks the app (`tsc --noEmit -p tsconfig.app.json`) **and** the test project (`tsc --noEmit -p tsconfig.test.json`). |
+| `npm run lint`               | `biome check .` (lint + format check).                                                                                     |
+| `npm run lint:fix`           | `biome check --write .` — apply safe fixes + organize imports.                                                             |
+| `npm run format`             | `biome format --write .`.                                                                                                  |
+| `npm run test`               | `vitest` in watch mode.                                                                                                    |
+| `npm run test:run`           | `vitest run` — single CI-style pass.                                                                                       |
+| `npm run test:coverage`      | `vitest run --coverage` (engines/workers/utils gated ≥75%).                                                                |
+| `npm run test:ui`            | Vitest browser UI.                                                                                                         |
+| `npm run check:supply-chain` | Telemetry/analytics denylist over `package.json`. Also runs as the `prebuild` hook.                                        |
+| `npm run check:bundle-size`  | Post-build gz budget check on the eager `index` and lazy `vendor-pdf` chunks.                                              |
 
 Typical inner loop: `npm run dev` in one terminal; run `npm run typecheck`, `npm run lint`, and `npm run test:run` before every commit.
 
@@ -57,7 +57,7 @@ It runs at two points:
 
 - **`.githooks/pre-commit`**, armed by `npm install` via the `prepare` script setting
   `core.hooksPath`. No husky — a hook is nine lines of shell and one config line.
-- **`prebuild`**, alongside `check-supply-chain`. This exists so `git commit --no-verify` *defers*
+- **`prebuild`**, alongside `check-supply-chain`. This exists so `git commit --no-verify` _defers_
   the failure to build time rather than avoiding it.
 
 Two things to know before you silence a finding:

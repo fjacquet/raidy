@@ -112,7 +112,7 @@ data on HDD, journal writes and data writes contend for the same disk. Moving WA
 removes that contention and cuts commit latency, but it does not add a parallel pool of read/write
 IOPS the way a genuine cache tier would — bulk data still lives on, and is bounded by, the HDD's
 own IOPS ceiling. Ceph's `block.db` sizing guideline (~1–4% of `block` size, RGW workloads
-recommended ≥4%) sizes DB for metadata *volume*, not for absorbing data throughput, which is
+recommended ≥4%) sizes DB for metadata _volume_, not for absorbing data throughput, which is
 consistent with "commit-path accelerator" rather than "capacity tier."
 
 **Cache tiering vs. WAL/DB offload — not the same feature.** Ceph has a separate, CRUSH-based
@@ -135,7 +135,7 @@ reads, and its write-path benefit is a latency/contention-removal effect with no
 number to turn into an IOPS or bandwidth delta — reusing the S2D blend here would be exactly the
 "guess presented as a number" PR #82 declined to write. Ceph is the platform issue #89's own
 description already suspected belonged in category 3; this research confirms it, with the added
-nuance that "contributes nothing" is precisely true for reads and only *approximately* true for
+nuance that "contributes nothing" is precisely true for reads and only _approximately_ true for
 writes (true for bulk write IOPS/throughput; not true for a workload's commit-latency tail, which
 this engine doesn't model for any platform).
 
@@ -239,7 +239,7 @@ not file content.
 guidance and public IO-500 submissions measure metadata operations per second (via `mdtest`:
 create/stat/delete rates) completely separately from data throughput/IOPS (via `StorageBench`/IOR).
 No BeeGFS vendor document blends the two into a single number. Metadata-target speed genuinely
-gates *overall workload* performance for metadata-heavy access patterns (many small files, deep
+gates _overall workload_ performance for metadata-heavy access patterns (many small files, deep
 directory trees, `stat`/`readdir`-heavy I/O) — but it gates a different axis (namespace operations
 per second), not bytes or IOPS of bulk data transfer.
 
@@ -271,13 +271,13 @@ of future research; the underlying architecture, not a gap in current sourcing, 
 
 ## Summary table
 
-| Platform | Reads? | Writes? | Metadata-only? | Proposed model | Inputs | Risk if assumption wrong |
-|---|---|---|---|---|---|---|
-| vSAN OSA (hybrid) | Yes, ~90% hit rate target, working-set-shaped | Yes, full write-back, congestion-throttled under sustained load (no numeric rate) | No | Reuse S2D blend for reads (hybrid only) and writes (both modes) | `workingSetPercent` (reads, gated on `diskGroupMode === 'hybrid'`), cache-tier drive/count | Overstates reads if real working set > cache capacity; overstates sustained writes (no destage-rate ceiling modelled) — same class of risk S2D already carries |
-| vSAN OSA (all-flash) | No (0% read cache documented) | Yes, full write-back | Partial | Writes only, same as hybrid; no read blend | cache-tier drive/count (writes only) | Same sustained-write risk as hybrid; no read risk since no read model added |
-| Ceph (WAL/DB) | No | Effectively no (contention-removal, not added capacity) | Yes (for reads outright; ~yes for bulk writes) | No model | — | None — unchanged, stays safe |
-| Nutanix (hybrid) | Yes, but touch-count-driven with no % figure | Yes, full write-back for random writes only (sequential bypasses OpLog); drain at 85% capacity or idle, no numeric rate | No for writes; effectively yes for reads (no modellable input) | Write-only model split by `randomPercent`; no read model | `randomPercent`/`sequentialPercent`, cache(OpLog)-tier drive/count | Overstates write IOPS if app's random/sequential label doesn't match Nutanix's own >1.5MB routing rule, and under sustained (non-idle) load with no drain-rate ceiling modelled |
-| BeeGFS (MDT) | No | No | Yes, structurally | No model | — | None — unchanged, and should stay unchanged regardless of future research |
+| Platform             | Reads?                                        | Writes?                                                                                                                 | Metadata-only?                                                 | Proposed model                                                  | Inputs                                                                                     | Risk if assumption wrong                                                                                                                                                        |
+| -------------------- | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| vSAN OSA (hybrid)    | Yes, ~90% hit rate target, working-set-shaped | Yes, full write-back, congestion-throttled under sustained load (no numeric rate)                                       | No                                                             | Reuse S2D blend for reads (hybrid only) and writes (both modes) | `workingSetPercent` (reads, gated on `diskGroupMode === 'hybrid'`), cache-tier drive/count | Overstates reads if real working set > cache capacity; overstates sustained writes (no destage-rate ceiling modelled) — same class of risk S2D already carries                  |
+| vSAN OSA (all-flash) | No (0% read cache documented)                 | Yes, full write-back                                                                                                    | Partial                                                        | Writes only, same as hybrid; no read blend                      | cache-tier drive/count (writes only)                                                       | Same sustained-write risk as hybrid; no read risk since no read model added                                                                                                     |
+| Ceph (WAL/DB)        | No                                            | Effectively no (contention-removal, not added capacity)                                                                 | Yes (for reads outright; ~yes for bulk writes)                 | No model                                                        | —                                                                                          | None — unchanged, stays safe                                                                                                                                                    |
+| Nutanix (hybrid)     | Yes, but touch-count-driven with no % figure  | Yes, full write-back for random writes only (sequential bypasses OpLog); drain at 85% capacity or idle, no numeric rate | No for writes; effectively yes for reads (no modellable input) | Write-only model split by `randomPercent`; no read model        | `randomPercent`/`sequentialPercent`, cache(OpLog)-tier drive/count                         | Overstates write IOPS if app's random/sequential label doesn't match Nutanix's own >1.5MB routing rule, and under sustained (non-idle) load with no drain-rate ceiling modelled |
+| BeeGFS (MDT)         | No                                            | No                                                                                                                      | Yes, structurally                                              | No model                                                        | —                                                                                          | None — unchanged, and should stay unchanged regardless of future research                                                                                                       |
 
 ## Least-sourced answer
 
@@ -322,5 +322,5 @@ the app does not and cannot easily model," not "reads aren't served from the fas
 - `docs/ARCHITECTURE.md` (lines 303–312) — the "deliberately not modelled" comment this research
   will inform an update to
 - `docs/superpowers/specs/2026-08-04-resilience-tiering-design.md` — prior art on tiering-awareness
-  gaps in the same engine, including the note that fast-tier *failure* semantics (shared fault
+  gaps in the same engine, including the note that fast-tier _failure_ semantics (shared fault
   domains) remain out of scope for both that work and this one

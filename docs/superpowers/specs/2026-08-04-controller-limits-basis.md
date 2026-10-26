@@ -11,14 +11,14 @@ engine (`src/engines/performance/index.ts`) uses for the Controller layer of the
 chain (Media → Controller → PCIe → Network). It mixed two bases:
 
 - **Throughput** was roughly the vendor per-controller figure.
-- **IOPS** were 3.4–4.7x *below* any measured per-controller number, from an undocumented basis.
+- **IOPS** were 3.4–4.7x _below_ any measured per-controller number, from an undocumented basis.
 
 The issue's own numbers were partly misattributed — it cited a rebuild-time (degraded-volume)
 IOPS figure as if it were steady-state — but the underlying defect was real and independently
 confirmed against a different, correctly-attributed source (see below): the IOPS column was not
 comparable to the throughput column, and neither was comparable across controllers. Some PERC
 entries sat near their real ceiling; others sat at a fifth of it. Since this table feeds a
-bottleneck *comparison* across controller choices, an inconsistent basis makes the comparison
+bottleneck _comparison_ across controller choices, an inconsistent basis makes the comparison
 itself meaningless — a configuration's controller ceiling depended on which controller was
 picked in a way that did not reflect the hardware.
 
@@ -45,13 +45,13 @@ Both sources measure at the stated basis, one controller, independently verified
 - **Signal65 PERC13 lab testing** (2026), corroborated by StorageReview's PERC13 review, "Meet PERC13: The Gen5 NVMe HW RAID Breakthrough"
   — lab-validated on PowerEdge 17G, RAID 5, 16 NVMe drives, one controller.
 
-| Key | Controller | iops (old → new) | throughputMBs (old → new) | Source |
-|---|---|---|---|---|
-| `perc_h755` | PERC11 SAS (H755) | 750,000 → **3,500,000** | 12,000 → **14,100** | Tolly #223103 Table 2, tests 2 & 1, PERC 11 col. |
-| `perc_h755n` | PERC11 NVMe (H755N) | 1,000,000 → **3,402,370** | 14,000 → **14,108** | Tolly #223103 Table 4, tests 15 & 14, PERC 11 col. |
-| `perc_h965i` | PERC12 SAS (H965i) | 1,200,000 → **5,148,110** | 22,000 → **27,800** | Tolly #223103 Table 2, tests 2 & 1, PERC 12 col. |
-| `perc_h965in` | PERC12 NVMe (H965iN) | 1,800,000 → **6,918,729** | 28,000 → **28,205** | Tolly #223103 Table 4, tests 15 & 14, PERC 12 col. |
-| `perc_h975i` | PERC13 NVMe (H975i) — new | — → **12,900,000** | — → **56,000** | Signal65 PERC13 lab testing / StorageReview, RAID5, 16 NVMe. |
+| Key           | Controller                | iops (old → new)          | throughputMBs (old → new) | Source                                                       |
+| ------------- | ------------------------- | ------------------------- | ------------------------- | ------------------------------------------------------------ |
+| `perc_h755`   | PERC11 SAS (H755)         | 750,000 → **3,500,000**   | 12,000 → **14,100**       | Tolly #223103 Table 2, tests 2 & 1, PERC 11 col.             |
+| `perc_h755n`  | PERC11 NVMe (H755N)       | 1,000,000 → **3,402,370** | 14,000 → **14,108**       | Tolly #223103 Table 4, tests 15 & 14, PERC 11 col.           |
+| `perc_h965i`  | PERC12 SAS (H965i)        | 1,200,000 → **5,148,110** | 22,000 → **27,800**       | Tolly #223103 Table 2, tests 2 & 1, PERC 12 col.             |
+| `perc_h965in` | PERC12 NVMe (H965iN)      | 1,800,000 → **6,918,729** | 28,000 → **28,205**       | Tolly #223103 Table 4, tests 15 & 14, PERC 12 col.           |
+| `perc_h975i`  | PERC13 NVMe (H975i) — new | — → **12,900,000**        | — → **56,000**            | Signal65 PERC13 lab testing / StorageReview, RAID5, 16 NVMe. |
 
 Values are used exactly as measured — not rounded, not "harmonised" between entries. The odd
 figures (e.g. `3,402,370`) are measurements; their oddness is the evidence they were measured
@@ -114,12 +114,12 @@ binding layer pre-fix (`testSsdNvme` fixture, `driveCount: 24`, `serverCount: 1`
 `standard`/`RAID5`, `100%` random read, `4K` blocks, PCIe Gen5 x16, 400GbE network — so PCIe
 and Network sit far above every PERC figure, old or new, and only Media and Controller compete):
 
-| Controller | Media IOPS ceiling (this config) | Old Controller IOPS | New Controller IOPS | IOPS-ceiling driver: before → after |
-|---|---|---|---|---|
-| `perc_h755` | ~3,600,000 | 750,000 | 3,500,000 | Controller → **still Controller** (3.5M just under the 3.6M media ceiling in this config) |
-| `perc_h965i` | ~3,600,000 | 1,200,000 | 5,148,110 | Controller → **Media** (5.15M now exceeds the 3.6M media ceiling) |
-| `perc_h755n` | ~3,600,000 | 1,000,000 | 3,402,370 | Controller → **still Controller** (3.40M just under the 3.6M media ceiling) |
-| `perc_h965in` | ~3,600,000 | 1,800,000 | 6,918,729 | Controller → **Media** (6.92M now exceeds the 3.6M media ceiling) |
+| Controller    | Media IOPS ceiling (this config) | Old Controller IOPS | New Controller IOPS | IOPS-ceiling driver: before → after                                                       |
+| ------------- | -------------------------------- | ------------------- | ------------------- | ----------------------------------------------------------------------------------------- |
+| `perc_h755`   | ~3,600,000                       | 750,000             | 3,500,000           | Controller → **still Controller** (3.5M just under the 3.6M media ceiling in this config) |
+| `perc_h965i`  | ~3,600,000                       | 1,200,000           | 5,148,110           | Controller → **Media** (5.15M now exceeds the 3.6M media ceiling)                         |
+| `perc_h755n`  | ~3,600,000                       | 1,000,000           | 3,402,370           | Controller → **still Controller** (3.40M just under the 3.6M media ceiling)               |
+| `perc_h965in` | ~3,600,000                       | 1,800,000           | 6,918,729           | Controller → **Media** (6.92M now exceeds the 3.6M media ceiling)                         |
 
 Throughput tells a related but distinct story for the same config (Media throughput ceiling
 ~14,062 MB/s): `perc_h965i` (old 22,000 MB/s) and `perc_h965in` (old 28,000 MB/s) were already

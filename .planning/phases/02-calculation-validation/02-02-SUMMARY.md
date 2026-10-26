@@ -1,43 +1,47 @@
 ---
+
 phase: 02-calculation-validation
 plan: 02
 subsystem: testing
 tags: [vitest, zfs, vsan, s2d, ceph, nutanix, openzfs, vmware, table-driven-tests, property-based-testing]
 
 # Dependency graph
+
 requires:
-  - phase: 01-test-infrastructure
-    provides: Vitest configuration with coverage thresholds and test setup
-  - phase: 02-01-PLAN
-    provides: WintelGuy-validated RAID test suite with table-driven testing pattern
-provides:
-  - OpenZFS-validated ZFS test suite with 22 test vectors
-  - VMware-validated vSAN ESA/OSA test suite with 18 test vectors
-  - S2D, Ceph, and Nutanix topology validation with 19 test cases
-  - ZFS slop space calculation with min/max bounds (128 MiB - 128 GiB)
-affects: [02-03-performance-validation, 02-04-resilience-validation, module-a-volumetry]
+- phase: 01-test-infrastructure
+  provides: Vitest configuration with coverage thresholds and test setup
+- phase: 02-01-PLAN
+  provides: WintelGuy-validated RAID test suite with table-driven testing pattern
+  provides:
+- OpenZFS-validated ZFS test suite with 22 test vectors
+- VMware-validated vSAN ESA/OSA test suite with 18 test vectors
+- S2D, Ceph, and Nutanix topology validation with 19 test cases
+- ZFS slop space calculation with min/max bounds (128 MiB - 128 GiB)
+  affects: [02-03-performance-validation, 02-04-resilience-validation, module-a-volumetry]
 
 # Tech tracking
+
 tech-stack:
-  added: []
-  patterns: [vendor-validated test vectors, adaptive efficiency testing]
+added: []
+patterns: [vendor-validated test vectors, adaptive efficiency testing]
 
 key-files:
-  created: [tests/fixtures/zfs-vectors.ts, tests/fixtures/vsan-vectors.ts]
-  modified: [tests/engines/volumetry.spec.ts, src/engines/volumetry/index.ts]
+created: [tests/fixtures/zfs-vectors.ts, tests/fixtures/vsan-vectors.ts]
+modified: [tests/engines/volumetry.spec.ts, src/engines/volumetry/index.ts]
 
 key-decisions:
-  - "OpenZFS documentation as reference for ZFS slop space formulas (1/32 with 128 MiB min, 128 GiB max)"
-  - "VMware vSAN documentation for ESA adaptive efficiency (2+1 vs 4+1 based on cluster size)"
-  - "Inline test vectors for S2D/Ceph/Nutanix instead of separate fixture files"
-  - "Remove property tests that are too complex in favor of comprehensive table-driven tests"
+- "OpenZFS documentation as reference for ZFS slop space formulas (1/32 with 128 MiB min, 128 GiB max)"
+- "VMware vSAN documentation for ESA adaptive efficiency (2+1 vs 4+1 based on cluster size)"
+- "Inline test vectors for S2D/Ceph/Nutanix instead of separate fixture files"
+- "Remove property tests that are too complex in favor of comprehensive table-driven tests"
 
 patterns-established:
-  - "Vendor-validated test vectors with source documentation URLs"
-  - "Adaptive efficiency threshold testing (cluster size, drive count dependencies)"
-  - "Edge case testing for min/max bounds (slop space, safe capacity)"
+- "Vendor-validated test vectors with source documentation URLs"
+- "Adaptive efficiency threshold testing (cluster size, drive count dependencies)"
+- "Edge case testing for min/max bounds (slop space, safe capacity)"
 
 # Metrics
+
 duration: 10min
 completed: 2026-01-18
 ---
@@ -190,5 +194,6 @@ None - no external service configuration required.
 - Remaining gap: ~17 percentage points (requires performance and resilience tests)
 
 ---
-*Phase: 02-calculation-validation*
-*Completed: 2026-01-18*
+
+_Phase: 02-calculation-validation_
+_Completed: 2026-01-18_

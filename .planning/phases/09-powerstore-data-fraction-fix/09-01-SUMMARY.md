@@ -1,41 +1,42 @@
 ---
+
 phase: 09-powerstore-data-fraction-fix
 plan: 01
 subsystem: testing
 tags: [dell, powerstore, volumetry, dre, raid5, raid6, tdd, capacity]
 
 requires:
-  - phase: 08-powervault-adapt-formula-fix
-    provides: TDD protocol (skip/add-correct/fix/delete) and dell-vectors.ts fixture pattern
+- phase: 08-powervault-adapt-formula-fix
+  provides: TDD protocol (skip/add-correct/fix/delete) and dell-vectors.ts fixture pattern
 
 provides:
-  - Drive-count-aware DRE geometry in dell.ts for PowerStore RAID-5 and RAID-6
-  - dellPowerstoreVectors fixture array with 7 Dell KB 000188491 reference vectors
-  - Full PowerStore DRE test coverage in volumetry.spec.ts (14 tests)
+- Drive-count-aware DRE geometry in dell.ts for PowerStore RAID-5 and RAID-6
+- dellPowerstoreVectors fixture array with 7 Dell KB 000188491 reference vectors
+- Full PowerStore DRE test coverage in volumetry.spec.ts (14 tests)
 
 affects: [10-powerstore-system-overhead, any future Dell storage engine work]
 
 tech-stack:
-  added: []
-  patterns:
-    - "TDD RED/GREEN/CLEANUP: skip wrong tests, add correct reference vectors (RED), fix formula (GREEN), restore tests with updated comments (CLEANUP)"
-    - "DRE geometry selection by drive count using conditional returns (not switch)"
-    - "Usable capacity tests with snapshotReservePercent:0 to isolate data fraction from overhead"
+added: []
+patterns:
+- "TDD RED/GREEN/CLEANUP: skip wrong tests, add correct reference vectors (RED), fix formula (GREEN), restore tests with updated comments (CLEANUP)"
+- "DRE geometry selection by drive count using conditional returns (not switch)"
+- "Usable capacity tests with snapshotReservePercent:0 to isolate data fraction from overhead"
 
 key-files:
-  created:
-    - tests/fixtures/dell-vectors.ts (DellPowerstoreVector interface + dellPowerstoreVectors array appended)
+created:
+- tests/fixtures/dell-vectors.ts (DellPowerstoreVector interface + dellPowerstoreVectors array appended)
   modified:
-    - src/engines/volumetry/strategies/dell.ts (PowerStore RAID-5/6 cases replaced with DRE thresholds)
-    - tests/engines/volumetry.spec.ts (PowerStore DRE test block added, snapshot reserve tests restored)
+- src/engines/volumetry/strategies/dell.ts (PowerStore RAID-5/6 cases replaced with DRE thresholds)
+- tests/engines/volumetry.spec.ts (PowerStore DRE test block added, snapshot reserve tests restored)
 
 key-decisions:
-  - "PowerStore RAID-6 uses three DRE thresholds: <8 drives=4/6 (66.67%), 8-19=8/10 (80%), >=20=16/18 (88.89%)"
-  - "PowerStore RAID-5 uses two DRE thresholds: <10 drives=4/5 (80%), >=10=8/9 (88.89%)"
-  - "Usable capacity tests override snapshotReservePercent:0 to isolate DRE data fraction from snapshot overhead"
+- "PowerStore RAID-6 uses three DRE thresholds: <8 drives=4/6 (66.67%), 8-19=8/10 (80%), >=20=16/18 (88.89%)"
+- "PowerStore RAID-5 uses two DRE thresholds: <10 drives=4/5 (80%), >=10=8/9 (88.89%)"
+- "Usable capacity tests override snapshotReservePercent:0 to isolate DRE data fraction from snapshot overhead"
 
 patterns-established:
-  - "Pattern 1: Dell DRE geometry — use conditional returns in strategy calculateDataFraction; each case block uses usableDrives thresholds"
+- "Pattern 1: Dell DRE geometry — use conditional returns in strategy calculateDataFraction; each case block uses usableDrives thresholds"
 
 requirements-completed: [DELL-03, DELL-04]
 
@@ -110,5 +111,6 @@ _Note: TDD tasks have three commits (test → feat → chore/cleanup)_
 - Pre-existing `resilienceWorker.ts` Biome `noNonNullAssertion` warnings are unrelated and deferred
 
 ---
-*Phase: 09-powerstore-data-fraction-fix*
-*Completed: 2026-03-25*
+
+_Phase: 09-powerstore-data-fraction-fix_
+_Completed: 2026-03-25_

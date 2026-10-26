@@ -33,7 +33,7 @@ ever discharged.
 request that will be made again; the answer is not "no" but "that is a different product".
 
 **The boundary also applies inward.** Raidy does not read an existing array, does not monitor, and
-does not do capacity planning against real usage. It is the tool for the conversation *before* a
+does not do capacity planning against real usage. It is the tool for the conversation _before_ a
 vendor sizer, not a replacement for one.
 
 ## Alternatives rejected

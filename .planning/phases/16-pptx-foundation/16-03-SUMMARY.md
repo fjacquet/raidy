@@ -1,36 +1,38 @@
 ---
+
 phase: 16-pptx-foundation
 plan: "03"
 subsystem: export-ui
 tags: [export, pptx, i18n, ui]
 dependency_graph:
-  requires: [16-02]
-  provides: [pptx-export-button]
-  affects: [OutputDashboard, i18n-output]
+requires: [16-02]
+provides: [pptx-export-button]
+affects: [OutputDashboard, i18n-output]
 tech_stack:
-  added: []
-  patterns: [fire-and-forget-async-handler, export-button-pattern]
+added: []
+patterns: [fire-and-forget-async-handler, export-button-pattern]
 key_files:
-  created: []
-  modified:
-    - src/components/layout/OutputDashboard.tsx
-    - src/i18n/locales/en/output.json
-    - src/i18n/locales/fr/output.json
-    - src/i18n/locales/de/output.json
-    - src/i18n/locales/it/output.json
-decisions:
-  - "Fire-and-forget pattern for exportToPptx call, matching existing exportToPdf pattern"
-  - "Orange icon color (text-orange-400) distinguishes PPTX button from PDF (red) and YAML (yellow)"
-  - "PPTX button inserted between PDF and YAML buttons in Export Card grid"
-metrics:
+created: []
+modified:
+- src/components/layout/OutputDashboard.tsx
+- src/i18n/locales/en/output.json
+- src/i18n/locales/fr/output.json
+- src/i18n/locales/de/output.json
+- src/i18n/locales/it/output.json
+  decisions:
+- "Fire-and-forget pattern for exportToPptx call, matching existing exportToPdf pattern"
+- "Orange icon color (text-orange-400) distinguishes PPTX button from PDF (red) and YAML (yellow)"
+- "PPTX button inserted between PDF and YAML buttons in Export Card grid"
+  metrics:
   duration: "5m"
   completed: "2026-04-01"
   tasks_completed: 2
   files_modified: 5
-requirements:
-  - EXPORT-01
-  - EXPORT-06
-  - EXPORT-10
+  requirements:
+- EXPORT-01
+- EXPORT-06
+- EXPORT-10
+
 ---
 
 # Phase 16 Plan 03: PPTX Export Button + i18n Summary
@@ -68,12 +70,12 @@ const handleExportPptx = () => {
 
 Keys added after `"pdfDesc"` in the `"export"` object of each locale:
 
-| Locale | pptx | pptxDesc |
-|--------|------|----------|
-| EN | "PowerPoint" | "Slide deck" |
-| FR | "PowerPoint" | "Présentation" |
-| DE | "PowerPoint" | "Präsentation" |
-| IT | "PowerPoint" | "Presentazione" |
+| Locale | pptx         | pptxDesc        |
+| ------ | ------------ | --------------- |
+| EN     | "PowerPoint" | "Slide deck"    |
+| FR     | "PowerPoint" | "Présentation"  |
+| DE     | "PowerPoint" | "Präsentation"  |
+| IT     | "PowerPoint" | "Presentazione" |
 
 Brand name "PowerPoint" kept untranslated in all locales per project convention.
 
@@ -99,8 +101,8 @@ None — plan executed exactly as written.
 
 ## Commits
 
-| Hash | Message |
-|------|---------|
+| Hash    | Message                                                 |
+| ------- | ------------------------------------------------------- |
 | 3380ea8 | feat(export): add PPTX export button to OutputDashboard |
 
 ## Self-Check: PASSED

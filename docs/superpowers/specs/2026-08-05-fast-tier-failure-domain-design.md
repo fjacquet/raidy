@@ -24,12 +24,12 @@ halves now have a vendor statement behind them.
 > group. […] Both cache device and capacity devices that reside in the disk group, for example,
 > magnetic disks, are marked as degraded."
 
-— [Broadcom, *A Flash Caching Device Is Not Accessible in a vSAN Cluster*](https://techdocs.broadcom.com/us/en/vmware-cis/vsan/vsan/8-0/vsan-monitoring/handling-failures-and-troubleshooting-virtual-san/handling-failures-in-virtual-san/failure-handling-in-virtual-san/a-flash-caching-device-is-not-accessible.html)
+— [Broadcom, _A Flash Caching Device Is Not Accessible in a vSAN Cluster_](https://techdocs.broadcom.com/us/en/vmware-cis/vsan/vsan/8-0/vsan-monitoring/handling-failures-and-troubleshooting-virtual-san/handling-failures-in-virtual-san/failure-handling-in-virtual-san/a-flash-caching-device-is-not-accessible.html)
 
 Structure: a disk group is **exactly one cache device plus one to seven capacity devices**.
 
 One refinement worth recording but **not** proposed for v1: with Deduplication & Compression
-enabled, *any* device failure — cache or capacity — fails the whole disk group. Raidy has a vSAN
+enabled, _any_ device failure — cache or capacity — fails the whole disk group. Raidy has a vSAN
 dedup toggle, so this is expressible, but it is a second mechanism on top of the first and should
 land separately if at all.
 
@@ -37,7 +37,7 @@ land separately if at all.
 
 > "a corrupt block.db file will impact all OSDs which are included in that block.db file"
 
-— [Red Hat Ceph Storage 3, *Handling a disk failure*](https://docs.redhat.com/en/documentation/red_hat_ceph_storage/3/html/operations_guide/handling-a-disk-failure)
+— [Red Hat Ceph Storage 3, _Handling a disk failure_](https://docs.redhat.com/en/documentation/red_hat_ceph_storage/3/html/operations_guide/handling-a-disk-failure)
 
 Note the upstream Ceph BlueStore documentation does **not** state this — it documents provisioning
 several `db` logical volumes on one SSD without discussing the failure consequence. The citable
@@ -59,8 +59,8 @@ say so explicitly rather than keying off "is tiered".
 
 `resilienceWorker.ts` simulates `driveCount` data-bearing drives spread over `groupCount` fault
 groups (`distributeAcrossGroups`), each group tolerating `parityPerGroup` failures. It has a
-`correlatedFailureWindow` — but that models a *burst of independent failures being more likely
-after one occurs*, not a single event that deterministically removes a whole group at once.
+`correlatedFailureWindow` — but that models a _burst of independent failures being more likely
+after one occurs_, not a single event that deterministically removes a whole group at once.
 
 The fast-tier devices are not in the simulated population at all: `tieredPlatformScope` sets
 `driveCount` from `tiering.capacityTierDriveCount` and `mediaDrive` from the capacity tier. So
@@ -74,7 +74,7 @@ That is the gap. It needs a new concept, as #88 predicted.
 
 ### CORRECTION (2026-08-05, after reading the worker): the fault group must NOT become the disk group
 
-The first draft of this spec proposed making the simulated fault group the *disk group* rather
+The first draft of this spec proposed making the simulated fault group the _disk group_ rather
 than the node, deriving `groupCount = tiering.cacheTierDriveCount`. **That is wrong, and it would
 introduce a new optimistic bias while fixing an existing one.**
 
@@ -170,7 +170,7 @@ Because this moves published numbers, the same discipline the recent engine work
    first?** It is separable, it moves numbers on its own, and it moves them the other way.
 2. **Should a group loss be recoverable at all in v1**, or simply fatal to that group?
 3. ~~**Ceph's shared-device count**~~ — **answered.** `TieringConfig.fastTier.driveCount` is a
-   per-server *device* count that `calculateTieredCapacity` multiplies by `serverCount`, so
+   per-server _device_ count that `calculateTieredCapacity` multiplies by `serverCount`, so
    `cacheTierDriveCount / serverCount` is exactly "cache devices per host". No new input needed.
 
 4. **New, and the one that matters:** should `serverCount` be split into separate fault-group and

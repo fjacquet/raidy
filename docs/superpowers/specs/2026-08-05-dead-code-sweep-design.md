@@ -14,11 +14,11 @@ Structurally invisible to all four: **unused exports across files, files nothing
 
 That gap has a measured cost:
 
-| Finding | Size |
-|---|---|
-| `recharts` in `dependencies`, never imported | 8.5 MB |
-| `js-yaml` in `dependencies`, never imported | 1.0 MB |
-| `TopologyContext.tsx` — `TopologyProvider` + `useTopologyContext`, referenced nowhere | 48 lines |
+| Finding                                                                                           | Size        |
+| ------------------------------------------------------------------------------------------------- | ----------- |
+| `recharts` in `dependencies`, never imported                                                      | 8.5 MB      |
+| `js-yaml` in `dependencies`, never imported                                                       | 1.0 MB      |
+| `TopologyContext.tsx` — `TopologyProvider` + `useTopologyContext`, referenced nowhere             | 48 lines    |
 | `getMinIOPS`, `formatPercent`, `formatBytesLocalized` — one occurrence repo-wide, the declaration | 3 functions |
 
 The two dependencies are the sharp end. The app hand-rolls its SVG charts (`SankeyDiagram`, `Speedometer`, `DonutChart`) and builds YAML from template literals, so neither library does anything — yet both sit in the production dependency graph of a project that runs a supply-chain check on every build.
@@ -48,7 +48,7 @@ Deletions are not interchangeable, and neither is the evidence for them.
 
 **4. Orphan i18n keys** — 117 candidates out of 1,034 English keys.
 
-**The raw list is wrong and must not be acted on directly.** Keys are built dynamically at 19 call sites — `` t(`formFactor.${value}`) ``, `` t(`connectivity.${value}`) ``, `` i18n.t(`validation:${key}`) ``, `` t(`tiering.${platform}.fastTier`) ``. The scan flagged `formFactor.u2`, `formFactor.e3s` and `formFactor.m2` as orphans; all three are live.
+**The raw list is wrong and must not be acted on directly.** Keys are built dynamically at 19 call sites — ``t(`formFactor.${value}`)``, ``t(`connectivity.${value}`)``, ``i18n.t(`validation:${key}`)``, ``t(`tiering.${platform}.fastTier`)``. The scan flagged `formFactor.u2`, `formFactor.e3s` and `formFactor.m2` as orphans; all three are live.
 
 The method: enumerate every dynamic site, expand each template against the TypeScript union or array that feeds it, mark the resulting keys live, and re-run. What is still orphaned after that expansion is dead.
 

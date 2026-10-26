@@ -24,24 +24,27 @@ Current test infrastructure (Phase 1) provides Vitest with jsdom, 75% coverage t
 The established libraries/tools for calculation validation testing:
 
 ### Core
-| Library | Version | Purpose | Why Standard |
-|---------|---------|---------|--------------|
-| Vitest | 2.x | Test runner | Already configured, jsdom environment operational |
-| @vitest/coverage-v8 | 2.x | Code coverage | AST-based remapping since 3.2.0 matches Istanbul accuracy with V8 speed |
-| fast-check | 3.x | Property-based testing | Industry standard for generative testing, works with any test runner |
+
+| Library             | Version | Purpose                | Why Standard                                                            |
+| ------------------- | ------- | ---------------------- | ----------------------------------------------------------------------- |
+| Vitest              | 2.x     | Test runner            | Already configured, jsdom environment operational                       |
+| @vitest/coverage-v8 | 2.x     | Code coverage          | AST-based remapping since 3.2.0 matches Istanbul accuracy with V8 speed |
+| fast-check          | 3.x     | Property-based testing | Industry standard for generative testing, works with any test runner    |
 
 ### Supporting
-| Library | Version | Purpose | When to Use |
-|---------|---------|---------|-------------|
-| @testing-library/jest-dom | 6.x | Extended matchers | Already installed, useful for validation assertions |
-| happy-dom | N/A | DOM environment | NOT recommended for Web Worker tests (use jsdom) |
+
+| Library                   | Version | Purpose           | When to Use                                         |
+| ------------------------- | ------- | ----------------- | --------------------------------------------------- |
+| @testing-library/jest-dom | 6.x     | Extended matchers | Already installed, useful for validation assertions |
+| happy-dom                 | N/A     | DOM environment   | NOT recommended for Web Worker tests (use jsdom)    |
 
 ### Alternatives Considered
-| Instead of | Could Use | Tradeoff |
-|------------|-----------|----------|
-| V8 coverage | Istanbul coverage | V8 now equally accurate (Vitest 3.2.0+), faster |
-| fast-check | Manual edge cases | Property-based finds cases you wouldn't think of |
-| test.each | Individual tests | Table-driven reduces duplication, easier to add cases |
+
+| Instead of  | Could Use         | Tradeoff                                              |
+| ----------- | ----------------- | ----------------------------------------------------- |
+| V8 coverage | Istanbul coverage | V8 now equally accurate (Vitest 3.2.0+), faster       |
+| fast-check  | Manual edge cases | Property-based finds cases you wouldn't think of      |
+| test.each   | Individual tests  | Table-driven reduces duplication, easier to add cases |
 
 **Installation:**
 ```bash
@@ -52,6 +55,7 @@ npm install fast-check --save-dev
 ## Architecture Patterns
 
 ### Recommended Test Structure
+
 ```
 tests/
 ├── engines/
@@ -70,6 +74,7 @@ tests/
 ```
 
 ### Pattern 1: Table-Driven Test with External Vectors
+
 **What:** Separate test data from test logic, use Vitest test.each() for parametric execution
 **When to use:** Testing calculation formulas with known inputs/outputs
 **Example:**
@@ -88,17 +93,21 @@ const raidVectors = [
   // Add more vectors from WintelGuy manual verification
 ]
 
-describe.each(raidVectors)('RAID Capacity: $level', ({ level, drives, driveSize, expected, tolerance }) => {
-  it(`${drives}x ${driveSize}GB should yield ${expected}GB usable`, () => {
-    const result = calculateCapacity(level, drives, driveSize)
+describe.each(raidVectors)(
+  'RAID Capacity: $level',
+  ({ level, drives, driveSize, expected, tolerance }) => {
+    it(`${drives}x ${driveSize}GB should yield ${expected}GB usable`, () => {
+      const result = calculateCapacity(level, drives, driveSize)
 
-    // Use toBeCloseTo for floating-point tolerance
-    expect(result).toBeCloseTo(expected, Math.log10(1 / tolerance))
-  })
-})
+      // Use toBeCloseTo for floating-point tolerance
+      expect(result).toBeCloseTo(expected, Math.log10(1 / tolerance))
+    })
+  },
+)
 ```
 
 ### Pattern 2: Property-Based Testing for Mathematical Invariants
+
 **What:** Generative testing that verifies properties hold across randomized inputs
 **When to use:** Discovering edge cases, validating mathematical laws (commutativity, bounds checking)
 **Example:**
@@ -119,9 +128,9 @@ describe('RAID Capacity Properties', () => {
           // Account for filesystem overhead (2-3%)
           expect(result).toBeGreaterThan(expectedRaw * 0.97)
           expect(result).toBeLessThanOrEqual(expectedRaw)
-        }
+        },
       ),
-      { numRuns: 100 } // Run 100 random combinations
+      { numRuns: 100 }, // Run 100 random combinations
     )
   })
 
@@ -135,14 +144,15 @@ describe('RAID Capacity Properties', () => {
           const expanded = calculateCapacity('RAID5', startDrives + 1, driveSize)
 
           expect(expanded).toBeGreaterThan(baseline)
-        }
-      )
+        },
+      ),
     )
   })
 })
 ```
 
 ### Pattern 3: Snapshot Testing for Backward Compatibility
+
 **What:** Capture serialized state as snapshots, detect unintended changes
 **When to use:** URL state serialization, configuration export (JSON/YAML), PDF generation
 **Example:**
@@ -182,6 +192,7 @@ it('handles legacy v1.0 URL format (backward compatibility)', () => {
 ```
 
 ### Pattern 4: Monte Carlo Statistical Validation
+
 **What:** Test stochastic simulations by validating statistical properties, not exact values
 **When to use:** Resilience Worker URE probability, MTTDL calculations
 **Example:**
@@ -228,6 +239,7 @@ describe('Monte Carlo Resilience Worker', () => {
 ```
 
 ### Pattern 5: Web Worker Testing in jsdom
+
 **What:** Mock self.postMessage and test worker logic directly
 **When to use:** Testing resilienceWorker.ts Monte Carlo engine
 **Example:**
@@ -255,14 +267,14 @@ describe('Resilience Worker', () => {
     handler?.({
       data: {
         type: 'START',
-        payload: { /* config */ },
+        payload: {
+          /* config */
+        },
       },
     } as MessageEvent)
 
     // Find RESULT message in postMessage calls
-    const resultCall = mockPostMessage.mock.calls.find(
-      (call) => call[0].type === 'RESULT'
-    )
+    const resultCall = mockPostMessage.mock.calls.find((call) => call[0].type === 'RESULT')
 
     expect(resultCall).toBeDefined()
     expect(resultCall[0].payload.survivalRate).toBeGreaterThan(0)
@@ -271,6 +283,7 @@ describe('Resilience Worker', () => {
 ```
 
 ### Anti-Patterns to Avoid
+
 - **Hard-coded expected values without source citation:** Always document where test vectors come from (manual WintelGuy calculation, OpenZFS spec section X.Y)
 - **Exact equality for floating-point:** Use `toBeCloseTo()` with explicit tolerance, not `toBe()` or `toEqual()`
 - **Testing Monte Carlo with exact values:** Validate statistical bounds and confidence intervals, not precise survival rates
@@ -282,29 +295,31 @@ describe('Resilience Worker', () => {
 
 Problems that look simple but have existing solutions:
 
-| Problem | Don't Build | Use Instead | Why |
-|---------|-------------|-------------|-----|
-| Floating-point comparison | Custom epsilon logic | `toBeCloseTo(expected, precision)` | Handles edge cases, standard precision parameter |
-| Generative test data | Random test cases | fast-check property-based testing | Finds edge cases systematically, shrinks to minimal failure |
-| Snapshot updates | Manual JSON comparison | `toMatchSnapshot()` | Auto-updates with --update flag, version controlled |
-| Statistical validation | Manual standard deviation | Confidence interval formulas (±1.96σ for 95%) | Industry standard, well-tested |
-| Web Worker mocking | Custom message queue | Vitest `vi.stubGlobal('self', ...)` | Framework-supported, handles MessageEvent correctly |
-| Test vector generation | Manual calculator runs | Scripted extraction from WintelGuy/OpenZFS APIs | Reproducible, versionable |
+| Problem                   | Don't Build               | Use Instead                                     | Why                                                         |
+| ------------------------- | ------------------------- | ----------------------------------------------- | ----------------------------------------------------------- |
+| Floating-point comparison | Custom epsilon logic      | `toBeCloseTo(expected, precision)`              | Handles edge cases, standard precision parameter            |
+| Generative test data      | Random test cases         | fast-check property-based testing               | Finds edge cases systematically, shrinks to minimal failure |
+| Snapshot updates          | Manual JSON comparison    | `toMatchSnapshot()`                             | Auto-updates with --update flag, version controlled         |
+| Statistical validation    | Manual standard deviation | Confidence interval formulas (±1.96σ for 95%)   | Industry standard, well-tested                              |
+| Web Worker mocking        | Custom message queue      | Vitest`vi.stubGlobal('self', ...)`              | Framework-supported, handles MessageEvent correctly         |
+| Test vector generation    | Manual calculator runs    | Scripted extraction from WintelGuy/OpenZFS APIs | Reproducible, versionable                                   |
 
 **Key insight:** Mathematical testing requires precision tooling. Vitest's `toBeCloseTo()` isn't just convenience - it handles floating-point representation edge cases that manual epsilon checks miss. Similarly, fast-check's shrinking algorithm (reducing failing inputs to minimal cases) is complex to implement correctly.
 
 ## Common Pitfalls
 
 ### Pitfall 1: Floating-Point Arithmetic Errors
+
 **What goes wrong:** Tests fail with "expected 3000 but got 2999.9999999998" despite correct calculation logic
 **Why it happens:** JavaScript uses IEEE 754 double precision; 0.1 + 0.2 ≠ 0.3 exactly
 **How to avoid:**
 - Use `toBeCloseTo(expected, precision)` for all numerical assertions
 - Set precision based on tolerance (1% tolerance ≈ 2 decimal places for percentages)
 - Document tolerance explicitly: `// WintelGuy requires ±1% tolerance`
-**Warning signs:** Test failures with values differing in 10th+ decimal place
+  **Warning signs:** Test failures with values differing in 10th+ decimal place
 
 ### Pitfall 2: Testing Monte Carlo Deterministically
+
 **What goes wrong:** Monte Carlo tests are flaky - sometimes pass, sometimes fail with identical code
 **Why it happens:** Simulations use random number generation; outcomes vary run-to-run
 **How to avoid:**
@@ -312,9 +327,10 @@ Problems that look simple but have existing solutions:
 - Calculate confidence intervals: with 10k simulations, 95% CI ≈ ±1.96 × sqrt(p(1-p)/n)
 - Use fixed random seed for reproducible tests (if needed for debugging)
 - Validate consistency: run simulation 10 times, standard deviation should be small
-**Warning signs:** Intermittent test failures with "expected 0.987 but got 0.985"
+  **Warning signs:** Intermittent test failures with "expected 0.987 but got 0.985"
 
 ### Pitfall 3: Coverage Theater Instead of Validation
+
 **What goes wrong:** 100% coverage achieved but calculations still incorrect
 **Why it happens:** Tests execute code paths but don't validate correctness against authoritative sources
 **How to avoid:**
@@ -322,9 +338,10 @@ Problems that look simple but have existing solutions:
 - Compare against external calculators, not internal re-implementation
 - Use property-based testing to find edge cases coverage metrics miss
 - Test boundary conditions explicitly (1 drive, max drives, zero capacity)
-**Warning signs:** All tests pass but user reports incorrect calculations
+  **Warning signs:** All tests pass but user reports incorrect calculations
 
 ### Pitfall 4: Ignoring Backward Compatibility
+
 **What goes wrong:** URL format update breaks all user-shared links from previous versions
 **Why it happens:** Serialization logic changes without migration path testing
 **How to avoid:**
@@ -332,9 +349,10 @@ Problems that look simple but have existing solutions:
 - Snapshot current serialization format to detect unintended changes
 - Test migration: legacy format → deserialize → re-serialize → should update format
 - Version the state schema explicitly
-**Warning signs:** GitHub issues reporting "my saved link doesn't work anymore"
+  **Warning signs:** GitHub issues reporting "my saved link doesn't work anymore"
 
 ### Pitfall 5: Web Worker Testing with happy-dom
+
 **What goes wrong:** Worker tests fail with "MessageEvent data is undefined"
 **Why it happens:** happy-dom doesn't polyfill MessageEvent constructor properly, unlike jsdom
 **How to avoid:**
@@ -342,9 +360,10 @@ Problems that look simple but have existing solutions:
 - Mock `self.postMessage` before importing worker code
 - Call `vi.resetModules()` between tests to get fresh worker instance
 - If forced to use happy-dom, add MessageEvent polyfill to test setup
-**Warning signs:** `expect(event.data).toBeDefined()` fails despite worker posting data
+  **Warning signs:** `expect(event.data).toBeDefined()` fails despite worker posting data
 
 ### Pitfall 6: Switch Statement Coverage Without Logic Validation
+
 **What goes wrong:** Volumetry engine has 13 topology branches, all executed, but RAID 5E formula is still wrong
 **Why it happens:** Branch coverage ≠ correctness validation
 **How to avoid:**
@@ -352,13 +371,14 @@ Problems that look simple but have existing solutions:
 - For complex cases (vSAN ESA adaptive efficiency), test multiple sub-branches
 - Use table-driven tests to systematically cover all RAID levels
 - Cross-reference against authoritative formulas (not just "does it run?")
-**Warning signs:** 100% branch coverage but TEST-09 requirement (WintelGuy ±1%) fails
+  **Warning signs:** 100% branch coverage but TEST-09 requirement (WintelGuy ±1%) fails
 
 ## Code Examples
 
 Verified patterns from official sources and existing codebase:
 
 ### Floating-Point Comparison with Tolerance
+
 ```typescript
 // Source: https://vitest.dev/api/expect.html#tobecloseto
 import { expect, it } from 'vitest'
@@ -379,6 +399,7 @@ it('RAID 5 capacity calculation matches WintelGuy within 1%', () => {
 ```
 
 ### Table-Driven RAID Test Vectors
+
 ```typescript
 // Source: Existing volumetry.spec.ts + table-driven pattern
 // tests/engines/volumetry.vectors.ts
@@ -431,11 +452,12 @@ describe.each(standardRAIDVectors)(
       expect(result.usableCapacity).toBeGreaterThan(expectedUsable - toleranceBytes)
       expect(result.usableCapacity).toBeLessThanOrEqual(expectedUsable + toleranceBytes)
     })
-  }
+  },
 )
 ```
 
 ### ZFS Overhead Validation (1/32 Slop Factor)
+
 ```typescript
 // Source: https://openzfs.github.io/openzfs-docs/man/master/7/zpoolprops.7.html
 import { expect, it } from 'vitest'
@@ -466,12 +488,13 @@ it('ZFS slop has minimum 128MiB and maximum 128GiB', () => {
   // Huge pool: slop should cap at 128GiB
   const hugeInput = createInput(100, { type: 'zfs', level: 'stripe' })
   const hugeResult = calculateVolumetry(hugeInput)
-  const hugeSlop = (hugeInput.drive.capacity_raw * 100) - hugeResult.usableCapacity
+  const hugeSlop = hugeInput.drive.capacity_raw * 100 - hugeResult.usableCapacity
   expect(hugeSlop).toBeLessThanOrEqual(128 * 1024 * 1024 * 1024)
 })
 ```
 
 ### VMware vSAN ESA Adaptive Efficiency
+
 ```typescript
 // Source: https://blogs.vmware.com/cloud-foundation/2022/09/08/adaptive-raid-5-erasure-coding-with-the-express-storage-architecture-in-vsan-8/
 import { expect, it } from 'vitest'
@@ -502,11 +525,12 @@ it('vSAN ESA adapts RAID-5 stripe width based on cluster size', () => {
   const largeEfficiency = largeResult.usableCapacity / largeResult.rawCapacity
 
   // 4+1 scheme = 80% efficiency (1/1.25)
-  expect(largeEfficiency).toBeCloseTo(0.80, 2)
+  expect(largeEfficiency).toBeCloseTo(0.8, 2)
 })
 ```
 
 ### RAID Write Penalty Validation
+
 ```typescript
 // Source: https://www.massivegrid.com/blog/understanding-raid-write-penalties-raid-0-1-5-and-6-explained/
 // Industry formula: RAID 5 = 4x penalty, RAID 6 = 6x penalty
@@ -536,6 +560,7 @@ it('RAID 6 applies 6x write penalty for random I/O', () => {
 ```
 
 ### URE Probability Calculation
+
 ```typescript
 // Source: https://www.diskinternals.com/raid-recovery/raid-5-rebuild-failure-probability/
 import { expect, it } from 'vitest'
@@ -564,6 +589,7 @@ it('calculates URE probability during RAID rebuild', () => {
 ```
 
 ### Backward Compatibility Migration Test
+
 ```typescript
 // Source: https://vitest.dev/guide/snapshot + backward compatibility best practices
 import { expect, it } from 'vitest'
@@ -605,13 +631,13 @@ it('snapshots current URL format for regression detection', () => {
 
 ## State of the Art
 
-| Old Approach | Current Approach | When Changed | Impact |
-|--------------|------------------|--------------|--------|
-| Istanbul coverage | V8 coverage with AST remapping | Vitest 3.2.0 (2024) | Same accuracy, 2-3x faster |
-| happy-dom for all tests | jsdom for Web Workers | 2024 | MessageEvent compatibility |
-| Manual test vectors | Property-based testing with fast-check | 2023+ | Discovers edge cases automatically |
-| Exact Monte Carlo assertions | Statistical bounds + confidence intervals | Industry standard | Eliminates flaky tests |
-| Hardcoded test data | Table-driven with test.each | Modern best practice | Easier to add/maintain cases |
+| Old Approach                 | Current Approach                          | When Changed         | Impact                             |
+| ---------------------------- | ----------------------------------------- | -------------------- | ---------------------------------- |
+| Istanbul coverage            | V8 coverage with AST remapping            | Vitest 3.2.0 (2024)  | Same accuracy, 2-3x faster         |
+| happy-dom for all tests      | jsdom for Web Workers                     | 2024                 | MessageEvent compatibility         |
+| Manual test vectors          | Property-based testing with fast-check    | 2023+                | Discovers edge cases automatically |
+| Exact Monte Carlo assertions | Statistical bounds + confidence intervals | Industry standard    | Eliminates flaky tests             |
+| Hardcoded test data          | Table-driven with test.each               | Modern best practice | Easier to add/maintain cases       |
 
 **Deprecated/outdated:**
 - **expect.closeTo() utility function**: Built into Vitest now as `toBeCloseTo()` matcher
@@ -650,6 +676,7 @@ Things that couldn't be fully resolved:
 ## Sources
 
 ### Primary (HIGH confidence)
+
 - [Vitest API Documentation - expect.toBeCloseTo()](https://vitest.dev/api/expect.html) - Floating-point comparison
 - [Vitest Coverage Guide](https://vitest.dev/guide/coverage) - V8 provider configuration and thresholds
 - [Vitest Snapshot Testing](https://vitest.dev/guide/snapshot) - Backward compatibility testing
@@ -660,6 +687,7 @@ Things that couldn't be fully resolved:
 - [WintelGuy RAID Performance Calculator](https://wintelguy.com/raidperf.pl) - Write penalty validation
 
 ### Secondary (MEDIUM confidence)
+
 - [Understanding RAID Write Penalties - MassiveGRID](https://www.massivegrid.com/blog/understanding-raid-write-penalties-raid-0-1-5-and-6-explained/) - Industry standard formulas
 - [RAID 5 Rebuild Failure Probability - DiskInternals](https://www.diskinternals.com/raid-recovery/raid-5-rebuild-failure-probability/) - URE calculations
 - [Table-Driven Testing with TypeScript - Brendan Goodenough](https://goodenough.nz/blog/table-driven-testing-with-typescript) - Parametric test patterns
@@ -667,6 +695,7 @@ Things that couldn't be fully resolved:
 - [Vitest Web Worker Testing - GitHub Discussion](https://github.com/vitest-dev/vitest/discussions/1607) - jsdom vs happy-dom
 
 ### Tertiary (LOW confidence)
+
 - [Monte Carlo A/B Testing Paper (arXiv)](https://arxiv.org/html/2411.06701v1) - Statistical validation concepts (general research, not JavaScript-specific)
 - [Test Coverage Thresholds - Qt Blog](https://www.qt.io/quality-assurance/blog/is-70-80-90-or-100-code-coverage-good-enough) - Industry standards (C++/Qt context)
 

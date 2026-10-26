@@ -15,13 +15,13 @@ times, and drifts between applications.
 Each repository holds **thin caller workflows** that delegate to reusable workflows in
 [`fjacquet/ci`](https://github.com/fjacquet/ci), pinned to `@v1`.
 
-| Local file | Delegates to |
-|---|---|
-| `ci.yml` | `web-ci.yml@v1` |
-| `security.yml` | `web-security.yml@v1` |
-| `deploy.yml` | `web-deploy.yml@v1` |
-| `release.yml` | `web-release.yml@v1` |
-| `dependabot-automerge.yml` | — (inline) |
+| Local file                 | Delegates to          |
+| -------------------------- | --------------------- |
+| `ci.yml`                   | `web-ci.yml@v1`       |
+| `security.yml`             | `web-security.yml@v1` |
+| `deploy.yml`               | `web-deploy.yml@v1`   |
+| `release.yml`              | `web-release.yml@v1`  |
+| `dependabot-automerge.yml` | — (inline)            |
 
 Gates that are project-specific stay local as npm scripts: the supply-chain denylist, the
 dead-code gate and the bundle-size budget.

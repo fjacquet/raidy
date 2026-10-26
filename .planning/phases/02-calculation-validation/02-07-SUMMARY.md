@@ -1,47 +1,51 @@
 ---
+
 phase: 02-calculation-validation
 plan: 07
 subsystem: testing
 tags: [vitest, edge-cases, error-handling, volumetry, test-coverage, validation]
 
 # Dependency graph
+
 requires:
-  - phase: 02-calculation-validation
-    provides: Volumetry engine with basic test coverage (58.51%)
-provides:
-  - Comprehensive edge case tests for invalid drive counts (zero, below-minimum, odd numbers)
-  - Boundary condition tests for extreme values (PB-scale arrays, 500 drives, hot spare limits)
-  - Error handling tests for invalid topologies and missing data
-  - Bug fixes for null/undefined inputs and division by zero
-  - Increased volumetry engine test coverage from 58.51% to 64.84%
-affects: [03-performance-engine, 04-resilience-engine, testing, validation]
+- phase: 02-calculation-validation
+  provides: Volumetry engine with basic test coverage (58.51%)
+  provides:
+- Comprehensive edge case tests for invalid drive counts (zero, below-minimum, odd numbers)
+- Boundary condition tests for extreme values (PB-scale arrays, 500 drives, hot spare limits)
+- Error handling tests for invalid topologies and missing data
+- Bug fixes for null/undefined inputs and division by zero
+- Increased volumetry engine test coverage from 58.51% to 64.84%
+  affects: [03-performance-engine, 04-resilience-engine, testing, validation]
 
 # Tech tracking
+
 tech-stack:
-  added: []
-  patterns:
-    - Property-based testing with fast-check for extreme value validation
-    - Graceful degradation pattern for invalid inputs (return zero values instead of crashing)
-    - Input validation pattern at function entry points
+added: []
+patterns:
+- Property-based testing with fast-check for extreme value validation
+- Graceful degradation pattern for invalid inputs (return zero values instead of crashing)
+- Input validation pattern at function entry points
 
 key-files:
-  created: []
-  modified:
-    - tests/engines/volumetry.spec.ts
-    - src/engines/volumetry/index.ts
+created: []
+modified:
+- tests/engines/volumetry.spec.ts
+- src/engines/volumetry/index.ts
 
 key-decisions:
-  - "Handle invalid inputs gracefully by returning zero-value results instead of throwing errors"
-  - "Add input validation guards at calculateVolumetry entry point before any processing"
-  - "Use property-based testing (fast-check) for extreme value ranges (100-500 drives, 1TB-20TB)"
-  - "Clamp efficiency to 0 when NaN/Infinity to prevent downstream calculation errors"
+- "Handle invalid inputs gracefully by returning zero-value results instead of throwing errors"
+- "Add input validation guards at calculateVolumetry entry point before any processing"
+- "Use property-based testing (fast-check) for extreme value ranges (100-500 drives, 1TB-20TB)"
+- "Clamp efficiency to 0 when NaN/Infinity to prevent downstream calculation errors"
 
 patterns-established:
-  - "Input validation pattern: Check for null/undefined/zero early, return safe defaults"
-  - "Division by zero protection: Guard all division operations with denominator checks"
-  - "Options null safety: Check all optional parameters before accessing nested properties"
+- "Input validation pattern: Check for null/undefined/zero early, return safe defaults"
+- "Division by zero protection: Guard all division operations with denominator checks"
+- "Options null safety: Check all optional parameters before accessing nested properties"
 
 # Metrics
+
 duration: 13min
 completed: 2026-01-18
 ---
@@ -61,6 +65,7 @@ completed: 2026-01-18
 - **Coverage increase:** 6.33 percentage points (58.51% → 64.84%)
 
 ## Accomplishments
+
 - Added comprehensive edge case tests for invalid drive counts (zero drives, below-minimum, odd numbers for RAID 1/10)
 - Added boundary condition tests for extreme values (100-500 drives, PB-scale arrays, hot spare boundaries)
 - Added error handling tests for invalid topologies and missing data (null/undefined handling)
@@ -98,6 +103,7 @@ Each task was committed atomically:
      - Add null checks for all options access (ZFS, vSAN, Ceph)
 
 ## Files Created/Modified
+
 - `tests/engines/volumetry.spec.ts` - Added 39 edge case and error handling tests (+768 lines)
 - `src/engines/volumetry/index.ts` - Added input validation and null safety guards (+75 lines)
 
@@ -207,5 +213,6 @@ None - tests revealed bugs which were fixed according to deviation rules.
 **No blockers or concerns.**
 
 ---
-*Phase: 02-calculation-validation*
-*Completed: 2026-01-18*
+
+_Phase: 02-calculation-validation_
+_Completed: 2026-01-18_

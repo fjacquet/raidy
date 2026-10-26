@@ -58,15 +58,15 @@ Calculation accuracy for storage infrastructure decisions. If Raidy gives wrong 
 
 ## Key Decisions
 
-| Decision | Rationale | Outcome |
-|----------|-----------|---------|
-| Vitest for testing | Already configured, Vite-native, fast | ✓ Good — 881 tests in 8.5s |
-| Fix-in-place vs rewrite | Existing code works, users depend on it | ✓ Good — surgical fixes preserved all functionality |
-| Industry benchmarks for validation | WintelGuy, NetApp, OpenZFS are gold standards | ✓ Good — all calculations within 1% |
-| Dell Sizer as reference for Dell products | Official Dell capacity planning tool, ground truth | ✓ Good — all 5 Dell platforms validated |
-| TDD protocol: skip→RED→GREEN→delete | Prevents testing wrong formulas | ✓ Good — caught all issues cleanly |
-| Static-only architecture | Original constraint, enables simple deployment | ✓ Good |
-| React 19 + Tailwind 4 | Modern stack, already in use | ✓ Good — no stability issues |
+| Decision                                  | Rationale                                          | Outcome                                             |
+| ----------------------------------------- | -------------------------------------------------- | --------------------------------------------------- |
+| Vitest for testing                        | Already configured, Vite-native, fast              | ✓ Good — 881 tests in 8.5s                          |
+| Fix-in-place vs rewrite                   | Existing code works, users depend on it            | ✓ Good — surgical fixes preserved all functionality |
+| Industry benchmarks for validation        | WintelGuy, NetApp, OpenZFS are gold standards      | ✓ Good — all calculations within 1%                 |
+| Dell Sizer as reference for Dell products | Official Dell capacity planning tool, ground truth | ✓ Good — all 5 Dell platforms validated             |
+| TDD protocol: skip→RED→GREEN→delete       | Prevents testing wrong formulas                    | ✓ Good — caught all issues cleanly                  |
+| Static-only architecture                  | Original constraint, enables simple deployment     | ✓ Good                                              |
+| React 19 + Tailwind 4                     | Modern stack, already in use                       | ✓ Good — no stability issues                        |
 
 ## Constraints
 

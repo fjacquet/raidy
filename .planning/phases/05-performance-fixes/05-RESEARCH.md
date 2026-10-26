@@ -73,24 +73,18 @@ src/hooks/
 // Source: https://react.dev/reference/react/useMemo
 // Current (BAD): Single memo with 30+ dependencies - all calculations re-run on any change
 export function useCalculations() {
-  const config = useConfigStore();
+  const config = useConfigStore()
   return useMemo(() => {
-    const volumetry = calculateVolumetry(config);
-    const performance = calculatePerformance(config);
-    const sustainability = calculateSustainability(config);
-    return { volumetry, performance, sustainability };
-  }, [config.driveId, config.driveCount /* ...28 more dependencies */]);
+    const volumetry = calculateVolumetry(config)
+    const performance = calculatePerformance(config)
+    const sustainability = calculateSustainability(config)
+    return { volumetry, performance, sustainability }
+  }, [config.driveId, config.driveCount /* ...28 more dependencies */])
 }
 
 // Improved (GOOD): Independent memos with focused dependencies
 export function useVolumetryCalc() {
-  const {
-    drive,
-    driveCount,
-    topology,
-    compressionRatio,
-    dedupRatio,
-  } = useConfigStore();
+  const { drive, driveCount, topology, compressionRatio, dedupRatio } = useConfigStore()
   return useMemo(
     () =>
       calculateVolumetry({
@@ -100,18 +94,12 @@ export function useVolumetryCalc() {
         compressionRatio,
         dedupRatio,
       }),
-    [drive, driveCount, topology, compressionRatio, dedupRatio]
-  );
+    [drive, driveCount, topology, compressionRatio, dedupRatio],
+  )
 }
 
 export function usePerformanceCalc() {
-  const {
-    drive,
-    driveCount,
-    topology,
-    readPercent,
-    randomPercent,
-  } = useConfigStore();
+  const { drive, driveCount, topology, readPercent, randomPercent } = useConfigStore()
   return useMemo(
     () =>
       calculatePerformance({
@@ -121,16 +109,16 @@ export function usePerformanceCalc() {
         readPercent,
         randomPercent,
       }),
-    [drive, driveCount, topology, readPercent, randomPercent]
-  );
+    [drive, driveCount, topology, readPercent, randomPercent],
+  )
 }
 
 // Orchestrator just combines results
 export function useCalculations() {
-  const volumetry = useVolumetryCalc();
-  const performance = usePerformanceCalc();
-  const sustainability = useSustainabilityCalc();
-  return { volumetry, performance, sustainability };
+  const volumetry = useVolumetryCalc()
+  const performance = usePerformanceCalc()
+  const sustainability = useSustainabilityCalc()
+  return { volumetry, performance, sustainability }
 }
 ```
 
@@ -150,48 +138,48 @@ export function useCalculations() {
 
 ```typescript
 // Source: https://web.dev/articles/optimize-long-tasks
-let aborted = false;
+let aborted = false
 
 self.onmessage = (event) => {
-  if (event.data.type === "ABORT") {
-    aborted = true;
-    return;
+  if (event.data.type === 'ABORT') {
+    aborted = true
+    return
   }
 
-  if (event.data.type === "START") {
-    runSimulationWithYielding(event.data.payload);
+  if (event.data.type === 'START') {
+    runSimulationWithYielding(event.data.payload)
   }
-};
+}
 
 async function runSimulationWithYielding(input) {
-  const CHUNK_SIZE = 1000; // Process 1000 simulations per chunk
-  const { simulationCount } = input;
+  const CHUNK_SIZE = 1000 // Process 1000 simulations per chunk
+  const { simulationCount } = input
 
   for (let i = 0; i < simulationCount; i += CHUNK_SIZE) {
     if (aborted) {
-      postMessage({ type: "ABORTED" });
-      aborted = false;
-      return;
+      postMessage({ type: 'ABORTED' })
+      aborted = false
+      return
     }
 
     // Process chunk
     for (let j = 0; j < CHUNK_SIZE && i + j < simulationCount; j++) {
-      runSingleSimulation(input);
+      runSingleSimulation(input)
     }
 
     // Report progress
     postMessage({
-      type: "PROGRESS",
+      type: 'PROGRESS',
       payload: { completed: i + CHUNK_SIZE, total: simulationCount },
-    });
+    })
 
     // Yield to event loop using setTimeout
     if (i + CHUNK_SIZE < simulationCount) {
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0))
     }
   }
 
-  postMessage({ type: "RESULT", payload: results });
+  postMessage({ type: 'RESULT', payload: results })
 }
 ```
 
@@ -289,14 +277,14 @@ Problems that look simple but have existing solutions:
 // BAD: Missing driveCount dependency
 const volumetry = useMemo(
   () => calculateVolumetry({ drive, driveCount, topology }),
-  [drive, topology] // Missing driveCount!
-);
+  [drive, topology], // Missing driveCount!
+)
 
 // GOOD: All dependencies included
 const volumetry = useMemo(
   () => calculateVolumetry({ drive, driveCount, topology }),
-  [drive, driveCount, topology]
-);
+  [drive, driveCount, topology],
+)
 ```
 
 ### Pitfall 2: Web Worker Abort Message Ignored During Long Loop
@@ -322,36 +310,36 @@ const volumetry = useMemo(
 ```typescript
 // BAD: Abort never processed until loop finishes
 self.onmessage = (e) => {
-  if (e.data.type === "ABORT") {
+  if (e.data.type === 'ABORT') {
     // This sets a flag but doesn't stop the running loop
-    postMessage({ type: "ABORTED" });
-    return;
+    postMessage({ type: 'ABORTED' })
+    return
   }
-};
+}
 
 function runSimulation() {
   for (let i = 0; i < 100000; i++) {
-    runSingleSimulation(); // Tight loop - never checks message queue
+    runSingleSimulation() // Tight loop - never checks message queue
   }
 }
 
 // GOOD: Check flag and yield periodically
-let shouldAbort = false;
+let shouldAbort = false
 self.onmessage = (e) => {
-  if (e.data.type === "ABORT") {
-    shouldAbort = true;
+  if (e.data.type === 'ABORT') {
+    shouldAbort = true
   }
-};
+}
 
 async function runSimulation() {
   for (let i = 0; i < 100000; i += 1000) {
     if (shouldAbort) {
-      postMessage({ type: "ABORTED" });
-      shouldAbort = false;
-      return;
+      postMessage({ type: 'ABORTED' })
+      shouldAbort = false
+      return
     }
     // Process chunk, then yield
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    await new Promise((resolve) => setTimeout(resolve, 0))
   }
 }
 ```
@@ -458,22 +446,22 @@ Verified patterns from official sources:
 ```typescript
 // Source: https://react.dev/reference/react/useMemo
 // src/hooks/useVolumetryCalc.ts
-import { useMemo } from "react";
-import { calculateVolumetry } from "@/engines/volumetry";
-import { useConfigStore } from "@/store";
+import { useMemo } from 'react'
+import { calculateVolumetry } from '@/engines/volumetry'
+import { useConfigStore } from '@/store'
 
 export function useVolumetryCalc() {
-  const drive = useConfigStore((s) => s.drives[s.driveId]);
-  const driveCount = useConfigStore((s) => s.driveCount);
-  const serverCount = useConfigStore((s) => s.serverCount);
-  const topology = useConfigStore((s) => s.topology);
-  const hotSpares = useConfigStore((s) => s.hotSpares);
-  const compressionRatio = useConfigStore((s) => s.compressionRatio);
-  const dedupRatio = useConfigStore((s) => s.dedupRatio);
+  const drive = useConfigStore((s) => s.drives[s.driveId])
+  const driveCount = useConfigStore((s) => s.driveCount)
+  const serverCount = useConfigStore((s) => s.serverCount)
+  const topology = useConfigStore((s) => s.topology)
+  const hotSpares = useConfigStore((s) => s.hotSpares)
+  const compressionRatio = useConfigStore((s) => s.compressionRatio)
+  const dedupRatio = useConfigStore((s) => s.dedupRatio)
   // ... other volumetry-specific config
 
   return useMemo(() => {
-    if (!drive) return null;
+    if (!drive) return null
 
     return calculateVolumetry({
       drive,
@@ -484,7 +472,7 @@ export function useVolumetryCalc() {
       compressionRatio,
       dedupRatio,
       // ... other volumetry params
-    });
+    })
   }, [
     drive,
     driveCount,
@@ -494,7 +482,7 @@ export function useVolumetryCalc() {
     compressionRatio,
     dedupRatio,
     // ... list ALL dependencies
-  ]);
+  ])
 }
 ```
 
@@ -503,65 +491,65 @@ export function useVolumetryCalc() {
 ```typescript
 // Source: https://web.dev/articles/optimize-long-tasks
 // src/workers/resilienceWorker.ts
-let shouldAbort = false;
+let shouldAbort = false
 
 self.onmessage = (event: MessageEvent<WorkerInputMessage>) => {
-  if (event.data.type === "ABORT") {
-    shouldAbort = true;
-    return;
+  if (event.data.type === 'ABORT') {
+    shouldAbort = true
+    return
   }
 
-  if (event.data.type === "START") {
-    shouldAbort = false;
-    runSimulation(event.data.payload);
+  if (event.data.type === 'START') {
+    shouldAbort = false
+    runSimulation(event.data.payload)
   }
-};
+}
 
 async function runSimulation(input: SimulationInput) {
-  const CHUNK_SIZE = 1000; // Balance between responsiveness and overhead
-  const { simulationCount } = input;
+  const CHUNK_SIZE = 1000 // Balance between responsiveness and overhead
+  const { simulationCount } = input
 
-  let survivedCount = 0;
-  let totalRebuildTime = 0;
+  let survivedCount = 0
+  let totalRebuildTime = 0
   // ... other accumulators
 
   for (let i = 0; i < simulationCount; i += CHUNK_SIZE) {
     // Check abort flag at start of each chunk
     if (shouldAbort) {
-      postMessage({ type: "ABORTED" });
-      shouldAbort = false;
-      return;
+      postMessage({ type: 'ABORTED' })
+      shouldAbort = false
+      return
     }
 
     // Process chunk
-    const chunkEnd = Math.min(i + CHUNK_SIZE, simulationCount);
+    const chunkEnd = Math.min(i + CHUNK_SIZE, simulationCount)
     for (let j = i; j < chunkEnd; j++) {
-      const result = runSingleSimulation(input);
-      if (result.survived) survivedCount++;
-      totalRebuildTime += result.rebuildTimeHours;
+      const result = runSingleSimulation(input)
+      if (result.survived) survivedCount++
+      totalRebuildTime += result.rebuildTimeHours
       // ... accumulate results
     }
 
     // Report progress
     postMessage({
-      type: "PROGRESS",
+      type: 'PROGRESS',
       payload: { completed: chunkEnd, total: simulationCount },
-    });
+    })
 
     // Yield to event loop (allows abort message to be processed)
     if (chunkEnd < simulationCount) {
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0))
     }
   }
 
   // Calculate and send final results
   postMessage({
-    type: "RESULT",
+    type: 'RESULT',
     payload: {
       survivalRate: survivedCount / simulationCount,
       // ... other results
     },
-  });
+  })
 }
 ```
 
@@ -612,14 +600,14 @@ export default function ExportPdfButton({ onClose }) {
 ```typescript
 // Source: https://github.com/btd/rollup-plugin-visualizer
 // vite.config.ts
-import { defineConfig } from "vite";
-import { visualizer } from "rollup-plugin-visualizer";
+import { defineConfig } from 'vite'
+import { visualizer } from 'rollup-plugin-visualizer'
 
 export default defineConfig({
   plugins: [
     // ... other plugins
     visualizer({
-      filename: "./dist/stats.html",
+      filename: './dist/stats.html',
       open: true, // Auto-open in browser after build
       gzipSize: true,
       brotliSize: true,
@@ -629,14 +617,14 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          "vendor-pdf": ["jspdf", "jspdf-autotable"],
-          "vendor-react": ["react", "react-dom"],
-          "vendor-charts": ["recharts", "d3-sankey"],
+          'vendor-pdf': ['jspdf', 'jspdf-autotable'],
+          'vendor-react': ['react', 'react-dom'],
+          'vendor-charts': ['recharts', 'd3-sankey'],
         },
       },
     },
   },
-});
+})
 ```
 
 ## State of the Art
@@ -661,13 +649,11 @@ export default defineConfig({
 Things that couldn't be fully resolved:
 
 1. **html2canvas transitive dependency source**
-
    - What we know: html2canvas (196KB) appears in dist/assets but not in package.json dependencies
    - What's unclear: Which dependency (jsPDF, canvg, or other) includes it transitively
    - Recommendation: Run `npm ls html2canvas` to trace dependency tree. If unused by jsPDF 4.0.0, add to package.json `resolutions` field to exclude it or consider switching to jsPDF alternatives.
 
 2. **Optimal Monte Carlo chunk size**
-
    - What we know: Larger chunks reduce setTimeout overhead but increase abort latency
    - What's unclear: Whether 1000 or 5000 iterations per chunk is better for this use case
    - Recommendation: Test both with Chrome DevTools Performance tab. Target <50ms per chunk to maintain 60fps UI responsiveness.

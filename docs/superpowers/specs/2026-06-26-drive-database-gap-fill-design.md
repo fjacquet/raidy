@@ -11,8 +11,8 @@ drive picker. The `Drive` schema (`src/types/drive.ts`) is already rich — beyo
 (CMR/SMR/HAMR), `nandType` (SLC/MLC/TLC/QLC/3DXPoint), `dualActuator`, `latency_us` (SCM),
 `rpm`, `tier`, plus separate `interface` and `formFactor` fields.
 
-Auditing coverage surfaced gaps not in the *type system* but in the *data and the union
-members that have zero or near-zero representation*:
+Auditing coverage surfaced gaps not in the _type system_ but in the _data and the union
+members that have zero or near-zero representation_:
 
 - **`nandType` TLC and MLC are defined but used by zero drives**, although TLC is the dominant
   enterprise cell type — 44 SSDs are untagged.
@@ -47,23 +47,23 @@ Anonymized naming follows the existing convention (e.g. `Enterprise HDD 7.2K SAS
 `<tier>-<media>-<iface>-<capacity>[-<nand>]-<formfactor>[-<endurance>]`
 (e.g. `ent-hdd-7k2-sas-30tb-hamr`, `dc-nvme-pcie5-122880gb-qlc-e1l-ri`).
 
-| # | type | capacity | interface | formFactor | recording / nandType | tier | endurance |
-|---|------|----------|-----------|------------|----------------------|------|-----------|
-| 1 | HDD | 20 TB | SATA | 3.5" | CMR | enterprise | — |
-| 2 | HDD | 22 TB | SAS | 3.5" | CMR | enterprise | — |
-| 3 | HDD | 28 TB | SAS | 3.5" | HAMR | enterprise | — |
-| 4 | HDD | 30 TB | SATA | 3.5" | HAMR | enterprise | — |
-| 5 | HDD | 26 TB | SATA | 3.5" | SMR | enterprise (archival) | — |
-| 6 | SSD_SAS | 7.68 TB | SAS (24G) | 2.5" | TLC | enterprise | Mixed-Use |
-| 7 | SSD_SAS | 15.36 TB | SAS (24G) | 2.5" | TLC | enterprise | Read-Intensive |
-| 8 | SSD_NVMe | 30.72 TB | PCIe5 | E1.L | QLC | datacenter | Read-Intensive |
-| 9 | SSD_NVMe | 122.88 TB | PCIe5 | E1.L | QLC | datacenter | Read-Intensive |
-| 10 | SSD_NVMe | 61.44 TB | PCIe5 | E3.L | QLC | datacenter | Read-Intensive |
-| 11 | SSD_NVMe | 3.84 TB | PCIe5 | E3.S | TLC | datacenter | Mixed-Use |
-| 12 | SSD_NVMe | 7.68 TB | PCIe5 | U.3 | TLC | enterprise | Read-Intensive |
-| 13 | SSD_NVMe | 1.92 TB | PCIe5 | M.2 | TLC | enterprise | (boot/edge) |
-| 14 | SSD_SATA | 960 GB | SATA | 2.5" | TLC | enterprise | Mixed-Use |
-| 15 | SSD_SATA | 480 GB | SATA | 2.5" | TLC | enterprise | (boot) |
+| #   | type     | capacity  | interface | formFactor | recording / nandType | tier                  | endurance      |
+| --- | -------- | --------- | --------- | ---------- | -------------------- | --------------------- | -------------- |
+| 1   | HDD      | 20 TB     | SATA      | 3.5"       | CMR                  | enterprise            | —              |
+| 2   | HDD      | 22 TB     | SAS       | 3.5"       | CMR                  | enterprise            | —              |
+| 3   | HDD      | 28 TB     | SAS       | 3.5"       | HAMR                 | enterprise            | —              |
+| 4   | HDD      | 30 TB     | SATA      | 3.5"       | HAMR                 | enterprise            | —              |
+| 5   | HDD      | 26 TB     | SATA      | 3.5"       | SMR                  | enterprise (archival) | —              |
+| 6   | SSD_SAS  | 7.68 TB   | SAS (24G) | 2.5"       | TLC                  | enterprise            | Mixed-Use      |
+| 7   | SSD_SAS  | 15.36 TB  | SAS (24G) | 2.5"       | TLC                  | enterprise            | Read-Intensive |
+| 8   | SSD_NVMe | 30.72 TB  | PCIe5     | E1.L       | QLC                  | datacenter            | Read-Intensive |
+| 9   | SSD_NVMe | 122.88 TB | PCIe5     | E1.L       | QLC                  | datacenter            | Read-Intensive |
+| 10  | SSD_NVMe | 61.44 TB  | PCIe5     | E3.L       | QLC                  | datacenter            | Read-Intensive |
+| 11  | SSD_NVMe | 3.84 TB   | PCIe5     | E3.S       | TLC                  | datacenter            | Mixed-Use      |
+| 12  | SSD_NVMe | 7.68 TB   | PCIe5     | U.3        | TLC                  | enterprise            | Read-Intensive |
+| 13  | SSD_NVMe | 1.92 TB   | PCIe5     | M.2        | TLC                  | enterprise            | (boot/edge)    |
+| 14  | SSD_SATA | 960 GB    | SATA      | 2.5"       | TLC                  | enterprise            | Mixed-Use      |
+| 15  | SSD_SATA | 480 GB    | SATA      | 2.5"       | TLC                  | enterprise            | (boot)         |
 
 Each entry must populate every required `Drive` field: `id, model, type, capacity_raw` (decimal
 bytes), `sector_size` (4096), `performance{iops_read, iops_write, bandwidth_read_mb,

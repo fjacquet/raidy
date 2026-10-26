@@ -49,24 +49,26 @@ export interface WorkloadProfile {
   blockSize: BlockSize
 }
 
-export const WORKLOAD_PROFILES: readonly WorkloadProfile[] = [ /* table below */ ]
+export const WORKLOAD_PROFILES: readonly WorkloadProfile[] = [
+  /* table below */
+]
 ```
 
-| id | Read % | Random % | Block | Class |
-|---|---:|---:|---:|---|
-| `aiTraining` | 70 | 30 | 512K | hpc |
-| `aiCheckpointing` | 20 | 10 | 1M | hpc |
-| `hpcScratch` | 60 | 20 | 1M | hpc |
-| `genomics` | 65 | 40 | 256K | hpc |
-| `edaCae` | 55 | 35 | 256K | hpc |
-| `aiInference` | 80 | 25 | 512K | hpc |
-| `database` | 70 | 80 | 8K | general |
-| `fileServer` | 90 | 20 | 128K | general |
-| `videoStreaming` | 95 | 10 | 1M | general |
-| `backup` | 20 | 5 | 1M | general |
+| id                | Read % | Random % | Block | Class   |
+| ----------------- | -----: | -------: | ----: | ------- |
+| `aiTraining`      |     70 |       30 |  512K | hpc     |
+| `aiCheckpointing` |     20 |       10 |    1M | hpc     |
+| `hpcScratch`      |     60 |       20 |    1M | hpc     |
+| `genomics`        |     65 |       40 |  256K | hpc     |
+| `edaCae`          |     55 |       35 |  256K | hpc     |
+| `aiInference`     |     80 |       25 |  512K | hpc     |
+| `database`        |     70 |       80 |    8K | general |
+| `fileServer`      |     90 |       20 |  128K | general |
+| `videoStreaming`  |     95 |       10 |    1M | general |
+| `backup`          |     20 |        5 |    1M | general |
 
 The four `general` rows reproduce the existing buttons exactly — this refactor must not change what
-they do. The six `hpc` rows come from the source document. That document gives block-size *ranges*
+they do. The six `hpc` rows come from the source document. That document gives block-size _ranges_
 (for example "512K to 1M"); `blockSize` is an enum, so each profile takes a single value from within
 its range, chosen for the dominant characteristic: throughput-bound profiles take the larger end,
 mixed-pipeline profiles the smaller.
@@ -125,12 +127,12 @@ needs no edit — URL parsing accepts the new value automatically.
 
 `src/store/slices/workloadSlice.ts`:
 
-| Field | Before | After |
-|---|---|---|
-| `readPercent` | 70 | 60 |
-| `randomPercent` | 50 | 25 |
-| `blockSize` | `'64K'` | `'512K'` |
-| `dailyWriteVolume` | 1 TB | 1 TB (unchanged) |
+| Field              | Before  | After            |
+| ------------------ | ------- | ---------------- |
+| `readPercent`      | 70      | 60               |
+| `randomPercent`    | 50      | 25               |
+| `blockSize`        | `'64K'` | `'512K'`         |
+| `dailyWriteVolume` | 1 TB    | 1 TB (unchanged) |
 
 **This rewrites existing shared URLs.** `partialize` runs `omitDefaults`, so a hash created today
 carries nothing for a field left at its default; after this change that same link renders at the new
@@ -212,9 +214,9 @@ Changed in the same commit, per the repository's docs-in-sync rule:
 
 ## Risks
 
-| Risk | Mitigation |
-|---|---|
-| Old shared URLs silently render at the new defaults | Accepted deliberately; major version bump and an explicit CHANGELOG note |
-| Profile values have no vendor citation | They are UI starting points, not engine constants; the source document is cited in this spec and the values are trivially editable in one table |
-| A new platform ships unclassed | `Record<TopologyType, …>` is exhaustive — it fails to compile |
-| `512K` missed at some call site | `Record<BlockSize, …>` on both the byte table and the label table — also a compile failure |
+| Risk                                                | Mitigation                                                                                                                                      |
+| --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| Old shared URLs silently render at the new defaults | Accepted deliberately; major version bump and an explicit CHANGELOG note                                                                        |
+| Profile values have no vendor citation              | They are UI starting points, not engine constants; the source document is cited in this spec and the values are trivially editable in one table |
+| A new platform ships unclassed                      | `Record<TopologyType, …>` is exhaustive — it fails to compile                                                                                   |
+| `512K` missed at some call site                     | `Record<BlockSize, …>` on both the byte table and the label table — also a compile failure                                                      |

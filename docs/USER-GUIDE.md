@@ -8,7 +8,7 @@ as a URL.
 
 > The app has a built-in **Guide** with the same material, per platform and in four languages.
 > This document is the version you can read without opening the app, and it says a few things the
-> in-app guide does not: what the numbers are *not*, and where they are deliberately pessimistic.
+> in-app guide does not: what the numbers are _not_, and where they are deliberately pessimistic.
 
 ---
 
@@ -19,7 +19,7 @@ as a URL.
    than sitting there inert.
 2. **Hardware** — drive model, drives per server, servers. The drive database carries real
    published specs: capacity, IOPS, throughput, power, endurance, AFR and URE rate.
-   *PowerScale is the exception*: its cluster is built as node pools in the Topology panel (node
+   _PowerScale is the exception_: its cluster is built as node pools in the Topology panel (node
    model, drive size, node count, protection, virtual hot spare — all constrained to what Dell's
    catalog publishes, 1 to 8 pools per cluster), so the drives-per-server and servers sliders do
    not apply and the panel shows the pools' own drive count instead. Capacity is reported per
@@ -52,11 +52,11 @@ Cost → Take-away**, in the order a sizing conversation actually goes.
 
 Three numbers, and confusing them is the most common sizing error.
 
-| Figure | Meaning |
-|---|---|
-| **Raw** | What you bought. Drive capacity × drive count. |
-| **Usable** | What survives protection and formatting: parity or replicas, filesystem overhead, hot spares, reserved slack. |
-| **Effective** | Usable × your compression and deduplication assumptions. |
+| Figure        | Meaning                                                                                                       |
+| ------------- | ------------------------------------------------------------------------------------------------------------- |
+| **Raw**       | What you bought. Drive capacity × drive count.                                                                |
+| **Usable**    | What survives protection and formatting: parity or replicas, filesystem overhead, hot spares, reserved slack. |
+| **Effective** | Usable × your compression and deduplication assumptions.                                                      |
 
 **Effective capacity is a projection, not a measurement.** It rests on a ratio you supplied or
 accepted as a default. Quote usable capacity in a proposal; quote effective only with the ratio
@@ -80,7 +80,7 @@ land in the fast tier first. Burst is what that absorbs before it saturates; sus
 capacity tier can take once every byte has to drain there. A workload that fits in cache sees
 burst. A backup window does not.
 
-Where they are equal — untiered configurations, Ceph, BeeGFS — they are computed to be *exactly*
+Where they are equal — untiered configurations, Ceph, BeeGFS — they are computed to be _exactly_
 equal, not approximately.
 
 **The bottleneck chain names the binding layer**: media, controller, PCIe, network. It is the most
@@ -119,7 +119,7 @@ are rare enough that 100K iterations cannot resolve small differences between co
 two options look identical, they may genuinely be, at the precision this tool reports.
 
 **Some conservatism is visible and can look like a bug.** A BeeGFS cluster with an odd number of
-storage targets reports *worse* survival than one with an even number, because the unpaired target
+storage targets reports _worse_ survival than one with an even number, because the unpaired target
 has no buddy and gets no credit for one. The panel says so when it happens. It is a real property
 of the configuration, not an artefact.
 
@@ -142,7 +142,7 @@ write-heavy workloads on read-intensive drives are a classic and expensive mista
 **Copy URL to Share** puts the entire configuration in the link. No account, no expiry, nothing
 stored on a server.
 
-One caveat worth knowing: the link records only what you *changed* from the defaults. If a default
+One caveat worth knowing: the link records only what you _changed_ from the defaults. If a default
 changes in a later version, an old link inherits the new one. Version 2.0.0 did exactly this — the
 default hot-spare count went from 1 to 0, so links made earlier that never touched it now show
 slightly more usable capacity than when they were shared. Version 3.0.0 moved the neutral workload
@@ -162,7 +162,7 @@ theme and language. The Take-away card also carries copy-pasteable ZFS provision
   no credentials, so it was never deployable.
 - **Not a benchmark.** See the performance caveats above.
 - **Not a substitute for a vendor sizer** on a configuration you are about to buy. It is the tool
-  for the conversation *before* that one — comparing options, understanding trade-offs, and
+  for the conversation _before_ that one — comparing options, understanding trade-offs, and
   spotting the configuration that cannot work.
 - **Not a monitoring or capacity-planning tool.** It has no idea what your existing array is doing.
 

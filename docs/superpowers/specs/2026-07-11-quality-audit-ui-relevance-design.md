@@ -48,11 +48,11 @@ Cockpit layout itself (we adapt content visibility, not structure).
 
 For each platform, compare three sources:
 
-| Source | Where |
-|--------|-------|
-| Engine strategy code | `src/engines/volumetry/strategies/*` (and peers) |
-| Existing test vectors | `tests/fixtures/*-vectors.ts` |
-| External reference | WintelGuy, NetApp efficiency calculator, vendor sizing docs — fetched fresh via Perplexity/Context7, never from memory |
+| Source                | Where                                                                                                                  |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Engine strategy code  | `src/engines/volumetry/strategies/*` (and peers)                                                                       |
+| Existing test vectors | `tests/fixtures/*-vectors.ts`                                                                                          |
+| External reference    | WintelGuy, NetApp efficiency calculator, vendor sizing docs — fetched fresh via Perplexity/Context7, never from memory |
 
 ### Scope split (builds on phase 02, no rework)
 
@@ -104,12 +104,12 @@ finding is tagged one of:
 
 ### Known code defects to fix (confirm during e2e)
 
-| Defect | Location | Fix |
-|--------|----------|-----|
-| Hardcoded English strings (`'drives'`, `'servers'`, `'Raw'`, `'Usable'`, `'Max Read'`, …) bypass 4-locale i18n | `src/utils/exportPptx.ts` | Move all slide labels to `output.json` (en/fr/de/it) |
-| `unitSystem` accepted in `ExportConfig` but never read — deck always decimal TB | `src/utils/exportPptx.ts` (`bytesToTB`) | Honor the user's unit setting via `@utils/units` |
-| Module-level mutable `let brand` (hidden state, impure) | `src/utils/exportPptx.ts` | Pass the palette as a parameter through the slide builders |
-| Export failures only reach the console | `OutputDashboard.tsx` handler | Surface a user-visible error toast |
+| Defect                                                                                                         | Location                                | Fix                                                        |
+| -------------------------------------------------------------------------------------------------------------- | --------------------------------------- | ---------------------------------------------------------- |
+| Hardcoded English strings (`'drives'`, `'servers'`, `'Raw'`, `'Usable'`, `'Max Read'`, …) bypass 4-locale i18n | `src/utils/exportPptx.ts`               | Move all slide labels to `output.json` (en/fr/de/it)       |
+| `unitSystem` accepted in `ExportConfig` but never read — deck always decimal TB                                | `src/utils/exportPptx.ts` (`bytesToTB`) | Honor the user's unit setting via `@utils/units`           |
+| Module-level mutable `let brand` (hidden state, impure)                                                        | `src/utils/exportPptx.ts`               | Pass the palette as a parameter through the slide builders |
+| Export failures only reach the console                                                                         | `OutputDashboard.tsx` handler           | Surface a user-visible error toast                         |
 
 ## 5. Workstream C — UI Relevance Pass
 
@@ -170,9 +170,9 @@ Reviewable PRs in dependency order:
 
 ## 9. Risks & Mitigations
 
-| Risk | Mitigation |
-|------|------------|
-| External references disagree with each other | Prefer vendor primary docs; record the chosen source per vector in the fixture comment |
-| Vendor formulas are proprietary/undocumented (Nutanix, NetApp) | Flag affected readouts as estimates in the UI rather than presenting false precision |
-| Capability map drifts from strategy behavior | Ignoring-input tests make each flag self-verifying |
-| PPTX e2e is browser-dependent and slow | Keep it a manual/scripted verification step, not CI; CI keeps unit-level slide-builder tests |
+| Risk                                                           | Mitigation                                                                                   |
+| -------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| External references disagree with each other                   | Prefer vendor primary docs; record the chosen source per vector in the fixture comment       |
+| Vendor formulas are proprietary/undocumented (Nutanix, NetApp) | Flag affected readouts as estimates in the UI rather than presenting false precision         |
+| Capability map drifts from strategy behavior                   | Ignoring-input tests make each flag self-verifying                                           |
+| PPTX e2e is browser-dependent and slow                         | Keep it a manual/scripted verification step, not CI; CI keeps unit-level slide-builder tests |
