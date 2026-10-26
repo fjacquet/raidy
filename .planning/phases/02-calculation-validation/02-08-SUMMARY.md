@@ -1,42 +1,46 @@
 ---
+
 phase: 02-calculation-validation
 plan: 08
 subsystem: testing
 tags: [vitest, monte-carlo, statistical-testing, confidence-intervals, flakiness]
 
 # Dependency graph
+
 requires:
-  - phase: 02-04
-    provides: Monte Carlo resilience simulation with statistical validation
-provides:
-  - Stable statistical test suite with no flakiness
-  - Documentation for testing stochastic code
-  - CI/CD reliability improvements
-affects: [future Monte Carlo test development, CI/CD pipeline stability]
+- phase: 02-04
+  provides: Monte Carlo resilience simulation with statistical validation
+  provides:
+- Stable statistical test suite with no flakiness
+- Documentation for testing stochastic code
+- CI/CD reliability improvements
+  affects: [future Monte Carlo test development, CI/CD pipeline stability]
 
 # Tech tracking
+
 tech-stack:
-  added: []
-  patterns:
-    - "Statistical tolerance guidelines for Monte Carlo tests"
-    - "Documented best practices for testing non-deterministic code"
+added: []
+patterns:
+- "Statistical tolerance guidelines for Monte Carlo tests"
+- "Documented best practices for testing non-deterministic code"
 
 key-files:
-  created: []
-  modified:
-    - tests/workers/resilience.spec.ts
+created: []
+modified:
+- tests/workers/resilience.spec.ts
 
 key-decisions:
-  - "Increased CI tolerance from 0.4 to 0.5 for statistical convergence test"
-  - "Documented stochastic testing best practices in test file"
-  - "Used 0.5 tolerance instead of theoretical 0.316 to account for 58% variance buffer"
+- "Increased CI tolerance from 0.4 to 0.5 for statistical convergence test"
+- "Documented stochastic testing best practices in test file"
+- "Used 0.5 tolerance instead of theoretical 0.316 to account for 58% variance buffer"
 
 patterns-established:
-  - "Statistical tests should use generous tolerance (2-3σ) to prevent flakiness"
-  - "Document tolerance reasoning inline to educate maintainers"
-  - "Verify stability with 10+ consecutive runs before committing fixes"
+- "Statistical tests should use generous tolerance (2-3σ) to prevent flakiness"
+- "Document tolerance reasoning inline to educate maintainers"
+- "Verify stability with 10+ consecutive runs before committing fixes"
 
 # Metrics
+
 duration: 3min
 completed: 2026-01-18
 ---
@@ -54,6 +58,7 @@ completed: 2026-01-18
 - **Files modified:** 1
 
 ## Accomplishments
+
 - Fixed flaky confidence interval narrowing test (resilience.spec.ts:1297)
 - Increased tolerance from 0.4 to 0.5 to account for Monte Carlo variance
 - Verified stability with 10 consecutive test runs without failures
@@ -69,6 +74,7 @@ Each task was committed atomically:
 2. **Task 2: Document statistical test design principles** - `2cdc4c2` (docs)
 
 ## Files Created/Modified
+
 - `tests/workers/resilience.spec.ts` - Fixed flaky test tolerance, added stochastic testing documentation
 
 ## Decisions Made
@@ -115,5 +121,6 @@ None - no external service configuration required.
 - No blockers or concerns
 
 ---
-*Phase: 02-calculation-validation*
-*Completed: 2026-01-18*
+
+_Phase: 02-calculation-validation_
+_Completed: 2026-01-18_

@@ -50,7 +50,6 @@ Le cœur du calcul de capacité doit prendre en compte les pertes liées à la p
 $$C_{raw} = N_{nodes} \times N_{osd\_per\_node} \times C_{disk}$$
 
 1. **Efficacité du Stockage ($E$) :**
-
    - Pour la Réplication ($R$) :
      $$E = \frac{1}{R}$$
    - Pour l'Erasure Coding ($k, m$) :

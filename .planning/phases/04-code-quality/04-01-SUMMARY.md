@@ -1,49 +1,53 @@
 ---
+
 phase: 04-code-quality
 plan: 01
 subsystem: testing
 tags: [biome, typescript, type-guards, lint, vite, code-quality]
 
 # Dependency graph
+
 requires:
-  - phase: 03-security-hardening
-    provides: Validation infrastructure and error handling patterns
-provides:
-  - Clean lint status (zero Biome errors across 114 files)
-  - Exhaustive type checking helper (assertNever) for discriminated unions
-  - Optimized bundle configuration (html2canvas auto-chunked, not manually bundled)
-affects: [04-02-component-extraction, 04-03-engine-refactoring]
+- phase: 03-security-hardening
+  provides: Validation infrastructure and error handling patterns
+  provides:
+- Clean lint status (zero Biome errors across 114 files)
+- Exhaustive type checking helper (assertNever) for discriminated unions
+- Optimized bundle configuration (html2canvas auto-chunked, not manually bundled)
+  affects: [04-02-component-extraction, 04-03-engine-refactoring]
 
 # Tech tracking
+
 tech-stack:
-  added: []
-  patterns:
-    - "Double-cast pattern (as unknown as T) for intentional type violations in tests"
-    - "Explicit null checks instead of non-null assertions for Biome compliance"
-    - "assertNever() for exhaustive switch statement checking"
+added: []
+patterns:
+- "Double-cast pattern (as unknown as T) for intentional type violations in tests"
+- "Explicit null checks instead of non-null assertions for Biome compliance"
+- "assertNever() for exhaustive switch statement checking"
 
 key-files:
-  created:
-    - src/utils/typeGuards.ts
+created:
+- src/utils/typeGuards.ts
   modified:
-    - src/hooks/useCalculations.ts
-    - tests/utils/urlStorage.spec.ts
-    - tests/hooks/useCalculations.spec.ts
-    - src/utils/index.ts
-    - vite.config.ts
-    - src/utils/schemas.ts
+- src/hooks/useCalculations.ts
+- tests/utils/urlStorage.spec.ts
+- tests/hooks/useCalculations.spec.ts
+- src/utils/index.ts
+- vite.config.ts
+- src/utils/schemas.ts
 
 key-decisions:
-  - "Use 'as unknown as T' double-cast instead of 'as any' for test type violations"
-  - "Export assertNever from barrel file for convenient project-wide access"
-  - "Remove html2canvas from manual chunks - it's an optionalDependency that auto-chunks"
-  - "Add explicit type annotations (VolumetryResult, PerformanceResult, SustainabilityResult) for let declarations"
+- "Use 'as unknown as T' double-cast instead of 'as any' for test type violations"
+- "Export assertNever from barrel file for convenient project-wide access"
+- "Remove html2canvas from manual chunks - it's an optionalDependency that auto-chunks"
+- "Add explicit type annotations (VolumetryResult, PerformanceResult, SustainabilityResult) for let declarations"
 
 patterns-established:
-  - "Explicit type annotations on let declarations before try-catch blocks"
-  - "Exhaustive type checking in switch default cases via assertNever(value)"
+- "Explicit type annotations on let declarations before try-catch blocks"
+- "Exhaustive type checking in switch default cases via assertNever(value)"
 
 # Metrics
+
 duration: 9min
 completed: 2026-01-18
 ---

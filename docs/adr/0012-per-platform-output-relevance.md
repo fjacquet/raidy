@@ -9,7 +9,7 @@ A dashboard showing every metric for every platform shows some that are meaningl
 capacity tile for standard RAID reports the same value as usable, because RAID has no data
 reduction. A dedup framing for Longhorn describes something Longhorn does not do.
 
-The same reasoning had already been applied to *inputs* — a control that cannot change any number
+The same reasoning had already been applied to _inputs_ — a control that cannot change any number
 is worse than no control ([ADR-0007](./0007-sourced-lists-over-probed-flags.md)).
 
 ## Decision

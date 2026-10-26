@@ -6,7 +6,7 @@
 ## Context
 
 "Copy URL to Share" is a core feature: a sizing scenario must be reproducible from a link, with no
-account, no backend and no export step. Raidy has no server, so the link *is* the document.
+account, no backend and no export step. Raidy has no server, so the link _is_ the document.
 
 ## Decision
 
@@ -24,7 +24,7 @@ malformed or hostile link falls back to defaults with a toast rather than crashi
 **Changing a default silently rewrites every old link that relied on it.** This is the trap, and
 it is invisible from the diff, because changing a default touches no URL code. It happened in
 v2.0.0: `hotSpares` went from 1 to 0, so a link created under the old default — which therefore
-never recorded `hotSpares` — now resolves to 0 and reports one drive per server *more* usable
+never recorded `hotSpares` — now resolves to 0 and reports one drive per server _more_ usable
 capacity than when it was shared. Links where the user had changed the value are unaffected,
 because a non-default value is written into the hash.
 
@@ -33,7 +33,7 @@ in its CHANGELOG entry.
 
 **Removing an option field is the harmless case, but only if the schema changes too.** The nested
 schemas are plain `z.object()`: they strip unknown keys, so an old link carrying a deleted control
-still loads — but they *require* declared ones, so deleting a field from the type without deleting
+still loads — but they _require_ declared ones, so deleting a field from the type without deleting
 it from the schema breaks parsing for every link.
 
 **No sensitive data is at stake**, which is what makes this acceptable. Raidy is a calculator; its

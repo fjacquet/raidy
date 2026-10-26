@@ -1,55 +1,59 @@
 ---
+
 phase: 02-calculation-validation
 plan: 09
 subsystem: testing
 tags: [vitest, volumetry, objectscale, powerflex, raid5e, raid5ee, powervault, vsan-esa, edge-cases, coverage]
 
 # Dependency graph
+
 requires:
-  - phase: 02-01
-    provides: Table-driven testing framework and property-based testing with fast-check
-  - phase: 02-02
-    provides: Vendor-specific topology test patterns (vSAN, S2D, Ceph, Nutanix)
-  - phase: 02-06
-    provides: Write penalty edge case testing patterns
-provides:
-  - ObjectScale multi-site geo-replication overhead validation (EC 12+4, EC 10+2, EC 24+4, Mirror 3)
-  - PowerFlex Fine Granularity metadata overhead tests (12-15% overhead validation)
-  - RAID 5E/5EE distributed hot spare capacity tests
-  - PowerVault ADAPT distributed RAID efficiency threshold validation
-  - vSAN ESA RAID-6 adaptive stripe width tests (4+2 vs 6+2 selection logic)
-  - Coverage of vendor-specific calculation edge cases in lines 78-144, 208-214, 339-343, 503-506, 819-823
-affects: [Phase 3 - Security Hardening, Module B - Performance Engine]
+- phase: 02-01
+  provides: Table-driven testing framework and property-based testing with fast-check
+- phase: 02-02
+  provides: Vendor-specific topology test patterns (vSAN, S2D, Ceph, Nutanix)
+- phase: 02-06
+  provides: Write penalty edge case testing patterns
+  provides:
+- ObjectScale multi-site geo-replication overhead validation (EC 12+4, EC 10+2, EC 24+4, Mirror 3)
+- PowerFlex Fine Granularity metadata overhead tests (12-15% overhead validation)
+- RAID 5E/5EE distributed hot spare capacity tests
+- PowerVault ADAPT distributed RAID efficiency threshold validation
+- vSAN ESA RAID-6 adaptive stripe width tests (4+2 vs 6+2 selection logic)
+- Coverage of vendor-specific calculation edge cases in lines 78-144, 208-214, 339-343, 503-506, 819-823
+  affects: [Phase 3 - Security Hardening, Module B - Performance Engine]
 
 # Tech tracking
+
 tech-stack:
-  added: []
-  patterns:
-    - "ObjectScale geo-overhead table validation for multi-site replication (1-8 sites)"
-    - "PowerFlex Fine Granularity metadata overhead testing pattern"
-    - "RAID 5E/5EE distributed hot spare capacity validation with FS overhead"
-    - "PowerVault ADAPT efficiency threshold testing (24 drive boundary)"
-    - "vSAN ESA RAID-6 adaptive stripe width selection testing (cluster size dependent)"
+added: []
+patterns:
+- "ObjectScale geo-overhead table validation for multi-site replication (1-8 sites)"
+- "PowerFlex Fine Granularity metadata overhead testing pattern"
+- "RAID 5E/5EE distributed hot spare capacity validation with FS overhead"
+- "PowerVault ADAPT efficiency threshold testing (24 drive boundary)"
+- "vSAN ESA RAID-6 adaptive stripe width selection testing (cluster size dependent)"
 
 key-files:
-  created: []
-  modified:
-    - tests/engines/volumetry.spec.ts
+created: []
+modified:
+- tests/engines/volumetry.spec.ts
 
 key-decisions:
-  - "Test all ObjectScale EC schemes across their full site range (1-8 sites depending on scheme)"
-  - "Validate PowerFlex Fine Granularity only applies to 2-way mirrors (3-way uses Medium Granularity)"
-  - "Account for filesystem overhead (0.98x) in RAID 5E/5EE capacity expectations"
-  - "Test PowerVault ADAPT efficiency threshold at 24 drives (87% vs 85%)"
-  - "Validate vSAN ESA RAID-6 uses 4+2 when drives/server < 20, 6+2 when >= 20"
+- "Test all ObjectScale EC schemes across their full site range (1-8 sites depending on scheme)"
+- "Validate PowerFlex Fine Granularity only applies to 2-way mirrors (3-way uses Medium Granularity)"
+- "Account for filesystem overhead (0.98x) in RAID 5E/5EE capacity expectations"
+- "Test PowerVault ADAPT efficiency threshold at 24 drives (87% vs 85%)"
+- "Validate vSAN ESA RAID-6 uses 4+2 when drives/server < 20, 6+2 when >= 20"
 
 patterns-established:
-  - "Vendor geo-replication overhead validation via efficiency range checks"
-  - "Fine Granularity metadata overhead testing with explicit granularity flags"
-  - "Distributed RAID capacity validation accounting for all overhead layers"
-  - "Adaptive stripe width testing based on cluster size thresholds"
+- "Vendor geo-replication overhead validation via efficiency range checks"
+- "Fine Granularity metadata overhead testing with explicit granularity flags"
+- "Distributed RAID capacity validation accounting for all overhead layers"
+- "Adaptive stripe width testing based on cluster size thresholds"
 
 # Metrics
+
 duration: Combined with 02-10 (8min total for both gap closure plans)
 completed: 2026-01-18
 ---
@@ -222,6 +226,7 @@ None - no external service configuration required.
 **No blockers or concerns**
 
 ---
-*Phase: 02-calculation-validation*
-*Completed: 2026-01-18*
-*Note: Executed and committed alongside Plan 02-10 as combined gap closure effort*
+
+_Phase: 02-calculation-validation_
+_Completed: 2026-01-18_
+_Note: Executed and committed alongside Plan 02-10 as combined gap closure effort_

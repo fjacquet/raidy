@@ -23,18 +23,18 @@
 
 ## File Structure
 
-| File | Change | Responsibility |
-|---|---|---|
-| `src/types/config.ts` | Modify | Owns six closed unions; gains their `as const` value arrays |
-| `src/types/topology.ts` | Modify | Owns `ControllerType`; gains `HBA_TYPES`, `RAID_CONTROLLER_TYPES`, `CONTROLLER_TYPES` |
-| `src/utils/schemas.ts` | Modify | URL payload validation; enums replace `z.string()`, root `.passthrough()` removed |
-| `src/store/persistedKeys.ts` | Create | The single list of persisted keys, and the deliberate opt-outs |
-| `src/store/configStore.ts` | Modify | `partialize` derives from `PERSISTED_KEYS`; `getDefaultState()` derives from the slices |
-| `src/store/urlStorage.ts` | Modify | Envelope is the only accepted payload shape |
-| `tests/store/persistedKeys.spec.ts` | Create | The parity test that forces new settings to be classified |
-| `tests/store/resetToDefaults.spec.ts` | Create | Pins the three fields the reset button silently skipped |
-| `tests/utils/schemaEnums.spec.ts` | Create | Forged enum values are rejected, valid ones survive |
-| `tests/utils/urlStorage.spec.ts` | Modify | Fixtures migrate to the enveloped shape zustand actually writes |
+| File                                  | Change | Responsibility                                                                          |
+| ------------------------------------- | ------ | --------------------------------------------------------------------------------------- |
+| `src/types/config.ts`                 | Modify | Owns six closed unions; gains their `as const` value arrays                             |
+| `src/types/topology.ts`               | Modify | Owns `ControllerType`; gains `HBA_TYPES`, `RAID_CONTROLLER_TYPES`, `CONTROLLER_TYPES`   |
+| `src/utils/schemas.ts`                | Modify | URL payload validation; enums replace `z.string()`, root `.passthrough()` removed       |
+| `src/store/persistedKeys.ts`          | Create | The single list of persisted keys, and the deliberate opt-outs                          |
+| `src/store/configStore.ts`            | Modify | `partialize` derives from `PERSISTED_KEYS`; `getDefaultState()` derives from the slices |
+| `src/store/urlStorage.ts`             | Modify | Envelope is the only accepted payload shape                                             |
+| `tests/store/persistedKeys.spec.ts`   | Create | The parity test that forces new settings to be classified                               |
+| `tests/store/resetToDefaults.spec.ts` | Create | Pins the three fields the reset button silently skipped                                 |
+| `tests/utils/schemaEnums.spec.ts`     | Create | Forged enum values are rejected, valid ones survive                                     |
+| `tests/utils/urlStorage.spec.ts`      | Modify | Fixtures migrate to the enveloped shape zustand actually writes                         |
 
 ---
 
@@ -177,8 +177,8 @@ export type FsType = (typeof FS_TYPES)[number]
 `FsType` is new. In the same file, `FilesystemState.fsType` currently inlines the union — change it to use the named type:
 
 ```ts
-  /** File system type */
-  fsType: FsType
+/** File system type */
+fsType: FsType
 ```
 
 - [ ] **Step 4: Add the const arrays in `src/types/topology.ts`**
@@ -332,7 +332,9 @@ describe('persisted-key parity', () => {
   })
 
   it('keeps the two lists disjoint', () => {
-    const overlap = PERSISTED_KEYS.filter((key) => (EPHEMERAL_KEYS as readonly string[]).includes(key))
+    const overlap = PERSISTED_KEYS.filter((key) =>
+      (EPHEMERAL_KEYS as readonly string[]).includes(key),
+    )
     expect(overlap).toEqual([])
   })
 
@@ -372,7 +374,7 @@ describe('performanceThreshold round trip', () => {
 If `urlHashStorage.getItem` returns `null` here because the store's `persist` middleware has not
 written the hash in this test environment, build the hash explicitly instead — compress
 `JSON.stringify({ state: { performanceThreshold: 0.7 }, version: 1 })` into
-`window.location.hash = \`${stateKey}=…\`` and assert `getItem` returns it with the field intact.
+`window.location.hash = \`${stateKey}=…\``and assert`getItem` returns it with the field intact.
 Either shape proves the same thing: the field is no longer dropped. Say in your report which one
 you used and why.
 
@@ -663,6 +665,7 @@ and add a `### Changed` section under `## [Unreleased]`:
 
 ```markdown
 ### Changed
+
 - **"Reset to defaults" now resets the performance threshold and the two drive-picker filters.**
   They lived only in their slices' initial state, and `resetToDefaults()` merges, so the button
   silently skipped them. Defaults are now taken from the slices themselves rather than restated.
@@ -700,27 +703,27 @@ Closes #63"
 Append to `tests/utils/urlStorage.spec.ts`, inside the outermost `describe`:
 
 ```ts
-  it('rejects a flat payload, which no released version has ever written', () => {
-    // `createJSONStorage` has wrapped state in `{ state, version }` since the initial commit, so
-    // a flat payload can only come from a hand-crafted link.
-    const flat = compressToEncodedURIComponent(JSON.stringify({ driveCount: 24 }))
-    window.location.hash = `${stateKey}=${flat}`
+it('rejects a flat payload, which no released version has ever written', () => {
+  // `createJSONStorage` has wrapped state in `{ state, version }` since the initial commit, so
+  // a flat payload can only come from a hand-crafted link.
+  const flat = compressToEncodedURIComponent(JSON.stringify({ driveCount: 24 }))
+  window.location.hash = `${stateKey}=${flat}`
 
-    expect(urlHashStorage.getItem(stateKey)).toBeNull()
-  })
+  expect(urlHashStorage.getItem(stateKey)).toBeNull()
+})
 
-  it('strips an unknown root key instead of merging it into the store', () => {
-    const payload = compressToEncodedURIComponent(
-      JSON.stringify({ state: { driveCount: 24, somethingUnknown: 'x' }, version: 1 }),
-    )
-    window.location.hash = `${stateKey}=${payload}`
+it('strips an unknown root key instead of merging it into the store', () => {
+  const payload = compressToEncodedURIComponent(
+    JSON.stringify({ state: { driveCount: 24, somethingUnknown: 'x' }, version: 1 }),
+  )
+  window.location.hash = `${stateKey}=${payload}`
 
-    const retrieved = urlHashStorage.getItem(stateKey)
-    expect(retrieved).not.toBeNull()
-    const parsed = JSON.parse(retrieved as string)
-    expect(parsed.state.driveCount).toBe(24)
-    expect(parsed.state).not.toHaveProperty('somethingUnknown')
-  })
+  const retrieved = urlHashStorage.getItem(stateKey)
+  expect(retrieved).not.toBeNull()
+  const parsed = JSON.parse(retrieved as string)
+  expect(parsed.state.driveCount).toBe(24)
+  expect(parsed.state).not.toHaveProperty('somethingUnknown')
+})
 ```
 
 `compressToEncodedURIComponent` is already imported in that file if other tests build hashes directly; if not, add `import { compressToEncodedURIComponent } from 'lz-string'`. `stateKey` is the existing local constant.
@@ -736,12 +739,12 @@ Expected: both new tests FAIL — the flat payload is currently accepted, and th
 In `src/store/urlStorage.ts`, `getItem` currently reads:
 
 ```ts
-      // Validate the REAL config payload, not the persist envelope wrapping it.
-      // A bare/flat object (older links, hand-constructed test fixtures) is
-      // validated as-is for backward compatibility.
-      const envelope = isPersistEnvelope(parsed)
-      const rawState = envelope ? (parsed as PersistEnvelope).state : parsed
-      const validated = validateUrlState(rawState)
+// Validate the REAL config payload, not the persist envelope wrapping it.
+// A bare/flat object (older links, hand-constructed test fixtures) is
+// validated as-is for backward compatibility.
+const envelope = isPersistEnvelope(parsed)
+const rawState = envelope ? (parsed as PersistEnvelope).state : parsed
+const validated = validateUrlState(rawState)
 ```
 
 Replace with:
@@ -765,9 +768,9 @@ Replace with:
 Then simplify the re-wrap below it, which no longer has two cases:
 
 ```ts
-      // Re-wrap in the envelope Zustand expects (preserving `version`) so
-      // hydration reads the validated config, not the raw unvalidated one.
-      const output = { state: validated, version: parsed.version }
+// Re-wrap in the envelope Zustand expects (preserving `version`) so
+// hydration reads the validated config, not the raw unvalidated one.
+const output = { state: validated, version: parsed.version }
 ```
 
 Update the module-level doc comment (lines 11-20) so it no longer implies flat payloads are handled — state plainly that the compressed hash decodes to the persist envelope and that anything else is rejected.

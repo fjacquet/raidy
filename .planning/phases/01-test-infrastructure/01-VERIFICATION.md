@@ -1,4 +1,5 @@
 ---
+
 phase: 01-test-infrastructure
 verified: 2026-01-18T05:53:16Z
 status: passed
@@ -16,43 +17,43 @@ score: 11/11 must-haves verified
 
 ### Observable Truths
 
-| # | Truth | Status | Evidence |
-|---|-------|--------|----------|
-| 1 | Developer can run npm test and tests execute without errors | ✓ VERIFIED | 78 tests passed across 3 files in 1.11s |
-| 2 | Developer can test React components using jsdom environment | ✓ VERIFIED | React component test rendered successfully with toBeInTheDocument matcher |
-| 3 | Coverage thresholds are enforced at production-ready levels (75%+) | ✓ VERIFIED | Thresholds set to 75%, enforcement active (currently failing at 32.74% - expected) |
-| 4 | Developer can run npm test and see test results with coverage reporting | ✓ VERIFIED | npm run test:coverage generates reports in coverage/ directory |
-| 5 | Developer can add new .test.ts files and they are automatically discovered | ✓ VERIFIED | Test discovery pattern works: **/*.{test,spec}.{ts,tsx} |
-| 6 | Tests can use jest-dom matchers like toBeInTheDocument without imports | ✓ VERIFIED | Global setup provides matchers without explicit imports |
-| 7 | Coverage report shows line-by-line coverage with threshold enforcement | ✓ VERIFIED | HTML report shows per-file line coverage, thresholds evaluated |
+| #   | Truth                                                                      | Status     | Evidence                                                                           |
+| --- | -------------------------------------------------------------------------- | ---------- | ---------------------------------------------------------------------------------- |
+| 1   | Developer can run npm test and tests execute without errors                | ✓ VERIFIED | 78 tests passed across 3 files in 1.11s                                            |
+| 2   | Developer can test React components using jsdom environment                | ✓ VERIFIED | React component test rendered successfully with toBeInTheDocument matcher          |
+| 3   | Coverage thresholds are enforced at production-ready levels (75%+)         | ✓ VERIFIED | Thresholds set to 75%, enforcement active (currently failing at 32.74% - expected) |
+| 4   | Developer can run npm test and see test results with coverage reporting    | ✓ VERIFIED | npm run test:coverage generates reports in coverage/ directory                     |
+| 5   | Developer can add new .test.ts files and they are automatically discovered | ✓ VERIFIED | Test discovery pattern works: **/*.{test,spec}.{ts,tsx}                            |
+| 6   | Tests can use jest-dom matchers like toBeInTheDocument without imports     | ✓ VERIFIED | Global setup provides matchers without explicit imports                            |
+| 7   | Coverage report shows line-by-line coverage with threshold enforcement     | ✓ VERIFIED | HTML report shows per-file line coverage, thresholds evaluated                     |
 
 **Score:** 7/7 truths verified
 
 ### Required Artifacts
 
-| Artifact | Expected | Status | Details |
-|----------|----------|--------|---------|
-| `package.json` | @testing-library/react dependency | ✓ VERIFIED | Line 38: "@testing-library/react": "^16.3.1" |
-| `package.json` | @testing-library/jest-dom dependency | ✓ VERIFIED | Line 37: "@testing-library/jest-dom": "^6.9.1" |
-| `package.json` | @testing-library/user-event dependency | ✓ VERIFIED | Line 39: "@testing-library/user-event": "^14.6.1" |
-| `package.json` | jsdom dependency | ✓ VERIFIED | Line 49: "jsdom": "^27.4.0" |
-| `vitest.config.ts` | environment: 'jsdom' | ✓ VERIFIED | Line 7, 36 lines total (exceeds min 25) |
-| `vitest.config.ts` | setupFiles configuration | ✓ VERIFIED | Line 8: setupFiles: ['./src/test/setup.ts'] |
-| `vitest.config.ts` | coverage thresholds at 75% | ✓ VERIFIED | Lines 17-20: all thresholds set to 75 |
-| `src/test/setup.ts` | Global test setup file | ✓ VERIFIED | 16 lines, imports jest-dom and configures cleanup |
+| Artifact            | Expected                               | Status     | Details                                           |
+| ------------------- | -------------------------------------- | ---------- | ------------------------------------------------- |
+| `package.json`      | @testing-library/react dependency      | ✓ VERIFIED | Line 38: "@testing-library/react": "^16.3.1"      |
+| `package.json`      | @testing-library/jest-dom dependency   | ✓ VERIFIED | Line 37: "@testing-library/jest-dom": "^6.9.1"    |
+| `package.json`      | @testing-library/user-event dependency | ✓ VERIFIED | Line 39: "@testing-library/user-event": "^14.6.1" |
+| `package.json`      | jsdom dependency                       | ✓ VERIFIED | Line 49: "jsdom": "^27.4.0"                       |
+| `vitest.config.ts`  | environment: 'jsdom'                   | ✓ VERIFIED | Line 7, 36 lines total (exceeds min 25)           |
+| `vitest.config.ts`  | setupFiles configuration               | ✓ VERIFIED | Line 8: setupFiles: ['./src/test/setup.ts']       |
+| `vitest.config.ts`  | coverage thresholds at 75%             | ✓ VERIFIED | Lines 17-20: all thresholds set to 75             |
+| `src/test/setup.ts` | Global test setup file                 | ✓ VERIFIED | 16 lines, imports jest-dom and configures cleanup |
 
 **Score:** 8/8 artifacts verified
 
 ### Key Link Verification
 
-| From | To | Via | Status | Details |
-|------|-----|-----|--------|---------|
-| vitest.config.ts | jsdom environment | environment: 'jsdom' | ✓ WIRED | Line 7 in config |
-| vitest.config.ts | coverage thresholds | thresholds object | ✓ WIRED | Lines 15-21, all at 75% |
-| vitest.config.ts | src/test/setup.ts | setupFiles array | ✓ WIRED | Line 8 references setup file |
-| src/test/setup.ts | @testing-library/jest-dom | import statement | ✓ WIRED | Line 9 imports jest-dom/vitest |
-| src/test/setup.ts | test cleanup | afterEach hook | ✓ WIRED | Lines 14-16 configure automatic cleanup |
-| test files | TypeScript path aliases | @/ imports | ✓ WIRED | Tests use @/engines, @/types successfully |
+| From              | To                        | Via                  | Status  | Details                                   |
+| ----------------- | ------------------------- | -------------------- | ------- | ----------------------------------------- |
+| vitest.config.ts  | jsdom environment         | environment: 'jsdom' | ✓ WIRED | Line 7 in config                          |
+| vitest.config.ts  | coverage thresholds       | thresholds object    | ✓ WIRED | Lines 15-21, all at 75%                   |
+| vitest.config.ts  | src/test/setup.ts         | setupFiles array     | ✓ WIRED | Line 8 references setup file              |
+| src/test/setup.ts | @testing-library/jest-dom | import statement     | ✓ WIRED | Line 9 imports jest-dom/vitest            |
+| src/test/setup.ts | test cleanup              | afterEach hook       | ✓ WIRED | Lines 14-16 configure automatic cleanup   |
+| test files        | TypeScript path aliases   | @/ imports           | ✓ WIRED | Tests use @/engines, @/types successfully |
 
 **Score:** 6/6 key links verified
 

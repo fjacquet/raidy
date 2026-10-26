@@ -26,7 +26,7 @@ adding it alone fixes nothing observable. `calculatePerformance`
 `tiering.capacityTierDriveCount` **only** inside its `topology.type === 's2d'` branch. Every other
 platform falls through to an `else` that computes media IOPS and bandwidth from the raw Hardware
 panel `drive` and `usableDrives`, ignoring `tiering` entirely. So a tiered vSAN OSA, Ceph or
-Nutanix configuration is *already* costed against the wrong drive today — B2/#60 named only the
+Nutanix configuration is _already_ costed against the wrong drive today — B2/#60 named only the
 BeeGFS symptom of a gap that affects four platforms.
 
 ## What this is not fixing
@@ -38,7 +38,7 @@ Two things surfaced while scoping this work and were deliberately kept out:
   every OSD it serves. Both are shared fault domains, not simply "excluded from the simulated
   population" the way BeeGFS's MDT is. Modelling that correctly needs per-platform failure-domain
   work, is a real scope expansion, and is not what B1/#59 asked for. This fix corrects the
-  *population count* (the capacity tier, not the whole drive count) without modelling *why* the
+  _population count_ (the capacity tier, not the whole drive count) without modelling _why_ the
   fast tier failing could cascade. That gap is called out explicitly in code and docs — the same
   treatment Ceph's WAL/DB offload already gets today (also not simulated).
 - **Hot spares are never excluded from the simulated resilience population, for any platform** — filed

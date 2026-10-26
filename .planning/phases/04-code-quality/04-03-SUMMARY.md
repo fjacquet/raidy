@@ -1,46 +1,48 @@
 ---
+
 phase: 04-code-quality
 plan: 03
 subsystem: ui-components
 tags: [react, component-extraction, refactoring, maintainability]
 requires: [04-01]
 provides:
-  - Per-topology option panels (7 extracted)
-  - Topology constants file
-  - TopologyPanel component tests
-affects: []
-tech-stack:
+- Per-topology option panels (7 extracted)
+- Topology constants file
+- TopologyPanel component tests
+  affects: []
+  tech-stack:
   added: []
   patterns:
-    - Compound component pattern with context
-    - Panel extraction for maintainability
-    - Constant externalization
-key-files:
-  created:
-    - src/components/inputs/topology-options/shared/TopologyContext.tsx
-    - src/components/inputs/topology-options/ZfsOptionsPanel.tsx
-    - src/components/inputs/topology-options/S2dOptionsPanel.tsx
-    - src/components/inputs/topology-options/VsanOptionsPanel.tsx
-    - src/components/inputs/topology-options/CephOptionsPanel.tsx
-    - src/components/inputs/topology-options/NutanixOptionsPanel.tsx
-    - src/components/inputs/topology-options/NetAppOptionsPanel.tsx
-    - src/components/inputs/topology-options/SynologyOptionsPanel.tsx
-    - src/components/inputs/topology-options/topologyConstants.ts
-    - tests/components/inputs/TopologyPanel.spec.tsx
-  modified:
-    - src/components/inputs/TopologyPanel.tsx
-decisions:
-  - decision: "Direct store access in panels instead of context"
-    rationale: "Simpler than prop drilling or context passing. Each panel directly accesses needed state via useConfigStore hook. Maintains type safety and clear dependencies."
-  - decision: "Extracted 7 main topology panels (ZFS, vSAN OSA/ESA, S2D, Ceph, Nutanix, NetApp, Synology)"
-    rationale: "These are the most complex topologies with 3-9 configuration options each. Extraction provides clear isolation and easier maintenance for these feature-rich panels."
-  - decision: "Kept 5 vendor panels inline (PowerVault, ObjectScale, PowerStore, PowerScale, PowerFlex)"
-    rationale: "Prioritized extraction of most complex topologies. Remaining vendors have 3-5 options each but simpler UI logic. Further extraction possible if needed."
-  - decision: "Moved TOPOLOGY_LEVELS and TOPOLOGY_TYPES to topologyConstants.ts"
-    rationale: "284-line constant definition was cluttering TopologyPanel. Separation improves readability and makes topology definitions easier to find and update."
-metrics:
+  - Compound component pattern with context
+  - Panel extraction for maintainability
+  - Constant externalization
+    key-files:
+    created:
+  - src/components/inputs/topology-options/shared/TopologyContext.tsx
+  - src/components/inputs/topology-options/ZfsOptionsPanel.tsx
+  - src/components/inputs/topology-options/S2dOptionsPanel.tsx
+  - src/components/inputs/topology-options/VsanOptionsPanel.tsx
+  - src/components/inputs/topology-options/CephOptionsPanel.tsx
+  - src/components/inputs/topology-options/NutanixOptionsPanel.tsx
+  - src/components/inputs/topology-options/NetAppOptionsPanel.tsx
+  - src/components/inputs/topology-options/SynologyOptionsPanel.tsx
+  - src/components/inputs/topology-options/topologyConstants.ts
+  - tests/components/inputs/TopologyPanel.spec.tsx
+    modified:
+  - src/components/inputs/TopologyPanel.tsx
+    decisions:
+- decision: "Direct store access in panels instead of context"
+  rationale: "Simpler than prop drilling or context passing. Each panel directly accesses needed state via useConfigStore hook. Maintains type safety and clear dependencies."
+- decision: "Extracted 7 main topology panels (ZFS, vSAN OSA/ESA, S2D, Ceph, Nutanix, NetApp, Synology)"
+  rationale: "These are the most complex topologies with 3-9 configuration options each. Extraction provides clear isolation and easier maintenance for these feature-rich panels."
+- decision: "Kept 5 vendor panels inline (PowerVault, ObjectScale, PowerStore, PowerScale, PowerFlex)"
+  rationale: "Prioritized extraction of most complex topologies. Remaining vendors have 3-5 options each but simpler UI logic. Further extraction possible if needed."
+- decision: "Moved TOPOLOGY_LEVELS and TOPOLOGY_TYPES to topologyConstants.ts"
+  rationale: "284-line constant definition was cluttering TopologyPanel. Separation improves readability and makes topology definitions easier to find and update."
+  metrics:
   duration: 13 min
   completed: 2026-01-18
+
 ---
 
 # Phase [04] Plan [03]: Component Extraction Summary
@@ -132,7 +134,7 @@ export function ZfsOptionsPanel() {
 
 ```typescript
 interface VsanOptionsPanelProps {
-  topology: Topology & { type: "vsan_osa" | "vsan_esa" };
+  topology: Topology & { type: 'vsan_osa' | 'vsan_esa' }
 }
 ```
 

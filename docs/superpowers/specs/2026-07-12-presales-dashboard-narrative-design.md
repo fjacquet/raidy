@@ -5,8 +5,8 @@
 **Author:** Claude (brainstormed with Frédéric Jacquet)
 **Builds on:** `2026-07-11-quality-audit-ui-relevance-design.md` (v1.13.0). That
 cycle validated every platform's numbers against external references and hid
-no-op *inputs* via a capability map, but explicitly kept *"changing the
-two-pane Cockpit layout itself"* **out of scope**. This is that deferred cycle,
+no-op _inputs_ via a capability map, but explicitly kept _"changing the
+two-pane Cockpit layout itself"_ **out of scope**. This is that deferred cycle,
 now with trustworthy numbers to build on.
 
 ## 1. Problem Statement
@@ -62,7 +62,7 @@ Two consequences:
 - **No projector/present mode, no customer-self-serve teaching mode.** Audience
   is the engineer preparing a deck (see §7 audience note). A future cycle can
   add a present mode if wanted.
-- **No input-control redesign.** The left panel is *re-sequenced*, not
+- **No input-control redesign.** The left panel is _re-sequenced_, not
   re-built; individual panels (Topology, Hardware, Workload, Advanced, Drive
   Properties) keep their internals.
 - **No change to URL persistence, i18n namespaces' meaning, or the store
@@ -98,14 +98,14 @@ A full-width band above the acts, carrying up to six glance tiles. Each tile is
 current platform, so its column count adapts (never renders an empty or `N/A`
 tile). Candidate tiles, in priority order:
 
-| Tile | Source | Shown when |
-|------|--------|-----------|
-| Usable capacity | `volumetry.usableCapacity` | always |
-| Effective capacity | `volumetry.effectiveCapacity` | platform actually applies compression/dedup **and** effective ≠ usable (RAID: omit — it equals usable) |
-| Efficiency | `volumetry.efficiency` | always |
-| Peak IOPS | `max(performance.maxReadIOPS, maxWriteIOPS)` | always |
-| Annual survival | `resilienceResult.survivalPercent` | after a simulation has run; before that, a compact "run" affordance sits in the tile's place |
-| Annual cost | `sustainability.annualEnergyKwh` / `annualCO2Kg` | always (which of energy vs CO₂ is the headline is settled in §8 open questions) |
+| Tile               | Source                                           | Shown when                                                                                             |
+| ------------------ | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------ |
+| Usable capacity    | `volumetry.usableCapacity`                       | always                                                                                                 |
+| Effective capacity | `volumetry.effectiveCapacity`                    | platform actually applies compression/dedup **and** effective ≠ usable (RAID: omit — it equals usable) |
+| Efficiency         | `volumetry.efficiency`                           | always                                                                                                 |
+| Peak IOPS          | `max(performance.maxReadIOPS, maxWriteIOPS)`     | always                                                                                                 |
+| Annual survival    | `resilienceResult.survivalPercent`               | after a simulation has run; before that, a compact "run" affordance sits in the tile's place           |
+| Annual cost        | `sustainability.annualEnergyKwh` / `annualCO2Kg` | always (which of energy vs CO₂ is the headline is settled in §8 open questions)                        |
 
 De-dup rule: the band is the **glance**; the act is the **explanation**. A
 number in the band still appears in its act, but the act adds context (units,
@@ -120,7 +120,7 @@ breakdown, tooltip) the band omits.
   present) attaches here as a capacity-adjacent sub-panel.
 - **Act 2 Performance + Act 3 Resilience** — side by side on wide screens
   (`xl:grid-cols-2`), stacked below. Performance keeps the four gauges; the
-  bottleneck-chain analysis becomes a supporting "why" detail *within* this act
+  bottleneck-chain analysis becomes a supporting "why" detail _within_ this act
   (demoted from its own equal card). Resilience keeps the survival hero, risk
   metrics, run button, and recommendations.
 - **Act 4 Cost & Sustainability** — full-width or paired with Act 5. Power
@@ -170,7 +170,7 @@ Extend the existing single source of truth in `src/engines/capabilities.ts`
 rather than inventing a parallel system. Two changes:
 
 1. **Add output-oriented flags** to `PlatformCapabilities` where relevance is a
-   property of the *platform* (topology type). Candidates, each to be validated
+   property of the _platform_ (topology type). Candidates, each to be validated
    against engine behavior by the probe suite before being trusted:
    - `hasParityOverhead` — parity/erasure segment is meaningful (false for pure
      mirror/replication platforms).
@@ -186,7 +186,7 @@ rather than inventing a parallel system. Two changes:
    (b) genuine result presence. The critical distinction the current
    `value > 0` filtering gets wrong: **not-applicable → omit** vs **applicable
    but genuinely zero → show with context**. Relevance that depends on data
-   rather than platform (flash endurance depends on the *drive media*, not the
+   rather than platform (flash endurance depends on the _drive media_, not the
    topology) stays keyed off result presence (`sustainability.flashEndurance`
    truthy), documented as such.
 
@@ -212,7 +212,7 @@ Lightweight, per the chosen "reordered accordion, multi-open" direction:
 
 ## 7. Cockpit / Shell
 
-Audience is the **self-serve engineer preparing a deck**, so we do *not* build a
+Audience is the **self-serve engineer preparing a deck**, so we do _not_ build a
 full-screen present mode this cycle. Shell changes are minimal:
 
 - The two-pane `Cockpit` and mobile bottom-nav (`config` / `report` / `guide`)
@@ -226,14 +226,14 @@ full-screen present mode this cycle. Shell changes are minimal:
 Break the 986-line `OutputDashboard.tsx` into focused units under
 `src/components/outputs/` (or a new `outputs/acts/` sub-dir):
 
-| Component | Responsibility | Consumes |
-|-----------|----------------|----------|
-| `HeadlineBand` | The KPI strip; capability-filtered tiles | volumetry, performance, resilience, sustainability, relevance |
-| `CapacityAct` | Hero + Sankey/donut + breakdown + ZFS/Longhorn detail + backup | volumetry, backup |
-| `PerformanceAct` | Gauges + bottleneck "why" detail | performance |
-| `ResilienceAct` | Survival hero, risk metrics, run button, recs | resilience hook |
-| `CostAct` | Power, energy, CO₂, flash endurance | sustainability |
-| `TakeawayAct` | Export buttons + collapsible commands | export handlers, topology |
+| Component        | Responsibility                                                 | Consumes                                                      |
+| ---------------- | -------------------------------------------------------------- | ------------------------------------------------------------- |
+| `HeadlineBand`   | The KPI strip; capability-filtered tiles                       | volumetry, performance, resilience, sustainability, relevance |
+| `CapacityAct`    | Hero + Sankey/donut + breakdown + ZFS/Longhorn detail + backup | volumetry, backup                                             |
+| `PerformanceAct` | Gauges + bottleneck "why" detail                               | performance                                                   |
+| `ResilienceAct`  | Survival hero, risk metrics, run button, recs                  | resilience hook                                               |
+| `CostAct`        | Power, energy, CO₂, flash endurance                            | sustainability                                                |
+| `TakeawayAct`    | Export buttons + collapsible commands                          | export handlers, topology                                     |
 
 `OutputDashboard` becomes a thin orchestrator: pull results + relevance, render
 `HeadlineBand` then the acts in order. Export handlers and the resilience hook
@@ -267,7 +267,7 @@ Reviewable PRs in dependency order:
 1. **Output relevance layer** — extend `capabilities.ts` with output flags +
    `shouldShowKpi`/`shouldShowSection`, probe + unit tests. No UI change yet.
 2. **Decompose OutputDashboard** — extract the act components and shared helpers
-   with *current* layout preserved (pure refactor, behavior identical; tests
+   with _current_ layout preserved (pure refactor, behavior identical; tests
    green). De-risks the visual change from the structural one.
 3. **Headline band + narrative composition** — introduce `HeadlineBand`,
    re-sequence acts into the Approach-B layout, wire relevance so tiles/sections
@@ -302,10 +302,10 @@ Reviewable PRs in dependency order:
 
 ## 13. Risks & Mitigations
 
-| Risk | Mitigation |
-|------|------------|
-| Decompose PR silently changes behavior | PR 2 is a pure refactor with layout unchanged and tests green before PR 3 touches visuals |
-| Relevance flags drift from engine reality | New flags asserted by the existing self-verifying probe suite |
-| Re-composition breaks exporters | §11 export-parity verification in a real browser |
-| "Omit when not applicable" hides a genuine zero | Relevance layer distinguishes not-applicable (omit) from applicable-but-zero (show with context); unit-tested |
-| Scope creep into a present mode / input redesign | Explicit non-goals (§3); present mode and input-control redesign are future cycles |
+| Risk                                             | Mitigation                                                                                                    |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------- |
+| Decompose PR silently changes behavior           | PR 2 is a pure refactor with layout unchanged and tests green before PR 3 touches visuals                     |
+| Relevance flags drift from engine reality        | New flags asserted by the existing self-verifying probe suite                                                 |
+| Re-composition breaks exporters                  | §11 export-parity verification in a real browser                                                              |
+| "Omit when not applicable" hides a genuine zero  | Relevance layer distinguishes not-applicable (omit) from applicable-but-zero (show with context); unit-tested |
+| Scope creep into a present mode / input redesign | Explicit non-goals (§3); present mode and input-control redesign are future cycles                            |

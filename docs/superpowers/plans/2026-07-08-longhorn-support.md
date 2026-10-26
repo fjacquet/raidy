@@ -207,7 +207,7 @@ In `HBA_REQUIRED_TOPOLOGIES` (line ~239) add `'longhorn',` to the array (softwar
 In `src/types/config.ts`, after `cephOptions: CephOptions` (line ~81) add:
 
 ```ts
-  longhornOptions: LonghornOptions
+longhornOptions: LonghornOptions
 ```
 
 Ensure `LonghornOptions` is imported in `config.ts` (add it to the existing `import type { … } from './topology'` group alongside `CephOptions`).
@@ -284,12 +284,7 @@ export const longhornPerformanceStrategy: PerformanceStrategy = {
     }
   },
 
-  calculateIOPS(
-    level: string,
-    driveCount: number,
-    driveIOPS: number,
-    readPercent: number,
-  ): number {
+  calculateIOPS(level: string, driveCount: number, driveIOPS: number, readPercent: number): number {
     const writePenalty = this.getWritePenalty(level)
     const readFraction = readPercent / 100
     const writeFraction = 1 - readFraction
@@ -533,20 +528,20 @@ In `src/engines/volumetry/index.ts`:
 In `src/engines/volumetry/index.ts`, immediately after the Ceph safe-capacity block (ends line ~236, `usableCapacity = usableCapacity * cephOptions.safeCapacityThreshold`), add:
 
 ```ts
-  // Longhorn guardrails: free-space reserve (F = 1 − minimalAvailable%) then snapshot reserve (÷S).
-  // Growth and over-provisioning are advisory only (see longhornDetails), never subtracted here.
-  let longhornFreeSpaceReserve = 0
-  let longhornSnapshotReserve = 0
-  if (topology.type === 'longhorn' && longhornOptions) {
-    const freeSpaceFactor = 1 - longhornOptions.minimalAvailablePercent / 100
-    const beforeFreeSpace = usableCapacity
-    usableCapacity = usableCapacity * freeSpaceFactor
-    longhornFreeSpaceReserve = beforeFreeSpace - usableCapacity
+// Longhorn guardrails: free-space reserve (F = 1 − minimalAvailable%) then snapshot reserve (÷S).
+// Growth and over-provisioning are advisory only (see longhornDetails), never subtracted here.
+let longhornFreeSpaceReserve = 0
+let longhornSnapshotReserve = 0
+if (topology.type === 'longhorn' && longhornOptions) {
+  const freeSpaceFactor = 1 - longhornOptions.minimalAvailablePercent / 100
+  const beforeFreeSpace = usableCapacity
+  usableCapacity = usableCapacity * freeSpaceFactor
+  longhornFreeSpaceReserve = beforeFreeSpace - usableCapacity
 
-    const beforeSnapshot = usableCapacity
-    usableCapacity = usableCapacity / longhornOptions.snapshotHeadroom
-    longhornSnapshotReserve = beforeSnapshot - usableCapacity
-  }
+  const beforeSnapshot = usableCapacity
+  usableCapacity = usableCapacity / longhornOptions.snapshotHeadroom
+  longhornSnapshotReserve = beforeSnapshot - usableCapacity
+}
 ```
 
 - [ ] **Step 7: Build the details object**
@@ -556,19 +551,19 @@ In `src/engines/volumetry/index.ts`:
 - After the `buildZfsDetails` block (ends line ~305), add:
 
 ```ts
-  // Build Longhorn-specific advisory details if Longhorn topology
-  let longhornDetails: LonghornCapacityDetails | undefined
-  if (topology.type === 'longhorn' && longhornOptions) {
-    longhornDetails = {
-      physicalUsable: usableCapacity,
-      recommendedCommittedData: usableCapacity / longhornOptions.growthHeadroom,
-      perNodeUsable: serverCount > 0 ? usableCapacity / serverCount : usableCapacity,
-      replicaCount: topology.level === 'longhorn_r3' ? 3 : 2,
-      minimalAvailablePercent: longhornOptions.minimalAvailablePercent,
-      overProvisioningPercent: longhornOptions.overProvisioningPercent,
-      diskMode: longhornOptions.diskMode,
-    }
+// Build Longhorn-specific advisory details if Longhorn topology
+let longhornDetails: LonghornCapacityDetails | undefined
+if (topology.type === 'longhorn' && longhornOptions) {
+  longhornDetails = {
+    physicalUsable: usableCapacity,
+    recommendedCommittedData: usableCapacity / longhornOptions.growthHeadroom,
+    perNodeUsable: serverCount > 0 ? usableCapacity / serverCount : usableCapacity,
+    replicaCount: topology.level === 'longhorn_r3' ? 3 : 2,
+    minimalAvailablePercent: longhornOptions.minimalAvailablePercent,
+    overProvisioningPercent: longhornOptions.overProvisioningPercent,
+    diskMode: longhornOptions.diskMode,
   }
+}
 ```
 
 - Add `longhornDetails,` to the returned object (after `zfsDetails,`, line ~317).
@@ -579,8 +574,8 @@ In `src/engines/volumetry/breakdown/buildBreakdown.ts`:
 - Add to `BreakdownInput` (after `cephSafeCapacityReduction: number`, line ~40):
 
 ```ts
-  longhornFreeSpaceReserve: number
-  longhornSnapshotReserve: number
+longhornFreeSpaceReserve: number
+longhornSnapshotReserve: number
 ```
 
 - Add both to the destructuring block (after `cephSafeCapacityReduction,`, line ~88):
@@ -593,23 +588,23 @@ In `src/engines/volumetry/breakdown/buildBreakdown.ts`:
 - After the `cephSafeCapacityReduction` push block (ends line ~251), add:
 
 ```ts
-  if (longhornFreeSpaceReserve > 0) {
-    breakdown.push({
-      label: 'Longhorn Free-Space Reserve',
-      bytes: longhornFreeSpaceReserve,
-      percent: (longhornFreeSpaceReserve / rawCapacity) * 100,
-      color: 'var(--color-overhead)',
-    })
-  }
+if (longhornFreeSpaceReserve > 0) {
+  breakdown.push({
+    label: 'Longhorn Free-Space Reserve',
+    bytes: longhornFreeSpaceReserve,
+    percent: (longhornFreeSpaceReserve / rawCapacity) * 100,
+    color: 'var(--color-overhead)',
+  })
+}
 
-  if (longhornSnapshotReserve > 0) {
-    breakdown.push({
-      label: 'Longhorn Snapshot Reserve',
-      bytes: longhornSnapshotReserve,
-      percent: (longhornSnapshotReserve / rawCapacity) * 100,
-      color: 'var(--color-overhead)',
-    })
-  }
+if (longhornSnapshotReserve > 0) {
+  breakdown.push({
+    label: 'Longhorn Snapshot Reserve',
+    bytes: longhornSnapshotReserve,
+    percent: (longhornSnapshotReserve / rawCapacity) * 100,
+    color: 'var(--color-overhead)',
+  })
+}
 ```
 
 - In `src/engines/volumetry/index.ts`, pass both into the `buildBreakdown({ … })` call (after `cephSafeCapacityReduction,`, line ~283):
@@ -661,7 +656,10 @@ Create `tests/components/longhornConstants.spec.ts`:
 
 ```ts
 import { describe, expect, it } from 'vitest'
-import { TOPOLOGY_LEVELS, TOPOLOGY_TYPES } from '@/components/inputs/topology-options/topologyConstants'
+import {
+  TOPOLOGY_LEVELS,
+  TOPOLOGY_TYPES,
+} from '@/components/inputs/topology-options/topologyConstants'
 
 describe('Longhorn topology constants', () => {
   it('exposes Longhorn in the type selector', () => {
@@ -841,8 +839,12 @@ In `src/components/inputs/TopologyPanel.tsx`:
 - Add the render after the Ceph line (line ~112):
 
 ```tsx
-      {/* Longhorn Options */}
-      {topology.type === 'longhorn' && <LonghornOptionsPanel />}
+{
+  /* Longhorn Options */
+}
+{
+  topology.type === 'longhorn' && <LonghornOptionsPanel />
+}
 ```
 
 - [ ] **Step 6: Add English translations**
@@ -922,6 +924,7 @@ Add an entry under the next/unreleased version following the existing format, e.
 
 ```markdown
 ### Added
+
 - **Longhorn topology** (#51): SUSE Longhorn distributed block storage with replica-aware
   capacity (R2/R3), free-space and snapshot guardrails, and advisory growth /
   over-provisioning readouts. Modeled on Ceph replicated pools.

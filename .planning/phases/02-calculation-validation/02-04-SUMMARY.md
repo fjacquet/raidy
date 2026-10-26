@@ -1,44 +1,48 @@
 ---
+
 phase: 02-calculation-validation
 plan: 04
 subsystem: testing
 tags: [monte-carlo, resilience, statistics, URE, correlated-failures, vitest]
 
 # Dependency graph
+
 requires:
-  - phase: 01-test-infrastructure
-    provides: Vitest configuration and test infrastructure
-provides:
-  - Monte Carlo resilience simulation validation tests
-  - URE probability calculation tests with industry formulas
-  - Correlated failure modeling tests
-  - Statistical accuracy validation with confidence intervals
-affects: [03-ui-foundation, 04-feature-development]
+- phase: 01-test-infrastructure
+  provides: Vitest configuration and test infrastructure
+  provides:
+- Monte Carlo resilience simulation validation tests
+- URE probability calculation tests with industry formulas
+- Correlated failure modeling tests
+- Statistical accuracy validation with confidence intervals
+  affects: [03-ui-foundation, 04-feature-development]
 
 # Tech tracking
+
 tech-stack:
-  added: []
-  patterns:
-    - "Statistical validation with confidence intervals for Monte Carlo simulations"
-    - "Industry formula validation for URE probability calculations"
-    - "Binomial distribution testing for simulation accuracy"
+added: []
+patterns:
+- "Statistical validation with confidence intervals for Monte Carlo simulations"
+- "Industry formula validation for URE probability calculations"
+- "Binomial distribution testing for simulation accuracy"
 
 key-files:
-  created: []
-  modified:
-    - tests/workers/resilience.spec.ts
+created: []
+modified:
+- tests/workers/resilience.spec.ts
 
 key-decisions:
-  - "Use moderate AFR (2-4%) to ensure rebuilds happen in URE probability tests"
-  - "Validate relative comparisons rather than absolute theoretical values for stochastic simulations"
-  - "Apply 95% confidence intervals (p ± 1.96σ) for statistical validation"
+- "Use moderate AFR (2-4%) to ensure rebuilds happen in URE probability tests"
+- "Validate relative comparisons rather than absolute theoretical values for stochastic simulations"
+- "Apply 95% confidence intervals (p ± 1.96σ) for statistical validation"
 
 patterns-established:
-  - "Monte Carlo test validation: verify statistical properties, not exact values"
-  - "URE probability formula: P = 1-(1-1/10^URE)^bits_read from industry sources"
-  - "Confidence interval validation for binomial distributions in simulations"
+- "Monte Carlo test validation: verify statistical properties, not exact values"
+- "URE probability formula: P = 1-(1-1/10^URE)^bits_read from industry sources"
+- "Confidence interval validation for binomial distributions in simulations"
 
 # Metrics
+
 duration: 9min
 completed: 2026-01-18
 ---
@@ -147,5 +151,6 @@ All exceeds 75% threshold. Ready to proceed with remaining calculation validatio
 **No blockers or concerns.**
 
 ---
-*Phase: 02-calculation-validation*
-*Completed: 2026-01-18*
+
+_Phase: 02-calculation-validation_
+_Completed: 2026-01-18_

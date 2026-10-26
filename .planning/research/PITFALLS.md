@@ -114,53 +114,53 @@ Add `case 'powerscale': options = { serverCount }; break;` to the switch in `get
 
 ## Technical Debt Patterns
 
-| Shortcut | Immediate Benefit | Long-term Cost | When Acceptable |
-|----------|-------------------|----------------|-----------------|
-| Hardcoded 85% for ADAPT | Simple code, passes rough sanity checks | Wrong answers for every configuration with <60 drives | Never — must be dynamic |
-| Hardcoded 75% for PowerStore RAID-6 | Simple, no stripe-width option needed | Errors of 5–15 percentage points vs. Dell Sizer | Never — 66.7% vs. 80% is a 13pp difference |
-| Using driveCount as nodeCount for PowerScale | Avoids adding serverCount to strategy options | Off by 10× for typical 36-drive-per-node configurations | Never |
-| Keeping test expected values that encode wrong behavior | Tests "pass" with old code | New correct formula causes all-red test run with no guidance | Never — skip and replace |
-| Treating PowerStore overhead as a fixed 20% | Avoids model-specific lookup | Errors grow for larger models with more system data overhead | Acceptable for MVP if documented as approximation |
+| Shortcut                                                | Immediate Benefit                             | Long-term Cost                                               | When Acceptable                                   |
+| ------------------------------------------------------- | --------------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------- |
+| Hardcoded 85% for ADAPT                                 | Simple code, passes rough sanity checks       | Wrong answers for every configuration with <60 drives        | Never — must be dynamic                           |
+| Hardcoded 75% for PowerStore RAID-6                     | Simple, no stripe-width option needed         | Errors of 5–15 percentage points vs. Dell Sizer              | Never — 66.7% vs. 80% is a 13pp difference        |
+| Using driveCount as nodeCount for PowerScale            | Avoids adding serverCount to strategy options | Off by 10× for typical 36-drive-per-node configurations      | Never                                             |
+| Keeping test expected values that encode wrong behavior | Tests "pass" with old code                    | New correct formula causes all-red test run with no guidance | Never — skip and replace                          |
+| Treating PowerStore overhead as a fixed 20%             | Avoids model-specific lookup                  | Errors grow for larger models with more system data overhead | Acceptable for MVP if documented as approximation |
 
 ---
 
 ## Integration Gotchas
 
-| Integration | Common Mistake | Correct Approach |
-|-------------|----------------|------------------|
-| Dell Sizer reference values | Using GUI-level "usable capacity" values which already include compression/dedup savings | Use "raw usable" before efficiency savings — Raidy applies compression/dedup separately |
-| Dell Sizer base-10 vs base-2 | Dell Sizer outputs in TB (base-10), Raidy uses bytes internally | Normalize before comparing: 1 TB = 1e12 bytes, not 1.099e12 |
-| PowerStore stripe width selection | Assuming 8+1 is always used — Dell defaults to 4+1 for new arrays | Confirm the default stripe width from Dell documentation or Sizer configuration |
-| PowerScale protection on small clusters | Assuming N+2 protection formula applies at 3–4 nodes | OneFS falls back to 2× mirroring below minimum node count for N+2 |
-| ObjectScale geo-replication | Treating 2-site replication as 2× overhead | 3+ sites use XOR mechanism, reducing overhead nonlinearly |
-| PowerFlex FG metadata overhead | Treating FG overhead as fixed 12% | Dell docs indicate FG overhead of 12–15% varies by drive count and pool size |
+| Integration                             | Common Mistake                                                                           | Correct Approach                                                                        |
+| --------------------------------------- | ---------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| Dell Sizer reference values             | Using GUI-level "usable capacity" values which already include compression/dedup savings | Use "raw usable" before efficiency savings — Raidy applies compression/dedup separately |
+| Dell Sizer base-10 vs base-2            | Dell Sizer outputs in TB (base-10), Raidy uses bytes internally                          | Normalize before comparing: 1 TB = 1e12 bytes, not 1.099e12                             |
+| PowerStore stripe width selection       | Assuming 8+1 is always used — Dell defaults to 4+1 for new arrays                        | Confirm the default stripe width from Dell documentation or Sizer configuration         |
+| PowerScale protection on small clusters | Assuming N+2 protection formula applies at 3–4 nodes                                     | OneFS falls back to 2× mirroring below minimum node count for N+2                       |
+| ObjectScale geo-replication             | Treating 2-site replication as 2× overhead                                               | 3+ sites use XOR mechanism, reducing overhead nonlinearly                               |
+| PowerFlex FG metadata overhead          | Treating FG overhead as fixed 12%                                                        | Dell docs indicate FG overhead of 12–15% varies by drive count and pool size            |
 
 ---
 
 ## Performance Traps
 
-| Trap | Symptoms | Prevention | When It Breaks |
-|------|----------|------------|----------------|
-| Re-running all 3848 test lines after each formula change | Test suite takes minutes per iteration | Use `it.only` or Vitest `--reporter=verbose` with targeted describe blocks during formula development | Immediately with each change |
-| Calling Dell Sizer manually for each test vector | Tedious, error-prone, inconsistent | Create a test fixture file `tests/fixtures/dell-vectors.ts` with batched reference values from one Sizer session | Every test vector addition |
+| Trap                                                     | Symptoms                               | Prevention                                                                                                       | When It Breaks               |
+| -------------------------------------------------------- | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | ---------------------------- |
+| Re-running all 3848 test lines after each formula change | Test suite takes minutes per iteration | Use `it.only` or Vitest `--reporter=verbose` with targeted describe blocks during formula development            | Immediately with each change |
+| Calling Dell Sizer manually for each test vector         | Tedious, error-prone, inconsistent     | Create a test fixture file `tests/fixtures/dell-vectors.ts` with batched reference values from one Sizer session | Every test vector addition   |
 
 ---
 
 ## Security Mistakes
 
-| Mistake | Risk | Prevention |
-|---------|------|------------|
+| Mistake                                                       | Risk                                                                   | Prevention                                                                                                                                                     |
+| ------------------------------------------------------------- | ---------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Trusting driveCount from URL params for PowerScale efficiency | User-crafted URL could produce anomalous efficiency values shown in UI | Validate driveCount and serverCount ranges before calculation — already in validateDriveCount but verify PowerScale minimum node limits (3 nodes) are enforced |
 
 ---
 
 ## UX Pitfalls
 
-| Pitfall | User Impact | Better Approach |
-|---------|-------------|-----------------|
-| Showing 85% efficiency for 12-drive ADAPT when correct value is ~55% | Storage engineers who rely on Raidy over-provision by 35%+ for small ADAPT configs | Fix formula; add tooltip citing Dell ADAPT white paper formula |
-| Not distinguishing PowerStore 4+1 vs 8+1 in UI | User cannot replicate their actual PowerStore configuration | Add `stripeWidth` dropdown to PowerStore options panel (post-formula-fix) |
-| PowerScale efficiency near 100% for high drive counts | Implausible numbers erode user trust | Fix to use node-based formula; display as "N+x" not capacity percentage |
+| Pitfall                                                              | User Impact                                                                        | Better Approach                                                           |
+| -------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| Showing 85% efficiency for 12-drive ADAPT when correct value is ~55% | Storage engineers who rely on Raidy over-provision by 35%+ for small ADAPT configs | Fix formula; add tooltip citing Dell ADAPT white paper formula            |
+| Not distinguishing PowerStore 4+1 vs 8+1 in UI                       | User cannot replicate their actual PowerStore configuration                        | Add `stripeWidth` dropdown to PowerStore options panel (post-formula-fix) |
+| PowerScale efficiency near 100% for high drive counts                | Implausible numbers erode user trust                                               | Fix to use node-based formula; display as "N+x" not capacity percentage   |
 
 ---
 
@@ -179,27 +179,27 @@ Add `case 'powerscale': options = { serverCount }; break;` to the switch in `get
 
 ## Recovery Strategies
 
-| Pitfall | Recovery Cost | Recovery Steps |
-|---------|---------------|----------------|
-| All Dell tests red after formula fix | MEDIUM | Run `npx vitest --reporter=verbose tests/engines/volumetry.spec.ts` to isolate; mark old tests `.skip`; add correct vector tests; delete skipped once passing |
-| ADAPT formula produces negative efficiency for small drive counts | LOW | Add guard: `Math.max(0, (N - spareDrives) / N)` and minimum drive count validation in `validateDriveCount` |
-| PowerScale strategy crashes with undefined serverCount | LOW | Add `options?.serverCount ?? driveCount` fallback with console.warn; fix the switch-case |
-| PowerStore stripe width option missing from store/UI | MEDIUM | Add to `PowerStoreOptions` type → add to store slice → add UI dropdown → update test fixtures |
-| Test expected values updated by running the wrong formula | HIGH — silent wrong tests | Reset with `git checkout` on test files; re-derive all vectors from Dell Sizer before re-adding |
+| Pitfall                                                           | Recovery Cost             | Recovery Steps                                                                                                                                                |
+| ----------------------------------------------------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| All Dell tests red after formula fix                              | MEDIUM                    | Run `npx vitest --reporter=verbose tests/engines/volumetry.spec.ts` to isolate; mark old tests `.skip`; add correct vector tests; delete skipped once passing |
+| ADAPT formula produces negative efficiency for small drive counts | LOW                       | Add guard: `Math.max(0, (N - spareDrives) / N)` and minimum drive count validation in `validateDriveCount`                                                    |
+| PowerScale strategy crashes with undefined serverCount            | LOW                       | Add `options?.serverCount ?? driveCount` fallback with console.warn; fix the switch-case                                                                      |
+| PowerStore stripe width option missing from store/UI              | MEDIUM                    | Add to `PowerStoreOptions` type → add to store slice → add UI dropdown → update test fixtures                                                                 |
+| Test expected values updated by running the wrong formula         | HIGH — silent wrong tests | Reset with `git checkout` on test files; re-derive all vectors from Dell Sizer before re-adding                                                               |
 
 ---
 
 ## Pitfall-to-Phase Mapping
 
-| Pitfall | Prevention Phase | Verification |
-|---------|------------------|--------------|
-| ADAPT hardcoded 85%/87% | DELL-01: Fix ADAPT formula | `expect(result.efficiency).toBeCloseTo(67, 1)` for 12 drives vs. Dell Sizer |
-| PowerStore hardcoded 80%/75% | DELL-03/DELL-04: Fix PowerStore formulas | Dell Sizer reference output for known configuration within 1% |
-| PowerScale driveCount used as nodeCount | DELL-06: Fix PowerScale formulas | Result for `serverCount:5, driveCount:50` must differ from `serverCount:1, driveCount:50` |
-| PowerScale serverCount not passed to strategy | DELL-06 (coupled) | `getDataFraction` switch-case code review + test demonstrating serverCount sensitivity |
-| Test expected values encode wrong formula | DELL-10: Update all tests | Zero `.skip` tests remaining; all Dell assertions traceable to Dell Sizer reference |
-| ObjectScale geo-overhead factors unverified | DELL-08: Validate ObjectScale | 2-site overhead > 3-site overhead per ObjectScale formula |
-| PowerFlex FG metadata overhead unverified | DELL-07: Validate PowerFlex | Confirm 12–15% FG overhead range from Dell documentation |
+| Pitfall                                       | Prevention Phase                         | Verification                                                                              |
+| --------------------------------------------- | ---------------------------------------- | ----------------------------------------------------------------------------------------- |
+| ADAPT hardcoded 85%/87%                       | DELL-01: Fix ADAPT formula               | `expect(result.efficiency).toBeCloseTo(67, 1)` for 12 drives vs. Dell Sizer               |
+| PowerStore hardcoded 80%/75%                  | DELL-03/DELL-04: Fix PowerStore formulas | Dell Sizer reference output for known configuration within 1%                             |
+| PowerScale driveCount used as nodeCount       | DELL-06: Fix PowerScale formulas         | Result for `serverCount:5, driveCount:50` must differ from `serverCount:1, driveCount:50` |
+| PowerScale serverCount not passed to strategy | DELL-06 (coupled)                        | `getDataFraction` switch-case code review + test demonstrating serverCount sensitivity    |
+| Test expected values encode wrong formula     | DELL-10: Update all tests                | Zero `.skip` tests remaining; all Dell assertions traceable to Dell Sizer reference       |
+| ObjectScale geo-overhead factors unverified   | DELL-08: Validate ObjectScale            | 2-site overhead > 3-site overhead per ObjectScale formula                                 |
+| PowerFlex FG metadata overhead unverified     | DELL-07: Validate PowerFlex              | Confirm 12–15% FG overhead range from Dell documentation                                  |
 
 ---
 
@@ -222,5 +222,6 @@ Add `case 'powerscale': options = { serverCount }; break;` to the switch in `get
 - Existing tests: `tests/engines/volumetry.spec.ts` lines 3727–3766 (ADAPT wrong expected values)
 
 ---
-*Pitfalls research for: Dell storage capacity formula implementation in Raidy v1.2*
-*Researched: 2026-03-25*
+
+_Pitfalls research for: Dell storage capacity formula implementation in Raidy v1.2_
+_Researched: 2026-03-25_

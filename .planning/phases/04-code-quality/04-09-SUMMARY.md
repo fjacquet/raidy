@@ -1,61 +1,65 @@
 ---
+
 phase: 04-code-quality
 plan: 09
 subsystem: calculation-engine
 tags: [typescript, refactoring, strategy-pattern, modularity]
 
 # Dependency graph
+
 requires:
-  - phase: 04-04
-    provides: Strategy pattern for volumetry calculations
-  - phase: 04-05
-    provides: Strategy pattern for performance calculations
-provides:
-  - Volumetry orchestrator reduced to 294 lines (from 911)
-  - 8 extracted modules with single responsibilities
-  - Tiering calculation module
-  - ObjectScale geo-overhead lookup tables
-  - Filesystem overhead mapping
-  - Capacity breakdown builder
-  - Input validation module
-  - Calculation helper functions
-  - Overhead calculator
-  - Capacity enhancements (compression/dedup, ZFS details)
-affects: [future-topology-additions, calculation-maintenance]
+- phase: 04-04
+  provides: Strategy pattern for volumetry calculations
+- phase: 04-05
+  provides: Strategy pattern for performance calculations
+  provides:
+- Volumetry orchestrator reduced to 294 lines (from 911)
+- 8 extracted modules with single responsibilities
+- Tiering calculation module
+- ObjectScale geo-overhead lookup tables
+- Filesystem overhead mapping
+- Capacity breakdown builder
+- Input validation module
+- Calculation helper functions
+- Overhead calculator
+- Capacity enhancements (compression/dedup, ZFS details)
+  affects: [future-topology-additions, calculation-maintenance]
 
 # Tech tracking
+
 tech-stack:
-  added: []
-  patterns:
-    - "Module extraction pattern for large orchestrators"
-    - "Single Responsibility Principle applied to calculation engines"
-    - "Helper function extraction to dedicated modules"
+added: []
+patterns:
+- "Module extraction pattern for large orchestrators"
+- "Single Responsibility Principle applied to calculation engines"
+- "Helper function extraction to dedicated modules"
 
 key-files:
-  created:
-    - src/engines/volumetry/tiering/calculateTieredCapacity.ts
-    - src/engines/volumetry/overhead/objectscale-geo.ts
-    - src/engines/volumetry/overhead/filesystem-overhead.ts
-    - src/engines/volumetry/breakdown/buildBreakdown.ts
-    - src/engines/volumetry/validation/inputValidation.ts
-    - src/engines/volumetry/helpers/calculationHelpers.ts
-    - src/engines/volumetry/overhead/overheadCalculator.ts
-    - src/engines/volumetry/postProcessing/capacityEnhancements.ts
+created:
+- src/engines/volumetry/tiering/calculateTieredCapacity.ts
+- src/engines/volumetry/overhead/objectscale-geo.ts
+- src/engines/volumetry/overhead/filesystem-overhead.ts
+- src/engines/volumetry/breakdown/buildBreakdown.ts
+- src/engines/volumetry/validation/inputValidation.ts
+- src/engines/volumetry/helpers/calculationHelpers.ts
+- src/engines/volumetry/overhead/overheadCalculator.ts
+- src/engines/volumetry/postProcessing/capacityEnhancements.ts
   modified:
-    - src/engines/volumetry/index.ts
+- src/engines/volumetry/index.ts
 
 key-decisions:
-  - "Extracted 8 separate modules to achieve under-300-line orchestrator"
-  - "Grouped related overheads in single calculator module"
-  - "Separated post-processing (compression/dedup) from core calculations"
-  - "Created validation module for graceful error handling"
+- "Extracted 8 separate modules to achieve under-300-line orchestrator"
+- "Grouped related overheads in single calculator module"
+- "Separated post-processing (compression/dedup) from core calculations"
+- "Created validation module for graceful error handling"
 
 patterns-established:
-  - "Module extraction: Single responsibility, clear naming, well-documented"
-  - "Overhead calculation: Centralized coordinator for all topology overheads"
-  - "Validation: Separate module returns zero-state for invalid inputs"
+- "Module extraction: Single responsibility, clear naming, well-documented"
+- "Overhead calculation: Centralized coordinator for all topology overheads"
+- "Validation: Separate module returns zero-state for invalid inputs"
 
 # Metrics
+
 duration: 14min
 completed: 2026-01-18
 ---
@@ -97,40 +101,33 @@ Each task was committed atomically:
 **Created modules:**
 
 1. `src/engines/volumetry/tiering/calculateTieredCapacity.ts` (97 lines)
-
    - Hybrid storage tiering calculation
    - Supports S2D, vSAN OSA, Ceph WAL/DB, and Nutanix hybrid tiers
 
 2. `src/engines/volumetry/overhead/objectscale-geo.ts` (114 lines)
-
    - Geo-replication overhead lookup tables
    - Supports EC 12+4, 10+2, 24+4, and mirror_3 configurations
    - Handles 1-8 sites with SME-validated overhead factors
 
 3. `src/engines/volumetry/overhead/filesystem-overhead.ts` (113 lines)
-
    - Filesystem overhead mapping for all topology types
    - XFS, ext4, NTFS, ReFS, ZFS, Btrfs overhead percentages
 
 4. `src/engines/volumetry/breakdown/buildBreakdown.ts` (239 lines)
-
    - Capacity breakdown visualization builder
    - Constructs breakdown entries for all overhead types
 
 5. `src/engines/volumetry/validation/inputValidation.ts` (156 lines)
-
    - Input validation and edge case handling
    - Graceful degradation with zero-state results
    - Tiering configuration checking
 
 6. `src/engines/volumetry/helpers/calculationHelpers.ts` (177 lines)
-
    - Strategy selection and data fraction calculation
    - ZFS overhead calculation (slop + ashift)
    - Helper functions for core calculations
 
 7. `src/engines/volumetry/overhead/overheadCalculator.ts` (219 lines)
-
    - Centralized overhead calculation coordinator
    - Handles 10+ different overhead types
    - S2D reserve, ZFS slop, PowerFlex FG, NetApp snapshots, Nutanix system, ObjectScale geo, PowerStore/PowerScale snapshots, Ceph safe capacity, filesystem overhead

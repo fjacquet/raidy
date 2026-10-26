@@ -1,41 +1,43 @@
 ---
+
 phase: 17-pptx-content
 plan: "02"
 subsystem: export
 tags: [pptx, i18n, export, charts, pptxgenjs]
 dependency_graph:
-  requires:
-    - 17-01 (captureSpeedometer, captureDonutChart functions)
+requires:
+- 17-01 (captureSpeedometer, captureDonutChart functions)
   provides:
-    - exportToPptx producing 7-slide PPTX deck
-    - pptx i18n keys in all four locales
+- exportToPptx producing 7-slide PPTX deck
+- pptx i18n keys in all four locales
   affects:
-    - src/utils/exportPptx.ts
-    - src/i18n/locales (all four languages)
-tech_stack:
+- src/utils/exportPptx.ts
+- src/i18n/locales (all four languages)
+  tech_stack:
   added: []
   patterns:
-    - parallel chart capture via Promise.all before slide building
-    - shared helper pattern (addSlideHeading, addMetricBlock) for DRY slide composition
-    - null guard on resilience result for graceful degradation
-key_files:
+- parallel chart capture via Promise.all before slide building
+- shared helper pattern (addSlideHeading, addMetricBlock) for DRY slide composition
+- null guard on resilience result for graceful degradation
+  key_files:
   created: []
   modified:
-    - src/utils/exportPptx.ts
-    - src/i18n/locales/en/output.json
-    - src/i18n/locales/fr/output.json
-    - src/i18n/locales/de/output.json
-    - src/i18n/locales/it/output.json
-decisions:
-  - Used unicode escape \u2082 for CO₂ subscript in slide text to avoid literal non-ASCII in source
-  - Template literal for topLabel level concatenation to satisfy Biome useTemplate linting rule
-  - Resilience slide returns early after placing "not run" message when resilience is null
-  - serverCount accessed via type assertion (config.topology as { serverCount: number }) — legitimately dynamic per plan
-metrics:
+- src/utils/exportPptx.ts
+- src/i18n/locales/en/output.json
+- src/i18n/locales/fr/output.json
+- src/i18n/locales/de/output.json
+- src/i18n/locales/it/output.json
+  decisions:
+- Used unicode escape \u2082 for CO₂ subscript in slide text to avoid literal non-ASCII in source
+- Template literal for topLabel level concatenation to satisfy Biome useTemplate linting rule
+- Resilience slide returns early after placing "not run" message when resilience is null
+- serverCount accessed via type assertion (config.topology as { serverCount: number }) — legitimately dynamic per plan
+  metrics:
   duration: "~15 minutes"
   completed: "2026-04-01"
   tasks: 2
   files_modified: 5
+
 ---
 
 # Phase 17 Plan 02: PPTX Content — Full 7-Slide Deck Summary
@@ -44,15 +46,15 @@ Expanded `exportPptx.ts` from a 2-slide stub into a complete 7-slide presentatio
 
 ## Slide Order and Builder Functions
 
-| Slide | Builder Function | Content |
-|-------|-----------------|---------|
-| 1 | `buildTitleSlide` | Topology type/level, drive model, date |
-| 2 | `buildExecutiveSummarySlide` | 6-metric grid: usable capacity, read/write IOPS, resilience, annual energy/CO₂ |
-| 3 | `buildVolumetrySlide` | Raw/usable/effective capacity, efficiency, Sankey PNG |
-| 4 | `buildPerformanceSlide` | Read/write IOPS and throughput, bottleneck desc, speedometer PNG |
-| 5 | `buildResilienceSlide` | Survival rate, nines, rebuild time, risk level, donut PNG; null guard |
-| 6 | `buildSustainabilitySlide` | Total/drive/server power, energy, cost, CO₂; flash endurance conditional |
-| 7 | `buildBomSlide` | Drive model/type/interface/capacity/power/DWPD; topology/drive count/server count |
+| Slide | Builder Function             | Content                                                                           |
+| ----- | ---------------------------- | --------------------------------------------------------------------------------- |
+| 1     | `buildTitleSlide`            | Topology type/level, drive model, date                                            |
+| 2     | `buildExecutiveSummarySlide` | 6-metric grid: usable capacity, read/write IOPS, resilience, annual energy/CO₂    |
+| 3     | `buildVolumetrySlide`        | Raw/usable/effective capacity, efficiency, Sankey PNG                             |
+| 4     | `buildPerformanceSlide`      | Read/write IOPS and throughput, bottleneck desc, speedometer PNG                  |
+| 5     | `buildResilienceSlide`       | Survival rate, nines, rebuild time, risk level, donut PNG; null guard             |
+| 6     | `buildSustainabilitySlide`   | Total/drive/server power, energy, cost, CO₂; flash endurance conditional          |
+| 7     | `buildBomSlide`              | Drive model/type/interface/capacity/power/DWPD; topology/drive count/server count |
 
 ## Shared Helpers Added
 
@@ -91,9 +93,9 @@ None. All slide content is wired to real `CalculationResults` data from `config.
 
 ## Commits
 
-| Task | Commit | Description |
-|------|--------|-------------|
-| 1 — i18n locale pptx keys | 46b9dd4 | feat(17-02): add pptx slide title keys to all four i18n locale files |
-| 2 — full 7-slide exportPptx.ts | 0792e53 | feat(17-02): rewrite exportPptx.ts with full 7-slide deck |
+| Task                           | Commit  | Description                                                          |
+| ------------------------------ | ------- | -------------------------------------------------------------------- |
+| 1 — i18n locale pptx keys      | 46b9dd4 | feat(17-02): add pptx slide title keys to all four i18n locale files |
+| 2 — full 7-slide exportPptx.ts | 0792e53 | feat(17-02): rewrite exportPptx.ts with full 7-slide deck            |
 
 ## Self-Check: PASSED

@@ -33,12 +33,12 @@ same root cause as #63, and the parity test below catches it.
 
 So the drift is across four lists, not two:
 
-| List | Location | Missing today |
-|---|---|---|
-| Slice initial states | `src/store/slices/*.ts` | — (this is the truth) |
-| `getDefaultState()` | `configStore.ts:77` | `performanceThreshold`, `driveConnectivity`, `driveFormFactor` |
-| `partialize` | `configStore.ts:156` | `performanceThreshold` |
-| `ConfigStateSchema` | `schemas.ts:376` | `performanceThreshold` |
+| List                 | Location                | Missing today                                                  |
+| -------------------- | ----------------------- | -------------------------------------------------------------- |
+| Slice initial states | `src/store/slices/*.ts` | — (this is the truth)                                          |
+| `getDefaultState()`  | `configStore.ts:77`     | `performanceThreshold`, `driveConnectivity`, `driveFormFactor` |
+| `partialize`         | `configStore.ts:156`    | `performanceThreshold`                                         |
+| `ConfigStateSchema`  | `schemas.ts:376`        | `performanceThreshold`                                         |
 
 ## Decision 1 — Enums derive from a single source (#62)
 
@@ -59,15 +59,15 @@ blockSize: z.enum(BLOCK_SIZES).optional(),
 
 Seven fields, in the module that owns each type:
 
-| Field | Type | Home |
-|---|---|---|
-| `blockSize` | `BlockSize` | `src/types/config.ts` |
-| `networkSpeed` | `NetworkSpeed` | `src/types/config.ts` |
-| `pcieGen` | `PCIeGen` | `src/types/config.ts` |
-| `pcieLanes` | `PCIeLanes` | `src/types/config.ts` |
-| `carbonRegion` | `CarbonRegion` | `src/types/config.ts` |
-| `fsType` | `FilesystemState['fsType']` | `src/types/config.ts` |
-| `controllerOptions.controller` | `ControllerType` | `src/types/topology.ts` |
+| Field                          | Type                        | Home                    |
+| ------------------------------ | --------------------------- | ----------------------- |
+| `blockSize`                    | `BlockSize`                 | `src/types/config.ts`   |
+| `networkSpeed`                 | `NetworkSpeed`              | `src/types/config.ts`   |
+| `pcieGen`                      | `PCIeGen`                   | `src/types/config.ts`   |
+| `pcieLanes`                    | `PCIeLanes`                 | `src/types/config.ts`   |
+| `carbonRegion`                 | `CarbonRegion`              | `src/types/config.ts`   |
+| `fsType`                       | `FilesystemState['fsType']` | `src/types/config.ts`   |
+| `controllerOptions.controller` | `ControllerType`            | `src/types/topology.ts` |
 
 `ControllerType` is `HbaType | RaidControllerType`, so it gets two const arrays and a derived
 union of both: `export const CONTROLLER_TYPES = [...HBA_TYPES, ...RAID_CONTROLLER_TYPES] as const`.
@@ -89,7 +89,7 @@ Two explicit lists that must **partition** the store's configuration state:
 ```ts
 // src/store/persistedKeys.ts
 /** Every configuration field that belongs in a shared link. */
-export const PERSISTED_KEYS = ['driveId', 'driveCount', /* … */, 'performanceThreshold'] as const
+export const PERSISTED_KEYS = ['driveId', 'driveCount', /* … */ , 'performanceThreshold'] as const
 
 /**
  * Configuration state deliberately left out of shared links, with the reason.
@@ -143,7 +143,7 @@ reports elsewhere. They migrate to the enveloped shape zustand actually produces
 `.passthrough()` is removed; Zod's default strip applies. Nested platform schemas are already
 strict, and accepting at the root what is refused one level down has no justification. The
 forward-compatibility argument does not survive examination either: an unknown key merged into the
-live store is read by nobody, but it *is* re-persisted, so it grows the URL indefinitely. A
+live store is read by nobody, but it _is_ re-persisted, so it grows the URL indefinitely. A
 comment at the call site records why the behaviour is strip.
 
 ## Testing

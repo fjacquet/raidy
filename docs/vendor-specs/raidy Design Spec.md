@@ -80,7 +80,6 @@ _Handles the "How much space do I actually get?" question._
 - ZFS Overhead (The "Slop" Factor):
 
   $$Capacity\_{ZFS} \= (Raw \- Parity) \\times 0.96875 \\text{ (1/32 reserved)} \\times \\text{CompressionRatio}$$
-
   - _Constraint:_ If ashift=12 (4Kn drives) and small files are selected, apply "Padding Overhead" penalty.
 
 - **S2D Efficiency:**

@@ -1,4 +1,5 @@
 ---
+
 phase: 18-quality-audit
 started: 2026-07-11
 completed: 2026-07-11
@@ -14,22 +15,22 @@ Newly audited here: S2D, Nutanix, NetApp, Ceph, Synology, Longhorn + PPTX export
 
 ## Findings Ledger
 
-| # | Platform/Area | Tag | Severity | Description | Reference (source + URL) | Status |
-|---|---------------|-----|----------|-------------|--------------------------|--------|
-| 1 | S2D | untested | — | No external-reference vector coverage before phase 18. Added 4 vectors (3-way mirror, single parity [engine-formula analog — no MS-published fraction exists], dual parity @7 FDs hybrid, mirror-accelerated parity @7 FDs). All pass at 0.00% deviation — no engine change needed. | Microsoft Learn plan-volumes / fault-tolerance / mirror-accelerated-parity (URLs in Reference Cases → S2D) | untested → now covered |
-| 2 | Nutanix | untested | — | No external-reference vector coverage before phase 18. Added 4 vectors (RF2, RF3, EC-X RF2-like 4:1, EC-X RF3-like 4:2); all four resiliency fractions match the Nutanix Bible's Book of AOS Data Efficiency (2X/3X overhead prose + EC-X strip-size multipliers) exactly. All pass at 0.00% deviation — no engine change needed. The 10% systemOverhead + 1.5% fs overhead layer is an engine-formula analog (Nutanix does not publish a single fixed capacity-overhead %; see honesty note). | Nutanix Bible — Book of AOS Data Efficiency (URL in Reference Cases → Nutanix) | untested → now covered |
-| 3 | Nutanix | value-misleading | minor | `src/types/topology.ts` comments `nutanix_ec_rf3` as "6:2 striping", but 6:2 = 6/(6+2) = 75% — a different strip size. The strategy (`src/engines/volumetry/strategies/nutanix.ts`) implements 4:2 = 4/(4+2) = 66.7%, matching the Nutanix Bible's default RF3-like strip. Implemented value is correct; the topology.ts comment label is wrong. Comment-only — no numeric output affected. | Nutanix Bible — Book of AOS Data Efficiency (default RF3-like strip 4/2, "1.5x overhead vs RF3's 3x"): https://www.nutanixbible.com/4h-book-of-aos-data-efficiency.html | open (comment fix deferred; logged in Task 4) |
-| 4 | NetApp | untested | — | No external-reference vector coverage before phase 18. Added 3 vectors (RAID-DP 8 drives, RAID-DP 24 drives, RAID-TEC 24 drives). The parity-drive fraction ((N-2)/N RAID-DP, (N-3)/N RAID-TEC) and the 5% default snapshot reserve are genuinely NetApp-published and match the engine exactly. All 3 pass at 0.00% deviation — no engine change needed for the tested paths. | docs.netapp.com sizing-raid-groups-concept, default-raid-policies-aggregates-concept, manage-snapshot-copy-reserve-concept (URLs in Reference Cases → NetApp) | untested → now covered |
-| 5 | NetApp | value-misleading | major | `DEFAULT_NETAPP_OPTIONS.waflOverhead = 0.015` (1.5%, UI slider capped 1-3%) is named after, but does not represent, ONTAP's real WAFL aggregate reserve, which is a fixed, non-user-configurable **10%** of aggregate size (5% only for >=30 TB aggregates on AFF/FAS500f since 9.12.1, all FAS since 9.14.1). The engine's "waflOverhead" is actually playing the same role as the small ~1-2% generic filesystem-metadata layer used for other topologies (xfs/ext4/zfs/vsan/ceph/nutanix fs-overhead in `filesystem-overhead.ts`), not the much larger real ONTAP reserve. Not fixed: the field is used consistently as a small fs-metadata analog throughout the engine and UI (slider range 1-3%), so retargeting it to 10% would be a product/UX design change, not a bug fix, and is out of scope for this task. Flagged for follow-up decision. | kb.netapp.com/on-prem/ontap/Ontap_OS/OS-KBs/ONTAP_Space_Usage; kb.netapp.com/.../Why_is_my_aggregate_showing_10_percent_less_total_space_than_expected | open (design decision deferred) |
-| 6 | Ceph | untested | — | No external-reference vector coverage before phase 18. Added 4 vectors (replicated size=2, replicated size=3, EC 4+2, EC 8+3). Replicated data fraction (raw/size) and EC data fraction (k/(k+m)) match `src/engines/volumetry/strategies/ceph.ts` exactly; `DEFAULT_CEPH_OPTIONS.safeCapacityThreshold = 0.85` matches Ceph's documented `mon_osd_nearfull_ratio` default exactly. All 4 pass at 0.00% deviation — no engine change needed. The 2% BlueStore fs-overhead layer (`filesystem-overhead.ts:83-85`) is an engine-formula analog — no docs.ceph.com page publishes a flat BlueStore metadata-overhead constant; see honesty note. | docs.ceph.com/en/reef/rados/operations/pools, docs.ceph.com/en/reef/rados/operations/erasure-code, docs.ceph.com/en/reef/rados/configuration/mon-config-ref (URLs in Reference Cases → Ceph) | untested → now covered |
-| 7 | Synology | untested | — | No external-reference vector coverage before phase 18. Added 3 vectors (SHR 4 drives, SHR-2 6 drives, RAID F1 6 drives; all uniform-size drives — mixed-size SHR is out of scope, see below). SHR ((N-1)/N, 1-drive fault tolerance per SHR KB), SHR-2 ((N-2)/N, 2-drive fault tolerance per SHR KB), and RAID F1 ((N-1)/N, RAID-5-class capacity with rotating parity for SSD wear-leveling only) match `src/engines/volumetry/strategies/proprietary.ts:16-32` exactly; the general (N-k)/N ratios are corroborated by the RAID calculator's behavior + industry consensus (the KB documents fault tolerance and minimum drive counts, not the general formula). The 4% Btrfs fs-overhead layer is genuinely Synology-published (RAID calculator page: Btrfs volumes reserve 4% for metadata) and matches `FILESYSTEM_OVERHEAD.btrfs = 0.04` exactly. All 3 pass at 0.00% deviation — no engine change needed. The vectors use the engine's 25 GB/disk system-partition default as a stated assumption (diverges from the published ~10 GB/drive — see finding #8). Mixed-size SHR is out of scope (tiered internal RAID groups, not a simple (N-k)/N ratio). | kb.synology.com/DSM/tutorial/What_is_Synology_Hybrid_RAID_SHR, synology.com/en-global/support/RAID_calculator (URLs in Reference Cases → Synology) | untested → now covered |
-| 8 | Synology | value-wrong | major | Synology system partition default 25 GB/drive vs vendor-published ~10 GB/drive: the Synology RAID Calculator page explicitly states "Each drive in the RAID must reserve approximately 10 GB of system space", but `DEFAULT_SYNOLOGY_OPTIONS.systemPartitionSize` (`src/types/topology.ts:696`) defaults to 25 GiB/drive — a real, quantified ~2.5× divergence in the default. User-adjustable in the UI; default divergence deferred as product decision (precedent: finding #5). | Synology RAID Calculator: https://www.synology.com/en-global/support/RAID_calculator | open |
-| 9 | Synology | value-wrong | minor | The engine's Synology-with-ext4 path uses the generic `FILESYSTEM_OVERHEAD.ext4 = 0.05` (5%) constant (`src/engines/volumetry/overhead/filesystem-overhead.ts:112-116`, `src/types/topology.ts:718`), but Synology publishes 2% for ext4 volumes on the RAID Calculator page. Not exercised by the Task 7 vectors (btrfs is the Synology default) — follow-up. | Synology RAID Calculator: https://www.synology.com/en-global/support/RAID_calculator | open |
-| 10 | Longhorn | untested → value-wrong | major | No external-reference vector coverage before phase 18. Added 4 vectors (R2 @ 3 nodes, R2 @ 6 nodes, R3 @ 3 nodes, R3 @ 6 nodes). The replica-count full-copy model (R2 = 1/2, R3 = 1/3) matches `src/engines/volumetry/strategies/longhorn.ts:12-22` exactly and is genuinely Longhorn-published. Separately: `DEFAULT_LONGHORN_OPTIONS.minimalAvailablePercent = 10` (`src/types/topology.ts:641`) diverges from the Longhorn settings reference / space-consumption KB, which document the `storageMinimalAvailablePercentage` DEFAULT as **25%** — a real, quantified 2.5× divergence in the shipped default. `overProvisioningPercent = 200` (engine default) DOES match the Longhorn-documented default of 200% — no divergence there. Vectors use `minimalAvailablePercent: 25` as an explicit override (not the engine default) so the tested free-space factor is traceable to the published value; all 4 pass at 0.00% deviation against that override. `overProvisioningPercent = 200` (engine default) matches the older Longhorn space-consumption KB guidance of 200%, but the current longhorn.io settings reference documents the `storageOverProvisioningPercentage` DEFAULT as **100%** — a candidate divergence against the currently-published default; advisory-only (never subtracted from `usableCapacity`) and not exercised by the vectors, so left open rather than fixed here. User-adjustable in the UI; default divergence deferred as product decision (precedent: findings #5, #8). | longhorn.io/docs/latest/nodes-and-volumes/volumes/, longhorn.io/kb/space-consumption-guideline/, documentation.suse.com/cloudnative/storage/1.11/en/longhorn-system/settings.html (URLs in Reference Cases → Longhorn) | untested → now covered; default value-wrong open |
-| 11 | Sustainability | value-wrong | minor | `CARBON_INTENSITY.switzerland = 30` (gCO2/kWh, `src/engines/sustainability/index.ts:27-34`) sits at the low end of, but below, the two most-cited authoritative point estimates: Swiss Federal Office of Energy (SFOE, via EnergyScope) publishes ~33 gCO2/kWh for Swiss *production*, and the AIB European Residual Mixes dataset publishes 34.84 gCO2/kWh for the Swiss *residual grid mix* — the engine's 30 is ~9% below SFOE and ~14% below AIB. The engine value does fall inside the broader literature band (~20–40 gCO2/kWh spanning IEA/OWID/Electricity Maps, which differ by methodology: production vs. consumption vs. residual-mix, CO2-only vs. CO2-eq), so this is a real but bounded divergence, not an order-of-magnitude error. Not fixed: given legitimate ±15% spread across credible published methodologies and no single canonical "Swiss carbon factor," retargeting to any one source is a product decision, not an unambiguous bug fix (precedent: findings #5, #8, #10). | Swiss Federal Office of Energy via EnergyScope: https://www.energyscope.ch/en/questions/does-switzerland-emit-comparatively-little-cosub2/ ; AIB European Residual Mixes (Climatiq): https://www.climatiq.io/data/emission-factor/ed6ef6e0-c51f-4237-9639-bce6a31a2e80 | open (deferred as product decision) |
-| 12 | PPTX export | value-misleading | minor | `formatIops()` in `src/utils/pptxContent.ts` rounded the K-suffix IOPS display to zero decimals (`.toFixed(0)`), silently dropping precision the on-screen gauges show — `Speedometer.tsx:55` and `AnimatedCounter.tsx:25` both use `.toFixed(1)}K` for the identical case, e.g. dashboard showed `1.3K IOPS` while the pre-fix PPTX slide showed `1K IOPS` for the same `perf.maxReadIOPS` value. Found via live E2E export verification (dark/EN and light/FR cells, RAID5/10-drive/1.2TB baseline). Same underlying number, misleading display precision vs. the app's own convention. | Task 14 E2E verification (this file, PPTX E2E Evidence section) | fixed — `formatIops()` K-suffix changed to `.toFixed(1)`, re-verified in exported slide, full suite 1016/1016 PASS; regression-pinned by `tests/utils/pptxContent.spec.ts` ("formats K-suffix IOPS with one decimal": 1200 → '1.2K', 800 → '800' sub-K branch) |
-| 13 | Longhorn / UI validation | untested | major | Longhorn with the default `serverCount = 1` renders `Usable Capacity: 0 B` / `Effective: 0 B` in the OutputDashboard plus a stream of SVG console errors (`<path> attribute d: Expected number "M195,NaN…"`, `<rect> attribute height: Expected length "NaN"`, `translate(10, NaN)`, etc.) from the capacity waterfall chart. Repro: Storage Type → Longhorn (level `longhorn_r2` default), leave Servers/Nodes at 1, open the dashboard. Expected: a validation message per Longhorn's replica-placement rule (R replicas require ≥ R schedulable nodes — the engine's 0-usable answer for R2@1 node is defensible, but the user should be told why, and the chart must not divide by/render NaN). Actual: silent 0 B readouts + NaN-broken waterfall SVG. Tagged `untested` (validation-display gap: no validator covers the degenerate `serverCount < replicaCount` config, and no test pins the chart's behavior on zero usable capacity) rather than value-wrong (no external reference contradicts 0 usable for an unschedulable config). Pre-existing: reproducible before commit c70e173 (Task 16 only changed control visibility; the Servers/Nodes slider was already shown for Longhorn) — found during Task 16 manual smoke, out of Task 16 scope. | Longhorn replica scheduling docs: https://longhorn.io/docs/latest/nodes-and-volumes/nodes/scheduling/ ; Task 16 smoke-test console log (.playwright-mcp/console-2026-07-11T20-23-58-066Z.log) | open |
-| 14 | HardwarePanel / all calc hooks | value-wrong | major | The servers/nodes slider is hidden (`shouldShowControl('serverCount', topology.type) \|\| isRaidGroupMode` in `HardwarePanel.tsx`) for single-node platforms, but `useVolumetryCalc`, `usePerformanceCalc`, `useSustainabilityCalc`, and `useCalculations` all multiplied `driveCount * serverCount` unconditionally, and `setTopology` never resets `serverCount`. Repro: Ceph with `serverCount = 8`, switch topology to ZFS — the hidden `serverCount` value is still 8, so all four hooks silently scale drive/hot-spare counts and downstream results 8× with no visible control to explain why. Fixed by clamping at the hook boundary via a new pure helper, `effectiveServerCount(serverCount, topology)` in `src/engines/capabilities.ts` — returns `serverCount` when `getCapabilities(topology.type).hasServerCount` is true or the topology is standard RAID50/60 (mirrors `HardwarePanel.tsx`'s `isRaidGroupMode` exactly), else `1`. Non-destructive: the store's `serverCount` is left untouched, so it round-trips unchanged if the user switches back to a multi-node platform. Also wired into the PPTX export subtitle (`ExportConfig.serverCount`, `OutputDashboard.tsx`'s `handleExportPptx`) so the exported "N servers" label uses the same clamped value instead of the always-false `'serverCount' in config.topology` dead branch it previously (never) hit. | Reproduced live via HardwarePanel/hook code inspection (final review, this task); regression-pinned by `tests/engines/capabilities.spec.ts` ("effectiveServerCount (finding #14 — stale serverCount clamp)") and `tests/utils/pptxContent.spec.ts` (serverCount subtitle segment) | fixed (02d98db). Addendum: verification found a fifth consumer — `useResilience` (`src/hooks/useResilience.ts`, Monte Carlo worker input) was still fed the raw store `serverCount` from `OutputDashboard.tsx`; clamped in a follow-up commit (call site passes `effectiveServerCount`, and the hook clamps internally for defense in depth). |
+| #   | Platform/Area                  | Tag                    | Severity | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | Reference (source + URL)                                                                                                                                                                                                                                                          | Status                                                                                                                                                                                                                                                                                                                                        |
+| --- | ------------------------------ | ---------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | S2D                            | untested               | —        | No external-reference vector coverage before phase 18. Added 4 vectors (3-way mirror, single parity [engine-formula analog — no MS-published fraction exists], dual parity @7 FDs hybrid, mirror-accelerated parity @7 FDs). All pass at 0.00% deviation — no engine change needed.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | Microsoft Learn plan-volumes / fault-tolerance / mirror-accelerated-parity (URLs in Reference Cases → S2D)                                                                                                                                                                        | untested → now covered                                                                                                                                                                                                                                                                                                                        |
+| 2   | Nutanix                        | untested               | —        | No external-reference vector coverage before phase 18. Added 4 vectors (RF2, RF3, EC-X RF2-like 4:1, EC-X RF3-like 4:2); all four resiliency fractions match the Nutanix Bible's Book of AOS Data Efficiency (2X/3X overhead prose + EC-X strip-size multipliers) exactly. All pass at 0.00% deviation — no engine change needed. The 10% systemOverhead + 1.5% fs overhead layer is an engine-formula analog (Nutanix does not publish a single fixed capacity-overhead %; see honesty note).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Nutanix Bible — Book of AOS Data Efficiency (URL in Reference Cases → Nutanix)                                                                                                                                                                                                    | untested → now covered                                                                                                                                                                                                                                                                                                                        |
+| 3   | Nutanix                        | value-misleading       | minor    | `src/types/topology.ts` comments `nutanix_ec_rf3` as "6:2 striping", but 6:2 = 6/(6+2) = 75% — a different strip size. The strategy (`src/engines/volumetry/strategies/nutanix.ts`) implements 4:2 = 4/(4+2) = 66.7%, matching the Nutanix Bible's default RF3-like strip. Implemented value is correct; the topology.ts comment label is wrong. Comment-only — no numeric output affected.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | Nutanix Bible — Book of AOS Data Efficiency (default RF3-like strip 4/2, "1.5x overhead vs RF3's 3x"): https://www.nutanixbible.com/4h-book-of-aos-data-efficiency.html                                                                                                           | open (comment fix deferred; logged in Task 4)                                                                                                                                                                                                                                                                                                 |
+| 4   | NetApp                         | untested               | —        | No external-reference vector coverage before phase 18. Added 3 vectors (RAID-DP 8 drives, RAID-DP 24 drives, RAID-TEC 24 drives). The parity-drive fraction ((N-2)/N RAID-DP, (N-3)/N RAID-TEC) and the 5% default snapshot reserve are genuinely NetApp-published and match the engine exactly. All 3 pass at 0.00% deviation — no engine change needed for the tested paths.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | docs.netapp.com sizing-raid-groups-concept, default-raid-policies-aggregates-concept, manage-snapshot-copy-reserve-concept (URLs in Reference Cases → NetApp)                                                                                                                     | untested → now covered                                                                                                                                                                                                                                                                                                                        |
+| 5   | NetApp                         | value-misleading       | major    | `DEFAULT_NETAPP_OPTIONS.waflOverhead = 0.015` (1.5%, UI slider capped 1-3%) is named after, but does not represent, ONTAP's real WAFL aggregate reserve, which is a fixed, non-user-configurable **10%** of aggregate size (5% only for >=30 TB aggregates on AFF/FAS500f since 9.12.1, all FAS since 9.14.1). The engine's "waflOverhead" is actually playing the same role as the small ~1-2% generic filesystem-metadata layer used for other topologies (xfs/ext4/zfs/vsan/ceph/nutanix fs-overhead in `filesystem-overhead.ts`), not the much larger real ONTAP reserve. Not fixed: the field is used consistently as a small fs-metadata analog throughout the engine and UI (slider range 1-3%), so retargeting it to 10% would be a product/UX design change, not a bug fix, and is out of scope for this task. Flagged for follow-up decision.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | kb.netapp.com/on-prem/ontap/Ontap_OS/OS-KBs/ONTAP_Space_Usage; kb.netapp.com/.../Why_is_my_aggregate_showing_10_percent_less_total_space_than_expected                                                                                                                            | open (design decision deferred)                                                                                                                                                                                                                                                                                                               |
+| 6   | Ceph                           | untested               | —        | No external-reference vector coverage before phase 18. Added 4 vectors (replicated size=2, replicated size=3, EC 4+2, EC 8+3). Replicated data fraction (raw/size) and EC data fraction (k/(k+m)) match `src/engines/volumetry/strategies/ceph.ts` exactly; `DEFAULT_CEPH_OPTIONS.safeCapacityThreshold = 0.85` matches Ceph's documented `mon_osd_nearfull_ratio` default exactly. All 4 pass at 0.00% deviation — no engine change needed. The 2% BlueStore fs-overhead layer (`filesystem-overhead.ts:83-85`) is an engine-formula analog — no docs.ceph.com page publishes a flat BlueStore metadata-overhead constant; see honesty note.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | docs.ceph.com/en/reef/rados/operations/pools, docs.ceph.com/en/reef/rados/operations/erasure-code, docs.ceph.com/en/reef/rados/configuration/mon-config-ref (URLs in Reference Cases → Ceph)                                                                                      | untested → now covered                                                                                                                                                                                                                                                                                                                        |
+| 7   | Synology                       | untested               | —        | No external-reference vector coverage before phase 18. Added 3 vectors (SHR 4 drives, SHR-2 6 drives, RAID F1 6 drives; all uniform-size drives — mixed-size SHR is out of scope, see below). SHR ((N-1)/N, 1-drive fault tolerance per SHR KB), SHR-2 ((N-2)/N, 2-drive fault tolerance per SHR KB), and RAID F1 ((N-1)/N, RAID-5-class capacity with rotating parity for SSD wear-leveling only) match `src/engines/volumetry/strategies/proprietary.ts:16-32` exactly; the general (N-k)/N ratios are corroborated by the RAID calculator's behavior + industry consensus (the KB documents fault tolerance and minimum drive counts, not the general formula). The 4% Btrfs fs-overhead layer is genuinely Synology-published (RAID calculator page: Btrfs volumes reserve 4% for metadata) and matches `FILESYSTEM_OVERHEAD.btrfs = 0.04` exactly. All 3 pass at 0.00% deviation — no engine change needed. The vectors use the engine's 25 GB/disk system-partition default as a stated assumption (diverges from the published ~10 GB/drive — see finding #8). Mixed-size SHR is out of scope (tiered internal RAID groups, not a simple (N-k)/N ratio).                                                                                                                                                                                                                                                                                                                                                   | kb.synology.com/DSM/tutorial/What_is_Synology_Hybrid_RAID_SHR, synology.com/en-global/support/RAID_calculator (URLs in Reference Cases → Synology)                                                                                                                                | untested → now covered                                                                                                                                                                                                                                                                                                                        |
+| 8   | Synology                       | value-wrong            | major    | Synology system partition default 25 GB/drive vs vendor-published ~10 GB/drive: the Synology RAID Calculator page explicitly states "Each drive in the RAID must reserve approximately 10 GB of system space", but `DEFAULT_SYNOLOGY_OPTIONS.systemPartitionSize` (`src/types/topology.ts:696`) defaults to 25 GiB/drive — a real, quantified ~2.5× divergence in the default. User-adjustable in the UI; default divergence deferred as product decision (precedent: finding #5).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | Synology RAID Calculator: https://www.synology.com/en-global/support/RAID_calculator                                                                                                                                                                                              | open                                                                                                                                                                                                                                                                                                                                          |
+| 9   | Synology                       | value-wrong            | minor    | The engine's Synology-with-ext4 path uses the generic `FILESYSTEM_OVERHEAD.ext4 = 0.05` (5%) constant (`src/engines/volumetry/overhead/filesystem-overhead.ts:112-116`, `src/types/topology.ts:718`), but Synology publishes 2% for ext4 volumes on the RAID Calculator page. Not exercised by the Task 7 vectors (btrfs is the Synology default) — follow-up.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Synology RAID Calculator: https://www.synology.com/en-global/support/RAID_calculator                                                                                                                                                                                              | open                                                                                                                                                                                                                                                                                                                                          |
+| 10  | Longhorn                       | untested → value-wrong | major    | No external-reference vector coverage before phase 18. Added 4 vectors (R2 @ 3 nodes, R2 @ 6 nodes, R3 @ 3 nodes, R3 @ 6 nodes). The replica-count full-copy model (R2 = 1/2, R3 = 1/3) matches `src/engines/volumetry/strategies/longhorn.ts:12-22` exactly and is genuinely Longhorn-published. Separately: `DEFAULT_LONGHORN_OPTIONS.minimalAvailablePercent = 10` (`src/types/topology.ts:641`) diverges from the Longhorn settings reference / space-consumption KB, which document the `storageMinimalAvailablePercentage` DEFAULT as **25%** — a real, quantified 2.5× divergence in the shipped default. `overProvisioningPercent = 200` (engine default) DOES match the Longhorn-documented default of 200% — no divergence there. Vectors use `minimalAvailablePercent: 25` as an explicit override (not the engine default) so the tested free-space factor is traceable to the published value; all 4 pass at 0.00% deviation against that override. `overProvisioningPercent = 200` (engine default) matches the older Longhorn space-consumption KB guidance of 200%, but the current longhorn.io settings reference documents the `storageOverProvisioningPercentage` DEFAULT as **100%** — a candidate divergence against the currently-published default; advisory-only (never subtracted from `usableCapacity`) and not exercised by the vectors, so left open rather than fixed here. User-adjustable in the UI; default divergence deferred as product decision (precedent: findings #5, #8). | longhorn.io/docs/latest/nodes-and-volumes/volumes/, longhorn.io/kb/space-consumption-guideline/, documentation.suse.com/cloudnative/storage/1.11/en/longhorn-system/settings.html (URLs in Reference Cases → Longhorn)                                                            | untested → now covered; default value-wrong open                                                                                                                                                                                                                                                                                              |
+| 11  | Sustainability                 | value-wrong            | minor    | `CARBON_INTENSITY.switzerland = 30` (gCO2/kWh, `src/engines/sustainability/index.ts:27-34`) sits at the low end of, but below, the two most-cited authoritative point estimates: Swiss Federal Office of Energy (SFOE, via EnergyScope) publishes ~33 gCO2/kWh for Swiss _production_, and the AIB European Residual Mixes dataset publishes 34.84 gCO2/kWh for the Swiss _residual grid mix_ — the engine's 30 is ~9% below SFOE and ~14% below AIB. The engine value does fall inside the broader literature band (~20–40 gCO2/kWh spanning IEA/OWID/Electricity Maps, which differ by methodology: production vs. consumption vs. residual-mix, CO2-only vs. CO2-eq), so this is a real but bounded divergence, not an order-of-magnitude error. Not fixed: given legitimate ±15% spread across credible published methodologies and no single canonical "Swiss carbon factor," retargeting to any one source is a product decision, not an unambiguous bug fix (precedent: findings #5, #8, #10).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | Swiss Federal Office of Energy via EnergyScope: https://www.energyscope.ch/en/questions/does-switzerland-emit-comparatively-little-cosub2/ ; AIB European Residual Mixes (Climatiq): https://www.climatiq.io/data/emission-factor/ed6ef6e0-c51f-4237-9639-bce6a31a2e80            | open (deferred as product decision)                                                                                                                                                                                                                                                                                                           |
+| 12  | PPTX export                    | value-misleading       | minor    | `formatIops()` in `src/utils/pptxContent.ts` rounded the K-suffix IOPS display to zero decimals (`.toFixed(0)`), silently dropping precision the on-screen gauges show — `Speedometer.tsx:55` and `AnimatedCounter.tsx:25` both use `.toFixed(1)}K` for the identical case, e.g. dashboard showed `1.3K IOPS` while the pre-fix PPTX slide showed `1K IOPS` for the same `perf.maxReadIOPS` value. Found via live E2E export verification (dark/EN and light/FR cells, RAID5/10-drive/1.2TB baseline). Same underlying number, misleading display precision vs. the app's own convention.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | Task 14 E2E verification (this file, PPTX E2E Evidence section)                                                                                                                                                                                                                   | fixed — `formatIops()` K-suffix changed to `.toFixed(1)`, re-verified in exported slide, full suite 1016/1016 PASS; regression-pinned by `tests/utils/pptxContent.spec.ts` ("formats K-suffix IOPS with one decimal": 1200 → '1.2K', 800 → '800' sub-K branch)                                                                                |
+| 13  | Longhorn / UI validation       | untested               | major    | Longhorn with the default `serverCount = 1` renders `Usable Capacity: 0 B` / `Effective: 0 B` in the OutputDashboard plus a stream of SVG console errors (`<path> attribute d: Expected number "M195,NaN…"`, `<rect> attribute height: Expected length "NaN"`, `translate(10, NaN)`, etc.) from the capacity waterfall chart. Repro: Storage Type → Longhorn (level `longhorn_r2` default), leave Servers/Nodes at 1, open the dashboard. Expected: a validation message per Longhorn's replica-placement rule (R replicas require ≥ R schedulable nodes — the engine's 0-usable answer for R2@1 node is defensible, but the user should be told why, and the chart must not divide by/render NaN). Actual: silent 0 B readouts + NaN-broken waterfall SVG. Tagged `untested` (validation-display gap: no validator covers the degenerate `serverCount < replicaCount` config, and no test pins the chart's behavior on zero usable capacity) rather than value-wrong (no external reference contradicts 0 usable for an unschedulable config). Pre-existing: reproducible before commit c70e173 (Task 16 only changed control visibility; the Servers/Nodes slider was already shown for Longhorn) — found during Task 16 manual smoke, out of Task 16 scope.                                                                                                                                                                                                                                                    | Longhorn replica scheduling docs: https://longhorn.io/docs/latest/nodes-and-volumes/nodes/scheduling/ ; Task 16 smoke-test console log (.playwright-mcp/console-2026-07-11T20-23-58-066Z.log)                                                                                     | open                                                                                                                                                                                                                                                                                                                                          |
+| 14  | HardwarePanel / all calc hooks | value-wrong            | major    | The servers/nodes slider is hidden (`shouldShowControl('serverCount', topology.type) \|\| isRaidGroupMode` in `HardwarePanel.tsx`) for single-node platforms, but `useVolumetryCalc`, `usePerformanceCalc`, `useSustainabilityCalc`, and `useCalculations` all multiplied `driveCount * serverCount` unconditionally, and `setTopology` never resets `serverCount`. Repro: Ceph with `serverCount = 8`, switch topology to ZFS — the hidden `serverCount` value is still 8, so all four hooks silently scale drive/hot-spare counts and downstream results 8× with no visible control to explain why. Fixed by clamping at the hook boundary via a new pure helper, `effectiveServerCount(serverCount, topology)` in `src/engines/capabilities.ts` — returns `serverCount` when `getCapabilities(topology.type).hasServerCount` is true or the topology is standard RAID50/60 (mirrors `HardwarePanel.tsx`'s `isRaidGroupMode` exactly), else `1`. Non-destructive: the store's `serverCount` is left untouched, so it round-trips unchanged if the user switches back to a multi-node platform. Also wired into the PPTX export subtitle (`ExportConfig.serverCount`, `OutputDashboard.tsx`'s `handleExportPptx`) so the exported "N servers" label uses the same clamped value instead of the always-false `'serverCount' in config.topology` dead branch it previously (never) hit.                                                                                                                            | Reproduced live via HardwarePanel/hook code inspection (final review, this task); regression-pinned by `tests/engines/capabilities.spec.ts` ("effectiveServerCount (finding #14 — stale serverCount clamp)") and `tests/utils/pptxContent.spec.ts` (serverCount subtitle segment) | fixed (02d98db). Addendum: verification found a fifth consumer — `useResilience` (`src/hooks/useResilience.ts`, Monte Carlo worker input) was still fed the raw store `serverCount` from `OutputDashboard.tsx`; clamped in a follow-up commit (call site passes `effectiveServerCount`, and the hook clamps internally for defense in depth). |
 
 Tags: value-wrong (>1% off reference) · value-misleading (right number, wrong label/unit) · untested (no vector coverage)
 
@@ -58,9 +59,9 @@ validation message).
 
 ### Covered platforms (regression)
 
-| Suite | Date | Pass | Fail | Status |
-|-------|------|------|------|--------|
-| tests/engines/volumetry.spec.ts | 2026-07-11 | 318 | 0 | PASS |
+| Suite                           | Date       | Pass | Fail | Status |
+| ------------------------------- | ---------- | ---- | ---- | ------ |
+| tests/engines/volumetry.spec.ts | 2026-07-11 | 318  | 0    | PASS   |
 
 One subsection per platform, added by Tasks 3–8. Each case records: config,
 external source, expected value, engine value, deviation %.
@@ -69,25 +70,25 @@ external source, expected value, engine value, deviation %.
 
 Fixture: `tests/fixtures/s2d-vectors.ts` · Spec: `tests/engines/volumetry/vectors/s2d.spec.ts`
 
-Microsoft publishes only the *resiliency efficiency fraction* (mirror/parity table).
+Microsoft publishes only the _resiliency efficiency fraction_ (mirror/parity table).
 Expected values below apply that fraction on top of the engine's documented reserve
 pipeline so the comparison is apples-to-apples:
 raw − rebuild reserve (min(faultDomains, 4) whole drives, pre-parity, per
 `DEFAULT_S2D_OPTIONS.reserveStrategy = 'drive_failure'`) → × efficiency fraction →
 − 277 GB infra-volume reserve (post-parity) → × 0.98 (ReFS fs overhead).
-Drive: `testDrive1TB` (HDD ⇒ engine selects the *hybrid* dual-parity stepped table).
+Drive: `testDrive1TB` (HDD ⇒ engine selects the _hybrid_ dual-parity stepped table).
 
-| Config | MS efficiency fraction | Source | Expected usable (bytes) | Engine (bytes) | Deviation |
-|--------|-----------------------|--------|------------------------|----------------|-----------|
-| 3-way mirror, 12×1 TB, 4 servers (mirrorCopies=3) | 33.3% (1/3) | [Plan volumes — mirror efficiency](https://learn.microsoft.com/en-us/windows-server/storage/storage-spaces/plan-volumes) | 2 341 873 333 333 | 2 341 873 333 333 | 0.00% |
-| Single parity, 16×1 TB, 4 servers (faultDomains=4) — **engine-formula analog, see honesty note** | 75% ((N−1)/N, RAID-5 analogy) | [Fault tolerance — single parity (qualitative only)](https://learn.microsoft.com/en-us/windows-server/storage/storage-spaces/fault-tolerance) | 8 548 540 000 000 | 8 548 540 000 000 | 0.00% |
-| Dual parity, 16×1 TB, 7 servers (faultDomains=7, hybrid) | 66.7% (RS 4+2, 7–11 FDs) | [Fault tolerance & storage efficiency](https://learn.microsoft.com/en-us/windows-server/storage/storage-spaces/fault-tolerance) | 7 568 540 000 000 | 7 568 540 000 000 | 0.00% |
-| Mirror-accelerated parity, 16×1 TB, 7 servers (20/80 tiering, mirrorCopies=2) | 63.3% (0.2/2 + 0.8×2/3) | [Mirror-accelerated parity (ReFS)](https://learn.microsoft.com/en-us/windows-server/storage/refs/mirror-accelerated-parity) | 7 176 540 000 000 | 7 176 540 000 000 | 0.00% |
+| Config                                                                                           | MS efficiency fraction        | Source                                                                                                                                        | Expected usable (bytes) | Engine (bytes)    | Deviation |
+| ------------------------------------------------------------------------------------------------ | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- | ----------------- | --------- |
+| 3-way mirror, 12×1 TB, 4 servers (mirrorCopies=3)                                                | 33.3% (1/3)                   | [Plan volumes — mirror efficiency](https://learn.microsoft.com/en-us/windows-server/storage/storage-spaces/plan-volumes)                      | 2 341 873 333 333       | 2 341 873 333 333 | 0.00%     |
+| Single parity, 16×1 TB, 4 servers (faultDomains=4) — **engine-formula analog, see honesty note** | 75% ((N−1)/N, RAID-5 analogy) | [Fault tolerance — single parity (qualitative only)](https://learn.microsoft.com/en-us/windows-server/storage/storage-spaces/fault-tolerance) | 8 548 540 000 000       | 8 548 540 000 000 | 0.00%     |
+| Dual parity, 16×1 TB, 7 servers (faultDomains=7, hybrid)                                         | 66.7% (RS 4+2, 7–11 FDs)      | [Fault tolerance & storage efficiency](https://learn.microsoft.com/en-us/windows-server/storage/storage-spaces/fault-tolerance)               | 7 568 540 000 000       | 7 568 540 000 000 | 0.00%     |
+| Mirror-accelerated parity, 16×1 TB, 7 servers (20/80 tiering, mirrorCopies=2)                    | 63.3% (0.2/2 + 0.8×2/3)       | [Mirror-accelerated parity (ReFS)](https://learn.microsoft.com/en-us/windows-server/storage/refs/mirror-accelerated-parity)                   | 7 176 540 000 000       | 7 176 540 000 000 | 0.00%     |
 
 Result: 4/4 PASS (tolerance 1%). Regression: `tests/engines/volumetry.spec.ts` 318/318 PASS.
 No change to `src/engines/volumetry/**` — engine matched every Microsoft efficiency fraction.
 
-Note: the MAP 20/80 mirror:parity split is Microsoft's *typical* configuration (the ratio is
+Note: the MAP 20/80 mirror:parity split is Microsoft's _typical_ configuration (the ratio is
 tunable per volume); the vector validates the engine's documented 20/80 model, not a fixed
 Microsoft constant. The 277 GB infra reserve and rebuild-reserve sizing are engine policy
 sourced in code comments (Azure Local docs); this task validated the resiliency fractions.
@@ -96,7 +97,7 @@ sourced in code comments (Azure Local docs); this task validated the resiliency 
 fault-tolerance page ("keeps only one bitwise parity symbol … most closely resembles RAID-5")
 and publishes **no numeric single-parity efficiency fraction** anywhere on Learn (re-verified
 via Perplexity, 2026-07-11). The (N−1)/N value is the standard RAID-5 analogy — the same
-formula the engine implements — so this vector is an *engine-formula analog* (regression pin),
+formula the engine implements — so this vector is an _engine-formula analog_ (regression pin),
 not an independent external validation. Externally validated vectors: 3/4 (3-way mirror,
 dual parity, MAP); coverage should not be overstated as 4/4 external.
 
@@ -119,12 +120,12 @@ fraction, plus the engine's 1.5% Nutanix fs overhead
 Pipeline: raw usable × resiliency data fraction (validated) → × 0.90 (systemOverhead, engine
 policy) → × 0.985 (1.5% Nutanix fs overhead, engine policy).
 
-| Config | Nutanix Bible data fraction | Source | Expected usable (bytes) | Engine (bytes) | Deviation |
-|--------|------------------------------|--------|-------------------------|-----------------|-----------|
-| RF2, 12×1 TB, 3 servers | 50% (1/2) | [Book of AOS Data Efficiency](https://www.nutanixbible.com/4h-book-of-aos-data-efficiency.html) | 5 319 000 000 000 | 5 319 000 000 000 | 0.00% |
-| RF3, 15×1 TB, 5 servers | 33.3% (1/3) | [Book of AOS Data Efficiency](https://www.nutanixbible.com/4h-book-of-aos-data-efficiency.html) | 4 432 500 000 000 | 4 432 500 000 000 | 0.00% |
-| EC-X RF2 (4:1 strip), 24×1 TB, 6 servers | 80% (4/5, "1.25x vs RF2's 2x", 6+ nodes) | [Book of AOS Data Efficiency](https://www.nutanixbible.com/4h-book-of-aos-data-efficiency.html) | 17 020 800 000 000 | 17 020 800 000 000 | 0.00% |
-| EC-X RF3 (4:2 strip), 32×1 TB, 8 servers | 66.7% (4/6, "1.5x vs RF3's 3x", 8+ nodes) | [Book of AOS Data Efficiency](https://www.nutanixbible.com/4h-book-of-aos-data-efficiency.html) | 18 912 000 000 000 | 18 912 000 000 000 | 0.00% |
+| Config                                   | Nutanix Bible data fraction               | Source                                                                                          | Expected usable (bytes) | Engine (bytes)     | Deviation |
+| ---------------------------------------- | ----------------------------------------- | ----------------------------------------------------------------------------------------------- | ----------------------- | ------------------ | --------- |
+| RF2, 12×1 TB, 3 servers                  | 50% (1/2)                                 | [Book of AOS Data Efficiency](https://www.nutanixbible.com/4h-book-of-aos-data-efficiency.html) | 5 319 000 000 000       | 5 319 000 000 000  | 0.00%     |
+| RF3, 15×1 TB, 5 servers                  | 33.3% (1/3)                               | [Book of AOS Data Efficiency](https://www.nutanixbible.com/4h-book-of-aos-data-efficiency.html) | 4 432 500 000 000       | 4 432 500 000 000  | 0.00%     |
+| EC-X RF2 (4:1 strip), 24×1 TB, 6 servers | 80% (4/5, "1.25x vs RF2's 2x", 6+ nodes)  | [Book of AOS Data Efficiency](https://www.nutanixbible.com/4h-book-of-aos-data-efficiency.html) | 17 020 800 000 000      | 17 020 800 000 000 | 0.00%     |
+| EC-X RF3 (4:2 strip), 32×1 TB, 8 servers | 66.7% (4/6, "1.5x vs RF3's 3x", 8+ nodes) | [Book of AOS Data Efficiency](https://www.nutanixbible.com/4h-book-of-aos-data-efficiency.html) | 18 912 000 000 000      | 18 912 000 000 000 | 0.00%     |
 
 Result: 4/4 PASS (tolerance 1%). Regression: `tests/engines/volumetry.spec.ts` 318/318 PASS.
 No change to `src/engines/volumetry/**` — the engine's `nutanixStrategy.calculateDataFraction`
@@ -136,11 +137,11 @@ multipliers exactly.
 as a mix of fixed per-node GiB reservations (Nutanix Home ~60 GiB, Cassandra/AES metadata
 ~15 GiB/SSD up to 4 SSDs, dynamic OpLog — per the Nutanix Bible's Book of Basics: Drive
 Breakdown, https://www.nutanixbible.com/2i-book-of-basics-drive-breakdown.html) and a separate
-~10-15% CVM *compute* (CPU/RAM) reservation that does not apply to storage capacity at all
+~10-15% CVM _compute_ (CPU/RAM) reservation that does not apply to storage capacity at all
 (verified via Perplexity, 2026-07-11). `DEFAULT_NUTANIX_OPTIONS.systemOverhead = 0.10` and the
 1.5% Nutanix fs overhead constant are therefore engine-formula analogs (regression pins), not
 independently-sourced numbers — actual per-cluster reservation is proprietary/Sizer-driven.
-Externally validated vectors: 4/4 for the *resiliency data fraction* (the number that
+Externally validated vectors: 4/4 for the _resiliency data fraction_ (the number that
 dominates usable capacity); 0/4 for the systemOverhead/fs-overhead layer specifically —
 coverage should not be overstated as fully external end-to-end.
 
@@ -172,11 +173,11 @@ Two of the formula's three layers are genuinely NetApp-published:
 Pipeline: raw usable × parity fraction (validated) → × 0.95 (5% snapshot reserve, validated) →
 × 0.985 (1.5% WAFL-overhead layer, engine-formula analog — see honesty note).
 
-| Config | Parity fraction | Source | Expected usable (bytes) | Engine (bytes) | Deviation |
-|--------|------------------|--------|--------------------------|-----------------|-----------|
-| RAID-DP, 8 drives, 1 server | 75% ((8−2)/8) | [Sizing RAID groups](https://docs.netapp.com/us-en/ontap/disks-aggregates/sizing-raid-groups-concept.html) | 5 614 500 000 000 | 5 614 500 000 000 | 0.00% |
-| RAID-DP, 24 drives, 1 server | 91.67% ((24−2)/24) | [Sizing RAID groups](https://docs.netapp.com/us-en/ontap/disks-aggregates/sizing-raid-groups-concept.html) | 20 586 500 000 000 | 20 586 500 000 000 | 0.00% |
-| RAID-TEC, 24 drives, 1 server | 87.5% ((24−3)/24) | [Default RAID policies](https://docs.netapp.com/us-en/ontap/disks-aggregates/default-raid-policies-aggregates-concept.html) | 19 650 750 000 000 | 19 650 750 000 000 | 0.00% |
+| Config                        | Parity fraction    | Source                                                                                                                      | Expected usable (bytes) | Engine (bytes)     | Deviation |
+| ----------------------------- | ------------------ | --------------------------------------------------------------------------------------------------------------------------- | ----------------------- | ------------------ | --------- |
+| RAID-DP, 8 drives, 1 server   | 75% ((8−2)/8)      | [Sizing RAID groups](https://docs.netapp.com/us-en/ontap/disks-aggregates/sizing-raid-groups-concept.html)                  | 5 614 500 000 000       | 5 614 500 000 000  | 0.00%     |
+| RAID-DP, 24 drives, 1 server  | 91.67% ((24−2)/24) | [Sizing RAID groups](https://docs.netapp.com/us-en/ontap/disks-aggregates/sizing-raid-groups-concept.html)                  | 20 586 500 000 000      | 20 586 500 000 000 | 0.00%     |
+| RAID-TEC, 24 drives, 1 server | 87.5% ((24−3)/24)  | [Default RAID policies](https://docs.netapp.com/us-en/ontap/disks-aggregates/default-raid-policies-aggregates-concept.html) | 19 650 750 000 000      | 19 650 750 000 000 | 0.00%     |
 
 Result: 3/3 PASS (tolerance 1%). Regression: `tests/engines/volumetry.spec.ts` 318/318 PASS.
 No change to `src/engines/volumetry/**` — the engine's parity-fraction formula and default
@@ -196,7 +197,7 @@ non-configurable aggregate reserve. This is a naming collision with real ONTAP t
 (finding #5, value-misleading, major), not a numeric defect in how the field is used
 internally, so it was not changed as part of this task; retargeting it to 10% would be a
 product/UX decision affecting the UI's documented 1-3% range and is deferred.
-Externally validated vectors: 3/3 for the *parity fraction* and *snapshot reserve* layers (the
+Externally validated vectors: 3/3 for the _parity fraction_ and _snapshot reserve_ layers (the
 two dominant terms); 0/3 for the WAFL-overhead layer specifically — coverage should not be
 overstated as fully external end-to-end.
 
@@ -212,7 +213,7 @@ metadata constant (`src/engines/volumetry/overhead/filesystem-overhead.ts:83-85`
 `safeCapacityThreshold` defaults to 0.85 (`DEFAULT_CEPH_OPTIONS`). Drive: `testDrive1TB` (1 TB).
 
 APPLES-TO-APPLES: docs.ceph.com and community calculators typically express raw→usable
-*before* any nearfull headroom — `mon_osd_nearfull_ratio` is documented as a `HEALTH_WARN`
+_before_ any nearfull headroom — `mon_osd_nearfull_ratio` is documented as a `HEALTH_WARN`
 threshold, not a capacity-planning discount. `expectedUsable` below is stated **post-nearfull**
 (i.e. includes the × 0.85 multiplier) to match `VolumetryResult.usableCapacity` directly; each
 vector's inline comment shows the pre-nearfull ("raw external") intermediate value so the two
@@ -236,12 +237,12 @@ Two of the pipeline's three layers are genuinely Ceph-published:
 Pipeline: raw usable × data fraction (validated) → × 0.98 (2% BlueStore fs-overhead layer,
 engine-formula analog — see honesty note) → × 0.85 (nearfull ratio, validated).
 
-| Config | Data fraction | Source | Expected usable (bytes) | Engine (bytes) | Deviation |
-|--------|----------------|--------|--------------------------|-----------------|-----------|
-| Replicated size=2, 6 drives / 3 nodes | 50% (1/2) | [Pools](https://docs.ceph.com/en/reef/rados/operations/pools/) | 2 499 000 000 000 | 2 499 000 000 000 | 0.00% |
-| Replicated size=3 (default), 12 drives / 4 nodes | 33.3% (1/3) | [Pools](https://docs.ceph.com/en/reef/rados/operations/pools/) | 3 332 000 000 000 | 3 332 000 000 000 | 0.00% |
-| Erasure coded 4+2, 12 drives / 6 nodes | 66.7% (4/6) | [Erasure code](https://docs.ceph.com/en/reef/rados/operations/erasure-code) | 6 664 000 000 000 | 6 664 000 000 000 | 0.00% |
-| Erasure coded 8+3, 22 drives / 11 nodes | 72.7% (8/11) | [Erasure code](https://docs.ceph.com/en/reef/rados/operations/erasure-code) | 13 328 000 000 000 | 13 328 000 000 000 | 0.00% |
+| Config                                           | Data fraction | Source                                                                      | Expected usable (bytes) | Engine (bytes)     | Deviation |
+| ------------------------------------------------ | ------------- | --------------------------------------------------------------------------- | ----------------------- | ------------------ | --------- |
+| Replicated size=2, 6 drives / 3 nodes            | 50% (1/2)     | [Pools](https://docs.ceph.com/en/reef/rados/operations/pools/)              | 2 499 000 000 000       | 2 499 000 000 000  | 0.00%     |
+| Replicated size=3 (default), 12 drives / 4 nodes | 33.3% (1/3)   | [Pools](https://docs.ceph.com/en/reef/rados/operations/pools/)              | 3 332 000 000 000       | 3 332 000 000 000  | 0.00%     |
+| Erasure coded 4+2, 12 drives / 6 nodes           | 66.7% (4/6)   | [Erasure code](https://docs.ceph.com/en/reef/rados/operations/erasure-code) | 6 664 000 000 000       | 6 664 000 000 000  | 0.00%     |
+| Erasure coded 8+3, 22 drives / 11 nodes          | 72.7% (8/11)  | [Erasure code](https://docs.ceph.com/en/reef/rados/operations/erasure-code) | 13 328 000 000 000      | 13 328 000 000 000 | 0.00%     |
 
 Result: 4/4 PASS (tolerance 1%). Regression: `tests/engines/volumetry.spec.ts` 318/318 PASS.
 No change to `src/engines/volumetry/**` — the replicated/EC data-fraction formulas and the
@@ -256,7 +257,7 @@ generic small-fs-overhead role documented for xfs/ext4/zfs/vsan/nutanix elsewher
 file (identical pattern to NetApp's `waflOverhead`, finding #5 above). It is included in
 `expectedUsable` because it is part of what the engine actually returns in
 `VolumetryResult.usableCapacity`, but is not itself externally validated.
-Externally validated vectors: 4/4 for the *data-fraction* and *nearfull-ratio* layers (the two
+Externally validated vectors: 4/4 for the _data-fraction_ and _nearfull-ratio_ layers (the two
 dominant, genuinely Ceph-published terms); 0/4 for the BlueStore fs-overhead layer specifically —
 coverage should not be overstated as fully external end-to-end.
 
@@ -307,11 +308,11 @@ Pipeline: raw usable − 25 GB/disk system partition (engine default, stated ass
 from published ~10 GB/drive, finding #8) → × data fraction (calculator-corroborated) →
 × 0.96 (4% Btrfs fs-overhead, Synology-published).
 
-| Config | Data fraction | Source | Expected usable (bytes) | Engine (bytes) | Deviation |
-|--------|----------------|--------|--------------------------|-----------------|-----------|
-| SHR (SHR-1), 4 drives | 75% ((N-1)/N) | [SHR KB](https://kb.synology.com/en-ph/DSM/tutorial/What_is_Synology_Hybrid_RAID_SHR) | 2 802 690 588 672 | 2 802 690 588 672 | 0.00% |
-| SHR-2, 6 drives | 66.7% ((N-2)/N) | [SHR KB](https://kb.synology.com/en-ph/DSM/tutorial/What_is_Synology_Hybrid_RAID_SHR) | 3 736 920 784 896 | 3 736 920 784 896 | 0.00% |
-| RAID F1, 6 drives | 83.3% ((N-1)/N) | [RAID calculator](https://www.synology.com/en-global/support/RAID_calculator) | 4 671 150 981 120 | 4 671 150 981 120 | 0.00% |
+| Config                | Data fraction   | Source                                                                                | Expected usable (bytes) | Engine (bytes)    | Deviation |
+| --------------------- | --------------- | ------------------------------------------------------------------------------------- | ----------------------- | ----------------- | --------- |
+| SHR (SHR-1), 4 drives | 75% ((N-1)/N)   | [SHR KB](https://kb.synology.com/en-ph/DSM/tutorial/What_is_Synology_Hybrid_RAID_SHR) | 2 802 690 588 672       | 2 802 690 588 672 | 0.00%     |
+| SHR-2, 6 drives       | 66.7% ((N-2)/N) | [SHR KB](https://kb.synology.com/en-ph/DSM/tutorial/What_is_Synology_Hybrid_RAID_SHR) | 3 736 920 784 896       | 3 736 920 784 896 | 0.00%     |
+| RAID F1, 6 drives     | 83.3% ((N-1)/N) | [RAID calculator](https://www.synology.com/en-global/support/RAID_calculator)         | 4 671 150 981 120       | 4 671 150 981 120 | 0.00%     |
 
 Result: 3/3 PASS (tolerance 1%). Regression: `tests/engines/volumetry.spec.ts` 318/318 PASS.
 No change to `src/engines/volumetry/**` — the SHR/SHR-2/RAID F1 data-fraction formulas match
@@ -326,8 +327,8 @@ deferred as product decision, precedent finding #5). The vectors validate the pa
 pipeline with the engine's 25 GB default as a stated assumption. The parity (N-k)/N ratios are
 labeled calculator-corroborated (+ industry consensus), not "Synology-documented formula" —
 the SHR KB documents fault tolerance and minimum drive counts only.
-Externally validated vectors: 3/3 for the *Btrfs fs-overhead* layer (Synology-published) and
-the *parity-efficiency* layer (calculator-corroborated); 0/3 for the system-partition layer
+Externally validated vectors: 3/3 for the _Btrfs fs-overhead_ layer (Synology-published) and
+the _parity-efficiency_ layer (calculator-corroborated); 0/3 for the system-partition layer
 (known divergence, stated assumption) — coverage should not be overstated as fully external
 end-to-end.
 
@@ -346,7 +347,7 @@ clamped to >= 1. `overProvisioningPercent` and `growthHeadroom` are advisory-onl
 
 Note: `tests/engines/volumetry/longhorn.spec.ts` (from PR #51) already covers this pipeline at
 the unit level (recognition + guardrail-clamping tests with hand-picked coefficients). This task
-adds *external-reference* vectors traceable to longhorn.io sources; it does not duplicate that
+adds _external-reference_ vectors traceable to longhorn.io sources; it does not duplicate that
 suite.
 
 Of the pipeline's layers exercised by these vectors, the replica-count model and the
@@ -383,12 +384,12 @@ Pipeline: raw × data fraction (Longhorn-published) → × 0.99 (xfs 1%, engine-
 × 0.75 (25% minimal-available reserve, Longhorn-published default — overridden explicitly since
 the engine default of 10% diverges, finding #10) → ÷ 1 (snapshot headroom held neutral).
 
-| Config | Nodes | Data fraction | Free-space factor | Expected usable (bytes) | Engine (bytes) | Deviation |
-|--------|-------|----------------|--------------------|--------------------------|-----------------|-----------|
-| Longhorn R2, 18 drives | 3 | 50% (1/2) | 0.75 (25%, published) | 6 682 500 000 000 | 6 682 500 000 000 | 0.00% |
-| Longhorn R2, 18 drives | 6 | 50% (1/2) | 0.75 (25%, published) | 6 682 500 000 000 | 6 682 500 000 000 | 0.00% |
-| Longhorn R3, 18 drives | 3 | 33.3% (1/3) | 0.75 (25%, published) | 4 455 000 000 000 | 4 455 000 000 000 | 0.00% |
-| Longhorn R3, 18 drives | 6 | 33.3% (1/3) | 0.75 (25%, published) | 4 455 000 000 000 | 4 455 000 000 000 | 0.00% |
+| Config                 | Nodes | Data fraction | Free-space factor     | Expected usable (bytes) | Engine (bytes)    | Deviation |
+| ---------------------- | ----- | ------------- | --------------------- | ----------------------- | ----------------- | --------- |
+| Longhorn R2, 18 drives | 3     | 50% (1/2)     | 0.75 (25%, published) | 6 682 500 000 000       | 6 682 500 000 000 | 0.00%     |
+| Longhorn R2, 18 drives | 6     | 50% (1/2)     | 0.75 (25%, published) | 6 682 500 000 000       | 6 682 500 000 000 | 0.00%     |
+| Longhorn R3, 18 drives | 3     | 33.3% (1/3)   | 0.75 (25%, published) | 4 455 000 000 000       | 4 455 000 000 000 | 0.00%     |
+| Longhorn R3, 18 drives | 6     | 33.3% (1/3)   | 0.75 (25%, published) | 4 455 000 000 000       | 4 455 000 000 000 | 0.00%     |
 
 Result: 4/4 PASS (tolerance 1%). Regression: `tests/engines/volumetry.spec.ts` 318/318 PASS.
 No change to `src/engines/volumetry/**` — the replica-count data-fraction formulas match the
@@ -399,7 +400,7 @@ reserve, not node count.
 
 **Honesty note:** The replica-count model is genuinely Longhorn-published and matches the
 engine exactly — no divergence. The free-space-reserve percentage IS genuinely
-Longhorn-published (25% default), but the engine's *shipped default* (10%) diverges from it by
+Longhorn-published (25% default), but the engine's _shipped default_ (10%) diverges from it by
 2.5× — a real, quantified defect in the default, not a labeling issue (finding #10,
 value-wrong/major, open, deferred as product decision per precedent findings #5 and #8). The
 vectors validate the published 25% value via explicit override, not the engine's own default.
@@ -408,12 +409,12 @@ snapshot-headroom layer is real engine behavior (it does subtract from `usableCa
 index.ts:265-268) but is NOT externally validated here — no longhorn.io page publishes a fixed
 divisor for it, so it is held at a neutral no-op (1) in every vector rather than asserted
 against an unsourced number.
-Externally validated vectors: 4/4 for the *replica-count* layer (Longhorn-published) and the
-*free-space-reserve percentage* (Longhorn-published, used as override); 0/4 for the
+Externally validated vectors: 4/4 for the _replica-count_ layer (Longhorn-published) and the
+_free-space-reserve percentage_ (Longhorn-published, used as override); 0/4 for the
 snapshot-headroom layer (not Longhorn-published, held neutral) — coverage should not be
-overstated as fully external end-to-end. Additionally, the engine's *default* value for the
+overstated as fully external end-to-end. Additionally, the engine's _default_ value for the
 free-space-reserve setting (10%) is flagged as diverging from the published default (25%,
-finding #10) even though the *formula* using that setting is validated.
+finding #10) even though the _formula_ using that setting is validated.
 
 ## Spot-Checks (Task 9)
 
@@ -433,15 +434,15 @@ read/write, 1,000,000/190,000 IOPS read/write), `software` controller, PCIe gen4
 Hand-derived bottleneck chain (all layers computed independently, then cross-checked
 against `calculatePerformance` output):
 
-| Layer | Hand-calc | Engine output | Deviation |
-|-------|-----------|----------------|-----------|
-| Media (drives): 8 × 6900 MB/s read, 8 × 190,000 IOPS write × 8 = 1,520,000 IOPS | 55,200 MB/s / 1,520,000 IOPS | 55,200 MB/s / 1,520,000 IOPS | 0.00% |
-| Controller (software RAID: 10,000 MB/s, 1,000,000 IOPS) | 10,000 MB/s / 1,000,000 IOPS | 10,000 MB/s / 1,000,000 IOPS | 0.00% |
-| PCIe gen4 x4: 1,969 MB/s/lane × 4 lanes | 7,876 MB/s / 126,016 IOPS | 7,876 MB/s / 126,016 IOPS | 0.00% |
-| Network 25GbE: 3,125 MB/s/port | 3,125 MB/s / 50,000 IOPS | 3,125 MB/s / 50,000 IOPS | 0.00% |
-| **Bottleneck** | Network (min of all four: 3,125 MB/s) | `Bottleneck: Network (25GbE) (3125 MB/s)` | 0.00% |
-| maxRead/WriteThroughputMBs | min(effective, 3,125) = 3,125 | 3,125 / 3,125 | 0.00% |
-| maxRead/WriteIOPS | capped by controller ceiling (1,000,000) | 1,000,000 / 1,000,000 | 0.00% |
+| Layer                                                                           | Hand-calc                                | Engine output                             | Deviation |
+| ------------------------------------------------------------------------------- | ---------------------------------------- | ----------------------------------------- | --------- |
+| Media (drives): 8 × 6900 MB/s read, 8 × 190,000 IOPS write × 8 = 1,520,000 IOPS | 55,200 MB/s / 1,520,000 IOPS             | 55,200 MB/s / 1,520,000 IOPS              | 0.00%     |
+| Controller (software RAID: 10,000 MB/s, 1,000,000 IOPS)                         | 10,000 MB/s / 1,000,000 IOPS             | 10,000 MB/s / 1,000,000 IOPS              | 0.00%     |
+| PCIe gen4 x4: 1,969 MB/s/lane × 4 lanes                                         | 7,876 MB/s / 126,016 IOPS                | 7,876 MB/s / 126,016 IOPS                 | 0.00%     |
+| Network 25GbE: 3,125 MB/s/port                                                  | 3,125 MB/s / 50,000 IOPS                 | 3,125 MB/s / 50,000 IOPS                  | 0.00%     |
+| **Bottleneck**                                                                  | Network (min of all four: 3,125 MB/s)    | `Bottleneck: Network (25GbE) (3125 MB/s)` | 0.00%     |
+| maxRead/WriteThroughputMBs                                                      | min(effective, 3,125) = 3,125            | 3,125 / 3,125                             | 0.00%     |
+| maxRead/WriteIOPS                                                               | capped by controller ceiling (1,000,000) | 1,000,000 / 1,000,000                     | 0.00%     |
 
 **Hybrid case**: RAID-5, 8× `ent-hdd-15k-sas-300gb-cmr` (210/210 IOPS, 300/300 MB/s),
 same controller/PCIe/network config. Media layer (8 × 300 MB/s = 2,400 MB/s, 8 × 210 =
@@ -454,11 +455,11 @@ External validation (Perplexity, `mcp__perplexity__search`):
   `PCIE_LANE_BANDWIDTH.gen4 = 1969` in `src/engines/performance/utils/bottleneck-chain.ts:100`
   exactly. Real sustained NVMe throughput is typically 10–20% below this theoretical
   ceiling (protocol/implementation overhead) — the engine models the theoretical PCIe
-  *layer* ceiling, not real-world sustained throughput, which is the correct modeling
+  _layer_ ceiling, not real-world sustained throughput, which is the correct modeling
   choice for a bottleneck-chain ceiling (the layer above/below it will be the actual
   limiter in realistic configs).
 - **25GbE usable throughput**: line rate 25 Gb/s ÷ 8 = 3.125 GB/s ≈ 3,125 MB/s is the
-  Ethernet-*layer* usable payload — matches `NETWORK_SPEED_MBS['25GbE'] = 3125` in
+  Ethernet-_layer_ usable payload — matches `NETWORK_SPEED_MBS['25GbE'] = 3125` in
   `src/engines/performance/utils/bottleneck-chain.ts:197` exactly. Real-world
   iSCSI/TCP storage throughput is ~2,800–3,000 MB/s (93–97% efficiency after TCP/iSCSI
   overhead) — again, the engine models the theoretical network-layer ceiling
@@ -477,7 +478,7 @@ the task brief, for RAID-5 and RAID-6, 8×1TB.
 
 Key finding during setup (not a defect, but worth recording): with testDrive1TB's
 actual consumer-grade URE rate (`ure_rate: 14`, i.e. 1e-14) at 1TB capacity, RAID-5
-rebuild URE risk *dominates* annual data-loss probability by ~4 orders of magnitude
+rebuild URE risk _dominates_ annual data-loss probability by ~4 orders of magnitude
 over the dual-independent-failure mechanism the brief's closed-form formula models
 (empirically measured: ~3.4% simulated annual loss probability vs. ~1.3e-6 analytic
 dual-failure probability — a ~26,000× gap, far outside any "order of magnitude"
@@ -499,10 +500,10 @@ a self-consistent derived MTBF (`8760 / AFR_fraction`) so both sides of the comp
 describe the same (stressed) population; RAID-5 keeps testDrive1TB's real AFR (1%) and
 MTBF (1,000,000h) since its signal is observable without stress-testing.
 
-| Config | rebuildSpeedMBs | ureRate | AFR | simulationCount | Analytic P(loss/yr) | MC P(loss/yr) (3 repeated runs) | Ratio (MC/analytic) | Bound |
-|--------|------------------|---------|-----|------------------|----------------------|-----------------------------------|----------------------|-------|
-| RAID-5 8×1TB | 20 | 17 (1e-17) | 1.0% (testDrive1TB) | 1,000,000 | 6.498e-6 | 1.333e-5, 1.333e-5, 5.000e-6 | 2.05, 2.05, 0.77 | (0.1, 10) ✓ |
-| RAID-6 8×1TB | 10 | 17 (1e-17) | 15% (stress) | 1,000,000 | 1.037e-5 | 3.500e-5, 2.800e-5, 2.700e-5 | 3.37, 2.70, 2.60 | (0.1, 10) ✓ |
+| Config       | rebuildSpeedMBs | ureRate    | AFR                 | simulationCount | Analytic P(loss/yr) | MC P(loss/yr) (3 repeated runs) | Ratio (MC/analytic) | Bound       |
+| ------------ | --------------- | ---------- | ------------------- | --------------- | ------------------- | ------------------------------- | ------------------- | ----------- |
+| RAID-5 8×1TB | 20              | 17 (1e-17) | 1.0% (testDrive1TB) | 1,000,000       | 6.498e-6            | 1.333e-5, 1.333e-5, 5.000e-6    | 2.05, 2.05, 0.77    | (0.1, 10) ✓ |
+| RAID-6 8×1TB | 10              | 17 (1e-17) | 15% (stress)        | 1,000,000       | 1.037e-5            | 3.500e-5, 2.800e-5, 2.700e-5    | 3.37, 2.70, 2.60    | (0.1, 10) ✓ |
 
 Result: 2/2 PASS at committed simulationCount/parameters, stable across repeated runs
 (scratch harness re-ran each config 3× to verify no borderline flakiness before
@@ -528,9 +529,9 @@ deviation**, formula pipeline (power → energy → cost/CO2) is correct.
 
 External validation (Perplexity, `mcp__perplexity__search` — "Switzerland electricity
 grid carbon intensity gCO2/kWh"): Swiss Federal Office of Energy (via EnergyScope)
-publishes **~33 gCO2/kWh** for Swiss electricity *production* (hydro+nuclear
+publishes **~33 gCO2/kWh** for Swiss electricity _production_ (hydro+nuclear
 dominated); the AIB European Residual Mixes dataset publishes **34.84 gCO2/kWh** for
-the Swiss *residual grid mix* (2018 baseline, CO2-only). Both are within the broader
+the Swiss _residual grid mix_ (2018 baseline, CO2-only). Both are within the broader
 20–40 gCO2/kWh band reported by IEA/OWID/Electricity Maps for 2023–2024. The engine's
 `CARBON_INTENSITY.switzerland = 30` (`src/engines/sustainability/index.ts:27-34`) is
 **9% below the SFOE production estimate and 14% below the AIB residual-mix estimate**
@@ -547,13 +548,13 @@ match their published theoretical ceilings exactly — genuinely externally vali
 0 findings. The resilience analytic cross-check required real engineering compromises
 (best-case URE rate, AFR-stressed RAID-6) to make the closed-form/Monte-Carlo
 comparison meaningful and non-flaky at a practical iteration count — these compromises
-are documented in both this section and the spec file's header; the *unmodified*
+are documented in both this section and the spec file's header; the _unmodified_
 comparison (testDrive1TB's real consumer URE rate, real 1% AFR for RAID-6) is not
 testable within a fast unit test's iteration budget, and that infeasibility is itself
 informative (URE dominates RAID-5 risk; RAID-6 triple-failure risk is vanishingly
 rare), not a gap in coverage. The sustainability formula pipeline (power → energy →
 cost/CO2) is exact (0.00% deviation, no fix needed); the Switzerland carbon-intensity
-*constant* itself is a bounded, quantified divergence from the two most-cited
+_constant_ itself is a bounded, quantified divergence from the two most-cited
 published point estimates, logged as finding #11 and deferred as a product decision
 per established precedent.
 
@@ -570,8 +571,8 @@ rtk grep -rn "toLocaleString\|Intl\.\|process\.env\|fetch(\|XMLHttpRequest\|perf
 
 **Result: 1 hit total, classified benign — clean sweep, no code changes.**
 
-| Hit | File | Classification | Reasoning |
-|-----|------|-----------------|-----------|
+| Hit             | File                                 | Classification            | Reasoning                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| --------------- | ------------------------------------ | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `Math.random()` | `src/workers/resilienceWorker.ts:15` | Benign (random-by-design) | Monte Carlo resilience simulation — the entire point of the worker is to sample random failure/rebuild timelines across `simulationCount` (default 1,000,000) iterations and report a probability distribution. Determinism would defeat its purpose; already cross-validated against closed-form MTTDL analytics in `tests/engines/resilience-analytic.spec.ts` (Task 9, Spot-Checks section above), which explicitly accounts for its unseeded non-determinism (3 repeated runs checked for stability within a tolerance band, since the worker exposes no fixed-seed API). |
 
 No `Date.now`/`new Date` (wall-clock), no `document.`/`window.`/`navigator.` (DOM/browser
@@ -656,7 +657,7 @@ branch (pptxContent.ts:158-169) correctly omits the whole row. No crash, no empt
 section header rendered. **PASS.**
 
 **(c2) Chart/gauge DOM unavailable** — the OutputDashboard has no UI control to
-collapse/hide the Capacity Overview or Performance panels (only the *input* sidebar
+collapse/hide the Capacity Overview or Performance panels (only the _input_ sidebar
 accordions collapse; verified by `grep -n "collapse\|Collapsible" OutputDashboard.tsx` —
 no matches), so this could not be exercised via normal UI interaction as the brief's
 step 5(a) anticipated. Instead the underlying condition `captureById()` handles
@@ -698,8 +699,8 @@ suffix, silently rounding to zero decimal places (e.g. an underlying 1,300 IOPS 
 (~5-9% relative error at the low end of each K-bucket, observed directly: dashboard
 showed `1.3K IOPS` while the pre-fix export showed `1K IOPS` for the same underlying
 value in both the dark/EN and light/FR cells above) versus the app's own established
-formatting convention for the exact same number. Not a wrong *value* (same underlying
-`perf.maxReadIOPS`/`perf.maxWriteIOPS`), but a misleading *display* — tagged
+formatting convention for the exact same number. Not a wrong _value_ (same underlying
+`perf.maxReadIOPS`/`perf.maxWriteIOPS`), but a misleading _display_ — tagged
 value-misleading per the ledger's tag convention.
 
 **Fix:** `src/utils/pptxContent.ts` — changed `formatIops()`'s K-suffix branch from
@@ -719,13 +720,13 @@ updating).
 
 ### Summary
 
-| Cell | Config | Result |
-|------|--------|--------|
-| (a) dark + EN | RAID5, 10x1.2TB, 1 server | PASS (after fix #12) |
-| (b) light + FR | same, `?lang=fr` | PASS (after fix #12) |
-| (c1) no resilience | same, sim not run | PASS — resilience row correctly omitted, no crash |
+| Cell                       | Config                                                               | Result                                                                    |
+| -------------------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| (a) dark + EN              | RAID5, 10x1.2TB, 1 server                                            | PASS (after fix #12)                                                      |
+| (b) light + FR             | same, `?lang=fr`                                                     | PASS (after fix #12)                                                      |
+| (c1) no resilience         | same, sim not run                                                    | PASS — resilience row correctly omitted, no crash                         |
 | (c2) chart DOM unavailable | same, Sankey+gauge DOM nodes removed (no UI collapse control exists) | PASS — fallback text/silent omission per design, 0 media images, no crash |
-| (d) decimal units | same, Units=TB | PASS — TB/GB throughout, no TiB/GiB |
+| (d) decimal units          | same, Units=TB                                                       | PASS — TB/GB throughout, no TiB/GiB                                       |
 
 **Fixes applied:** 1 (`src/utils/pptxContent.ts` `formatIops` precision, finding #12).
 **Ledger:** finding #12 added (value-misleading, minor, fixed). No other deviations
@@ -755,22 +756,22 @@ single-node = `false`).
 
 ### Final flag matrix (14 platforms × 4 flags)
 
-| Platform | supportsCompression | supportsDedup | supportsHotSpares | hasServerCount |
-|---|---|---|---|---|
-| standard | false | false | true | false |
-| zfs | **true** | **true** | true | false |
-| s2d | false | false | true | true |
-| proprietary | false | false | true | false |
-| vsan_osa | false | false | true | true |
-| vsan_esa | false | false | true | true |
-| ceph | false | false | true | true |
-| powerflex | false | false | true | true |
-| powerstore | false | false | true | true |
-| powerscale | false | false | true | true |
-| objectscale | false | false | true | true |
-| nutanix | false | false | true | true |
-| powervault | false | false | true | false |
-| longhorn | false | false | true | true |
+| Platform    | supportsCompression | supportsDedup | supportsHotSpares | hasServerCount |
+| ----------- | ------------------- | ------------- | ----------------- | -------------- |
+| standard    | false               | false         | true              | false          |
+| zfs         | **true**            | **true**      | true              | false          |
+| s2d         | false               | false         | true              | true           |
+| proprietary | false               | false         | true              | false          |
+| vsan_osa    | false               | false         | true              | true           |
+| vsan_esa    | false               | false         | true              | true           |
+| ceph        | false               | false         | true              | true           |
+| powerflex   | false               | false         | true              | true           |
+| powerstore  | false               | false         | true              | true           |
+| powerscale  | false               | false         | true              | true           |
+| objectscale | false               | false         | true              | true           |
+| nutanix     | false               | false         | true              | true           |
+| powervault  | false               | false         | true              | false          |
+| longhorn    | false               | false         | true              | true           |
 
 `supportsHotSpares` is `true` for all 14 platforms — hot spares reduce `usableCapacity`
 everywhere the probe checked.
@@ -800,7 +801,7 @@ responds to the global `compressionRatio`/`dedupRatio` inputs.** Root cause, rea
 compression/dedup slider tied to the global store fields for every platform, that
 slider is a no-op for 13 of 14 platforms (all but ZFS) — it should be hidden per
 `shouldShowControl('compression'|'dedup', type)` for those platforms, and those
-platforms' *own* options panels (already present per-platform) are the only place
+platforms' _own_ options panels (already present per-platform) are the only place
 compression/dedup are actually live. This is flagged here as a candidate UI finding,
 continuing the ledger numbering — **not added as ledger finding #13** because Task 15's
 scope is the capability map itself; Task 16 owns deciding whether/how to act on it in

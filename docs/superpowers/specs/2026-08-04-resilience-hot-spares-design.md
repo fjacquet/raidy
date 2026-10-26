@@ -54,7 +54,7 @@ node.
 ## Consequences, stated plainly
 
 **vSAN does not move.** `usesDistributedSpares` returns true for `vsan_osa` and `vsan_esa`, so
-`totalHotSpares` is 0 and the population is unchanged. This makes the rule the *reason* vSAN is
+`totalHotSpares` is 0 and the population is unchanged. This makes the rule the _reason_ vSAN is
 unchanged rather than an accident of the missing subtraction — worth a test, since the two are
 indistinguishable from today's numbers.
 
@@ -62,7 +62,7 @@ indistinguishable from today's numbers.
 means fewer failure draws. This is the correct direction — a spare's failure is not a data-loss
 event — but it is a visible change to a headline number and belongs in the CHANGELOG.
 
-**What this still does not model.** A real hot spare also *shortens the rebuild window*, which is
+**What this still does not model.** A real hot spare also _shortens the rebuild window_, which is
 its main contribution to resilience. The worker has no concept of a standby drive and does not
 credit it. So the model moves from "pessimistic, by counting spares as data-bearing" to
 "optimistic on a different axis, by ignoring the rebuild-window benefit". The change is justified

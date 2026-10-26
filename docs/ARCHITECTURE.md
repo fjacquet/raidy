@@ -8,17 +8,17 @@ Raidy is a browser-based Single Page Application (SPA) / Progressive Web App (PW
 
 ## Technology Stack
 
-| Technology | Version | Purpose |
-|------------|---------|---------|
-| React | 19.x | UI framework (Functional Components + Hooks) |
-| TypeScript | 5.x | Type safety (Strict Mode) |
-| Zustand | 5.x | State management with URL persistence |
-| Tailwind CSS | 4.x | Responsive styling (dark mode native) |
-| Vite | 8.x | Build tool |
-| D3-Sankey | - | Capacity waterfall visualization |
-| jspdf-autotable / pptxgenjs-plus | - | PDF and PowerPoint export |
-| jsPDF | - | PDF report generation |
-| LZ-String | - | URL state compression |
+| Technology                       | Version | Purpose                                      |
+| -------------------------------- | ------- | -------------------------------------------- |
+| React                            | 19.x    | UI framework (Functional Components + Hooks) |
+| TypeScript                       | 5.x     | Type safety (Strict Mode)                    |
+| Zustand                          | 5.x     | State management with URL persistence        |
+| Tailwind CSS                     | 4.x     | Responsive styling (dark mode native)        |
+| Vite                             | 8.x     | Build tool                                   |
+| D3-Sankey                        | -       | Capacity waterfall visualization             |
+| jspdf-autotable / pptxgenjs-plus | -       | PDF and PowerPoint export                    |
+| jsPDF                            | -       | PDF report generation                        |
+| LZ-String                        | -       | URL state compression                        |
 
 ---
 
@@ -150,19 +150,20 @@ tooltip nested inside the switch's label would flip the setting when tapped to r
 Both are why the locale files carry **10** namespaces, not the 8 the calculation path needs.
 
 ---
+
 ## Calculation engines
 
 Four engines produce every published number. They are **pure functions** — no React, no DOM, no
 store, no i18n (see [ADR-0004](./adr/0004-engines-are-pure-functions.md)) — and each dispatches to
 one strategy per platform ([ADR-0003](./adr/0003-strategy-pattern-per-platform.md)).
 
-| Engine | Location | Produces |
-|---|---|---|
-| Volumetry | `src/engines/volumetry/` | Usable and effective capacity, parity/filesystem/spare overheads, per-platform detail cards |
-| Performance | `src/engines/performance/` | Burst and sustained IOPS and throughput, the Media→Controller→PCIe→Network bottleneck chain, latency |
-| Resilience | `src/workers/resilienceWorker.ts` | Annual survival rate, URE and dual-failure probabilities, rebuild time — Monte Carlo in a Web Worker ([ADR-0006](./adr/0006-monte-carlo-and-the-superset-invariant.md)) |
-| Sustainability | `src/engines/sustainability/` | Power draw, energy, CO₂, flash endurance, TCO |
-| Backup | `src/engines/backup/` | Backup capacity from change rate and retention |
+| Engine         | Location                          | Produces                                                                                                                                                                |
+| -------------- | --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Volumetry      | `src/engines/volumetry/`          | Usable and effective capacity, parity/filesystem/spare overheads, per-platform detail cards                                                                             |
+| Performance    | `src/engines/performance/`        | Burst and sustained IOPS and throughput, the Media→Controller→PCIe→Network bottleneck chain, latency                                                                    |
+| Resilience     | `src/workers/resilienceWorker.ts` | Annual survival rate, URE and dual-failure probabilities, rebuild time — Monte Carlo in a Web Worker ([ADR-0006](./adr/0006-monte-carlo-and-the-superset-invariant.md)) |
+| Sustainability | `src/engines/sustainability/`     | Power draw, energy, CO₂, flash endurance, TCO                                                                                                                           |
+| Backup         | `src/engines/backup/`             | Backup capacity from change rate and retention                                                                                                                          |
 
 > **PowerScale is the exception to the strategy-per-platform shape.** `calculateVolumetry` returns
 > early into `src/engines/volumetry/powerscale/` instead of selecting a `VolumetryStrategy`, because
@@ -240,12 +241,12 @@ ConfigStore = HardwareSlice & TopologySlice & WorkloadSlice & AdvancedSlice
 
 ### Key State Values
 
-| Slice | Key Fields |
-|-------|------------|
-| Hardware | driveId, driveCount, serverCount, serverPowerWatts |
+| Slice    | Key Fields                                                       |
+| -------- | ---------------------------------------------------------------- |
+| Hardware | driveId, driveCount, serverCount, serverPowerWatts               |
 | Topology | topology (type + level), hotSpares, zfsOptions, s2dOptions, etc. |
-| Workload | readPercent, blockSize, randomPercent, dailyWriteVolume |
-| Advanced | compressionRatio, networkSpeed, pue, carbonRegion, unitSystem |
+| Workload | readPercent, blockSize, randomPercent, dailyWriteVolume          |
+| Advanced | compressionRatio, networkSpeed, pue, carbonRegion, unitSystem    |
 
 ---
 
@@ -318,24 +319,24 @@ flowchart TB
 
 ### Layout Components
 
-| Component | Purpose |
-|-----------|---------|
-| `Cockpit.tsx` | Main split-screen container |
-| `Header.tsx` | Navigation bar with unit toggle and CO2 selector |
-| `InputSidebar.tsx` | Left panel with accordion sections |
+| Component             | Purpose                                                                   |
+| --------------------- | ------------------------------------------------------------------------- |
+| `Cockpit.tsx`         | Main split-screen container                                               |
+| `Header.tsx`          | Navigation bar with unit toggle and CO2 selector                          |
+| `InputSidebar.tsx`    | Left panel with accordion sections                                        |
 | `OutputDashboard.tsx` | Right panel — thin orchestrator composing the headline band and five acts |
 
 ### Input Components
 
 All input components read from and write to the Zustand store:
 
-| Component | Store Slice |
-|-----------|-------------|
-| `TopologyPanel.tsx` | TopologySlice |
-| `HardwarePanel.tsx` | HardwareSlice |
-| `WorkloadPanel.tsx` | WorkloadSlice |
-| `AdvancedPanel.tsx` | AdvancedSlice |
-| `TieringPanel.tsx` | TopologySlice (tiered storage) |
+| Component           | Store Slice                    |
+| ------------------- | ------------------------------ |
+| `TopologyPanel.tsx` | TopologySlice                  |
+| `HardwarePanel.tsx` | HardwareSlice                  |
+| `WorkloadPanel.tsx` | WorkloadSlice                  |
+| `AdvancedPanel.tsx` | AdvancedSlice                  |
+| `TieringPanel.tsx`  | TopologySlice (tiered storage) |
 
 ### Output Components
 
@@ -353,20 +354,20 @@ whether `AdvancedPanel` shows the backup inputs and whether `CapacityAct` render
 — an input and the output it feeds are one decision, so they cannot drift into a live figure
 computed from a control the user cannot see.
 
-| Component | Purpose / Data Source |
-|-----------|------------------------|
-| `HeadlineBand.tsx` | Persistent KPI band (usable/effective capacity, efficiency, peak IOPS, survival, annual energy) |
-| `acts/CapacityAct.tsx` | Sankey + donut + breakdown list + ZFS/Longhorn/BeeGFS detail panels + Backup sub-panel |
-| `CapacityRow.tsx` | Shared label/description/dual-unit row used by the ZFS, Longhorn and BeeGFS detail panels |
-| `acts/PerformanceAct.tsx` | Speedometer gauges + bottleneck chain |
-| `acts/ResilienceAct.tsx` | Monte Carlo survival probability, run/progress controls |
-| `acts/CostAct.tsx` | Power, annual energy, CO2, flash endurance |
-| `acts/TakeawayAct.tsx` | Export buttons (PDF/PPTX) as closing CTA, plus provisioning commands in a collapsible `<details>` |
-| `SankeyDiagram.tsx` | volumetry.breakdown (used inside `CapacityAct`) |
-| `Speedometer.tsx` | performance.layers (used inside `PerformanceAct`) |
-| `DonutChart.tsx` | volumetry.efficiency (used inside `CapacityAct`) |
-| `MetricCard.tsx` / `ProgressBar.tsx` | Shared presentational helpers used across acts |
-| `AnimatedCounter.tsx` | Any numeric value |
+| Component                            | Purpose / Data Source                                                                             |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------- |
+| `HeadlineBand.tsx`                   | Persistent KPI band (usable/effective capacity, efficiency, peak IOPS, survival, annual energy)   |
+| `acts/CapacityAct.tsx`               | Sankey + donut + breakdown list + ZFS/Longhorn/BeeGFS detail panels + Backup sub-panel            |
+| `CapacityRow.tsx`                    | Shared label/description/dual-unit row used by the ZFS, Longhorn and BeeGFS detail panels         |
+| `acts/PerformanceAct.tsx`            | Speedometer gauges + bottleneck chain                                                             |
+| `acts/ResilienceAct.tsx`             | Monte Carlo survival probability, run/progress controls                                           |
+| `acts/CostAct.tsx`                   | Power, annual energy, CO2, flash endurance                                                        |
+| `acts/TakeawayAct.tsx`               | Export buttons (PDF/PPTX) as closing CTA, plus provisioning commands in a collapsible `<details>` |
+| `SankeyDiagram.tsx`                  | volumetry.breakdown (used inside `CapacityAct`)                                                   |
+| `Speedometer.tsx`                    | performance.layers (used inside `PerformanceAct`)                                                 |
+| `DonutChart.tsx`                     | volumetry.efficiency (used inside `CapacityAct`)                                                  |
+| `MetricCard.tsx` / `ProgressBar.tsx` | Shared presentational helpers used across acts                                                    |
+| `AnimatedCounter.tsx`                | Any numeric value                                                                                 |
 
 ---
 
@@ -443,13 +444,13 @@ lists them, and the absentees are the point: S2D and Nutanix resolve through the
 taking the capacity tier down.
 
 The worker rolls each fast-tier device once per simulated day; a hit forces
-`ceil(driveCount / fastTierDeviceCount)` drives to fail at once, through the *same* failure body as
+`ceil(driveCount / fastTierDeviceCount)` drives to fail at once, through the _same_ failure body as
 ordinary failures so the mirror/group assignment, URE check, rebuild trigger and correlated window
 all apply. Both inputs default to zero, so every other configuration is bit-for-bit unchanged —
 pinned by `tests/workers/sharedFastTierFailureDomain.spec.ts`, which asserts a zero-AFR fast tier
 reproduces the pre-#88 result exactly.
 
-Counter-intuitive result worth keeping: at the same per-device AFR, *more and smaller* fault
+Counter-intuitive result worth keeping: at the same per-device AFR, _more and smaller_ fault
 domains are worse than fewer and larger ones (16 devices × 3 drives gives 0.78 survival, 2 × 24
 gives 0.82, at identical expected drives lost). Device count does not map monotonically to harm.
 
@@ -463,12 +464,12 @@ superset invariant holds; the practical consequence is that dual-failure figures
 levels are an **upper bound**, not a calibrated estimate.
 
 Deliberately still not modelled: rebuild behaviour after a whole group is lost, and vSAN's
-deduplication amplification, where *any* device failure fails the disk group.
+deduplication amplification, where _any_ device failure fails the disk group.
 
 The resilience model carries a deliberate invariant: **its simulated failure set must be a
 superset of the physically real one**, so the tool may understate resilience but never overstate
 it. Hot spares and stranded drives are excluded because their failure is genuinely not a
-data-loss event; when not even one whole target forms, every remaining *usable* drive is put
+data-loss event; when not even one whole target forms, every remaining _usable_ drive is put
 into a single over-wide group, which is more failure-prone than any real target and therefore
 stays on the conservative side of the invariant.
 
@@ -494,14 +495,14 @@ Formats byte values respecting unit system:
 
 ```typescript
 // Binary units (OS/filesystem display)
-TiB = 1024^4  // Tebibyte
-GiB = 1024^3  // Gibibyte
+TiB = 1024 ^ 4 // Tebibyte
+GiB = 1024 ^ 3 // Gibibyte
 
 // Decimal units (drive marketing)
-TB = 1000^4   // Terabyte
-GB = 1000^3   // Gigabyte
+TB = 1000 ^ 4 // Terabyte
+GB = 1000 ^ 3 // Gigabyte
 
-formatBytes(bytes, 'binary')  // "1.5 TiB"
+formatBytes(bytes, 'binary') // "1.5 TiB"
 formatBytes(bytes, 'decimal') // "1.6 TB"
 ```
 
@@ -524,7 +525,7 @@ keeping the two separate means the slide content itself is unit-testable without
 PPTX library.
 
 `src/utils/powerscaleExportContent.ts` is the same pattern for the one platform whose document
-*structure* differs: a PowerScale cluster is 1-8 heterogeneous node pools rather than one drive
+_structure_ differs: a PowerScale cluster is 1-8 heterogeneous node pools rather than one drive
 model times a count, so `exportToPptx` and `exportToPdf` both dispatch on
 `topology.type === 'powerscale'` and render `buildPowerScaleExportContent()`'s two per-pool tables
 (a core table and a derivation table, each with a cluster total) in place of the generic hardware
@@ -583,7 +584,7 @@ checklist, not an afterthought:
   `OutputDashboard.tsx`'s `mirrorCopies` derivation (an IIFE of platform checks) behaves the
   same way — a platform that needs a non-default `mirrorCopies` but isn't listed just gets `1`.
 - **Zod schema drift decides what a URL link actually carries.** `utils/schemas.ts` needs the
-  new platform's options object added as its own schema *and* wired into the discriminated
+  new platform's options object added as its own schema _and_ wired into the discriminated
   `ConfigStateSchema` — omitting it doesn't fail to compile (every field on `ConfigStateSchema`
   is optional), it silently drops that platform's options from every shared link,
   or worse, lets an unvalidated object through if the wiring is partial. This exact class of bug
@@ -636,12 +637,12 @@ No backend required - all logic runs client-side.
 
 ## Key Files Reference
 
-| File | Purpose |
-|------|---------|
-| `src/App.tsx` | Root component |
-| `src/store/configStore.ts` | Zustand store |
-| `src/hooks/useCalculations.ts` | Calculation orchestration |
-| `src/engines/volumetry/index.ts` | Capacity calculations |
-| `src/engines/performance/index.ts` | Performance calculations |
-| `src/data/drives.json` | Drive database |
-| `src/types/topology.ts` | Topology type definitions |
+| File                               | Purpose                   |
+| ---------------------------------- | ------------------------- |
+| `src/App.tsx`                      | Root component            |
+| `src/store/configStore.ts`         | Zustand store             |
+| `src/hooks/useCalculations.ts`     | Calculation orchestration |
+| `src/engines/volumetry/index.ts`   | Capacity calculations     |
+| `src/engines/performance/index.ts` | Performance calculations  |
+| `src/data/drives.json`             | Drive database            |
+| `src/types/topology.ts`            | Topology type definitions |

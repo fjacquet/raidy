@@ -1,41 +1,45 @@
 ---
+
 phase: 02-calculation-validation
 plan: 01
 subsystem: testing
 tags: [vitest, fast-check, raid, wintelguy, table-driven-tests, property-based-testing]
 
 # Dependency graph
+
 requires:
-  - phase: 01-test-infrastructure
-    provides: Vitest configuration with coverage thresholds and test setup
-provides:
-  - WintelGuy-validated RAID test suite with 24 test vectors
-  - Table-driven tests for all 11 standard RAID levels
-  - Property-based tests validating RAID mathematical invariants
-  - Write penalty documentation for performance calculations
-affects: [02-02-zfs-validation, 02-03-advanced-topologies, module-b-performance]
+- phase: 01-test-infrastructure
+  provides: Vitest configuration with coverage thresholds and test setup
+  provides:
+- WintelGuy-validated RAID test suite with 24 test vectors
+- Table-driven tests for all 11 standard RAID levels
+- Property-based tests validating RAID mathematical invariants
+- Write penalty documentation for performance calculations
+  affects: [02-02-zfs-validation, 02-03-advanced-topologies, module-b-performance]
 
 # Tech tracking
+
 tech-stack:
-  added: [fast-check@4.5.3]
-  patterns: [table-driven testing with describe.each, property-based testing with fast-check]
+added: [fast-check@4.5.3]
+patterns: [table-driven testing with describe.each, property-based testing with fast-check]
 
 key-files:
-  created: [tests/fixtures/raid-vectors.ts]
-  modified: [tests/engines/volumetry.spec.ts, package.json, package-lock.json]
+created: [tests/fixtures/raid-vectors.ts]
+modified: [tests/engines/volumetry.spec.ts, package.json, package-lock.json]
 
 key-decisions:
-  - "Use WintelGuy RAID Calculator as industry reference for validation (1% tolerance)"
-  - "Table-driven tests with describe.each for systematic coverage of all RAID levels"
-  - "Property-based tests with fast-check to validate mathematical invariants"
-  - "50 runs per property test for balance between coverage and speed"
+- "Use WintelGuy RAID Calculator as industry reference for validation (1% tolerance)"
+- "Table-driven tests with describe.each for systematic coverage of all RAID levels"
+- "Property-based tests with fast-check to validate mathematical invariants"
+- "50 runs per property test for balance between coverage and speed"
 
 patterns-established:
-  - "Test vectors in fixtures/ directory with industry source documentation"
-  - "Each RAID level has 2+ test vectors for different drive counts"
-  - "Property tests validate invariants (monotonicity, efficiency formulas)"
+- "Test vectors in fixtures/ directory with industry source documentation"
+- "Each RAID level has 2+ test vectors for different drive counts"
+- "Property tests validate invariants (monotonicity, efficiency formulas)"
 
 # Metrics
+
 duration: 5min
 completed: 2026-01-18
 ---
@@ -53,6 +57,7 @@ completed: 2026-01-18
 - **Files modified:** 4
 
 ## Accomplishments
+
 - All 11 standard RAID levels (0/1/1E/3/4/5/5E/5EE/6/10/50/60) validated against WintelGuy within 1% tolerance
 - 24 WintelGuy-validated test vectors covering simple and complex configurations
 - 8 property-based tests validating RAID mathematical invariants (monotonicity, efficiency formulas)
@@ -81,6 +86,7 @@ Each task was committed atomically:
    - All 56 tests passing
 
 ## Files Created/Modified
+
 - `tests/fixtures/raid-vectors.ts` - 24 WintelGuy-validated test vectors for all standard RAID levels with formulas documented
 - `tests/engines/volumetry.spec.ts` - Expanded from ~385 lines to ~671 lines with table-driven and property-based tests
 - `package.json` - Added fast-check@4.5.3 dev dependency
@@ -136,5 +142,6 @@ None - no external service configuration required.
 - Target after Phase 2 complete: 75%+ (all topologies validated)
 
 ---
-*Phase: 02-calculation-validation*
-*Completed: 2026-01-18*
+
+_Phase: 02-calculation-validation_
+_Completed: 2026-01-18_

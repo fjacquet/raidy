@@ -8,36 +8,36 @@
 
 Raidy models RAID, ZFS, vSAN, S2D, Nutanix, Dell, NetApp, Ceph, Synology, Longhorn, PowerFlex, PowerScale and ObjectScale. BeeGFS — the parallel filesystem used on most HPC and AI training clusters — is missing.
 
-BeeGFS does not fit any existing platform template. Every other platform in Raidy owns its data protection: a level name maps to an efficiency fraction. BeeGFS does not. It is a filesystem layer that federates *storage targets*, and each storage target is a **local RAID volume** (RAID6, RAID10, ZFS RAIDz2) or a bare drive. Cluster-level protection is a separate, optional feature: **Buddy Mirroring**, synchronous replication between pairs of targets.
+BeeGFS does not fit any existing platform template. Every other platform in Raidy owns its data protection: a level name maps to an efficiency fraction. BeeGFS does not. It is a filesystem layer that federates _storage targets_, and each storage target is a **local RAID volume** (RAID6, RAID10, ZFS RAIDz2) or a bare drive. Cluster-level protection is a separate, optional feature: **Buddy Mirroring**, synchronous replication between pairs of targets.
 
-Metadata is also physically separate: *metadata targets* (MDT) hold the filesystem namespace, usually on RAID1/RAID10 SSDs, and contribute nothing to usable data capacity. Sizing them wrong is the single most common BeeGFS deployment mistake, so the sizer should say something about it.
+Metadata is also physically separate: _metadata targets_ (MDT) hold the filesystem namespace, usually on RAID1/RAID10 SSDs, and contribute nothing to usable data capacity. Sizing them wrong is the single most common BeeGFS deployment mistake, so the sizer should say something about it.
 
 ## Reference facts
 
 From ThinkParQ / BeeGFS documentation:
 
-| Fact | Value | Source |
-|---|---|---|
-| Metadata capacity rule of thumb | 0.3–0.5 % of total storage capacity | [System Requirements](https://doc.beegfs.io/latest/system_design/system_requirements.html) |
-| Metadata density (ext4, 512 B inodes) | 500 GB ≈ 150 M files | [Metadata Node Tuning](https://doc.beegfs.io/latest/advanced_topics/metadata_tuning.html) |
-| Buddy Mirroring capacity cost | exactly ×2 — "chunks of buddy mirrored files are written to two targets and thus consumed disk space is twice their size" | [System Requirements](https://doc.beegfs.io/latest/system_design/system_requirements.html) |
-| Buddy groups | always pairs; data and metadata buddy mirroring are configured independently | idem |
-| RAID6 storage target width | 10–12 drives is the recommended balance | [Storage Node Tuning](https://doc.beegfs.io/latest/advanced_topics/storage_tuning.html) |
-| Striping (`numtargets`, `chunksize` 512 K) | performance only, no capacity effect | idem |
+| Fact                                       | Value                                                                                                                     | Source                                                                                     |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| Metadata capacity rule of thumb            | 0.3–0.5 % of total storage capacity                                                                                       | [System Requirements](https://doc.beegfs.io/latest/system_design/system_requirements.html) |
+| Metadata density (ext4, 512 B inodes)      | 500 GB ≈ 150 M files                                                                                                      | [Metadata Node Tuning](https://doc.beegfs.io/latest/advanced_topics/metadata_tuning.html)  |
+| Buddy Mirroring capacity cost              | exactly ×2 — "chunks of buddy mirrored files are written to two targets and thus consumed disk space is twice their size" | [System Requirements](https://doc.beegfs.io/latest/system_design/system_requirements.html) |
+| Buddy groups                               | always pairs; data and metadata buddy mirroring are configured independently                                              | idem                                                                                       |
+| RAID6 storage target width                 | 10–12 drives is the recommended balance                                                                                   | [Storage Node Tuning](https://doc.beegfs.io/latest/advanced_topics/storage_tuning.html)    |
+| Striping (`numtargets`, `chunksize` 512 K) | performance only, no capacity effect                                                                                      | idem                                                                                       |
 
-> **As-built divergence.** `numtargets` and `chunksize` ended up **informational**, not modelled. `numtargets` is a *per-file* stripe width, so it caps single-file throughput, while every performance figure this tool reports is a cluster aggregate bounded by the total storage-target count; `chunksize` shapes per-target sequential efficiency, and the bottleneck chain has no per-file layer for a chunk boundary to act on. Both are labelled informational in the panel (tooltip + hint) rather than wired to an invented formula. See the doc-comments on `BeeGfsOptions.chunkSizeKb` / `numTargets`.
+> **As-built divergence.** `numtargets` and `chunksize` ended up **informational**, not modelled. `numtargets` is a _per-file_ stripe width, so it caps single-file throughput, while every performance figure this tool reports is a cluster aggregate bounded by the total storage-target count; `chunksize` shapes per-target sequential efficiency, and the bottleneck chain has no per-file layer for a chunk boundary to act on. Both are labelled informational in the panel (tooltip + hint) rather than wired to an invented formula. See the doc-comments on `BeeGfsOptions.chunkSizeKb` / `numTargets`.
 
 Additional architecture reference: [BeeGFS Reference Architecture (June 2026)](https://www.beegfs.io/c/wp-content/uploads/2026/06/BeeGFS-Ref-architecture-June-2026pdf.pdf), [NetApp BeeGFS sizing guidelines](https://github.com/NetAppDocs/beegfs/blob/main/second-gen/beegfs-design-solution-sizing-guidelines.adoc).
 
 ## Decisions
 
-1. **Level = local RAID only.** `beegfs_raid6`, `beegfs_raid10`, `beegfs_raidz2`, `beegfs_single`. Buddy Mirroring is *not* encoded in the level.
+1. **Level = local RAID only.** `beegfs_raid6`, `beegfs_raid10`, `beegfs_raidz2`, `beegfs_single`. Buddy Mirroring is _not_ encoded in the level.
 2. **Buddy Mirroring = two independent booleans** in `BeeGfsOptions` (`storageBuddyMirror`, `metadataBuddyMirror`). This mirrors how BeeGFS actually works — you can mirror metadata without mirroring data — and avoids a 7-entry level enum that still could not express the metadata case.
 3. **Target width is an explicit input**: `drivesPerTarget`, default 12. RAID6 efficiency is meaningless without it. The target count is derived and shown read-only.
 4. **Metadata targets reuse the existing `TieringConfig` primitive** (`src/types/topology.ts:181-207`, resolved by `src/engines/shared/tiering.ts`). Its semantics are already exactly right: the fast tier counts toward **raw** capacity but never toward usable — the same treatment Ceph WAL/DB offload gets today. `fastTier` = MDT, `capacityTier` = ST. The `TieringPanel.tsx` UI is reused as-is.
 5. **All four engines in v1.** Sustainability needs no code (it is platform-agnostic).
-6. **The controller class follows the LEVEL, not the platform.** *(Added post-implementation —
-   see the correction note below.)* `getControllerRequirement(type, level?)` returns `'raid'` for
+6. **The controller class follows the LEVEL, not the platform.** _(Added post-implementation —
+   see the correction note below.)_ `getControllerRequirement(type, level?)` returns `'raid'` for
    `beegfs_raid6` / `beegfs_raid10`, `'hba'` for `beegfs_raidz2`, and `'either'` for
    `beegfs_single`. BeeGFS is **not** entered in `HBA_REQUIRED_TOPOLOGIES`.
 
@@ -58,8 +58,8 @@ Additional architecture reference: [BeeGFS Reference Architecture (June 2026)](h
 
 ### Rejected alternatives
 
-- *Efficiency-lookup only* (the Ceph/Nutanix/Longhorn shape): cheapest, but produces wrong numbers — RAID6 efficiency depends on target width, and metadata would silently inflate usable capacity.
-- *File-count-driven metadata sizing* (new "number of files" / "average file size" store inputs): more accurate, but adds store fields, UI and i18n outside the topology slice. Deferred — the advisory below derives an estimated file count from MDT capacity instead, which answers the same question without new global inputs.
+- _Efficiency-lookup only_ (the Ceph/Nutanix/Longhorn shape): cheapest, but produces wrong numbers — RAID6 efficiency depends on target width, and metadata would silently inflate usable capacity.
+- _File-count-driven metadata sizing_ (new "number of files" / "average file size" store inputs): more accurate, but adds store fields, UI and i18n outside the topology slice. Deferred — the advisory below derives an estimated file count from MDT capacity instead, which answers the same question without new global inputs.
 
 ## Model
 
@@ -67,21 +67,21 @@ Additional architecture reference: [BeeGFS Reference Architecture (June 2026)](h
 
 ```ts
 export type BeeGfsTopology =
-  | 'beegfs_raid6'    // storage target = local RAID6 (default)
-  | 'beegfs_raid10'   // storage target = local RAID10
-  | 'beegfs_raidz2'   // storage target = ZFS RAIDz2
-  | 'beegfs_single'   // one drive = one target, no local RAID
+  | 'beegfs_raid6' // storage target = local RAID6 (default)
+  | 'beegfs_raid10' // storage target = local RAID10
+  | 'beegfs_raidz2' // storage target = ZFS RAIDz2
+  | 'beegfs_single' // one drive = one target, no local RAID
 
 export interface BeeGfsOptions {
-  drivesPerTarget: number          // default 12
-  storageBuddyMirror: boolean      // default false → usable ×0.5
-  metadataBuddyMirror: boolean     // default true  → MDT requirement ×2
-  chunkSizeKb: 512 | 1024 | 2048   // default 512, informational (see divergence note above)
-  numTargets: number               // per-file stripe width, default 4, informational
-  network: 'ib-hdr' | 'ib-ndr' | '100gbe' | '25gbe'  // default '100gbe', informational
-  fsOverheadPercent: number        // ext4/xfs under the targets, default 2
-  metadataTargets: boolean         // default false — AS-BUILT ADDITION, see below
-  tiering?: TieringConfig          // fastTier = MDT, capacityTier = ST
+  drivesPerTarget: number // default 12
+  storageBuddyMirror: boolean // default false → usable ×0.5
+  metadataBuddyMirror: boolean // default true  → MDT requirement ×2
+  chunkSizeKb: 512 | 1024 | 2048 // default 512, informational (see divergence note above)
+  numTargets: number // per-file stripe width, default 4, informational
+  network: 'ib-hdr' | 'ib-ndr' | '100gbe' | '25gbe' // default '100gbe', informational
+  fsOverheadPercent: number // ext4/xfs under the targets, default 2
+  metadataTargets: boolean // default false — AS-BUILT ADDITION, see below
+  tiering?: TieringConfig // fastTier = MDT, capacityTier = ST
 }
 ```
 
@@ -113,7 +113,7 @@ status              = mdtUsable < mdtRecommendedMin ? 'under' : 'ok'
 
 Surfaced in the capacity card, plus a `validators.ts` alert when `status === 'under'` or when no MDT is configured at all.
 
-> **As-built addition: the `metadataTargets` opt-in gate.** The spec above let MDT tiering activate as soon as both `TieringPanel` drive pickers were filled in. That is a trap: enabling tiering also switches the *storage-target* drive selection from the Hardware sidebar to `tiering.capacityTier`, so simply exploring the MDT pickers would silently move the capacity calculation onto a different drive. Implementation added an explicit `metadataTargets: boolean` (default `false`) that gates both the `TieringPanel` render and the `resolveTiering` branch, mirroring Ceph's existing `walDbOffload` toggle. This is an improvement on what the spec describes and is the shipped behaviour.
+> **As-built addition: the `metadataTargets` opt-in gate.** The spec above let MDT tiering activate as soon as both `TieringPanel` drive pickers were filled in. That is a trap: enabling tiering also switches the _storage-target_ drive selection from the Hardware sidebar to `tiering.capacityTier`, so simply exploring the MDT pickers would silently move the capacity calculation onto a different drive. Implementation added an explicit `metadataTargets: boolean` (default `false`) that gates both the `TieringPanel` render and the `resolveTiering` branch, mirroring Ceph's existing `walDbOffload` toggle. This is an improvement on what the spec describes and is the shipped behaviour.
 
 ### Performance
 
@@ -134,7 +134,7 @@ Reads scale linearly with drive count; writes are `driveCount × driveIOPS × wr
 > drains to the array, so once the cache saturates the ceiling is the back-end array's, and the RAID
 > 6 read-modify-write cost (read old data + P + Q, write new data + P + Q = 6 back-end I/Os) is
 > deferred by the cache but never removed. The genuine benefits — write latency (ack from NVRAM
-> instead of media) and burst absorption — are properties of the *unsaturated* cache, i.e. of a
+> instead of media) and burst absorption — are properties of the _unsaturated_ cache, i.e. of a
 > transient with no representation in this engine. There is one real sustained effect, full-stripe
 > write coalescing, which converts a 6-I/O RMW into an `(N+2)/N` full-stripe write; but its
 > magnitude is a function of write locality and stripe alignment, no platform's write penalty in
@@ -156,13 +156,13 @@ No code. `src/engines/sustainability/` is topology-agnostic (drive count × powe
 
 ## Component boundaries
 
-| Unit | Responsibility | Depends on |
-|---|---|---|
-| `volumetry/strategies/beegfs.ts` | level + `drivesPerTarget` + buddy → data fraction | `BeeGfsOptions` only |
+| Unit                                      | Responsibility                                       | Depends on                         |
+| ----------------------------------------- | ---------------------------------------------------- | ---------------------------------- |
+| `volumetry/strategies/beegfs.ts`          | level + `drivesPerTarget` + buddy → data fraction    | `BeeGfsOptions` only               |
 | metadata advisory in `volumetry/index.ts` | MDT capacity vs 0.3–0.5 % rule, estimated file count | resolved tiering + usable capacity |
-| `performance/strategies/beegfs.ts` | write penalty, IOPS | `BeeGfsOptions` only |
-| `NETWORK_MODEL_BY_TOPOLOGY` | per-platform wire amplification | topology type + workload mix |
-| `BeeGfsOptionsPanel.tsx` | inputs; delegates MDT selection to `TieringPanel` | store slice |
+| `performance/strategies/beegfs.ts`        | write penalty, IOPS                                  | `BeeGfsOptions` only               |
+| `NETWORK_MODEL_BY_TOPOLOGY`               | per-platform wire amplification                      | topology type + workload mix       |
+| `BeeGfsOptionsPanel.tsx`                  | inputs; delegates MDT selection to `TieringPanel`    | store slice                        |
 
 Each is a pure function of its inputs and testable in isolation, matching the existing strategy-pattern contract (`VolumetryStrategy`, `PerformanceStrategy`).
 
@@ -185,5 +185,5 @@ Each is a pure function of its inputs and testable in isolation, matching the ex
 ## Out of scope
 
 - Explicit file-count / average-file-size inputs (see rejected alternatives).
-- BeeOND (on-demand burst filesystem) and storage pools / tiering *within* BeeGFS.
+- BeeOND (on-demand burst filesystem) and storage pools / tiering _within_ BeeGFS.
 - Client-side caching and per-client bandwidth modelling — the performance engine has no client concept.

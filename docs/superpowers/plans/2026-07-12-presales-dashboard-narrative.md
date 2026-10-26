@@ -75,17 +75,30 @@ import { shouldShowKpi, shouldShowSection, type RelevanceContext } from '@/engin
 import type { VolumetryResult, SustainabilityResult } from '@/types/results'
 
 const vol = (over: Partial<VolumetryResult> = {}): VolumetryResult => ({
-  rawCapacity: 1000, parityOverhead: 100, hotSpareOverhead: 0, filesystemOverhead: 0,
-  slopOverhead: 0, usableCapacity: 900, effectiveCapacity: 900, efficiency: 90, breakdown: [],
+  rawCapacity: 1000,
+  parityOverhead: 100,
+  hotSpareOverhead: 0,
+  filesystemOverhead: 0,
+  slopOverhead: 0,
+  usableCapacity: 900,
+  effectiveCapacity: 900,
+  efficiency: 90,
+  breakdown: [],
   ...over,
 })
 const sus = (over: Partial<SustainabilityResult> = {}): SustainabilityResult => ({
-  annualEnergyKwh: 5000, annualEnergyCost: 1000, annualCO2Kg: 800,
-  powerBreakdown: { drives: 100, servers: 50, cooling: 30, total: 180 }, ...over,
+  annualEnergyKwh: 5000,
+  annualEnergyCost: 1000,
+  annualCO2Kg: 800,
+  powerBreakdown: { drives: 100, servers: 50, cooling: 30, total: 180 },
+  ...over,
 })
 const ctx = (over: Partial<RelevanceContext> = {}): RelevanceContext => ({
   topology: { type: 'standard', level: 'RAID5' },
-  volumetry: vol(), sustainability: sus(), hasResilienceResult: false, hasBackup: false,
+  volumetry: vol(),
+  sustainability: sus(),
+  hasResilienceResult: false,
+  hasBackup: false,
   ...over,
 })
 
@@ -116,11 +129,17 @@ describe('shouldShowKpi', () => {
 describe('shouldShowSection', () => {
   it('hides zfsDetails unless zfsDetails present', () => {
     expect(shouldShowSection('zfsDetails', ctx())).toBe(false)
-    const c = ctx({ topology: { type: 'zfs', level: 'raidz2' }, volumetry: vol({ zfsDetails: {} as never }) })
+    const c = ctx({
+      topology: { type: 'zfs', level: 'raidz2' },
+      volumetry: vol({ zfsDetails: {} as never }),
+    })
     expect(shouldShowSection('zfsDetails', c)).toBe(true)
   })
   it('hides longhornDetails unless longhornDetails present', () => {
-    const c = ctx({ topology: { type: 'longhorn', level: 'longhorn_r3' }, volumetry: vol({ longhornDetails: {} as never }) })
+    const c = ctx({
+      topology: { type: 'longhorn', level: 'longhorn_r3' },
+      volumetry: vol({ longhornDetails: {} as never }),
+    })
     expect(shouldShowSection('longhornDetails', c)).toBe(true)
     expect(shouldShowSection('longhornDetails', ctx())).toBe(false)
   })
@@ -160,8 +179,15 @@ import type { Topology } from '@/types/topology'
 export type KpiId = 'usable' | 'effective' | 'efficiency' | 'peakIops' | 'survival' | 'annualEnergy'
 
 export type SectionId =
-  | 'capacity' | 'performance' | 'resilience' | 'cost' | 'takeaway'
-  | 'zfsDetails' | 'longhornDetails' | 'backup' | 'flashEndurance'
+  | 'capacity'
+  | 'performance'
+  | 'resilience'
+  | 'cost'
+  | 'takeaway'
+  | 'zfsDetails'
+  | 'longhornDetails'
+  | 'backup'
+  | 'flashEndurance'
 
 export interface RelevanceContext {
   topology: Topology
@@ -251,7 +277,11 @@ import { MetricCard, ProgressBar } from '@/components/outputs'
 
 describe('MetricCard', () => {
   it('renders label, value and optional subvalue', () => {
-    render(<MetricCard label="Usable" subvalue="after compression">42 TB</MetricCard>)
+    render(
+      <MetricCard label="Usable" subvalue="after compression">
+        42 TB
+      </MetricCard>,
+    )
     expect(screen.getByText('Usable')).toBeInTheDocument()
     expect(screen.getByText('42 TB')).toBeInTheDocument()
     expect(screen.getByText('after compression')).toBeInTheDocument()
@@ -319,8 +349,14 @@ import { CapacityAct } from '@/components/outputs'
 import type { VolumetryResult } from '@/types/results'
 
 const volumetry: VolumetryResult = {
-  rawCapacity: 1e12, parityOverhead: 1e11, hotSpareOverhead: 0, filesystemOverhead: 0,
-  slopOverhead: 0, usableCapacity: 9e11, effectiveCapacity: 9e11, efficiency: 90,
+  rawCapacity: 1e12,
+  parityOverhead: 1e11,
+  hotSpareOverhead: 0,
+  filesystemOverhead: 0,
+  slopOverhead: 0,
+  usableCapacity: 9e11,
+  effectiveCapacity: 9e11,
+  efficiency: 90,
   breakdown: [{ label: 'Usable', bytes: 9e11, percent: 90, color: '#3b82f6' }],
 }
 
@@ -383,9 +419,13 @@ import { PerformanceAct } from '@/components/outputs'
 import type { PerformanceResult } from '@/types/results'
 
 const performance: PerformanceResult = {
-  maxReadThroughputMBs: 1200, maxWriteThroughputMBs: 800,
-  maxReadIOPS: 500000, maxWriteIOPS: 300000,
-  layers: [{ name: 'Media', throughputMBs: 1200, iops: 500000, isBottleneck: true, utilization: 100 }],
+  maxReadThroughputMBs: 1200,
+  maxWriteThroughputMBs: 800,
+  maxReadIOPS: 500000,
+  maxWriteIOPS: 300000,
+  layers: [
+    { name: 'Media', throughputMBs: 1200, iops: 500000, isBottleneck: true, utilization: 100 },
+  ],
   bottleneckDescription: 'Media bound',
 }
 
@@ -497,7 +537,9 @@ import { CostAct } from '@/components/outputs'
 import type { SustainabilityResult } from '@/types/results'
 
 const sustainability: SustainabilityResult = {
-  annualEnergyKwh: 5000, annualEnergyCost: 1000, annualCO2Kg: 800,
+  annualEnergyKwh: 5000,
+  annualEnergyCost: 1000,
+  annualCO2Kg: 800,
   powerBreakdown: { drives: 100, servers: 50, cooling: 30, total: 180 },
 }
 
@@ -555,11 +597,21 @@ it('disables export buttons when no drive selected', () => {
     <TakeawayAct
       topology={{ type: 'standard', level: 'RAID5' }}
       zfsOptions={undefined}
-      performance={{ maxReadThroughputMBs: 0, maxWriteThroughputMBs: 0, maxReadIOPS: 0, maxWriteIOPS: 0, layers: [], bottleneckDescription: '' }}
+      performance={{
+        maxReadThroughputMBs: 0,
+        maxWriteThroughputMBs: 0,
+        maxReadIOPS: 0,
+        maxWriteIOPS: 0,
+        layers: [],
+        bottleneckDescription: '',
+      }}
       selectedDrive={null}
       exportError={false}
-      onExportPdf={vi.fn()} onExportPptx={vi.fn()} onExportYaml={vi.fn()}
-      onExportAnsible={vi.fn()} onExportTerraform={vi.fn()}
+      onExportPdf={vi.fn()}
+      onExportPptx={vi.fn()}
+      onExportYaml={vi.fn()}
+      onExportAnsible={vi.fn()}
+      onExportTerraform={vi.fn()}
     />,
   )
   const buttons = screen.getAllByRole('button')
@@ -616,14 +668,28 @@ const flat = (o: object, p = ''): string[] =>
   )
 
 const REQUIRED = [
-  'headline.usable', 'headline.effective', 'headline.efficiency', 'headline.peakIops',
-  'headline.survival', 'headline.annualEnergy', 'headline.runSurvival',
-  'acts.capacity', 'acts.performance', 'acts.resilience', 'acts.cost', 'acts.takeaway',
+  'headline.usable',
+  'headline.effective',
+  'headline.efficiency',
+  'headline.peakIops',
+  'headline.survival',
+  'headline.annualEnergy',
+  'headline.runSurvival',
+  'acts.capacity',
+  'acts.performance',
+  'acts.resilience',
+  'acts.cost',
+  'acts.takeaway',
   'acts.forEngineers',
 ]
 
 describe('output namespace headline/act keys', () => {
-  it.each([['en', en], ['fr', fr], ['de', de], ['it', it]] as const)('%s has all required keys', (_n, loc) => {
+  it.each([
+    ['en', en],
+    ['fr', fr],
+    ['de', de],
+    ['it', it],
+  ] as const)('%s has all required keys', (_n, loc) => {
     const keys = new Set(flat(loc))
     for (const k of REQUIRED) expect(keys.has(k)).toBe(true)
   })
@@ -697,23 +763,39 @@ import { HeadlineBand } from '@/components/outputs'
 import type { PerformanceResult, SustainabilityResult, VolumetryResult } from '@/types/results'
 
 const volumetry: VolumetryResult = {
-  rawCapacity: 1e12, parityOverhead: 1e11, hotSpareOverhead: 0, filesystemOverhead: 0,
-  slopOverhead: 0, usableCapacity: 9e11, effectiveCapacity: 9e11, efficiency: 90, breakdown: [],
+  rawCapacity: 1e12,
+  parityOverhead: 1e11,
+  hotSpareOverhead: 0,
+  filesystemOverhead: 0,
+  slopOverhead: 0,
+  usableCapacity: 9e11,
+  effectiveCapacity: 9e11,
+  efficiency: 90,
+  breakdown: [],
 }
 const performance: PerformanceResult = {
-  maxReadThroughputMBs: 1200, maxWriteThroughputMBs: 800, maxReadIOPS: 500000, maxWriteIOPS: 300000,
-  layers: [], bottleneckDescription: '',
+  maxReadThroughputMBs: 1200,
+  maxWriteThroughputMBs: 800,
+  maxReadIOPS: 500000,
+  maxWriteIOPS: 300000,
+  layers: [],
+  bottleneckDescription: '',
 }
 const sustainability: SustainabilityResult = {
-  annualEnergyKwh: 5000, annualEnergyCost: 1000, annualCO2Kg: 800,
+  annualEnergyKwh: 5000,
+  annualEnergyCost: 1000,
+  annualCO2Kg: 800,
   powerBreakdown: { drives: 100, servers: 50, cooling: 30, total: 180 },
 }
 
 it('omits the effective tile for RAID (effective === usable)', () => {
   render(
     <HeadlineBand
-      volumetry={volumetry} performance={performance} resilience={null}
-      sustainability={sustainability} topology={{ type: 'standard', level: 'RAID5' }}
+      volumetry={volumetry}
+      performance={performance}
+      resilience={null}
+      sustainability={sustainability}
+      topology={{ type: 'standard', level: 'RAID5' }}
       onRunSurvival={vi.fn()}
     />,
   )
@@ -724,8 +806,11 @@ it('omits the effective tile for RAID (effective === usable)', () => {
 it('shows a run-survival affordance when no simulation result', () => {
   render(
     <HeadlineBand
-      volumetry={volumetry} performance={performance} resilience={null}
-      sustainability={sustainability} topology={{ type: 'standard', level: 'RAID5' }}
+      volumetry={volumetry}
+      performance={performance}
+      resilience={null}
+      sustainability={sustainability}
+      topology={{ type: 'standard', level: 'RAID5' }}
       onRunSurvival={vi.fn()}
     />,
   )
@@ -745,7 +830,12 @@ Expected: FAIL — not exported.
 import { useTranslation } from 'react-i18next'
 import { shouldShowKpi, type RelevanceContext } from '@/engines/outputRelevance'
 import { formatNumber, useFormatBytes } from '@/hooks'
-import type { PerformanceResult, ResilienceResult, SustainabilityResult, VolumetryResult } from '@/types/results'
+import type {
+  PerformanceResult,
+  ResilienceResult,
+  SustainabilityResult,
+  VolumetryResult,
+} from '@/types/results'
 import type { Topology } from '@/types/topology'
 import { AnimatedBytes, AnimatedPercent } from './AnimatedCounter'
 
@@ -759,13 +849,21 @@ interface HeadlineBandProps {
 }
 
 export function HeadlineBand({
-  volumetry, performance, resilience, sustainability, topology, onRunSurvival,
+  volumetry,
+  performance,
+  resilience,
+  sustainability,
+  topology,
+  onRunSurvival,
 }: HeadlineBandProps) {
   const { t } = useTranslation('output')
   const formatBytes = useFormatBytes()
   const ctx: RelevanceContext = {
-    topology, volumetry, sustainability,
-    hasResilienceResult: resilience != null, hasBackup: false,
+    topology,
+    volumetry,
+    sustainability,
+    hasResilienceResult: resilience != null,
+    hasBackup: false,
   }
   const peakIops = Math.max(performance.maxReadIOPS, performance.maxWriteIOPS)
 
@@ -774,36 +872,50 @@ export function HeadlineBand({
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
         {shouldShowKpi('usable', ctx) && (
           <div className="text-center">
-            <div className="text-2xl font-bold text-primary-400"><AnimatedBytes value={volumetry.usableCapacity} /></div>
+            <div className="text-2xl font-bold text-primary-400">
+              <AnimatedBytes value={volumetry.usableCapacity} />
+            </div>
             <p className="text-xs text-slate-500 dark:text-slate-400">{t('headline.usable')}</p>
           </div>
         )}
         {shouldShowKpi('effective', ctx) && (
           <div className="text-center">
-            <div className="text-2xl font-bold text-green-400"><AnimatedBytes value={volumetry.effectiveCapacity} /></div>
+            <div className="text-2xl font-bold text-green-400">
+              <AnimatedBytes value={volumetry.effectiveCapacity} />
+            </div>
             <p className="text-xs text-slate-500 dark:text-slate-400">{t('headline.effective')}</p>
           </div>
         )}
         {shouldShowKpi('efficiency', ctx) && (
           <div className="text-center">
-            <div className="text-2xl font-bold text-slate-900 dark:text-white"><AnimatedPercent value={volumetry.efficiency} /></div>
+            <div className="text-2xl font-bold text-slate-900 dark:text-white">
+              <AnimatedPercent value={volumetry.efficiency} />
+            </div>
             <p className="text-xs text-slate-500 dark:text-slate-400">{t('headline.efficiency')}</p>
           </div>
         )}
         {shouldShowKpi('peakIops', ctx) && (
           <div className="text-center">
-            <div className="text-2xl font-bold text-slate-900 dark:text-white font-mono">{formatNumber(Math.round(peakIops))}</div>
+            <div className="text-2xl font-bold text-slate-900 dark:text-white font-mono">
+              {formatNumber(Math.round(peakIops))}
+            </div>
             <p className="text-xs text-slate-500 dark:text-slate-400">{t('headline.peakIops')}</p>
           </div>
         )}
         <div className="text-center">
           {shouldShowKpi('survival', ctx) && resilience ? (
             <>
-              <div className="text-2xl font-bold text-slate-900 dark:text-white font-mono">{resilience.survivalPercent}</div>
+              <div className="text-2xl font-bold text-slate-900 dark:text-white font-mono">
+                {resilience.survivalPercent}
+              </div>
               <p className="text-xs text-slate-500 dark:text-slate-400">{t('headline.survival')}</p>
             </>
           ) : (
-            <button type="button" onClick={onRunSurvival} className="px-3 py-2 text-xs font-medium rounded bg-primary-600 hover:bg-primary-500 transition-colors">
+            <button
+              type="button"
+              onClick={onRunSurvival}
+              className="px-3 py-2 text-xs font-medium rounded bg-primary-600 hover:bg-primary-500 transition-colors"
+            >
               {t('headline.runSurvival')}
             </button>
           )}

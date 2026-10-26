@@ -5,6 +5,7 @@
 **Requirement**: QUALITY-02
 
 ## What was done
+
 - Added `model` field to `PowerStoreOptions` interface (`'powerstore_3200' | 'powerstore_5200t' | 'powerstore_5200q' | 'custom'`)
 - Added `POWERSTORE_MODEL_OVERHEAD` lookup table exported from `src/types/topology.ts`:
   - powerstore_3200 → 5%
@@ -18,6 +19,7 @@
 - Fixed test fixtures: added `model` field to inline `powerstoreOptions` objects in test files
 
 ## Verification
+
 - `npm run typecheck` → 0 errors ✓
 - `npm run lint` → 0 errors ✓
 - `npm test -- --run` → 881/881 tests pass ✓

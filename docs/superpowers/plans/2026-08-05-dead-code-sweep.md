@@ -4,7 +4,7 @@
 
 **Goal:** Delete every dependency, file, export and translation key nothing reaches, and install a gate so the next one cannot accumulate unnoticed.
 
-**Architecture:** Knip supplies the import graph that TypeScript and Biome do not build, and its first failing run *is* the work list for the deletion tasks. The gate lands last, once the report is clean, at `.githooks/pre-commit` via `core.hooksPath` — no husky. Translation keys stay outside Knip's reach and get a bespoke test beside the existing i18n parity specs.
+**Architecture:** Knip supplies the import graph that TypeScript and Biome do not build, and its first failing run _is_ the work list for the deletion tasks. The gate lands last, once the report is clean, at `.githooks/pre-commit` via `core.hooksPath` — no husky. Translation keys stay outside Knip's reach and get a bespoke test beside the existing i18n parity specs.
 
 **Tech Stack:** Knip 6, TypeScript 5 strict, Biome, Vitest, react-i18next (4 locales), plain git hooks.
 
@@ -81,7 +81,7 @@ rtk npm run check:dead
 
 Expected: **FAIL**, listing unused dependencies, files and exports. Save the output verbatim into the task report — Tasks 2, 3 and 4 each consume one section of it.
 
-If Knip reports something this plan does not anticipate, do **not** delete it silently. Add it to the report and flag it: the plan's list was built from hand-rolled scans that got barrels and in-file-only exports wrong, so Knip finding *more* is expected, and each addition needs the same per-category proof as the rest.
+If Knip reports something this plan does not anticipate, do **not** delete it silently. Add it to the report and flag it: the plan's list was built from hand-rolled scans that got barrels and in-file-only exports wrong, so Knip finding _more_ is expected, and each addition needs the same per-category proof as the rest.
 
 - [ ] **Step 5: Commit**
 
@@ -187,12 +187,12 @@ Verified by build, check:bundle-size and check:supply-chain, not by grep alone."
 
 Each symbol below occurs exactly once repo-wide: its own declaration.
 
-| Target | Location |
-|---|---|
+| Target                                                          | Location                                                            |
+| --------------------------------------------------------------- | ------------------------------------------------------------------- |
 | `TopologyProvider`, `useTopologyContext` (whole file, 48 lines) | `src/components/inputs/topology-options/shared/TopologyContext.tsx` |
-| `getMinIOPS` | `src/engines/performance/utils/bottleneck-chain.ts` |
-| `formatPercent` | `src/i18n/formatters.ts` |
-| `formatBytesLocalized` | `src/i18n/formatters.ts` |
+| `getMinIOPS`                                                    | `src/engines/performance/utils/bottleneck-chain.ts`                 |
+| `formatPercent`                                                 | `src/i18n/formatters.ts`                                            |
+| `formatBytesLocalized`                                          | `src/i18n/formatters.ts`                                            |
 
 `formatNumber` and `formatCurrency` in the same file are **live** — do not touch them.
 
@@ -519,9 +519,7 @@ const DYNAMIC_NAMESPACES: Record<string, string> = {
 function flatten(obj: Record<string, unknown>, prefix = ''): string[] {
   return Object.entries(obj).flatMap(([k, v]) => {
     const key = prefix ? `${prefix}.${k}` : k
-    return typeof v === 'object' && v !== null
-      ? flatten(v as Record<string, unknown>, key)
-      : [key]
+    return typeof v === 'object' && v !== null ? flatten(v as Record<string, unknown>, key) : [key]
   })
 }
 
@@ -681,6 +679,6 @@ test named it, then removed."
 
 **Type consistency.** `check:dead` is defined in Task 1 and consumed by 2, 3, 4 and 5. `DYNAMIC_PREFIXES` is defined in Task 6 and consumed by Task 7. `knip.json` is created in Task 1 and extended in Task 4 with `ignoreExportsUsedInFile`.
 
-**Ordering.** Knip must come first because its output *is* the work list. The gate must come last because a hook installed while the check fails would block the commit that installs it — Task 5 Step 1 checks for exactly that. The i18n pair sits after the gate because it is enforced by the test suite, not by the hook, and so does not interact with it.
+**Ordering.** Knip must come first because its output _is_ the work list. The gate must come last because a hook installed while the check fails would block the commit that installs it — Task 5 Step 1 checks for exactly that. The i18n pair sits after the gate because it is enforced by the test suite, not by the hook, and so does not interact with it.
 
 **One risk the plan carries deliberately.** Task 1 may surface findings this plan does not anticipate — the reconnaissance behind the spec used hand-rolled scans that got barrel files and in-file-only exports wrong. Step 4 of Task 1 says to report those rather than delete them silently. More findings is the expected outcome of using a real tool, not a sign the plan is broken.

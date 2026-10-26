@@ -1,52 +1,56 @@
 ---
+
 phase: 02-calculation-validation
 plan: 10
 subsystem: testing
 tags: [vitest, volumetry, tiering, s2d, nutanix, ceph, zfs, objectscale, powerstore, powerscale, coverage]
 
 # Dependency graph
+
 requires:
-  - phase: 02-01
-    provides: Table-driven testing framework and property-based testing with fast-check
-  - phase: 02-02
-    provides: Vendor-specific topology test patterns (vSAN, S2D, Ceph, Nutanix)
-  - phase: 02-07
-    provides: Error handling patterns for invalid volumetry inputs
-provides:
-  - Storage tiering test coverage (S2D, Nutanix, Ceph, vSAN OSA)
-  - ZFS ashift padding penalty validation
-  - PowerStore/PowerScale snapshot reserve tests
-  - ObjectScale multi-site geo-replication tests (corrected)
-  - 87% volumetry engine line coverage (exceeds 75% target)
-affects: [Phase 3 - Security Hardening, Module B - Performance Engine]
+- phase: 02-01
+  provides: Table-driven testing framework and property-based testing with fast-check
+- phase: 02-02
+  provides: Vendor-specific topology test patterns (vSAN, S2D, Ceph, Nutanix)
+- phase: 02-07
+  provides: Error handling patterns for invalid volumetry inputs
+  provides:
+- Storage tiering test coverage (S2D, Nutanix, Ceph, vSAN OSA)
+- ZFS ashift padding penalty validation
+- PowerStore/PowerScale snapshot reserve tests
+- ObjectScale multi-site geo-replication tests (corrected)
+- 87% volumetry engine line coverage (exceeds 75% target)
+  affects: [Phase 3 - Security Hardening, Module B - Performance Engine]
 
 # Tech tracking
+
 tech-stack:
-  added: []
-  patterns:
-    - "Tiering configuration test pattern (cache tier + capacity tier validation)"
-    - "ZFS ashift sector size mismatch testing (5% penalty per level)"
-    - "Vendor snapshot reserve breakdown validation"
-    - "Multi-site geo-replication efficiency calculation validation"
+added: []
+patterns:
+- "Tiering configuration test pattern (cache tier + capacity tier validation)"
+- "ZFS ashift sector size mismatch testing (5% penalty per level)"
+- "Vendor snapshot reserve breakdown validation"
+- "Multi-site geo-replication efficiency calculation validation"
 
 key-files:
-  created: []
-  modified:
-    - tests/engines/volumetry.spec.ts
-    - src/engines/volumetry/index.ts
+created: []
+modified:
+- tests/engines/volumetry.spec.ts
+- src/engines/volumetry/index.ts
 
 key-decisions:
-  - "Use real drive IDs from drives.json for tiering tests (not fake IDs like 'ssd-nvme-1tb')"
-  - "Allow driveCount=0 and drive=null when tiering is configured (tiering provides drives)"
-  - "Fix ObjectScale geo-overhead efficiency calculations to account for filesystem overhead"
-  - "Test snapshot reserves with varying percentages (15-30%) to validate breakdown entries"
+- "Use real drive IDs from drives.json for tiering tests (not fake IDs like 'ssd-nvme-1tb')"
+- "Allow driveCount=0 and drive=null when tiering is configured (tiering provides drives)"
+- "Fix ObjectScale geo-overhead efficiency calculations to account for filesystem overhead"
+- "Test snapshot reserves with varying percentages (15-30%) to validate breakdown entries"
 
 patterns-established:
-  - "Tiering tests validate both cache and capacity tier calculations separately"
-  - "ZFS ashift penalty tests use drives with different sector sizes (512B vs 4096B)"
-  - "Vendor-specific breakdown entries validated via Array.some() on breakdown labels"
+- "Tiering tests validate both cache and capacity tier calculations separately"
+- "ZFS ashift penalty tests use drives with different sector sizes (512B vs 4096B)"
+- "Vendor-specific breakdown entries validated via Array.some() on breakdown labels"
 
 # Metrics
+
 duration: 8min
 completed: 2026-01-18
 ---
@@ -177,5 +181,6 @@ None - no external service configuration required.
 - Statement coverage: 86.48%
 
 ---
-*Phase: 02-calculation-validation*
-*Completed: 2026-01-18*
+
+_Phase: 02-calculation-validation_
+_Completed: 2026-01-18_

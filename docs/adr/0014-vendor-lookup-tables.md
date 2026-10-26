@@ -43,7 +43,7 @@ For PowerScale that means:
 
 - `src/data/powerscaleNodes.json` and `src/data/powerscaleEfficiency.json` are generated artifacts,
   emitted by `scripts/build-powerscale-catalog.mjs`. They are never hand-edited. The Biome
-  *formatter* is disabled for them (the linter is not) so that a reformat cannot disguise an edit.
+  _formatter_ is disabled for them (the linter is not) so that a reformat cannot disguise an edit.
 - `src/engines/volumetry/powerscale/onefsFormula.ts` holds the closed form. It has **no production
   import** and must never gain one. Its job is to cross-check the shipped table in tests, so a
   regenerated table that diverges from published OneFS mechanics fails loudly.
@@ -76,20 +76,20 @@ argument for approximating.
   gap, which is the whole reason this ADR exists.
 - Not everything is bit-exact, and the doc says so rather than overclaiming. Raw matches to the
   workbook's own six significant figures; **usable cannot be bit-exact** — measured max divergence
-  0.053%, p99 0.008%, which sits *inside* the 0.088% the workbook's own rounding produces. The
+  0.053%, p99 0.008%, which sits _inside_ the 0.088% the workbook's own rounding produces. The
   gate asserts p99 < 0.01% as the real tripwire.
-- Resilience gets no such backing. PowerSizer is a *capacity* calculator: it carries no AFR, URE or
+- Resilience gets no such backing. PowerSizer is a _capacity_ calculator: it carries no AFR, URE or
   MTBF. The PowerScale resilience model is derived from published OneFS protection semantics and is
   labelled **NOT vendor-attested** everywhere a reader will look. Do not let a future change quietly
   imply otherwise.
 - **Data reduction (DRR) is not a column of the table either.** The 122,828 rows carry raw, usable
-  and efficiency; DRR (1.0, 1.6 or 2.0) is Dell's per-model *default assumption* about the data a
+  and efficiency; DRR (1.0, 1.6 or 2.0) is Dell's per-model _default assumption_ about the data a
   node sizes, layered on top of the table by `sizeTier`, not read out of it. That is why
   `PowerScaleTier.drrOverride` — a per-pool override, because DRR describes the pool's data, not
   its hardware — can exist at all without touching anything this ADR makes exact: the conformance
   gate below asserts raw, usable and efficiency, never effective capacity. If a DRR override ever
   moved that gate, it would mean DRR had reached a quantity the vendor does publish, and this
-  decision needs revisiting. (There is still no *global* compression/dedup slider — one ratio
+  decision needs revisiting. (There is still no _global_ compression/dedup slider — one ratio
   across a cluster's heterogeneous pools would be meaningless — but that is a different question
   from whether DRR is vendor data, which it never was.)
 

@@ -161,33 +161,29 @@ export function ZfsOptionsPanel({ topology, onChange }: ZfsOptionsPanelProps) {
 // Source: https://refactoring.guru/design-patterns/strategy/typescript/example
 // volumetry/strategies/VolumetryStrategy.ts
 export interface VolumetryStrategy {
-  calculateDataFraction(
-    level: string,
-    driveCount: number,
-    options: TopologyOptions
-  ): number;
+  calculateDataFraction(level: string, driveCount: number, options: TopologyOptions): number
 
-  calculateOverhead?(rawCapacity: number, options: TopologyOptions): number;
+  calculateOverhead?(rawCapacity: number, options: TopologyOptions): number
 }
 
 // volumetry/strategies/raid.ts
 export class RaidVolumetryStrategy implements VolumetryStrategy {
   calculateDataFraction(level: string, driveCount: number): number {
-    const usableDrives = driveCount;
+    const usableDrives = driveCount
 
     switch (level) {
-      case "RAID0":
-        return 1.0;
-      case "RAID1":
-        return 0.5;
-      case "RAID5":
-        return (usableDrives - 1) / usableDrives;
-      case "RAID6":
-        return (usableDrives - 2) / usableDrives;
-      case "RAID10":
-        return 0.5;
+      case 'RAID0':
+        return 1.0
+      case 'RAID1':
+        return 0.5
+      case 'RAID5':
+        return (usableDrives - 1) / usableDrives
+      case 'RAID6':
+        return (usableDrives - 2) / usableDrives
+      case 'RAID10':
+        return 0.5
       default:
-        return 1.0;
+        return 1.0
     }
   }
 }
@@ -195,24 +191,24 @@ export class RaidVolumetryStrategy implements VolumetryStrategy {
 // volumetry/strategies/zfs.ts
 export class ZfsVolumetryStrategy implements VolumetryStrategy {
   calculateDataFraction(level: string, driveCount: number): number {
-    const usableDrives = driveCount;
+    const usableDrives = driveCount
 
     switch (level) {
-      case "stripe":
-        return 1.0;
-      case "mirror":
-        return 0.5;
-      case "raidz1":
-      case "draid1":
-        return (usableDrives - 1) / usableDrives;
-      case "raidz2":
-      case "draid2":
-        return (usableDrives - 2) / usableDrives;
-      case "raidz3":
-      case "draid3":
-        return (usableDrives - 3) / usableDrives;
+      case 'stripe':
+        return 1.0
+      case 'mirror':
+        return 0.5
+      case 'raidz1':
+      case 'draid1':
+        return (usableDrives - 1) / usableDrives
+      case 'raidz2':
+      case 'draid2':
+        return (usableDrives - 2) / usableDrives
+      case 'raidz3':
+      case 'draid3':
+        return (usableDrives - 3) / usableDrives
       default:
-        return 1.0;
+        return 1.0
     }
   }
 
@@ -220,30 +216,26 @@ export class ZfsVolumetryStrategy implements VolumetryStrategy {
     // ZFS slop space: clamp(capacity/32, 128 MiB, 128 GiB)
     const slopSpace = Math.min(
       Math.max(rawCapacity / 32, 128 * 1024 * 1024),
-      128 * 1024 * 1024 * 1024
-    );
-    return slopSpace;
+      128 * 1024 * 1024 * 1024,
+    )
+    return slopSpace
   }
 }
 
 // volumetry/index.ts - orchestrator (refactored from 1141 → 200-300 lines)
-import { RaidVolumetryStrategy } from "./strategies/raid";
-import { ZfsVolumetryStrategy } from "./strategies/zfs";
+import { RaidVolumetryStrategy } from './strategies/raid'
+import { ZfsVolumetryStrategy } from './strategies/zfs'
 // ... other strategies
 
 const strategies: Record<TopologyType, VolumetryStrategy> = {
   standard: new RaidVolumetryStrategy(),
   zfs: new ZfsVolumetryStrategy(),
   // ... other topologies
-};
+}
 
-function getDataFraction(
-  topology: Topology,
-  driveCount: number,
-  options: any
-): number {
-  const strategy = strategies[topology.type];
-  return strategy.calculateDataFraction(topology.level, driveCount, options);
+function getDataFraction(topology: Topology, driveCount: number, options: any): number {
+  const strategy = strategies[topology.type]
+  return strategy.calculateDataFraction(topology.level, driveCount, options)
 }
 ```
 
@@ -257,39 +249,39 @@ function getDataFraction(
 // Source: https://www.typescriptlang.org/docs/handbook/2/narrowing.html
 // types/topology.ts - discriminated union with literal type property
 type StandardTopology = {
-  type: "standard";
-  level: "RAID0" | "RAID1" | "RAID5" | "RAID6" | "RAID10";
-};
+  type: 'standard'
+  level: 'RAID0' | 'RAID1' | 'RAID5' | 'RAID6' | 'RAID10'
+}
 
 type ZfsTopology = {
-  type: "zfs";
-  level: "stripe" | "mirror" | "raidz1" | "raidz2" | "raidz3";
-};
+  type: 'zfs'
+  level: 'stripe' | 'mirror' | 'raidz1' | 'raidz2' | 'raidz3'
+}
 
 type CephTopology = {
-  type: "ceph";
-  level: "replicated_2x" | "replicated_3x" | "ec_4_2" | "ec_8_3";
-};
+  type: 'ceph'
+  level: 'replicated_2x' | 'replicated_3x' | 'ec_4_2' | 'ec_8_3'
+}
 
-type Topology = StandardTopology | ZfsTopology | CephTopology;
+type Topology = StandardTopology | ZfsTopology | CephTopology
 
 // Exhaustive checking helper
 function assertNever(x: never): never {
-  throw new Error(`Unhandled case: ${x}`);
+  throw new Error(`Unhandled case: ${x}`)
 }
 
 // Usage in calculation engine
 function getDataFraction(topology: Topology, driveCount: number): number {
   switch (topology.type) {
-    case "standard":
-      return calculateRaidDataFraction(topology.level, driveCount);
-    case "zfs":
-      return calculateZfsDataFraction(topology.level, driveCount);
-    case "ceph":
-      return calculateCephDataFraction(topology.level, driveCount);
+    case 'standard':
+      return calculateRaidDataFraction(topology.level, driveCount)
+    case 'zfs':
+      return calculateZfsDataFraction(topology.level, driveCount)
+    case 'ceph':
+      return calculateCephDataFraction(topology.level, driveCount)
     default:
       // TypeScript error if new topology type added without case
-      return assertNever(topology);
+      return assertNever(topology)
   }
 }
 
@@ -392,11 +384,11 @@ case 'new_topology':  // Add case
 ```typescript
 // BAD - mutable state in strategy
 class ZfsVolumetryStrategy implements VolumetryStrategy {
-  private driveCount: number = 0; // State persists between calls!
+  private driveCount: number = 0 // State persists between calls!
 
   calculateDataFraction(level: string, driveCount: number): number {
-    this.driveCount = driveCount; // Mutation
-    return this.internalCalculation();
+    this.driveCount = driveCount // Mutation
+    return this.internalCalculation()
   }
 }
 
@@ -404,21 +396,21 @@ class ZfsVolumetryStrategy implements VolumetryStrategy {
 class ZfsVolumetryStrategy implements VolumetryStrategy {
   calculateDataFraction(level: string, driveCount: number): number {
     // All data from parameters, no stored state
-    const usableDrives = driveCount;
-    return (usableDrives - this.getParityDrives(level)) / usableDrives;
+    const usableDrives = driveCount
+    return (usableDrives - this.getParityDrives(level)) / usableDrives
   }
 
   private getParityDrives(level: string): number {
     // Pure function, no state
     switch (level) {
-      case "raidz1":
-        return 1;
-      case "raidz2":
-        return 2;
-      case "raidz3":
-        return 3;
+      case 'raidz1':
+        return 1
+      case 'raidz2':
+        return 2
+      case 'raidz3':
+        return 3
       default:
-        return 0;
+        return 0
     }
   }
 }
@@ -497,32 +489,28 @@ Verified patterns from official sources:
 // https://code.visualstudio.com/docs/typescript/typescript-refactoring
 
 // BEFORE: Large switch statement in getDataFraction (500+ lines)
-function getDataFraction(
-  topology: Topology,
-  driveCount: number,
-  options: any
-): number {
-  const usableDrives = driveCount;
+function getDataFraction(topology: Topology, driveCount: number, options: any): number {
+  const usableDrives = driveCount
 
   switch (topology.type) {
-    case "standard":
+    case 'standard':
       switch (topology.level) {
-        case "RAID0":
-          return 1.0;
-        case "RAID1":
-          return 0.5;
-        case "RAID5":
-          return (usableDrives - 1) / usableDrives;
-        case "RAID6":
-          return (usableDrives - 2) / usableDrives;
+        case 'RAID0':
+          return 1.0
+        case 'RAID1':
+          return 0.5
+        case 'RAID5':
+          return (usableDrives - 1) / usableDrives
+        case 'RAID6':
+          return (usableDrives - 2) / usableDrives
         // ... 10 more RAID levels
       }
-    case "zfs":
+    case 'zfs':
       switch (topology.level) {
-        case "stripe":
-          return 1.0;
-        case "mirror":
-          return 0.5;
+        case 'stripe':
+          return 1.0
+        case 'mirror':
+          return 0.5
         // ... 6 more ZFS levels
       }
     // ... 11 more topology types with nested switches
@@ -530,53 +518,45 @@ function getDataFraction(
 }
 
 // AFTER: Extracted methods (VS Code "Extract to method" refactoring)
-function getDataFraction(
-  topology: Topology,
-  driveCount: number,
-  options: any
-): number {
+function getDataFraction(topology: Topology, driveCount: number, options: any): number {
   switch (topology.type) {
-    case "standard":
-      return calculateRaidDataFraction(topology.level, driveCount);
-    case "zfs":
-      return calculateZfsDataFraction(topology.level, driveCount);
-    case "s2d":
-      return calculateS2dDataFraction(
-        topology.level,
-        driveCount,
-        options.s2dOptions
-      );
-    case "ceph":
-      return calculateCephDataFraction(topology.level, options.cephOptions);
-    case "vsan_esa":
-      return calculateVsanEsaDataFraction(topology.level, driveCount);
+    case 'standard':
+      return calculateRaidDataFraction(topology.level, driveCount)
+    case 'zfs':
+      return calculateZfsDataFraction(topology.level, driveCount)
+    case 's2d':
+      return calculateS2dDataFraction(topology.level, driveCount, options.s2dOptions)
+    case 'ceph':
+      return calculateCephDataFraction(topology.level, options.cephOptions)
+    case 'vsan_esa':
+      return calculateVsanEsaDataFraction(topology.level, driveCount)
     // ... other topologies
     default:
-      assertNever(topology);
+      assertNever(topology)
   }
 }
 
 // Each extracted function handles one topology type (20-30 lines each)
 function calculateRaidDataFraction(level: string, driveCount: number): number {
-  const usableDrives = driveCount;
+  const usableDrives = driveCount
 
   switch (level) {
-    case "RAID0":
-      return 1.0;
-    case "RAID1":
-      return 0.5;
-    case "RAID5":
-      return (usableDrives - 1) / usableDrives;
-    case "RAID6":
-      return (usableDrives - 2) / usableDrives;
-    case "RAID10":
-      return 0.5;
-    case "RAID50":
-      return (usableDrives - 2) / usableDrives;
-    case "RAID60":
-      return (usableDrives - 4) / usableDrives;
+    case 'RAID0':
+      return 1.0
+    case 'RAID1':
+      return 0.5
+    case 'RAID5':
+      return (usableDrives - 1) / usableDrives
+    case 'RAID6':
+      return (usableDrives - 2) / usableDrives
+    case 'RAID10':
+      return 0.5
+    case 'RAID50':
+      return (usableDrives - 2) / usableDrives
+    case 'RAID60':
+      return (usableDrives - 4) / usableDrives
     default:
-      return 1.0;
+      return 1.0
   }
 }
 ```
@@ -745,19 +725,16 @@ export function ZfsOptionsPanel({ topology, onChange }: ZfsOptionsPanelProps) {
 Things that couldn't be fully resolved:
 
 1. **html2canvas actual usage by jspdf**
-
    - What we know: html2canvas is transitive dependency of jspdf@4.0.0, listed in vite.config manual chunks
    - What's unclear: Whether jspdf 4.0 actually uses html2canvas or if it's legacy from older versions
    - Recommendation: Test PDF export after removing from manual chunks. If export still works, html2canvas loading was unnecessary overhead. Check jspdf 4.0 changelog for html2canvas removal.
 
 2. **Optimal component granularity**
-
    - What we know: Industry recommends components under 300 lines, single responsibility principle
    - What's unclear: Whether to create shared TopologyFormGroup wrapper or use composition with existing FormControls
    - Recommendation: Start with direct use of existing FormControls (Label, Slider, etc.). Only extract shared wrapper if pattern repeats 3+ times across topology panels.
 
 3. **Strategy pattern vs functional approach**
-
    - What we know: Strategy pattern uses classes implementing interface. Functional approach uses object with functions.
    - What's unclear: Which approach fits better with existing TypeScript/React codebase patterns
    - Recommendation: Use object-based strategy (functional) to match existing codebase style. Example: `const strategies = { standard: { calculate: (args) => ... }, zfs: { calculate: (args) => ... } }` instead of classes.

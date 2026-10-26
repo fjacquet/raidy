@@ -41,6 +41,7 @@
 
 ```markdown
 ---
+
 phase: 18-quality-audit
 started: 2026-07-11
 status: in-progress
@@ -55,8 +56,8 @@ Newly audited here: S2D, Nutanix, NetApp, Ceph, Synology, Longhorn + PPTX export
 
 ## Findings Ledger
 
-| # | Platform/Area | Tag | Severity | Description | Reference (source + URL) | Status |
-|---|---------------|-----|----------|-------------|--------------------------|--------|
+| #   | Platform/Area | Tag | Severity | Description | Reference (source + URL) | Status |
+| --- | ------------- | --- | -------- | ----------- | ------------------------ | ------ |
 
 Tags: value-wrong (>1% off reference) · value-misleading (right number, wrong label/unit) · untested (no vector coverage)
 
@@ -272,8 +273,10 @@ describe('S2D external-reference vectors', () => {
         createVolumetryInput(v.drives, v.topology, { serverCount: v.serverCount }),
       )
       const deviation = Math.abs(result.usableCapacity - v.expectedUsable) / v.expectedUsable
-      expect(deviation, `${v.name}: got ${result.usableCapacity}, ref ${v.expectedUsable} (${v.source})`)
-        .toBeLessThanOrEqual(v.tolerance)
+      expect(
+        deviation,
+        `${v.name}: got ${result.usableCapacity}, ref ${v.expectedUsable} (${v.source})`,
+      ).toBeLessThanOrEqual(v.tolerance)
     })
   }
 })
@@ -288,7 +291,7 @@ Run: `rtk npm test -- tests/engines/volumetry/vectors/s2d.spec.ts --run`
 
 - [ ] **Step 5 (conditional): Fix the strategy**
 
-Adjust `src/engines/volumetry/strategies/s2d.ts` (or the relevant helper in `src/engines/volumetry/helpers/` / `overhead/`) so the engine matches the reference. Re-run Step 4 until green **and** re-run `rtk npm test -- tests/engines/volumetry.spec.ts --run` to prove no covered-platform regression. If the evidence shows the *reference case interpretation* was wrong instead (e.g. reserve accounted twice), fix the vector and say so in the ledger — never tune both at once.
+Adjust `src/engines/volumetry/strategies/s2d.ts` (or the relevant helper in `src/engines/volumetry/helpers/` / `overhead/`) so the engine matches the reference. Re-run Step 4 until green **and** re-run `rtk npm test -- tests/engines/volumetry.spec.ts --run` to prove no covered-platform regression. If the evidence shows the _reference case interpretation_ was wrong instead (e.g. reserve accounted twice), fix the vector and say so in the ledger — never tune both at once.
 
 - [ ] **Step 6: Commit**
 
@@ -465,7 +468,7 @@ export const synologyVectors: PlatformVector[] = [
 
 - Consumes: `createVolumetryInput` (Task 2), `PlatformVector` (Task 3).
 
-- [ ] **Step 1: Research** — queries: "Longhorn storage reserved percentage default 25 minimal available longhorn.io docs", "Longhorn replica count usable capacity calculation", "Longhorn over-provisioning percentage snapshot space". The engine applies replica division, then free-space reserve (`1 − minimalAvailablePercent/100`), then snapshot headroom divisor (`src/engines/volumetry/index.ts:252-269`). Note `tests/engines/volumetry/longhorn.spec.ts` already exists (unit-level, from #51) — this task adds *external-reference* vectors, it does not duplicate those unit tests. Cover `longhorn_r2` and `longhorn_r3` at ≥ 2 node counts (serverCount must be ≥ replicas — engine validates placement).
+- [ ] **Step 1: Research** — queries: "Longhorn storage reserved percentage default 25 minimal available longhorn.io docs", "Longhorn replica count usable capacity calculation", "Longhorn over-provisioning percentage snapshot space". The engine applies replica division, then free-space reserve (`1 − minimalAvailablePercent/100`), then snapshot headroom divisor (`src/engines/volumetry/index.ts:252-269`). Note `tests/engines/volumetry/longhorn.spec.ts` already exists (unit-level, from #51) — this task adds _external-reference_ vectors, it does not duplicate those unit tests. Cover `longhorn_r2` and `longhorn_r3` at ≥ 2 node counts (serverCount must be ≥ replicas — engine validates placement).
 
 - [ ] **Step 2: Fixture**
 
@@ -558,11 +561,15 @@ Expected: `Math.random` legitimately appears in the Monte Carlo worker (`src/wor
 - Produces: `buildPptxContent(config: ExportConfig, t: (key: string) => string, dateLabel?: string): PptxContent` where
 
 ```typescript
-export interface PptxStat { label: string; value: string; role: 'plain' | 'accent' | 'capacity' | 'overhead' | 'parity' | 'muted' }
+export interface PptxStat {
+  label: string
+  value: string
+  role: 'plain' | 'accent' | 'capacity' | 'overhead' | 'parity' | 'muted'
+}
 export interface PptxContent {
   title: string
   subtitle: string
-  volumetryLines: PptxStat[][]   // 2 rows under the Sankey
+  volumetryLines: PptxStat[][] // 2 rows under the Sankey
   performanceLines: PptxStat[][] // 2 rows under the gauges
   energyLine: PptxStat[]
   bottleneckLine: PptxStat[]
@@ -628,17 +635,27 @@ const config: ExportConfig = {
   unitSystem: 'binary',
   results: {
     volumetry: {
-      rawCapacity: 8e12, usableCapacity: 7e12, effectiveCapacity: 7e12, efficiency: 87.5,
-      parityOverhead: 1e12, hotSpareOverhead: 0, filesystemOverhead: 0.14e12, slopOverhead: 0,
+      rawCapacity: 8e12,
+      usableCapacity: 7e12,
+      effectiveCapacity: 7e12,
+      efficiency: 87.5,
+      parityOverhead: 1e12,
+      hotSpareOverhead: 0,
+      filesystemOverhead: 0.14e12,
+      slopOverhead: 0,
       breakdown: [],
     },
     performance: {
-      maxReadIOPS: 1200, maxWriteIOPS: 800, maxReadThroughputMBs: 1600, maxWriteThroughputMBs: 1000,
+      maxReadIOPS: 1200,
+      maxWriteIOPS: 800,
+      maxReadThroughputMBs: 1600,
+      maxWriteThroughputMBs: 1000,
       layers: [],
     },
     sustainability: {
       powerBreakdown: { total: 120, drives: 80, servers: 30, cooling: 10 },
-      annualEnergyKwh: 1051, annualCO2Kg: 13,
+      annualEnergyKwh: 1051,
+      annualCO2Kg: 13,
     },
     resilience: null,
   } as unknown as ExportConfig['results'],
@@ -730,7 +747,9 @@ rtk git commit -m "feat(pptx): pure content builder, full i18n (en/fr/de/it), un
 ```typescript
 const handleExportPptx = () => {
   if (!selectedDrive) return
-  exportToPptx({ /* unchanged args */ }).catch(() => setExportError(true))
+  exportToPptx({
+    /* unchanged args */
+  }).catch(() => setExportError(true))
 }
 ```
 
@@ -850,7 +869,9 @@ describe('capability map matches engine behavior', () => {
     })
 
     it(`${topology.type}: supportsHotSpares=${caps.supportsHotSpares}`, () => {
-      const base = calculateVolumetry(createVolumetryInput(drives, topology, { serverCount: servers }))
+      const base = calculateVolumetry(
+        createVolumetryInput(drives, topology, { serverCount: servers }),
+      )
       const spared = calculateVolumetry(
         createVolumetryInput(drives, topology, { serverCount: servers, hotSpares: 1 }),
       )
@@ -885,7 +906,12 @@ export interface PlatformCapabilities {
 }
 
 export const PLATFORM_CAPABILITIES: Record<TopologyType, PlatformCapabilities> = {
-  standard: { supportsCompression: true, supportsDedup: true, supportsHotSpares: true, hasServerCount: false },
+  standard: {
+    supportsCompression: true,
+    supportsDedup: true,
+    supportsHotSpares: true,
+    hasServerCount: false,
+  },
   // …one entry per TopologyType, values set from the probe run (Step 3 procedure)
 } as const
 
@@ -923,7 +949,7 @@ import { describe, expect, it } from 'vitest'
 // existing component-test pattern and follow it instead.
 ```
 
-Follow the existing pattern in `tests/components/` (see `longhornConstants.spec.ts` neighborhood — if no component render tests exist yet, test the visibility *logic* instead: extract `shouldShowControl(control: 'compression'|'dedup'|'hotSpares'|'serverCount', type: TopologyType): boolean` into `src/engines/capabilities.ts` and unit-test that):
+Follow the existing pattern in `tests/components/` (see `longhornConstants.spec.ts` neighborhood — if no component render tests exist yet, test the visibility _logic_ instead: extract `shouldShowControl(control: 'compression'|'dedup'|'hotSpares'|'serverCount', type: TopologyType): boolean` into `src/engines/capabilities.ts` and unit-test that):
 
 ```typescript
 import { describe, expect, it } from 'vitest'

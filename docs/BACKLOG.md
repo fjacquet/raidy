@@ -2,7 +2,7 @@
 
 Known limitations and deferred work, with enough context to pick each item up cold.
 
-Each entry links to its GitHub issue. Every entry here was found during review and deliberately *not* fixed at the time, with a
+Each entry links to its GitHub issue. Every entry here was found during review and deliberately _not_ fixed at the time, with a
 recorded reason. None is a correctness emergency: the items that affect numbers all err in the
 conservative direction (understating capacity, resilience or performance) or are unreachable
 from the UI. Where that is not true it is stated explicitly.
@@ -14,8 +14,7 @@ which touched enough shared code to expose pre-existing gaps.
 
 ## Correctness — real defects, non-blocking
 
-
-*Nothing open.* B21 (#88) closed 2026-08-05; see `docs/superpowers/specs/2026-08-05-fast-tier-failure-domain-design.md` for what was deliberately left out of it.
+_Nothing open._ B21 (#88) closed 2026-08-05; see `docs/superpowers/specs/2026-08-05-fast-tier-failure-domain-design.md` for what was deliberately left out of it.
 
 ## PowerScale performance and resilience size the first node pool only
 

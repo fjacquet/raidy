@@ -419,9 +419,7 @@ export function computeTopologyModel(input: SimulationInput): TopologyModel {
         // path already guards the analogous case with the same Math.max(1, ...); this makes the
         // defense consistent across both PowerScale branches in this block.
         powerScaleMirrorCopies(powerScaleShape.nf, Math.max(1, serverCount))
-      : mirrorCopies >= 2
-        ? mirrorCopies
-        : 2
+      : Math.max(mirrorCopies, 2)
 
   // Calculate rebuild time in hours
   const driveCapacityMB = driveCapacityBytes / (1024 * 1024)

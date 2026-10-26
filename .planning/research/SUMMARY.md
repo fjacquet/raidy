@@ -89,36 +89,42 @@ See `.planning/research/PITFALLS.md` for full detail.
 Based on combined research, the correct implementation sequence is strictly ordered by test isolation and dependency. Each phase must be self-contained enough that only its own tests change.
 
 ### Phase 1: ADAPT Formula Fix
+
 **Rationale:** Isolated change to a single `case` in `proprietary.ts`. No new types, no overhead changes, no interface additions. Provides the first verified Dell Sizer test vector. Lowest risk entry point.
 **Delivers:** Correct ADAPT efficiency for all drive counts 12–128; reference fixture `tests/fixtures/dell-vectors.ts` initialized
 **Addresses:** Must-have feature "ADAPT formula replacement"; 0.04% error tolerance confirmed
 **Avoids:** Pitfall 1 (hardcoded constants), Pitfall 4 (test regression — skip-then-replace protocol)
 
 ### Phase 2: PowerStore Data Fraction Fix
+
 **Rationale:** Isolated to `dell.ts` only; changes the base RAID efficiency without touching the overhead pipeline. Must precede Phase 3 because system overhead is calculated as a percentage of the post-parity capacity — getting the parity fraction right first avoids compounding errors.
 **Delivers:** Drive-count-aware DRE stripe selection for RAID-5 and RAID-6
 **Addresses:** Must-have features DELL-03 and DELL-04
 **Avoids:** Pitfall 2 (hardcoded PowerStore constants); pitfall that system overhead compounds onto wrong base
 
 ### Phase 3: PowerStore System Overhead Addition
+
 **Rationale:** Requires Phase 2 to be stable. Needs type changes (`PowerStoreOptions`), overhead pipeline changes, breakdown builder changes, and `OverheadResult` interface changes. The most invasive phase — must be last in the PowerStore sequence.
 **Delivers:** End-to-end PowerStore accuracy within Dell Sizer tolerance; `systemOverheadPercent` field visible in test fixtures
 **Uses:** Existing overhead block pattern from `overheadCalculator.ts`; mirrors `ObjectScaleOptions.systemOverheadPercent`
 **Avoids:** Pitfall 2 (incomplete fix leaves 5–15 pp error); URL hash backward-compatibility (new field with default is migration-safe)
 
 ### Phase 4: PowerScale serverCount Fix
+
 **Rationale:** Independent of PowerStore changes; can proceed in parallel with Phases 2–3 in practice but is lower priority because the current approximation happens to be numerically reasonable for same-node-count-as-drive-count inputs used in existing tests. Requires threading `serverCount` through two files.
 **Delivers:** Correct PowerScale efficiency for multi-drive-per-node configurations (the common enterprise case)
 **Addresses:** Should-have feature — PowerScale serverCount threading (DELL-06)
 **Avoids:** Pitfall 3 (driveCount used as nodeCount) and Pitfall 5 (serverCount not passed to strategy)
 
 ### Phase 5: PowerScale, PowerFlex, ObjectScale Validation
+
 **Rationale:** Existing formulas are mathematically correct; this phase is validation-only. Run Dell Sizer reference cases and confirm all are within 1% tolerance. Only implement corrections if divergence is found.
 **Delivers:** Complete Dell Sizer validation suite covering all five Dell products; `dell-vectors.ts` fixture complete
 **Addresses:** DELL-07 (PowerFlex FG overhead verification), DELL-08 (ObjectScale EC verification)
 **Avoids:** Pitfall 5 (ObjectScale geo-overhead factors unverified), unit mismatch trap
 
 ### Phase 6: Test Suite Cleanup
+
 **Rationale:** Must follow all formula fixes. Removes all `.skip` markers, validates no `it.skip` remains in Dell test sections, and ensures all Dell assertions are traceable to Dell Sizer reference values.
 **Delivers:** Clean test suite with zero skipped Dell tests; full coverage threshold maintained at 75%
 **Addresses:** DELL-10 (test vector updates)
@@ -147,12 +153,12 @@ Phases with standard patterns (skip research-phase):
 
 ## Confidence Assessment
 
-| Area | Confidence | Notes |
-|------|------------|-------|
-| Stack | HIGH | No new dependencies; pure arithmetic in existing TypeScript files |
-| Features | MEDIUM | ADAPT and PowerStore formulas validated against one Dell Sizer reference each; PowerScale/PowerFlex/ObjectScale formulas are mathematically correct but unvalidated against Sizer |
-| Architecture | HIGH | Existing strategy pattern is the correct integration point; overhead calculator pattern is well-established in the codebase |
-| Pitfalls | HIGH | All five critical pitfalls identified from direct code inspection and cross-referenced with Dell documentation; recovery strategies are concrete |
+| Area         | Confidence | Notes                                                                                                                                                                             |
+| ------------ | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Stack        | HIGH       | No new dependencies; pure arithmetic in existing TypeScript files                                                                                                                 |
+| Features     | MEDIUM     | ADAPT and PowerStore formulas validated against one Dell Sizer reference each; PowerScale/PowerFlex/ObjectScale formulas are mathematically correct but unvalidated against Sizer |
+| Architecture | HIGH       | Existing strategy pattern is the correct integration point; overhead calculator pattern is well-established in the codebase                                                       |
+| Pitfalls     | HIGH       | All five critical pitfalls identified from direct code inspection and cross-referenced with Dell documentation; recovery strategies are concrete                                  |
 
 **Overall confidence:** MEDIUM — formula derivation is solid, but PowerSizer access is required to validate the PowerStore system overhead constant and confirm PowerScale node-based formulas before shipping.
 
@@ -168,6 +174,7 @@ Phases with standard patterns (skip research-phase):
 ## Sources
 
 ### Primary (HIGH confidence)
+
 - Dell PowerStore KB 000188491: DRE geometry 4+1, 8+1, 4+2, 8+2, 16+2 and distributed spare = 1 drive per RRS
 - Dell ObjectScale Admin Guide 1.0.0: EC overhead multipliers 1.33x (12+4 single-site), 2.67x (two-site geo)
 - Dell PowerFlex 4.5.x / 5.0 Install Guide: FG requires NVDIMMs; 8+2 requires 11 nodes
@@ -176,6 +183,7 @@ Phases with standard patterns (skip research-phase):
 - Direct codebase inspection: `proprietary.ts`, `dell.ts`, `calculationHelpers.ts`, `overheadCalculator.ts`, `volumetry.spec.ts`
 
 ### Secondary (MEDIUM confidence)
+
 - Dell Community Forum — ME4 ADAPT Usable Space Formula: community reconstruction of `((N-2)*size) - 20%`
 - Dell ME5 ADAPT Whitepaper (binary PDF, extracted via search snippets)
 - Blog post (rickgouin.com): confirms 4+1 stripe for <10 SSDs on PowerStore
@@ -183,9 +191,11 @@ Phases with standard patterns (skip research-phase):
 - Open-source Isilon capacity calculator (github.com/adamgweeks): empirical node-based formula
 
 ### Tertiary (LOW confidence)
+
 - PowerStore system overhead exact percentage by model: not disclosed in public docs; back-calculated from one reference case as ~5% for large models
 - PowerFlex FG metadata overhead 12–15%: mentioned in existing code comments as prior decision; not confirmed from current Dell public docs
 
 ---
-*Research completed: 2026-03-25*
-*Ready for roadmap: yes*
+
+_Research completed: 2026-03-25_
+_Ready for roadmap: yes_

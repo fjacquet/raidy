@@ -163,7 +163,9 @@ Expected: errors on `BLOCK_SIZE_BYTES` (`src/engines/performance/index.ts`) and 
 And in the hint paragraph (currently lines 118-126), between the `256K` and `1M` lines:
 
 ```tsx
-          {blockSize === '512K' && t('blockSize.hint512k')}
+{
+  blockSize === '512K' && t('blockSize.hint512k')
+}
 ```
 
 - [ ] **Step 7: Add `hint512k` to all four locales**
@@ -733,27 +735,23 @@ Expected: FAIL — `presets.aiTraining` is not in the document, because the pane
 In `src/components/inputs/WorkloadPanel.tsx`, add to the imports:
 
 ```tsx
-import {
-  isHpcTopology,
-  profilesForTopology,
-  type WorkloadProfile,
-} from '@/data/workloadProfiles'
+import { isHpcTopology, profilesForTopology, type WorkloadProfile } from '@/data/workloadProfiles'
 ```
 
 and add `topology` to the store destructuring (currently lines 45-54):
 
 ```tsx
-  const {
-    topology,
-    readPercent,
-    blockSize,
-    randomPercent,
-    dailyWriteVolume,
-    setReadPercent,
-    setBlockSize,
-    setRandomPercent,
-    setDailyWriteVolume,
-  } = useConfigStore()
+const {
+  topology,
+  readPercent,
+  blockSize,
+  randomPercent,
+  dailyWriteVolume,
+  setReadPercent,
+  setBlockSize,
+  setRandomPercent,
+  setDailyWriteVolume,
+} = useConfigStore()
 ```
 
 - [ ] **Step 4: Derive the profiles and the apply handler**
@@ -761,14 +759,14 @@ and add `topology` to the store destructuring (currently lines 45-54):
 Immediately after the existing `writePercent` / `sequentialPercent` lines:
 
 ```tsx
-  const profiles = profilesForTopology(topology.type)
-  const isHpc = isHpcTopology(topology.type)
+const profiles = profilesForTopology(topology.type)
+const isHpc = isHpcTopology(topology.type)
 
-  const applyProfile = (profile: WorkloadProfile) => {
-    setReadPercent(profile.readPercent)
-    setRandomPercent(profile.randomPercent)
-    setBlockSize(profile.blockSize)
-  }
+const applyProfile = (profile: WorkloadProfile) => {
+  setReadPercent(profile.readPercent)
+  setRandomPercent(profile.randomPercent)
+  setBlockSize(profile.blockSize)
+}
 ```
 
 - [ ] **Step 5: Replace the preset block**
@@ -776,27 +774,27 @@ Immediately after the existing `writePercent` / `sequentialPercent` lines:
 Replace the whole `{/* Workload Presets */}` block (currently lines 149-198) with:
 
 ```tsx
-      {/* Workload Profiles — data-driven, filtered by platform. See src/data/workloadProfiles.ts */}
-      <div className="pt-3 border-t border-slate-200 dark:border-surface-700">
-        <Label>{isHpc ? t('presets.labelHpc') : t('presets.label')}</Label>
-        <div className="grid grid-cols-2 gap-2 mt-2">
-          {profiles.map((profile) => (
-            <button
-              key={profile.id}
-              type="button"
-              onClick={() => applyProfile(profile)}
-              className="px-3 py-2 text-xs bg-slate-100 dark:bg-surface-700 hover:bg-slate-200 dark:hover:bg-surface-600 rounded-lg text-slate-600 dark:text-slate-300 transition-colors"
-            >
-              {t(profile.labelKey)}
-            </button>
-          ))}
-        </div>
-        {isHpc && (
-          <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
-            {t('presets.hpcGuidance')}
-          </p>
-        )}
-      </div>
+{
+  /* Workload Profiles — data-driven, filtered by platform. See src/data/workloadProfiles.ts */
+}
+;<div className="pt-3 border-t border-slate-200 dark:border-surface-700">
+  <Label>{isHpc ? t('presets.labelHpc') : t('presets.label')}</Label>
+  <div className="grid grid-cols-2 gap-2 mt-2">
+    {profiles.map((profile) => (
+      <button
+        key={profile.id}
+        type="button"
+        onClick={() => applyProfile(profile)}
+        className="px-3 py-2 text-xs bg-slate-100 dark:bg-surface-700 hover:bg-slate-200 dark:hover:bg-surface-600 rounded-lg text-slate-600 dark:text-slate-300 transition-colors"
+      >
+        {t(profile.labelKey)}
+      </button>
+    ))}
+  </div>
+  {isHpc && (
+    <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">{t('presets.hpcGuidance')}</p>
+  )}
+</div>
 ```
 
 - [ ] **Step 6: Run the test and confirm it passes**
@@ -917,7 +915,7 @@ Expected: PASS.
 npm run test:run
 ```
 
-Expected: PASS. If `tests/utils/urlStorage.spec.ts` or `tests/store/urlPersistenceOptions.spec.ts` fails, read the failure before editing: those fixtures set workload fields explicitly and round-trip them, which is default-independent. A failure there means a test asserted on the *size* or *contents* of the omitted set; update that assertion to the new defaults rather than reverting Step 3.
+Expected: PASS. If `tests/utils/urlStorage.spec.ts` or `tests/store/urlPersistenceOptions.spec.ts` fails, read the failure before editing: those fixtures set workload fields explicitly and round-trip them, which is default-independent. A failure there means a test asserted on the _size_ or _contents_ of the omitted set; update that assertion to the new defaults rather than reverting Step 3.
 
 - [ ] **Step 6: Bump the version**
 

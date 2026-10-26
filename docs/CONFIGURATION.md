@@ -5,13 +5,13 @@ workflows in [`fjacquet/ci`](https://github.com/fjacquet/ci), pinned to `@v1`. T
 pipeline defined here to read — the steps below live in the central repo, and changing them means
 changing it, not this one.
 
-| Workflow | Triggers | Delegates to |
-|---|---|---|
-| `ci.yml` | push + PR to `main` | `web-ci.yml@v1` (Node 24) |
-| `security.yml` | push + PR to `main`, weekly cron (Mon 04:23) | `web-security.yml@v1` |
-| `deploy.yml` | push to `main`, manual dispatch | `web-deploy.yml@v1` (build-dir `dist`) |
-| `release.yml` | `v*` tags | `web-release.yml@v1` (no npm, no Docker) |
-| `dependabot-automerge.yml` | `pull_request_target` from `dependabot[bot]` | — (inline, patch/minor only) |
+| Workflow                   | Triggers                                     | Delegates to                             |
+| -------------------------- | -------------------------------------------- | ---------------------------------------- |
+| `ci.yml`                   | push + PR to `main`                          | `web-ci.yml@v1` (Node 24)                |
+| `security.yml`             | push + PR to `main`, weekly cron (Mon 04:23) | `web-security.yml@v1`                    |
+| `deploy.yml`               | push to `main`, manual dispatch              | `web-deploy.yml@v1` (build-dir `dist`)   |
+| `release.yml`              | `v*` tags                                    | `web-release.yml@v1` (no npm, no Docker) |
+| `dependabot-automerge.yml` | `pull_request_target` from `dependabot[bot]` | — (inline, patch/minor only)             |
 
 `.github/dependabot.yml` is what produces those pull requests. It did not exist until after 3.1.1,
 so the merge half of the mechanism sat armed while nothing fed it — which is how twenty-six packages
@@ -35,11 +35,11 @@ two for the OIDC build-provenance attestation.
 
 These are the ones a contributor can run and change locally. Everything else is the central CI's.
 
-| Gate | Command | When |
-|---|---|---|
-| Supply-chain denylist | `npm run check:supply-chain` | `prebuild`, so every `npm run build` |
-| Dead code / unused deps | `npm run check:dead` | `prebuild` **and** `.githooks/pre-commit` |
-| Bundle-size budget | `npm run check:bundle-size` | after a build |
+| Gate                    | Command                      | When                                      |
+| ----------------------- | ---------------------------- | ----------------------------------------- |
+| Supply-chain denylist   | `npm run check:supply-chain` | `prebuild`, so every `npm run build`      |
+| Dead code / unused deps | `npm run check:dead`         | `prebuild` **and** `.githooks/pre-commit` |
+| Bundle-size budget      | `npm run check:bundle-size`  | after a build                             |
 
 **`prebuild` runs both `check-supply-chain` and `check:dead`.** So `npm run build` fails on a
 tainted manifest or on dead code, not only in CI.
@@ -72,7 +72,7 @@ build`; the sizes come from `dist/`.
 
 Releases are cut by pushing a `vX.Y.Z` tag, which triggers `release.yml` — tarball, zip,
 `sbom.cyclonedx.json`, `SHA256SUMS` and a provenance attestation. The GitHub release is created
-with GitHub's *auto-generated* notes, not the CHANGELOG body; enrich it afterwards with
+with GitHub's _auto-generated_ notes, not the CHANGELOG body; enrich it afterwards with
 `gh release edit vX.Y.Z --notes-file <file>`.
 
 ## Local equivalents

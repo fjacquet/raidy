@@ -44,9 +44,9 @@
 
 ## Cross-Milestone Trends
 
-| Metric | v1.0 | v1.1 | v1.2 |
-|--------|------|------|------|
-| Phases | 6 | 1 | 6 |
-| Plans | 30 | 3 | 7 |
-| Tests at end | ~645 | ~645 | 881 |
+| Metric          | v1.0 | v1.1 | v1.2   |
+| --------------- | ---- | ---- | ------ |
+| Phases          | 6    | 1    | 6      |
+| Plans           | 30   | 3    | 7      |
+| Tests at end    | ~645 | ~645 | 881    |
 | Coverage at end | ~70% | ~70% | 84.13% |

@@ -19,7 +19,7 @@ where `U` = usable app data, `R` = replica count (2 or 3), `S` = snapshot headro
 `G` = growth headroom (~1.20), `F` = free-space factor (0.75 root-disk / 0.90 dedicated-disk).
 
 Raidy is a **forward** simulator: hardware (drives × count × servers) + topology → usable
-capacity. The issue is written *inverse* (target usable → raw to buy), but solving the
+capacity. The issue is written _inverse_ (target usable → raw to buy), but solving the
 formula for usable gives `U = Raw × F ÷ (R·S·G)`, which is expressible in the forward model.
 Structurally Longhorn is almost identical to Ceph's replicated pools (`1/R` efficiency + a
 free-space guardrail), which is already a first-class topology.
@@ -27,20 +27,20 @@ free-space guardrail), which is already a first-class topology.
 ### Vendor-doc validation (Perplexity → longhorn.io + documentation.suse.com)
 
 - **Replicas** are full sparse copies, one per node; physical efficiency ≈ `1/R` when
-  ignoring snapshots and assuming near-full volumes. *(documented)*
-- **`F` maps to a real setting** — Longhorn's *"Storage Minimal Available Percentage"*,
+  ignoring snapshots and assuming near-full volumes. _(documented)_
+- **`F` maps to a real setting** — Longhorn's _"Storage Minimal Available Percentage"_,
   default **25%**. Docs say dedicated disk → **10%**, root disk → **25%** + over-provisioning
   100%. So the issue's `F = 0.75 / 0.90` is literally `1 − minimalAvailable%`. It behaves like
-  Ceph's nearfull guardrail (a scheduling reduction). *(documented)*
+  Ceph's nearfull guardrail (a scheduling reduction). _(documented)_
 - **`S` (snapshots)** genuinely consumes physical per-replica disk (snapshot chains live
   inside each replica), but Longhorn publishes **no fixed percentage** — the 1.20 is a
-  planning assumption, hence a tunable, not a constant. *(real consumer, tunable %)*
+  planning assumption, hence a tunable, not a constant. _(real consumer, tunable %)_
 - **`G` (growth)** has no physical basis — nothing in Longhorn consumes disk for future
-  growth. Advisory only. *(planning only)*
+  growth. Advisory only. _(planning only)_
 - **Over-provisioning** (SUSE default **100%**, upstream Longhorn **200%**) is a
-  thin-provisioning *scheduling* multiplier — it over-*commits* logical volume size and does
+  thin-provisioning _scheduling_ multiplier — it over-_commits_ logical volume size and does
   **not** reduce physical usable capacity. The issue's own formula correctly excludes it.
-  Modeled as a displayed guardrail, never as a capacity multiplier. *(scheduling-only)*
+  Modeled as a displayed guardrail, never as a capacity multiplier. _(scheduling-only)_
 
 ## Goals
 
@@ -64,10 +64,10 @@ free-space guardrail), which is already a first-class topology.
 
 Two levels, mirroring Ceph's `ceph_replicated_2` / `ceph_replicated_3`:
 
-| Level          | Replicas `R` | Efficiency | Notes                              |
-|----------------|--------------|------------|------------------------------------|
-| `longhorn_r2`  | 2            | `1/2`      | efficiency-oriented production     |
-| `longhorn_r3`  | 3            | `1/3`      | default when ≥ 3 storage nodes     |
+| Level         | Replicas `R` | Efficiency | Notes                          |
+| ------------- | ------------ | ---------- | ------------------------------ |
+| `longhorn_r2` | 2            | `1/2`      | efficiency-oriented production |
+| `longhorn_r3` | 3            | `1/3`      | default when ≥ 3 storage nodes |
 
 Decided: **no `longhorn_r1`** (dev/test, no redundancy) in v1 — the issue treats replica count
 as a 2-or-3 design decision. Can be added later.
@@ -96,7 +96,7 @@ interface LonghornOptions {
 
 `diskMode` is the primary toggle; flipping it presets `minimalAvailablePercent` and
 `overProvisioningPercent` to the documented defaults, while both stay user-editable
-(matching the issue: dedicated *may* reduce to 10%; root *shall* remain 25%).
+(matching the issue: dedicated _may_ reduce to 10%; root _shall_ remain 25%).
 
 `DEFAULT_LONGHORN_OPTIONS` = `{ diskMode: 'dedicated', minimalAvailablePercent: 10,
 snapshotHeadroom: 1.2, growthHeadroom: 1.2, overProvisioningPercent: 200 }`
@@ -142,12 +142,12 @@ New optional result field, analogous to `ZfsCapacityDetails`:
 
 ```ts
 interface LonghornCapacityDetails {
-  physicalUsable: number            // bytes — safe app-data ceiling incl. snapshots
-  recommendedCommittedData: number  // physicalUsable ÷ G — commit today, leave growth room
-  perNodeUsable: number             // physicalUsable ÷ serverCount
+  physicalUsable: number // bytes — safe app-data ceiling incl. snapshots
+  recommendedCommittedData: number // physicalUsable ÷ G — commit today, leave growth room
+  perNodeUsable: number // physicalUsable ÷ serverCount
   replicaCount: number
   minimalAvailablePercent: number
-  overProvisioningPercent: number   // displayed guardrail
+  overProvisioningPercent: number // displayed guardrail
   diskMode: 'dedicated' | 'root'
 }
 ```

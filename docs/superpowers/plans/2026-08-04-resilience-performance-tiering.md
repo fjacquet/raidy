@@ -13,7 +13,7 @@
 ## Global Constraints
 
 - Untiered configurations must produce **byte-identical** output on every platform. `tieredPlatformScope` returns `null` and the new performance branch is not entered — that is the mechanism, and the tests must prove it.
-- Tiered S2D performance output must be **byte-identical**. The existing `topology.type === 's2d'` branch in `calculatePerformance` is not modified, and the new branch must sit *after* it.
+- Tiered S2D performance output must be **byte-identical**. The existing `topology.type === 's2d'` branch in `calculatePerformance` is not modified, and the new branch must sit _after_ it.
 - S2D's `workingSetPercent` write-back-cache blend is **not** generalised to other platforms. The new branch models no fast-tier contribution at all.
 - Hot spares: resilience does **not** subtract them (unchanged, tracked as B19/#80). Performance **does** — `Math.max(0, capacityTierDriveCount - hotSpares)`, mirroring `spareAdjustedDrives` in `src/engines/volumetry/index.ts:178`.
 - `xfsAlignment` keeps using the raw `usableDrives`. Do not change it. Add the code comment specified in Task 2.
@@ -340,17 +340,17 @@ In `useResilience`'s destructure, add after `beeGfsOptions,`:
 In `runSimulation`, extend the resolver call:
 
 ```ts
-    const scope = SIMULATION_SCOPE_BY_TOPOLOGY[topology.type]?.({
-      driveCount,
-      serverCount: effServerCount,
-      hotSpares,
-      topology,
-      beeGfsOptions,
-      s2dOptions,
-      vsanOptions,
-      cephOptions,
-      nutanixOptions,
-    })
+const scope = SIMULATION_SCOPE_BY_TOPOLOGY[topology.type]?.({
+  driveCount,
+  serverCount: effServerCount,
+  hotSpares,
+  topology,
+  beeGfsOptions,
+  s2dOptions,
+  vsanOptions,
+  cephOptions,
+  nutanixOptions,
+})
 ```
 
 And add the same four names to `runSimulation`'s dependency array, after `beeGfsOptions,`:
@@ -495,10 +495,7 @@ const tiering: TieredCapacityResult = {
   capacityTierDriveCount: CAPACITY_TIER_COUNT,
 }
 
-function inputFor(
-  topology: Topology,
-  overrides: Partial<PerformanceInput> = {},
-): PerformanceInput {
+function inputFor(topology: Topology, overrides: Partial<PerformanceInput> = {}): PerformanceInput {
   return {
     drive: fastDrive,
     driveCount: HARDWARE_DRIVE_COUNT,
@@ -606,15 +603,15 @@ Expected: the four "sizes the media layer from the capacity tier" tests and the 
 In `src/engines/performance/index.ts`, the current media block reads:
 
 ```ts
-  if (topology.type === 's2d' && tiering && cacheDrive && capacityDrive) {
-    // ... unchanged S2D write-back-cache blend ...
-    writeBW = cacheCount * c.performance.bandwidth_write_mb
-  } else {
-    readCapIOPS = totalDriveIOPS
-    writeCapIOPS = totalDriveIOPS
-    readBW = drive.performance.bandwidth_read_mb * usableDrives
-    writeBW = drive.performance.bandwidth_write_mb * usableDrives
-  }
+if (topology.type === 's2d' && tiering && cacheDrive && capacityDrive) {
+  // ... unchanged S2D write-back-cache blend ...
+  writeBW = cacheCount * c.performance.bandwidth_write_mb
+} else {
+  readCapIOPS = totalDriveIOPS
+  writeCapIOPS = totalDriveIOPS
+  readBW = drive.performance.bandwidth_read_mb * usableDrives
+  writeBW = drive.performance.bandwidth_write_mb * usableDrives
+}
 ```
 
 Insert a new branch between the S2D branch and the final `else` — leave the S2D branch exactly as it is:
@@ -648,10 +645,10 @@ Insert a new branch between the S2D branch and the final `else` — leave the S2
 Still in `src/engines/performance/index.ts`, find the `xfsAlignment` call (`calculateXfsAlignment(controllerOptions.stripeSize, usableDrives, topology)`) and add above it:
 
 ```ts
-  // Known inconsistency: `usableDrives` here is the raw Hardware-panel population even when the
-  // media layer above was sized from the capacity tier. Stripe alignment is a display value, not
-  // part of the bottleneck chain, and which tier a stripe aligns to is a separate judgement call.
-  // Tracked in the design spec's out-of-scope list.
+// Known inconsistency: `usableDrives` here is the raw Hardware-panel population even when the
+// media layer above was sized from the capacity tier. Stripe alignment is a display value, not
+// part of the bottleneck chain, and which tier a stripe aligns to is a separate judgement call.
+// Tracked in the design spec's out-of-scope list.
 ```
 
 - [ ] **Step 5: Run the test to verify it passes**
@@ -799,24 +796,24 @@ If `usePerformanceCalc` cannot be rendered standalone (it may require a store su
 In `src/hooks/usePerformanceCalc.ts`, the `resolveTiering` call reads:
 
 ```ts
-    const tiering = resolveTiering(topology, effServerCount, {
-      s2dOptions,
-      vsanOptions,
-      cephOptions,
-      nutanixOptions,
-    })
+const tiering = resolveTiering(topology, effServerCount, {
+  s2dOptions,
+  vsanOptions,
+  cephOptions,
+  nutanixOptions,
+})
 ```
 
 Add `beeGfsOptions`:
 
 ```ts
-    const tiering = resolveTiering(topology, effServerCount, {
-      s2dOptions,
-      vsanOptions,
-      cephOptions,
-      nutanixOptions,
-      beeGfsOptions,
-    })
+const tiering = resolveTiering(topology, effServerCount, {
+  s2dOptions,
+  vsanOptions,
+  cephOptions,
+  nutanixOptions,
+  beeGfsOptions,
+})
 ```
 
 `beeGfsOptions` is already destructured from the store and already in the memo's dependency array — no other change.

@@ -22,10 +22,10 @@ generalises.
 
 **Keep both, because they answer different questions.**
 
-- The capability map answers *"does the engine read this input"*. It is **probed**: every flag is
+- The capability map answers _"does the engine read this input"_. It is **probed**: every flag is
   asserted against `calculateVolumetry` or `calculatePerformance`, so it cannot drift from the
   code.
-- `DISTRIBUTED_SPARE_TOPOLOGIES` answers *"does this platform have such a thing to configure"*.
+- `DISTRIBUTED_SPARE_TOPOLOGIES` answers _"does this platform have such a thing to configure"_.
   That is a vendor-architecture fact, so it is **sourced**, not probed.
 
 `PLATFORM_CAPABILITIES.supportsHotSpares` was deleted: it was `true` for all fifteen platforms, so
@@ -34,7 +34,7 @@ it carried no information, and its only reader was never called.
 ## Consequences
 
 **A flag cannot express the hot-spare case, and the failure is instructive.** The engines really do
-subtract hot spares for every platform; the zeroing happens in the calculation *hooks*, before the
+subtract hot spares for every platform; the zeroing happens in the calculation _hooks_, before the
 engine is called. So a flag saying "this platform ignores hot spares" would be refuted by the
 probe — which drives the engine directly and would still observe the subtraction. The flag would
 be describing the hooks while claiming to describe the engine.
@@ -45,7 +45,7 @@ ships dedicated spare drives. That is Dell's documentation.
 **Sourced lists carry their evidence inline, including its absence.** Each of the ten entries names
 its vendor statement; ObjectScale is marked `INFERRED, not sourced` because its erasure-coding
 architecture implies it but no vendor says so. The same discipline applies in
-`SHARED_FAST_TIER_TOPOLOGIES` (#88), where S2D and Nutanix are *excluded* precisely because no
+`SHARED_FAST_TIER_TOPOLOGIES` (#88), where S2D and Nutanix are _excluded_ precisely because no
 vendor documents the cascade — the absentees are the point of the list.
 
 **Probes must be able to fail.** The hot-spare probe was wrapped in `if (caps.supportsHotSpares)`

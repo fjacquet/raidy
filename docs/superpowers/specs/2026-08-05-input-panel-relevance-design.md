@@ -34,7 +34,7 @@ The inert controls name real product features. PowerVault really does have contr
 
 They are **deleted**, not kept with a disclaimer. Keeping them unmarked would claim they are modelled. Keeping them marked is the current state, which is what prompted this work.
 
-The knowledge is not lost: the sourced comments in `src/types/topology.ts` and the platform strategies record *why* each is unmodelled, where they serve the person maintaining the model.
+The knowledge is not lost: the sourced comments in `src/types/topology.ts` and the platform strategies record _why_ each is unmodelled, where they serve the person maintaining the model.
 
 **An alternative was considered and rejected**: moving these settings into the YAML/Ansible/Terraform export, so a presales engineer keeps a record of intended configuration. The export covers ZFS only — one platform of fifteen — so this would have meant building it out across every platform. Raidy is a sizing tool, not a provisioning tool, and what the ZFS export emits is three lines, not a deployable artifact. Expanding an unproven feature to house deleted controls fails YAGNI. The export's value is a separate question, filed as #124.
 
@@ -42,19 +42,19 @@ The knowledge is not lost: the sourced comments in `src/types/topology.ts` and t
 
 ### Class A — delete (inert for every topology)
 
-| Panel | Controls |
-|---|---|
-| Workload | `datasetSize` |
-| Tiering | `cacheMode` |
+| Panel      | Controls                                                              |
+| ---------- | --------------------------------------------------------------------- |
+| Workload   | `datasetSize`                                                         |
+| Tiering    | `cacheMode`                                                           |
 | PowerVault | `model`, `controllers`, `tiering`, `ssdReadCache`, `thinProvisioning` |
-| BeeGFS | `chunkSizeKb`, `numTargets`, `network` |
-| Ceph | `backend`, `encryption`, `journalOnSsd` |
-| NetApp | `platform`, `adpVersion`, `zeroDetection` |
-| Synology | `modelSeries`, `ssdCache`, `cacheMode` |
-| PowerScale | `smartQuotas`, `syncIQ` |
-| vSAN | `encryption` |
-| ZFS | `specialVdev` |
-| Longhorn | `overProvisioningPercent` |
+| BeeGFS     | `chunkSizeKb`, `numTargets`, `network`                                |
+| Ceph       | `backend`, `encryption`, `journalOnSsd`                               |
+| NetApp     | `platform`, `adpVersion`, `zeroDetection`                             |
+| Synology   | `modelSeries`, `ssdCache`, `cacheMode`                                |
+| PowerScale | `smartQuotas`, `syncIQ`                                               |
+| vSAN       | `encryption`                                                          |
+| ZFS        | `specialVdev`                                                         |
+| Longhorn   | `overProvisioningPercent`                                             |
 
 Delete the control, the underlying field, its locale keys in all four languages, **and its ALLOWLIST entry** in `tests/utils/optionFieldsConsumed.spec.ts`. Leaving the allowlist entry behind would keep the guard test blessing a field that no longer exists.
 
@@ -80,7 +80,7 @@ Field removal is link-safe: the nested platform schemas are plain `z.object()` a
 
 ### Hint text
 
-`fsOverheadHint` drops to the varies-with clause alone: from *"Filesystem overhead: {{percent}}%. Reduces usable capacity — varies with inode ratio and formatting options on ext4/XFS storage targets"* to the tail. The label carries the name and the value carries the number; the hint should carry neither. Four locales.
+`fsOverheadHint` drops to the varies-with clause alone: from _"Filesystem overhead: {{percent}}%. Reduces usable capacity — varies with inode ratio and formatting options on ext4/XFS storage targets"_ to the tail. The label carries the name and the value carries the number; the hint should carry neither. Four locales.
 
 ## Hot spares — the two changes that do move numbers
 
@@ -90,35 +90,35 @@ Everything above is inert-control removal and cannot change a result. These two 
 
 **Widen `DISTRIBUTED_SPARE_TOPOLOGIES`.** It holds `vsan_osa` and `vsan_esa` today; `TopologyPanel` already hides the slider for them and shows a note instead. The audit found seven more platforms where dedicated hot-spare drives are not the vendor's model — for these, adding them zeroes `totalHotSpares` in all three hooks, so usable capacity **increases** for anyone who had configured a spare.
 
-| Platform | Vendor statement |
-|---|---|
-| S2D | Reserve capacity "serves the same function as a hot spare" but is "taken evenly from every drive in the pool" |
-| PowerScale | Virtual Hot Spare — reserved space, configurable as a percentage or a virtual-drive count, not a physical disk |
-| PowerStore | "Dedicated hot spare drives are not required"; spare space is distributed across each resiliency set |
-| PowerFlex | Spare capacity spread across all disks rather than on dedicated hot-spare disks |
-| Nutanix | Many-to-many rebuild across the cluster; no single hot-spare destination |
-| Ceph | No traditional hot spare; recovery backfills into free cluster capacity |
-| Longhorn | Replicas rebuild onto any node with available space, governed by the minimum-free-space threshold |
+| Platform    | Vendor statement                                                                                                  |
+| ----------- | ----------------------------------------------------------------------------------------------------------------- |
+| S2D         | Reserve capacity "serves the same function as a hot spare" but is "taken evenly from every drive in the pool"     |
+| PowerScale  | Virtual Hot Spare — reserved space, configurable as a percentage or a virtual-drive count, not a physical disk    |
+| PowerStore  | "Dedicated hot spare drives are not required"; spare space is distributed across each resiliency set              |
+| PowerFlex   | Spare capacity spread across all disks rather than on dedicated hot-spare disks                                   |
+| Nutanix     | Many-to-many rebuild across the cluster; no single hot-spare destination                                          |
+| Ceph        | No traditional hot spare; recovery backfills into free cluster capacity                                           |
+| Longhorn    | Replicas rebuild onto any node with available space, governed by the minimum-free-space threshold                 |
 | ObjectScale | Erasure-coded fragments re-created across surviving nodes; no spare drive (inferred from architecture, see below) |
 
-Sources: Microsoft "Deep Dive: The Storage Pool in Storage Spaces Direct"; Dell PowerScale OneFS Administration Guide (Virtual Hot Spare); Dell KB 000188491 (PowerStore capacity); Dell KB 000219120 (PowerFlex spare capacity); Nutanix *Definitive Guide to AOS Storage*; Red Hat Ceph Storage Operations Guide (handling a disk failure); Longhorn space-consumption guideline.
+Sources: Microsoft "Deep Dive: The Storage Pool in Storage Spaces Direct"; Dell PowerScale OneFS Administration Guide (Virtual Hot Spare); Dell KB 000188491 (PowerStore capacity); Dell KB 000219120 (PowerFlex spare capacity); Nutanix _Definitive Guide to AOS Storage_; Red Hat Ceph Storage Operations Guide (handling a disk failure); Longhorn space-consumption guideline.
 
 **ObjectScale joins the distributed list.** Its 12+4 erasure coding disperses fragments across nodes and recovery re-creates them on the surviving nodes; there is no spare-drive concept. No vendor source states this in so many words, so this rests on architecture rather than a citation — recorded as such, and ruled in deliberately.
 
 **Platforms that keep the control**, with dedicated spares documented:
 
-| Platform | Vendor statement |
-|---|---|
-| Standard RAID | PERC and mdadm global hot spares |
-| ZFS | Dedicated spare vdevs |
-| PowerVault ME5 | Global *and* dedicated spares (ME5 Administrator's Guide) |
-| NetApp ONTAP | Spares are a core concept; best practice is **two** per disk type, with a `min_spare_count` RAID option, and two spares enable the Disk Maintenance Center |
-| Synology DSM | Explicit Hot Spare feature in Storage Manager, assignable globally, supported on SHR of two drives or more |
-| BeeGFS | Storage targets are local hardware RAID6 volumes, so spares are meaningful at the controller level even though BeeGFS itself has no such concept |
+| Platform       | Vendor statement                                                                                                                                           |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Standard RAID  | PERC and mdadm global hot spares                                                                                                                           |
+| ZFS            | Dedicated spare vdevs                                                                                                                                      |
+| PowerVault ME5 | Global _and_ dedicated spares (ME5 Administrator's Guide)                                                                                                  |
+| NetApp ONTAP   | Spares are a core concept; best practice is **two** per disk type, with a `min_spare_count` RAID option, and two spares enable the Disk Maintenance Center |
+| Synology DSM   | Explicit Hot Spare feature in Storage Manager, assignable globally, supported on SHR of two drives or more                                                 |
+| BeeGFS         | Storage targets are local hardware RAID6 volumes, so spares are meaningful at the controller level even though BeeGFS itself has no such concept           |
 
 NetApp and Synology were initially marked for removal alongside ObjectScale, on the grounds that all three were unresearched. Research contradicted that for two of the three: both vendors expose hot spares as a first-class, user-configurable feature, so removing the control would delete a setting the user genuinely has to size. Kept, with sources.
 
-**PowerVault ADAPT — resolved by not building a mechanism.** ME5 supports spares for standard disk groups but ADAPT disk groups use neither global nor dynamic spares, which makes relevance depend on the *level* while `usesDistributedSpares(type)` takes only a type. Rather than widen the predicate for one sub-case, PowerVault keeps the control unconditionally; the new default of 0 means an ADAPT configuration is correct unless the user deliberately raises it. The signature stays as it is.
+**PowerVault ADAPT — resolved by not building a mechanism.** ME5 supports spares for standard disk groups but ADAPT disk groups use neither global nor dynamic spares, which makes relevance depend on the _level_ while `usesDistributedSpares(type)` takes only a type. Rather than widen the predicate for one sub-case, PowerVault keeps the control unconditionally; the new default of 0 means an ADAPT configuration is correct unless the user deliberately raises it. The signature stays as it is.
 
 **Release note.** Both changes move published figures. They belong in the CHANGELOG with before/after numbers, in the form used for the four figures that moved in 1.16.0 — anyone who sized hardware on the current release needs to know whether it applied to them.
 

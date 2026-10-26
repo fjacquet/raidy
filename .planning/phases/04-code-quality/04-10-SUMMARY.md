@@ -1,41 +1,45 @@
 ---
+
 phase: 04-code-quality
 plan: 10
 subsystem: performance-engine
 tags: [bottleneck-chain, performance, refactoring, code-quality]
 
 # Dependency graph
+
 requires:
-  - phase: 04-05
-    provides: Performance strategy pattern extraction
-provides:
-  - Bottleneck chain calculation extracted to utils module
-  - Performance orchestrator under 300 lines (298 lines)
-  - PCIe and network limit calculations isolated
-affects: [05-i18n]
+- phase: 04-05
+  provides: Performance strategy pattern extraction
+  provides:
+- Bottleneck chain calculation extracted to utils module
+- Performance orchestrator under 300 lines (298 lines)
+- PCIe and network limit calculations isolated
+  affects: [05-i18n]
 
 # Tech tracking
+
 tech-stack:
-  added: []
-  patterns:
-    - Bottleneck identification with utilization calculation
-    - PCIe/network limit calculation helpers
+added: []
+patterns:
+- Bottleneck identification with utilization calculation
+- PCIe/network limit calculation helpers
 
 key-files:
-  created:
-    - src/engines/performance/utils/bottleneck-chain.ts
+created:
+- src/engines/performance/utils/bottleneck-chain.ts
   modified:
-    - src/engines/performance/index.ts
+- src/engines/performance/index.ts
 
 key-decisions:
-  - "Extract bottleneck identification logic to dedicated utils module"
-  - "Move PCIe and network constants to bottleneck-chain.ts to reduce duplication"
+- "Extract bottleneck identification logic to dedicated utils module"
+- "Move PCIe and network constants to bottleneck-chain.ts to reduce duplication"
 
 patterns-established:
-  - "Bottleneck chain: identifyBottleneck() mutates layers array, marking bottleneck and calculating utilization"
-  - "Limit calculation: separate functions return { bandwidth, iops } objects"
+- "Bottleneck chain: identifyBottleneck() mutates layers array, marking bottleneck and calculating utilization"
+- "Limit calculation: separate functions return { bandwidth, iops } objects"
 
 # Metrics
+
 duration: 3min
 completed: 2026-01-18
 ---

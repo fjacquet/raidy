@@ -1,48 +1,52 @@
 ---
+
 phase: 07-dependency-maintenance
 plan: "03"
 subsystem: testing
 tags: [biome, react-error-boundary, jsdom, types-node, lint, typecheck, build]
 
 # Dependency graph
+
 requires:
-  - phase: 07-dependency-maintenance plan 01
-    provides: dompurify 3.3.2 and react-i18next 16.5.5 updates
-  - phase: 07-dependency-maintenance plan 02
-    provides: biome 2.4.6, jsdom 28.1.0, @types/node 25.3.3 updates
-provides:
-  - All four quality gates (test, lint, typecheck, build) pass after dependency bumps
-  - ErrorBoundary.tsx compatible with react-error-boundary v6 FallbackProps API change
-  - biome.json schema URL updated to 2.4.6
-  - volumetry.spec.ts reformatted for biome 2.4.x style
-affects: [future-dependency-updates, ci-pipeline]
+- phase: 07-dependency-maintenance plan 01
+  provides: dompurify 3.3.2 and react-i18next 16.5.5 updates
+- phase: 07-dependency-maintenance plan 02
+  provides: biome 2.4.6, jsdom 28.1.0, @types/node 25.3.3 updates
+  provides:
+- All four quality gates (test, lint, typecheck, build) pass after dependency bumps
+- ErrorBoundary.tsx compatible with react-error-boundary v6 FallbackProps API change
+- biome.json schema URL updated to 2.4.6
+- volumetry.spec.ts reformatted for biome 2.4.x style
+  affects: [future-dependency-updates, ci-pipeline]
 
 # Tech tracking
+
 tech-stack:
-  added: []
-  patterns:
-    - "Fix ErrorFallbackProps.error to use unknown instead of Error for react-error-boundary v6 compatibility"
-    - "Schema URL in biome.json must match installed biome version"
+added: []
+patterns:
+- "Fix ErrorFallbackProps.error to use unknown instead of Error for react-error-boundary v6 compatibility"
+- "Schema URL in biome.json must match installed biome version"
 
 key-files:
-  created: []
-  modified:
-    - src/components/ErrorBoundary.tsx
-    - biome.json
-    - tests/engines/volumetry.spec.ts
-    - .planning/config.json
+created: []
+modified:
+- src/components/ErrorBoundary.tsx
+- biome.json
+- tests/engines/volumetry.spec.ts
+- .planning/config.json
 
 key-decisions:
-  - "Use error: unknown and resetErrorBoundary: (...args: unknown[]) => void in ErrorFallbackProps to match react-error-boundary v6 FallbackProps type"
-  - "Global coverage thresholds at ~69% are pre-existing (not caused by dependency bumps); src/utils/ has 40% coverage pulling down the global average"
+- "Use error: unknown and resetErrorBoundary: (...args: unknown[]) => void in ErrorFallbackProps to match react-error-boundary v6 FallbackProps type"
+- "Global coverage thresholds at ~69% are pre-existing (not caused by dependency bumps); src/utils/ has 40% coverage pulling down the global average"
 
 patterns-established:
-  - "When upgrading react-error-boundary, check FallbackProps type changes (v5 used Error, v6 uses unknown)"
-  - "biome.json schema URL must be updated to match installed biome major.minor.patch version"
+- "When upgrading react-error-boundary, check FallbackProps type changes (v5 used Error, v6 uses unknown)"
+- "biome.json schema URL must be updated to match installed biome major.minor.patch version"
 
 requirements-completed: [VERIFY-01, VERIFY-02, VERIFY-03, VERIFY-04]
 
 # Metrics
+
 duration: 5min
 completed: 2026-03-05
 ---
@@ -128,5 +132,6 @@ None - no external service configuration required.
 - The pre-existing coverage gap in `src/utils/` should be addressed in a future maintenance phase
 
 ---
-*Phase: 07-dependency-maintenance*
-*Completed: 2026-03-05*
+
+_Phase: 07-dependency-maintenance_
+_Completed: 2026-03-05_

@@ -1,10 +1,10 @@
 ---
+
 phase: 04-code-quality
 plan: 05
 subsystem: performance-engine
 tags:
-  [
-    typescript,
+[typescript,
     strategy-pattern,
     refactoring,
     performance-calculation,
@@ -12,59 +12,61 @@ tags:
     zfs,
     vsan,
     ceph,
-    s2d,
-  ]
+    s2d,]
 
 # Dependency graph
+
 requires:
-  - phase: 02-calculation-validation
-    provides: Phase 2 performance tests validating write penalties and IOPS calculations
-  - phase: 04-01
-    provides: assertNever utility for exhaustive type checking
-provides:
-  - Performance engine refactored with strategy pattern (10 topology-specific strategies)
-  - PerformanceStrategy interface for extensible performance calculations
-  - Utility functions extracted (XFS alignment, latency estimation, PowerFlex CPU factor)
-  - Performance orchestrator reduced from 734 to 335 lines (54% reduction)
-affects: [future-topology-additions, performance-ui, documentation]
+- phase: 02-calculation-validation
+  provides: Phase 2 performance tests validating write penalties and IOPS calculations
+- phase: 04-01
+  provides: assertNever utility for exhaustive type checking
+  provides:
+- Performance engine refactored with strategy pattern (10 topology-specific strategies)
+- PerformanceStrategy interface for extensible performance calculations
+- Utility functions extracted (XFS alignment, latency estimation, PowerFlex CPU factor)
+- Performance orchestrator reduced from 734 to 335 lines (54% reduction)
+  affects: [future-topology-additions, performance-ui, documentation]
 
 # Tech tracking
+
 tech-stack:
-  added: []
-  patterns:
-    - "Strategy pattern for topology-specific performance calculations"
-    - "Exhaustive type checking with assertNever() in getStrategy()"
-    - "Utility function extraction for shared performance logic"
+added: []
+patterns:
+- "Strategy pattern for topology-specific performance calculations"
+- "Exhaustive type checking with assertNever() in getStrategy()"
+- "Utility function extraction for shared performance logic"
 
 key-files:
-  created:
-    - src/engines/performance/strategies/PerformanceStrategy.ts
-    - src/engines/performance/strategies/raid.ts
-    - src/engines/performance/strategies/zfs.ts
-    - src/engines/performance/strategies/s2d.ts
-    - src/engines/performance/strategies/vsan.ts
-    - src/engines/performance/strategies/ceph.ts
-    - src/engines/performance/strategies/nutanix.ts
-    - src/engines/performance/strategies/powerflex.ts
-    - src/engines/performance/strategies/dell.ts
-    - src/engines/performance/strategies/proprietary.ts
-    - src/engines/performance/utils.ts
-    - tests/engines/performance/strategies/raid.spec.ts
+created:
+- src/engines/performance/strategies/PerformanceStrategy.ts
+- src/engines/performance/strategies/raid.ts
+- src/engines/performance/strategies/zfs.ts
+- src/engines/performance/strategies/s2d.ts
+- src/engines/performance/strategies/vsan.ts
+- src/engines/performance/strategies/ceph.ts
+- src/engines/performance/strategies/nutanix.ts
+- src/engines/performance/strategies/powerflex.ts
+- src/engines/performance/strategies/dell.ts
+- src/engines/performance/strategies/proprietary.ts
+- src/engines/performance/utils.ts
+- tests/engines/performance/strategies/raid.spec.ts
   modified:
-    - src/engines/performance/index.ts
+- src/engines/performance/index.ts
 
 key-decisions:
-  - "Strategy pattern isolates topology-specific performance logic"
-  - "Dell strategy consolidates PowerStore, PowerScale, ObjectScale, PowerVault"
-  - "Proprietary strategy handles Synology and NetApp custom RAID"
-  - "Utility functions extracted to reduce orchestrator complexity"
+- "Strategy pattern isolates topology-specific performance logic"
+- "Dell strategy consolidates PowerStore, PowerScale, ObjectScale, PowerVault"
+- "Proprietary strategy handles Synology and NetApp custom RAID"
+- "Utility functions extracted to reduce orchestrator complexity"
 
 patterns-established:
-  - "Strategy pattern: Each topology implements PerformanceStrategy interface"
-  - "Exhaustive checking: assertNever() catches missing topology cases at compile time"
-  - "Separation of concerns: Orchestrator delegates to strategies, utilities handle shared logic"
+- "Strategy pattern: Each topology implements PerformanceStrategy interface"
+- "Exhaustive checking: assertNever() catches missing topology cases at compile time"
+- "Separation of concerns: Orchestrator delegates to strategies, utilities handle shared logic"
 
 # Metrics
+
 duration: 8min
 completed: 2026-01-18
 ---
@@ -94,7 +96,6 @@ completed: 2026-01-18
 Each task was committed atomically:
 
 1. **Task 1: Create PerformanceStrategy interface and extract RAID/ZFS strategies** - `b8e3a53` (refactor)
-
    - Created PerformanceStrategy interface with getWritePenalty() and calculateIOPS()
    - Extracted RAID strategy with industry-validated write penalties (RAID5=4x, RAID6=6x)
    - Extracted ZFS strategy with CoW-optimized penalties

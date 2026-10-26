@@ -1,25 +1,27 @@
 ---
+
 phase: "15"
 plan: "01"
 subsystem: resilience-worker
 tags: [code-quality, type-safety, biome, non-null-assertion]
 dependency_graph:
-  requires: []
-  provides: [QUALITY-01]
-  affects: [src/workers/resilienceWorker.ts]
+requires: []
+provides: [QUALITY-01]
+affects: [src/workers/resilienceWorker.ts]
 tech_stack:
-  added: []
-  patterns: [nullish-coalescing]
+added: []
+patterns: [nullish-coalescing]
 key_files:
-  created: []
-  modified:
-    - src/workers/resilienceWorker.ts
-decisions:
-  - "Used `arr[i] ?? 0` over optional chaining because arrays are always initialized with .fill(0) — semantically identical to `!` with no behavioral change"
-metrics:
+created: []
+modified:
+- src/workers/resilienceWorker.ts
+  decisions:
+- "Used `arr[i] ?? 0` over optional chaining because arrays are always initialized with .fill(0) — semantically identical to `!` with no behavioral change"
+  metrics:
   duration: "5 minutes"
   completed: "2026-04-01"
-requirements: [QUALITY-01]
+  requirements: [QUALITY-01]
+
 ---
 
 # Phase 15 Plan 01: Fix resilienceWorker.ts noNonNullAssertion Warnings Summary
@@ -54,8 +56,8 @@ Total replacements: 14 non-null assertions eliminated.
 
 ## Commits
 
-| Hash | Description |
-|------|-------------|
+| Hash    | Description                                                                              |
+| ------- | ---------------------------------------------------------------------------------------- |
 | 32cf624 | fix(resilience): replace non-null assertions with nullish coalescing in resilienceWorker |
 
 ## Deviations from Plan

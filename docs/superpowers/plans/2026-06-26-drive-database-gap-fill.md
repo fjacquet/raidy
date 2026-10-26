@@ -87,16 +87,7 @@ Expected: the AIC test FAILS (`FORM_FACTOR_TO_TYPES.all` still contains `'AIC'`)
 In the `FormFactor` union, delete the `| 'AIC'` line:
 
 ```ts
-export type FormFactor =
-  | '2.5"'
-  | '3.5"'
-  | 'M.2'
-  | 'U.2'
-  | 'U.3'
-  | 'E1.S'
-  | 'E1.L'
-  | 'E3.S'
-  | 'E3.L'
+export type FormFactor = '2.5"' | '3.5"' | 'M.2' | 'U.2' | 'U.3' | 'E1.S' | 'E1.L' | 'E3.S' | 'E3.L'
 ```
 
 In `FORM_FACTOR_TO_TYPES`, remove `'AIC'` from the `all` array (leave every other entry unchanged):
@@ -130,7 +121,6 @@ rtk proxy git commit -m "test(drives): add DB invariant test; prune orphaned AIC
 - Produces: drive IDs `ent-hdd-7k2-sata-20tb-cmr`, `ent-hdd-7k2-sas-22tb-cmr`, `ent-hdd-7k2-sata-26tb-smr`, `ent-hdd-7k2-sata-28tb-hamr`, `ent-hdd-7k2-sata-30tb-hamr`.
 
 > **Note:** the spec listed the 28 TB HAMR as SAS; no SAS HAMR product exists (Mozaic 3+ is SATA-only), so it is **SATA**. SAS high-capacity coverage is provided by the 22 TB CMR SAS entry.
-
 - [ ] **Step 1: Write the failing HDD test**
 
 Append to `tests/data/drives-db.spec.ts`:
@@ -256,7 +246,6 @@ Insert these inside the top-level object, after the last existing `"type": "HDD"
 ```
 
 > The repo formats `drives.json` with each nested object expanded over multiple lines; after pasting, run the formatter (Step 4) to normalize. Ensure the entry immediately before the first inserted line ends with `},` and the last inserted entry ends with `},` (another entry follows) or `}` (if it becomes the final entry — it will not here since SSD entries follow).
-
 - [ ] **Step 4: Format, then run tests**
 
 Run: `rtk proxy npx biome format --write src/data/drives.json && rtk proxy npx vitest run tests/data/drives-db.spec.ts`
@@ -281,7 +270,6 @@ rtk proxy git commit -m "feat(drives): add 20-30TB nearline HDDs (CMR/SMR/HAMR)"
 - Produces IDs: `dc-nvme-pcie4-30720gb-qlc-e1l-ri`, `dc-nvme-pcie4-122880gb-qlc-e1l-ri`, `dc-nvme-pcie5-61440gb-qlc-e3l-ri`, `dc-nvme-pcie5-3840gb-tlc-e3s-mu`, `ent-nvme-pcie5-7680gb-tlc-u3-ri`, `ent-nvme-pcie5-1920gb-tlc-m2-ri`.
 
 > **Note:** the two E1.L rulers are **PCIe4** — the only real ≥30 TB QLC E1.L rulers (Solidigm D5-P5336 family) are PCIe4; PCIe5 coverage is provided by the E3.L + the PCIe5 TLC entries. This is intentional and accurate.
-
 - [ ] **Step 1: Write the failing NVMe test**
 
 Append to `tests/data/drives-db.spec.ts`:
@@ -636,6 +624,7 @@ Bump `package.json` `version` (patch, e.g. `1.10.1`). Add to `CHANGELOG.md` unde
 ## [1.10.1] - <date>
 
 ### Added
+
 - Expanded the drive database: 20–30 TB nearline HDDs (CMR/SMR/HAMR), 24G-SAS TLC SSDs, small SATA TLC SSDs, and E1.L/E3.L QLC NVMe rulers up to 122.88 TB. Backfilled NAND cell type (TLC/QLC) on all SSDs and removed the unused AIC form factor.
 ```
 

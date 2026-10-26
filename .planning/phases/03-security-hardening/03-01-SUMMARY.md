@@ -1,42 +1,46 @@
 ---
+
 phase: 03-security-hardening
 plan: 01
 subsystem: security
 tags: [zod, validation, url-state, runtime-validation, security]
 
 # Dependency graph
+
 requires:
-  - phase: 02-calculation-validation
-    provides: Test infrastructure and existing test patterns (vitest, mocking)
-provides:
-  - Zod validation schemas for URL state deserialization
-  - Runtime validation preventing malicious URL injection
-  - Security test coverage for SEC-01, SEC-02, SEC-10 requirements
-affects: [03-02-xss-prevention, 03-03-dependency-audit, ui-components]
+- phase: 02-calculation-validation
+  provides: Test infrastructure and existing test patterns (vitest, mocking)
+  provides:
+- Zod validation schemas for URL state deserialization
+- Runtime validation preventing malicious URL injection
+- Security test coverage for SEC-01, SEC-02, SEC-10 requirements
+  affects: [03-02-xss-prevention, 03-03-dependency-audit, ui-components]
 
 # Tech tracking
+
 tech-stack:
-  added: [zod@3.25.76]
-  patterns: [runtime schema validation, discriminated unions for topology types, optional fields with Zustand defaults]
+added: [zod@3.25.76]
+patterns: [runtime schema validation, discriminated unions for topology types, optional fields with Zustand defaults]
 
 key-files:
-  created: [src/utils/schemas.ts]
-  modified: [src/store/urlStorage.ts, tests/utils/urlStorage.spec.ts]
+created: [src/utils/schemas.ts]
+modified: [src/store/urlStorage.ts, tests/utils/urlStorage.spec.ts]
 
 key-decisions:
-  - "Use Zod for runtime validation (TypeScript-first, zero dependencies, industry standard)"
-  - "Make schema fields optional to support Zustand persist middleware defaults"
-  - "Validate after LZ decompression (untrusted input boundary)"
-  - "Use .finite() to reject NaN and Infinity values"
-  - "Use discriminated unions for topology type validation"
-  - "Log validation errors to console.error with user-facing message"
+- "Use Zod for runtime validation (TypeScript-first, zero dependencies, industry standard)"
+- "Make schema fields optional to support Zustand persist middleware defaults"
+- "Validate after LZ decompression (untrusted input boundary)"
+- "Use .finite() to reject NaN and Infinity values"
+- "Use discriminated unions for topology type validation"
+- "Log validation errors to console.error with user-facing message"
 
 patterns-established:
-  - "Runtime validation pattern: Parse → Validate → Return validated | null"
-  - "Validation boundaries: URL deserialization is security boundary in client-only SPA"
-  - "Optional fields + strict validation when present"
+- "Runtime validation pattern: Parse → Validate → Return validated | null"
+- "Validation boundaries: URL deserialization is security boundary in client-only SPA"
+- "Optional fields + strict validation when present"
 
 # Metrics
+
 duration: 6min
 completed: 2026-01-18
 ---
@@ -137,5 +141,6 @@ None - no external service configuration required. Zod is a pure TypeScript libr
 - UI notification system integration can be added when notification component exists (TODO comment in urlStorage.ts)
 
 ---
-*Phase: 03-security-hardening*
-*Completed: 2026-01-18*
+
+_Phase: 03-security-hardening_
+_Completed: 2026-01-18_
