@@ -27,7 +27,7 @@ import {
  * returns a string here; this runtime guard makes that explicit for the type
  * checker without an unsafe cast.
  */
-function expectSyncString(v: string | Promise<string | null>): string {
+function expectSyncString(v: string | PromiseLike<string | null>): string {
   if (typeof v !== 'string') throw new Error('expected a synchronous string from storage')
   return v
 }
