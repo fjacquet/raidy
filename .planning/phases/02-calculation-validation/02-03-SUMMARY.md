@@ -8,6 +8,7 @@ tags: [vitest, performance-engine, iops, bottleneck-analysis, write-penalty, mas
 # Dependency graph
 
 requires:
+
 - phase: 01-test-infrastructure
   provides: Vitest configuration with coverage thresholds and test setup
   provides:
@@ -29,12 +30,14 @@ created: [tests/fixtures/performance-vectors.ts]
 modified: [tests/engines/performance.spec.ts]
 
 key-decisions:
+
 - "Use MassiveGRID and WintelGuy as industry references for write penalty validation"
 - "Test bottleneck chain logic with Math.min across all layers (media/controller/bus/network)"
 - "Property-based tests validate IOPS scaling behavior across drive counts and types"
 - "XFS alignment calculations validate sunit/swidth formulas for optimal performance"
 
 patterns-established:
+
 - "Performance test vectors in fixtures/ with realistic HDD/SSD/NVMe specs"
 - "Write penalty tests document industry formulas with source URLs"
 - "Bottleneck tests cover all four limiting factors in the chain"
@@ -109,21 +112,25 @@ Each task was committed atomically:
 ## Decisions Made
 
 **1. MassiveGRID and WintelGuy as industry references**
+
 - **Decision:** Use MassiveGRID blog and WintelGuy calculator as validation references for write penalties
 - **Rationale:** Industry-standard sources, widely cited in storage documentation, formulas match real-world behavior
 - **Documented:** All write penalty formulas include source URLs and explanations
 
 **2. Bottleneck chain testing approach**
+
 - **Decision:** Test all four bottleneck layers (media/controller/bus/network) with Math.min logic
 - **Rationale:** Users need to identify performance-limiting factors to make infrastructure decisions
 - **Coverage:** Tests for media-limited, controller-limited, network-limited, and bus-limited scenarios
 
 **3. Property-based IOPS validation**
+
 - **Decision:** Use property-based tests to validate IOPS scaling behavior across configurations
 - **Rationale:** Ensures formulas work correctly across wide range of drive counts and types
 - **Invariants tested:** No negative IOPS, write IOPS ≤ read IOPS, write penalty ≥ 1
 
 **4. XFS alignment calculation validation**
+
 - **Decision:** Validate sunit/swidth calculations for RAID stripe alignment
 - **Rationale:** Correct XFS alignment critical for optimal performance, formulas must be accurate
 - **Formula:** swidth = sunit × data_drives (varies by RAID level)
@@ -135,11 +142,13 @@ None - plan executed exactly as written.
 ## Issues Encountered
 
 **Issue 1: Test expectations too strict for bottlenecked configurations**
+
 - **Problem:** Tests expected exact IOPS values but results were capped by controller/network limits
 - **Solution:** Changed tests to validate relationships (e.g., write IOPS < read IOPS / 2) rather than exact values
 - **Impact:** Tests now correctly handle bottleneck scenarios
 
 **Issue 2: Controller layer name mismatch**
+
 - **Problem:** Test expected "Controller" or "HBA" but actual layer name was "Software RAID"
 - **Solution:** Updated test to check for "RAID" in layer name (covers both hardware and software controllers)
 - **Impact:** Test now works with all controller types
@@ -151,19 +160,23 @@ None - no external service configuration required.
 ## Next Phase Readiness
 
 **Ready for next plans:**
+
 - Performance engine IOPS calculations validated (50.7% coverage)
 - Write penalty formulas established and tested
 - Bottleneck chain logic proven across all limiting factors
 
 **Next plans:**
+
 - Plan 02-04: Resilience engine validation (Monte Carlo, URE probability, data loss simulation)
 - Plan 02-05: Advanced topology performance validation (vSAN, S2D, Ceph, PowerFlex)
 
 **Coverage target:**
+
 - Current performance engine coverage: 50.7% statements, 50% lines
 - Target after Phase 2 complete: 75%+ (all engine branches covered)
 
 **TEST requirements satisfied:**
+
 - TEST-04: Performance calculations validated ✓
 - TEST-05: Bottleneck chain logic tested ✓
 - TEST-12: Write penalty validation completed ✓

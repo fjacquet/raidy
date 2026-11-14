@@ -26,11 +26,13 @@ See `.planning/research/STACK.md` for full detail.
 No new dependencies are needed. All formula corrections are pure TypeScript arithmetic changes within existing files. The existing stack (TypeScript 5.x, Vitest 2.x, fast-check 3.x) is correct and complete for this work. Dell PowerSizer and Dell MidRange Sizer are the required external reference tools for generating test vectors, but both require authenticated Dell partner/customer access and cannot be called programmatically.
 
 **Core technologies:**
+
 - TypeScript (existing, ~5.x): Pure function arithmetic corrections — no runtime overhead
 - Vitest (existing, ~2.x): Test vectors for all corrected formulas, already configured
 - fast-check (existing, ~3.x): Property-based validation of formula boundary conditions at drive count limits
 
 **Reference tools (external, for test vector generation):**
+
 - Dell PowerSizer (powersizer.dell.com): Authoritative output; requires login
 - Dell MidRange Sizer (midrangesizer.dell.com): ME4/ME5 reference; legacy tool
 
@@ -39,17 +41,20 @@ No new dependencies are needed. All formula corrections are pure TypeScript arit
 See `.planning/research/FEATURES.md` for full detail.
 
 **Must have (table stakes):**
+
 - ADAPT formula `((N-2)/N) * (8/10)` for ≤18 drives; `((N-2)/N) * (16/18)` for >18 drives — validated at 0.04% error against 27.93 TiB reference
 - PowerStore RAID-6 geometry-aware calculation: DRE DP selects 4+2, 8+2, or 16+2 stripe by drive count, plus ~5% system overhead
 - PowerStore RAID-5 geometry-aware calculation: DRE SP selects 4+1 or 8+1 stripe by drive count
 - Dell Sizer reference test vectors (minimum: ME5 12-drive ADAPT and PowerStore 35-drive DRE DP cases)
 
 **Should have (competitive):**
+
 - ADAPT 8+2 vs 16+2 auto-selection threshold: >18 drives triggers 16+2 (88.89% vs 80% stripe efficiency)
 - PowerStore DRE geometry auto-selection matching exact Dell Sizer drive-count thresholds
 - PowerScale serverCount threaded to strategy (replaces incorrect driveCount proxy)
 
 **Defer (v2+):**
+
 - PowerStore system overhead per appliance model class (1000T vs 5200Q have different overhead percentages)
 - ObjectScale two-site geo-replication factor (doubles overhead; niche but architecturally straightforward)
 - PowerScale small-file overhead modeling (requires workload file-size distribution as input)
@@ -62,6 +67,7 @@ See `.planning/research/ARCHITECTURE.md` for full detail.
 All changes are within the existing strategy pattern. No new components or interfaces are required beyond adding `systemOverheadPercent` to `PowerStoreOptions`. The build order is strictly sequential — each step must be validated before the next begins — because PowerStore RAID fraction changes affect the same test assertions as the system overhead addition.
 
 **Major components affected:**
+
 1. `src/engines/volumetry/strategies/proprietary.ts` — Replace hardcoded ADAPT constants with dynamic formula
 2. `src/engines/volumetry/strategies/dell.ts` — Replace hardcoded PowerStore constants with DRE geometry selection
 3. `src/engines/volumetry/overhead/overheadCalculator.ts` — Add PowerStore system overhead block (new)
@@ -141,10 +147,12 @@ Based on combined research, the correct implementation sequence is strictly orde
 ### Research Flags
 
 Phases likely needing deeper research during planning:
+
 - **Phase 3 (PowerStore system overhead):** The exact system overhead percentage varies by PowerStore model (1000T vs 3200 vs 5200Q). The 5% figure is derived from a single reference case (35-drive large model). Smaller models likely have higher overhead as a percentage. Validate with Dell Sizer for at least two model sizes before treating 5% as universal.
 - **Phase 5 (PowerScale validation):** PowerScale is node-level striping; the existing `driveCount` proxy may produce numerically coincidental matches in existing tests. Require at least one multi-drive-per-node reference case from Dell Sizer (e.g., 10 nodes × 36 drives).
 
 Phases with standard patterns (skip research-phase):
+
 - **Phase 1 (ADAPT):** Formula confirmed against Dell Sizer at 0.04% error. Reference validation is complete. Implementation is a one-line change.
 - **Phase 2 (PowerStore data fraction):** DRE geometry table is confirmed from Dell KB 000188491 (official). Stripe thresholds are HIGH confidence.
 - **Phase 6 (Test cleanup):** Standard brownfield test remediation pattern; no domain research needed.

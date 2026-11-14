@@ -8,6 +8,7 @@ tags: [vitest, zfs, vsan, s2d, ceph, nutanix, openzfs, vmware, table-driven-test
 # Dependency graph
 
 requires:
+
 - phase: 01-test-infrastructure
   provides: Vitest configuration with coverage thresholds and test setup
 - phase: 02-01-PLAN
@@ -30,12 +31,14 @@ created: [tests/fixtures/zfs-vectors.ts, tests/fixtures/vsan-vectors.ts]
 modified: [tests/engines/volumetry.spec.ts, src/engines/volumetry/index.ts]
 
 key-decisions:
+
 - "OpenZFS documentation as reference for ZFS slop space formulas (1/32 with 128 MiB min, 128 GiB max)"
 - "VMware vSAN documentation for ESA adaptive efficiency (2+1 vs 4+1 based on cluster size)"
 - "Inline test vectors for S2D/Ceph/Nutanix instead of separate fixture files"
 - "Remove property tests that are too complex in favor of comprehensive table-driven tests"
 
 patterns-established:
+
 - "Vendor-validated test vectors with source documentation URLs"
 - "Adaptive efficiency threshold testing (cluster size, drive count dependencies)"
 - "Edge case testing for min/max bounds (slop space, safe capacity)"
@@ -109,21 +112,25 @@ Each task was committed atomically:
 ## Decisions Made
 
 **1. OpenZFS slop space formula with min/max bounds**
+
 - **Decision:** Implement clamp(capacity/32, 128 MiB, 128 GiB) per OpenZFS source code
 - **Rationale:** OpenZFS documentation specifies exact bounds (SPA_MIN_SLOP, SPA_MAX_SLOP)
 - **Impact:** Accurate ZFS capacity calculations for small and large pools
 
 **2. VMware vSAN ESA adaptive efficiency thresholds**
+
 - **Decision:** Test adaptive RAID-5 (2+1 vs 4+1) and RAID-6 (4+2 vs 6+2) based on cluster size
 - **Rationale:** vSAN ESA automatically adjusts stripe width based on available resources
 - **Thresholds:** 4+1 requires serverCount >= 5 AND driveCount >= serverCount * 20
 
 **3. Inline test vectors for S2D/Ceph/Nutanix**
+
 - **Decision:** Use inline test vectors instead of separate fixture files
 - **Rationale:** Fewer topologies to test, simpler maintenance, easier to read test cases
 - **Pattern:** const vectors = [...]; describe.each(vectors)(...)
 
 **4. Remove complex property tests in favor of table-driven tests**
+
 - **Decision:** Remove Ceph EC k/(k+m) property test that was failing edge cases
 - **Rationale:** Table-driven tests already cover all important k+m combinations
 - **Result:** 121 passing tests with comprehensive vendor-validated coverage
@@ -133,6 +140,7 @@ Each task was committed atomically:
 **Auto-fixed Issues:**
 
 **1. [Rule 1 - Bug] ZFS slop space calculation missing min/max bounds**
+
 - **Found during:** Task 1 - ZFS test execution
 - **Issue:** getZfsOverhead() calculated slop as capacity/32 without enforcing 128 MiB minimum and 128 GiB maximum
 - **Fix:** Added MIN_SLOP and MAX_SLOP constants, applied Math.max/Math.min clamping
@@ -140,6 +148,7 @@ Each task was committed atomically:
 - **Commit:** 6ae2f8c (included in Task 1 commit)
 
 **2. [Rule 1 - Bug] Property test failing for invalid ZFS configurations**
+
 - **Found during:** Task 1 - Property-based test execution
 - **Issue:** Test generated invalid configurations (e.g., 2 drives with RAID-Z3 which requires 5 minimum)
 - **Fix:** Added minDrivesRequired validation to skip invalid configurations
@@ -147,6 +156,7 @@ Each task was committed atomically:
 - **Commit:** 6ae2f8c (included in Task 1 commit)
 
 **3. [Rule 1 - Bug] vSAN OSA RAID-5 property test incorrect assumption**
+
 - **Found during:** Task 2 - Property-based test execution
 - **Issue:** Test assumed vSAN OSA RAID-5 had fixed 75% efficiency, but it's actually adaptive (75-87.5%)
 - **Fix:** Updated property test to validate scaling efficiency range instead of fixed value
@@ -154,6 +164,7 @@ Each task was committed atomically:
 - **Commit:** f40a656 (included in Task 2 commit)
 
 **4. [Rule 1 - Bug] S2D MAP efficiency calculation incorrect**
+
 - **Found during:** Task 3 - S2D MAP test execution
 - **Issue:** Expected 60% efficiency but actual formula produces ~50%
 - **Fix:** Corrected expected efficiency in test vector (mirrorPortion + parityPortion = 0.1 + 0.4 = 0.5)
@@ -161,6 +172,7 @@ Each task was committed atomically:
 - **Commit:** b0c4843 (included in Task 3 commit)
 
 **5. [Rule 4 - Architectural] Removed complex Ceph EC property test**
+
 - **Found during:** Task 3 - Ceph property-based test execution
 - **Issue:** Property test for k/(k+m) formula was too complex with overhead calculations, failing edge cases
 - **Decision:** Remove property test, rely on comprehensive table-driven tests
@@ -179,16 +191,19 @@ None - no external service configuration required.
 ## Next Phase Readiness
 
 **Ready for next plans:**
+
 - Advanced storage topology capacity calculations validated (ZFS, vSAN, S2D, Ceph, Nutanix)
 - Volumetry engine coverage at 58.51% (approaching 75% threshold)
 - Vendor-validated test pattern established for future topologies
 
 **Next plans:**
+
 - Plan 02-03: Performance bottleneck engine validation (write penalty, IOPS scaling, XFS alignment)
 - Plan 02-04: Monte Carlo resilience engine validation (URE probability, rebuild simulation)
 - Plan 02-05: URL state management and validation
 
 **Coverage progress:**
+
 - Current volumetry engine coverage: 58.51%
 - Target after Phase 2 complete: 75%+
 - Remaining gap: ~17 percentage points (requires performance and resilience tests)

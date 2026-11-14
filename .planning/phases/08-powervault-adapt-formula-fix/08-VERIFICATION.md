@@ -70,12 +70,14 @@ None. All phase goals are verifiable programmatically via test execution and cod
 No gaps. All five observable truths are verified, both artifacts pass all three levels (exists, substantive, wired), both key links are confirmed, and both requirements (DELL-01, DELL-02) are satisfied.
 
 **CI State:**
+
 - `npm run typecheck`: PASS (0 errors)
 - `npx vitest run tests/engines/volumetry.spec.ts`: PASS (235 tests, 0 failed, 0 skipped)
 - `npm run lint` on phase files (`proprietary.ts`, `dell-vectors.ts`, `volumetry.spec.ts`): PASS (no issues in modified files)
 - Pre-existing lint issues in `resilienceWorker.ts` and `.planning/config.json` are out of scope and documented in `deferred-items.md`
 
 **Commits verified:**
+
 - `65ff4c5` — test: add failing ADAPT tests using Dell Sizer reference vectors
 - `ef6d1a5` — feat: fix PowerVault ADAPT formula to use drive-count-aware efficiency
 - `cb9293a` — refactor: remove deprecated ADAPT tests encoding wrong constants

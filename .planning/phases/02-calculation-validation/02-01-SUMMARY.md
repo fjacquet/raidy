@@ -8,6 +8,7 @@ tags: [vitest, fast-check, raid, wintelguy, table-driven-tests, property-based-t
 # Dependency graph
 
 requires:
+
 - phase: 01-test-infrastructure
   provides: Vitest configuration with coverage thresholds and test setup
   provides:
@@ -28,12 +29,14 @@ created: [tests/fixtures/raid-vectors.ts]
 modified: [tests/engines/volumetry.spec.ts, package.json, package-lock.json]
 
 key-decisions:
+
 - "Use WintelGuy RAID Calculator as industry reference for validation (1% tolerance)"
 - "Table-driven tests with describe.each for systematic coverage of all RAID levels"
 - "Property-based tests with fast-check to validate mathematical invariants"
 - "50 runs per property test for balance between coverage and speed"
 
 patterns-established:
+
 - "Test vectors in fixtures/ directory with industry source documentation"
 - "Each RAID level has 2+ test vectors for different drive counts"
 - "Property tests validate invariants (monotonicity, efficiency formulas)"
@@ -95,21 +98,25 @@ Each task was committed atomically:
 ## Decisions Made
 
 **1. WintelGuy as industry reference**
+
 - **Decision:** Use WintelGuy RAID Calculator (https://wintelguy.com/raidcalc.pl) as validation reference
 - **Rationale:** Industry-standard calculator, widely trusted, easy to verify manually
 - **Tolerance:** 1% to account for minor filesystem overhead variations
 
 **2. Table-driven testing approach**
+
 - **Decision:** Use describe.each() pattern for systematic test coverage
 - **Rationale:** Reduces code duplication, makes adding test vectors trivial, clear failure messages
 - **Pattern:** Filter vectors by RAID level, iterate with describe.each
 
 **3. Property-based testing with fast-check**
+
 - **Decision:** Use fast-check for mathematical invariant validation
 - **Rationale:** Discovers edge cases manual tests miss, validates formulas across wide input ranges
 - **Configuration:** 50 runs per test for balance between coverage and speed
 
 **4. Write penalty documentation**
+
 - **Decision:** Document write penalty formulas in test comments with industry sources
 - **Rationale:** Critical for Module B (Performance Engine) implementation, establishes formulas early
 - **Sources:** WintelGuy performance calculator, industry white papers
@@ -129,15 +136,18 @@ None - no external service configuration required.
 ## Next Phase Readiness
 
 **Ready for next plans:**
+
 - Standard RAID capacity calculations validated (baseline established)
 - Test infrastructure proven with 56 passing tests
 - Property-based testing pattern established for future use
 
 **Next plans:**
+
 - Plan 02-02: ZFS calculation validation (RAID-Z, slop space, ashift overhead)
 - Plan 02-03: Advanced topology validation (S2D, vSAN, proprietary systems)
 
 **Coverage target:**
+
 - Current volumetry engine coverage: 38.7% (standard RAID only)
 - Target after Phase 2 complete: 75%+ (all topologies validated)
 

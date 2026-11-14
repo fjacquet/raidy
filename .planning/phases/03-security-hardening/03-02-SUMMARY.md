@@ -8,6 +8,7 @@ tags: [dompurify, xss, pdf, sanitization, jspdf]
 # Dependency graph
 
 requires:
+
 - phase: 03-01
   provides: URL state validation with Zod
   provides:
@@ -27,11 +28,13 @@ created: [tests/utils/exportPdf.spec.ts]
 modified: [src/utils/exportPdf.ts, package.json]
 
 key-decisions:
+
 - "Export sanitizeForPdf() for direct unit testing instead of mocking jsPDF"
 - "Accept DOMPurify HTML entity encoding (&amp;, &lt;&gt;) as correct security behavior"
 - "Document that SVG/iframe content removal is expected DOMPurify security behavior"
 
 patterns-established:
+
 - "Pattern 1: Sanitize user-controlled text at function entry with DOMPurify"
 - "Pattern 2: Export internal functions for testability when mocking is complex"
 - "Pattern 3: Test sanitization functions directly rather than integration testing with mocks"
@@ -80,16 +83,19 @@ Each task was committed atomically:
 ## Decisions Made
 
 **1. Export sanitizeForPdf() for direct testing**
+
 - Attempted to mock jsPDF but encountered constructor compatibility issues with Vitest
 - Exported the sanitization function as public API for direct unit testing
 - Result: Simpler, more reliable tests that focus on sanitization logic
 
 **2. Accept DOMPurify HTML entity encoding**
+
 - DOMPurify encodes special characters (`&` → `&amp;`, `<>` → `&lt;&gt;`)
 - Initially expected plain text preservation, but encoding is correct security behavior
 - HTML entities in PDF text are safe; they render as display text not HTML
 
 **3. SVG/iframe content removal is expected behavior**
+
 - DOMPurify removes SVG and iframe tags entirely (including content) for security
 - This is correct behavior - these tags are dangerous vectors
 - Updated tests to expect empty string for these XSS attempts
@@ -101,11 +107,13 @@ None - plan executed exactly as written.
 ## Issues Encountered
 
 **1. jsPDF mocking complexity in Vitest**
+
 - Problem: vi.doMock() requires constructor functions, mock setup became complex
 - Solution: Exported sanitizeForPdf() and tested it directly instead of integration testing
 - Result: Cleaner tests, better test isolation, function now part of public API
 
 **2. Test expectations for DOMPurify behavior**
+
 - Problem: Initial tests expected plain text preservation for special characters and SVG/iframe content
 - Solution: Researched DOMPurify security behavior, updated test expectations to match
 - Result: Tests now validate correct security behavior (HTML encoding, dangerous tag removal)

@@ -27,12 +27,14 @@
 ### Task 1: Resilience — capacity-tier simulation scope for S2D, vSAN OSA, Ceph, Nutanix
 
 **Files:**
+
 - Modify: `src/hooks/useResilience.ts`
 - Modify: `src/components/layout/OutputDashboard.tsx`
 - Modify: `docs/ARCHITECTURE.md`
 - Test: `tests/hooks/useResilienceTieredScope.spec.ts` (create)
 
 **Interfaces:**
+
 - Consumes: `resolveTiering(topology, serverCount, options)` from `@/engines/shared/tiering` (already imported in `useResilience.ts`); `TieredCapacityResult` fields `capacityTierDrive: Drive | null`, `capacityTierDriveCount: number`.
 - Produces: `UseResilienceOptions` gains `s2dOptions?: S2DOptions`, `vsanOptions?: VsanOptions`, `cephOptions?: CephOptions`, `nutanixOptions?: NutanixOptions`. Task 3 does not depend on these.
 
@@ -434,11 +436,13 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 ### Task 2: Performance — capacity-tier media for non-S2D tiered platforms
 
 **Files:**
+
 - Modify: `src/engines/performance/index.ts`
 - Modify: `docs/ARCHITECTURE.md`
 - Test: `tests/engines/performance/tiered-media.spec.ts` (create)
 
 **Interfaces:**
+
 - Consumes: `PerformanceInput`'s existing `tiering?: TieredCapacityResult` and `hotSpares: number` fields — no signature change.
 - Produces: nothing new for later tasks.
 
@@ -699,12 +703,14 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 ### Task 3: BeeGFS tiering reaches the performance engine, and backlog closure
 
 **Files:**
+
 - Modify: `src/hooks/usePerformanceCalc.ts`
 - Modify: `docs/BACKLOG.md`
 - Modify: `CHANGELOG.md`
 - Test: `tests/hooks/usePerformanceTiering.spec.ts` (create)
 
 **Interfaces:**
+
 - Consumes: the branch added in Task 2 — without it this fix is a no-op, which is exactly why the two are separate commits and this one lands second.
 - Produces: nothing.
 

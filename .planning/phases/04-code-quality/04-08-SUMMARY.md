@@ -8,6 +8,7 @@ tags: [tests, component-testing, topology, gap-closure]
 # Dependency graph
 
 requires:
+
 - phase: 04-06
   provides: Type safety lint fixes that mocked topology option panels
 - phase: 04-07
@@ -28,6 +29,7 @@ created: []
 modified: []
 
 key-decisions:
+
 - "Gap closure unnecessary - tests already passing due to panel mocking in 04-06"
 
 patterns-established: []

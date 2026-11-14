@@ -6,6 +6,7 @@ subsystem: volumetry-engine
 tags: [refactoring, strategy-pattern, typescript, architecture]
 requires: [02-01, 02-02]
 provides:
+
 - Modular volumetry calculation architecture
 - Strategy pattern for topology-specific calculations
 - Exhaustive type checking with assertNever

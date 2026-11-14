@@ -8,6 +8,7 @@ tags: [bottleneck-chain, performance, refactoring, code-quality]
 # Dependency graph
 
 requires:
+
 - phase: 04-05
   provides: Performance strategy pattern extraction
   provides:
@@ -21,20 +22,24 @@ requires:
 tech-stack:
 added: []
 patterns:
+
 - Bottleneck identification with utilization calculation
 - PCIe/network limit calculation helpers
 
 key-files:
 created:
+
 - src/engines/performance/utils/bottleneck-chain.ts
   modified:
 - src/engines/performance/index.ts
 
 key-decisions:
+
 - "Extract bottleneck identification logic to dedicated utils module"
 - "Move PCIe and network constants to bottleneck-chain.ts to reduce duplication"
 
 patterns-established:
+
 - "Bottleneck chain: identifyBottleneck() mutates layers array, marking bottleneck and calculating utilization"
 - "Limit calculation: separate functions return { bandwidth, iops } objects"
 

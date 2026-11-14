@@ -9,6 +9,7 @@ tags: [react, typescript, html-to-image, pptx, chart-capture]
 
 requires: []
 provides:
+
 - id="speedometer-chart" stable DOM id on Speedometer wrapper div
 - id="donut-chart" stable DOM id on DonutChart root div (both render branches)
 - captureSpeedometer() exported from src/utils/captureChart.ts
@@ -21,24 +22,29 @@ provides:
 tech-stack:
 added: []
 patterns:
+
 - "Stable hardcoded DOM ids on chart wrapper divs enable html-to-image capture without selector fragility"
 - "All chart capture functions follow same toPng pattern: backgroundColor '#1A1B2E', pixelRatio 2"
 
 key-files:
 created: []
 modified:
+
 - src/components/outputs/Speedometer.tsx
 - src/components/outputs/DonutChart.tsx
 - src/utils/captureChart.ts
 
 key-decisions:
+
 - "id on outermost wrapper div (not SVG) because html-to-image requires HTMLElement not SVGElement"
 - "id present in both DonutChart render branches (empty state and normal) to guarantee consistent capture target"
 
 patterns-established:
+
 - "Chart capture: getElementById -> toPng with dark background and 2x pixelRatio"
 
 requirements-completed:
+
 - EXPORT-04
 
 # Metrics

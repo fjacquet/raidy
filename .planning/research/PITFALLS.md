@@ -20,6 +20,7 @@ ADAPT documentation describes efficiency in terms of typical large arrays (60–
 Implement the dynamic formula: `usable = (N - spare_drives) / N` where `spare_drives = 2 × protection_level` (default protection level 2 means 4 drives equivalent reserved). Verify against Dell Sizer outputs for 12, 24, 36, and 60-drive configurations before finalizing. Dell community posts confirm the formula as `((N - 2*protection) * disk_size) * 0.8` (the 0.8 factor represents the RAID-6 stripe efficiency within each ADAPT stripe of 8+2 or 16+2).
 
 **Warning signs:**
+
 - Test expects `efficiency > 82` for 12 drives — this will pass with the wrong 85% constant
 - Efficiency is reported above 80% for small ADAPT arrays (fewer than 24 drives)
 - Results do not degrade gracefully as drive count decreases toward the 12-drive minimum
@@ -40,6 +41,7 @@ Documents describe RAID-5 and RAID-6 without emphasizing that stripe width is us
 Add `stripeWidth: '4+1' | '8+1' | '4+2' | '8+2'` to `PowerStoreOptions`. Compute base efficiency from stripe width: `data_chunks / (data_chunks + parity_chunks)`. Then subtract system overhead (~20% of raw for internal reserved capacity including sparing and metadata). Validate the combined result against Dell Sizer for a known configuration (e.g., 10-drive PowerStore 1000T with RAID-5 4+1).
 
 **Warning signs:**
+
 - `powerstore_raid6` returning ~75% before system overhead — too high by ~5–15 percentage points
 - `powerstore_raid5` constant at 80% regardless of `stripeWidth` option
 - `PowerStoreOptions` type has no `stripeWidth` field
@@ -60,6 +62,7 @@ The formula `(usableDrives - x) / usableDrives` works by coincidence on certain 
 Use `serverCount` (node count) as the variable, not `driveCount`. The formula becomes `(nodeCount - protectionLevel) / nodeCount` for large files, but requires a minimum-stripe-width adjustment for small clusters. Minimum stripe widths per protection level: N+1 requires 3 nodes, N+2 requires 5 nodes, N+2:1 requires 3 nodes, N+3 requires 7 nodes, N+4 requires 9 nodes. Below minimum, OneFS falls back to mirroring. Verify against the Dell Sizer or the open-source Isilon capacity calculator.
 
 **Warning signs:**
+
 - The `getDataFraction` function passes `usableDrives` to `dellStrategy` for PowerScale — this is the drive count, not node count
 - Tests that pass `driveCount=10` with `serverCount=1` produce nonsensical but numerically "reasonable" results
 - Efficiency near 100% when drive count is high and protection level is small
@@ -78,6 +81,7 @@ Tests were written to document the current (incorrect) behavior rather than the 
 
 **How to avoid:**
 Follow a three-step protocol:
+
 1. Mark the incorrect tests with `it.skip` and a comment citing the Dell Sizer reference value expected after fix.
 2. Add new tests with correct reference vectors derived from Dell Sizer outputs.
 3. After the formula is corrected and new tests pass, delete the skipped (incorrect) tests.
@@ -85,6 +89,7 @@ Follow a three-step protocol:
 Never delete incorrect tests before the replacement tests pass. Never update test assertions by running the formula and copying its output — always derive expected values from Dell Sizer first.
 
 **Warning signs:**
+
 - Tests passing immediately after a formula change without any test updates
 - All Dell-related tests suddenly failing after a formula change
 - Test expected values are round numbers (80%, 75%, 85%) rather than Dell Sizer decimals
@@ -105,6 +110,7 @@ PowerScale was initially implemented using the same pattern as PowerFlex (drive-
 Add `case 'powerscale': options = { serverCount }; break;` to the switch in `getDataFraction`. Update the PowerScale strategy to accept and use `serverCount` from options rather than the raw `driveCount` parameter.
 
 **Warning signs:**
+
 - `powerscale` not listed in the `getDataFraction` switch-case options
 - Passing a `VolumetryInput` with `serverCount: 5, driveCount: 60` to a PowerScale topology produces the same result as `serverCount: 1, driveCount: 60`
 

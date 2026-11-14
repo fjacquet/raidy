@@ -181,6 +181,7 @@ same key set.
 ## Testing
 
 **`tests/data/workloadProfiles.spec.ts`** (new)
+
 - Every profile: `readPercent` and `randomPercent` within 0–100, `blockSize` a member of
   `BLOCK_SIZES`, `id` unique.
 - Every `labelKey` resolves to a non-empty string in all four locales.
@@ -188,6 +189,7 @@ same key set.
 - Every `TopologyType` maps to a non-empty class array.
 
 **`tests/components/WorkloadPanel.spec.tsx`** (new or extended)
+
 - BeeGFS topology: `aiTraining` rendered, `database` not.
 - `standard` topology: `database` rendered, `aiTraining` not.
 - Clicking a profile applies all three values to the store.
@@ -196,6 +198,7 @@ same key set.
   `useIsTouchDevice`.
 
 **`tests/engines/performance/`** (extended)
+
 - `512K` maps to 524288 bytes and produces throughput between the `256K` and `1M` results at
   otherwise identical inputs.
 

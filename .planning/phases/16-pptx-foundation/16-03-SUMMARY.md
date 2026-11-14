@@ -14,6 +14,7 @@ patterns: [fire-and-forget-async-handler, export-button-pattern]
 key_files:
 created: []
 modified:
+
 - src/components/layout/OutputDashboard.tsx
 - src/i18n/locales/en/output.json
 - src/i18n/locales/fr/output.json
@@ -44,11 +45,13 @@ PPTX export button wired into OutputDashboard Export Card with `handleExportPptx
 ### Task 1: OutputDashboard.tsx — PPTX button and handler
 
 **Import added** (line 31):
+
 ```typescript
 import { exportToPptx } from '@/utils/exportPptx'
 ```
 
 **Handler added** after `handleExportPdf` (lines 199-212):
+
 ```typescript
 const handleExportPptx = () => {
   if (!selectedDrive) return

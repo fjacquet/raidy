@@ -450,6 +450,7 @@ same controller/PCIe/network config. Media layer (8 × 300 MB/s = 2,400 MB/s, 8 
 output exactly: `maxReadThroughputMBs: 2400`, `maxReadIOPS: 1680`. 0.00% deviation.
 
 External validation (Perplexity, `mcp__perplexity__search`):
+
 - **PCIe 4.0 per-lane payload bandwidth**: 16 GT/s × 128b/130b encoding ≈ 1.969 GB/s ≈
   1,969 MB/s/lane (x4 ≈ 7,876 MB/s) — matches
   `PCIE_LANE_BANDWIDTH.gen4 = 1969` in `src/engines/performance/utils/bottleneck-chain.ts:100`
@@ -808,6 +809,7 @@ scope is the capability map itself; Task 16 owns deciding whether/how to act on 
 the UI.
 
 **Test evidence:**
+
 - `rtk npm test -- tests/engines/capabilities.spec.ts --run` → 46/46 PASS
 - `rtk npm test -- --run` → 1063/1063 PASS (35 test files, ~52s)
 - `rtk npm run typecheck` → clean

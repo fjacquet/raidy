@@ -45,6 +45,7 @@ The established libraries/tools for React + TypeScript + Vitest testing:
 | vite.config.ts | vitest.config.ts  | Separate file has higher priority but duplicates alias config                        |
 
 **Installation:**
+
 ```bash
 npm install -D @testing-library/react @testing-library/jest-dom @testing-library/user-event jsdom
 ```
@@ -70,6 +71,7 @@ src/
 **What:** Add test configuration to existing vite.config.ts instead of separate vitest.config.ts
 **When to use:** When Vitest should inherit Vite's resolve.alias, plugins, and build settings
 **Example:**
+
 ```typescript
 // Source: https://vitest.dev/config/
 import { defineConfig } from 'vite'
@@ -102,6 +104,7 @@ export default defineConfig({
 **What:** Centralized setup for jest-dom matchers and test cleanup
 **When to use:** Always - provides DOM matchers and automatic cleanup
 **Example:**
+
 ```typescript
 // Source: https://testing-library.com/docs/react-testing-library/setup/
 // src/test/setup.ts
@@ -120,6 +123,7 @@ afterEach(() => {
 **What:** Use `.test.ts` or `.spec.ts` suffix for test files
 **When to use:** Default Vitest pattern, automatically discovered
 **Example:**
+
 ```
 src/engines/volumetry.ts          # Source file
 src/engines/volumetry.test.ts     # Test file (discovered automatically)
@@ -130,6 +134,7 @@ src/engines/volumetry.test.ts     # Test file (discovered automatically)
 **What:** Vitest automatically inherits path aliases from vite.config.ts resolve.alias
 **When to use:** Always - no additional configuration needed
 **Example:**
+
 ```typescript
 // Test file can use existing path aliases
 import { calculateCapacity } from '@engines/volumetry'
@@ -167,6 +172,7 @@ Problems that look simple but have existing solutions:
 **What goes wrong:** npm install shows peer dependency warnings: "@testing-library/react expects react@^18.0.0"
 **Why it happens:** @testing-library/react's package.json hasn't updated peerDependencies to include React 19 (as of Jan 2026)
 **How to avoid:** Use `npm install --legacy-peer-deps` or add to .npmrc:
+
 ```
 legacy-peer-deps=true
 ```
@@ -178,6 +184,7 @@ legacy-peer-deps=true
 **What goes wrong:** Tests run but coverage fails with "coverage.all is not a valid option"
 **Why it happens:** Vitest 4 removed coverage.all and coverage.extensions options
 **How to avoid:** Use coverage.include pattern instead:
+
 ```typescript
 // OLD (Vitest 3):
 coverage: {
@@ -198,6 +205,7 @@ coverage: {
 **What goes wrong:** "Cannot find module './src/test/setup.ts'" error
 **Why it happens:** setupFiles paths are resolved relative to project root, not vite.config.ts location
 **How to avoid:** Use root-relative paths or absolute paths with __dirname:
+
 ```typescript
 // WRONG:
 setupFiles: ['./setup.ts']
@@ -215,6 +223,7 @@ setupFiles: [resolve(__dirname, './src/test/setup.ts')]
 **What goes wrong:** Tests fail with "ReferenceError: document is not defined"
 **Why it happens:** environment: 'jsdom' configured but jsdom package not installed
 **How to avoid:** Install jsdom as devDependency:
+
 ```bash
 npm install -D jsdom
 ```
@@ -225,6 +234,7 @@ npm install -D jsdom
 **What goes wrong:** Tests fail with "describe is not defined", "it is not defined"
 **Why it happens:** If globals: false (or omitted), describe/it/expect must be imported in each test file
 **How to avoid:** Either set globals: true in config OR import in every test:
+
 ```typescript
 // With globals: true in config:
 describe('MyComponent', () => {
@@ -244,6 +254,7 @@ describe('MyComponent', () => {
 **What goes wrong:** Tests in src/components/**tests**/ not running
 **Why it happens:** Default include pattern is **/*.{test,spec}.{js,ts,jsx,tsx}, which doesn't match **tests** directories
 **How to avoid:** Add to include pattern if using **tests** convention:
+
 ```typescript
 test: {
   include: ['**/*.{test,spec}.{js,ts,jsx,tsx}', '**/__tests__/**/*.{js,ts,jsx,tsx}']
@@ -390,6 +401,7 @@ export default defineConfig({
 | react-test-renderer              | @testing-library/react        | React 19 (2024)       | react-test-renderer deprecated, RTL recommended      |
 
 **Deprecated/outdated:**
+
 - **coverage.all option:** Removed in Vitest 4, use coverage.include instead
 - **coverage.extensions option:** Removed in Vitest 4, use glob patterns in coverage.include
 - **poolOptions configuration:** Restructured in Vitest 4, use top-level maxWorkers, isolate, execArgv
@@ -443,6 +455,7 @@ Things that couldn't be fully resolved:
 ## Metadata
 
 **Confidence breakdown:**
+
 - Standard stack: HIGH - Official documentation, current versions verified, Jan 2026 guides
 - Architecture: HIGH - Official Vitest docs, verified examples from RTL docs
 - Pitfalls: HIGH - Official migration guide, community issues with verified fixes

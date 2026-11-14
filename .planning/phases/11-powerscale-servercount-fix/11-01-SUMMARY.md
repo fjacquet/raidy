@@ -13,6 +13,7 @@ added: []
 patterns: [strategy-pattern, tdd-red-green, options-threading]
 key_files:
 created:
+
 - tests/fixtures/dell-vectors.ts (extended with DellPowerscaleVector and dellPowerscaleVectors)
   modified:
 - src/engines/volumetry/strategies/dell.ts
@@ -46,6 +47,7 @@ PowerScale (OneFS) protection overhead is node-level, not drive-level. The formu
 ### The Fix
 
 **`src/engines/volumetry/strategies/dell.ts`:**
+
 - Added `DellPowerscaleOptions` interface for typed `serverCount` extraction from options
 - Changed `calculateDataFraction` signature to accept `options?: unknown` parameter
 - Replaced `usableDrives` with `nodeCount` (extracted from `opts?.serverCount`) in all PowerScale N+x cases
@@ -53,6 +55,7 @@ PowerScale (OneFS) protection overhead is node-level, not drive-level. The formu
 - Mirror cases (2x=50%, 3x=33.3%) remain fixed ratios independent of node count
 
 **`src/engines/volumetry/helpers/calculationHelpers.ts`:**
+
 - Added `case 'powerscale':` to the switch statement, passing `{ serverCount }` in options
 - This threads the store's serverCount (node count) to the Dell strategy, mirroring the existing vSAN pattern
 

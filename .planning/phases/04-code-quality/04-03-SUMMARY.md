@@ -6,6 +6,7 @@ subsystem: ui-components
 tags: [react, component-extraction, refactoring, maintainability]
 requires: [04-01]
 provides:
+
 - Per-topology option panels (7 extracted)
 - Topology constants file
 - TopologyPanel component tests

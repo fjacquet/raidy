@@ -8,6 +8,7 @@ tags: [vitest, coverage, unit-tests, units, connectivity]
 # Dependency graph
 
 requires:
+
 - phase: 08-powervault-adapt-formula-fix
   provides: Dell ADAPT engine formulas and dell-vectors.ts fixture
 - phase: 09-powerstore-data-fraction-fix
@@ -27,14 +28,17 @@ patterns: [binary-decimal-unit-testing, connectivity-constraint-branch-coverage]
 
 key-files:
 created:
+
 - tests/utils/units.spec.ts
 - tests/utils/connectivityConstraints.spec.ts
   modified: []
 
 key-decisions:
+
 - "No additional test files needed beyond units.ts and connectivityConstraints.ts to reach 75% threshold"
 
 patterns-established:
+
 - "Unit conversion tests use toBeCloseTo for floating-point and toBe for integer-exact comparisons"
 - "Connectivity constraint tests use 'as any' for partial options objects since only specific fields are checked"
 

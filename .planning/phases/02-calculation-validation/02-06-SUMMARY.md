@@ -8,6 +8,7 @@ tags: [vitest, performance, dell, nutanix, powerflex, objectscale, powerstore, p
 # Dependency graph
 
 requires:
+
 - phase: 02-01
   provides: Performance engine with basic RAID write penalties
 - phase: 02-03
@@ -25,6 +26,7 @@ requires:
 tech-stack:
 added: []
 patterns:
+
 - Latency validation across multiple network types
 - CPU overhead accumulation testing (compression + dedup)
 - Write penalty edge case coverage patterns
@@ -32,15 +34,18 @@ patterns:
 key-files:
 created: []
 modified:
+
 - tests/engines/performance.spec.ts
 
 key-decisions:
+
 - "Test all three Nutanix network types (RDMA, 25GbE, 10GbE) to validate latency variations"
 - "Accumulate CPU overhead for compression + dedup in Nutanix tests to validate lines 514-519"
 - "Add write penalty edge cases for multiple topologies to reach 75% coverage threshold"
 - "Use table-driven tests for topology variations to minimize code duplication"
 
 patterns-established:
+
 - "Network type variation testing: Test min/mid/max latency scenarios"
 - "CPU overhead accumulation testing: none → compression → dedup → both"
 - "Latency formula validation: mediaLatency * multiplier + networkLatency + cpuOverhead"
@@ -159,6 +164,7 @@ None - all tests passed on first run after implementation.
 **Gain:** +24.53 percentage points
 
 **Uncovered target lines (now covered):**
+
 - Lines 488-489: PowerFlex latency (mediaLatency * 1.5 + networkLatency + cpuOverhead)
 - Lines 491-495: ObjectScale latency (mediaLatency * 2 + networkLatency * 1.5 + EC overhead)
 - Lines 497-499: PowerStore latency (mediaLatency * 1.2 + cpuOverhead)

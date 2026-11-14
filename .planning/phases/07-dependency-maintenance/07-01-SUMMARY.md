@@ -9,6 +9,7 @@ tags: [npm, dompurify, react-i18next, dependencies, security]
 
 requires: []
 provides:
+
 - dompurify 3.3.2 (security patch, XSS sanitization library)
 - react-i18next 16.5.5 (i18n patch, internationalization library)
   affects: [all phases using dompurify or react-i18next]
@@ -22,14 +23,17 @@ patterns: [pin exact patch versions for security-sensitive libraries]
 key-files:
 created: []
 modified:
+
 - package.json
 - package-lock.json
 
 key-decisions:
+
 - "Update dompurify to exact 3.3.2 patch (security library - keep current)"
 - "Update react-i18next to exact 16.5.5 patch (patch-only, no peer dep changes)"
 
 patterns-established:
+
 - "Patch updates: install exact version with @X.Y.Z, verify in package-lock.json"
 
 requirements-completed: [DEP-01, DEP-02]

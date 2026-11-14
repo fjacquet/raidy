@@ -32,6 +32,7 @@
 `cacheMode` is the most misleading control in the app: it renders only for S2D, directly above the Working Set slider, which is live.
 
 **Files:**
+
 - Modify: `src/components/inputs/WorkloadPanel.tsx` (remove the dataset-size slider)
 - Modify: `src/components/inputs/TieringPanel.tsx` (remove the cache-mode segmented control and its `showCacheMode` prop)
 - Modify: `src/components/inputs/topology-options/S2dOptionsPanel.tsx`, `CephOptionsPanel.tsx`, `BeeGfsOptionsPanel.tsx`, `VsanOptionsPanel.tsx` (drop the now-dead `showCacheMode` prop at each call site)
@@ -42,6 +43,7 @@
 - Test: `tests/utils/optionFieldsConsumed.spec.ts` (verify no allowlist change is needed — neither field was listed)
 
 **Interfaces:**
+
 - Consumes: nothing from earlier tasks (this is the first).
 - Produces: `TieringConfig` no longer has `cacheMode`; `TieringPanel`'s props no longer accept `showCacheMode`. Tasks 5 and 6 render `TieringPanel` and must not reintroduce either.
 
@@ -139,6 +141,7 @@ either field still load."
 PowerVault renders five controls and **all five are inert** — the user tunes model, controller count, tiering, SSD read cache and thin provisioning, and none moves a figure. PowerScale adds two more.
 
 **Files:**
+
 - Modify: `src/components/inputs/topology-options/DellOptionsPanel.tsx`
 - Modify: `src/types/topology.ts` (`PowerVaultOptions`, `PowerScaleOptions`, and both `DEFAULT_*` objects)
 - Modify: `src/utils/schemas.ts`
@@ -146,6 +149,7 @@ PowerVault renders five controls and **all five are inert** — the user tunes m
 - Test: `tests/utils/optionFieldsConsumed.spec.ts` (remove seven ALLOWLIST entries)
 
 **Interfaces:**
+
 - Consumes: nothing from Task 1.
 - Produces: `PowerVaultOptions` retains only fields with engine consumers; `PowerScaleOptions` loses `smartQuotas` and `syncIQ`. No later task reads any of the seven.
 
@@ -208,6 +212,7 @@ engine-read."
 ### Task 3: Delete the inert Ceph, vSAN and ZFS controls
 
 **Files:**
+
 - Modify: `src/components/inputs/topology-options/CephOptionsPanel.tsx`, `VsanOptionsPanel.tsx`, `ZfsOptionsPanel.tsx`
 - Modify: `src/types/topology.ts` (`CephOptions`, `VsanOptions`, `ZfsOptions` + defaults)
 - Modify: `src/utils/schemas.ts`
@@ -215,6 +220,7 @@ engine-read."
 - Test: `tests/utils/optionFieldsConsumed.spec.ts` (remove five ALLOWLIST entries)
 
 **Interfaces:**
+
 - Consumes: nothing from Tasks 1–2.
 - Produces: `CephOptions` loses `backend`, `encryption`, `journalOnSsd`; `VsanOptions` loses `encryption`; `ZfsOptions` loses `specialVdev`.
 
@@ -263,6 +269,7 @@ computed number."
 ### Task 4: Delete the inert NetApp, Synology, Longhorn and BeeGFS controls
 
 **Files:**
+
 - Modify: `src/components/inputs/topology-options/NetAppOptionsPanel.tsx`, `SynologyOptionsPanel.tsx`, `LonghornOptionsPanel.tsx`, `BeeGfsOptionsPanel.tsx`
 - Modify: `src/components/outputs/LonghornCapacityDetails.tsx` (remove the over-provisioning row)
 - Modify: `src/types/topology.ts` (four options interfaces + defaults)
@@ -272,6 +279,7 @@ computed number."
 - Test: `tests/utils/optionFieldsConsumed.spec.ts` (remove eight ALLOWLIST entries)
 
 **Interfaces:**
+
 - Consumes: nothing from Tasks 1–3.
 - Produces: `BeeGfsOptions` loses `chunkSizeKb`, `numTargets`, `network`; `NetAppOptions` loses `platform`, `adpVersion`, `zeroDetection`; `SynologyOptions` loses `modelSeries`, `ssdCache`, `cacheMode`; `LonghornOptions` loses `overProvisioningPercent`. `LonghornDetails` loses its `overProvisioningPercent` member.
 
@@ -318,11 +326,13 @@ that row goes too — it displayed a number the user can no longer influence."
 > An earlier draft of the spec said `standard` only. Gating on that would have hidden the control for Longhorn while the engine kept consuming the stored value, silently changing Longhorn's usable capacity. The probe case below is what catches this class of error.
 
 **Files:**
+
 - Modify: `src/engines/capabilities.ts` (add `honoursFsType` to `PlatformCapabilities`, extend `shouldShowControl`'s union)
 - Modify: `src/components/inputs/AdvancedPanel.tsx:319` (gate the selector)
 - Test: `tests/engines/capabilities.spec.ts`
 
 **Interfaces:**
+
 - Consumes: nothing from Tasks 1–4.
 - Produces: `PlatformCapabilities` gains `honoursFsType: boolean`; `shouldShowControl` accepts `'fsType'`. Task 6 extends the same interface and must merge rather than replace.
 
@@ -431,12 +441,14 @@ Two narrower guards the audit found:
 - **`workingSetPercent`** — inert for `vsan_osa` in `all-flash` disk-group mode. The all-flash branch of `vsanFastTierModel` never reads it; the hybrid branch does. This is a **sub-mode** gate keyed on `diskGroupMode === 'hybrid'`, not on the topology type — `PlatformCapabilities` cannot express it, so it is a local condition in `TieringPanel`, not a capability flag.
 
 **Files:**
+
 - Modify: `src/engines/capabilities.ts` (add `honoursController`)
 - Modify: `src/components/inputs/AdvancedPanel.tsx` (gate the controller selector)
 - Modify: `src/components/inputs/TieringPanel.tsx` (gate the working-set slider on the vSAN mode it already receives)
 - Test: `tests/engines/capabilities.spec.ts`, `tests/engines/performance/` (a new spec for the working-set sub-mode)
 
 **Interfaces:**
+
 - Consumes: `PlatformCapabilities` and `shouldShowControl` as extended by Task 5. Add to them; do not replace.
 - Produces: `PlatformCapabilities` gains `honoursController: boolean`; `shouldShowControl` accepts `'controller'`.
 
@@ -550,9 +562,11 @@ Three fields change visible output without changing a computed number: `zfsOptio
 They stay. The problem is that they pass the guard test **by accident**: the test treats any read in `validators.ts`, `exportConfig.ts` or `TakeawayAct.tsx` as a real consumer. That is a loophole wide enough to admit a genuinely dead field that happens to be logged somewhere.
 
 **Files:**
+
 - Modify: `tests/utils/optionFieldsConsumed.spec.ts` (docstring + an explicit category)
 
 **Interfaces:**
+
 - Consumes: the ALLOWLIST as left by Tasks 2–4 (twenty entries lighter).
 - Produces: nothing later tasks depend on.
 
@@ -588,6 +602,7 @@ Now stated explicitly, with a falsifiability check."
 The label carries the name and the value carries the number; the hint should carry neither.
 
 **Files:**
+
 - Modify: `src/i18n/locales/{en,fr,de,it}/topology.json`
 
 **Interfaces:** none.
@@ -623,11 +638,13 @@ repeated both. Four locales, accents preserved (#86)."
 **This task moves published numbers.** Everything before it was inert-control removal and visibility gating, which cannot change a result. From here the expectations invert: numbers change, and the new values are pinned to fixed figures.
 
 **Files:**
+
 - Modify: `src/store/slices/topologySlice.ts:69`
 - Modify: `CHANGELOG.md`, `docs/CONFIGURATION.md` (if it documents the default)
 - Test: `tests/engines/volumetry/` (new fixed-value vectors)
 
 **Interfaces:**
+
 - Consumes: nothing from Tasks 1–8.
 - Produces: the default the Task 10 vectors build on. Task 10 must be written against `hotSpares: 0`.
 
@@ -681,12 +698,14 @@ Eight platforms join `vsan_osa` and `vsan_esa`: `s2d`, `powerscale`, `powerstore
 While here, record the resulting oddity rather than leaving it for the next reader: `shouldShowControl('hotSpares', …)` is **never called** in the UI — `TopologyPanel` gates on `usesDistributedSpares` instead — and `supportsHotSpares` is `true` for all fifteen types, so the flag carries no information. Two mechanisms, one of them vestigial. Unifying them is out of scope here; file an issue and add a comment at both sites pointing at each other.
 
 **Files:**
+
 - Modify: `src/types/topology.ts` (`DISTRIBUTED_SPARE_TOPOLOGIES`)
 - Modify: `src/engines/capabilities.ts` (comment only, cross-referencing)
 - Modify: `CHANGELOG.md`, `docs/ARCHITECTURE.md`
 - Test: `tests/hooks/` (new fixed-value vectors)
 
 **Interfaces:**
+
 - Consumes: the `hotSpares: 0` default from Task 9. Vectors here must set `hotSpares` explicitly, since the default no longer exercises the path.
 - Produces: nothing later depends on.
 

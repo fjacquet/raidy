@@ -64,12 +64,14 @@ This roadmap takes Raidy from a functionally complete application to production-
 **Depends on**: Nothing (standalone maintenance)
 **Requirements**: DEPS-01
 **Success Criteria** (what must be TRUE):
+
 1. Running `npm outdated` shows no packages with available updates beyond current semver constraints
 2. All CI checks (tests, typecheck, lint) pass after the update
 3. No runtime regressions in the browser after updating
    **Plans**: 3 plans
 
 Plans:
+
 - [x] 14-01-PLAN.md — Patch low-risk packages (dompurify, recharts, zustand, fast-check, snyk, @types/node, tailwindcss)
 - [x] 14-02-PLAN.md — Update tool chain (biome 2.4.10, vitest suite 4.1.2)
 - [ ] 14-03-PLAN.md — Update i18n stack and build plugin (@vitejs/plugin-react 5.2.0, i18next 25.10.10, react-i18next 16.6.6) + browser verify
@@ -80,12 +82,14 @@ Plans:
 **Depends on**: Nothing (independent surgical fixes)
 **Requirements**: QUALITY-01, QUALITY-02
 **Success Criteria** (what must be TRUE):
+
 1. `npm run typecheck` produces zero noNonNullAssertion warnings in resilienceWorker.ts
 2. PowerStore 5200T, 5200Q, and 3200 model classes each apply their own distinct overhead rate instead of a flat 5%
 3. Existing PowerStore tests continue to pass after the per-model overhead change
    **Plans**: 2 plans
 
 Plans:
+
 - [x] 15-01-PLAN.md — Fix resilienceWorker.ts noNonNullAssertion warnings (QUALITY-01)
 - [ ] 15-02-PLAN.md — Add PowerStore per-model overhead rates and model selector UI (QUALITY-02)
 
@@ -95,6 +99,7 @@ Plans:
 **Depends on**: Nothing (new feature foundation)
 **Requirements**: EXPORT-01, EXPORT-06, EXPORT-10
 **Success Criteria** (what must be TRUE):
+
 1. User clicks an export button and a .pptx file downloads to their machine — no server request is made
 2. Generated PPTX slides use the app's dark storage-themed background, color palette, and typography
 3. Chart capture produces a rasterized image of the Sankey diagram suitable for embedding in a slide
@@ -103,6 +108,7 @@ Plans:
    **UI hint**: yes
 
 Plans:
+
 - [x] 16-01-PLAN.md — Install pptxgenjs + html-to-image, add Sankey id, create captureChart.ts
 - [x] 16-02-PLAN.md — Create exportPptx.ts with brand constants, title slide, and capacity slide
 - [x] 16-03-PLAN.md — Add PPTX button to OutputDashboard export card + i18n in all 4 locales
@@ -113,6 +119,7 @@ Plans:
 **Depends on**: Phase 16
 **Requirements**: EXPORT-02, EXPORT-03, EXPORT-04, EXPORT-05
 **Success Criteria** (what must be TRUE):
+
 1. The first slide displays topology name, usable capacity, and headline IOPS, resilience probability, and sustainability metrics
 2. The deck contains four detail slides — one each for Volumetry, Performance, Resilience, and Sustainability — with the key metrics for that engine
 3. The Sankey waterfall, performance gauge, and resilience donut chart appear as embedded images in the appropriate slides
@@ -121,6 +128,7 @@ Plans:
    **UI hint**: yes
 
 Plans:
+
 - [x] 17-01-PLAN.md — Add DOM ids to Speedometer and DonutChart; add captureSpeedometer() and captureDonutChart() to captureChart.ts
 - [x] 17-02-PLAN.md — Expand exportPptx.ts to 7-slide deck (exec summary, 4 engine detail slides, BOM) with embedded charts; add pptx i18n keys to all 4 locales
 
@@ -130,6 +138,7 @@ Plans:
 **Depends on**: Phase 16
 **Requirements**: EXPORT-07, EXPORT-08, EXPORT-09
 **Success Criteria** (what must be TRUE):
+
 1. User clicks a PDF export button and a redesigned .pdf file downloads — no server request is made
 2. The PDF layout uses the same dark theme, color palette, and typography established in the PPTX
 3. The PDF contains an executive summary section, per-engine detail sections, embedded charts, and a hardware BOM section — matching PPTX content scope

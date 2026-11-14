@@ -70,6 +70,7 @@ None. All observable truths can be verified programmatically via the test suite.
 No gaps. All 6 must-have truths are verified. The phase goal — drive-count-aware DRE geometry for PowerStore RAID-5 and RAID-6 — is fully implemented, tested, and passing.
 
 **Key facts confirmed:**
+
 - No hardcoded 0.75 or 0.80 constants remain in the `powerstore_raid5` and `powerstore_raid6` cases
 - 14 new PowerStore DRE tests (7 vectors x 2 tests each: data fraction + usable capacity) pass
 - Snapshot reserve tests were restored with correct DRE efficiency comments (no `it.skip` remains)

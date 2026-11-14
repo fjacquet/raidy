@@ -8,6 +8,7 @@ tags: [react, component-extraction, dell, topology, code-organization]
 # Dependency graph
 
 requires:
+
 - phase: 04-03
   provides: Component extraction pattern for topology panels
   provides:
@@ -20,21 +21,25 @@ requires:
 tech-stack:
 added: []
 patterns:
+
 - "Consolidated vendor options in single panel with discriminated unions"
 
 key-files:
 created:
+
 - src/components/inputs/topology-options/DellOptionsPanel.tsx
   modified:
 - src/components/inputs/TopologyPanel.tsx
 - tests/components/inputs/TopologyPanel.spec.tsx
 
 key-decisions:
+
 - "Consolidate all 5 Dell topologies in single DellOptionsPanel (PowerVault, ObjectScale, PowerStore, PowerScale, PowerFlex)"
 - "Use discriminated union based on topology.type for panel rendering"
 - "Access store options directly in DellOptionsPanel rather than passing via props"
 
 patterns-established:
+
 - "Vendor-specific panels can consolidate multiple related topologies when they share similar UI patterns"
 
 # Metrics

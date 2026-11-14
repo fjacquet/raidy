@@ -8,6 +8,7 @@ tags: [biome, typescript, type-guards, lint, vite, code-quality]
 # Dependency graph
 
 requires:
+
 - phase: 03-security-hardening
   provides: Validation infrastructure and error handling patterns
   provides:
@@ -21,12 +22,14 @@ requires:
 tech-stack:
 added: []
 patterns:
+
 - "Double-cast pattern (as unknown as T) for intentional type violations in tests"
 - "Explicit null checks instead of non-null assertions for Biome compliance"
 - "assertNever() for exhaustive switch statement checking"
 
 key-files:
 created:
+
 - src/utils/typeGuards.ts
   modified:
 - src/hooks/useCalculations.ts
@@ -37,12 +40,14 @@ created:
 - src/utils/schemas.ts
 
 key-decisions:
+
 - "Use 'as unknown as T' double-cast instead of 'as any' for test type violations"
 - "Export assertNever from barrel file for convenient project-wide access"
 - "Remove html2canvas from manual chunks - it's an optionalDependency that auto-chunks"
 - "Add explicit type annotations (VolumetryResult, PerformanceResult, SustainabilityResult) for let declarations"
 
 patterns-established:
+
 - "Explicit type annotations on let declarations before try-catch blocks"
 - "Exhaustive type checking in switch default cases via assertNever(value)"
 

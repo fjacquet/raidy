@@ -15,6 +15,7 @@ key_files:
 created: [src/utils/captureChart.ts]
 modified: [src/components/outputs/SankeyDiagram.tsx, src/utils/index.ts, package.json, package-lock.json]
 decisions:
+
 - Wrapped SVG in div for html-to-image compatibility (requires HTMLElement, not SVGElement)
 - pixelRatio=2 for retina-quality output in PPTX slides
 - backgroundColor=#1A1B2E matches app dark brand theme
@@ -67,6 +68,7 @@ captureSankeyDiagram(): Promise<string | null>
 ### Auto-fixed Issues
 
 **1. [Rule 1 - Format] Fixed indentation and import ordering in changed files**
+
 - **Found during:** Lint verification of Task 2 changes
 - **Issue:** Adding `<div>` wrapper caused Biome to require re-indented SVG content; `captureSankeyDiagram` export needed to be alphabetically sorted before `exportConfig` exports
 - **Fix:** Ran `npm run lint:fix` — Biome reformatted indentation and reordered the export in index.ts

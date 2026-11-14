@@ -42,7 +42,6 @@ The test for whether something belongs here: **could a competent person reasonab
 otherwise?** If yes, record the alternative and why it lost. If it is simply what the vendor
 documents, it is reference material.
 
-
 ## Writing a new one
 
 Number sequentially, keep the shape: **Context → Decision → Consequences → Alternatives rejected**.

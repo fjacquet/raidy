@@ -49,12 +49,14 @@ calculateOverhead?(rawCapacity, options?): number            // bytes to subtrac
 ### DELL-01 / DELL-02: PowerVault ADAPT
 
 **Current code** (`proprietary.ts` line 73–75):
+
 ```typescript
 case 'powervault_adapt':
   return usableDrives >= 24 ? 0.87 : 0.85
 ```
 
 **Correct formula** per Dell ME5 technical specification:
+
 ```
 dataFraction = (N - 2 * protectionLevel) / N
 ```
@@ -151,6 +153,7 @@ calculateVolumetry()
 ```
 
 The `powerstoreSystemOverhead` must also appear in:
+
 - `OverheadResult` interface (new field)
 - The subtraction chain in `calculateVolumetry()` (lines 197–207 of index.ts)
 - `buildBreakdown()` to render in the Sankey waterfall
@@ -177,6 +180,7 @@ The new block must match this style exactly — same comment format, same guard 
 ### Pattern: Named constants for magic numbers
 
 ADAPT protection level should be a `const` inside the case block, not a numeric literal:
+
 ```typescript
 case 'powervault_adapt': {
   const ADAPT_PROTECTION_DRIVES = 2  // ADAPT always uses dual distributed parity
@@ -195,17 +199,20 @@ The current `0.85`/`0.87` pattern for ADAPT and `0.80`/`0.75` for PowerStore are
 Build in this order to minimize test regressions cascading across steps:
 
 **Step 1: ADAPT formula fix (isolated, no new plumbing)**
+
 - Edit `proprietary.ts` `powervault_adapt` case
 - Update the 4 existing ADAPT test assertions in `volumetry.spec.ts` (lines 3728–3756) — the new expected values will be significantly lower (~67% vs 85%)
 - Add Dell Sizer reference vectors in new `tests/fixtures/dell-vectors.ts`
 - Run `npm test` — only ADAPT tests should change
 
 **Step 2: PowerStore data fraction fix (isolated to `dell.ts`)**
+
 - Edit `dell.ts` `powerstore_raid5` and `powerstore_raid6` cases to use drive-count-aware stripe selection
 - Update existing PowerStore snapshot reserve tests (lines 3147–3172 of `volumetry.spec.ts`) — the base efficiency changes so snapshot-reserve assertions that use relative comparisons need revision
 - Run `npm test` — only PowerStore tests should change
 
 **Step 3: PowerStore system overhead (requires type + overhead + breakdown changes)**
+
 - Add `systemOverheadPercent` to `PowerStoreOptions` interface and `DEFAULT_POWERSTORE_OPTIONS`
 - Add overhead block in `overheadCalculator.ts`
 - Add `powerstoreSystemOverhead` field to `OverheadResult` interface
@@ -214,11 +221,13 @@ Build in this order to minimize test regressions cascading across steps:
 - Run `npm test` — broader surface, verify breakdown tests pass
 
 **Step 4: PowerScale, PowerFlex, ObjectScale validation**
+
 - Compare calculated output against Dell documentation reference values
 - Fix only if divergence found; each fix is isolated to `dell.ts` cases
 - Add reference vectors to `dell-vectors.ts`
 
 **Step 5: Regression sweep**
+
 - Run `npm run test:coverage` — verify 75% threshold not broken
 - Run `npm run typecheck` — PowerStoreOptions interface change must typecheck cleanly
 - Run `npm run lint` — no unused variables from new fields

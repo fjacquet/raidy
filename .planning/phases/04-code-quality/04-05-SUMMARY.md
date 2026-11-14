@@ -5,18 +5,19 @@ plan: 05
 subsystem: performance-engine
 tags:
 [typescript,
-    strategy-pattern,
-    refactoring,
-    performance-calculation,
-    raid,
-    zfs,
-    vsan,
-    ceph,
-    s2d,]
+strategy-pattern,
+refactoring,
+performance-calculation,
+raid,
+zfs,
+vsan,
+ceph,
+s2d,]
 
 # Dependency graph
 
 requires:
+
 - phase: 02-calculation-validation
   provides: Phase 2 performance tests validating write penalties and IOPS calculations
 - phase: 04-01
@@ -33,12 +34,14 @@ requires:
 tech-stack:
 added: []
 patterns:
+
 - "Strategy pattern for topology-specific performance calculations"
 - "Exhaustive type checking with assertNever() in getStrategy()"
 - "Utility function extraction for shared performance logic"
 
 key-files:
 created:
+
 - src/engines/performance/strategies/PerformanceStrategy.ts
 - src/engines/performance/strategies/raid.ts
 - src/engines/performance/strategies/zfs.ts
@@ -55,12 +58,14 @@ created:
 - src/engines/performance/index.ts
 
 key-decisions:
+
 - "Strategy pattern isolates topology-specific performance logic"
 - "Dell strategy consolidates PowerStore, PowerScale, ObjectScale, PowerVault"
 - "Proprietary strategy handles Synology and NetApp custom RAID"
 - "Utility functions extracted to reduce orchestrator complexity"
 
 patterns-established:
+
 - "Strategy pattern: Each topology implements PerformanceStrategy interface"
 - "Exhaustive checking: assertNever() catches missing topology cases at compile time"
 - "Separation of concerns: Orchestrator delegates to strategies, utilities handle shared logic"

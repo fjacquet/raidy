@@ -8,6 +8,7 @@ dependency_graph:
 requires: []
 provides: [DELL-01, DELL-02]
 affects:
+
 - src/engines/volumetry/strategies/proprietary.ts
 - tests/fixtures/dell-vectors.ts
 - tests/engines/volumetry.spec.ts
@@ -108,6 +109,7 @@ case 'powervault_adapt': {
 ### Auto-fixed Issues
 
 **1. [Rule 2 - Lint] Fixed useExponentiationOperator and noUnusedVariables in test**
+
 - **Found during:** Task 2 lint check on new test code
 - **Issue:** Test used `Math.pow(1024, 4)` instead of `1024 ** 4`, and `dellSizerUsableBytes` was declared but not used
 - **Fix:** Replaced `Math.pow(1024, 4)` with `1024 ** 4`, removed unused variable
@@ -117,6 +119,7 @@ case 'powervault_adapt': {
 ## Deferred Issues
 
 Pre-existing issues discovered but out of scope:
+
 - `npm run test:coverage` reports ~69-70% coverage (below 75% threshold) — pre-existing, not caused by our changes
 - `src/workers/resilienceWorker.ts` has multiple `noNonNullAssertion` lint warnings — pre-existing
 - `.planning/config.json` missing trailing newline — pre-existing

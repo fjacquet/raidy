@@ -14,6 +14,7 @@ patterns: [nullish-coalescing]
 key_files:
 created: []
 modified:
+
 - src/workers/resilienceWorker.ts
   decisions:
 - "Used `arr[i] ?? 0` over optional chaining because arrays are always initialized with .fill(0) — semantically identical to `!` with no behavioral change"
@@ -40,6 +41,7 @@ Replaced all non-null assertion (`!`) occurrences on array index accesses in
 No behavioral change — purely type-safe refactor.
 
 Arrays affected (all `number[]` initialized with `.fill(0)`):
+
 - `mirrorGroupFailures` — mirror group failure tracking
 - `groupFailures` — RAID group failure tracking
 - `survivingPerGroup` — surviving drives per group (intermediate array)
@@ -65,6 +67,7 @@ Total replacements: 14 non-null assertions eliminated.
 ### Auto-fixed Issues
 
 **1. [Rule 3 - Formatting] Applied Biome formatter after mechanical edits**
+
 - **Found during:** Task 1 verification
 - **Issue:** Biome formatter required minor style adjustments (parentheses removal on standalone `?? 0`, line-length wrapping for long `if` conditions, block expansion for inline `{ const cur = ... }` statements)
 - **Fix:** Ran `node_modules/.bin/biome check --write src/workers/resilienceWorker.ts`

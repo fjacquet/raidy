@@ -31,6 +31,7 @@
 Introduce the `longhorn` topology type, both engine strategies, store state, and input plumbing. After this task a `longhorn_r3` config computes `usable = raw × (1/R) − fsOverhead` (guardrails come in Task 2). This is the atomic compile unit: adding `'longhorn'` to `TopologyType` breaks the two exhaustive `getStrategy` switches, so both strategies + cases land together.
 
 **Files:**
+
 - Modify: `src/types/topology.ts` (add level union, `TopologyType` member, `Topology` member, `LonghornOptions`, `DEFAULT_LONGHORN_OPTIONS`, `HBA_REQUIRED_TOPOLOGIES`)
 - Modify: `src/types/config.ts:81` area (add `longhornOptions` to `TopologyState`)
 - Modify: `src/types/index.ts` (re-export `LonghornOptions`, `DEFAULT_LONGHORN_OPTIONS`)
@@ -46,6 +47,7 @@ Introduce the `longhorn` topology type, both engine strategies, store state, and
 - Test: `tests/engines/volumetry/longhorn.spec.ts` (create) + `tests/engines/volumetry.spec.ts` (`createInput` helper)
 
 **Interfaces:**
+
 - Produces: `type LonghornTopology = 'longhorn_r2' | 'longhorn_r3'`
 - Produces: `interface LonghornOptions { diskMode: 'dedicated' | 'root'; minimalAvailablePercent: number; snapshotHeadroom: number; growthHeadroom: number; overProvisioningPercent: number }`
 - Produces: `const DEFAULT_LONGHORN_OPTIONS: LonghornOptions`
@@ -249,6 +251,7 @@ export const longhornStrategy: VolumetryStrategy = {
 - [ ] **Step 7: Register the volumetry strategy**
 
 In `src/engines/volumetry/helpers/calculationHelpers.ts`:
+
 - Add the import after the `cephStrategy` import (line ~19): `import { longhornStrategy } from '../strategies/longhorn'`
 - Add `'longhorn',` to `VALID_TOPOLOGY_TYPES` (after `'ceph',`, line ~40).
 - Add to the `getStrategy` switch, after the `case 'ceph':` block (line ~67):
@@ -298,6 +301,7 @@ export const longhornPerformanceStrategy: PerformanceStrategy = {
 - [ ] **Step 9: Register the performance strategy**
 
 In `src/engines/performance/index.ts`:
+
 - Add the import after `cephPerformanceStrategy` (line ~26): `import { longhornPerformanceStrategy } from './strategies/longhorn'`
 - Add to the `getStrategy` switch, after `case 'ceph':` (line ~95):
 
@@ -330,6 +334,7 @@ In `src/workers/resilienceWorker.ts`, in `getParityDrives`, after the NetApp lin
 - [ ] **Step 12: Add `longhornOptions` to `VolumetryInput`**
 
 In `src/engines/volumetry/index.ts`:
+
 - Add `LonghornOptions,` to the `import type { … } from '@/types/topology'` group (near `CephOptions`).
 - Add to the `VolumetryInput` interface, after `cephOptions: CephOptions` (line ~53): `longhornOptions: LonghornOptions`
 - Add `longhornOptions,` to the destructuring block inside `calculateVolumetry` (after `cephOptions,`, line ~84). It is not consumed yet (Task 2 consumes it); this keeps the type complete.
@@ -337,6 +342,7 @@ In `src/engines/volumetry/index.ts`:
 - [ ] **Step 13: Wire the store slice**
 
 In `src/store/slices/topologySlice.ts`:
+
 - Add `LonghornOptions,` to the `import type { … } from '@/types'` group (near `CephOptions`).
 - Add `DEFAULT_LONGHORN_OPTIONS,` to the `import { … } from '@/types'` value group (near `DEFAULT_CEPH_OPTIONS`).
 - Add to the `TopologySlice` interface, after `setCephOptions` (line ~51): `setLonghornOptions: (options: Partial<LonghornOptions>) => void`
@@ -351,6 +357,7 @@ In `src/store/slices/topologySlice.ts`:
 - [ ] **Step 14: Plumb through `useVolumetryCalc`**
 
 In `src/hooks/useVolumetryCalc.ts`:
+
 - Add `longhornOptions,` to the `useConfigStore()` destructuring (after `cephOptions,`, line ~36).
 - Add `longhornOptions,` to the `calculateVolumetry({ … })` call (after `cephOptions,`, line ~87).
 
@@ -379,6 +386,7 @@ Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>"
 Consume `longhornOptions` in the engine: apply the free-space factor `F` and snapshot reserve `S`, populate `LonghornCapacityDetails` (physical usable, recommended committed data, per-node allocation, guardrails), add breakdown slices, and enforce `serverCount ≥ R`.
 
 **Files:**
+
 - Modify: `src/types/results.ts` (`LonghornCapacityDetails` + `VolumetryResult.longhornDetails`)
 - Modify: `src/engines/volumetry/index.ts` (guardrail reductions, details, breakdown wiring, validation call)
 - Modify: `src/engines/volumetry/breakdown/buildBreakdown.ts` (two new slices)
@@ -386,6 +394,7 @@ Consume `longhornOptions` in the engine: apply the free-space factor `F` and sna
 - Test: `tests/engines/volumetry/longhorn.spec.ts` (extend)
 
 **Interfaces:**
+
 - Consumes: `VolumetryInput.longhornOptions`, `longhornStrategy` (Task 1).
 - Produces: `interface LonghornCapacityDetails { physicalUsable: number; recommendedCommittedData: number; perNodeUsable: number; replicaCount: number; minimalAvailablePercent: number; overProvisioningPercent: number; diskMode: 'dedicated' | 'root' }`
 - Produces: `VolumetryResult.longhornDetails?: LonghornCapacityDetails`
@@ -514,6 +523,7 @@ export function validateReplicaPlacement(
 - [ ] **Step 5: Call the validator in the engine**
 
 In `src/engines/volumetry/index.ts`:
+
 - Add `validateReplicaPlacement` to the import from `./validation/inputValidation` (line ~35).
 - After the existing `validateTopology` guard (line ~98) add:
 
@@ -547,6 +557,7 @@ if (topology.type === 'longhorn' && longhornOptions) {
 - [ ] **Step 7: Build the details object**
 
 In `src/engines/volumetry/index.ts`:
+
 - Add `LonghornCapacityDetails,` to the `import type { … } from '@/types/results'` group (line ~10, alongside `ZfsCapacityDetails`).
 - After the `buildZfsDetails` block (ends line ~305), add:
 
@@ -571,6 +582,7 @@ if (topology.type === 'longhorn' && longhornOptions) {
 - [ ] **Step 8: Add breakdown slices**
 
 In `src/engines/volumetry/breakdown/buildBreakdown.ts`:
+
 - Add to `BreakdownInput` (after `cephSafeCapacityReduction: number`, line ~40):
 
 ```ts
@@ -635,6 +647,7 @@ Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>"
 Expose Longhorn in the topology selector, add its levels, render an options panel, and add translations for all four languages.
 
 **Files:**
+
 - Modify: `src/components/inputs/topology-options/topologyConstants.ts` (`TOPOLOGY_TYPES`, `TOPOLOGY_LEVELS.longhorn`)
 - Create: `src/components/inputs/topology-options/LonghornOptionsPanel.tsx`
 - Modify: `src/components/inputs/TopologyPanel.tsx` (import + render)
@@ -648,6 +661,7 @@ Expose Longhorn in the topology selector, add its levels, render an options pane
 > labels/descriptions specified — do not add a duplicate key — and add the `TOPOLOGY_TYPES` entry.
 
 **Interfaces:**
+
 - Consumes: `useConfigStore().longhornOptions`, `setLonghornOptions` (Task 1); `DEFAULT_LONGHORN_OPTIONS`.
 
 - [ ] **Step 1: Write the failing test**
@@ -681,6 +695,7 @@ Expected: FAIL — `TOPOLOGY_LEVELS.longhorn` is undefined.
 - [ ] **Step 3: Add topology type and levels**
 
 In `src/components/inputs/topology-options/topologyConstants.ts`:
+
 - Add to `TOPOLOGY_TYPES`, after the Ceph entry (line ~11): `{ value: 'longhorn', label: 'Longhorn' },`
 - Add a `longhorn` key to `TOPOLOGY_LEVELS`, after the `ceph` block (line ~252):
 
@@ -835,6 +850,7 @@ export function LonghornOptionsPanel() {
 - [ ] **Step 5: Render the panel**
 
 In `src/components/inputs/TopologyPanel.tsx`:
+
 - Add the import after `CephOptionsPanel` (line ~7): `import { LonghornOptionsPanel } from '@/components/inputs/topology-options/LonghornOptionsPanel'`
 - Add the render after the Ceph line (line ~112):
 
@@ -850,6 +866,7 @@ In `src/components/inputs/TopologyPanel.tsx`:
 - [ ] **Step 6: Add English translations**
 
 In `src/i18n/locales/en/topology.json`:
+
 - Add `"longhorn": "Longhorn",` to the type-label map (near line 9, after `"ceph": "Ceph",`).
 - Add a `longhorn` options block after the `ceph` options block (after line ~460 — locate the closing `}` of the `"ceph": { … }` block that contains `"title": "Ceph Options"`):
 
@@ -905,6 +922,7 @@ Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>"
 Bring docs in sync in the same branch (CLAUDE.md rule).
 
 **Files:**
+
 - Modify: `docs/ARCHITECTURE.md` (platform list / topology coverage)
 - Modify: `CLAUDE.md` (Project Overview platform list)
 - Modify: `CHANGELOG.md`
@@ -951,6 +969,7 @@ Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>"
 ## Self-Review
 
 **Spec coverage** (design doc §→task):
+
 - Forward topology modeled on Ceph → Task 1 (strategy `1/R`) + Task 2 (guardrails). ✅
 - Levels `r2`/`r3`, no `r1` → Task 1 types + Task 3 constants. ✅
 - `serverCount ≥ R` validation → Task 2 Step 4–5. ✅

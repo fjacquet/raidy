@@ -8,6 +8,7 @@ tags: [validation, error-handling, react-error-boundary, zod]
 # Dependency graph
 
 requires:
+
 - phase: 03-01
   provides: URL state validation with Zod schemas
   provides:
@@ -25,6 +26,7 @@ patterns: [error boundary pattern, blocking validation pattern]
 
 key-files:
 created:
+
 - src/components/ErrorBoundary.tsx
 - tests/components/ErrorBoundary.spec.tsx
   modified:
@@ -34,6 +36,7 @@ created:
 - tests/utils/validators.spec.ts
 
 key-decisions:
+
 - "Use react-error-boundary library for error handling (hooks-based, TypeScript support, 1M+ weekly downloads)"
 - "Never expose error.message or error.stack to users (security: prevents internal path disclosure)"
 - "Reset clears URL hash and reloads to default state (simple recovery UX)"
@@ -41,6 +44,7 @@ key-decisions:
 - "Validation check happens in useCalculations before calculation engines (prevents crashes)"
 
 patterns-established:
+
 - "Error boundary wraps entire application for calculation crash recovery"
 - "Blocking validation returns zero-state results with error messages instead of throwing"
 - "Console logging for debugging but never user-visible error details"
@@ -90,18 +94,22 @@ Each task was committed atomically:
 ## Decisions Made
 
 **1. Use react-error-boundary library**
+
 - Rationale: Avoids class components, built-in reset logic, TypeScript support, hooks integration
 - Alternative considered: Custom error boundary with class component (more boilerplate)
 
 **2. Never expose error.message or error.stack to users**
+
 - Rationale: Security risk - exposes internal file paths and implementation details
 - Only log to console for developer debugging
 
 **3. validateOrThrow() for explicit blocking**
+
 - Rationale: Provides both validateOrThrow() (throws on error) and hasBlockingErrors() (returns boolean)
 - Allows flexibility: throwing in critical paths, checking in UI flows
 
 **4. Validation gate in useCalculations**
+
 - Rationale: Single point of enforcement before calculation engines
 - Returns zero-state results with error messages instead of crashing
 
@@ -112,11 +120,13 @@ None - plan executed exactly as written.
 ## Issues Encountered
 
 **1. React import missing in test file**
+
 - Problem: JSX syntax required React import in test file
 - Solution: Added `import React from 'react'` to ErrorBoundary.spec.tsx
 - Impact: Initial test run failed, fixed in 30 seconds
 
 **2. Console error message format**
+
 - Problem: React's error boundary logging uses formatted messages (%o, %s placeholders)
 - Solution: Updated test to check all console.error calls for our custom message
 - Impact: One test initially failed, adjusted assertion to filter call arguments
@@ -124,11 +134,13 @@ None - plan executed exactly as written.
 ## Next Phase Readiness
 
 **Ready for next phase:**
+
 - Validation enforcement blocks invalid configurations before calculations
 - Error boundary provides graceful recovery from calculation crashes
 - Test coverage confirms blocking behavior and error handling
 
 **Capabilities:**
+
 - SEC-03 (validation enforcement) ✓ - Validators block calculations on error-severity alerts
 - SEC-04 (value sanitization) ✓ - Invalid configs prevented, never reach calculation engines
 - SEC-05 (error messages) ✓ - User-friendly error messages without stack traces
