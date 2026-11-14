@@ -9,6 +9,7 @@
 Phase 2 requires validating complex storage calculation engines against industry references (WintelGuy, OpenZFS docs, VMware vSAN specs). The challenge is testing 13 topology types with branching logic, Monte Carlo stochastic simulations, and ensuring backward compatibility of URL state serialization.
 
 The standard approach combines multiple testing strategies:
+
 1. **Table-driven tests** using Vitest's `test.each()` for parametric testing of known test vectors
 2. **Property-based testing** with fast-check for generative validation of mathematical invariants
 3. **Snapshot testing** for regression detection and backward compatibility
@@ -47,6 +48,7 @@ The established libraries/tools for calculation validation testing:
 | test.each   | Individual tests  | Table-driven reduces duplication, easier to add cases |
 
 **Installation:**
+
 ```bash
 npm install fast-check --save-dev
 # Vitest and coverage already installed from Phase 1
@@ -78,6 +80,7 @@ tests/
 **What:** Separate test data from test logic, use Vitest test.each() for parametric execution
 **When to use:** Testing calculation formulas with known inputs/outputs
 **Example:**
+
 ```typescript
 // Source: https://vitest.dev/api/
 // Pattern: Table-driven tests with test.each
@@ -111,6 +114,7 @@ describe.each(raidVectors)(
 **What:** Generative testing that verifies properties hold across randomized inputs
 **When to use:** Discovering edge cases, validating mathematical laws (commutativity, bounds checking)
 **Example:**
+
 ```typescript
 // Source: https://fast-check.dev/
 import fc from 'fast-check'
@@ -156,6 +160,7 @@ describe('RAID Capacity Properties', () => {
 **What:** Capture serialized state as snapshots, detect unintended changes
 **When to use:** URL state serialization, configuration export (JSON/YAML), PDF generation
 **Example:**
+
 ```typescript
 // Source: https://vitest.dev/guide/snapshot
 import { expect, it } from 'vitest'
@@ -196,6 +201,7 @@ it('handles legacy v1.0 URL format (backward compatibility)', () => {
 **What:** Test stochastic simulations by validating statistical properties, not exact values
 **When to use:** Resilience Worker URE probability, MTTDL calculations
 **Example:**
+
 ```typescript
 // Source: Research on Monte Carlo validation best practices
 import { describe, expect, it } from 'vitest'
@@ -243,6 +249,7 @@ describe('Monte Carlo Resilience Worker', () => {
 **What:** Mock self.postMessage and test worker logic directly
 **When to use:** Testing resilienceWorker.ts Monte Carlo engine
 **Example:**
+
 ```typescript
 // Source: Existing resilience.spec.ts + Vitest Web Worker best practices
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -313,6 +320,7 @@ Problems that look simple but have existing solutions:
 **What goes wrong:** Tests fail with "expected 3000 but got 2999.9999999998" despite correct calculation logic
 **Why it happens:** JavaScript uses IEEE 754 double precision; 0.1 + 0.2 ≠ 0.3 exactly
 **How to avoid:**
+
 - Use `toBeCloseTo(expected, precision)` for all numerical assertions
 - Set precision based on tolerance (1% tolerance ≈ 2 decimal places for percentages)
 - Document tolerance explicitly: `// WintelGuy requires ±1% tolerance`
@@ -323,6 +331,7 @@ Problems that look simple but have existing solutions:
 **What goes wrong:** Monte Carlo tests are flaky - sometimes pass, sometimes fail with identical code
 **Why it happens:** Simulations use random number generation; outcomes vary run-to-run
 **How to avoid:**
+
 - Test statistical properties (survival rate within range) not exact values
 - Calculate confidence intervals: with 10k simulations, 95% CI ≈ ±1.96 × sqrt(p(1-p)/n)
 - Use fixed random seed for reproducible tests (if needed for debugging)
@@ -334,6 +343,7 @@ Problems that look simple but have existing solutions:
 **What goes wrong:** 100% coverage achieved but calculations still incorrect
 **Why it happens:** Tests execute code paths but don't validate correctness against authoritative sources
 **How to avoid:**
+
 - Every test vector must cite source: "WintelGuy 4x 1TB RAID 5 = 3TB" with URL
 - Compare against external calculators, not internal re-implementation
 - Use property-based testing to find edge cases coverage metrics miss
@@ -345,6 +355,7 @@ Problems that look simple but have existing solutions:
 **What goes wrong:** URL format update breaks all user-shared links from previous versions
 **Why it happens:** Serialization logic changes without migration path testing
 **How to avoid:**
+
 - Maintain test fixtures for all historical URL formats (v1.0, v1.1, etc.)
 - Snapshot current serialization format to detect unintended changes
 - Test migration: legacy format → deserialize → re-serialize → should update format
@@ -356,6 +367,7 @@ Problems that look simple but have existing solutions:
 **What goes wrong:** Worker tests fail with "MessageEvent data is undefined"
 **Why it happens:** happy-dom doesn't polyfill MessageEvent constructor properly, unlike jsdom
 **How to avoid:**
+
 - Use jsdom environment for Web Worker tests (already configured)
 - Mock `self.postMessage` before importing worker code
 - Call `vi.resetModules()` between tests to get fresh worker instance
@@ -367,6 +379,7 @@ Problems that look simple but have existing solutions:
 **What goes wrong:** Volumetry engine has 13 topology branches, all executed, but RAID 5E formula is still wrong
 **Why it happens:** Branch coverage ≠ correctness validation
 **How to avoid:**
+
 - At minimum one validated test vector per switch case
 - For complex cases (vSAN ESA adaptive efficiency), test multiple sub-branches
 - Use table-driven tests to systematically cover all RAID levels
@@ -640,6 +653,7 @@ it('snapshots current URL format for regression detection', () => {
 | Hardcoded test data          | Table-driven with test.each               | Modern best practice | Easier to add/maintain cases       |
 
 **Deprecated/outdated:**
+
 - **expect.closeTo() utility function**: Built into Vitest now as `toBeCloseTo()` matcher
 - **Custom snapshot assertion libraries**: Vitest has native `toMatchSnapshot()` support
 - **Separate Istanbul install**: V8 provider now handles branch coverage accurately
@@ -702,6 +716,7 @@ Things that couldn't be fully resolved:
 ## Metadata
 
 **Confidence breakdown:**
+
 - Standard stack: HIGH - Vitest already operational, fast-check is mature and widely adopted
 - Architecture patterns: HIGH - Table-driven and property-based testing are established practices, examples verified against official docs
 - Authoritative sources: MEDIUM - WintelGuy exists but no published test vector API; OpenZFS docs comprehensive but ashift padding formula unclear

@@ -8,6 +8,7 @@ tags: [vitest, performance-strategies, sustainability, tco, coverage, tdd]
 # Dependency graph
 
 requires:
+
 - phase: 13-test-suite-cleanup plan 01
   provides: test infrastructure and initial coverage improvements
   provides:
@@ -24,16 +25,19 @@ patterns: [describe.each for parametric write penalty tests, expectedIOPS helper
 
 key-files:
 created:
+
 - tests/engines/performance/strategies/perf-strategies.spec.ts
 - tests/engines/sustainability.spec.ts
   modified: []
 
 key-decisions:
+
 - "Used describe.each pattern for write penalty assertions to keep tests DRY across 60+ level/value pairs"
 - "Used expectedIOPS helper function to verify calculateIOPS formula consistently across all strategies"
 - "Tested special factors (ObjectScale 0.9, WAFL 1.05, ESA 1.1, 100GbE 1.1, ARC 1.1) with comparison assertions"
 
 patterns-established:
+
 - "describe.each([level, expected]) for exhaustive write penalty coverage"
 - "Shared drive fixtures (testSsdDrive, testHddDrive) for sustainability tests"
 

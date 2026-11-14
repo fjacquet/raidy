@@ -31,6 +31,7 @@
 ## File Structure
 
 **Create:**
+
 - `src/engines/outputRelevance.ts` — pure relevance predicates for KPI tiles + sections.
 - `src/components/outputs/MetricCard.tsx` — extracted shared presentational helper.
 - `src/components/outputs/ProgressBar.tsx` — extracted shared presentational helper.
@@ -43,6 +44,7 @@
 - Test files mirroring each under `tests/engines/` and `tests/components/outputs/`.
 
 **Modify:**
+
 - `src/components/layout/OutputDashboard.tsx` — becomes a thin orchestrator.
 - `src/components/outputs/index.ts` — export new components/helpers.
 - `src/components/layout/InputSidebar.tsx` — re-order accordion sections.
@@ -54,10 +56,12 @@
 ### Task 1: Output relevance module
 
 **Files:**
+
 - Create: `src/engines/outputRelevance.ts`
 - Test: `tests/engines/outputRelevance.spec.ts`
 
 **Interfaces:**
+
 - Consumes: `getCapabilities` from `@/engines/capabilities`; `CalculationResults` types from `@/types/results`; `Topology` from `@/types/topology`.
 - Produces:
   - `type KpiId = 'usable' | 'effective' | 'efficiency' | 'peakIops' | 'survival' | 'annualEnergy'`
@@ -257,11 +261,13 @@ rtk git commit -m "feat(outputs): pure output-relevance predicates (capability +
 ### Task 2: Extract shared presentational helpers (pure refactor)
 
 **Files:**
+
 - Create: `src/components/outputs/MetricCard.tsx`, `src/components/outputs/ProgressBar.tsx`
 - Modify: `src/components/outputs/index.ts`, `src/components/layout/OutputDashboard.tsx:41-97` (remove the two local definitions), `src/components/layout/OutputDashboard.tsx` imports
 - Test: `tests/components/outputs/MetricCard.spec.tsx`
 
 **Interfaces:**
+
 - Produces:
   - `MetricCard({ label, children, subvalue?, color? }: { label: string; children: React.ReactNode; subvalue?: string; color?: string })`
   - `ProgressBar({ label, value, max, color?, showValue? }: { label: string; value: number; max: number; color?: string; showValue?: boolean })`
@@ -331,11 +337,13 @@ rtk git commit -m "refactor(outputs): extract MetricCard and ProgressBar helpers
 ### Task 3: Extract CapacityAct (pure refactor — layout unchanged)
 
 **Files:**
+
 - Create: `src/components/outputs/acts/CapacityAct.tsx`
 - Modify: `src/components/layout/OutputDashboard.tsx` (replace the capacity + ZFS + Longhorn + backup card JSX with `<CapacityAct .../>`), `src/components/outputs/index.ts`
 - Test: `tests/components/outputs/CapacityAct.spec.tsx`
 
 **Interfaces:**
+
 - Consumes: `useCalculations` result `volumetry` + `backup`; `useFormatBytes`, `useIsDesktop`, `useIsMobile` from `@/hooks`; `SankeyDiagram`, `DonutChart`, `DonutLegend`, `CapacityBreakdownList`, `ZfsCapacityDetails`, `LonghornCapacityDetails`, `BackupCard`, `MetricCard` from `@/components/outputs`.
 - Produces: `CapacityAct({ volumetry, backup, topology, operationalLimit, performanceThreshold }: CapacityActProps)` — props typed with the exact `VolumetryResult`, `BackupResult | undefined`, `Topology`, `number | null`, `number` shapes. Re-exported from `@/components/outputs`.
 
@@ -401,11 +409,13 @@ rtk git commit -m "refactor(outputs): extract CapacityAct (layout unchanged)"
 ### Task 4: Extract PerformanceAct (gauges + bottleneck)
 
 **Files:**
+
 - Create: `src/components/outputs/acts/PerformanceAct.tsx`
 - Modify: `src/components/layout/OutputDashboard.tsx` (replace performance gauges card 405-462 AND bottleneck card 550-585 with `<PerformanceAct performance={performance} />`), `index.ts`
 - Test: `tests/components/outputs/PerformanceAct.spec.tsx`
 
 **Interfaces:**
+
 - Consumes: `PerformanceResult`; `Speedometer`, `MetricCard` from `@/components/outputs`; `useIsMobile`, `formatNumber` from `@/hooks`.
 - Produces: `PerformanceAct({ performance }: { performance: PerformanceResult })`, re-exported.
 
@@ -462,11 +472,13 @@ rtk git commit -m "refactor(outputs): extract PerformanceAct (gauges + bottlenec
 ### Task 5: Extract ResilienceAct
 
 **Files:**
+
 - Create: `src/components/outputs/acts/ResilienceAct.tsx`
 - Modify: `src/components/layout/OutputDashboard.tsx` (replace resilience card 587-713 with `<ResilienceAct ... />`), `index.ts`
 - Test: `tests/components/outputs/ResilienceAct.spec.tsx`
 
 **Interfaces:**
+
 - Consumes: `ResilienceResult | null`, `SimulationProgress`, booleans, and the `runSimulation` callback — all already produced by `useResilience` in the parent.
 - Produces: `ResilienceAct({ result, progress, isRunning, runSimulation, isMobile }: ResilienceActProps)` with `result: ResilienceResult | null`, `progress: SimulationProgress`, `isRunning: boolean`, `runSimulation: () => void`, `isMobile: boolean`. Re-exported.
 
@@ -519,11 +531,13 @@ rtk git commit -m "refactor(outputs): extract ResilienceAct"
 ### Task 6: Extract CostAct
 
 **Files:**
+
 - Create: `src/components/outputs/acts/CostAct.tsx`
 - Modify: `src/components/layout/OutputDashboard.tsx` (replace Power & Sustainability card 464-541 with `<CostAct sustainability={sustainability} />`), `index.ts`
 - Test: `tests/components/outputs/CostAct.spec.tsx`
 
 **Interfaces:**
+
 - Consumes: `SustainabilityResult`; `MetricCard`, `ProgressBar` from `@/components/outputs`; `formatNumber` from `@/hooks`.
 - Produces: `CostAct({ sustainability }: { sustainability: SustainabilityResult })`, re-exported.
 
@@ -576,11 +590,13 @@ rtk git commit -m "refactor(outputs): extract CostAct"
 ### Task 7: Extract TakeawayAct (export + commands)
 
 **Files:**
+
 - Create: `src/components/outputs/acts/TakeawayAct.tsx`
 - Modify: `src/components/layout/OutputDashboard.tsx` (replace Commands card 715-824 AND Export card 826-982 with `<TakeawayAct ... />`), `index.ts`
 - Test: `tests/components/outputs/TakeawayAct.spec.tsx`
 
 **Interfaces:**
+
 - Consumes: `Topology`, `zfsOptions`, `performance`, the five export handlers, `selectedDrive` boolean, `exportError`.
 - Produces: `TakeawayAct({ topology, zfsOptions, performance, selectedDrive, exportError, onExportPdf, onExportPptx, onExportYaml, onExportAnsible, onExportTerraform }: TakeawayActProps)` — handler props are `() => void`, `selectedDrive: Drive | null`, `exportError: boolean`. Re-exported.
 
@@ -646,10 +662,12 @@ rtk git commit -m "refactor(outputs): extract TakeawayAct (export CTA + collapsi
 ### Task 8: Add i18n keys for the headline band and act headings
 
 **Files:**
+
 - Modify: `src/i18n/locales/{en,fr,de,it}/output.json`
 - Test: `tests/i18n/output-keys.spec.ts` (create if absent — assert key parity across locales)
 
 **Interfaces:**
+
 - Produces: new `output` keys: `headline.title`, `headline.usable`, `headline.effective`, `headline.efficiency`, `headline.peakIops`, `headline.survival`, `headline.annualEnergy`, `headline.runSurvival`, `acts.capacity`, `acts.performance`, `acts.resilience`, `acts.cost`, `acts.takeaway`, `acts.forEngineers`.
 
 - [ ] **Step 1: Write the failing test (locale key parity)**
@@ -745,11 +763,13 @@ rtk git commit -m "i18n(output): headline band + act heading keys (en/fr/de/it)"
 ### Task 9: HeadlineBand component
 
 **Files:**
+
 - Create: `src/components/outputs/HeadlineBand.tsx`
 - Modify: `src/components/outputs/index.ts`
 - Test: `tests/components/outputs/HeadlineBand.spec.tsx`
 
 **Interfaces:**
+
 - Consumes: `RelevanceContext`, `shouldShowKpi` from `@/engines/outputRelevance`; `VolumetryResult`, `PerformanceResult`, `ResilienceResult | null`, `SustainabilityResult`; `useFormatBytes`, `formatNumber` from `@/hooks`; `AnimatedBytes`, `AnimatedPercent` from `@/components/outputs`.
 - Produces: `HeadlineBand({ volumetry, performance, resilience, sustainability, topology, onRunSurvival }: HeadlineBandProps)`. Renders only KPI tiles for which `shouldShowKpi` is true. Re-exported.
 
@@ -953,10 +973,12 @@ rtk git commit -m "feat(outputs): capability-filtered HeadlineBand KPI strip"
 ### Task 10: Compose the narrative in OutputDashboard (Approach B)
 
 **Files:**
+
 - Modify: `src/components/layout/OutputDashboard.tsx`
 - Test: `tests/components/layout/OutputDashboard.spec.tsx` (create — smoke test the full narrative renders)
 
 **Interfaces:**
+
 - Consumes: all act components + `HeadlineBand` + `shouldShowSection`.
 - Produces: the final composed dashboard.
 
@@ -1056,10 +1078,12 @@ rtk git commit -m "feat(outputs): compose presales guided-narrative layout (head
 ### Task 11: Re-sequence the input accordion
 
 **Files:**
+
 - Modify: `src/components/layout/InputSidebar.tsx`
 - Test: `tests/components/layout/InputSidebar.spec.tsx` (create — assert section order)
 
 **Interfaces:**
+
 - Produces: accordion order Topology → Hardware → Workload → Advanced → Drive Properties, with `topology` and `hardware` open by default (unchanged default set).
 
 - [ ] **Step 1: Write the failing test**
@@ -1135,6 +1159,7 @@ If the repo wants planning evidence, add a short note; otherwise no commit. Conf
 ### Task 13: Docs sync
 
 **Files:**
+
 - Modify: `docs/ARCHITECTURE.md` (UI Layout section), `README.md`, `CHANGELOG.md`
 
 - [ ] **Step 1: Update ARCHITECTURE.md UI Layout**
@@ -1161,6 +1186,7 @@ rtk git commit -m "docs: sync architecture/readme/changelog with narrative dashb
 ## Self-Review
 
 **Spec coverage:**
+
 - §4.1 narrative arc → Tasks 3-7 (acts) + Task 10 (composition). ✓
 - §4.2 headline band → Task 9 + Task 8 (i18n). ✓
 - §4.3 act layout (Performance|Resilience side by side, commands collapsed) → Task 10 + Task 7. ✓

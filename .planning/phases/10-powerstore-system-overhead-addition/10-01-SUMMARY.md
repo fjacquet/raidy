@@ -8,6 +8,7 @@ tags: [powerstore, dell, volumetry, overhead, tdd, capacity]
 # Dependency graph
 
 requires:
+
 - phase: 09-powerstore-data-fraction-fix
   provides: PowerStore DRE drive-count-aware geometry fix enabling correct post-parity capacity
   provides:
@@ -25,11 +26,13 @@ requires:
 tech-stack:
 added: []
 patterns:
+
 - "System overhead as configurable percent on platform options interface (mirrors ObjectScale pattern)"
 - "TDD RED-GREEN-CLEANUP with Dell Sizer reference vector as acceptance criterion"
 
 key-files:
 created:
+
 - tests/fixtures/dell-vectors.ts (DellPowerstore5200QVector interface + dellPowerstore5200QVector export)
   modified:
 - src/types/topology.ts (systemOverheadPercent field added to PowerStoreOptions, default 5 in DEFAULT_POWERSTORE_OPTIONS)
@@ -40,11 +43,13 @@ created:
 - src/store/configStore.ts (systemOverheadPercent: 5 added to hardcoded powerstoreOptions default state)
 
 key-decisions:
+
 - "PowerStore system overhead: ~5% default back-calculated from Dell Sizer 5200Q reference (35-drive RAID(16+2))"
 - "systemOverheadPercent is user-configurable on PowerStoreOptions (like snapshotReservePercent) to support different PowerStore models"
 - "Overhead applied to capacityAfterParity (post-parity, pre-snapshot), matching ObjectScale system overhead pattern"
 
 patterns-established:
+
 - "Platform system overhead pattern: add field to PlatformOptions, compute in overheadCalculator.ts, subtract in capacityForFs chain, show as distinct breakdown entry"
 - "Dell Sizer reference test: use DellPowerstoreXXXVector fixture with 2% tolerance, set snapshotReservePercent:0 to isolate overhead under test"
 
@@ -107,6 +112,7 @@ _Note: TDD tasks have two commits (test RED → feat GREEN). Task 3 included a R
 ### Auto-fixed Issues
 
 **1. [Rule 1 - Bug] Missing systemOverheadPercent in configStore default powerstoreOptions caused build failure**
+
 - **Found during:** Task 3 (CLEANUP — Full CI validation)
 - **Issue:** `src/store/configStore.ts` had a hardcoded `powerstoreOptions` object without the new `systemOverheadPercent` field, causing TypeScript error in production build: "Property 'systemOverheadPercent' is missing in type"
 - **Fix:** Added `systemOverheadPercent: 5` to the hardcoded powerstoreOptions object in configStore.ts

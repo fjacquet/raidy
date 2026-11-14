@@ -41,12 +41,14 @@
 ### Task 1: Closed enums derived from const arrays
 
 **Files:**
+
 - Modify: `src/types/config.ts`
 - Modify: `src/types/topology.ts:233-257`
 - Modify: `src/utils/schemas.ts:257` and `:376-426`
 - Test: `tests/utils/schemaEnums.spec.ts` (create)
 
 **Interfaces:**
+
 - Consumes: nothing from earlier tasks — this is the first.
 - Produces: `BLOCK_SIZES`, `NETWORK_SPEEDS`, `PCIE_GENS`, `PCIE_LANES`, `CARBON_REGIONS`, `FS_TYPES` exported from `src/types/config.ts`; `HBA_TYPES`, `RAID_CONTROLLER_TYPES`, `CONTROLLER_TYPES` exported from `src/types/topology.ts`. All are `readonly` string tuples. The matching types (`BlockSize`, `NetworkSpeed`, `PCIeGen`, `PCIeLanes`, `CarbonRegion`, `HbaType`, `RaidControllerType`, `ControllerType`) keep their existing names and remain exported.
 
@@ -290,12 +292,14 @@ Closes #62"
 ### Task 2: One persisted-key list, with a parity test
 
 **Files:**
+
 - Create: `src/store/persistedKeys.ts`
 - Modify: `src/store/configStore.ts:156-202`
 - Modify: `src/utils/schemas.ts` (add `performanceThreshold`)
 - Test: `tests/store/persistedKeys.spec.ts` (create)
 
 **Interfaces:**
+
 - Consumes: nothing from Task 1.
 - Produces: `PERSISTED_KEYS` and `EPHEMERAL_KEYS`, both `readonly string[]` tuples exported from `src/store/persistedKeys.ts`, plus the type alias `PersistedKey = (typeof PERSISTED_KEYS)[number]`.
 
@@ -530,10 +534,12 @@ getDefaultState reconciliation in the next commit."
 ### Task 3: `getDefaultState()` derives from the slices
 
 **Files:**
+
 - Modify: `src/store/configStore.ts:77-141`
 - Test: `tests/store/resetToDefaults.spec.ts` (create)
 
 **Interfaces:**
+
 - Consumes: `PERSISTED_KEYS` / `EPHEMERAL_KEYS` from Task 2 (only through the parity test, which this task turns green).
 - Produces: nothing new — `getDefaultState()` keeps its name and its "fresh objects every call" contract.
 
@@ -689,12 +695,14 @@ Closes #63"
 ### Task 4: The envelope is the only payload shape
 
 **Files:**
+
 - Modify: `src/store/urlStorage.ts:11-80`
 - Modify: `src/utils/schemas.ts:426`
 - Modify: `tests/utils/urlStorage.spec.ts`
 - Modify: `docs/ARCHITECTURE.md`
 
 **Interfaces:**
+
 - Consumes: nothing from earlier tasks.
 - Produces: nothing — `urlHashStorage` keeps its `StateStorage` shape.
 

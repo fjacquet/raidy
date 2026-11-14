@@ -8,6 +8,7 @@ tags: [vitest, edge-cases, error-handling, volumetry, test-coverage, validation]
 # Dependency graph
 
 requires:
+
 - phase: 02-calculation-validation
   provides: Volumetry engine with basic test coverage (58.51%)
   provides:
@@ -23,6 +24,7 @@ requires:
 tech-stack:
 added: []
 patterns:
+
 - Property-based testing with fast-check for extreme value validation
 - Graceful degradation pattern for invalid inputs (return zero values instead of crashing)
 - Input validation pattern at function entry points
@@ -30,16 +32,19 @@ patterns:
 key-files:
 created: []
 modified:
+
 - tests/engines/volumetry.spec.ts
 - src/engines/volumetry/index.ts
 
 key-decisions:
+
 - "Handle invalid inputs gracefully by returning zero-value results instead of throwing errors"
 - "Add input validation guards at calculateVolumetry entry point before any processing"
 - "Use property-based testing (fast-check) for extreme value ranges (100-500 drives, 1TB-20TB)"
 - "Clamp efficiency to 0 when NaN/Infinity to prevent downstream calculation errors"
 
 patterns-established:
+
 - "Input validation pattern: Check for null/undefined/zero early, return safe defaults"
 - "Division by zero protection: Guard all division operations with denominator checks"
 - "Options null safety: Check all optional parameters before accessing nested properties"
@@ -122,6 +127,7 @@ Each task was committed atomically:
 ### Auto-fixed Issues
 
 **1. [Rule 1 - Bug] Fixed zero drives causing NaN values**
+
 - **Found during:** Task 1 (Edge case tests for invalid drive counts)
 - **Issue:** When driveCount = 0, calculations produced NaN because of division by zero in data fraction calculation (e.g., RAID5: (0-1)/0 = NaN)
 - **Fix:** Added early return when driveCount === 0 with safe zero-value result
@@ -130,6 +136,7 @@ Each task was committed atomically:
 - **Committed in:** d85308e (Task 1 commit)
 
 **2. [Rule 2 - Missing Critical] Added validation for null/undefined topology**
+
 - **Found during:** Task 3 (Error handling tests)
 - **Issue:** Code crashed with "Cannot read properties of null (reading 'type')" when topology was null/undefined
 - **Fix:** Added early return when !topology with safe zero-value result
@@ -138,6 +145,7 @@ Each task was committed atomically:
 - **Committed in:** 54a30d7 (Task 3 commit)
 
 **3. [Rule 2 - Missing Critical] Added validation for null/undefined drive**
+
 - **Found during:** Task 3 (Error handling tests)
 - **Issue:** Missing drive or drive.capacity_raw caused NaN propagation
 - **Fix:** Added early return when !drive or drive.capacity_raw is undefined/null
@@ -146,6 +154,7 @@ Each task was committed atomically:
 - **Committed in:** 54a30d7 (Task 3 commit)
 
 **4. [Rule 2 - Missing Critical] Added division by zero protection for S2D fault domains**
+
 - **Found during:** Task 3 (Invalid option combinations tests)
 - **Issue:** S2D with 0 fault domains caused division by zero in parity calculation: (faultDomains-1)/faultDomains = -1/0
 - **Fix:** Added guard: if (faultDomains === 0) return 0 before division
@@ -154,6 +163,7 @@ Each task was committed atomically:
 - **Committed in:** 54a30d7 (Task 3 commit)
 
 **5. [Rule 2 - Missing Critical] Added NaN/Infinity protection in efficiency calculation**
+
 - **Found during:** Task 3 (Invalid option combinations tests)
 - **Issue:** Edge cases produced NaN or Infinity efficiency values, breaking downstream logic
 - **Fix:** Changed efficiency calculation to explicitly check for division by zero and clamp NaN/Infinity to 0
@@ -162,6 +172,7 @@ Each task was committed atomically:
 - **Committed in:** 54a30d7 (Task 3 commit)
 
 **6. [Rule 2 - Missing Critical] Added null safety for options access (ZFS, vSAN, Ceph)**
+
 - **Found during:** Task 3 (Missing required fields tests)
 - **Issue:** Code accessed nested properties (vsanOptions.tiering, zfsOptions.ashift, cephOptions.safeCapacityThreshold) without null checks
 - **Fix:** Added null guards: if (zfsOptions && ...), if (vsanOptions && ...), if (cephOptions && ...)
@@ -188,6 +199,7 @@ None - tests revealed bugs which were fixed according to deviation rules.
 **Lines covered:** +68 lines
 
 **Remaining uncovered areas (estimated ~35% of code):**
+
 - Vendor-specific topology edge cases (PowerFlex FG metadata, ObjectScale geo-overhead with 5-8 sites)
 - Less common topology combinations (RAID 5E/5EE, PowerVault ADAPT, vSAN ESA RAID-6 6+2)
 - Tiering configurations (S2D storage tiers, Nutanix hybrid, Ceph WAL/DB offload)
@@ -197,6 +209,7 @@ None - tests revealed bugs which were fixed according to deviation rules.
 **Reason:** Remaining uncovered paths require vendor-specific hardware/topology combinations not in scope for general edge case testing. These would require dedicated vendor integration tests (e.g., ObjectScale 8-site geo-replication, PowerFlex Fine Granularity with specific SDS configurations).
 
 **Actual accomplishment:** Added comprehensive coverage for:
+
 - ✅ Invalid input handling (null, undefined, zero, negative)
 - ✅ Boundary conditions (extreme drive counts, PB-scale capacities)
 - ✅ Division by zero protection
@@ -206,6 +219,7 @@ None - tests revealed bugs which were fixed according to deviation rules.
 ## Next Phase Readiness
 
 **Ready for:**
+
 - Performance engine development (Module B) - volumetry calculations now robust
 - Resilience engine development (Module C) - can rely on volumetry for capacity inputs
 - UI integration - error handling ensures graceful degradation for invalid user inputs

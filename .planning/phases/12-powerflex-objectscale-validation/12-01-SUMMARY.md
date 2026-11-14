@@ -8,6 +8,7 @@ tags: [dell, powerflex, objectscale, erasure-coding, mirror, volumetry, validati
 # Dependency graph
 
 requires:
+
 - phase: 08-powervault-adapt-formula-fix
   provides: Dell strategy pattern and test vector fixtures
   provides:
@@ -21,18 +22,22 @@ requires:
 tech-stack:
 added: []
 patterns:
+
 - "Dell reference vector pattern extended to PowerFlex and ObjectScale"
 
 key-files:
 created: []
 modified:
+
 - tests/fixtures/dell-vectors.ts
 - tests/engines/volumetry.spec.ts
 
 key-decisions:
+
 - "No formula fix needed: all PowerFlex and ObjectScale formulas use correct k/(k+m) EC math"
 
 patterns-established:
+
 - "DellPowerflexVector/DellObjectscaleVector interfaces follow same pattern as DellPowerstoreVector"
 - "describe.each(vectors) pattern reused for PowerFlex and ObjectScale data fraction tests"
 

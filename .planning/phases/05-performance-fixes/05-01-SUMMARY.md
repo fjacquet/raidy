@@ -6,6 +6,7 @@ subsystem: hooks
 tags: [react, performance, memoization, hooks, optimization]
 requires: [04-code-quality]
 provides:
+
 - Independent calculation hooks with focused dependencies
 - Optimized re-render behavior (only affected calculations re-run)
 - 60% reduction in orchestrator complexity
@@ -64,6 +65,7 @@ Created three new hooks to replace monolithic useMemo:
 ### Refactored Orchestrator
 
 **useCalculations.ts** reduced from 387 to 153 lines (60% reduction):
+
 - Removed monolithic useMemo block (lines 72-348)
 - Calls three independent hooks unconditionally at top level (React Rules of Hooks)
 - Preserved validation logic and error handling
@@ -72,6 +74,7 @@ Created three new hooks to replace monolithic useMemo:
 ### Performance Improvements
 
 **Before:**
+
 ```typescript
 // 30+ dependencies - changing ANY triggers ALL calculations
 useMemo(() => {
@@ -82,6 +85,7 @@ useMemo(() => {
 ```
 
 **After:**
+
 ```typescript
 // Each hook re-runs only when its dependencies change
 const volumetry = useVolumetryCalc() // 19 deps
@@ -90,11 +94,13 @@ const sustainability = useSustainabilityCalc(volumetry.usableCapacity) // 11 dep
 ```
 
 **Dependency Reduction:**
+
 - Volumetry: 30+ → 19 (37% fewer dependencies)
 - Performance: 30+ → 14 (53% fewer dependencies)
 - Sustainability: 30+ → 11 (63% fewer dependencies)
 
 **Real-World Impact:**
+
 | Config Change    | Before (Re-runs) | After (Re-runs)     | Improvement            |
 | ---------------- | ---------------- | ------------------- | ---------------------- |
 | compressionRatio | All 3 engines    | Volumetry only      | 66% fewer calculations |
@@ -107,6 +113,7 @@ const sustainability = useSustainabilityCalc(volumetry.usableCapacity) // 11 dep
 ### React Rules of Hooks Compliance
 
 **Challenge:** Original approach had early returns before hook calls:
+
 ```typescript
 // WRONG - violates Rules of Hooks
 if (!drive) {
@@ -116,6 +123,7 @@ const volumetry = useVolumetryCalc()  // Called conditionally!
 ```
 
 **Solution:** Call hooks unconditionally, then check errors:
+
 ```typescript
 // CORRECT - hooks called unconditionally
 const volumetry = useVolumetryCalc()
@@ -131,6 +139,7 @@ if (!drive) {
 ### Error Handling Strategy
 
 Each calculation hook handles errors internally:
+
 - Try/catch around engine call
 - Console error logging with context (driveId, topology, timestamp)
 - Fallback to zero-state on error
@@ -165,6 +174,7 @@ Each calculation hook handles errors internally:
 ### Manual Verification
 
 Tested configuration changes in dev environment:
+
 1. ✅ Changing compressionRatio updates only volumetry numbers
 2. ✅ Changing readPercent updates only performance numbers
 3. ✅ Changing pue updates only sustainability numbers
@@ -174,6 +184,7 @@ Tested configuration changes in dev environment:
 ### Performance Verification
 
 Added temporary console.time/timeEnd around each hook:
+
 - compressionRatio change: volumetry ~15ms, performance 0ms ✅, sustainability 0ms ✅
 - readPercent change: volumetry 0ms ✅, performance ~8ms, sustainability 0ms ✅
 - pue change: volumetry 0ms ✅, performance 0ms ✅, sustainability ~3ms
@@ -193,6 +204,7 @@ Added temporary console.time/timeEnd around each hook:
 **Decision:** Orchestrator calls hooks directly without wrapping in useMemo.
 
 **Rationale:** Each calculation hook already has its own useMemo with focused dependencies. Adding another useMemo wrapper would be:
+
 - Redundant (double memoization)
 - Risk of stale results (outer memo might not re-run when inner dependencies change)
 - Defeats the purpose of splitting into independent hooks
@@ -204,12 +216,14 @@ Added temporary console.time/timeEnd around each hook:
 **Decision:** Sustainability hook accepts usableCapacity as a function parameter instead of reading from store.
 
 **Rationale:**
+
 - Sustainability calculations depend on volumetry output (usableCapacity)
 - But should NOT re-run when volumetry config changes (e.g., topology options)
 - Parameter makes dependency explicit in useMemo array
 - Allows sustainability to re-run only when capacity value changes
 
 **Implementation:**
+
 ```typescript
 const sustainability = useSustainabilityCalc(volumetry.usableCapacity)
 ```
@@ -235,6 +249,7 @@ None.
 ### Follow-up Work
 
 Potential future optimizations (not in current plan):
+
 - Extract drive selection logic into useDrive() hook
 - Extract validation into useValidation() hook
 - Consider useMemo for error state construction (currently reconstructed on every render)

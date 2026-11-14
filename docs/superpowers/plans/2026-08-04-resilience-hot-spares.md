@@ -35,10 +35,12 @@
 ### Task 1: Subtract hot spares on the naive path
 
 **Files:**
+
 - Modify: `src/hooks/useResilience.ts` (around `:424-444`, inside `runSimulation`)
 - Test: `tests/hooks/useResilienceHotSpares.spec.ts` (create)
 
 **Interfaces:**
+
 - Consumes: `usesDistributedSpares` from `@/types` (already exported; see `src/types/topology.ts:340`), `effectiveServerCount` from `@/engines/capabilities` (already imported in this file), `installMockWorker` from `tests/fixtures/mock-worker`.
 - Produces: a local `const totalHotSpares: number` inside `runSimulation`, defined before the `scope` resolution so Task 2 can hand it to `tieredPlatformScope`.
 
@@ -188,11 +190,13 @@ rtk git commit -m "fix(resilience): exclude hot spares from the simulated popula
 ### Task 2: Subtract hot spares in `tieredPlatformScope`, and document the change
 
 **Files:**
+
 - Modify: `src/hooks/useResilience.ts` — `tieredPlatformScope` (`:173-193`) and its doc comment (`:169-171`)
 - Modify: `tests/hooks/useResilienceHotSpares.spec.ts` (append a second `describe`)
 - Modify: `CHANGELOG.md`, `docs/ARCHITECTURE.md`, `docs/BACKLOG.md`
 
 **Interfaces:**
+
 - Consumes: `SimulationScopeContext` already carries `hotSpares` and `topology` — no signature change. `resolveBeeGfsSimulationScope` is exported from the same module and is used by the BeeGFS regression test below.
 - Produces: nothing new for later tasks; this is the last code task.
 

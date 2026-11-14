@@ -8,6 +8,7 @@ tags: [vitest, monte-carlo, statistical-testing, confidence-intervals, flakiness
 # Dependency graph
 
 requires:
+
 - phase: 02-04
   provides: Monte Carlo resilience simulation with statistical validation
   provides:
@@ -21,20 +22,24 @@ requires:
 tech-stack:
 added: []
 patterns:
+
 - "Statistical tolerance guidelines for Monte Carlo tests"
 - "Documented best practices for testing non-deterministic code"
 
 key-files:
 created: []
 modified:
+
 - tests/workers/resilience.spec.ts
 
 key-decisions:
+
 - "Increased CI tolerance from 0.4 to 0.5 for statistical convergence test"
 - "Documented stochastic testing best practices in test file"
 - "Used 0.5 tolerance instead of theoretical 0.316 to account for 58% variance buffer"
 
 patterns-established:
+
 - "Statistical tests should use generous tolerance (2-3σ) to prevent flakiness"
 - "Document tolerance reasoning inline to educate maintainers"
 - "Verify stability with 10+ consecutive runs before committing fixes"
@@ -80,12 +85,14 @@ Each task was committed atomically:
 ## Decisions Made
 
 **1. Increased tolerance from 0.4 to 0.5 for confidence interval narrowing test**
+
 - **Rationale:** Statistical theory predicts 0.316 ratio (1/sqrt(10)), but Monte Carlo variance occasionally exceeds 0.4 threshold
 - **Impact:** Provides 58% variance buffer while still validating core principle (more simulations → narrower CI)
 - **Alternative considered:** Increasing simulation counts (rejected due to test execution time cost)
 - **Verification:** 10 consecutive test runs all passed without failures
 
 **2. Documented stochastic testing best practices in test file**
+
 - **Rationale:** Educate future maintainers on preventing flaky tests in Monte Carlo simulations
 - **Coverage:** Tolerance guidelines, flakiness prevention, statistical validation principles
 - **Location:** Comprehensive comment block in "Statistical Accuracy" describe block
@@ -102,6 +109,7 @@ None - fix worked on first attempt, verified stable with 10 consecutive test run
 ## Gap Closure
 
 This plan addressed **Gap 2** from `02-VERIFICATION.md`:
+
 - **Gap:** Flaky test in resilience.spec.ts:1297 causing intermittent CI failures
 - **Root cause:** Overly strict tolerance (0.4) for stochastic confidence interval comparison
 - **Fix:** Increased tolerance to 0.5, documented reasoning

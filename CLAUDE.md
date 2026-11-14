@@ -114,6 +114,7 @@ URL persistence via `src/store/urlStorage.ts` — state serialized to JSON, comp
 ### UI Layout
 
 Split-screen "Cockpit" (`src/components/layout/Cockpit.tsx`):
+
 - **Left**: `InputSidebar` with accordion panels (Topology, Hardware, Workload, Advanced)
 - **Right**: `OutputDashboard` with Sankey diagram, speedometer, donut chart, breakdown list
 

@@ -23,7 +23,6 @@ npm test -- tests/engines/volumetry.spec.ts   # single file
 > way — a coverage job added alongside the existing test job would have to run in a separate
 > job or a separate `reportsDirectory`.
 
-
 ## Type-checking the tests
 
 The test suite is type-checked, not just executed: `npm run typecheck` runs `tsc --noEmit -p tsconfig.test.json` over `tests/**`. Test files must satisfy the same strict settings as `src/` (including `noUncheckedIndexedAccess`). Use the real domain types and `DEFAULT_*_OPTIONS` (from `@/types/topology`) when constructing fixtures; do not paper over type errors with `as any` / `@ts-ignore` (reserved only for the deliberate invalid-input tests).
@@ -47,6 +46,7 @@ phase-18 vector records its own source URL inline and in
 `tests/engines/volumetry/powerscale/powersizer.spec.ts` walks all 122,828 rows
 of Dell's PowerSizer export (`tests/fixtures/powerscale-powersizer.csv.gz`,
 528 KB gzipped). Each row is treated as a single-tier cluster with VHS disabled
+
 - the configuration the source workbook sizes.
 
 Precision differs per quantity, deliberately:

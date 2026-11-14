@@ -43,6 +43,7 @@ So the correct sequencing is: **node-aware placement is a prerequisite, not a de
 the blast radius without it is worse than the status quo.
 
 **The four questions asked per platform:**
+
 1. What does a fast-tier device failure actually take down (blast radius)?
 2. Is it recoverable in place, or must the dependent capacity devices be rebuilt?
 3. Is it a _data-loss_ event at the cluster level, or a degradation-plus-resync event?
@@ -457,6 +458,7 @@ slots with independent tolerance, and a specific slot dying is what matters", wh
 to which fast device), because that structure is draw-independent, exactly like `pairGroupIndex`.
 
 **Needs adding:**
+
 - A `fastTier` block on `SimulationInput` (`src/types/worker.ts`): device count, AFR, and the
   binding ratio. Today `SimulationInput` carries a single AFR and a single capacity.
 - A **second AFR** in the per-day failure loop. The loop currently draws one
@@ -619,6 +621,7 @@ example of 2 groups on the product blog. Any default this tool picks is a judgem
 ## Sources
 
 **VMware / Broadcom vSAN OSA:**
+
 - [Claim Storage Devices for vSAN Original Storage Architecture Cluster (TechDocs 8.0)](https://techdocs.broadcom.com/us/en/vmware-cis/vsan/vsan/8-0/vsan-administration/device-management-in-a-vsan-cluster/managing-storage-devices-in-vsan-cluster/claim-storage-devices-for-vsan-original-storage-architecture-cluster.html) — "You can add only one cache device per disk group."
 - [vSAN Concepts (TechDocs 8.0)](https://techdocs.broadcom.com/us/en/vmware-cis/vsan/vsan/8-0/planning-and-deployment/what-is-vsan/vsan-concepts.html) — disk group composition; ESA flat storage pool
 - [Designing and Sizing vSAN Hosts (TechDocs 8.0)](https://techdocs.broadcom.com/us/en/vmware-cis/vsan/vsan/8-0/planning-and-deployment/designing-and-sizing-a-virtual-san-cluster/designing-and-sizing-virtual-san-hosts.html) — 5 disk groups / 7 capacity devices; multiple-disk-group trade-offs
@@ -639,6 +642,7 @@ example of 2 groups on the product blog. Any default this tool picks is a judgem
 - [One versus multiple vSAN disk groups per host — Yellow Bricks](https://www.yellow-bricks.com/2014/05/22/one-versus-multiple-vsan-diskgroups-per-host/) — _weak source_, personal blog; disk group as failure domain
 
 **Ceph:**
+
 - [BlueStore Config Reference (Reef)](https://docs.ceph.com/en/reef/rados/configuration/bluestore-config-ref/) — provisioning strategies; **negative finding: no failure-domain caveat**
 - [BlueStore Config Reference, raw source (latest)](https://docs.ceph.com/en/latest/_sources/rados/configuration/bluestore-config-ref.rst.txt) — verified the same absence in source form
 - [Hardware Recommendations (Reef)](https://docs.ceph.com/en/reef/start/hardware-recommendations/) — "4-5x HDD OSDs per DB/WAL SATA SSD", "≤10 HDD OSDs per DB/WAL NVMe SSD"; failure-domain definition
@@ -651,15 +655,18 @@ example of 2 groups on the product blog. Any default this tool picks is a judgem
 - [ceph-users: "Proper procedure to replace DB/WAL SSD"](https://ceph-users.ceph.narkive.com/uhXS1ygJ/proper-procedure-to-replace-db-wal-ssd) — _weak source_; **returned HTTP 503, only a search-engine summary was verifiable**
 
 **Microsoft S2D:**
+
 - [Understanding the storage pool cache in Azure Local and Windows Server clusters (Microsoft Learn)](https://learn.microsoft.com/en-us/windows-server/storage/storage-spaces/cache) — per-drive cache binding, 1:1 to 1:12+; cache-drive failure behaviour; server-level resiliency
 
 **Nutanix:**
+
 - [The Nutanix Bible — Book of AOS Storage](https://www.nutanixbible.com/4c-book-of-aos-storage.html) — Extent Store spans tiers; OpLog on SSD in hybrid; Curator re-replication on disk failure
 - [The Nutanix Bible — Book of Basics: Drive Breakdown](https://www.nutanixbible.com/2i-book-of-basics-drive-breakdown.html) — Nutanix Home mirrored across two SSDs; Cassandra sharded/mirrored; pre-5.0 CVM restart behaviour
 - [next.nutanix.com — CVM Crashed](https://next.nutanix.com/how-it-works-22/cvm-crashed-37283) — _weak source_, community corroboration
 - [next.nutanix.com — CVM fails to boot due to disk errors](https://next.nutanix.com/ahv-virtualization-27/cvm-fails-to-boot-due-to-disk-errors-38548) — _weak source_, community corroboration
 
 **BeeGFS:**
+
 - [Architecture Overview](https://doc.beegfs.io/latest/architecture/overview.html) — metadata/storage separation
 - [Mirroring](https://doc.beegfs.io/latest/advanced_topics/mirroring.html) — metadata and storage mirroring enabled independently
 - [Metadata Mirroring](https://doc.beegfs.io/latest/advanced_topics/metadata_mirroring.html) — buddy groups, `beegfs mirror init`, full-copy resync
@@ -668,6 +675,7 @@ example of 2 groups on the product blog. Any default this tool picks is a judgem
 - [Metadata Node Tuning](https://doc.beegfs.io/latest/advanced_topics/metadata_tuning.html) — RAID-1/RAID-10 and SSD/NVMe recommendations
 
 **Repository context read for this design:**
+
 - `src/workers/resilienceWorker.ts` at `origin/fix/worker-group-modelling` (PR #107) —
   `distributeAcrossGroups`, `buildGroupPairState`, `computeTopologyModel`, `TopologyModel`,
   `isGroupTopology`, `getParityDrives`

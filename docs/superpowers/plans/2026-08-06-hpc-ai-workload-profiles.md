@@ -29,6 +29,7 @@
 The six HPC profiles need `512K`, which the `BlockSize` enum does not currently offer. Both consuming tables are `Record<BlockSize, …>`, so the compiler names every site that must change.
 
 **Files:**
+
 - Modify: `src/types/config.ts:26`
 - Modify: `src/engines/performance/index.ts:73-81`
 - Modify: `src/components/inputs/WorkloadPanel.tsx:12-20` and `:118-126`
@@ -36,6 +37,7 @@ The six HPC profiles need `512K`, which the `BlockSize` enum does not currently 
 - Test: `tests/engines/performance/blockSize512k.spec.ts` (create)
 
 **Interfaces:**
+
 - Consumes: nothing from earlier tasks.
 - Produces: `'512K'` as a member of `BLOCK_SIZES` and therefore of the `BlockSize` union. Task 2 and Task 4 both use it.
 
@@ -228,10 +230,12 @@ git commit -m "feat(workload): add 512K block size"
 Turn the presets into a data table, classed per platform. Nothing consumes it yet — Task 3 wires it in. Knip would flag an unused export, so this task ships the table together with the spec that imports it, and Step 8 verifies the gate is satisfied.
 
 **Files:**
+
 - Create: `src/data/workloadProfiles.ts`
 - Test: `tests/data/workloadProfiles.spec.ts` (create)
 
 **Interfaces:**
+
 - Consumes: `BlockSize` and `BLOCK_SIZES` from `@/types/config` (now including `'512K'` from Task 1); `TopologyType` from `@/types/topology`.
 - Produces, all consumed by Task 3:
   - `type ProfileClass = 'hpc' | 'general'`
@@ -612,10 +616,12 @@ git commit -m "feat(workload): add HPC/AI profile catalogue"
 `WorkloadPanel` stops hardcoding four buttons and renders whatever the catalogue yields for the current topology, with an HPC heading and guidance note on BeeGFS.
 
 **Files:**
+
 - Modify: `src/components/inputs/WorkloadPanel.tsx:41-54` (store selection) and `:149-198` (the preset block)
 - Test: `tests/components/workloadPanelProfiles.spec.tsx` (create)
 
 **Interfaces:**
+
 - Consumes: `profilesForTopology`, `isHpcTopology`, `WorkloadProfile` from `@/data/workloadProfiles` (Task 2).
 - Produces: nothing consumed by later tasks.
 
@@ -840,6 +846,7 @@ The default workload (70 % read, 50 % random, 64K) is shaped for general-purpose
 **This rewrites existing shared URLs.** `partialize` runs `omitDefaults`, so a hash created before this change carries nothing for a field left at its default and will render at the new value after it. The repository has done this once — `hotSpares` 1→0 in v2.0.0 — and the precedent is a major bump. Hence 2.1.0 → 3.0.0 and a CHANGELOG entry that names the URL effect, not just the new numbers.
 
 **Files:**
+
 - Modify: `src/store/slices/workloadSlice.ts:20-23`
 - Modify: `package.json:4`
 - Modify: `CHANGELOG.md`
@@ -847,6 +854,7 @@ The default workload (70 % read, 50 % random, 64K) is shaped for general-purpose
 - Test: `tests/store/workloadDefaults.spec.ts` (create)
 
 **Interfaces:**
+
 - Consumes: `'512K'` from `BLOCK_SIZES` (Task 1).
 - Produces: nothing consumed by later tasks.
 

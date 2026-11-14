@@ -8,6 +8,7 @@ tags: [biome, typescript, type-safety, linting, noExplicitAny]
 # Dependency graph
 
 requires:
+
 - phase: 04-05
   provides: Strategy pattern for performance calculations
   provides:
@@ -21,12 +22,14 @@ requires:
 tech-stack:
 added: []
 patterns:
+
 - Strategy interfaces use unknown for optional topology-specific parameters
 - Test type violations use double-cast pattern (as unknown as T)
 
 key-files:
 created: []
 modified:
+
 - src/engines/performance/strategies/PerformanceStrategy.ts
 - src/engines/volumetry/strategies/VolumetryStrategy.ts
 - src/engines/performance/strategies/_.ts (8 implementations)
@@ -35,11 +38,13 @@ modified:
     - src/components/inputs/**/_.tsx (9 UI components)
 
 key-decisions:
+
 - "Use unknown instead of specific option union types for strategy interface parameters (maintains backward compatibility)"
 - "Apply double-cast pattern (as unknown as T) in tests instead of as any (follows 04-01 decision)"
 - "Auto-fix all Biome formatting issues to achieve zero lint errors (Rule 3 - blocking)"
 
 patterns-established:
+
 - "Strategy interface optional parameters typed as unknown for flexibility"
 - "Unused parameters in implementations prefixed with underscore"
 - "Test type violations use explicit double-cast pattern"

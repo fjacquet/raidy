@@ -2367,6 +2367,7 @@ Add to `docs/TESTING.md`:
 `tests/engines/volumetry/powerscale/powersizer.spec.ts` walks all 122,828 rows
 of Dell's PowerSizer export (`tests/fixtures/powerscale-powersizer.csv.gz`,
 564 KB gzipped). Each row is treated as a single-tier cluster with VHS disabled
+
 - the configuration the source workbook sizes.
 
 Precision differs per quantity, deliberately:

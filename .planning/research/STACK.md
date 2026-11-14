@@ -67,6 +67,7 @@ For N=24 with 8+2: `(22/24) * 0.8 = 0.733`
 For N=20+ with 16+2: `(18/20) * 0.8889 = 0.800`
 
 **Sources:**
+
 - Dell community formula: `((Ndisks - 2) * DiskSize) - 20%` — aligns with this reconstruction (MEDIUM)
 - ME5 Admin Guide: stripe is 8+2 or 16+2 (HIGH — official documentation)
 - ME4 community forum: https://www.dell.com/community/en/conversations/powervault/me4-adapt-usable-space-formula/ (MEDIUM)
@@ -83,6 +84,7 @@ For N=20+ with 16+2: `(18/20) * 0.8889 = 0.800`
 **Correct formula (MEDIUM confidence — from Dell KB 000188491 and DRE documentation):**
 
 PowerStore uses the Dynamic Resiliency Engine (DRE). Geometry is auto-selected:
+
 - RAID-5 (DRE SP): 4+1 if < 10 drives at setup, 8+1 if 10+ drives at setup
 - RAID-6 (DRE DP): 4+2, 8+2, or 16+2 depending on drive count
 
@@ -109,6 +111,7 @@ SYSTEM_OVERHEAD = 0.078  // approx 7.8% — NEEDS VALIDATION against PowerSizer
 ```
 
 **Sources:**
+
 - Dell KB 000188491: DRE geometry 4+1, 8+1, 4+2, 8+2, 16+2 (HIGH — official)
 - Dell KB 000188491: "Each RRS contains spare capacity (a single drive worth of space)" (HIGH)
 - Dell KB 000188491: "Appliance Total Physical Capacity = DRE capacity - Internal reserved capacity" (HIGH)
@@ -141,6 +144,7 @@ OneFS uses file-level erasure coding, not drive-level RAID groups. The protectio
 ```
 
 For practical purposes with the drive-count-based simulator:
+
 - N+1: `(driveCount - 1) / driveCount` — existing formula is adequate approximation
 - N+2: `(driveCount - 2) / driveCount` — existing formula is adequate approximation
 - Mirror 2x: 0.5 — correct
@@ -149,6 +153,7 @@ For practical purposes with the drive-count-based simulator:
 The existing formulas are reasonable approximations. The concern is whether they match Dell PowerSizer output within 1%. Given OneFS is file-level and node-count dependent, the current approach may be as accurate as possible without node topology information.
 
 **Sources:**
+
 - Dell Info Hub: "overhead = M/(N+M) where M is the protection number" (HIGH)
 - Dell Info Hub: 5-node cluster at +2d:1n → 8+2 layout → 20% overhead (HIGH)
 - Dell community calculator (github.com/adamgweeks): empirical results match per-file calculation (MEDIUM)
@@ -165,6 +170,7 @@ The existing formulas are reasonable approximations. The concern is whether they
 **Additional overhead (MEDIUM confidence):**
 
 PowerFlex has two granularity modes:
+
 - Medium Granularity (MG): lower metadata overhead, suitable for block workloads
 - Fine Granularity (FG): higher metadata overhead (required for snapshots/compression), uses NVDIMM
 
@@ -177,6 +183,7 @@ The existing code comment "PowerFlex FG metadata: 12-15% handled in main engine"
 ```
 
 **Sources:**
+
 - Dell PowerFlex 4.5.x Install Guide: FG requires NVDIMMs and inline compression (HIGH)
 - Dell PowerFlex 3.5.x Getting Started: FG vs MG data layout difference (HIGH)
 - Specific overhead percentages (12-15%): LOW confidence — not found in current public docs, mentioned in existing code comments as a prior decision
@@ -210,6 +217,7 @@ For geo-replication, ObjectScale replicates full copies between sites. Each site
 The current code only captures single-site efficiency. Geo-replication multiplier is not implemented. If ObjectScale geo-replication is a selectable option, this overhead needs to be applied.
 
 **Sources:**
+
 - Dell ObjectScale Admin Guide 1.0.0: "12+4 storage protection overhead is 1.33x" (HIGH — official docs)
 - Dell ObjectScale Admin Guide: "two-site geo = 2.67x overhead" (HIGH)
 - ObjectScale Admin Guide URL: https://www.dell.com/support/manuals/en-us/objectscale/objectscale_p_adminguide_1_0_0/
@@ -252,15 +260,18 @@ No new packages required. All fixes are arithmetic formula corrections in existi
 ## Stack Patterns by Variant
 
 **If verifying ADAPT for fewer than 12 drives:**
+
 - ADAPT requires minimum 12 drives per Dell documentation
 - Formula is undefined below 12; validate drive count constraint in input validation
 
 **If verifying PowerStore stripe geometry selection:**
+
 - Stripe width is locked at cluster creation time (not runtime)
 - Raidy should treat stripe width as a user-selectable option in PowerStoreOptions, not auto-detected
 - Currently auto-determined by driveCount which is a reasonable approximation
 
 **If PowerScale node count is unknown:**
+
 - Current drive-count approximation is the best available without node topology
 - Flag as "approximate" in UI tooltip rather than claiming exact accuracy
 
@@ -297,6 +308,7 @@ All changes are within existing TypeScript files. No version compatibility conce
 Dell's support portal (dell.com/support/manuals/, dell.com/support/kbdoc/) returns HTTP 403 to automated fetchers even for public documents. Dell Info Hub (infohub.delltechnologies.com) returns reCAPTCHA pages. Dell PowerSizer requires authenticated partner/customer login.
 
 **Recommended approach for test vector generation:**
+
 1. Access dell.com/support/manuals/ in a browser while logged into Dell account
 2. Use PowerSizer at powersizer.dell.com for authoritative capacity outputs
 3. Record inputs and outputs manually to populate test fixture vectors

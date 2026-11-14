@@ -8,6 +8,7 @@ tags: [monte-carlo, resilience, statistics, URE, correlated-failures, vitest]
 # Dependency graph
 
 requires:
+
 - phase: 01-test-infrastructure
   provides: Vitest configuration and test infrastructure
   provides:
@@ -22,6 +23,7 @@ requires:
 tech-stack:
 added: []
 patterns:
+
 - "Statistical validation with confidence intervals for Monte Carlo simulations"
 - "Industry formula validation for URE probability calculations"
 - "Binomial distribution testing for simulation accuracy"
@@ -29,14 +31,17 @@ patterns:
 key-files:
 created: []
 modified:
+
 - tests/workers/resilience.spec.ts
 
 key-decisions:
+
 - "Use moderate AFR (2-4%) to ensure rebuilds happen in URE probability tests"
 - "Validate relative comparisons rather than absolute theoretical values for stochastic simulations"
 - "Apply 95% confidence intervals (p ± 1.96σ) for statistical validation"
 
 patterns-established:
+
 - "Monte Carlo test validation: verify statistical properties, not exact values"
 - "URE probability formula: P = 1-(1-1/10^URE)^bits_read from industry sources"
 - "Confidence interval validation for binomial distributions in simulations"
@@ -102,12 +107,15 @@ Each task was committed atomically:
 ## Decisions Made
 
 **1. Use moderate AFR (2-4%) in URE tests to ensure rebuilds occur**
+
 - **Rationale**: With very low AFR (0.1%), most simulations never experience drive failures, so URE probability is measured as 0. Moderate AFR ensures enough rebuilds happen to measure URE effects while still isolating URE from other failure modes.
 
 **2. Validate relative comparisons rather than exact theoretical values**
+
 - **Rationale**: Monte Carlo simulations include multiple interacting failure modes (URE, correlated failures, rebuild stress). Theoretical URE formulas assume isolated rebuild scenarios. Tests validate that simulations show expected trends (enterprise better than consumer, larger arrays riskier) rather than exact theoretical probabilities.
 
 **3. Apply 95% confidence intervals for statistical validation**
+
 - **Rationale**: Industry standard for statistical significance. Formula p ± 1.96σ where σ = sqrt(p(1-p)/n) provides rigorous bounds for acceptable simulation variance.
 
 ## Deviations from Plan
@@ -119,11 +127,13 @@ All tests implemented as specified with appropriate statistical rigor. No bugs d
 ## Issues Encountered
 
 **1. Initial URE test expectations too narrow**
+
 - **Problem**: First test runs showed URE probabilities higher than initial theoretical estimates
 - **Root cause**: Theoretical formulas assume isolated rebuild scenarios, but simulations include correlated failures and rebuild stress that compound URE risk
 - **Resolution**: Adjusted test expectations to validate trends and statistical properties rather than exact theoretical values. This approach is more appropriate for complex Monte Carlo simulations.
 
 **2. Low URE rates (10^17) made failure events rare**
+
 - **Problem**: With enterprise SSD URE rates, dual failure probabilities were 0 in many tests, causing assertions to fail
 - **Root cause**: Very low URE rates mean most simulations complete successfully with no data loss
 - **Resolution**: Adjusted tests to use survival rate comparisons or increased AFR to consumer HDD URE rates (10^14) where appropriate. Focus on relative comparisons rather than absolute thresholds.
@@ -135,12 +145,14 @@ None - no external service configuration required.
 ## Next Phase Readiness
 
 **Ready for next validation phases:**
+
 - Monte Carlo resilience simulation thoroughly validated
 - Statistical properties verified with industry-standard confidence intervals
 - URE probability calculations validated against multiple industry sources
 - Correlated failure modeling tested across RAID levels
 
 **Resilience worker test coverage:**
+
 - Statements: 96.42%
 - Branches: 95%
 - Functions: 100%

@@ -8,6 +8,7 @@ tags: [vitest, volumetry, tiering, s2d, nutanix, ceph, zfs, objectscale, powerst
 # Dependency graph
 
 requires:
+
 - phase: 02-01
   provides: Table-driven testing framework and property-based testing with fast-check
 - phase: 02-02
@@ -27,6 +28,7 @@ requires:
 tech-stack:
 added: []
 patterns:
+
 - "Tiering configuration test pattern (cache tier + capacity tier validation)"
 - "ZFS ashift sector size mismatch testing (5% penalty per level)"
 - "Vendor snapshot reserve breakdown validation"
@@ -35,16 +37,19 @@ patterns:
 key-files:
 created: []
 modified:
+
 - tests/engines/volumetry.spec.ts
 - src/engines/volumetry/index.ts
 
 key-decisions:
+
 - "Use real drive IDs from drives.json for tiering tests (not fake IDs like 'ssd-nvme-1tb')"
 - "Allow driveCount=0 and drive=null when tiering is configured (tiering provides drives)"
 - "Fix ObjectScale geo-overhead efficiency calculations to account for filesystem overhead"
 - "Test snapshot reserves with varying percentages (15-30%) to validate breakdown entries"
 
 patterns-established:
+
 - "Tiering tests validate both cache and capacity tier calculations separately"
 - "ZFS ashift penalty tests use drives with different sector sizes (512B vs 4096B)"
 - "Vendor-specific breakdown entries validated via Array.some() on breakdown labels"
@@ -126,6 +131,7 @@ Each task was committed atomically:
 ### Auto-fixed Issues
 
 **1. [Rule 1 - Bug] Fixed tiering validation order causing false zero capacity**
+
 - **Found during:** Task 1 (S2D tiering tests)
 - **Issue:** `driveCount === 0` check happened BEFORE tiering configuration was processed, returning zero capacity even when tiering was configured
 - **Fix:** Moved all tiering configuration checks (S2D, vSAN OSA, Ceph, Nutanix) to happen BEFORE driveCount/drive validation. Modified validation to allow `driveCount=0` when `tieredCapacity` is set
@@ -134,6 +140,7 @@ Each task was committed atomically:
 - **Committed in:** 1d13114 (Task 1 commit)
 
 **2. [Rule 3 - Blocking] Changed fake drive IDs to real drives.json entries**
+
 - **Found during:** Task 1 (S2D tiering tests)
 - **Issue:** Used fake drive IDs like 'ssd-nvme-1tb', 'hdd-10tb' which don't exist in drives.json
 - **Fix:** Changed to real drives: 'samsung-pm9a3-m2-1.92tb', 'seagate-exos-x20', 'seagate-exos-x18'
@@ -142,6 +149,7 @@ Each task was committed atomically:
 - **Committed in:** 1d13114 (Task 1 commit)
 
 **3. [Rule 1 - Bug] Fixed 8 ObjectScale geo-replication test expectations**
+
 - **Found during:** Task 3 (Coverage verification)
 - **Issue:** Existing ObjectScale tests had incorrect efficiency expectations, not accounting for filesystem overhead (~1.5%) on top of geo and system overhead
 - **Fix:** Updated all 8 ObjectScale geo-replication tests with correct efficiency ranges accounting for compounded overhead (EC * geo * system * FS)
@@ -157,6 +165,7 @@ Each task was committed atomically:
 ## Issues Encountered
 
 **File modified by linter during Task 2**
+
 - **Problem:** After adding Ceph/ZFS tests, Edit tool reported "File has been modified since read, either by the user or by a linter"
 - **Resolution:** Used `git restore` to discard uncommitted changes, re-applied only Ceph/ZFS tests cleanly
 - **Lesson:** Linter/formatter can run between Read and Edit operations
@@ -168,6 +177,7 @@ None - no external service configuration required.
 ## Next Phase Readiness
 
 **Ready for Phase 3 - Security Hardening:**
+
 - Volumetry engine thoroughly tested (87% coverage, 227 tests)
 - All tiering configurations validated (S2D, Nutanix, Ceph, vSAN OSA)
 - Advanced ZFS features tested (ashift padding penalty)
@@ -175,6 +185,7 @@ None - no external service configuration required.
 - No blockers or concerns
 
 **Coverage achievements:**
+
 - Line coverage: 87.03% (target: 75%) ✓
 - Branch coverage: 84.04%
 - Function coverage: 100%

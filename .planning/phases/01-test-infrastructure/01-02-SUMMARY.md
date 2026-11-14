@@ -8,6 +8,7 @@ tags: [vitest, jest-dom, react-testing-library, test-setup, coverage]
 # Dependency graph
 
 requires:
+
 - phase: 01-01
   provides: "Vitest configuration with jsdom and coverage thresholds"
   provides:
@@ -27,10 +28,12 @@ created: ["src/test/setup.ts"]
 modified: []
 
 key-decisions:
+
 - "Setup file provides jest-dom matchers globally to avoid repeated imports in every test"
 - "Automatic cleanup after each test prevents memory leaks and state pollution between tests"
 
 patterns-established:
+
 - "Test setup in src/test/setup.ts loaded via vitest setupFiles configuration"
 - "Coverage thresholds enforced correctly (currently failing at 32.84% - infrastructure working as expected)"
 
@@ -91,24 +94,28 @@ None - no external service configuration required.
 ## Test Infrastructure Verification Results
 
 **Test Execution:**
+
 - ✓ 3 test files discovered automatically (volumetry.spec.ts, performance.spec.ts, resilience.spec.ts)
 - ✓ 78 tests executed successfully in ~1.1s
 - ✓ No configuration errors (jsdom environment working)
 - ✓ Setup file loaded successfully (cleanup available globally)
 
 **Coverage Reporting:**
+
 - ✓ Coverage reports generated in coverage/ directory
 - ✓ HTML report created (coverage/index.html)
 - ✓ Line-by-line coverage tracking working
 - ✓ Threshold enforcement active (currently failing at 32.84% - expected behavior)
 
 **Current Coverage:**
+
 - Lines: 32.84% (threshold: 75%)
 - Functions: 27.27% (threshold: 75%)
 - Statements: 33.83% (threshold: 75%)
 - Branches: 25.24% (threshold: 75%)
 
 **Coverage by Module:**
+
 - Performance Engine: 49.52% lines
 - Volumetry Engine: 36.91% lines
 - Resilience Worker: 90.75% lines

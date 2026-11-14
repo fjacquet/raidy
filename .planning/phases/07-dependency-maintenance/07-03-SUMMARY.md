@@ -8,6 +8,7 @@ tags: [biome, react-error-boundary, jsdom, types-node, lint, typecheck, build]
 # Dependency graph
 
 requires:
+
 - phase: 07-dependency-maintenance plan 01
   provides: dompurify 3.3.2 and react-i18next 16.5.5 updates
 - phase: 07-dependency-maintenance plan 02
@@ -24,22 +25,26 @@ requires:
 tech-stack:
 added: []
 patterns:
+
 - "Fix ErrorFallbackProps.error to use unknown instead of Error for react-error-boundary v6 compatibility"
 - "Schema URL in biome.json must match installed biome version"
 
 key-files:
 created: []
 modified:
+
 - src/components/ErrorBoundary.tsx
 - biome.json
 - tests/engines/volumetry.spec.ts
 - .planning/config.json
 
 key-decisions:
+
 - "Use error: unknown and resetErrorBoundary: (...args: unknown[]) => void in ErrorFallbackProps to match react-error-boundary v6 FallbackProps type"
 - "Global coverage thresholds at ~69% are pre-existing (not caused by dependency bumps); src/utils/ has 40% coverage pulling down the global average"
 
 patterns-established:
+
 - "When upgrading react-error-boundary, check FallbackProps type changes (v5 used Error, v6 uses unknown)"
 - "biome.json schema URL must be updated to match installed biome major.minor.patch version"
 
@@ -97,6 +102,7 @@ Each task was committed atomically:
 ### Auto-fixed Issues
 
 **1. [Rule 1 - Bug] Fixed ErrorBoundary type incompatibility from react-error-boundary v6**
+
 - **Found during:** Task 1 (Step 4 — Build)
 - **Issue:** `react-error-boundary` v6 changed `FallbackProps.error` from `Error` to `unknown` and `resetErrorBoundary` signature to `(...args: unknown[]) => void`. The existing `ErrorFallbackProps` interface still used `error: Error`, causing TypeScript build failure.
 - **Fix:** Updated `ErrorFallbackProps` interface to match the new `FallbackProps` type from react-error-boundary v6.
@@ -105,6 +111,7 @@ Each task was committed atomically:
 - **Committed in:** `360c42d` (Task 1 commit)
 
 **2. [Rule 1 - Bug] Updated biome.json schema URL to match installed version**
+
 - **Found during:** Task 1 (Step 2 — Lint)
 - **Issue:** `biome.json` `$schema` pointed to `2.3.11` but biome `2.4.6` is installed. This caused a `deserialize` error in biome lint output.
 - **Fix:** Updated `$schema` URL to `https://biomejs.dev/schemas/2.4.6/schema.json`

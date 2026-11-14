@@ -8,6 +8,7 @@ tags: [url-storage, validation, form-validation, shareable-links, backward-compa
 # Dependency graph
 
 requires:
+
 - phase: 01-test-infrastructure
   provides: Vitest configuration with coverage thresholds and test setup
   provides:
@@ -28,12 +29,14 @@ created: [tests/utils/urlStorage.spec.ts, tests/utils/validators.spec.ts]
 modified: []
 
 key-decisions:
+
 - "Document future versioning strategy for URL format changes (v2.0 migration path)"
 - "Use table-driven tests for systematic validator coverage across all topologies"
 - "Validate error messages include WHY invalid and HOW to fix for user experience"
 - "Mock browser APIs (window, navigator, clipboard) for testable URL storage"
 
 patterns-established:
+
 - "Roundtrip serialization tests: config → serialize → deserialize → should equal config"
 - "Snapshot tests prevent unintentional URL format changes breaking shared links"
 - "Table-driven validator tests with expected error codes for systematic coverage"
@@ -99,24 +102,28 @@ Each task was committed atomically:
 ## Decisions Made
 
 **1. Future versioning strategy documentation**
+
 - **Decision:** Document expected v2.0 URL format migration strategy in tests
 - **Rationale:** Prepares for future breaking changes without actual legacy formats yet
 - **Strategy:** Add #v=2.0 param when needed, detect version in getItem, migrate old → new
 - **Pattern:** Legacy format → deserialize → detect version → migrate → re-serialize to new format
 
 **2. Table-driven validator tests**
+
 - **Decision:** Use array of test cases with describe.each pattern
 - **Rationale:** Systematic coverage, easy to add new scenarios, clear failure messages
 - **Coverage:** 8 comprehensive scenarios from invalid to valid configurations
 - **Pattern:** { description, drive, driveCount, topology, expectedErrorCode, shouldHaveError }
 
 **3. Error message quality validation**
+
 - **Decision:** Validate that error messages explain WHY invalid and HOW to fix
 - **Rationale:** User-facing validation must be actionable, not cryptic
 - **Example:** "RAID 5 requires at least 3 drives. You have 2 drives. Add 1 more drive."
 - **Tests:** Verify messages contain "minimum", "require", specific values, and recommendations
 
 **4. Browser API mocking strategy**
+
 - **Decision:** Mock window, navigator, clipboard APIs using vi.stubGlobal
 - **Rationale:** URL storage uses browser APIs not available in Node test environment
 - **Implementation:** Fresh mock setup in beforeEach, per-test navigator.clipboard mocking
@@ -127,6 +134,7 @@ Each task was committed atomically:
 ### Auto-fixed Issues
 
 **1. [Rule 1 - Bug] Compression test expectation**
+
 - **Found during:** Task 1 - URL storage roundtrip tests
 - **Issue:** Small JSON strings can be longer after LZ compression due to overhead
 - **Fix:** Added repetitive data pattern (array of 20 identical objects) for effective compression
@@ -134,6 +142,7 @@ Each task was committed atomically:
 - **Commit:** 0c5152e (included in Task 1-2 commit)
 
 **2. [Rule 1 - Bug] Clipboard mock not working**
+
 - **Found during:** Task 1 - Helper function tests
 - **Issue:** Global navigator stub from beforeEach leaked into individual tests
 - **Fix:** Per-test vi.stubGlobal('navigator', {...}) for clipboard tests
@@ -141,6 +150,7 @@ Each task was committed atomically:
 - **Commit:** 0c5152e (included in Task 1-2 commit)
 
 **3. [Rule 1 - Bug] Invalid controller types in validator tests**
+
 - **Found during:** Task 3 - Controller compatibility tests
 - **Issue:** Used non-existent controller names ('lsi_9500_16i', 'smartpqi_gen5')
 - **Fix:** Updated to valid controller types from topology.ts ('lsi_9500', 'hardware')
@@ -148,6 +158,7 @@ Each task was committed atomically:
 - **Commit:** 52891fc (included in Task 3 commit)
 
 **4. [Rule 2 - Missing Critical] vSAN ESA requires HBA controller**
+
 - **Found during:** Task 3 - Table-driven validator tests
 - **Issue:** Valid vSAN ESA test case used default 'hardware' controller (incompatible)
 - **Fix:** Specified 'lsi_9500' HBA controller for vSAN ESA configuration
@@ -165,22 +176,26 @@ None - no external service configuration required.
 ## Next Phase Readiness
 
 **Ready for next plans:**
+
 - URL serialization thoroughly tested - shareable links feature ready for UI integration
 - Configuration validation comprehensive - form validation ready for UI forms
 - Error message quality validated - user-facing validation feedback is actionable
 - Validators.ts coverage: 84.17% (exceeds 75% threshold)
 
 **Remaining Phase 2 work:**
+
 - Need to test other utils modules to reach 75% overall utils coverage
 - Other engines (performance, sustainability) need validation tests
 - Overall project coverage target: 75% by end of Phase 2
 
 **Next suggested plans:**
+
 - Test exportConfig.ts (configuration export for Ansible/Terraform)
 - Test exportPdf.ts (PDF report generation)
 - Test units.ts (capacity/performance unit formatting)
 
 **Coverage status:**
+
 - Utils/validators.ts: 84.17% statements, 85.03% lines ✓
 - Utils overall: 35.88% (pulled down by untested files)
 - Project overall: 11.26% (Phase 2 in progress)

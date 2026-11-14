@@ -8,6 +8,7 @@ tags: [typescript, refactoring, strategy-pattern, modularity]
 # Dependency graph
 
 requires:
+
 - phase: 04-04
   provides: Strategy pattern for volumetry calculations
 - phase: 04-05
@@ -30,12 +31,14 @@ requires:
 tech-stack:
 added: []
 patterns:
+
 - "Module extraction pattern for large orchestrators"
 - "Single Responsibility Principle applied to calculation engines"
 - "Helper function extraction to dedicated modules"
 
 key-files:
 created:
+
 - src/engines/volumetry/tiering/calculateTieredCapacity.ts
 - src/engines/volumetry/overhead/objectscale-geo.ts
 - src/engines/volumetry/overhead/filesystem-overhead.ts
@@ -48,12 +51,14 @@ created:
 - src/engines/volumetry/index.ts
 
 key-decisions:
+
 - "Extracted 8 separate modules to achieve under-300-line orchestrator"
 - "Grouped related overheads in single calculator module"
 - "Separated post-processing (compression/dedup) from core calculations"
 - "Created validation module for graceful error handling"
 
 patterns-established:
+
 - "Module extraction: Single responsibility, clear naming, well-documented"
 - "Overhead calculation: Centralized coordinator for all topology overheads"
 - "Validation: Separate module returns zero-state for invalid inputs"

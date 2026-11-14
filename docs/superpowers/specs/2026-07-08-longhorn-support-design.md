@@ -128,6 +128,7 @@ Raw = drive.capacity_raw × driveCount    (standard non-tiered path; driveCount 
 - **Growth & over-provisioning: never subtract** — surfaced as advisory readouts below.
 
 Implementation notes:
+
 - `dataFraction = 1/R` lives in `longhornStrategy.calculateDataFraction` (parity/redundancy
   slice), exactly like `cephStrategy`.
 - The free-space reserve reuses the Ceph "safe capacity" mechanism in `volumetry/index.ts`

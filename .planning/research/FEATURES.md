@@ -15,21 +15,25 @@ usable_TiB = ((N - 2) × drive_TiB) × 0.80
 ```
 
 **Variables:**
+
 - `N` — total number of drives in the ADAPT disk group (minimum 12, maximum 128)
 - `drive_TiB` — capacity of each drive in TiB (homogeneous assumed; for mixed drive pools, use the smallest common drive size)
 - `2` — two drives worth of spare capacity reserved (automatically set to sum of the two largest drives, which equals 2× drive_size for homogeneous pools)
 - `0.80` — parity overhead factor (the 8+2 stripe uses 2 parity chunks out of 10 = 20% parity loss)
 
 **Stripe Width Selection:**
+
 - Default: 8+2 (8 data + 2 parity chunks, each chunk 512 KiB → 4 MiB stripe)
 - With > 18 drives: system may use 16+2 (16 data + 2 parity), giving parity factor 16/18 ≈ 88.89% instead of 80%
 
 **For the 16+2 case (> 18 drives):**
+
 ```
 usable_TiB = ((N - 2) × drive_TiB) × (16/18)
 ```
 
 **Reference Validation:**
+
 - ME5224, 12 × 3.84 TB SSD, ADAPT(8+2):
   - Raw: 12 × 3.84 = 46.08 TB = 41.9 TiB
   - Formula: ((12 - 2) × 3.84 TB) × 0.80 = 30.72 TB = 27.94 TiB
@@ -37,12 +41,14 @@ usable_TiB = ((N - 2) × drive_TiB) × (16/18)
   - **Error: 0.04% — within 1% tolerance. Formula confirmed.**
 
 **Sources (MEDIUM confidence):**
+
 - Dell Community forum — ME4 ADAPT Usable Space Formula: `((Ndisks - 2)*DiskSize)-20%`
 - Dell Support KB: spare capacity = sum of largest two drives (official)
 - Dell ME5 Admin Guide: stripe = 8 data + 2 parity chunks; 16+2 when > 18 drives (official)
 - Back-calculation against Dell Sizer reference value
 
 **Implementation Notes:**
+
 - The current code `usableDrives >= 24 ? 0.87 : 0.85` is WRONG — must be replaced
 - Minimum 12 drives (documented minimum for ADAPT disk group)
 - Mixed drive sizes: spare = sum of two largest; parity overhead uses actual drive sizes proportionally
@@ -67,11 +73,13 @@ PowerStore does not expose raw RAID groups. The Dynamic Resiliency Engine (DRE) 
 | 16+2 (DRE DP) | 16/18 = 88.89% | 19         | 2 drives  |
 
 **Geometry Selection (DRE SP — single parity):**
+
 - Small arrays (6-9 drives): 4+1 geometry
 - Medium arrays (10-24 drives): 8+1 geometry
 - Geometry not user-selectable; system determines automatically
 
 **Geometry Selection (DRE DP — double parity, since PowerStoreOS 2.0):**
+
 - Small arrays (7-9 drives): 4+2 geometry
 - Medium arrays (10-18 drives): 8+2 geometry
 - Large arrays (19-50 drives per RRS): 16+2 geometry
@@ -79,6 +87,7 @@ PowerStore does not expose raw RAID groups. The Dynamic Resiliency Engine (DRE) 
 ### Spare Capacity Overhead
 
 Each RRS reserves one drive's worth of capacity as distributed spare:
+
 ```
 spare_fraction = 1 / (stripe_width + parity_count + 1)
 ```
@@ -88,15 +97,18 @@ For 16+2 with 1 spare: `spare_fraction = 1/19 ≈ 5.26%`
 ### System Overhead
 
 Beyond DRE RAID math, PowerStore reserves additional capacity for internal system functions:
+
 - **Internal reserved capacity** — firmware, system metadata; varies by model size
 - **System Data** — deduplication maps, compression metadata, snapshot pointers; pre-allocated at initialization and grows with use
 
 **Empirically derived system overhead from reference case:**
+
 ```
 system_overhead ≈ 7-8% of DRE_capacity
 ```
 
 Back-calculation:
+
 - 35 drives × 30.72 TB NVMe QLC; DRE DP with 16+2 geometry
 - Raw per TiB: 35 × 30.72 = 1,075.2 TB ≈ 977.89 TiB (Dell Sizer raw)
 - Pure RAID: 16/18 = 88.89%
@@ -137,6 +149,7 @@ const usableFraction = raidFraction * (1 - spareFraction) * (1 - systemOverhead)
 ```
 
 **Reference Validation:**
+
 - 35 drives, RAID(16+2), DRE DP:
   - RAID: 16/18 = 88.89%
   - Spare: 34/35 = 97.14%
@@ -147,11 +160,13 @@ const usableFraction = raidFraction * (1 - spareFraction) * (1 - systemOverhead)
   - **Recommended: use ~5% system overhead for large models (5200Q-class), ~7.5% for small models (1000-class)**
 
 **Sources (MEDIUM confidence):**
+
 - Dell KB article 000188491: PowerStore physical capacity calculation structure (official)
 - Dell community and blog: DRE SP/DP configurations, RRS spare = 1 drive per RRS (official)
 - Back-calculation against Dell Sizer reference value provided in milestone context
 
 **Implementation Notes:**
+
 - Current code `powerstore_raid6: 0.75` is WRONG — must be replaced with geometry-aware calculation
 - Current code `powerstore_raid5: 0.8` is also incorrect — must use geometry selection
 - PowerStore user-selectable topology maps to DRE SP (RAID-5 equivalent) or DRE DP (RAID-6 equivalent)
@@ -174,6 +189,7 @@ data_fraction = data_width / (data_width + protection_width)
 ```
 
 Where:
+
 - `data_width = node_count - protection_level` (for N+M protection)
 - `protection_width = protection_level` (number of FEC/parity units)
 
@@ -211,6 +227,7 @@ function powerscaleDataFraction(
 For mirrors (2x, 3x): constant fractions (1/2, 1/3) regardless of node count.
 
 **Important Caveats:**
+
 - The overhead percentages above are for large files only
 - Small files (< 128 KB) are replicated M+1 times, giving much higher overhead
 - Real-world overhead is higher than pure formula suggests, especially with mixed workloads
@@ -218,6 +235,7 @@ For mirrors (2x, 3x): constant fractions (1/2, 1/3) regardless of node count.
 - Current code `(usableDrives - 2) / usableDrives` treats `driveCount` as `nodeCount`, which is correct IF the drive count parameter represents nodes in the PowerScale context
 
 **Sources (MEDIUM confidence):**
+
 - Dell community: N+2:1 overhead = 33% at 3 nodes, 25% at 4 nodes, 20% at 5 nodes (confirmed multiple sources)
 - GitHub calculator: formula embedded confirms data_width / (data_width + protection_width)
 - OneFS documentation references (doc.isilon.com, Dell manuals) confirm structure but inaccessible directly
@@ -229,6 +247,7 @@ For mirrors (2x, 3x): constant fractions (1/2, 1/3) regardless of node count.
 ### Architecture
 
 PowerFlex (formerly ScaleIO/VxFlex OS) uses two granularity modes:
+
 - **Medium Granularity (MG)**: 1 MB allocation units; 2-way or 3-way mirror only
 - **Fine Granularity (FG)**: 4 KB allocation units; supports EC and compression
 
@@ -245,6 +264,7 @@ PowerFlex 5.0 introduced Scalable Availability Engine (SAE) with native EC suppo
 | 12+4   | 12   | 4      | 75.0%    | —         | Fine Granularity               |
 
 **Formula (all EC schemes):**
+
 ```
 data_fraction = data_chunks / (data_chunks + parity_chunks)
 ```
@@ -253,6 +273,7 @@ data_fraction = data_chunks / (data_chunks + parity_chunks)
 FG pools incur metadata overhead due to 4 KB granularity and deduplication maps. The overhead is not a simple percentage but varies with data compressibility. Dell documentation indicates FG pools have ~11% lower raw-to-usable efficiency than 2+2 EC when comparing identical hardware, suggesting an effective additional overhead of ~11% for FG metadata. However, this is partially offset by compression gains.
 
 **For capacity-only calculation (no compression):**
+
 ```
 // FG overhead is primarily from metadata and internal layout
 // Net FG capacity = EC_fraction × (1 - ~0.11 metadata overhead)
@@ -260,15 +281,18 @@ FG pools incur metadata overhead due to 4 KB granularity and deduplication maps.
 ```
 
 **Mirror schemes remain:**
+
 - 2-way: 50% (both MG and FG)
 - 3-way: 33.3% (MG only; FG only supports 2-way mirroring)
 
 **Sources (MEDIUM confidence):**
+
 - WWT blog on PowerFlex 5.0: "2+2 being about as efficient as older MG pools when looking at raw-to-usable, and ~11% improvement over FG pools"
 - Dell PowerFlex 5.0 documentation: 8+2 requires 11 nodes (official)
 - Pure math for EC fractions (HIGH confidence — standard erasure coding arithmetic)
 
 **Implementation Notes:**
+
 - Current code for `powerflex_ec_4_1: 4/5`, `powerflex_ec_4_2: 4/6`, `powerflex_ec_8_2: 8/10`, `powerflex_ec_12_4: 12/16` — all CORRECT
 - `powerflex_medium_2way: 0.5`, `powerflex_medium_3way: 1/3`, `powerflex_fine_2way: 0.5` — CORRECT
 - FG metadata overhead is a secondary concern for capacity simulation; current approach is acceptable
@@ -287,6 +311,7 @@ FG pools incur metadata overhead due to 4 KB granularity and deduplication maps.
 | Triple mirror | 3    | —      | 33.3%    | 3x                  | 3         | Metadata; small configs  |
 
 **Formula:**
+
 ```
 data_fraction = data_segments / (data_segments + parity_segments)
 ```
@@ -300,6 +325,7 @@ data_fraction = data_segments / (data_segments + parity_segments)
 | Three+ sites, 12+4 | 1.33x–2.67x         | Sites share chunks; not full replica per site |
 
 For two-site geo-replication, data is erasure-coded at each site independently:
+
 ```
 two_site_fraction = single_site_fraction / 2
 // e.g., 12+4 → 75% → with 2 sites → 37.5%
@@ -308,11 +334,13 @@ two_site_fraction = single_site_fraction / 2
 For three or more sites, ECS optimizes by combining replicated chunks across sites, reducing total overhead. The exact multiplier depends on site count and is not a simple formula.
 
 **Sources (MEDIUM confidence):**
+
 - Dell ObjectScale 1.0.0 Admin Guide: EC schemes 12+4 and 10+2, minimum node requirements, overhead multipliers (official)
 - Dell ObjectScale ECS documentation: geo-replication doubles overhead for 2 sites (official)
 - Dell ECS sizing document: 24+4 tech preview scheme
 
 **Implementation Notes:**
+
 - Current code for all ObjectScale schemes — CORRECT (pure math, confirmed by official docs)
 - `objectscale_ec_12_4: 12/16`, `objectscale_ec_10_2: 10/12`, `objectscale_ec_24_4: 24/28`, `objectscale_mirror_3: 1/3` — all match official overhead multipliers
 - Geo-replication factor is not currently modeled in Raidy; would require separate topology options

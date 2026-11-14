@@ -6,6 +6,7 @@ subsystem: export
 tags: [pptx, i18n, export, charts, pptxgenjs]
 dependency_graph:
 requires:
+
 - 17-01 (captureSpeedometer, captureDonutChart functions)
   provides:
 - exportToPptx producing 7-slide PPTX deck
@@ -75,6 +76,7 @@ All three chart captures (`captureSankeyDiagram`, `captureSpeedometer`, `capture
 ### Auto-fixed Issues
 
 **1. [Rule 1 - Bug] Fixed template literal string concatenation linting error**
+
 - **Found during:** Task 2 lint run
 - **Issue:** `' ' + config.topology.level` string concatenation in topLabel triggered Biome `useTemplate` rule
 - **Fix:** Changed to `` ` ${config.topology.level}` `` template literal inside the outer template
@@ -84,6 +86,7 @@ All three chart captures (`captureSankeyDiagram`, `captureSpeedometer`, `capture
 ## TypeScript Challenges
 
 The `Topology` discriminated union required careful access for optional fields:
+
 - `'level' in config.topology` guard used for level display in title slide and BOM
 - `'serverCount' in config.topology` guard used for server count in BOM slide, with a type assertion to `{ serverCount: number }` as this is a legitimately dynamic field across platform topologies (vSAN, S2D, Nutanix, etc.)
 

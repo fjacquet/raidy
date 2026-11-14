@@ -8,6 +8,7 @@ tags: [vitest, volumetry, objectscale, powerflex, raid5e, raid5ee, powervault, v
 # Dependency graph
 
 requires:
+
 - phase: 02-01
   provides: Table-driven testing framework and property-based testing with fast-check
 - phase: 02-02
@@ -28,6 +29,7 @@ requires:
 tech-stack:
 added: []
 patterns:
+
 - "ObjectScale geo-overhead table validation for multi-site replication (1-8 sites)"
 - "PowerFlex Fine Granularity metadata overhead testing pattern"
 - "RAID 5E/5EE distributed hot spare capacity validation with FS overhead"
@@ -37,9 +39,11 @@ patterns:
 key-files:
 created: []
 modified:
+
 - tests/engines/volumetry.spec.ts
 
 key-decisions:
+
 - "Test all ObjectScale EC schemes across their full site range (1-8 sites depending on scheme)"
 - "Validate PowerFlex Fine Granularity only applies to 2-way mirrors (3-way uses Medium Granularity)"
 - "Account for filesystem overhead (0.98x) in RAID 5E/5EE capacity expectations"
@@ -47,6 +51,7 @@ key-decisions:
 - "Validate vSAN ESA RAID-6 uses 4+2 when drives/server < 20, 6+2 when >= 20"
 
 patterns-established:
+
 - "Vendor geo-replication overhead validation via efficiency range checks"
 - "Fine Granularity metadata overhead testing with explicit granularity flags"
 - "Distributed RAID capacity validation accounting for all overhead layers"
@@ -147,6 +152,7 @@ Executed as part of combined gap closure effort (committed under 02-10 labels):
 ### Auto-fixed Issues
 
 **1. [Rule 1 - Bug] Fixed ObjectScale geo-overhead test expectations (12 tests corrected)**
+
 - **Found during:** Task 1 (ObjectScale multi-site geo-replication tests)
 - **Issue:** Initial test expectations based on simplified overhead math didn't account for how system overhead (15%) and geo-overhead multiply together, then filesystem overhead (1.5%) applies on top
 - **Root cause:** Formula is: `efficiency = (parityEfficiency / geoFactor) × (1 - systemOverhead) × fsOverhead`, not simple division
@@ -161,6 +167,7 @@ Executed as part of combined gap closure effort (committed under 02-10 labels):
 - **Committed in:** ef5168c (alongside other vendor tests)
 
 **2. [Rule 2 - Missing Critical] PowerFlex 3-way mirror topology level correction**
+
 - **Found during:** Task 2 (PowerFlex Fine Granularity tests)
 - **Issue:** Test used `'powerflex_3way'` topology level which doesn't exist
 - **Root cause:** PowerFlex Fine Granularity (8KB chunks) only supports 2-way mirrors; 3-way mirrors require Medium Granularity (1MB chunks)
@@ -170,6 +177,7 @@ Executed as part of combined gap closure effort (committed under 02-10 labels):
 - **Committed in:** ef5168c
 
 **3. [Rule 1 - Bug] RAID 5E/5EE capacity expectations didn't account for filesystem overhead**
+
 - **Found during:** Task 2 (RAID 5E/5EE tests)
 - **Issue:** Expected exact capacity (e.g., 4TB) but got ~3.92TB due to ~2% filesystem overhead
 - **Root cause:** RAID 5E/5EE tests calculated expected capacity as `testDrive.capacity_raw * dataDrives` without considering FS overhead
@@ -186,6 +194,7 @@ Executed as part of combined gap closure effort (committed under 02-10 labels):
 ## Issues Encountered
 
 **Systematic test expectation errors for ObjectScale geo-replication**
+
 - **Problem:** Initial efficiency expectations were systematically incorrect across all ObjectScale EC schemes
 - **Root cause:** Misunderstanding of how geo-overhead compounds with other overhead factors
 - **Resolution process:**
@@ -197,6 +206,7 @@ Executed as part of combined gap closure effort (committed under 02-10 labels):
 - **Time impact:** Required 3-4 iterations of test/fix/verify cycles
 
 **File modification tooling challenges**
+
 - **Problem:** Edit tool failed with "File has been modified since read" errors during test addition
 - **Resolution:** Used bash `cat >>` to append vendor tests from separate file, then used sed/awk for corrections
 - **Lesson:** Large file modifications are more stable with direct bash commands than Edit tool when formatters/watchers are active
@@ -208,6 +218,7 @@ None - no external service configuration required.
 ## Next Phase Readiness
 
 **Contributing to Phase 3 - Security Hardening readiness:**
+
 - All vendor-specific topology edge cases validated
 - ObjectScale geo-replication overhead calculations verified correct
 - PowerFlex Fine Granularity metadata overhead validated
@@ -217,6 +228,7 @@ None - no external service configuration required.
 - Combined with Plan 02-10: achieved 87.03% volumetry coverage (exceeds 75% target)
 
 **Vendor topology coverage:**
+
 - ObjectScale: Multi-site geo-replication (1-8 sites, 4 EC schemes) ✓
 - PowerFlex: Fine Granularity metadata overhead ✓
 - Dell RAID variants: 5E/5EE distributed hot spare ✓

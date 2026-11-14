@@ -9,6 +9,7 @@
 Security hardening for a client-side React SPA differs significantly from traditional full-stack applications. Without a backend, all validation must occur after URL state deserialization, and traditional "server-side validation" becomes "post-deserialization validation" in the calculation engines. The project already uses many secure patterns (React's auto-escaping, jsPDF 4.0.0 with path traversal fix, Snyk for scanning), but lacks systematic input validation after URL hash decompression.
 
 The standard approach is layered defense:
+
 1. **CSP headers** to prevent XSS as a second line of defense
 2. **Input validation** after LZ-string decompression with bounds checking and enum guards
 3. **PDF sanitization** for user-controlled text fields
@@ -45,6 +46,7 @@ The established libraries/tools for React SPA security:
 | react-error-boundary | Custom class | More control, but verbose and error-prone                |
 
 **Installation:**
+
 ```bash
 npm install zod dompurify react-error-boundary
 npm install --save-dev @types/dompurify
@@ -71,6 +73,7 @@ src/
 **What:** Define Zod schema matching Zustand store shape for runtime validation after LZ-string decompression
 **When to use:** Every URL hash load (on app init, shared link navigation)
 **Example:**
+
 ```typescript
 // src/utils/schemas.ts
 import { z } from 'zod'
@@ -120,6 +123,7 @@ export function validateUrlState(data: unknown): ConfigState | null {
 **When to use:** All production deployments
 
 **Netlify (_headers file in public/ directory):**
+
 ```
 /*
   Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
@@ -129,6 +133,7 @@ export function validateUrlState(data: unknown): ConfigState | null {
 ```
 
 **Vercel (vercel.json):**
+
 ```json
 {
   "headers": [
@@ -150,6 +155,7 @@ export function validateUrlState(data: unknown): ConfigState | null {
 ```
 
 **GitHub Pages (limitation - meta tag only):**
+
 ```html
 <!-- In public/index.html <head> section -->
 <meta http-equiv="Content-Security-Policy"
@@ -163,6 +169,7 @@ export function validateUrlState(data: unknown): ConfigState | null {
 **What:** Catch calculation engine errors and render fallback UI without exposing stack traces
 **When to use:** Wrap calculation dashboard and PDF export components
 **Example:**
+
 ```typescript
 // src/components/ErrorBoundary.tsx
 import { ErrorBoundary as ReactErrorBoundary } from 'react-error-boundary'
@@ -227,6 +234,7 @@ Problems that look simple but have existing solutions:
 **What goes wrong:** Passing user-controlled file paths to jsPDF methods (addImage, html, addFont, loadFile) in Node.js builds allows reading arbitrary files
 **Why it happens:** jsPDF ≤3.0.4 didn't sanitize paths; attackers could pass `"../../../etc/passwd"` to embed file contents in PDF
 **How to avoid:**
+
 - Use jsPDF ≥4.0.0 (Raidy currently uses 4.0.0 ✓)
 - Never pass user-controlled paths to file-loading methods
 - Raidy only uses jsPDF for text/table rendering (not file loading), so safe
@@ -237,6 +245,7 @@ Problems that look simple but have existing solutions:
 **What goes wrong:** `decompressFromEncodedURIComponent()` returns strings; parsing JSON from untrusted source without validation allows injection of malformed data (NaN, Infinity, negative drive counts)
 **Why it happens:** Developers assume URL state is "their own data" and safe; attackers can craft malicious URLs
 **How to avoid:**
+
 ```typescript
 // BAD: Direct deserialization
 const state = JSON.parse(decompressed)
@@ -256,6 +265,7 @@ if (!result.success) {
 **What goes wrong:** Strict CSP blocks Tailwind's utility classes or React's inline event handlers; app appears broken
 **Why it happens:** CSP `script-src 'self'` blocks inline `<script>` tags; `style-src 'self'` blocks inline styles
 **How to avoid:**
+
 - Use `'unsafe-inline'` for script-src and style-src during migration (Raidy pattern)
 - Long-term: Use nonces or hashes for specific inline scripts
 - Test CSP in report-only mode first (`Content-Security-Policy-Report-Only`)
@@ -266,6 +276,7 @@ if (!result.success) {
 **What goes wrong:** Showing raw error.message or stack traces to users reveals internal paths, library versions, logic flow
 **Why it happens:** Developers use error.message for debugging and forget to sanitize for production
 **How to avoid:**
+
 ```typescript
 // BAD: Leaks internal details
 catch (error) {
@@ -285,6 +296,7 @@ catch (error) {
 **What goes wrong:** In SPAs, there IS no server-side validation; all security depends on post-deserialization validation
 **Why it happens:** Developers think "client-side validation is just UX" and skip thorough validation
 **How to avoid:**
+
 - Treat URL deserialization as "untrusted input boundary"
 - Validate ALL fields after JSON.parse() before passing to calculation engines
 - Use TypeScript strict mode + Zod for defense in depth
@@ -295,6 +307,7 @@ catch (error) {
 **What goes wrong:** Using GitHub Pages with meta tag CSP, assuming full protection; missing critical directives like frame-ancestors
 **Why it happens:** GitHub Pages doesn't support HTTP headers; meta tags only support subset of CSP directives
 **How to avoid:**
+
 - Use Netlify or Vercel for production (free tier supports HTTP headers)
 - If stuck with GitHub Pages, use Cloudflare Workers proxy to inject headers
 - Document CSP limitations in deployment guide
@@ -461,6 +474,7 @@ function CalculationDashboard() {
 | Client-side validation only  | Post-deserialization validation in SPAs           | Ongoing      | Recognize URL state as untrusted input         |
 
 **Deprecated/outdated:**
+
 - **Feature-Policy header**: Replaced by Permissions-Policy (still supported but use new name)
 - **jsPDF <4.0.0**: Critical vulnerability CVE-2025-68428 in Node.js builds
 - **Formik + Yup pattern**: Still valid but Zod gaining dominance in TypeScript projects
@@ -527,6 +541,7 @@ Things that couldn't be fully resolved:
 ## Metadata
 
 **Confidence breakdown:**
+
 - Standard stack: HIGH - Zod, DOMPurify, react-error-boundary are industry standard (official docs verified)
 - Architecture: HIGH - Patterns verified against official documentation and CVE advisories
 - Pitfalls: HIGH - Based on real CVE (jsPDF), OWASP guidelines, and common SPA mistakes

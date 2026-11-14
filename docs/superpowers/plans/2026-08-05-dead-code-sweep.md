@@ -28,10 +28,12 @@
 Knip supplies what the toolchain cannot: an import graph. Its first run is expected to **fail**, and that failure is the work list for Tasks 2–4.
 
 **Files:**
+
 - Modify: `package.json` (devDependency + `check:dead` script)
 - Create: `knip.json`
 
 **Interfaces:**
+
 - Consumes: nothing.
 - Produces: `npm run check:dead`, used by Tasks 2–4 to verify their deletions and by Task 5 as the hook's payload.
 
@@ -108,10 +110,12 @@ follow."
 Both are production dependencies in a project that runs `check-supply-chain.mjs` on every build, so this is supply-chain surface as much as weight.
 
 **Files:**
+
 - Modify: `package.json`, `package-lock.json`
 - Modify: `CHANGELOG.md`
 
 **Interfaces:**
+
 - Consumes: `npm run check:dead` from Task 1.
 - Produces: nothing later tasks depend on.
 
@@ -197,10 +201,12 @@ Each symbol below occurs exactly once repo-wide: its own declaration.
 `formatNumber` and `formatCurrency` in the same file are **live** — do not touch them.
 
 **Files:**
+
 - Delete: `src/components/inputs/topology-options/shared/TopologyContext.tsx`
 - Modify: `src/engines/performance/utils/bottleneck-chain.ts`, `src/i18n/formatters.ts`
 
 **Interfaces:**
+
 - Consumes: `npm run check:dead` from Task 1.
 - Produces: nothing.
 
@@ -263,9 +269,11 @@ Knip reports symbols exported but used only inside their own file. **React `*Pro
 What remains after that exclusion is a small set of engine and utility types. Removing `export` there narrows the public surface of each module to what other modules actually use.
 
 **Files:**
+
 - Modify: whichever files Knip's unused-exports section names, excluding any symbol whose name ends in `Props`.
 
 **Interfaces:**
+
 - Consumes: `npm run check:dead` from Task 1.
 - Produces: nothing.
 
@@ -328,11 +336,13 @@ A one-off cleanup rots. `recharts` was unused for a long time and nothing was go
 **No husky.** `git config core.hooksPath .githooks` from an npm `prepare` script — which `npm install` runs — arms a fresh clone with no dependency to manage. Taking a dependency to police dependencies would be a poor trade in this PR of all PRs.
 
 **Files:**
+
 - Create: `.githooks/pre-commit`
 - Modify: `package.json` (`prepare` script, `prebuild` chain)
 - Modify: `docs/DEVELOPMENT.md`
 
 **Interfaces:**
+
 - Consumes: `npm run check:dead` from Task 1, now passing.
 - Produces: the hook; Task 6's i18n test is enforced by the normal test run, not by this hook.
 
@@ -451,9 +461,11 @@ Knip cannot see translation keys. A scan for orphans finds 117 candidates out of
 The failure mode justifies the care: a wrongly deleted key does not crash. i18next renders the key's own name into the interface, in a language the developer may not read, and no existing test asserts against that.
 
 **Files:**
+
 - Create: `tests/i18n/orphanKeys.spec.ts`
 
 **Interfaces:**
+
 - Consumes: nothing.
 - Produces: `DYNAMIC_PREFIXES`, consumed by Task 7 to decide which keys may be deleted.
 
@@ -604,10 +616,12 @@ does not throw, it renders its own name into the UI."
 ### Task 7: Delete the orphan keys across four locales
 
 **Files:**
+
 - Modify: `src/i18n/locales/{en,fr,de,it}/*.json`
 - Modify: `CHANGELOG.md`
 
 **Interfaces:**
+
 - Consumes: the orphan list produced by Task 6's failing run.
 - Produces: nothing.
 

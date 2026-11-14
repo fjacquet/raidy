@@ -13,6 +13,7 @@ added: []
 patterns: [pptxgenjs v4 browser API, bytes-to-TB conversion, dark brand palette]
 key_files:
 created:
+
 - src/utils/exportPptx.ts
   modified:
 - src/utils/index.ts
@@ -46,6 +47,7 @@ PPTX generation engine using pptxgenjs v4 with dark brand palette, two-slide dec
 ### Slide Structure
 
 **Slide 1 — Title slide:**
+
 - Dark background (`BRAND.bg = '1A1B2E'`)
 - Thin accent bar at top (`BRAND.accent = '3D6FCC'`)
 - Large title: topology type + level (e.g. "RAID 5")
@@ -53,6 +55,7 @@ PPTX generation engine using pptxgenjs v4 with dark brand palette, two-slide dec
 - Footer: localized generation date
 
 **Slide 2 — Capacity Summary:**
+
 - Same dark background + accent bar
 - Left column: 4 key metrics (Raw, Usable, Effective capacity in TB, Drive count × capacity)
 - Right column: Sankey diagram PNG (8.7" × 6.3") captured via `captureSankeyDiagram()`
@@ -67,6 +70,7 @@ PPTX generation engine using pptxgenjs v4 with dark brand palette, two-slide dec
 ### Auto-fixed Issues
 
 **1. [Rule 1 - Bug] Corrected VolumetryResult field names**
+
 - **Found during:** Task 1 — reading src/types/results.ts
 - **Issue:** Plan template referenced `vol.rawCapacityTB`, `vol.usableCapacityTB`, `vol.effectiveCapacityTB` — none of which exist. The actual `VolumetryResult` interface stores all values in bytes: `rawCapacity`, `usableCapacity`, `effectiveCapacity`
 - **Fix:** Added `bytesToTB(bytes)` helper (÷1e12) and used the correct field names with conversion
@@ -74,6 +78,7 @@ PPTX generation engine using pptxgenjs v4 with dark brand palette, two-slide dec
 - **Commit:** 5b5bcaa
 
 **2. [Rule 1 - Bug] Corrected Drive field references**
+
 - **Found during:** Task 1 — reading src/types/drive.ts
 - **Issue:** Plan template referenced `config.drive.brand` (no such field) and `config.drive.capacityTB` (no such field). Drive interface has `model` and `capacity_raw` (bytes)
 - **Fix:** Used `config.drive.model` for the drive label; computed TB display from `bytesToTB(config.drive.capacity_raw)`

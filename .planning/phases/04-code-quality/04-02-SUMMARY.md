@@ -9,6 +9,7 @@ tags:
 # Dependency graph
 
 requires:
+
 - phase: 03-security-hardening
   provides: Error boundaries and validation infrastructure
   provides:
@@ -25,6 +26,7 @@ patterns: [structured-error-logging, user-friendly-error-notifications]
 
 key-files:
 created:
+
 - tests/hooks/useCalculations.spec.ts
 - tests/store/urlStorage.spec.ts
   modified:
@@ -33,11 +35,13 @@ created:
 - src/App.tsx
 
 key-decisions:
+
 - "Use sonner for toast notifications (lightweight 30KB, 200K+ weekly downloads)"
 - "Structured error logging with context (driveId, topology, counts, timestamp)"
 - "Maintain console.error for developer debugging alongside user notifications"
 
 patterns-established:
+
 - "Error logging pattern: console.error with message, context object, ISO timestamp"
 - "User notification pattern: toast.error with user-friendly description, 5s duration"
 - "Safe fallback pattern: return zero-state instead of crashing on errors"

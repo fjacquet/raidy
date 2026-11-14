@@ -20,6 +20,7 @@ deferred, so each platform can now get a decision made on real sourcing instead 
 "not yet."
 
 **The four questions asked per platform**, from the issue:
+
 1. Does the fast tier serve reads, and under what condition (all reads / working set / recently
    written data only)?
 2. Does it absorb writes fully (write-back) or as a staging area with a drain rate that becomes
@@ -294,25 +295,30 @@ the app does not and cannot easily model," not "reads aren't served from the fas
 ## Sources
 
 **VMware vSAN OSA:**
+
 - [Understanding vSAN Architecture: Disk Groups](https://blogs.vmware.com/cloud-foundation/2019/04/18/vsan-disk-groups/) — VMware Cloud Foundation blog; 70/30 read-cache/write-buffer split (hybrid), 100% write buffer (all-flash), ~90% read-cache hit-rate target, elevator destage algorithm
 - [Write Buffer Sizing in vSAN When Using the Very Latest Hardware](https://blogs.vmware.com/cloud-foundation/2019/10/01/write-buffer-sizing-in-vsan-when-using-the-very-latest-hardware/) — VMware Cloud Foundation blog; write-buffer capacity guidance, corroborates write-back behavior
 - [Understanding Congestion in vSAN](https://knowledge.broadcom.com/external/article/326479/understanding-congestion-in-vsan.html) — Broadcom (VMware) KB; Log Congestion / SSD Congestion throttling mechanism when the write buffer fills
 
 **Ceph BlueStore:**
+
 - [BlueStore Config Reference](https://docs.ceph.com/en/latest/rados/configuration/bluestore-config-ref/) — Ceph official docs; WAL/DB device roles, internal journal/metadata description
 - [BlueStore Config Reference (Octopus)](https://docs.ceph.com/en/octopus/rados/configuration/bluestore-config-ref/) — Ceph official docs; `block.db` sizing guideline (~1–4% of `block`, RGW ≥4%)
 - [Cache Tiering](https://docs.ceph.com/en/latest/rados/operations/cache-tiering/) — Ceph official docs; confirms cache tiering is a separate, deprecated (Reef) feature distinct from WAL/DB offload
 
 **Nutanix AOS:**
+
 - [Nutanix Bible — Book of AOS Storage](https://www.nutanixbible.com/4c-book-of-aos-storage.html) — Nutanix's official architecture reference; ILM touch-count promotion trigger, tier-utilization down-migration threshold, OpLog write-back/replication/drain behavior, >1.5MB sequential bypass rule
 - [Sequential I/O and the OpLog versus the Extent Store](https://next.nutanix.com/how-it-works-22/sequential-i-o-and-the-oplog-versus-the-extent-store-39228) — Nutanix Community (corroborating source), sequential-vs-OpLog routing detail
 
 **BeeGFS:**
+
 - [Architecture Overview](https://doc.beegfs.io/latest/architecture/overview.html) — official BeeGFS docs; storage-server vs. metadata-server role separation
 - [Benchmarking a BeeGFS System](https://doc.beegfs.io/latest/advanced_topics/benchmark.html) — official BeeGFS docs; metadata ops/sec (`mdtest`) measured separately from data throughput (`StorageBench`/IOR)
 - [Metadata Node Tuning](https://doc.beegfs.io/latest/advanced_topics/metadata_tuning.html) — official BeeGFS docs; metadata performance's effect on metadata-heavy workloads
 
 **Repository context read for this research:**
+
 - `src/engines/performance/index.ts` — the branch under discussion (lines 226–282)
 - `src/engines/shared/tiering.ts` — `resolveTiering`, per-platform tiering gate conditions
 - `src/types/topology.ts` — `TieringConfig`, `VsanOptions`, `CephOptions`, `NutanixOptions`,

@@ -24,10 +24,12 @@
 ### Task 1: Drive-DB invariant test + prune `AIC` form factor
 
 **Files:**
+
 - Create: `tests/data/drives-db.spec.ts`
 - Modify: `src/types/drive.ts` (remove `'AIC'` from the `FormFactor` union and from `FORM_FACTOR_TO_TYPES.all`)
 
 **Interfaces:**
+
 - Consumes: `Drive`, `FormFactor` from `@/types/drive`; `drives.json` via `@/data/drives.json`.
 - Produces: `tests/data/drives-db.spec.ts` — the shared test file later tasks extend.
 
@@ -113,10 +115,12 @@ rtk proxy git commit -m "test(drives): add DB invariant test; prune orphaned AIC
 ### Task 2: Add 5 HDD entries (CMR / SMR / HAMR, 20–30 TB)
 
 **Files:**
+
 - Modify: `src/data/drives.json` (append 5 entries inside the HDD group, after the last `HDD`-type entry)
 - Modify: `tests/data/drives-db.spec.ts` (add an HDD presence/coverage describe block)
 
 **Interfaces:**
+
 - Consumes: the `Drive` shape; `drives` map from Task 1's test.
 - Produces: drive IDs `ent-hdd-7k2-sata-20tb-cmr`, `ent-hdd-7k2-sas-22tb-cmr`, `ent-hdd-7k2-sata-26tb-smr`, `ent-hdd-7k2-sata-28tb-hamr`, `ent-hdd-7k2-sata-30tb-hamr`.
 
@@ -263,10 +267,12 @@ rtk proxy git commit -m "feat(drives): add 20-30TB nearline HDDs (CMR/SMR/HAMR)"
 ### Task 3: Add 6 NVMe SSD entries (E1.L / E3.L rulers + PCIe5 TLC)
 
 **Files:**
+
 - Modify: `src/data/drives.json` (append 6 entries inside the `SSD_NVMe` group)
 - Modify: `tests/data/drives-db.spec.ts` (add NVMe presence + form-factor coverage)
 
 **Interfaces:**
+
 - Produces IDs: `dc-nvme-pcie4-30720gb-qlc-e1l-ri`, `dc-nvme-pcie4-122880gb-qlc-e1l-ri`, `dc-nvme-pcie5-61440gb-qlc-e3l-ri`, `dc-nvme-pcie5-3840gb-tlc-e3s-mu`, `ent-nvme-pcie5-7680gb-tlc-u3-ri`, `ent-nvme-pcie5-1920gb-tlc-m2-ri`.
 
 > **Note:** the two E1.L rulers are **PCIe4** — the only real ≥30 TB QLC E1.L rulers (Solidigm D5-P5336 family) are PCIe4; PCIe5 coverage is provided by the E3.L + the PCIe5 TLC entries. This is intentional and accurate.
@@ -418,10 +424,12 @@ rtk proxy git commit -m "feat(drives): add E1.L/E3.L QLC rulers and PCIe5 TLC NV
 ### Task 4: Add 4 SAS/SATA SSD entries
 
 **Files:**
+
 - Modify: `src/data/drives.json` (2 entries in the `SSD_SAS` group, 2 in the `SSD_SATA` group)
 - Modify: `tests/data/drives-db.spec.ts` (presence test)
 
 **Interfaces:**
+
 - Produces IDs: `ent-ssd-sas-7680gb-mu`, `ent-ssd-sas-15360gb-ri`, `ent-ssd-sata-960gb-mu`, `ent-ssd-sata-480gb-ri`.
 
 - [ ] **Step 1: Write the failing test**
@@ -535,10 +543,12 @@ rtk proxy git commit -m "feat(drives): add 24G-SAS TLC SSDs and small SATA TLC S
 ### Task 5: Backfill `nandType` on the 27 untagged existing SSDs
 
 **Files:**
+
 - Modify: `src/data/drives.json` (add a `nandType` field to 27 existing SSD entries — additive, no other field changes)
 - Modify: `tests/data/drives-db.spec.ts` (assert every SSD now has `nandType`)
 
 **Classification (explicit):**
+
 - **QLC (4):** `ent-nvme-pcie4-30720gb-u3-ri`, `dc-nvme-pcie5-30720gb-e3s-ri`, `ent-ssd-sas-30720gb-ri` (all ≥30 TB read-intensive), and `con-ssd-sata-4tb-ri` (consumer, 0.3 DWPD).
 - **TLC (23):** every other untagged SSD: `ent-nvme-pcie4-960gb-m2-ri`, `ent-nvme-pcie4-1600gb-u3-mu`, `ent-nvme-pcie4-1920gb-u2-ri`, `ent-nvme-pcie4-1920gb-u3-ri`, `dc-nvme-pcie5-1920gb-e1s-ri`, `ent-nvme-pcie4-3840gb-m2-ri`, `ent-nvme-pcie4-6400gb-u3-mu`, `ent-nvme-pcie4-6400gb-u2-mu`, `dc-nvme-pcie4-6400gb-e3s-mu`, `dc-nvme-pcie5-7680gb-e1s-ri`, `dc-nvme-pcie5-7680gb-e3s-ri`, `dc-nvme-pcie4-7680gb-e3s-ri`, `dc-nvme-pcie5-12800gb-u3-mu`, `ent-nvme-pcie4-15360gb-u2-ri`, `ent-ssd-sas-1600gb-wi`, `ent-ssd-sas-1920gb-ri`, `ent-ssd-sas-3200gb-mu`, `ent-ssd-sas-3200gb-wi`, `ent-ssd-sas-12800gb-mu`, `ent-ssd-sata-960gb-ri`, `ent-ssd-sata-1920gb-mu`, `ent-ssd-sata-3840gb-mu`, `ent-ssd-sata-7680gb-ri`.
 
@@ -603,6 +613,7 @@ rtk proxy git commit -m "feat(drives): backfill nandType (TLC/QLC) on existing S
 ### Task 6: Full quality gate + docs sync + manual smoke
 
 **Files:**
+
 - Modify: `CHANGELOG.md` (new `### Added` bullet under a new patch section), `package.json` (version bump), `docs/ARCHITECTURE.md` (drive-DB note if one exists; otherwise skip)
 
 **Interfaces:** none (verification + release-notes only).
