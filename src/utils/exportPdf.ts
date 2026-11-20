@@ -52,7 +52,7 @@ function formatNumber(value: number): string {
  * Get translated string from pdf namespace.
  */
 function t(key: string, options?: Record<string, string | number>): string {
-  return i18n.t(`pdf:${key}`, options) as string
+  return i18n.t(`pdf:${key}`, options ?? {}) as string
 }
 
 /**
@@ -60,7 +60,7 @@ function t(key: string, options?: Record<string, string | number>): string {
  * being duplicated into `pdf:` — see `formatBottleneck` (#139).
  */
 function tOutput(key: string, options?: Record<string, string | number>): string {
-  return i18n.t(`output:${key}`, options) as string
+  return i18n.t(`output:${key}`, options ?? {}) as string
 }
 
 /**
@@ -190,7 +190,7 @@ export function exportToPdf(config: ExportConfig): void {
   const powerScale =
     topology.type === 'powerscale'
       ? buildPowerScaleExportContent(volumetry.powerScaleDetails, {
-          t: (key, options) => i18n.t(key, options) as string,
+          t: (key, options) => i18n.t(key, options ?? {}) as string,
           language: config.language ?? DEFAULT_LANGUAGE,
           unitSystem,
           topology,

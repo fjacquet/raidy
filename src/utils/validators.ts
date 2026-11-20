@@ -23,7 +23,7 @@ import { formatBytes } from '@/utils/units'
 
 /** i18n lookup for the `validation` namespace, used outside React components. */
 function tv(key: string, options?: Record<string, unknown>): string {
-  return i18n.t(`validation:${key}`, options) as string
+  return i18n.t(`validation:${key}`, options ?? {}) as string
 }
 
 /** Alert severity levels */

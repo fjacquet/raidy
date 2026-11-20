@@ -460,14 +460,14 @@ export async function exportToPptx(config: ExportConfig): Promise<void> {
     month: 'long',
     day: 'numeric',
   })
-  const content = buildPptxContent(config, i18n.t, dateLabel)
+  const content = buildPptxContent(config, (key, options) => i18n.t(key, options ?? {}) as string, dateLabel)
 
   // PowerScale takes a dedicated path: a cluster is 1-8 heterogeneous node pools, so "one drive
   // model × a count" is the wrong shape for the document, not merely the wrong label on a line.
   const powerScale =
     config.topology.type === 'powerscale'
       ? buildPowerScaleExportContent(config.results.volumetry.powerScaleDetails, {
-          t: i18n.t,
+          t: (key, options) => i18n.t(key, options ?? {}) as string,
           language: config.language ?? DEFAULT_LANGUAGE,
           unitSystem: config.unitSystem ?? 'binary',
           topology: config.topology,
