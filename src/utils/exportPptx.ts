@@ -460,7 +460,11 @@ export async function exportToPptx(config: ExportConfig): Promise<void> {
     month: 'long',
     day: 'numeric',
   })
-  const content = buildPptxContent(config, (key, options) => i18n.t(key, options ?? {}) as string, dateLabel)
+  const content = buildPptxContent(
+    config,
+    (key, options) => i18n.t(key, options ?? {}) as string,
+    dateLabel,
+  )
 
   // PowerScale takes a dedicated path: a cluster is 1-8 heterogeneous node pools, so "one drive
   // model × a count" is the wrong shape for the document, not merely the wrong label on a line.
