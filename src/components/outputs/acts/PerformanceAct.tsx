@@ -136,7 +136,7 @@ export function PerformanceAct({ performance }: PerformanceActProps) {
 
         <div className="mt-4 pt-4 border-t border-slate-200 dark:border-surface-700">
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            {formatBottleneck(performance.bottleneck, t)}
+            {formatBottleneck(performance.bottleneck, (key, options) => t(key, options ?? {}) as string)}
           </p>
         </div>
       </div>
